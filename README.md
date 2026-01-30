@@ -1,0 +1,514 @@
+# WWE 2K League Management System
+
+A serverless web application for managing a WWE 2K league with player standings, championships, matches, and tournaments.
+
+## Features
+
+- **Public Access** (no login required):
+  - View current standings
+  - Browse championships and their history
+  - See scheduled and completed matches
+  - Follow tournament brackets and standings
+
+- **Admin Features** (requires authentication):
+  - Manage players and their wrestlers
+  - Schedule matches with various stipulations
+  - Record match results
+  - Create and manage championships
+  - Create tournaments (single-elimination and round-robin)
+
+## Tech Stack
+
+### Frontend
+- React 18 with TypeScript
+- Vite for build tooling
+- React Router for navigation
+
+### Backend
+- AWS Lambda (Node.js 18)
+- API Gateway
+- DynamoDB
+- Serverless Framework
+
+## Project Structure
+
+```
+wwe-2k-league/
+├── frontend/          # React frontend application
+│   ├── src/
+│   │   ├── components/    # React components
+│   │   ├── services/      # API client
+│   │   └── types/         # TypeScript types
+│   └── package.json
+├── backend/           # Serverless backend API
+│   ├── functions/         # Lambda functions
+│   │   ├── players/
+│   │   ├── matches/
+│   │   ├── championships/
+│   │   ├── tournaments/
+│   │   └── standings/
+│   ├── lib/              # Shared utilities
+│   └── serverless.yml    # Infrastructure config
+└── README.md
+```
+
+## Quick Start (Local Development)
+
+Get the app running locally with sample data in 5 steps:
+
+### 1. Start DynamoDB Local
+
+Using Docker (recommended):
+```bash
+docker run -p 8000:8000 amazon/dynamodb-local
+```
+
+Keep this terminal running.
+
+### 2. Start Backend API
+
+Open a new terminal:
+```bash
+cd wwe-2k-league/backend
+npm install
+npm run offline
+```
+
+The API will start at http://localhost:3000/dev
+
+Keep this terminal running.
+
+### 3. Seed Sample Data
+
+Open another terminal:
+```bash
+cd wwe-2k-league/backend
+npm run seed
+```
+
+This creates 6 players, 3 championships, 4 matches, and 2 tournaments.
+
+### 4. Start Frontend
+
+Open another terminal:
+```bash
+cd wwe-2k-league/frontend
+npm install
+npm run dev
+```
+
+The frontend will start at http://localhost:5173
+
+### 5. View the App
+
+Open **http://localhost:5173** in your browser to see the fully populated league!
+
+**To clear data and start fresh:**
+```bash
+cd wwe-2k-league/backend
+npm run clear-data
+```
+
+---
+
+## Deployment to AWS
+
+### Prerequisites
+
+- Node.js 18+ (nodenv recommended)
+- AWS CLI configured with appropriate credentials
+- Serverless Framework CLI (`npm install -g serverless`)
+
+### Backend Setup
+
+1. Navigate to the backend directory:
+```bash
+cd backend
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Deploy to AWS:
+```bash
+serverless deploy
+```
+
+4. Note the API endpoint URL from the deployment output.
+
+### Frontend Setup
+
+1. Navigate to the frontend directory:
+```bash
+cd frontend
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create a `.env` file with your API endpoint:
+```bash
+VITE_API_BASE_URL=https://your-api-gateway-url
+```
+
+4. Start the development server:
+```bash
+npm run dev
+```
+
+5. Open http://localhost:3000 in your browser.
+
+## Local Development & Testing
+
+### Prerequisites for Local Testing
+
+1. Install DynamoDB Local (for local testing):
+```bash
+# Option 1: Using Docker (recommended)
+docker pull amazon/dynamodb-local
+
+# Option 2: Download JAR file
+# https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html
+```
+
+2. Make sure you have Node.js installed (v18+):
+```bash
+node --version  # Should be 18 or higher
+```
+
+### Step-by-Step Local Setup
+
+#### 1. Start DynamoDB Local
+
+Using Docker:
+```bash
+docker run -p 8000:8000 amazon/dynamodb-local
+```
+
+Or if you downloaded the JAR:
+```bash
+java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -port 8000
+```
+
+Keep this terminal running.
+
+#### 2. Set Up Backend
+
+Open a new terminal:
+
+```bash
+cd backend
+npm install
+```
+
+Create a `.env` file in the backend directory:
+```bash
+# backend/.env
+IS_OFFLINE=true
+DYNAMODB_ENDPOINT=http://localhost:8000
+```
+
+Update `serverless.yml` to use local DynamoDB (already configured for offline use).
+
+Start the backend:
+```bash
+npm run offline
+```
+
+The API will be available at **http://localhost:3000** (note: serverless-offline uses port 3000 by default).
+
+You should see output like:
+```
+Starting Offline at stage dev (us-east-1)
+
+Offline [http for lambda] listening on http://localhost:3002
+...
+   GET    | http://localhost:3000/dev/players
+   POST   | http://localhost:3000/dev/players
+   ...
+```
+
+Keep this terminal running.
+
+#### 3. Set Up Frontend
+
+Open another new terminal:
+
+```bash
+cd frontend
+npm install
+```
+
+Create a `.env` file in the frontend directory:
+```bash
+# frontend/.env
+VITE_API_BASE_URL=http://localhost:3000/dev
+```
+
+Start the frontend:
+```bash
+npm run dev
+```
+
+The frontend will be available at **http://localhost:5173** (Vite's default port).
+
+#### 4. Testing the Application
+
+Now you have everything running locally:
+- DynamoDB Local: http://localhost:8000
+- Backend API: http://localhost:3000/dev
+- Frontend: http://localhost:5173
+
+Open http://localhost:5173 in your browser to test the application.
+
+### Testing Workflow
+
+#### Option 1: Use the Seed Script (Recommended)
+
+The easiest way to get started is to use the included seed data script that will populate your local database with sample data:
+
+```bash
+cd backend
+npm run seed
+```
+
+This will create:
+- 6 sample players with wins/losses
+- 3 championships (World, Intercontinental, Tag Team)
+- Championship history
+- 4 matches (2 completed, 2 scheduled)
+- 2 tournaments (Single Elimination and Round Robin)
+
+After running the seed script, refresh your frontend at http://localhost:5173 to see all the data!
+
+**To clear all data and start fresh:**
+
+```bash
+cd backend
+npm run clear-data
+```
+
+This will delete all data from your local DynamoDB tables.
+
+#### Option 2: Add Sample Data Manually via API
+
+If you prefer to add data manually:
+
+1. **Test Creating a Player**:
+   - The app starts with an empty database
+   - You can use the admin panel or API directly to add test data
+   - Use tools like curl, Postman, or the browser's developer console
+
+2. **Add Sample Data via API**:
+
+```bash
+# Create a player
+curl -X POST http://localhost:3000/dev/players \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "currentWrestler": "Stone Cold Steve Austin"
+  }'
+
+# Create another player
+curl -X POST http://localhost:3000/dev/players \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Jane Smith",
+    "currentWrestler": "The Rock"
+  }'
+
+# Get all players to see their IDs
+curl http://localhost:3000/dev/players
+
+# Create a championship
+curl -X POST http://localhost:3000/dev/championships \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "World Heavyweight Championship",
+    "type": "singles"
+  }'
+
+# Schedule a match (use actual player IDs from the GET request above)
+curl -X POST http://localhost:3000/dev/matches \
+  -H "Content-Type: application/json" \
+  -d '{
+    "date": "2024-03-15T20:00:00Z",
+    "matchType": "singles",
+    "stipulation": "No DQ",
+    "participants": ["player-id-1", "player-id-2"],
+    "isChampionship": false
+  }'
+```
+
+3. **View in the Frontend**:
+   - Refresh http://localhost:5173
+   - Check the Standings page
+   - Check the Championships page
+   - Check the Matches page
+
+4. **Test Recording Match Results**:
+
+```bash
+# Record a match result (use actual match ID and player IDs)
+curl -X PUT http://localhost:3000/dev/matches/{matchId}/result \
+  -H "Content-Type: application/json" \
+  -d '{
+    "winners": ["player-id-1"],
+    "losers": ["player-id-2"]
+  }'
+
+# Check standings updated
+curl http://localhost:3000/dev/standings
+```
+
+### Troubleshooting Local Setup
+
+**Backend won't start:**
+- Make sure DynamoDB Local is running on port 8000
+- Check that no other process is using port 3000
+- Run `npm install` in the backend directory
+
+**Frontend can't connect to backend:**
+- Check the `.env` file has the correct `VITE_API_BASE_URL`
+- Make sure the backend is running
+- Check for CORS errors in browser console
+
+**DynamoDB errors:**
+- Tables are created automatically by serverless-offline
+- If you see table errors, restart serverless-offline
+- Make sure DynamoDB Local is accessible at http://localhost:8000
+
+**Port conflicts:**
+- Frontend (Vite): Change port with `vite --port 5174`
+- Backend: Change port in serverless.yml under `custom.serverless-offline`
+- DynamoDB Local: Use `-port 8001` flag
+
+### Resetting Local Database
+
+To clear all data and start fresh:
+
+1. Stop DynamoDB Local (Ctrl+C)
+2. If using Docker: `docker rm -f <container-id>`
+3. Restart DynamoDB Local
+4. Restart serverless-offline (it will recreate tables)
+
+### Running Tests Before Deployment
+
+Before deploying to AWS, verify:
+
+1. ✅ Can create players
+2. ✅ Can schedule matches
+3. ✅ Can record match results
+4. ✅ Standings update correctly
+5. ✅ Can create championships
+6. ✅ Championship history tracks properly
+7. ✅ Can create tournaments (both types)
+8. ✅ Tournament standings update correctly
+9. ✅ All pages display data correctly
+10. ✅ No console errors in browser
+
+## API Endpoints
+
+### Public Endpoints
+
+- `GET /players` - Get all players
+- `GET /matches` - Get all matches (filter by status)
+- `GET /championships` - Get all championships
+- `GET /championships/{id}/history` - Get championship history
+- `GET /tournaments` - Get all tournaments
+- `GET /standings` - Get current standings
+
+### Admin Endpoints (Authentication Required)
+
+- `POST /players` - Create new player
+- `PUT /players/{id}` - Update player
+- `POST /matches` - Schedule a match
+- `PUT /matches/{id}/result` - Record match result
+- `POST /championships` - Create championship
+- `POST /tournaments` - Create tournament
+- `PUT /tournaments/{id}` - Update tournament
+
+## Database Schema
+
+### Players Table
+- Stores player information, current wrestler, and win/loss records
+
+### Matches Table
+- Stores match details, participants, results, and stipulations
+- Supports championship and tournament matches
+
+### Championships Table
+- Stores championship information and current champion
+
+### Championship History Table
+- Tracks all championship reigns with dates and duration
+
+### Tournaments Table
+- Stores tournament information
+- Includes brackets for single-elimination
+- Includes standings for round-robin
+
+## Deployment
+
+### Deploy Backend
+
+```bash
+cd backend
+serverless deploy --stage prod
+```
+
+### Build and Deploy Frontend
+
+1. Build the frontend:
+```bash
+cd frontend
+npm run build
+```
+
+2. The build output will be in `frontend/dist/`.
+
+3. Deploy to S3 + CloudFront:
+```bash
+aws s3 sync dist/ s3://your-bucket-name
+```
+
+## Tournament Types
+
+### Single Elimination
+- Bracket-style tournament
+- Winners advance, losers are eliminated
+- Automatic bracket generation
+
+### Round Robin (G1 Climax Style)
+- Every participant faces every other participant
+- Point system: 2 points for win, 1 point for draw
+- Highest points wins the tournament
+
+## Cost Estimation
+
+With AWS Free Tier:
+- DynamoDB: ~$0-1/month (on-demand pricing)
+- Lambda: Free for first 1M requests
+- API Gateway: Free for first 1M requests
+- S3 + CloudFront: ~$0-2/month
+
+**Expected monthly cost for low traffic: $1-5/month**
+
+## Future Enhancements
+
+- [ ] AWS Cognito integration for admin authentication
+- [ ] Match type statistics and analytics
+- [ ] Tag team support
+- [ ] Advanced filtering and search
+- [ ] Export standings to PDF/CSV
+- [ ] Mobile responsive design improvements
+- [ ] Real-time updates with WebSockets
+
+## License
+
+MIT

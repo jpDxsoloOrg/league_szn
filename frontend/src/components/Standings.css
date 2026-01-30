@@ -1,0 +1,67 @@
+.standings-container {
+  width: 100%;
+}
+
+.standings-table-wrapper {
+  overflow-x: auto;
+  margin-top: 1.5rem;
+}
+
+.standings-table {
+  width: 100%;
+  min-width: 600px;
+}
+
+.standings-table th {
+  text-align: center;
+  padding: 1rem;
+}
+
+.standings-table td {
+  text-align: center;
+  padding: 0.75rem;
+}
+
+.standings-table .rank {
+  font-weight: bold;
+  color: #d4af37;
+  font-size: 1.1rem;
+}
+
+.standings-table .player-name {
+  font-weight: bold;
+  text-align: left;
+}
+
+.standings-table .wrestler-name {
+  text-align: left;
+  color: #bbb;
+}
+
+.standings-table .wins {
+  color: #4ade80;
+  font-weight: bold;
+}
+
+.standings-table .losses {
+  color: #f87171;
+  font-weight: bold;
+}
+
+.standings-table .draws {
+  color: #fbbf24;
+}
+
+.standings-table .win-percentage {
+  font-weight: bold;
+}
+
+.loading, .error, .empty-state {
+  text-align: center;
+  padding: 2rem;
+}
+
+.error p {
+  color: #f87171;
+  margin-bottom: 1rem;
+}

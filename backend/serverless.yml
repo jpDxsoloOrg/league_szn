@@ -1,0 +1,232 @@
+service: wwe-2k-league-api
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  environment:
+    PLAYERS_TABLE: ${self:service}-players-${self:provider.stage}
+    MATCHES_TABLE: ${self:service}-matches-${self:provider.stage}
+    CHAMPIONSHIPS_TABLE: ${self:service}-championships-${self:provider.stage}
+    CHAMPIONSHIP_HISTORY_TABLE: ${self:service}-championship-history-${self:provider.stage}
+    TOURNAMENTS_TABLE: ${self:service}-tournaments-${self:provider.stage}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PLAYERS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCHES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCHES_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CHAMPIONSHIPS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CHAMPIONSHIP_HISTORY_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TOURNAMENTS_TABLE}
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+
+functions:
+  # Players
+  getPlayers:
+    handler: functions/players/getPlayers.handler
+    events:
+      - http:
+          path: players
+          method: get
+          cors: true
+
+  createPlayer:
+    handler: functions/players/createPlayer.handler
+    events:
+      - http:
+          path: players
+          method: post
+          cors: true
+
+  updatePlayer:
+    handler: functions/players/updatePlayer.handler
+    events:
+      - http:
+          path: players/{playerId}
+          method: put
+          cors: true
+
+  # Matches
+  getMatches:
+    handler: functions/matches/getMatches.handler
+    events:
+      - http:
+          path: matches
+          method: get
+          cors: true
+
+  scheduleMatch:
+    handler: functions/matches/scheduleMatch.handler
+    events:
+      - http:
+          path: matches
+          method: post
+          cors: true
+
+  recordResult:
+    handler: functions/matches/recordResult.handler
+    events:
+      - http:
+          path: matches/{matchId}/result
+          method: put
+          cors: true
+
+  # Championships
+  getChampionships:
+    handler: functions/championships/getChampionships.handler
+    events:
+      - http:
+          path: championships
+          method: get
+          cors: true
+
+  createChampionship:
+    handler: functions/championships/createChampionship.handler
+    events:
+      - http:
+          path: championships
+          method: post
+          cors: true
+
+  getChampionshipHistory:
+    handler: functions/championships/getChampionshipHistory.handler
+    events:
+      - http:
+          path: championships/{championshipId}/history
+          method: get
+          cors: true
+
+  # Tournaments
+  getTournaments:
+    handler: functions/tournaments/getTournaments.handler
+    events:
+      - http:
+          path: tournaments
+          method: get
+          cors: true
+
+  createTournament:
+    handler: functions/tournaments/createTournament.handler
+    events:
+      - http:
+          path: tournaments
+          method: post
+          cors: true
+
+  updateTournament:
+    handler: functions/tournaments/updateTournament.handler
+    events:
+      - http:
+          path: tournaments/{tournamentId}
+          method: put
+          cors: true
+
+  # Standings
+  getStandings:
+    handler: functions/standings/getStandings.handler
+    events:
+      - http:
+          path: standings
+          method: get
+          cors: true
+
+resources:
+  Resources:
+    PlayersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.PLAYERS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
+
+    MatchesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.MATCHES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: matchId
+            AttributeType: S
+          - AttributeName: date
+            AttributeType: S
+          - AttributeName: tournamentId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: matchId
+            KeyType: HASH
+          - AttributeName: date
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: TournamentIndex
+            KeySchema:
+              - AttributeName: tournamentId
+                KeyType: HASH
+              - AttributeName: matchId
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    ChampionshipsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.CHAMPIONSHIPS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: championshipId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: championshipId
+            KeyType: HASH
+
+    ChampionshipHistoryTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.CHAMPIONSHIP_HISTORY_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: championshipId
+            AttributeType: S
+          - AttributeName: wonDate
+            AttributeType: S
+        KeySchema:
+          - AttributeName: championshipId
+            KeyType: HASH
+          - AttributeName: wonDate
+            KeyType: RANGE
+
+    TournamentsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TOURNAMENTS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: tournamentId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: tournamentId
+            KeyType: HASH

@@ -1,0 +1,133 @@
+.championships-container {
+  width: 100%;
+}
+
+.championships-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.championship-card {
+  background-color: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: border-color 0.3s;
+}
+
+.championship-card:hover {
+  border-color: #d4af37;
+}
+
+.championship-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.championship-header h3 {
+  color: #d4af37;
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.championship-type {
+  background-color: #333;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #bbb;
+}
+
+.current-champion {
+  margin: 1rem 0;
+}
+
+.current-champion label {
+  display: block;
+  font-size: 0.875rem;
+  color: #888;
+  margin-bottom: 0.5rem;
+}
+
+.current-champion p {
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #d4af37;
+  margin: 0;
+}
+
+.view-history-btn {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.history-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.history-content {
+  background-color: #0f0f0f;
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 800px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.history-header h3 {
+  margin: 0;
+  color: #d4af37;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0;
+  width: auto;
+  line-height: 1;
+  transition: color 0.3s;
+}
+
+.close-btn:hover {
+  color: #d4af37;
+}
+
+.history-table-wrapper {
+  overflow-x: auto;
+}
+
+.history-table {
+  width: 100%;
+  min-width: 500px;
+}
+
+.history-table .champion-name {
+  font-weight: bold;
+  color: #d4af37;
+}
