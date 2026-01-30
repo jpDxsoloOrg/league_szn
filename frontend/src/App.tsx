@@ -1,16 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { useState } from 'react';
 import Standings from './components/Standings';
 import Championships from './components/Championships';
 import Matches from './components/Matches';
 import Tournaments from './components/Tournaments';
+import AdminPanel from './components/admin/AdminPanel';
 import './App.css';
 
-const AdminPanel = () => <div><h2>Admin Panel</h2><p>Coming soon...</p></div>;
-
 function App() {
-  const [isAdmin] = useState(false);
-
   return (
     <Router>
       <div className="App">
@@ -21,7 +17,7 @@ function App() {
             <Link to="/championships">Championships</Link>
             <Link to="/matches">Matches</Link>
             <Link to="/tournaments">Tournaments</Link>
-            {isAdmin && <Link to="/admin">Admin</Link>}
+            <Link to="/admin">Admin</Link>
           </nav>
         </header>
         <main>

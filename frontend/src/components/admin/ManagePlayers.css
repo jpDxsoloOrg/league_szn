@@ -1,0 +1,78 @@
+.manage-players {
+  width: 100%;
+}
+
+.players-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.player-form-container {
+  background-color: #1a1a1a;
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.player-form-container h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: #d4af37;
+}
+
+.player-form {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-actions button {
+  flex: 1;
+}
+
+.cancel-btn {
+  background-color: #333 !important;
+}
+
+.cancel-btn:hover {
+  background-color: #444 !important;
+}
+
+.players-list h3 {
+  margin-bottom: 1rem;
+}
+
+.players-table {
+  width: 100%;
+}
+
+.players-table .record {
+  font-family: monospace;
+  color: #bbb;
+}
+
+.edit-btn {
+  background-color: #3b82f6;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.edit-btn:hover {
+  background-color: #2563eb;
+}
+
+.error-message {
+  background-color: #7f1d1d;
+  color: #fecaca;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border: 1px solid #991b1b;
+}

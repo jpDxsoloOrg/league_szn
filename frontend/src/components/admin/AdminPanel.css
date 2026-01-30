@@ -1,0 +1,73 @@
+.admin-panel {
+  width: 100%;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #d4af37;
+}
+
+.admin-header h2 {
+  margin: 0;
+}
+
+.logout-btn {
+  background-color: #7f1d1d !important;
+  padding: 0.5rem 1.5rem;
+}
+
+.logout-btn:hover {
+  background-color: #991b1b !important;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #333;
+  overflow-x: auto;
+}
+
+.admin-tabs .tab {
+  background: none;
+  border: none;
+  color: #bbb;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.admin-tabs .tab:hover {
+  background-color: #1a1a1a;
+  color: #d4af37;
+}
+
+.admin-tabs .tab.active {
+  color: #d4af37;
+  border-bottom-color: #d4af37;
+  background-color: #1a1a1a;
+}
+
+.admin-content {
+  padding: 1rem 0;
+}
+
+@media (max-width: 768px) {
+  .admin-tabs {
+    flex-wrap: nowrap;
+    overflow-x: scroll;
+  }
+
+  .admin-tabs .tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+}
