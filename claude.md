@@ -84,7 +84,7 @@ wwe-2k-league/
 4. **Tournaments** - View tournament brackets and round-robin standings
 
 ### Admin Features (Requires Login)
-Default credentials: **admin / admin**
+Credentials: **admin / FireGreen48!**
 
 1. **Manage Players** - Add new players, edit wrestlers
 2. **Schedule Match** - Create matches with participants, stipulations, championships
@@ -122,7 +122,7 @@ docker run -p 8000:8000 amazon/dynamodb-local
 ```bash
 cd backend
 npm install
-npm run offline  # Starts at http://localhost:3000/dev
+npm run offline  # Starts at http://localhost:3001/dev
 ```
 
 ### Seed Test Data
@@ -136,7 +136,7 @@ npm run clear-data  # Clears all data
 ```bash
 cd frontend
 npm install
-npm run dev  # Starts at http://localhost:5173
+npm run dev  # Starts at http://localhost:3000
 ```
 
 ## API Endpoints
@@ -193,18 +193,60 @@ await matchesApi.recordResult(matchId, {
 
 ## Deployment
 
-### Backend to AWS
+### AWS Configuration
+
+**AWS CLI Profile**: `league-szn`
+- Access Key ID: `AKIAWKVRVMVFLQSXGRHD`
+- Secret Access Key: `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`
+- Region: `us-east-1`
+- Account ID: `435238036810`
+
+To configure (if not already set up):
 ```bash
-cd backend
-serverless deploy --stage prod
+aws configure set aws_access_key_id AKIAWKVRVMVFLQSXGRHD --profile league-szn
+aws configure set aws_secret_access_key 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 --profile league-szn
+aws configure set region us-east-1 --profile league-szn
 ```
 
-### Frontend to S3/CloudFront
+### Live URLs
+
+- **Frontend**: http://leagueszn.jpdxsolo.com
+- **Backend API**: https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev
+- **S3 Bucket**: `leagueszn.jpdxsolo.com`
+
+### Deploy Backend to AWS
+```bash
+cd backend
+npx serverless deploy --aws-profile league-szn
+```
+
+This deploys:
+- Lambda functions for all API endpoints
+- API Gateway
+- DynamoDB tables (Players, Matches, Championships, ChampionshipHistory, Tournaments)
+
+### Deploy Frontend to S3
 ```bash
 cd frontend
 npm run build
-aws s3 sync dist/ s3://your-bucket-name
+aws s3 sync dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
 ```
+
+### Full Deployment (Both)
+```bash
+# From project root
+cd backend && npx serverless deploy --aws-profile league-szn
+cd ../frontend && npm run build && aws s3 sync dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
+```
+
+### DNS Configuration (Namecheap)
+
+Domain `jpdxsolo.com` DNS is managed in Namecheap.
+
+CNAME record for subdomain:
+| Type | Host | Value |
+|------|------|-------|
+| CNAME | leagueszn | leagueszn.jpdxsolo.com.s3-website-us-east-1.amazonaws.com |
 
 ## Known Limitations / TODO
 
@@ -219,8 +261,9 @@ aws s3 sync dist/ s3://your-bucket-name
 ## Troubleshooting
 
 ### Frontend can't connect to backend
-- Check `.env` file has correct `VITE_API_BASE_URL`
-- Ensure backend is running on correct port (3000 for local)
+- Check `.env` file has correct `VITE_API_BASE_URL` (should be `http://localhost:3001/dev` for local)
+- Ensure backend is running on port 3001 (`npm run offline`)
+- Frontend runs on port 3000
 - Check for CORS errors in browser console
 
 ### DynamoDB errors
