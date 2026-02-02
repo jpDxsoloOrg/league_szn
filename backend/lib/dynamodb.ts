@@ -15,7 +15,20 @@ import {
   QueryCommandInput,
 } from '@aws-sdk/lib-dynamodb';
 
-const client = new DynamoDBClient({});
+const isOffline = process.env.IS_OFFLINE === 'true';
+
+const client = new DynamoDBClient(
+  isOffline
+    ? {
+        region: 'us-east-1',
+        endpoint: 'http://localhost:8000',
+        credentials: {
+          accessKeyId: 'dummy',
+          secretAccessKey: 'dummy',
+        },
+      }
+    : {}
+);
 export const docClient = DynamoDBDocumentClient.from(client);
 
 export const dynamoDb = {
