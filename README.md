@@ -69,12 +69,12 @@ Keep this terminal running.
 
 Open a new terminal:
 ```bash
-cd wwe-2k-league/backend
+cd backend
 npm install
 npm run offline
 ```
 
-The API will start at http://localhost:3000/dev
+The API will start at http://localhost:3001/dev
 
 Keep this terminal running.
 
@@ -82,7 +82,7 @@ Keep this terminal running.
 
 Open another terminal:
 ```bash
-cd wwe-2k-league/backend
+cd backend
 npm run seed
 ```
 
@@ -92,75 +92,77 @@ This creates 6 players, 3 championships, 4 matches, and 2 tournaments.
 
 Open another terminal:
 ```bash
-cd wwe-2k-league/frontend
+cd frontend
 npm install
 npm run dev
 ```
 
-The frontend will start at http://localhost:5173
+The frontend will start at http://localhost:3000
 
 ### 5. View the App
 
-Open **http://localhost:5173** in your browser to see the fully populated league!
+Open **http://localhost:3000** in your browser to see the fully populated league!
+
+**Admin Panel**: Navigate to `/admin` and login with credentials: `admin` / `FireGreen48!`
 
 **To clear data and start fresh:**
 ```bash
-cd wwe-2k-league/backend
+cd backend
 npm run clear-data
 ```
 
 ---
+
+## Live Deployment
+
+- **Frontend**: http://leagueszn.jpdxsolo.com
+- **Backend API**: https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev
 
 ## Deployment to AWS
 
 ### Prerequisites
 
 - Node.js 18+ (nodenv recommended)
-- AWS CLI configured with appropriate credentials
+- AWS CLI configured with the `league-szn` profile
 - Serverless Framework CLI (`npm install -g serverless`)
 
-### Backend Setup
+### AWS Profile Configuration
 
-1. Navigate to the backend directory:
+```bash
+aws configure set aws_access_key_id YOUR_ACCESS_KEY --profile league-szn
+aws configure set aws_secret_access_key YOUR_SECRET_KEY --profile league-szn
+aws configure set region us-east-1 --profile league-szn
+```
+
+### Deploy Backend
+
 ```bash
 cd backend
-```
-
-2. Install dependencies:
-```bash
 npm install
+npx serverless deploy --aws-profile league-szn
 ```
 
-3. Deploy to AWS:
-```bash
-serverless deploy
-```
+This deploys:
+- Lambda functions for all API endpoints
+- API Gateway
+- DynamoDB tables (Players, Matches, Championships, ChampionshipHistory, Tournaments)
 
-4. Note the API endpoint URL from the deployment output.
+### Deploy Frontend
 
-### Frontend Setup
-
-1. Navigate to the frontend directory:
 ```bash
 cd frontend
-```
-
-2. Install dependencies:
-```bash
 npm install
+npm run build
+aws s3 sync dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
 ```
 
-3. Create a `.env` file with your API endpoint:
+### Full Deployment (Both)
+
 ```bash
-VITE_API_BASE_URL=https://your-api-gateway-url
+# From project root
+cd backend && npx serverless deploy --aws-profile league-szn
+cd ../frontend && npm run build && aws s3 sync dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
 ```
-
-4. Start the development server:
-```bash
-npm run dev
-```
-
-5. Open http://localhost:3000 in your browser.
 
 ## Local Development & Testing
 
@@ -219,7 +221,7 @@ Start the backend:
 npm run offline
 ```
 
-The API will be available at **http://localhost:3000** (note: serverless-offline uses port 3000 by default).
+The API will be available at **http://localhost:3001/dev**.
 
 You should see output like:
 ```
@@ -227,8 +229,8 @@ Starting Offline at stage dev (us-east-1)
 
 Offline [http for lambda] listening on http://localhost:3002
 ...
-   GET    | http://localhost:3000/dev/players
-   POST   | http://localhost:3000/dev/players
+   GET    | http://localhost:3001/dev/players
+   POST   | http://localhost:3001/dev/players
    ...
 ```
 
@@ -246,7 +248,7 @@ npm install
 Create a `.env` file in the frontend directory:
 ```bash
 # frontend/.env
-VITE_API_BASE_URL=http://localhost:3000/dev
+VITE_API_BASE_URL=http://localhost:3001/dev
 ```
 
 Start the frontend:
@@ -254,16 +256,18 @@ Start the frontend:
 npm run dev
 ```
 
-The frontend will be available at **http://localhost:5173** (Vite's default port).
+The frontend will be available at **http://localhost:3000**.
 
 #### 4. Testing the Application
 
 Now you have everything running locally:
 - DynamoDB Local: http://localhost:8000
-- Backend API: http://localhost:3000/dev
-- Frontend: http://localhost:5173
+- Backend API: http://localhost:3001/dev
+- Frontend: http://localhost:3000
 
-Open http://localhost:5173 in your browser to test the application.
+Open http://localhost:3000 in your browser to test the application.
+
+**Admin Panel**: Navigate to `/admin` and login with credentials: `admin` / `FireGreen48!`
 
 ### Testing Workflow
 
@@ -283,7 +287,7 @@ This will create:
 - 4 matches (2 completed, 2 scheduled)
 - 2 tournaments (Single Elimination and Round Robin)
 
-After running the seed script, refresh your frontend at http://localhost:5173 to see all the data!
+After running the seed script, refresh your frontend at http://localhost:3000 to see all the data!
 
 **To clear all data and start fresh:**
 
@@ -307,7 +311,7 @@ If you prefer to add data manually:
 
 ```bash
 # Create a player
-curl -X POST http://localhost:3000/dev/players \
+curl -X POST http://localhost:3001/dev/players \
   -H "Content-Type: application/json" \
   -d '{
     "name": "John Doe",
@@ -315,7 +319,7 @@ curl -X POST http://localhost:3000/dev/players \
   }'
 
 # Create another player
-curl -X POST http://localhost:3000/dev/players \
+curl -X POST http://localhost:3001/dev/players \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Jane Smith",
@@ -323,10 +327,10 @@ curl -X POST http://localhost:3000/dev/players \
   }'
 
 # Get all players to see their IDs
-curl http://localhost:3000/dev/players
+curl http://localhost:3001/dev/players
 
 # Create a championship
-curl -X POST http://localhost:3000/dev/championships \
+curl -X POST http://localhost:3001/dev/championships \
   -H "Content-Type: application/json" \
   -d '{
     "name": "World Heavyweight Championship",
@@ -334,7 +338,7 @@ curl -X POST http://localhost:3000/dev/championships \
   }'
 
 # Schedule a match (use actual player IDs from the GET request above)
-curl -X POST http://localhost:3000/dev/matches \
+curl -X POST http://localhost:3001/dev/matches \
   -H "Content-Type: application/json" \
   -d '{
     "date": "2024-03-15T20:00:00Z",
@@ -346,7 +350,7 @@ curl -X POST http://localhost:3000/dev/matches \
 ```
 
 3. **View in the Frontend**:
-   - Refresh http://localhost:5173
+   - Refresh http://localhost:3000
    - Check the Standings page
    - Check the Championships page
    - Check the Matches page
@@ -355,7 +359,7 @@ curl -X POST http://localhost:3000/dev/matches \
 
 ```bash
 # Record a match result (use actual match ID and player IDs)
-curl -X PUT http://localhost:3000/dev/matches/{matchId}/result \
+curl -X PUT http://localhost:3001/dev/matches/{matchId}/result \
   -H "Content-Type: application/json" \
   -d '{
     "winners": ["player-id-1"],
@@ -363,19 +367,20 @@ curl -X PUT http://localhost:3000/dev/matches/{matchId}/result \
   }'
 
 # Check standings updated
-curl http://localhost:3000/dev/standings
+curl http://localhost:3001/dev/standings
 ```
 
 ### Troubleshooting Local Setup
 
 **Backend won't start:**
 - Make sure DynamoDB Local is running on port 8000
-- Check that no other process is using port 3000
+- Check that no other process is using port 3001
 - Run `npm install` in the backend directory
 
 **Frontend can't connect to backend:**
-- Check the `.env` file has the correct `VITE_API_BASE_URL`
-- Make sure the backend is running
+- Check the `.env` file has the correct `VITE_API_BASE_URL` (should be `http://localhost:3001/dev` for local)
+- Make sure the backend is running on port 3001
+- Frontend runs on port 3000
 - Check for CORS errors in browser console
 
 **DynamoDB errors:**
@@ -384,8 +389,8 @@ curl http://localhost:3000/dev/standings
 - Make sure DynamoDB Local is accessible at http://localhost:8000
 
 **Port conflicts:**
-- Frontend (Vite): Change port with `vite --port 5174`
-- Backend: Change port in serverless.yml under `custom.serverless-offline`
+- Frontend (Vite): Change port in vite.config.ts (default: 3000)
+- Backend: Change port in serverless.yml under `custom.serverless-offline` (default: 3001)
 - DynamoDB Local: Use `-port 8001` flag
 
 ### Resetting Local Database
@@ -453,30 +458,6 @@ Before deploying to AWS, verify:
 - Includes brackets for single-elimination
 - Includes standings for round-robin
 
-## Deployment
-
-### Deploy Backend
-
-```bash
-cd backend
-serverless deploy --stage prod
-```
-
-### Build and Deploy Frontend
-
-1. Build the frontend:
-```bash
-cd frontend
-npm run build
-```
-
-2. The build output will be in `frontend/dist/`.
-
-3. Deploy to S3 + CloudFront:
-```bash
-aws s3 sync dist/ s3://your-bucket-name
-```
-
 ## Tournament Types
 
 ### Single Elimination
@@ -499,11 +480,21 @@ With AWS Free Tier:
 
 **Expected monthly cost for low traffic: $1-5/month**
 
-## Future Enhancements
+## Todo
 
+### High Priority
+- [ ] Add Divisions support (group players into divisions)
+- [ ] Add Seasons support (track standings per season, season resets)
 - [ ] AWS Cognito integration for admin authentication
+- [ ] Lambda Authorizer to protect admin endpoints
+
+### Medium Priority
+- [ ] Tag team match handling in frontend
+- [ ] Tournament bracket progression (auto-advance winners)
 - [ ] Match type statistics and analytics
-- [ ] Tag team support
+- [ ] Player profile pictures and championship images
+
+### Low Priority
 - [ ] Advanced filtering and search
 - [ ] Export standings to PDF/CSV
 - [ ] Mobile responsive design improvements
