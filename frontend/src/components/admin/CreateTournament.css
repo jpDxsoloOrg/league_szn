@@ -1,0 +1,27 @@
+.create-tournament {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.tournament-form {
+  background-color: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-top: 1.5rem;
+}
+
+.help-text {
+  display: block;
+  margin-top: 0.5rem;
+  color: #888;
+  font-size: 0.875rem;
+}
+
+.participant-card .participant-record {
+  color: #888;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  font-family: monospace;
+}

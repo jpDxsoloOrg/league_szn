@@ -1,0 +1,88 @@
+.schedule-match {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.match-form {
+  background-color: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-top: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group label[for] {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #d4af37;
+  font-weight: bold;
+}
+
+.form-group label input[type="checkbox"] {
+  margin-right: 0.5rem;
+  width: auto;
+}
+
+.participants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.participant-card {
+  background-color: #0f0f0f;
+  border: 2px solid #333;
+  border-radius: 4px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.participant-card:hover {
+  border-color: #d4af37;
+}
+
+.participant-card.selected {
+  border-color: #d4af37;
+  background-color: #2a2416;
+}
+
+.participant-name {
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.participant-wrestler {
+  color: #888;
+  font-size: 0.875rem;
+}
+
+.selected-count {
+  margin-top: 0.5rem;
+  color: #d4af37;
+  font-weight: bold;
+}
+
+.success-message {
+  background-color: #14532d;
+  color: #bbf7d0;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border: 1px solid #166534;
+}
+
+@media (max-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
