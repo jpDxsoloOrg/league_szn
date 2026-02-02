@@ -19,7 +19,7 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
 
     try {
       // For now, this is a simple check. In production, this would authenticate with AWS Cognito
-      if (username === 'admin' && password === 'admin') {
+      if (username === 'admin' && password === 'FireGreen48!') {
         // Store a dummy token for now
         authApi.setToken('dummy-admin-token');
         onLoginSuccess();
@@ -67,9 +67,6 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
             {loading ? 'Logging in...' : 'Login'}
           </button>
 
-          <div className="login-note">
-            <small>Default credentials: admin / admin</small>
-          </div>
         </form>
       </div>
     </div>
