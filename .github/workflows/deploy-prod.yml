@@ -1,7 +1,8 @@
 name: Deploy to Production
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - main
 
@@ -13,6 +14,7 @@ jobs:
   deploy-prod:
     name: Deploy to Production Environment
     runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
 
     steps:
       - name: Checkout code
