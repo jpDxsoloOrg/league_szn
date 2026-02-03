@@ -90,6 +90,35 @@
   font-size: 0.875rem;
 }
 
+.delete-season-btn {
+  background-color: #7f1d1d !important;
+  color: #fecaca;
+  padding: 0.75rem 1.5rem;
+}
+
+.delete-season-btn:hover {
+  background-color: #991b1b !important;
+}
+
+.delete-season-btn.small {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.delete-season-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.season-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.season-actions button {
+  flex: 1;
+}
+
 .seasons-list h3 {
   margin-bottom: 1.5rem;
 }
@@ -134,7 +163,7 @@
   margin: 0.25rem 0;
 }
 
-.season-actions {
+.season-card .season-actions {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid #333;

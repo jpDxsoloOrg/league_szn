@@ -211,13 +211,35 @@ label.file-input-label:hover {
   border-top: 1px solid #333;
 }
 
+.championship-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .championship-edit-btn {
-  background-color: #3b82f6;
+  background-color: #3b82f6 !important;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
-  width: 100%;
+  flex: 1;
 }
 
 .championship-edit-btn:hover {
-  background-color: #2563eb;
+  background-color: #2563eb !important;
+}
+
+.championship-delete-btn {
+  background-color: #7f1d1d !important;
+  color: #fecaca;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  flex: 1;
+}
+
+.championship-delete-btn:hover {
+  background-color: #991b1b !important;
+}
+
+.championship-delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
