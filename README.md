@@ -17,6 +17,10 @@ A serverless web application for managing a WWE 2K league with player standings,
   - Create and manage championships
   - Create tournaments (single-elimination and round-robin)
   - **Manage seasons** (create seasons, track per-season standings, end seasons)
+  - **Manage divisions** (create divisions, assign players to divisions)
+  - **Delete functionality** for players, divisions, seasons, and championships
+  - **Data management** (clear all data, generate sample data)
+  - **Built-in Help guide** with comprehensive admin documentation
 
 ## Tech Stack
 
@@ -48,7 +52,9 @@ wwe-2k-league/
 │   │   ├── championships/
 │   │   ├── tournaments/
 │   │   ├── standings/
-│   │   └── seasons/       # Season management
+│   │   ├── seasons/       # Season management
+│   │   ├── divisions/     # Division management
+│   │   └── admin/         # Admin utilities (clear-all, seed-data)
 │   ├── lib/              # Shared utilities
 │   └── serverless.yml    # Infrastructure config
 └── README.md
@@ -451,18 +457,92 @@ Before deploying to AWS, verify:
 - `GET /tournaments` - Get all tournaments
 - `GET /standings` - Get current standings (optional `?seasonId=` for season-specific)
 - `GET /seasons` - Get all seasons
+- `GET /divisions` - Get all divisions
 
 ### Admin Endpoints (Authentication Required)
 
 - `POST /players` - Create new player
 - `PUT /players/{id}` - Update player
+- `DELETE /players/{id}` - Delete player (fails if player holds a championship)
 - `POST /matches` - Schedule a match (optional `seasonId` to assign to a season)
 - `PUT /matches/{id}/result` - Record match result
 - `POST /championships` - Create championship
+- `PUT /championships/{id}` - Update championship
+- `DELETE /championships/{id}` - Delete championship (cascades to championship history)
 - `POST /tournaments` - Create tournament
 - `PUT /tournaments/{id}` - Update tournament
 - `POST /seasons` - Create a new season
 - `PUT /seasons/{id}` - Update season (end season, change name)
+- `DELETE /seasons/{id}` - Delete season (cascades to season standings)
+- `POST /divisions` - Create a new division
+- `PUT /divisions/{id}` - Update division
+- `DELETE /divisions/{id}` - Delete division (fails if players are assigned)
+- `DELETE /admin/clear-all` - Clear all data from all tables
+- `POST /admin/seed-data` - Generate sample data for testing
+
+## Admin Panel Features
+
+The Admin Panel is accessible at `/admin` and provides comprehensive management tools organized into tabs.
+
+### Delete Functionality
+
+Each management area includes delete capabilities with appropriate safeguards:
+
+| Entity | Location | Validation | Cascade Behavior |
+|--------|----------|------------|------------------|
+| **Players** | Manage Players tab | Cannot delete if player holds an active championship | Removes player from all season standings |
+| **Divisions** | Divisions tab | Cannot delete if players are assigned to the division | None |
+| **Seasons** | Seasons tab | Confirmation required | Deletes all season standings for that season |
+| **Championships** | Championships tab | Confirmation required | Deletes entire championship history (all reigns) |
+
+All delete operations display a confirmation dialog before execution.
+
+### Clear All Data (Danger Zone)
+
+Located in the **Danger Zone** tab, this feature allows complete data reset:
+
+- **Safety Features**:
+  - Requires typing the exact phrase `DELETE ALL DATA` to enable the button
+  - Shows a final confirmation dialog before proceeding
+  - Displays count of deleted items after completion
+
+- **What Gets Deleted**:
+  - All players
+  - All matches
+  - All championships and championship history
+  - All tournaments
+  - All seasons and season standings
+  - All divisions
+
+### Generate Sample Data (Seed Data)
+
+Also located in the **Danger Zone** tab, this feature creates sample data for testing:
+
+- **What Gets Created**:
+  - 3 divisions (Raw, SmackDown, NXT)
+  - 12 players with random wrestlers and win/loss records
+  - 1 active season (30-day duration)
+  - Season standings for all players
+  - 4 championships (World Heavyweight, Intercontinental, Tag Team, US)
+  - Championship history entries
+  - 12 matches (8 completed, 4 scheduled)
+  - 2 tournaments (King of the Ring - Single Elimination, G1 Climax - Round Robin)
+
+- **Note**: Seed data is additive and does not delete existing data
+
+### Admin Help Guide
+
+The **Help** tab provides comprehensive documentation covering:
+
+1. **Managing Players** - Add, edit, delete players; image upload guidelines
+2. **Scheduling Matches** - Match types, stipulations, championship matches
+3. **Recording Results** - Enter outcomes, update standings
+4. **Managing Championships** - Create titles, track history, assign champions
+5. **Creating Tournaments** - Single elimination and round robin formats
+6. **Managing Seasons** - Create/end seasons, per-season standings
+7. **Managing Divisions** - Create divisions, assign players
+8. **Data Management** - Seed data and clear all with warnings
+9. **Typical Admin Workflow** - Step-by-step guide for common tasks
 
 ## Database Schema
 
@@ -493,6 +573,10 @@ Before deploying to AWS, verify:
 - Composite key: seasonId + playerId
 - Stores wins, losses, draws for the specific season
 
+### Divisions Table
+- Stores division information (name, description)
+- Players can be assigned to a division via the divisionId field
+
 ## Tournament Types
 
 ### Single Elimination
@@ -518,7 +602,7 @@ With AWS Free Tier:
 ## Todo
 
 ### High Priority
-- [ ] Add Divisions support (group players into divisions)
+- [x] ~~Add Divisions support (group players into divisions)~~ **DONE**
 - [x] ~~Add Seasons support (track standings per season, season resets)~~ **DONE**
 - [ ] AWS Cognito integration for admin authentication
 - [ ] Lambda Authorizer to protect admin endpoints
