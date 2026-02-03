@@ -6,6 +6,7 @@ import { created, badRequest, serverError } from '../../lib/response';
 interface CreatePlayerBody {
   name: string;
   currentWrestler: string;
+  imageUrl?: string;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -21,7 +22,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const timestamp = new Date().toISOString();
-    const player = {
+    const player: Record<string, any> = {
       playerId: uuidv4(),
       name: body.name,
       currentWrestler: body.currentWrestler,
@@ -31,6 +32,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       createdAt: timestamp,
       updatedAt: timestamp,
     };
+
+    // Add imageUrl if provided
+    if (body.imageUrl) {
+      player.imageUrl = body.imageUrl;
+    }
 
     await dynamoDb.put({
       TableName: TableNames.PLAYERS,

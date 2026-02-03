@@ -13,6 +13,7 @@ provider:
     CHAMPIONSHIPS_TABLE: ${self:service}-championships-${self:provider.stage}
     CHAMPIONSHIP_HISTORY_TABLE: ${self:service}-championship-history-${self:provider.stage}
     TOURNAMENTS_TABLE: ${self:service}-tournaments-${self:provider.stage}
+    IMAGES_BUCKET: ${self:service}-images-${self:provider.stage}
   iam:
     role:
       statements:
@@ -31,6 +32,13 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CHAMPIONSHIPS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CHAMPIONSHIP_HISTORY_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TOURNAMENTS_TABLE}
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+          Resource:
+            - arn:aws:s3:::${self:provider.environment.IMAGES_BUCKET}/*
 
 plugins:
   - serverless-plugin-typescript
@@ -152,6 +160,15 @@ functions:
           method: get
           cors: true
 
+  # Images
+  generateUploadUrl:
+    handler: functions/images/generateUploadUrl.handler
+    events:
+      - http:
+          path: images/upload-url
+          method: post
+          cors: true
+
 resources:
   Resources:
     PlayersTable:
@@ -232,3 +249,38 @@ resources:
         KeySchema:
           - AttributeName: tournamentId
             KeyType: HASH
+
+    ImagesBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.IMAGES_BUCKET}
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+          IgnorePublicAcls: false
+          RestrictPublicBuckets: false
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+              AllowedOrigins:
+                - '*'
+              MaxAge: 3000
+
+    ImagesBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref ImagesBucket
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: '*'
+              Action:
+                - s3:GetObject
+              Resource:
+                - !Sub '${ImagesBucket.Arn}/*'

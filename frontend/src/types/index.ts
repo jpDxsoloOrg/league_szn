@@ -5,6 +5,7 @@ export interface Player {
   wins: number;
   losses: number;
   draws: number;
+  imageUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -29,6 +30,7 @@ export interface Championship {
   name: string;
   type: 'singles' | 'tag';
   currentChampion?: string | string[]; // playerId or array for tag teams
+  imageUrl?: string;
   createdAt: string;
   isActive: boolean;
 }
