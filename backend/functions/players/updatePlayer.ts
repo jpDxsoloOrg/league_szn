@@ -27,43 +27,65 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Build update expression
-    const updateExpressions: string[] = [];
+    const setExpressions: string[] = [];
+    const removeExpressions: string[] = [];
     const expressionAttributeNames: Record<string, string> = {};
     const expressionAttributeValues: Record<string, any> = {};
 
     if (body.currentWrestler !== undefined) {
-      updateExpressions.push('#currentWrestler = :currentWrestler');
+      setExpressions.push('#currentWrestler = :currentWrestler');
       expressionAttributeNames['#currentWrestler'] = 'currentWrestler';
       expressionAttributeValues[':currentWrestler'] = body.currentWrestler;
     }
 
     if (body.name !== undefined) {
-      updateExpressions.push('#name = :name');
+      setExpressions.push('#name = :name');
       expressionAttributeNames['#name'] = 'name';
       expressionAttributeValues[':name'] = body.name;
     }
 
     if (body.imageUrl !== undefined) {
-      updateExpressions.push('#imageUrl = :imageUrl');
+      setExpressions.push('#imageUrl = :imageUrl');
       expressionAttributeNames['#imageUrl'] = 'imageUrl';
       expressionAttributeValues[':imageUrl'] = body.imageUrl;
     }
 
+    if (body.divisionId !== undefined) {
+      if (body.divisionId === '' || body.divisionId === null) {
+        // Remove divisionId if empty string or null
+        removeExpressions.push('#divisionId');
+        expressionAttributeNames['#divisionId'] = 'divisionId';
+      } else {
+        setExpressions.push('#divisionId = :divisionId');
+        expressionAttributeNames['#divisionId'] = 'divisionId';
+        expressionAttributeValues[':divisionId'] = body.divisionId;
+      }
+    }
+
     // Always update the updatedAt timestamp
-    updateExpressions.push('#updatedAt = :updatedAt');
+    setExpressions.push('#updatedAt = :updatedAt');
     expressionAttributeNames['#updatedAt'] = 'updatedAt';
     expressionAttributeValues[':updatedAt'] = new Date().toISOString();
 
-    if (updateExpressions.length === 1) {
+    if (setExpressions.length === 1 && removeExpressions.length === 0) {
       return badRequest('No valid fields to update');
+    }
+
+    // Build the full UpdateExpression
+    let updateExpression = '';
+    if (setExpressions.length > 0) {
+      updateExpression = `SET ${setExpressions.join(', ')}`;
+    }
+    if (removeExpressions.length > 0) {
+      updateExpression += ` REMOVE ${removeExpressions.join(', ')}`;
     }
 
     const result = await dynamoDb.update({
       TableName: TableNames.PLAYERS,
       Key: { playerId },
-      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
+      UpdateExpression: updateExpression,
       ExpressionAttributeNames: expressionAttributeNames,
-      ExpressionAttributeValues: expressionAttributeValues,
+      ExpressionAttributeValues: Object.keys(expressionAttributeValues).length > 0 ? expressionAttributeValues : undefined,
       ReturnValues: 'ALL_NEW',
     });
 
