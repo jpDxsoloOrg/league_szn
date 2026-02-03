@@ -1,0 +1,51 @@
+import { APIGatewayProxyHandler } from 'aws-lambda';
+import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
+
+export const handler: APIGatewayProxyHandler = async (event) => {
+  try {
+    const divisionId = event.pathParameters?.divisionId;
+
+    if (!divisionId) {
+      return badRequest('Division ID is required');
+    }
+
+    // Check if division exists
+    const existingDivision = await dynamoDb.get({
+      TableName: TableNames.DIVISIONS,
+      Key: { divisionId },
+    });
+
+    if (!existingDivision.Item) {
+      return notFound('Division not found');
+    }
+
+    // Check if any players are assigned to this division
+    const playersResult = await dynamoDb.scan({
+      TableName: TableNames.PLAYERS,
+      FilterExpression: '#divisionId = :divisionId',
+      ExpressionAttributeNames: {
+        '#divisionId': 'divisionId',
+      },
+      ExpressionAttributeValues: {
+        ':divisionId': divisionId,
+      },
+    });
+
+    if (playersResult.Items && playersResult.Items.length > 0) {
+      return badRequest(
+        `Cannot delete division. ${playersResult.Items.length} player(s) are still assigned to this division.`
+      );
+    }
+
+    await dynamoDb.delete({
+      TableName: TableNames.DIVISIONS,
+      Key: { divisionId },
+    });
+
+    return success({ message: 'Division deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting division:', err);
+    return serverError('Failed to delete division');
+  }
+};

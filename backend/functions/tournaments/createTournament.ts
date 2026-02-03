@@ -26,7 +26,6 @@ const generateSingleEliminationBracket = (participants: string[]): { rounds: Bra
   // If not, some participants get byes in the first round
   const numParticipants = participants.length;
   const numRounds = Math.ceil(Math.log2(numParticipants));
-  const totalSlots = Math.pow(2, numRounds);
 
   // Shuffle participants
   const shuffled = [...participants].sort(() => Math.random() - 0.5);

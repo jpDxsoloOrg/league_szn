@@ -63,6 +63,34 @@ const tables = [
     AttributeDefinitions: [{ AttributeName: 'tournamentId', AttributeType: 'S' }],
     BillingMode: 'PAY_PER_REQUEST',
   },
+  {
+    TableName: 'wwe-2k-league-api-seasons-dev',
+    KeySchema: [{ AttributeName: 'seasonId', KeyType: 'HASH' }],
+    AttributeDefinitions: [{ AttributeName: 'seasonId', AttributeType: 'S' }],
+    BillingMode: 'PAY_PER_REQUEST',
+  },
+  {
+    TableName: 'wwe-2k-league-api-season-standings-dev',
+    KeySchema: [
+      { AttributeName: 'seasonId', KeyType: 'HASH' },
+      { AttributeName: 'playerId', KeyType: 'RANGE' },
+    ],
+    AttributeDefinitions: [
+      { AttributeName: 'seasonId', AttributeType: 'S' },
+      { AttributeName: 'playerId', AttributeType: 'S' },
+    ],
+    BillingMode: 'PAY_PER_REQUEST',
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: 'PlayerIndex',
+        KeySchema: [
+          { AttributeName: 'playerId', KeyType: 'HASH' },
+          { AttributeName: 'seasonId', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+      },
+    ],
+  },
 ];
 
 async function createTables() {

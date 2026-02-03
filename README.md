@@ -5,7 +5,7 @@ A serverless web application for managing a WWE 2K league with player standings,
 ## Features
 
 - **Public Access** (no login required):
-  - View current standings
+  - View current standings (all-time or per-season)
   - Browse championships and their history
   - See scheduled and completed matches
   - Follow tournament brackets and standings
@@ -16,6 +16,7 @@ A serverless web application for managing a WWE 2K league with player standings,
   - Record match results
   - Create and manage championships
   - Create tournaments (single-elimination and round-robin)
+  - **Manage seasons** (create seasons, track per-season standings, end seasons)
 
 ## Tech Stack
 
@@ -46,7 +47,8 @@ wwe-2k-league/
 │   │   ├── matches/
 │   │   ├── championships/
 │   │   ├── tournaments/
-│   │   └── standings/
+│   │   ├── standings/
+│   │   └── seasons/       # Season management
 │   ├── lib/              # Shared utilities
 │   └── serverless.yml    # Infrastructure config
 └── README.md
@@ -113,55 +115,76 @@ npm run clear-data
 
 ---
 
-## Live Deployment
+## Live Environments
 
-- **Frontend**: http://leagueszn.jpdxsolo.com
-- **Backend API**: https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev
+| Environment | Frontend | Backend API |
+|-------------|----------|-------------|
+| **Production** | http://leagueszn.jpdxsolo.com | https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev |
+| **Dev** | http://dev.leagueszn.jpdxsolo.com | https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest |
 
-## Deployment to AWS
+## Deployment
 
 ### Prerequisites
 
-- Node.js 18+ (nodenv recommended)
+- Node.js 18+
 - AWS CLI configured with the `league-szn` profile
-- Serverless Framework CLI (`npm install -g serverless`)
 
-### AWS Profile Configuration
+---
+
+### Deploy to DEV
+
+From the project root directory, run:
 
 ```bash
-aws configure set aws_access_key_id YOUR_ACCESS_KEY --profile league-szn
-aws configure set aws_secret_access_key YOUR_SECRET_KEY --profile league-szn
-aws configure set region us-east-1 --profile league-szn
+cd backend && npm install && cd ../frontend && npm install && npm run build -- --mode devtest && cd ../backend && npx serverless deploy --stage devtest --aws-profile league-szn && aws s3 sync ../frontend/dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete
 ```
 
-### Deploy Backend
+**Dev URLs after deployment:**
+- Frontend: http://dev.leagueszn.jpdxsolo.com
+- API: https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest
+
+---
+
+### Deploy to PROD
+
+From the project root directory, run:
 
 ```bash
-cd backend
-npm install
-npx serverless deploy --aws-profile league-szn
+cd backend && npm install && cd ../frontend && npm install && npm run build && cd ../backend && npx serverless deploy --aws-profile league-szn && aws s3 sync ../frontend/dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
 ```
 
-This deploys:
-- Lambda functions for all API endpoints
-- API Gateway
-- DynamoDB tables (Players, Matches, Championships, ChampionshipHistory, Tournaments)
+**Prod URLs after deployment:**
+- Frontend: http://leagueszn.jpdxsolo.com
+- API: https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev
 
-### Deploy Frontend
+---
 
+### Quick Reference
+
+| Action | Dev | Prod |
+|--------|-----|------|
+| Build frontend | `npm run build -- --mode devtest` | `npm run build` |
+| Deploy backend | `npx serverless deploy --stage devtest --aws-profile league-szn` | `npx serverless deploy --aws-profile league-szn` |
+| Sync frontend | `aws s3 sync ../frontend/dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete` | `aws s3 sync ../frontend/dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete` |
+
+---
+
+### Troubleshooting Deployments
+
+**"Failed to load data" after deploying to dev:**
+
+Some branches may be missing the `.env.devtest` file. Create it:
 ```bash
-cd frontend
-npm install
-npm run build
-aws s3 sync dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
+echo "VITE_API_BASE_URL=https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest" > frontend/.env.devtest
+```
+Then rebuild and sync:
+```bash
+cd frontend && npm run build -- --mode devtest && aws s3 sync dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete
 ```
 
-### Full Deployment (Both)
-
+**Verify the API is working:**
 ```bash
-# From project root
-cd backend && npx serverless deploy --aws-profile league-szn
-cd ../frontend && npm run build && aws s3 sync dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
+curl https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest/players
 ```
 
 ## Local Development & Testing
@@ -426,17 +449,20 @@ Before deploying to AWS, verify:
 - `GET /championships` - Get all championships
 - `GET /championships/{id}/history` - Get championship history
 - `GET /tournaments` - Get all tournaments
-- `GET /standings` - Get current standings
+- `GET /standings` - Get current standings (optional `?seasonId=` for season-specific)
+- `GET /seasons` - Get all seasons
 
 ### Admin Endpoints (Authentication Required)
 
 - `POST /players` - Create new player
 - `PUT /players/{id}` - Update player
-- `POST /matches` - Schedule a match
+- `POST /matches` - Schedule a match (optional `seasonId` to assign to a season)
 - `PUT /matches/{id}/result` - Record match result
 - `POST /championships` - Create championship
 - `POST /tournaments` - Create tournament
 - `PUT /tournaments/{id}` - Update tournament
+- `POST /seasons` - Create a new season
+- `PUT /seasons/{id}` - Update season (end season, change name)
 
 ## Database Schema
 
@@ -457,6 +483,15 @@ Before deploying to AWS, verify:
 - Stores tournament information
 - Includes brackets for single-elimination
 - Includes standings for round-robin
+
+### Seasons Table
+- Stores season information (name, start/end dates, status)
+- Only one season can be active at a time
+
+### Season Standings Table
+- Tracks per-player standings for each season
+- Composite key: seasonId + playerId
+- Stores wins, losses, draws for the specific season
 
 ## Tournament Types
 
@@ -484,7 +519,7 @@ With AWS Free Tier:
 
 ### High Priority
 - [ ] Add Divisions support (group players into divisions)
-- [ ] Add Seasons support (track standings per season, season resets)
+- [x] ~~Add Seasons support (track standings per season, season resets)~~ **DONE**
 - [ ] AWS Cognito integration for admin authentication
 - [ ] Lambda Authorizer to protect admin endpoints
 

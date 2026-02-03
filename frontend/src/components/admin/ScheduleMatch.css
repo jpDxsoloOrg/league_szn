@@ -72,6 +72,13 @@
   font-weight: bold;
 }
 
+.form-hint {
+  display: block;
+  margin-top: 0.5rem;
+  color: #888;
+  font-size: 0.75rem;
+}
+
 .success-message {
   background-color: #14532d;
   color: #bbf7d0;

@@ -4,7 +4,9 @@ import type {
   Championship,
   ChampionshipReign,
   Tournament,
-  Standings
+  Standings,
+  Season,
+  Division
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
@@ -134,8 +136,57 @@ export const tournamentsApi = {
 
 // Standings API
 export const standingsApi = {
-  get: async (): Promise<Standings> => {
-    return fetchWithAuth(`${API_BASE_URL}/standings`);
+  get: async (seasonId?: string): Promise<Standings> => {
+    const params = seasonId ? `?seasonId=${seasonId}` : '';
+    return fetchWithAuth(`${API_BASE_URL}/standings${params}`);
+  },
+};
+
+// Seasons API
+export const seasonsApi = {
+  getAll: async (): Promise<Season[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/seasons`);
+  },
+
+  create: async (season: { name: string; startDate: string; endDate?: string }): Promise<Season> => {
+    return fetchWithAuth(`${API_BASE_URL}/seasons`, {
+      method: 'POST',
+      body: JSON.stringify(season),
+    });
+  },
+
+  update: async (seasonId: string, updates: Partial<Season>): Promise<Season> => {
+    return fetchWithAuth(`${API_BASE_URL}/seasons/${seasonId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+};
+
+// Divisions API
+export const divisionsApi = {
+  getAll: async (): Promise<Division[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/divisions`);
+  },
+
+  create: async (division: { name: string; description?: string }): Promise<Division> => {
+    return fetchWithAuth(`${API_BASE_URL}/divisions`, {
+      method: 'POST',
+      body: JSON.stringify(division),
+    });
+  },
+
+  update: async (divisionId: string, updates: Partial<Division>): Promise<Division> => {
+    return fetchWithAuth(`${API_BASE_URL}/divisions/${divisionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  delete: async (divisionId: string): Promise<void> => {
+    return fetchWithAuth(`${API_BASE_URL}/divisions/${divisionId}`, {
+      method: 'DELETE',
+    });
   },
 };
 
