@@ -462,14 +462,8 @@ resources:
               Resource:
                 - !Sub '${ImagesBucket.Arn}/*'
 
-    # CloudFront Origin Access Identity for secure S3 access
-    CloudFrontOriginAccessIdentity:
-      Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
-      Properties:
-        CloudFrontOriginAccessIdentityConfig:
-          Comment: OAI for ${self:custom.frontendDomain.${self:provider.stage}, 'leagueszn.jpdxsolo.com'}
-
     # CloudFront Distribution for HTTPS frontend
+    # Uses S3 website endpoint (existing public bucket) instead of OAI
     FrontendCloudFrontDistribution:
       Type: AWS::CloudFront::Distribution
       Properties:
@@ -480,12 +474,14 @@ resources:
           Aliases:
             - ${self:custom.frontendDomain.${self:provider.stage}, 'leagueszn.jpdxsolo.com'}
           Origins:
-            - Id: S3Origin
-              DomainName: ${self:custom.frontendBucket.${self:provider.stage}, 'leagueszn.jpdxsolo.com'}.s3.amazonaws.com
-              S3OriginConfig:
-                OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}
+            - Id: S3WebsiteOrigin
+              DomainName: ${self:custom.frontendBucket.${self:provider.stage}, 'leagueszn.jpdxsolo.com'}.s3-website-us-east-1.amazonaws.com
+              CustomOriginConfig:
+                HTTPPort: 80
+                HTTPSPort: 443
+                OriginProtocolPolicy: http-only
           DefaultCacheBehavior:
-            TargetOriginId: S3Origin
+            TargetOriginId: S3WebsiteOrigin
             ViewerProtocolPolicy: redirect-to-https
             AllowedMethods:
               - GET
@@ -517,22 +513,6 @@ resources:
             MinimumProtocolVersion: TLSv1.2_2021
           HttpVersion: http2
           PriceClass: PriceClass_100
-
-    # S3 Bucket Policy to allow CloudFront access
-    FrontendBucketPolicy:
-      Type: AWS::S3::BucketPolicy
-      Properties:
-        Bucket: ${self:custom.frontendBucket.${self:provider.stage}, 'leagueszn.jpdxsolo.com'}
-        PolicyDocument:
-          Statement:
-            - Sid: AllowCloudFrontAccess
-              Effect: Allow
-              Principal:
-                CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
-              Action:
-                - s3:GetObject
-              Resource:
-                - arn:aws:s3:::${self:custom.frontendBucket.${self:provider.stage}, 'leagueszn.jpdxsolo.com'}/*
 
   Outputs:
     CloudFrontDistributionId:
