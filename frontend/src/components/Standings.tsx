@@ -55,6 +55,7 @@ export default function Standings() {
           <thead>
             <tr>
               <th>Rank</th>
+              <th className="image-header">Image</th>
               <th>Player</th>
               <th>Wrestler</th>
               <th>Wins</th>
@@ -73,6 +74,17 @@ export default function Standings() {
               return (
                 <tr key={player.playerId}>
                   <td className="rank">{index + 1}</td>
+                  <td className="wrestler-image-cell">
+                    {player.imageUrl ? (
+                      <img
+                        src={player.imageUrl}
+                        alt={player.currentWrestler}
+                        className="wrestler-thumbnail"
+                      />
+                    ) : (
+                      <div className="no-image-placeholder">-</div>
+                    )}
+                  </td>
                   <td className="player-name">{player.name}</td>
                   <td className="wrestler-name">{player.currentWrestler}</td>
                   <td className="wins">{player.wins}</td>

@@ -86,6 +86,19 @@ export default function Championships() {
       <div className="championships-grid">
         {championships.map((championship) => (
           <div key={championship.championshipId} className="championship-card">
+            {championship.imageUrl ? (
+              <div className="championship-image-container">
+                <img
+                  src={championship.imageUrl}
+                  alt={championship.name}
+                  className="championship-image"
+                />
+              </div>
+            ) : (
+              <div className="championship-image-placeholder">
+                <span>No Image</span>
+              </div>
+            )}
             <div className="championship-header">
               <h3>{championship.name}</h3>
               <span className="championship-type">
