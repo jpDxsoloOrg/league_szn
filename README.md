@@ -133,15 +133,10 @@ npm run clear-data
 
 ### Deploy to DEV
 
+From the project root directory, run:
+
 ```bash
-# 1. Install dependencies
-cd backend && npm install && cd ../frontend && npm install && cd ..
-
-# 2. Build frontend for dev
-cd frontend && npm run build -- --mode devtest && cd ..
-
-# 3. Deploy backend + sync frontend to S3
-cd backend && npx serverless deploy --stage devtest --aws-profile league-szn && npx serverless s3sync --stage devtest --aws-profile league-szn
+cd backend && npm install && cd ../frontend && npm install && npm run build -- --mode devtest && cd ../backend && npx serverless deploy --stage devtest --aws-profile league-szn && npx serverless s3sync --stage devtest --aws-profile league-szn
 ```
 
 **Dev URLs after deployment:**
@@ -152,15 +147,10 @@ cd backend && npx serverless deploy --stage devtest --aws-profile league-szn && 
 
 ### Deploy to PROD
 
+From the project root directory, run:
+
 ```bash
-# 1. Install dependencies
-cd backend && npm install && cd ../frontend && npm install && cd ..
-
-# 2. Build frontend for prod
-cd frontend && npm run build && cd ..
-
-# 3. Deploy backend + sync frontend to S3
-cd backend && npx serverless deploy --aws-profile league-szn && npx serverless s3sync --aws-profile league-szn
+cd backend && npm install && cd ../frontend && npm install && npm run build && cd ../backend && npx serverless deploy --aws-profile league-szn && npx serverless s3sync --aws-profile league-szn
 ```
 
 **Prod URLs after deployment:**
