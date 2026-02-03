@@ -95,7 +95,57 @@
     "winner": "Winner",
     "winners": "Winners",
     "loser": "Loser",
-    "losers": "Losers"
+    "losers": "Losers",
+    "winningTeam": "Winning Team",
+    "losingTeam": "Losing Team",
+    "losingTeams": "Losing Teams"
+  },
+  "scheduleMatch": {
+    "title": "Schedule Match",
+    "dateTime": "Date & Time",
+    "matchType": "Match Type",
+    "matchTypes": {
+      "singles": "Singles",
+      "tag": "Tag Team",
+      "tripleThread": "Triple Threat",
+      "fatal4Way": "Fatal 4-Way",
+      "sixPack": "Six Pack Challenge",
+      "battleRoyal": "Battle Royal"
+    },
+    "stipulation": "Stipulation (Optional)",
+    "stipulationPlaceholder": "e.g., Ladder Match, Steel Cage, Hell in a Cell",
+    "participants": "Participants",
+    "selected": "Selected",
+    "submit": "Schedule Match",
+    "success": "Match scheduled successfully!",
+    "error": "Failed to schedule match",
+    "minParticipantsError": "Please select at least 2 participants",
+    "tagTeam": {
+      "selectTeams": "Select Teams",
+      "team": "Team",
+      "addTeam": "Add Team",
+      "noMembers": "No members selected",
+      "members": "members",
+      "minTeamsError": "Please create at least 2 teams with 2+ members each"
+    }
+  },
+  "recordResult": {
+    "title": "Record Match Results",
+    "scheduledMatches": "Scheduled Matches",
+    "recordResult": "Record Result",
+    "matchType": "Match Type",
+    "stipulation": "Stipulation",
+    "date": "Date",
+    "selectWinners": "Select Winner(s)",
+    "selectWinningTeamTitle": "Select Winning Team",
+    "team": "Team",
+    "winner": "Winner",
+    "selectWinner": "Please select at least one winner",
+    "selectWinningTeam": "Please select the winning team",
+    "success": "Match result recorded successfully!",
+    "error": "Failed to record result",
+    "selectMatch": "Select a match to record its result",
+    "noScheduledMatches": "No scheduled matches to record results for."
   },
   "tournaments": {
     "title": "Tournaments",

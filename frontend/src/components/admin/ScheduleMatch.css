@@ -88,8 +88,159 @@
   border: 1px solid #166534;
 }
 
+/* Tag Team Selection Styles */
+.tag-team-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.team-section {
+  background-color: #0f0f0f;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.team-header h4 {
+  margin: 0;
+  color: #d4af37;
+  font-size: 1rem;
+}
+
+.remove-team-btn {
+  background-color: #991b1b;
+  color: #fff;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.remove-team-btn:hover {
+  background-color: #b91c1c;
+}
+
+.team-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-height: 2rem;
+  padding: 0.5rem;
+  background-color: #1a1a1a;
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+}
+
+.team-member-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: #d4af37;
+  color: #000;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+
+.remove-member-btn {
+  background: none;
+  border: none;
+  color: #000;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  margin-left: 0.25rem;
+}
+
+.remove-member-btn:hover {
+  color: #991b1b;
+}
+
+.no-members {
+  color: #666;
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
+.team-players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.5rem;
+}
+
+.team-players-grid .participant-card {
+  padding: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.participant-card.in-other-team {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: #444;
+}
+
+.other-team-label {
+  font-size: 0.7rem;
+  color: #888;
+  margin-top: 0.25rem;
+}
+
+.add-team-btn {
+  background-color: #1a1a1a;
+  border: 2px dashed #333;
+  color: #888;
+  padding: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.add-team-btn:hover {
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+.teams-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.team-count {
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.team-count.valid {
+  background-color: #14532d;
+  color: #4ade80;
+}
+
+.team-count.invalid {
+  background-color: #450a0a;
+  color: #f87171;
+}
+
 @media (max-width: 640px) {
   .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .team-players-grid {
     grid-template-columns: 1fr;
   }
 }

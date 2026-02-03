@@ -95,7 +95,57 @@
     "winner": "Sieger",
     "winners": "Sieger",
     "loser": "Verlierer",
-    "losers": "Verlierer"
+    "losers": "Verlierer",
+    "winningTeam": "Sieger-Team",
+    "losingTeam": "Verlierer-Team",
+    "losingTeams": "Verlierer-Teams"
+  },
+  "scheduleMatch": {
+    "title": "Kampf planen",
+    "dateTime": "Datum & Uhrzeit",
+    "matchType": "Kampftyp",
+    "matchTypes": {
+      "singles": "Einzel",
+      "tag": "Tag Team",
+      "tripleThread": "Triple Threat",
+      "fatal4Way": "Fatal 4-Way",
+      "sixPack": "Six Pack Challenge",
+      "battleRoyal": "Battle Royal"
+    },
+    "stipulation": "Stipulation (Optional)",
+    "stipulationPlaceholder": "z.B. Leiterkampf, Stahlkäfig, Hell in a Cell",
+    "participants": "Teilnehmer",
+    "selected": "Ausgewählt",
+    "submit": "Kampf planen",
+    "success": "Kampf erfolgreich geplant!",
+    "error": "Kampf konnte nicht geplant werden",
+    "minParticipantsError": "Bitte wählen Sie mindestens 2 Teilnehmer aus",
+    "tagTeam": {
+      "selectTeams": "Teams auswählen",
+      "team": "Team",
+      "addTeam": "Team hinzufügen",
+      "noMembers": "Keine Mitglieder ausgewählt",
+      "members": "Mitglieder",
+      "minTeamsError": "Bitte erstellen Sie mindestens 2 Teams mit je 2+ Mitgliedern"
+    }
+  },
+  "recordResult": {
+    "title": "Kampfergebnisse eintragen",
+    "scheduledMatches": "Geplante Kämpfe",
+    "recordResult": "Ergebnis eintragen",
+    "matchType": "Kampftyp",
+    "stipulation": "Stipulation",
+    "date": "Datum",
+    "selectWinners": "Sieger auswählen",
+    "selectWinningTeamTitle": "Sieger-Team auswählen",
+    "team": "Team",
+    "winner": "Sieger",
+    "selectWinner": "Bitte wählen Sie mindestens einen Sieger aus",
+    "selectWinningTeam": "Bitte wählen Sie das Sieger-Team aus",
+    "success": "Kampfergebnis erfolgreich eingetragen!",
+    "error": "Ergebnis konnte nicht eingetragen werden",
+    "selectMatch": "Wählen Sie einen Kampf aus, um das Ergebnis einzutragen",
+    "noScheduledMatches": "Keine geplanten Kämpfe zum Eintragen vorhanden."
   },
   "tournaments": {
     "title": "Turniere",

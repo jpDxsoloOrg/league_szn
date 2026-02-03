@@ -1,9 +1,11 @@
 import { useState, useEffect, FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi } from '../../services/api';
 import type { Player, Championship, Tournament, Season } from '../../types';
 import './ScheduleMatch.css';
 
 export default function ScheduleMatch() {
+  const { t } = useTranslation();
   const [players, setPlayers] = useState<Player[]>([]);
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -11,6 +13,9 @@ export default function ScheduleMatch() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Tag team state: array of teams, each team is an array of player IDs
+  const [teams, setTeams] = useState<string[][]>([[], []]);
 
   const [formData, setFormData] = useState({
     date: '',
@@ -53,45 +58,83 @@ export default function ScheduleMatch() {
     }
   };
 
+  const isTagTeamMatch = formData.matchType === 'tag';
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
 
-    if (formData.participants.length < 2) {
-      setError('Please select at least 2 participants');
-      return;
-    }
+    if (isTagTeamMatch) {
+      // For tag team matches, validate teams
+      const validTeams = teams.filter(team => team.length >= 2);
+      if (validTeams.length < 2) {
+        setError(t('scheduleMatch.tagTeam.minTeamsError'));
+        return;
+      }
+      // All participants are members of all teams combined
+      const allParticipants = teams.flat();
 
-    try {
-      await matchesApi.schedule({
-        date: new Date(formData.date).toISOString(),
-        matchType: formData.matchType,
-        stipulation: formData.stipulation,
-        participants: formData.participants,
-        isChampionship: formData.isChampionship,
-        championshipId: formData.championshipId || undefined,
-        tournamentId: formData.tournamentId || undefined,
-        seasonId: formData.seasonId || undefined,
-        status: 'scheduled',
-      });
+      try {
+        await matchesApi.schedule({
+          date: new Date(formData.date).toISOString(),
+          matchType: formData.matchType,
+          stipulation: formData.stipulation,
+          participants: allParticipants,
+          teams: validTeams,
+          isChampionship: formData.isChampionship,
+          championshipId: formData.championshipId || undefined,
+          tournamentId: formData.tournamentId || undefined,
+          seasonId: formData.seasonId || undefined,
+          status: 'scheduled',
+        });
 
-      setSuccess('Match scheduled successfully!');
-      // Reset form but keep the active season selected
-      const activeSeason = seasons.find(s => s.status === 'active');
-      setFormData({
-        date: '',
-        matchType: 'singles',
-        stipulation: '',
-        participants: [],
-        isChampionship: false,
-        championshipId: '',
-        tournamentId: '',
-        seasonId: activeSeason?.seasonId || '',
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to schedule match');
+        setSuccess(t('scheduleMatch.success'));
+        resetForm();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('scheduleMatch.error'));
+      }
+    } else {
+      // Non-tag team match validation
+      if (formData.participants.length < 2) {
+        setError(t('scheduleMatch.minParticipantsError'));
+        return;
+      }
+
+      try {
+        await matchesApi.schedule({
+          date: new Date(formData.date).toISOString(),
+          matchType: formData.matchType,
+          stipulation: formData.stipulation,
+          participants: formData.participants,
+          isChampionship: formData.isChampionship,
+          championshipId: formData.championshipId || undefined,
+          tournamentId: formData.tournamentId || undefined,
+          seasonId: formData.seasonId || undefined,
+          status: 'scheduled',
+        });
+
+        setSuccess(t('scheduleMatch.success'));
+        resetForm();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('scheduleMatch.error'));
+      }
     }
+  };
+
+  const resetForm = () => {
+    const activeSeason = seasons.find(s => s.status === 'active');
+    setFormData({
+      date: '',
+      matchType: 'singles',
+      stipulation: '',
+      participants: [],
+      isChampionship: false,
+      championshipId: '',
+      tournamentId: '',
+      seasonId: activeSeason?.seasonId || '',
+    });
+    setTeams([[], []]);
   };
 
   const handleParticipantToggle = (playerId: string) => {
@@ -101,6 +144,53 @@ export default function ScheduleMatch() {
         ? prev.participants.filter(id => id !== playerId)
         : [...prev.participants, playerId],
     }));
+  };
+
+  // Tag team helper functions
+  const handleTeamMemberToggle = (teamIndex: number, playerId: string) => {
+    setTeams(prev => {
+      const newTeams = [...prev];
+      const team = [...newTeams[teamIndex]];
+
+      if (team.includes(playerId)) {
+        // Remove from this team
+        newTeams[teamIndex] = team.filter(id => id !== playerId);
+      } else {
+        // Remove from other teams first
+        newTeams.forEach((t, i) => {
+          if (i !== teamIndex) {
+            newTeams[i] = t.filter(id => id !== playerId);
+          }
+        });
+        // Add to this team
+        newTeams[teamIndex] = [...team, playerId];
+      }
+
+      return newTeams;
+    });
+  };
+
+  const addTeam = () => {
+    setTeams(prev => [...prev, []]);
+  };
+
+  const removeTeam = (teamIndex: number) => {
+    if (teams.length <= 2) return; // Keep at least 2 teams
+    setTeams(prev => prev.filter((_, i) => i !== teamIndex));
+  };
+
+  const getPlayerTeamIndex = (playerId: string): number => {
+    return teams.findIndex(team => team.includes(playerId));
+  };
+
+  const getPlayerName = (playerId: string): string => {
+    const player = players.find(p => p.playerId === playerId);
+    return player ? player.name : t('common.unknown');
+  };
+
+  const handleMatchTypeChange = (newType: string) => {
+    setFormData(prev => ({ ...prev, matchType: newType, participants: [] }));
+    setTeams([[], []]);
   };
 
   if (loading) {
@@ -128,19 +218,19 @@ export default function ScheduleMatch() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="matchType">Match Type</label>
+            <label htmlFor="matchType">{t('scheduleMatch.matchType')}</label>
             <select
               id="matchType"
               value={formData.matchType}
-              onChange={(e) => setFormData({ ...formData, matchType: e.target.value })}
+              onChange={(e) => handleMatchTypeChange(e.target.value)}
               required
             >
-              <option value="singles">Singles</option>
-              <option value="tag">Tag Team</option>
-              <option value="triple-threat">Triple Threat</option>
-              <option value="fatal-4-way">Fatal 4-Way</option>
-              <option value="six-pack">Six Pack Challenge</option>
-              <option value="battle-royal">Battle Royal</option>
+              <option value="singles">{t('scheduleMatch.matchTypes.singles')}</option>
+              <option value="tag">{t('scheduleMatch.matchTypes.tag')}</option>
+              <option value="triple-threat">{t('scheduleMatch.matchTypes.tripleThread')}</option>
+              <option value="fatal-4-way">{t('scheduleMatch.matchTypes.fatal4Way')}</option>
+              <option value="six-pack">{t('scheduleMatch.matchTypes.sixPack')}</option>
+              <option value="battle-royal">{t('scheduleMatch.matchTypes.battleRoyal')}</option>
             </select>
           </div>
         </div>
@@ -228,26 +318,101 @@ export default function ScheduleMatch() {
           </div>
         )}
 
-        <div className="form-group">
-          <label>Participants (Select {formData.matchType === 'singles' ? '2' : '2+'})</label>
-          <div className="participants-grid">
-            {players.map(player => (
-              <div
-                key={player.playerId}
-                className={`participant-card ${formData.participants.includes(player.playerId) ? 'selected' : ''}`}
-                onClick={() => handleParticipantToggle(player.playerId)}
-              >
-                <div className="participant-name">{player.name}</div>
-                <div className="participant-wrestler">{player.currentWrestler}</div>
-              </div>
-            ))}
+        {isTagTeamMatch ? (
+          /* Tag Team Selection UI */
+          <div className="form-group">
+            <label>{t('scheduleMatch.tagTeam.selectTeams')}</label>
+            <div className="tag-team-container">
+              {teams.map((team, teamIndex) => (
+                <div key={teamIndex} className="team-section">
+                  <div className="team-header">
+                    <h4>{t('scheduleMatch.tagTeam.team')} {teamIndex + 1}</h4>
+                    {teams.length > 2 && (
+                      <button
+                        type="button"
+                        className="remove-team-btn"
+                        onClick={() => removeTeam(teamIndex)}
+                      >
+                        {t('common.delete')}
+                      </button>
+                    )}
+                  </div>
+                  <div className="team-members">
+                    {team.length > 0 ? (
+                      team.map(playerId => (
+                        <span key={playerId} className="team-member-tag">
+                          {getPlayerName(playerId)}
+                          <button
+                            type="button"
+                            className="remove-member-btn"
+                            onClick={() => handleTeamMemberToggle(teamIndex, playerId)}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))
+                    ) : (
+                      <span className="no-members">{t('scheduleMatch.tagTeam.noMembers')}</span>
+                    )}
+                  </div>
+                  <div className="team-players-grid">
+                    {players.filter(p => !team.includes(p.playerId)).map(player => {
+                      const playerTeamIndex = getPlayerTeamIndex(player.playerId);
+                      const isInOtherTeam = playerTeamIndex !== -1 && playerTeamIndex !== teamIndex;
+                      return (
+                        <div
+                          key={player.playerId}
+                          className={`participant-card ${isInOtherTeam ? 'in-other-team' : ''}`}
+                          onClick={() => !isInOtherTeam && handleTeamMemberToggle(teamIndex, player.playerId)}
+                        >
+                          <div className="participant-name">{player.name}</div>
+                          <div className="participant-wrestler">{player.currentWrestler}</div>
+                          {isInOtherTeam && (
+                            <div className="other-team-label">
+                              {t('scheduleMatch.tagTeam.team')} {playerTeamIndex + 1}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              <button type="button" className="add-team-btn" onClick={addTeam}>
+                + {t('scheduleMatch.tagTeam.addTeam')}
+              </button>
+            </div>
+            <div className="teams-summary">
+              {teams.map((team, i) => (
+                <span key={i} className={`team-count ${team.length >= 2 ? 'valid' : 'invalid'}`}>
+                  {t('scheduleMatch.tagTeam.team')} {i + 1}: {team.length} {t('scheduleMatch.tagTeam.members')}
+                </span>
+              ))}
+            </div>
           </div>
-          <div className="selected-count">
-            Selected: {formData.participants.length}
+        ) : (
+          /* Standard Participant Selection UI */
+          <div className="form-group">
+            <label>{t('scheduleMatch.participants')} ({formData.matchType === 'singles' ? '2' : '2+'})</label>
+            <div className="participants-grid">
+              {players.map(player => (
+                <div
+                  key={player.playerId}
+                  className={`participant-card ${formData.participants.includes(player.playerId) ? 'selected' : ''}`}
+                  onClick={() => handleParticipantToggle(player.playerId)}
+                >
+                  <div className="participant-name">{player.name}</div>
+                  <div className="participant-wrestler">{player.currentWrestler}</div>
+                </div>
+              ))}
+            </div>
+            <div className="selected-count">
+              {t('scheduleMatch.selected')}: {formData.participants.length}
+            </div>
           </div>
-        </div>
+        )}
 
-        <button type="submit">Schedule Match</button>
+        <button type="submit">{t('scheduleMatch.submit')}</button>
       </form>
     </div>
   );

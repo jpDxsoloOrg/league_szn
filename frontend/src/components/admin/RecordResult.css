@@ -157,6 +157,63 @@
   background-color: #444 !important;
 }
 
+/* Tag Team Selection Styles */
+.teams-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.team-option {
+  background-color: #0f0f0f;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.team-option:hover {
+  border-color: #4ade80;
+}
+
+.team-option.winner {
+  border-color: #4ade80;
+  background-color: #14532d;
+}
+
+.team-info {
+  flex: 1;
+}
+
+.team-label {
+  font-weight: bold;
+  color: #d4af37;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.team-members-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.team-member-name {
+  background-color: #1a1a1a;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #fff;
+}
+
+.team-option.winner .team-member-name {
+  background-color: #166534;
+}
+
 @media (max-width: 768px) {
   .matches-result-grid {
     grid-template-columns: 1fr;

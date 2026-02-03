@@ -82,7 +82,7 @@ export const matchesApi = {
     });
   },
 
-  recordResult: async (matchId: string, result: { winners: string[], losers: string[] }): Promise<Match> => {
+  recordResult: async (matchId: string, result: { winners: string[], losers: string[], winningTeam?: number }): Promise<Match> => {
     return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}/result`, {
       method: 'PUT',
       body: JSON.stringify(result),

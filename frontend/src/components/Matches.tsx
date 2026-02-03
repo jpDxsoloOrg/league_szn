@@ -38,6 +38,30 @@ export default function Matches() {
     return player ? player.name : t('common.unknown');
   };
 
+  const isTagTeamMatch = (match: Match): boolean => {
+    return match.teams !== undefined && match.teams.length >= 2;
+  };
+
+  const formatTeamMembers = (team: string[]): string => {
+    return team.map(getPlayerName).join(' & ');
+  };
+
+  const getTeamParticipants = (match: Match) => {
+    if (!isTagTeamMatch(match)) {
+      return match.participants.map(getPlayerName).join(', ');
+    }
+
+    // Format as "Team 1 vs Team 2 vs Team 3..."
+    return match.teams!.map((team, index) => (
+      <span key={index} className="team-display">
+        {formatTeamMembers(team)}
+        {index < match.teams!.length - 1 && (
+          <span className="team-vs"> {t('common.vs')} </span>
+        )}
+      </span>
+    ));
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -52,6 +76,31 @@ export default function Matches() {
       return <span className="status-completed">{t('common.completed')}</span>;
     }
 
+    // For tag team matches, show team-based results
+    if (isTagTeamMatch(match) && match.winningTeam !== undefined) {
+      const winningTeam = match.teams![match.winningTeam];
+      const losingTeams = match.teams!.filter((_, index) => index !== match.winningTeam);
+
+      return (
+        <div className="match-result tag-team-result">
+          <div className="winners">
+            <strong>{t('matches.winningTeam')}:</strong>{' '}
+            <span className="team-result">{formatTeamMembers(winningTeam)}</span>
+          </div>
+          <div className="losers">
+            <strong>{losingTeams.length > 1 ? t('matches.losingTeams') : t('matches.losingTeam')}:</strong>{' '}
+            {losingTeams.map((team, index) => (
+              <span key={index} className="team-result">
+                {formatTeamMembers(team)}
+                {index < losingTeams.length - 1 && ', '}
+              </span>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Standard match results
     const winners = match.winners.map(getPlayerName).join(', ');
     const losers = match.losers.map(getPlayerName).join(', ');
 
@@ -129,7 +178,13 @@ export default function Matches() {
 
               <div className="match-participants">
                 <strong>{t('matches.participants')}:</strong>{' '}
-                {match.participants.map(getPlayerName).join(', ')}
+                {isTagTeamMatch(match) ? (
+                  <span className="tag-team-participants">
+                    {getTeamParticipants(match)}
+                  </span>
+                ) : (
+                  match.participants.map(getPlayerName).join(', ')
+                )}
               </div>
 
               <div className="match-result-section">
