@@ -55,8 +55,11 @@ custom:
     httpPort: 3001
     environment:
       IS_OFFLINE: 'true'
+  frontendBucket:
+    dev: leagueszn.jpdxsolo.com
+    devtest: dev.leagueszn.jpdxsolo.com
   s3Sync:
-    - bucketName: leagueszn.jpdxsolo.com
+    - bucketName: ${self:custom.frontendBucket.${self:provider.stage}, 'leagueszn.jpdxsolo.com'}
       localDir: ../frontend/dist
       deleteRemoved: true
 
