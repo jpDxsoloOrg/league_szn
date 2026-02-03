@@ -78,3 +78,146 @@
   font-size: 0.875rem;
   font-weight: bold;
 }
+
+/* Image Upload Styles */
+.image-upload-container {
+  margin-top: 0.5rem;
+}
+
+.image-upload-box {
+  border: 2px dashed #444;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  background-color: #222;
+  transition: border-color 0.2s;
+}
+
+.image-upload-box:hover {
+  border-color: #d4af37;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-input-label,
+.form-group .file-input-label,
+.image-upload-box .file-input-label,
+label.file-input-label {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background-color: #d4af37;
+  color: #000 !important;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+  text-shadow: none;
+}
+
+.file-input-label:hover,
+.form-group .file-input-label:hover,
+.image-upload-box .file-input-label:hover,
+label.file-input-label:hover {
+  background-color: #b8962e;
+  color: #000 !important;
+}
+
+.upload-hint {
+  margin-top: 0.75rem;
+  color: #888;
+  font-size: 0.875rem;
+}
+
+.image-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.image-preview img {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+  border: 2px solid #d4af37;
+  object-fit: cover;
+}
+
+.remove-image-btn {
+  background-color: #7f1d1d !important;
+  color: #fecaca;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.remove-image-btn:hover {
+  background-color: #991b1b !important;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-actions button {
+  flex: 1;
+}
+
+.cancel-btn {
+  background-color: #333 !important;
+}
+
+.cancel-btn:hover {
+  background-color: #444 !important;
+}
+
+.error-message {
+  background-color: #7f1d1d;
+  color: #fecaca;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border: 1px solid #991b1b;
+}
+
+/* Championship Image in Card */
+.championship-image {
+  width: 100%;
+  height: 150px;
+  object-fit: contain;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  background-color: #222;
+}
+
+.championship-no-image {
+  width: 100%;
+  height: 150px;
+  border-radius: 4px;
+  background-color: #222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  margin-bottom: 1rem;
+  border: 1px dashed #444;
+}
+
+.championship-actions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #333;
+}
+
+.championship-edit-btn {
+  background-color: #3b82f6;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  width: 100%;
+}
+
+.championship-edit-btn:hover {
+  background-color: #2563eb;
+}

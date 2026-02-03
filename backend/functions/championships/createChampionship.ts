@@ -7,6 +7,7 @@ interface CreateChampionshipBody {
   name: string;
   type: 'singles' | 'tag';
   currentChampion?: string | string[];
+  imageUrl?: string;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -25,7 +26,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Type must be either "singles" or "tag"');
     }
 
-    const championship = {
+    const championship: Record<string, any> = {
       championshipId: uuidv4(),
       name: body.name,
       type: body.type,
@@ -33,6 +34,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       createdAt: new Date().toISOString(),
       isActive: true,
     };
+
+    // Add imageUrl if provided
+    if (body.imageUrl) {
+      championship.imageUrl = body.imageUrl;
+    }
 
     await dynamoDb.put({
       TableName: TableNames.CHAMPIONSHIPS,
