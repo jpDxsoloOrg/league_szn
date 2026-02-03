@@ -21,6 +21,7 @@ export interface Match {
   isChampionship: boolean;
   championshipId?: string;
   tournamentId?: string;
+  seasonId?: string;
   status: 'scheduled' | 'completed';
   createdAt: string;
 }
@@ -82,5 +83,16 @@ export interface RoundRobinStanding {
 
 export interface Standings {
   players: Player[];
+  seasonId?: string;
   sortedByWins: boolean;
+}
+
+export interface Season {
+  seasonId: string;
+  name: string;
+  startDate: string;
+  endDate?: string;
+  status: 'active' | 'completed';
+  createdAt: string;
+  updatedAt: string;
 }
