@@ -129,11 +129,6 @@ npm run clear-data
 - Node.js 18+
 - AWS CLI configured with the `league-szn` profile
 
-**Note:** If you get `Serverless command "s3sync" not found`, run this first in the backend directory:
-```bash
-npm install serverless-s3-sync --save-dev
-```
-
 ---
 
 ### Deploy to DEV
@@ -141,7 +136,7 @@ npm install serverless-s3-sync --save-dev
 From the project root directory, run:
 
 ```bash
-cd backend && npm install && cd ../frontend && npm install && npm run build -- --mode devtest && cd ../backend && npx serverless deploy --stage devtest --aws-profile league-szn && npx serverless s3sync --stage devtest --aws-profile league-szn
+cd backend && npm install && cd ../frontend && npm install && npm run build -- --mode devtest && cd ../backend && npx serverless deploy --stage devtest --aws-profile league-szn && aws s3 sync ../frontend/dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete
 ```
 
 **Dev URLs after deployment:**
@@ -155,7 +150,7 @@ cd backend && npm install && cd ../frontend && npm install && npm run build -- -
 From the project root directory, run:
 
 ```bash
-cd backend && npm install && cd ../frontend && npm install && npm run build && cd ../backend && npx serverless deploy --aws-profile league-szn && npx serverless s3sync --aws-profile league-szn
+cd backend && npm install && cd ../frontend && npm install && npm run build && cd ../backend && npx serverless deploy --aws-profile league-szn && aws s3 sync ../frontend/dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
 ```
 
 **Prod URLs after deployment:**
@@ -170,7 +165,7 @@ cd backend && npm install && cd ../frontend && npm install && npm run build && c
 |--------|-----|------|
 | Build frontend | `npm run build -- --mode devtest` | `npm run build` |
 | Deploy backend | `npx serverless deploy --stage devtest --aws-profile league-szn` | `npx serverless deploy --aws-profile league-szn` |
-| Sync frontend | `npx serverless s3sync --stage devtest --aws-profile league-szn` | `npx serverless s3sync --aws-profile league-szn` |
+| Sync frontend | `aws s3 sync ../frontend/dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete` | `aws s3 sync ../frontend/dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete` |
 
 ## Local Development & Testing
 
