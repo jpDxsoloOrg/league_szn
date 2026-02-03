@@ -133,15 +133,10 @@ npm run clear-data
 
 ### Deploy to DEV
 
+From the project root directory, run:
+
 ```bash
-# 1. Install dependencies
-cd backend && npm install && cd ../frontend && npm install && cd ..
-
-# 2. Build frontend for dev
-cd frontend && npm run build -- --mode devtest && cd ..
-
-# 3. Deploy backend + sync frontend to S3
-cd backend && npx serverless deploy --stage devtest --aws-profile league-szn && npx serverless s3sync --stage devtest --aws-profile league-szn
+cd backend && npm install && cd ../frontend && npm install && npm run build -- --mode devtest && cd ../backend && npx serverless deploy --stage devtest --aws-profile league-szn && aws s3 sync ../frontend/dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete
 ```
 
 **Dev URLs after deployment:**
@@ -152,15 +147,10 @@ cd backend && npx serverless deploy --stage devtest --aws-profile league-szn && 
 
 ### Deploy to PROD
 
+From the project root directory, run:
+
 ```bash
-# 1. Install dependencies
-cd backend && npm install && cd ../frontend && npm install && cd ..
-
-# 2. Build frontend for prod
-cd frontend && npm run build && cd ..
-
-# 3. Deploy backend + sync frontend to S3
-cd backend && npx serverless deploy --aws-profile league-szn && npx serverless s3sync --aws-profile league-szn
+cd backend && npm install && cd ../frontend && npm install && npm run build && cd ../backend && npx serverless deploy --aws-profile league-szn && aws s3 sync ../frontend/dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
 ```
 
 **Prod URLs after deployment:**
@@ -175,7 +165,27 @@ cd backend && npx serverless deploy --aws-profile league-szn && npx serverless s
 |--------|-----|------|
 | Build frontend | `npm run build -- --mode devtest` | `npm run build` |
 | Deploy backend | `npx serverless deploy --stage devtest --aws-profile league-szn` | `npx serverless deploy --aws-profile league-szn` |
-| Sync frontend | `npx serverless s3sync --stage devtest --aws-profile league-szn` | `npx serverless s3sync --aws-profile league-szn` |
+| Sync frontend | `aws s3 sync ../frontend/dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete` | `aws s3 sync ../frontend/dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete` |
+
+---
+
+### Troubleshooting Deployments
+
+**"Failed to load data" after deploying to dev:**
+
+Some branches may be missing the `.env.devtest` file. Create it:
+```bash
+echo "VITE_API_BASE_URL=https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest" > frontend/.env.devtest
+```
+Then rebuild and sync:
+```bash
+cd frontend && npm run build -- --mode devtest && aws s3 sync dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete
+```
+
+**Verify the API is working:**
+```bash
+curl https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest/players
+```
 
 ## Local Development & Testing
 
