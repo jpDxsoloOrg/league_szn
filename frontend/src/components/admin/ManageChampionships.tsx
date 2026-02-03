@@ -10,10 +10,12 @@ export default function ManageChampionships() {
   const [success, setSuccess] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [editingChampionship, setEditingChampionship] = useState<Championship | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
     type: 'singles' as 'singles' | 'tag',
+    imageUrl: '',
   });
 
   // Image upload state
@@ -67,10 +69,11 @@ export default function ManageChampionships() {
   const clearImage = () => {
     setSelectedFile(null);
     setImagePreview(null);
+    setFormData({ ...formData, imageUrl: '' });
   };
 
   const uploadImage = async (): Promise<string | null> => {
-    if (!selectedFile) return null;
+    if (!selectedFile) return formData.imageUrl || null;
 
     try {
       setUploading(true);
@@ -102,29 +105,52 @@ export default function ManageChampionships() {
       // Upload image first if one is selected
       const imageUrl = await uploadImage();
 
-      await championshipsApi.create({
-        name: formData.name,
-        type: formData.type,
-        imageUrl: imageUrl || undefined,
-        isActive: true,
-      });
+      if (editingChampionship) {
+        await championshipsApi.update(editingChampionship.championshipId, {
+          name: formData.name,
+          type: formData.type,
+          imageUrl: imageUrl || undefined,
+        });
+        setSuccess('Championship updated successfully!');
+      } else {
+        await championshipsApi.create({
+          name: formData.name,
+          type: formData.type,
+          imageUrl: imageUrl || undefined,
+          isActive: true,
+        });
+        setSuccess('Championship created successfully!');
+      }
 
-      setSuccess('Championship created successfully!');
-      setFormData({ name: '', type: 'singles' });
+      setFormData({ name: '', type: 'singles', imageUrl: '' });
       setSelectedFile(null);
       setImagePreview(null);
       setShowAddForm(false);
+      setEditingChampionship(null);
       await loadChampionships();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create championship');
+      setError(err instanceof Error ? err.message : 'Failed to save championship');
     }
   };
 
+  const handleEdit = (championship: Championship) => {
+    setEditingChampionship(championship);
+    setFormData({
+      name: championship.name,
+      type: championship.type,
+      imageUrl: championship.imageUrl || '',
+    });
+    setImagePreview(championship.imageUrl || null);
+    setSelectedFile(null);
+    setShowAddForm(true);
+  };
+
   const handleCancel = () => {
-    setFormData({ name: '', type: 'singles' });
+    setFormData({ name: '', type: 'singles', imageUrl: '' });
     setSelectedFile(null);
     setImagePreview(null);
     setShowAddForm(false);
+    setEditingChampionship(null);
   };
 
   if (loading) {
@@ -147,7 +173,7 @@ export default function ManageChampionships() {
 
       {showAddForm && (
         <div className="championship-form-container">
-          <h3>Create New Championship</h3>
+          <h3>{editingChampionship ? 'Edit Championship' : 'Create New Championship'}</h3>
           <form onSubmit={handleSubmit} className="championship-form">
             <div className="form-group">
               <label htmlFor="name">Championship Name</label>
@@ -204,7 +230,7 @@ export default function ManageChampionships() {
 
             <div className="form-actions">
               <button type="submit" disabled={uploading}>
-                {uploading ? 'Uploading...' : 'Create Championship'}
+                {uploading ? 'Uploading...' : editingChampionship ? 'Update Championship' : 'Create Championship'}
               </button>
               <button type="button" onClick={handleCancel} className="cancel-btn">
                 Cancel
@@ -241,6 +267,14 @@ export default function ManageChampionships() {
                   ) : (
                     <span className="status-inactive">Inactive</span>
                   )}
+                </div>
+                <div className="championship-actions">
+                  <button
+                    onClick={() => handleEdit(championship)}
+                    className="championship-edit-btn"
+                  >
+                    Edit
+                  </button>
                 </div>
               </div>
             ))}

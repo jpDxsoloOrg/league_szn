@@ -105,7 +105,7 @@
   display: inline-block;
   padding: 0.75rem 1.5rem;
   background-color: #d4af37;
-  color: #000;
+  color: #000 !important;
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
@@ -195,4 +195,21 @@
   color: #666;
   margin-bottom: 1rem;
   border: 1px dashed #444;
+}
+
+.championship-actions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #333;
+}
+
+.championship-edit-btn {
+  background-color: #3b82f6;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  width: 100%;
+}
+
+.championship-edit-btn:hover {
+  background-color: #2563eb;
 }
