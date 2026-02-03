@@ -15,6 +15,7 @@ provider:
     TOURNAMENTS_TABLE: ${self:service}-tournaments-${self:provider.stage}
     SEASONS_TABLE: ${self:service}-seasons-${self:provider.stage}
     SEASON_STANDINGS_TABLE: ${self:service}-season-standings-${self:provider.stage}
+    DIVISIONS_TABLE: ${self:service}-divisions-${self:provider.stage}
     IMAGES_BUCKET: ${self:service}-images-${self:provider.stage}
   iam:
     role:
@@ -37,6 +38,7 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SEASONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SEASON_STANDINGS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SEASON_STANDINGS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DIVISIONS_TABLE}
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -206,6 +208,39 @@ functions:
           method: put
           cors: true
 
+  # Divisions
+  getDivisions:
+    handler: functions/divisions/getDivisions.handler
+    events:
+      - http:
+          path: divisions
+          method: get
+          cors: true
+
+  createDivision:
+    handler: functions/divisions/createDivision.handler
+    events:
+      - http:
+          path: divisions
+          method: post
+          cors: true
+
+  updateDivision:
+    handler: functions/divisions/updateDivision.handler
+    events:
+      - http:
+          path: divisions/{divisionId}
+          method: put
+          cors: true
+
+  deleteDivision:
+    handler: functions/divisions/deleteDivision.handler
+    events:
+      - http:
+          path: divisions/{divisionId}
+          method: delete
+          cors: true
+
   # Images
   generateUploadUrl:
     handler: functions/images/generateUploadUrl.handler
@@ -332,6 +367,18 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
+
+    DivisionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DIVISIONS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: divisionId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: divisionId
+            KeyType: HASH
 
     ImagesBucket:
       Type: AWS::S3::Bucket

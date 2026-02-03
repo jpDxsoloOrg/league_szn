@@ -7,6 +7,7 @@ interface CreatePlayerBody {
   name: string;
   currentWrestler: string;
   imageUrl?: string;
+  divisionId?: string;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -36,6 +37,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Add imageUrl if provided
     if (body.imageUrl) {
       player.imageUrl = body.imageUrl;
+    }
+
+    // Add divisionId if provided
+    if (body.divisionId) {
+      player.divisionId = body.divisionId;
     }
 
     await dynamoDb.put({
