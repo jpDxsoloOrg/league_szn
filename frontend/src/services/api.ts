@@ -4,7 +4,8 @@ import type {
   Championship,
   ChampionshipReign,
   Tournament,
-  Standings
+  Standings,
+  Division
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
@@ -136,6 +137,33 @@ export const tournamentsApi = {
 export const standingsApi = {
   get: async (): Promise<Standings> => {
     return fetchWithAuth(`${API_BASE_URL}/standings`);
+  },
+};
+
+// Divisions API
+export const divisionsApi = {
+  getAll: async (): Promise<Division[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/divisions`);
+  },
+
+  create: async (division: Omit<Division, 'divisionId' | 'createdAt' | 'updatedAt'>): Promise<Division> => {
+    return fetchWithAuth(`${API_BASE_URL}/divisions`, {
+      method: 'POST',
+      body: JSON.stringify(division),
+    });
+  },
+
+  update: async (divisionId: string, updates: Partial<Division>): Promise<Division> => {
+    return fetchWithAuth(`${API_BASE_URL}/divisions/${divisionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  delete: async (divisionId: string): Promise<void> => {
+    return fetchWithAuth(`${API_BASE_URL}/divisions/${divisionId}`, {
+      method: 'DELETE',
+    });
   },
 };
 

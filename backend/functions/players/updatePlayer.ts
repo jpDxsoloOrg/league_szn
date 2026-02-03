@@ -49,6 +49,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       expressionAttributeValues[':imageUrl'] = body.imageUrl;
     }
 
+    if (body.divisionId !== undefined) {
+      updateExpressions.push('#divisionId = :divisionId');
+      expressionAttributeNames['#divisionId'] = 'divisionId';
+      expressionAttributeValues[':divisionId'] = body.divisionId;
+    }
+
     // Always update the updatedAt timestamp
     updateExpressions.push('#updatedAt = :updatedAt');
     expressionAttributeNames['#updatedAt'] = 'updatedAt';

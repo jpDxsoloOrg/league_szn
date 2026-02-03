@@ -65,3 +65,68 @@
   color: #f87171;
   margin-bottom: 1rem;
 }
+
+/* Division Filter */
+.division-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.filter-label {
+  color: #bbb;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filter-btn {
+  padding: 0.5rem 1rem;
+  background-color: #333;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.filter-btn:hover {
+  background-color: #444;
+  border-color: #555;
+}
+
+.filter-btn.active {
+  background-color: #d4af37;
+  border-color: #d4af37;
+  color: #000;
+  font-weight: bold;
+}
+
+/* Division name column */
+.standings-table .division-name {
+  text-align: center;
+  color: #d4af37;
+}
+
+.standings-table .no-division {
+  color: #666;
+}
+
+.no-players-message {
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+  font-style: italic;
+}

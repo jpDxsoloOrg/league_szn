@@ -1,10 +1,11 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
-import { playersApi, imagesApi } from '../../services/api';
-import type { Player } from '../../types';
+import { playersApi, imagesApi, divisionsApi } from '../../services/api';
+import type { Player, Division } from '../../types';
 import './ManagePlayers.css';
 
 export default function ManagePlayers() {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [divisions, setDivisions] = useState<Division[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -16,6 +17,7 @@ export default function ManagePlayers() {
     name: '',
     currentWrestler: '',
     imageUrl: '',
+    divisionId: '',
   });
 
   // Image upload state
@@ -23,19 +25,29 @@ export default function ManagePlayers() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
-    loadPlayers();
+    loadData();
   }, []);
 
-  const loadPlayers = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await playersApi.getAll();
-      setPlayers(data);
+      const [playersData, divisionsData] = await Promise.all([
+        playersApi.getAll(),
+        divisionsApi.getAll(),
+      ]);
+      setPlayers(playersData);
+      setDivisions(divisionsData);
     } catch (err) {
-      setError('Failed to load players');
+      setError('Failed to load data');
     } finally {
       setLoading(false);
     }
+  };
+
+  const getDivisionName = (divisionId?: string) => {
+    if (!divisionId) return 'None';
+    const division = divisions.find(d => d.divisionId === divisionId);
+    return division?.name || 'Unknown';
   };
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
@@ -69,7 +81,7 @@ export default function ManagePlayers() {
   const clearImage = () => {
     setSelectedFile(null);
     setImagePreview(null);
-    setFormData({ ...formData, imageUrl: '' });
+    setFormData(prev => ({ ...prev, imageUrl: '' }));
   };
 
   const uploadImage = async (): Promise<string | null> => {
@@ -106,26 +118,29 @@ export default function ManagePlayers() {
 
       if (editingPlayer) {
         await playersApi.update(editingPlayer.playerId, {
-          ...formData,
+          name: formData.name,
+          currentWrestler: formData.currentWrestler,
           imageUrl: imageUrl || undefined,
+          divisionId: formData.divisionId || undefined,
         });
       } else {
         await playersApi.create({
           name: formData.name,
           currentWrestler: formData.currentWrestler,
           imageUrl: imageUrl || undefined,
+          divisionId: formData.divisionId || undefined,
           wins: 0,
           losses: 0,
           draws: 0,
         });
       }
 
-      setFormData({ name: '', currentWrestler: '', imageUrl: '' });
+      setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '' });
       setSelectedFile(null);
       setImagePreview(null);
       setShowAddForm(false);
       setEditingPlayer(null);
-      await loadPlayers();
+      await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save player');
     }
@@ -137,6 +152,7 @@ export default function ManagePlayers() {
       name: player.name,
       currentWrestler: player.currentWrestler,
       imageUrl: player.imageUrl || '',
+      divisionId: player.divisionId || '',
     });
     setImagePreview(player.imageUrl || null);
     setSelectedFile(null);
@@ -144,7 +160,7 @@ export default function ManagePlayers() {
   };
 
   const handleCancel = () => {
-    setFormData({ name: '', currentWrestler: '', imageUrl: '' });
+    setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '' });
     setSelectedFile(null);
     setImagePreview(null);
     setShowAddForm(false);
@@ -194,6 +210,22 @@ export default function ManagePlayers() {
                 required
                 placeholder="Stone Cold Steve Austin"
               />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="division">Division</label>
+              <select
+                id="division"
+                value={formData.divisionId}
+                onChange={(e) => setFormData({ ...formData, divisionId: e.target.value })}
+              >
+                <option value="">No Division</option>
+                {divisions.map((division) => (
+                  <option key={division.divisionId} value={division.divisionId}>
+                    {division.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="form-group">
@@ -247,6 +279,7 @@ export default function ManagePlayers() {
                 <th>Image</th>
                 <th>Player Name</th>
                 <th>Wrestler</th>
+                <th>Division</th>
                 <th>Record</th>
                 <th>Actions</th>
               </tr>
@@ -267,6 +300,7 @@ export default function ManagePlayers() {
                   </td>
                   <td>{player.name}</td>
                   <td>{player.currentWrestler}</td>
+                  <td className="division-cell">{getDivisionName(player.divisionId)}</td>
                   <td>
                     <span className="record">
                       {player.wins}W - {player.losses}L - {player.draws}D

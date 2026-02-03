@@ -6,6 +6,15 @@ export interface Player {
   losses: number;
   draws: number;
   imageUrl?: string;
+  divisionId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Division {
+  divisionId: string;
+  name: string;
+  description?: string;
   createdAt: string;
   updatedAt: string;
 }

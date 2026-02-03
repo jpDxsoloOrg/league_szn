@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { authApi } from '../../services/api';
 import AdminLogin from './AdminLogin';
 import ManagePlayers from './ManagePlayers';
+import ManageDivisions from './ManageDivisions';
 import ScheduleMatch from './ScheduleMatch';
 import RecordResult from './RecordResult';
 import ManageChampionships from './ManageChampionships';
 import CreateTournament from './CreateTournament';
 import './AdminPanel.css';
 
-type AdminTab = 'players' | 'schedule' | 'results' | 'championships' | 'tournaments';
+type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments';
 
 export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(authApi.isAuthenticated());
@@ -44,6 +45,12 @@ export default function AdminPanel() {
           Manage Players
         </button>
         <button
+          className={`tab ${activeTab === 'divisions' ? 'active' : ''}`}
+          onClick={() => setActiveTab('divisions')}
+        >
+          Divisions
+        </button>
+        <button
           className={`tab ${activeTab === 'schedule' ? 'active' : ''}`}
           onClick={() => setActiveTab('schedule')}
         >
@@ -71,6 +78,7 @@ export default function AdminPanel() {
 
       <div className="admin-content">
         {activeTab === 'players' && <ManagePlayers />}
+        {activeTab === 'divisions' && <ManageDivisions />}
         {activeTab === 'schedule' && <ScheduleMatch />}
         {activeTab === 'results' && <RecordResult />}
         {activeTab === 'championships' && <ManageChampionships />}
