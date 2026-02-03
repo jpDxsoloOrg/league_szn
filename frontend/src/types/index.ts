@@ -17,8 +17,10 @@ export interface Match {
   matchType: string; // "singles", "tag", "triple-threat", etc.
   stipulation?: string; // "ladder", "cage", "hell-in-a-cell", etc.
   participants: string[]; // playerIds
+  teams?: string[][]; // Array of teams, each team is an array of playerIds (for tag team matches)
   winners?: string[]; // playerIds
   losers?: string[]; // playerIds
+  winningTeam?: number; // Index of winning team (for tag team matches)
   isChampionship: boolean;
   championshipId?: string;
   tournamentId?: string;

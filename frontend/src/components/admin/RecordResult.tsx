@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi } from '../../services/api';
 import type { Match, Player } from '../../types';
 import './RecordResult.css';
 
 export default function RecordResult() {
+  const { t } = useTranslation();
   const [matches, setMatches] = useState<Match[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [winners, setWinners] = useState<string[]>([]);
+  const [winningTeamIndex, setWinningTeamIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -40,9 +43,12 @@ export default function RecordResult() {
   const handleMatchSelect = (match: Match) => {
     setSelectedMatch(match);
     setWinners([]);
+    setWinningTeamIndex(null);
     setError(null);
     setSuccess(null);
   };
+
+  const isTagTeamMatch = selectedMatch?.teams && selectedMatch.teams.length >= 2;
 
   const handleWinnerToggle = (playerId: string) => {
     setWinners(prev =>
@@ -52,25 +58,72 @@ export default function RecordResult() {
     );
   };
 
+  const handleTeamWinnerSelect = (teamIndex: number) => {
+    if (!selectedMatch?.teams) return;
+
+    if (winningTeamIndex === teamIndex) {
+      // Deselect this team
+      setWinningTeamIndex(null);
+      setWinners([]);
+    } else {
+      // Select this team as winner
+      setWinningTeamIndex(teamIndex);
+      setWinners(selectedMatch.teams[teamIndex]);
+    }
+  };
+
+  const getPlayerNameShort = (playerId: string): string => {
+    const player = players.find(p => p.playerId === playerId);
+    return player ? player.name : t('common.unknown');
+  };
+
   const handleSubmit = async () => {
     if (!selectedMatch) return;
 
-    if (winners.length === 0) {
-      setError('Please select at least one winner');
-      return;
-    }
+    if (isTagTeamMatch) {
+      // Tag team match validation
+      if (winningTeamIndex === null || winners.length === 0) {
+        setError(t('recordResult.selectWinningTeam'));
+        return;
+      }
 
-    const losers = selectedMatch.participants.filter(p => !winners.includes(p));
+      // All non-winning team members are losers
+      const losers = selectedMatch.participants.filter(p => !winners.includes(p));
 
-    try {
-      setError(null);
-      await matchesApi.recordResult(selectedMatch.matchId, { winners, losers });
-      setSuccess('Match result recorded successfully!');
-      setSelectedMatch(null);
-      setWinners([]);
-      await loadData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to record result');
+      try {
+        setError(null);
+        await matchesApi.recordResult(selectedMatch.matchId, {
+          winners,
+          losers,
+          winningTeam: winningTeamIndex
+        });
+        setSuccess(t('recordResult.success'));
+        setSelectedMatch(null);
+        setWinners([]);
+        setWinningTeamIndex(null);
+        await loadData();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('recordResult.error'));
+      }
+    } else {
+      // Standard match validation
+      if (winners.length === 0) {
+        setError(t('recordResult.selectWinner'));
+        return;
+      }
+
+      const losers = selectedMatch.participants.filter(p => !winners.includes(p));
+
+      try {
+        setError(null);
+        await matchesApi.recordResult(selectedMatch.matchId, { winners, losers });
+        setSuccess(t('recordResult.success'));
+        setSelectedMatch(null);
+        setWinners([]);
+        await loadData();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('recordResult.error'));
+      }
     }
   };
 
@@ -136,23 +189,54 @@ export default function RecordResult() {
                 </div>
 
                 <div className="participants-selection">
-                  <h4>Select Winner(s)</h4>
-                  <div className="participants-list">
-                    {selectedMatch.participants.map(playerId => (
-                      <div
-                        key={playerId}
-                        className={`participant-option ${winners.includes(playerId) ? 'winner' : ''}`}
-                        onClick={() => handleWinnerToggle(playerId)}
-                      >
-                        <div className="participant-info">
-                          {getPlayerName(playerId)}
-                        </div>
-                        {winners.includes(playerId) && (
-                          <span className="winner-badge">Winner</span>
-                        )}
+                  {isTagTeamMatch ? (
+                    <>
+                      <h4>{t('recordResult.selectWinningTeamTitle')}</h4>
+                      <div className="teams-list">
+                        {selectedMatch.teams!.map((team, teamIndex) => (
+                          <div
+                            key={teamIndex}
+                            className={`team-option ${winningTeamIndex === teamIndex ? 'winner' : ''}`}
+                            onClick={() => handleTeamWinnerSelect(teamIndex)}
+                          >
+                            <div className="team-info">
+                              <div className="team-label">{t('recordResult.team')} {teamIndex + 1}</div>
+                              <div className="team-members-list">
+                                {team.map(playerId => (
+                                  <span key={playerId} className="team-member-name">
+                                    {getPlayerNameShort(playerId)}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            {winningTeamIndex === teamIndex && (
+                              <span className="winner-badge">{t('recordResult.winner')}</span>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </>
+                  ) : (
+                    <>
+                      <h4>{t('recordResult.selectWinners')}</h4>
+                      <div className="participants-list">
+                        {selectedMatch.participants.map(playerId => (
+                          <div
+                            key={playerId}
+                            className={`participant-option ${winners.includes(playerId) ? 'winner' : ''}`}
+                            onClick={() => handleWinnerToggle(playerId)}
+                          >
+                            <div className="participant-info">
+                              {getPlayerName(playerId)}
+                            </div>
+                            {winners.includes(playerId) && (
+                              <span className="winner-badge">{t('recordResult.winner')}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="result-actions">
