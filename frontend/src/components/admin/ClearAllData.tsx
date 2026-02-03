@@ -3,10 +3,12 @@ import { adminApi } from '../../services/api';
 import './ClearAllData.css';
 
 export default function ClearAllData() {
-  const [loading, setLoading] = useState(false);
+  const [clearLoading, setClearLoading] = useState(false);
+  const [seedLoading, setSeedLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [deletedCounts, setDeletedCounts] = useState<Record<string, number> | null>(null);
+  const [resultCounts, setResultCounts] = useState<Record<string, number> | null>(null);
+  const [resultType, setResultType] = useState<'deleted' | 'created' | null>(null);
   const [confirmText, setConfirmText] = useState('');
 
   const CONFIRMATION_PHRASE = 'DELETE ALL DATA';
@@ -21,31 +23,83 @@ export default function ClearAllData() {
       return;
     }
 
-    setLoading(true);
+    setClearLoading(true);
     setError(null);
     setSuccess(null);
-    setDeletedCounts(null);
+    setResultCounts(null);
 
     try {
       const result = await adminApi.clearAll();
       setSuccess('All data has been cleared successfully!');
-      setDeletedCounts(result.deletedCounts);
+      setResultCounts(result.deletedCounts);
+      setResultType('deleted');
       setConfirmText('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to clear data');
     } finally {
-      setLoading(false);
+      setClearLoading(false);
     }
   };
+
+  const handleSeedData = async () => {
+    if (!confirm('This will generate sample data including players, divisions, seasons, championships, matches, and tournaments. Any existing data will remain. Continue?')) {
+      return;
+    }
+
+    setSeedLoading(true);
+    setError(null);
+    setSuccess(null);
+    setResultCounts(null);
+
+    try {
+      const result = await adminApi.seedData();
+      setSuccess('Sample data has been generated successfully!');
+      setResultCounts(result.createdCounts);
+      setResultType('created');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to seed data');
+    } finally {
+      setSeedLoading(false);
+    }
+  };
+
+  const isLoading = clearLoading || seedLoading;
 
   return (
     <div className="clear-all-data">
       <div className="clear-all-header">
-        <h2>Clear All Data</h2>
+        <h2>Data Management</h2>
       </div>
 
+      {/* Seed Data Section */}
+      <div className="seed-banner">
+        <h3>Generate Sample Data</h3>
+        <p>
+          Quickly populate the league with sample data for testing or demonstration purposes.
+        </p>
+        <div className="seed-details">
+          <h4>What gets created:</h4>
+          <ul>
+            <li><strong>12 Players</strong> - With random win/loss records and wrestler assignments</li>
+            <li><strong>3 Divisions</strong> - Raw, SmackDown, and NXT</li>
+            <li><strong>1 Active Season</strong> - With standings for all players</li>
+            <li><strong>4 Championships</strong> - World, Intercontinental, Tag Team, and US titles</li>
+            <li><strong>12 Matches</strong> - Mix of completed and scheduled matches</li>
+            <li><strong>2 Tournaments</strong> - Single elimination and round robin</li>
+          </ul>
+        </div>
+        <button
+          onClick={handleSeedData}
+          disabled={isLoading}
+          className="seed-btn"
+        >
+          {seedLoading ? 'Generating Data...' : 'Generate Sample Data'}
+        </button>
+      </div>
+
+      {/* Clear All Section */}
       <div className="warning-banner">
-        <h3>Danger Zone</h3>
+        <h3>Danger Zone - Clear All Data</h3>
         <p>
           This action will permanently delete <strong>ALL</strong> data from the system:
         </p>
@@ -66,18 +120,33 @@ export default function ClearAllData() {
       {success && (
         <div className="success-message">
           {success}
-          {deletedCounts && (
-            <div className="deleted-counts">
-              <h4>Deleted Items:</h4>
+          {resultCounts && (
+            <div className="result-counts">
+              <h4>{resultType === 'deleted' ? 'Deleted Items:' : 'Created Items:'}</h4>
               <ul>
-                <li>Players: {deletedCounts.players || 0}</li>
-                <li>Matches: {deletedCounts.matches || 0}</li>
-                <li>Championships: {deletedCounts.championships || 0}</li>
-                <li>Championship History: {deletedCounts.championshipHistory || 0}</li>
-                <li>Tournaments: {deletedCounts.tournaments || 0}</li>
-                <li>Seasons: {deletedCounts.seasons || 0}</li>
-                <li>Season Standings: {deletedCounts.seasonStandings || 0}</li>
-                <li>Divisions: {deletedCounts.divisions || 0}</li>
+                {resultType === 'deleted' ? (
+                  <>
+                    <li>Players: {resultCounts.players || 0}</li>
+                    <li>Matches: {resultCounts.matches || 0}</li>
+                    <li>Championships: {resultCounts.championships || 0}</li>
+                    <li>Championship History: {resultCounts.championshipHistory || 0}</li>
+                    <li>Tournaments: {resultCounts.tournaments || 0}</li>
+                    <li>Seasons: {resultCounts.seasons || 0}</li>
+                    <li>Season Standings: {resultCounts.seasonStandings || 0}</li>
+                    <li>Divisions: {resultCounts.divisions || 0}</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Divisions: {resultCounts.divisions || 0}</li>
+                    <li>Players: {resultCounts.players || 0}</li>
+                    <li>Seasons: {resultCounts.seasons || 0}</li>
+                    <li>Season Standings: {resultCounts.seasonStandings || 0}</li>
+                    <li>Championships: {resultCounts.championships || 0}</li>
+                    <li>Championship History: {resultCounts.championshipHistory || 0}</li>
+                    <li>Matches: {resultCounts.matches || 0}</li>
+                    <li>Tournaments: {resultCounts.tournaments || 0}</li>
+                  </>
+                )}
               </ul>
             </div>
           )}
@@ -95,14 +164,14 @@ export default function ClearAllData() {
           onChange={(e) => setConfirmText(e.target.value)}
           placeholder={CONFIRMATION_PHRASE}
           className="confirm-input"
-          disabled={loading}
+          disabled={isLoading}
         />
         <button
           onClick={handleClearAll}
-          disabled={loading || confirmText !== CONFIRMATION_PHRASE}
+          disabled={isLoading || confirmText !== CONFIRMATION_PHRASE}
           className="clear-all-btn"
         >
-          {loading ? 'Clearing All Data...' : 'Clear All Data'}
+          {clearLoading ? 'Clearing All Data...' : 'Clear All Data'}
         </button>
       </div>
     </div>

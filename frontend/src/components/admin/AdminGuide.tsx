@@ -354,8 +354,30 @@ export default function AdminGuide() {
       </section>
 
       <section className="admin-guide-section danger-section">
-        <h4>Danger Zone - Clear All Data</h4>
-        <p>The <strong>Danger Zone</strong> tab provides the ability to completely reset the league by deleting all data.</p>
+        <h4>Data Management</h4>
+        <p>The <strong>Danger Zone</strong> tab provides tools to generate sample data or completely reset the league.</p>
+
+        <div className="guide-block highlight-box">
+          <h5>Generate Sample Data</h5>
+          <p>Quickly populate the league with realistic sample data for testing or demonstration.</p>
+          <h6>What Gets Created:</h6>
+          <ul>
+            <li><strong>12 Players</strong> - With random win/loss records and assigned wrestlers</li>
+            <li><strong>3 Divisions</strong> - Raw, SmackDown, and NXT</li>
+            <li><strong>1 Active Season</strong> - With standings for all players</li>
+            <li><strong>4 Championships</strong> - World, Intercontinental, Tag Team, and US titles</li>
+            <li><strong>12 Matches</strong> - Mix of completed and scheduled matches</li>
+            <li><strong>2 Tournaments</strong> - Single elimination and round robin</li>
+          </ul>
+          <h6>How to Generate Sample Data:</h6>
+          <ol>
+            <li>Navigate to the <strong>Danger Zone</strong> tab</li>
+            <li>Click the <strong>Generate Sample Data</strong> button</li>
+            <li>Confirm the action in the dialog</li>
+            <li>Wait for the data to be created</li>
+          </ol>
+          <p className="note-text"><strong>Tip:</strong> For a clean demonstration, use "Clear All Data" first, then generate sample data.</p>
+        </div>
 
         <div className="guide-block important-box">
           <h5>When to Use Clear All Data</h5>

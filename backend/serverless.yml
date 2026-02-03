@@ -283,6 +283,14 @@ functions:
           method: delete
           cors: true
 
+  seedData:
+    handler: functions/admin/seedData.handler
+    events:
+      - http:
+          path: admin/seed-data
+          method: post
+          cors: true
+
 resources:
   Resources:
     PlayersTable:

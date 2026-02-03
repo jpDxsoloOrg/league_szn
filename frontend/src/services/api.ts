@@ -215,6 +215,12 @@ export const adminApi = {
       method: 'DELETE',
     });
   },
+
+  seedData: async (): Promise<{ message: string; createdCounts: Record<string, number> }> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/seed-data`, {
+      method: 'POST',
+    });
+  },
 };
 
 // Auth API
