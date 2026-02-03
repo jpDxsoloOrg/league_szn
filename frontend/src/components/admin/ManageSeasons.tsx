@@ -9,6 +9,7 @@ export default function ManageSeasons() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -70,6 +71,26 @@ export default function ManageSeasons() {
       loadSeasons();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to end season');
+    }
+  };
+
+  const handleDelete = async (seasonId: string, seasonName: string) => {
+    if (!confirm(`Are you sure you want to delete "${seasonName}"? This will also delete all standings for this season. This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeleting(seasonId);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await seasonsApi.delete(seasonId);
+      setSuccess('Season deleted successfully!');
+      await loadSeasons();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete season');
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -172,13 +193,20 @@ export default function ManageSeasons() {
                     <p><strong>End:</strong> {new Date(season.endDate).toLocaleDateString()}</p>
                   )}
                 </div>
-                {season.status === 'active' && (
-                  <div className="season-actions">
+                <div className="season-actions">
+                  {season.status === 'active' && (
                     <button className="end-season-btn small" onClick={() => handleEndSeason(season.seasonId)}>
                       End Season
                     </button>
-                  </div>
-                )}
+                  )}
+                  <button
+                    className="delete-season-btn small"
+                    onClick={() => handleDelete(season.seasonId, season.name)}
+                    disabled={deleting === season.seasonId}
+                  >
+                    {deleting === season.seasonId ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

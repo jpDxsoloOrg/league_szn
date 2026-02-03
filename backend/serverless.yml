@@ -91,6 +91,14 @@ functions:
           method: put
           cors: true
 
+  deletePlayer:
+    handler: functions/players/deletePlayer.handler
+    events:
+      - http:
+          path: players/{playerId}
+          method: delete
+          cors: true
+
   # Matches
   getMatches:
     handler: functions/matches/getMatches.handler
@@ -147,6 +155,14 @@ functions:
       - http:
           path: championships/{championshipId}
           method: put
+          cors: true
+
+  deleteChampionship:
+    handler: functions/championships/deleteChampionship.handler
+    events:
+      - http:
+          path: championships/{championshipId}
+          method: delete
           cors: true
 
   # Tournaments
@@ -208,6 +224,14 @@ functions:
           method: put
           cors: true
 
+  deleteSeason:
+    handler: functions/seasons/deleteSeason.handler
+    events:
+      - http:
+          path: seasons/{seasonId}
+          method: delete
+          cors: true
+
   # Divisions
   getDivisions:
     handler: functions/divisions/getDivisions.handler
@@ -247,6 +271,23 @@ functions:
     events:
       - http:
           path: images/upload-url
+          method: post
+          cors: true
+
+  # Admin
+  clearAll:
+    handler: functions/admin/clearAll.handler
+    events:
+      - http:
+          path: admin/clear-all
+          method: delete
+          cors: true
+
+  seedData:
+    handler: functions/admin/seedData.handler
+    events:
+      - http:
+          path: admin/seed-data
           method: post
           cors: true
 

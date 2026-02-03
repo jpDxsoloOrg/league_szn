@@ -53,19 +53,45 @@
   width: 100%;
 }
 
+.players-table td {
+  vertical-align: middle;
+}
+
 .players-table .record {
   font-family: monospace;
   color: #bbb;
 }
 
+.actions-cell {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .edit-btn {
-  background-color: #3b82f6;
+  background-color: #3b82f6 !important;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
 }
 
 .edit-btn:hover {
-  background-color: #2563eb;
+  background-color: #2563eb !important;
+}
+
+.delete-btn {
+  background-color: #7f1d1d !important;
+  color: #fecaca;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.delete-btn:hover {
+  background-color: #991b1b !important;
+}
+
+.delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .error-message {
