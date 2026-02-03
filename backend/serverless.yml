@@ -17,6 +17,9 @@ provider:
     SEASON_STANDINGS_TABLE: ${self:service}-season-standings-${self:provider.stage}
     DIVISIONS_TABLE: ${self:service}-divisions-${self:provider.stage}
     IMAGES_BUCKET: ${self:service}-images-${self:provider.stage}
+    JWT_SECRET: ${env:JWT_SECRET, 'league-szn-admin-secret-key-change-in-production'}
+    ADMIN_USERNAME: ${env:ADMIN_USERNAME, 'admin'}
+    ADMIN_PASSWORD: ${env:ADMIN_PASSWORD, 'FireGreen48!'}
   iam:
     role:
       statements:
@@ -72,6 +75,18 @@ custom:
       deleteRemoved: true
 
 functions:
+  # Auth
+  adminAuthorizer:
+    handler: functions/auth/authorizer.handler
+
+  adminLogin:
+    handler: functions/auth/login.handler
+    events:
+      - http:
+          path: auth/login
+          method: post
+          cors: true
+
   # Players
   getPlayers:
     handler: functions/players/getPlayers.handler
@@ -88,6 +103,7 @@ functions:
           path: players
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
   updatePlayer:
     handler: functions/players/updatePlayer.handler
@@ -96,6 +112,7 @@ functions:
           path: players/{playerId}
           method: put
           cors: true
+          authorizer: adminAuthorizer
 
   deletePlayer:
     handler: functions/players/deletePlayer.handler
@@ -104,6 +121,7 @@ functions:
           path: players/{playerId}
           method: delete
           cors: true
+          authorizer: adminAuthorizer
 
   # Matches
   getMatches:
@@ -121,6 +139,7 @@ functions:
           path: matches
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
   recordResult:
     handler: functions/matches/recordResult.handler
@@ -129,6 +148,7 @@ functions:
           path: matches/{matchId}/result
           method: put
           cors: true
+          authorizer: adminAuthorizer
 
   # Championships
   getChampionships:
@@ -146,6 +166,7 @@ functions:
           path: championships
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
   getChampionshipHistory:
     handler: functions/championships/getChampionshipHistory.handler
@@ -162,6 +183,7 @@ functions:
           path: championships/{championshipId}
           method: put
           cors: true
+          authorizer: adminAuthorizer
 
   deleteChampionship:
     handler: functions/championships/deleteChampionship.handler
@@ -170,6 +192,7 @@ functions:
           path: championships/{championshipId}
           method: delete
           cors: true
+          authorizer: adminAuthorizer
 
   # Tournaments
   getTournaments:
@@ -187,6 +210,7 @@ functions:
           path: tournaments
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
   updateTournament:
     handler: functions/tournaments/updateTournament.handler
@@ -195,6 +219,7 @@ functions:
           path: tournaments/{tournamentId}
           method: put
           cors: true
+          authorizer: adminAuthorizer
 
   # Standings
   getStandings:
@@ -221,6 +246,7 @@ functions:
           path: seasons
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
   updateSeason:
     handler: functions/seasons/updateSeason.handler
@@ -229,6 +255,7 @@ functions:
           path: seasons/{seasonId}
           method: put
           cors: true
+          authorizer: adminAuthorizer
 
   deleteSeason:
     handler: functions/seasons/deleteSeason.handler
@@ -237,6 +264,7 @@ functions:
           path: seasons/{seasonId}
           method: delete
           cors: true
+          authorizer: adminAuthorizer
 
   # Divisions
   getDivisions:
@@ -254,6 +282,7 @@ functions:
           path: divisions
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
   updateDivision:
     handler: functions/divisions/updateDivision.handler
@@ -262,6 +291,7 @@ functions:
           path: divisions/{divisionId}
           method: put
           cors: true
+          authorizer: adminAuthorizer
 
   deleteDivision:
     handler: functions/divisions/deleteDivision.handler
@@ -270,6 +300,7 @@ functions:
           path: divisions/{divisionId}
           method: delete
           cors: true
+          authorizer: adminAuthorizer
 
   # Images
   generateUploadUrl:
@@ -279,6 +310,7 @@ functions:
           path: images/upload-url
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
   # Admin
   clearAll:
@@ -288,6 +320,7 @@ functions:
           path: admin/clear-all
           method: delete
           cors: true
+          authorizer: adminAuthorizer
 
   seedData:
     handler: functions/admin/seedData.handler
@@ -296,9 +329,55 @@ functions:
           path: admin/seed-data
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
 resources:
   Resources:
+    # API Gateway Response for CORS with Authorizer
+    GatewayResponseDefault4XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: ApiGatewayRestApi
+
+    GatewayResponseDefault5XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        ResponseType: DEFAULT_5XX
+        RestApiId:
+          Ref: ApiGatewayRestApi
+
+    GatewayResponseUnauthorized:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        ResponseType: UNAUTHORIZED
+        RestApiId:
+          Ref: ApiGatewayRestApi
+
+    GatewayResponseAccessDenied:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        ResponseType: ACCESS_DENIED
+        RestApiId:
+          Ref: ApiGatewayRestApi
+
     PlayersTable:
       Type: AWS::DynamoDB::Table
       Properties:

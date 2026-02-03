@@ -18,16 +18,12 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
     setLoading(true);
 
     try {
-      // For now, this is a simple check. In production, this would authenticate with AWS Cognito
-      if (username === 'admin' && password === 'FireGreen48!') {
-        // Store a dummy token for now
-        authApi.setToken('dummy-admin-token');
-        onLoginSuccess();
-      } else {
-        setError('Invalid username or password');
-      }
+      // Authenticate with the backend API
+      await authApi.login(username, password);
+      onLoginSuccess();
     } catch (err) {
-      setError('Login failed. Please try again.');
+      const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      setError(message);
     } finally {
       setLoading(false);
     }

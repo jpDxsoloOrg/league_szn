@@ -225,6 +225,26 @@ export const adminApi = {
 
 // Auth API
 export const authApi = {
+  login: async (username: string, password: string): Promise<{ token: string; expiresIn: string }> => {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Login failed' }));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    // Store the token after successful login
+    sessionStorage.setItem('authToken', data.token);
+    return data;
+  },
+
   setToken: (token: string) => {
     sessionStorage.setItem('authToken', token);
   },
@@ -235,6 +255,10 @@ export const authApi = {
 
   isAuthenticated: (): boolean => {
     return !!getAuthToken();
+  },
+
+  getToken: (): string | null => {
+    return getAuthToken();
   },
 };
 
