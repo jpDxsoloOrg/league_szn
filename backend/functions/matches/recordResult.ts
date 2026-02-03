@@ -217,14 +217,140 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             }
           }
 
-          await dynamoDb.update({
-            TableName: TableNames.TOURNAMENTS,
-            Key: { tournamentId: match.tournamentId },
-            UpdateExpression: 'SET standings = :standings',
-            ExpressionAttributeValues: { ':standings': standings },
-          });
+          // Check if round-robin tournament is complete
+          // Total matches in round-robin = n*(n-1)/2 where n = number of participants
+          const numParticipants = tournament.Item.participants.length;
+          const expectedTotalMatches = (numParticipants * (numParticipants - 1)) / 2;
+
+          // Count total matches played (sum of all wins + half of all draws since draws are counted for both)
+          let totalMatchesPlayed = 0;
+          for (const playerId of Object.keys(standings)) {
+            totalMatchesPlayed += standings[playerId].wins;
+            totalMatchesPlayed += standings[playerId].draws;
+          }
+          // Each match adds 2 to wins count (1 win, 1 loss) OR 2 to draws (both get draw)
+          // So total matches = (sum of wins + sum of draws) / 2
+          totalMatchesPlayed = totalMatchesPlayed / 2;
+
+          const isComplete = totalMatchesPlayed >= expectedTotalMatches;
+
+          if (isComplete) {
+            // Find winner (player with most points, or first if tied)
+            let winner = '';
+            let maxPoints = -1;
+            for (const [playerId, stats] of Object.entries(standings) as [string, any][]) {
+              if (stats.points > maxPoints) {
+                maxPoints = stats.points;
+                winner = playerId;
+              }
+            }
+
+            await dynamoDb.update({
+              TableName: TableNames.TOURNAMENTS,
+              Key: { tournamentId: match.tournamentId },
+              UpdateExpression: 'SET standings = :standings, winner = :winner, #status = :status',
+              ExpressionAttributeNames: { '#status': 'status' },
+              ExpressionAttributeValues: {
+                ':standings': standings,
+                ':winner': winner,
+                ':status': 'completed',
+              },
+            });
+          } else {
+            // Update tournament status to in-progress if it was upcoming
+            const newStatus = tournament.Item.status === 'upcoming' ? 'in-progress' : tournament.Item.status;
+
+            await dynamoDb.update({
+              TableName: TableNames.TOURNAMENTS,
+              Key: { tournamentId: match.tournamentId },
+              UpdateExpression: 'SET standings = :standings, #status = :status',
+              ExpressionAttributeNames: { '#status': 'status' },
+              ExpressionAttributeValues: {
+                ':standings': standings,
+                ':status': newStatus,
+              },
+            });
+          }
         }
-        // Single elimination bracket progression would be handled here
+        // Single elimination bracket progression
+        if (tournament.Item.type === 'single-elimination' && tournament.Item.brackets) {
+          const brackets = tournament.Item.brackets;
+          const winner = body.winners[0]; // Single elimination typically has one winner
+          const matchParticipants = match.participants;
+
+          // Find the bracket match by participants
+          let foundRoundIndex = -1;
+          let foundMatchIndex = -1;
+
+          for (let roundIndex = 0; roundIndex < brackets.rounds.length; roundIndex++) {
+            const round = brackets.rounds[roundIndex];
+            for (let matchIndex = 0; matchIndex < round.matches.length; matchIndex++) {
+              const bracketMatch = round.matches[matchIndex];
+              // Check if this bracket match has the same participants as the recorded match
+              if (
+                bracketMatch.participant1 &&
+                bracketMatch.participant2 &&
+                matchParticipants.includes(bracketMatch.participant1) &&
+                matchParticipants.includes(bracketMatch.participant2) &&
+                !bracketMatch.winner // Only update if winner not already set
+              ) {
+                foundRoundIndex = roundIndex;
+                foundMatchIndex = matchIndex;
+                break;
+              }
+            }
+            if (foundRoundIndex !== -1) break;
+          }
+
+          if (foundRoundIndex !== -1 && foundMatchIndex !== -1) {
+            // Set the winner in the current bracket match
+            brackets.rounds[foundRoundIndex].matches[foundMatchIndex].winner = winner;
+            brackets.rounds[foundRoundIndex].matches[foundMatchIndex].matchId = match.matchId;
+
+            const isLastRound = foundRoundIndex === brackets.rounds.length - 1;
+
+            if (isLastRound) {
+              // This was the finals - set tournament winner and complete
+              await dynamoDb.update({
+                TableName: TableNames.TOURNAMENTS,
+                Key: { tournamentId: match.tournamentId },
+                UpdateExpression: 'SET brackets = :brackets, winner = :winner, #status = :status',
+                ExpressionAttributeNames: { '#status': 'status' },
+                ExpressionAttributeValues: {
+                  ':brackets': brackets,
+                  ':winner': winner,
+                  ':status': 'completed',
+                },
+              });
+            } else {
+              // Advance winner to next round
+              const nextRoundIndex = foundRoundIndex + 1;
+              const nextMatchIndex = Math.floor(foundMatchIndex / 2);
+              const isFirstOfPair = foundMatchIndex % 2 === 0;
+
+              // Place winner in the appropriate slot of the next round match
+              if (isFirstOfPair) {
+                brackets.rounds[nextRoundIndex].matches[nextMatchIndex].participant1 = winner;
+              } else {
+                brackets.rounds[nextRoundIndex].matches[nextMatchIndex].participant2 = winner;
+              }
+
+              // Update tournament status to in-progress if it was upcoming
+              const newStatus = tournament.Item.status === 'upcoming' ? 'in-progress' : tournament.Item.status;
+
+              await dynamoDb.update({
+                TableName: TableNames.TOURNAMENTS,
+                Key: { tournamentId: match.tournamentId },
+                UpdateExpression: 'SET brackets = :brackets, #status = :status',
+                ExpressionAttributeNames: { '#status': 'status' },
+                ExpressionAttributeValues: {
+                  ':brackets': brackets,
+                  ':status': newStatus,
+                },
+              });
+            }
+          }
+        }
       }
     }
 
