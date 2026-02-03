@@ -6,9 +6,10 @@ import ScheduleMatch from './ScheduleMatch';
 import RecordResult from './RecordResult';
 import ManageChampionships from './ManageChampionships';
 import CreateTournament from './CreateTournament';
+import ManageSeasons from './ManageSeasons';
 import './AdminPanel.css';
 
-type AdminTab = 'players' | 'schedule' | 'results' | 'championships' | 'tournaments';
+type AdminTab = 'players' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'seasons';
 
 export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(authApi.isAuthenticated());
@@ -67,6 +68,12 @@ export default function AdminPanel() {
         >
           Tournaments
         </button>
+        <button
+          className={`tab ${activeTab === 'seasons' ? 'active' : ''}`}
+          onClick={() => setActiveTab('seasons')}
+        >
+          Seasons
+        </button>
       </div>
 
       <div className="admin-content">
@@ -75,6 +82,7 @@ export default function AdminPanel() {
         {activeTab === 'results' && <RecordResult />}
         {activeTab === 'championships' && <ManageChampionships />}
         {activeTab === 'tournaments' && <CreateTournament />}
+        {activeTab === 'seasons' && <ManageSeasons />}
       </div>
     </div>
   );

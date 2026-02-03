@@ -54,7 +54,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       },
     });
 
-    // Update player standings
+    // Update player standings (all-time)
     const allParticipants = [...body.winners, ...body.losers];
     const isDraw = body.winners.length > 1 && body.losers.length > 1 &&
                    JSON.stringify(body.winners.sort()) === JSON.stringify(body.losers.sort());
@@ -86,6 +86,39 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             ':timestamp': new Date().toISOString(),
           },
         });
+      }
+    }
+
+    // Update season standings if match belongs to a season
+    if (match.seasonId) {
+      for (const playerId of body.winners) {
+        await dynamoDb.update({
+          TableName: TableNames.SEASON_STANDINGS,
+          Key: { seasonId: match.seasonId, playerId },
+          UpdateExpression: isDraw
+            ? 'SET draws = if_not_exists(draws, :zero) + :one, wins = if_not_exists(wins, :zero), losses = if_not_exists(losses, :zero), updatedAt = :timestamp'
+            : 'SET wins = if_not_exists(wins, :zero) + :one, losses = if_not_exists(losses, :zero), draws = if_not_exists(draws, :zero), updatedAt = :timestamp',
+          ExpressionAttributeValues: {
+            ':one': 1,
+            ':zero': 0,
+            ':timestamp': new Date().toISOString(),
+          },
+        });
+      }
+
+      if (!isDraw) {
+        for (const playerId of body.losers) {
+          await dynamoDb.update({
+            TableName: TableNames.SEASON_STANDINGS,
+            Key: { seasonId: match.seasonId, playerId },
+            UpdateExpression: 'SET losses = if_not_exists(losses, :zero) + :one, wins = if_not_exists(wins, :zero), draws = if_not_exists(draws, :zero), updatedAt = :timestamp',
+            ExpressionAttributeValues: {
+              ':one': 1,
+              ':zero': 0,
+              ':timestamp': new Date().toISOString(),
+            },
+          });
+        }
       }
     }
 

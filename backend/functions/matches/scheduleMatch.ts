@@ -11,6 +11,7 @@ interface ScheduleMatchBody {
   isChampionship: boolean;
   championshipId?: string;
   tournamentId?: string;
+  seasonId?: string;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -38,6 +39,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       isChampionship: body.isChampionship,
       championshipId: body.championshipId,
       tournamentId: body.tournamentId,
+      seasonId: body.seasonId,
       status: 'scheduled',
       createdAt: new Date().toISOString(),
     };

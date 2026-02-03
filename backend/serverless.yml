@@ -13,6 +13,8 @@ provider:
     CHAMPIONSHIPS_TABLE: ${self:service}-championships-${self:provider.stage}
     CHAMPIONSHIP_HISTORY_TABLE: ${self:service}-championship-history-${self:provider.stage}
     TOURNAMENTS_TABLE: ${self:service}-tournaments-${self:provider.stage}
+    SEASONS_TABLE: ${self:service}-seasons-${self:provider.stage}
+    SEASON_STANDINGS_TABLE: ${self:service}-season-standings-${self:provider.stage}
     IMAGES_BUCKET: ${self:service}-images-${self:provider.stage}
   iam:
     role:
@@ -32,6 +34,9 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CHAMPIONSHIPS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CHAMPIONSHIP_HISTORY_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TOURNAMENTS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SEASONS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SEASON_STANDINGS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SEASON_STANDINGS_TABLE}/index/*
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -168,6 +173,31 @@ functions:
           method: get
           cors: true
 
+  # Seasons
+  getSeasons:
+    handler: functions/seasons/getSeasons.handler
+    events:
+      - http:
+          path: seasons
+          method: get
+          cors: true
+
+  createSeason:
+    handler: functions/seasons/createSeason.handler
+    events:
+      - http:
+          path: seasons
+          method: post
+          cors: true
+
+  updateSeason:
+    handler: functions/seasons/updateSeason.handler
+    events:
+      - http:
+          path: seasons/{seasonId}
+          method: put
+          cors: true
+
   # Images
   generateUploadUrl:
     handler: functions/images/generateUploadUrl.handler
@@ -257,6 +287,43 @@ resources:
         KeySchema:
           - AttributeName: tournamentId
             KeyType: HASH
+
+    SeasonsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.SEASONS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: seasonId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: seasonId
+            KeyType: HASH
+
+    SeasonStandingsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.SEASON_STANDINGS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: seasonId
+            AttributeType: S
+          - AttributeName: playerId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: seasonId
+            KeyType: HASH
+          - AttributeName: playerId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: PlayerIndex
+            KeySchema:
+              - AttributeName: playerId
+                KeyType: HASH
+              - AttributeName: seasonId
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
 
     ImagesBucket:
       Type: AWS::S3::Bucket
