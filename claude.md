@@ -238,17 +238,9 @@ await standingsApi.get(seasonId);
 ### AWS Configuration
 
 **AWS CLI Profile**: `league-szn`
-- Access Key ID: `AKIAWKVRVMVFLQSXGRHD`
-- Secret Access Key: `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`
 - Region: `us-east-1`
-- Account ID: `435238036810`
 
-To configure (if not already set up):
-```bash
-aws configure set aws_access_key_id AKIAWKVRVMVFLQSXGRHD --profile league-szn
-aws configure set aws_secret_access_key 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 --profile league-szn
-aws configure set region us-east-1 --profile league-szn
-```
+Credentials should be configured locally using `aws configure --profile league-szn`.
 
 ---
 
