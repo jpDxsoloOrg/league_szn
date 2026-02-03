@@ -60,6 +60,54 @@ export default function UserGuide() {
       </section>
 
       <section className="guide-section">
+        <h3>Seasons</h3>
+        <p>The league is organized into seasons, which are distinct competitive periods.</p>
+
+        <div className="guide-subsection">
+          <h4>What Are Seasons?</h4>
+          <p>
+            Seasons allow the league to track standings separately for each competitive period.
+            This means you can view how players performed in a specific season, as well as
+            their all-time record.
+          </p>
+        </div>
+
+        <div className="guide-subsection">
+          <h4>Viewing Season Standings</h4>
+          <ul className="feature-list">
+            <li><strong>All-Time Standings</strong> - Shows cumulative records across all seasons</li>
+            <li><strong>Season Standings</strong> - Shows records for a specific season only</li>
+          </ul>
+          <p>
+            When a season ends, its records are preserved and can be viewed at any time
+            for historical reference.
+          </p>
+        </div>
+      </section>
+
+      <section className="guide-section">
+        <h3>Divisions</h3>
+        <p>Players may be organized into divisions, similar to WWE's brand splits.</p>
+
+        <div className="guide-subsection">
+          <h4>What Are Divisions?</h4>
+          <p>
+            Divisions are groups that players can be assigned to, such as "Raw", "SmackDown",
+            or "NXT". This helps organize the roster and can be used for brand-specific
+            competitions.
+          </p>
+        </div>
+
+        <div className="guide-subsection">
+          <h4>Viewing Player Divisions</h4>
+          <p>
+            In the standings, you can see which division each player belongs to. Some players
+            may not be assigned to any division if the league administrator has not set one.
+          </p>
+        </div>
+      </section>
+
+      <section className="guide-section">
         <h3>Championships Page</h3>
         <p>View all the championships in the league and their history.</p>
 
