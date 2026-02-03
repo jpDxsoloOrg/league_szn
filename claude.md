@@ -250,45 +250,66 @@ aws configure set aws_secret_access_key xIvJd4Vyt2kAZbbK1ZNdtm/W8CvHtSFdjxxBpXwC
 aws configure set region us-east-1 --profile league-szn
 ```
 
-### Live URLs
+---
 
-- **Frontend**: http://leagueszn.jpdxsolo.com
-- **Backend API**: https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev
-- **S3 Bucket**: `leagueszn.jpdxsolo.com`
+### Environment Overview
 
-### Deploy Backend to AWS
-```bash
-cd backend
-npx serverless deploy --aws-profile league-szn
-```
+| Environment | Frontend URL | Backend API | S3 Bucket | Serverless Stage |
+|-------------|--------------|-------------|-----------|------------------|
+| **Prod** | http://leagueszn.jpdxsolo.com | https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev | `leagueszn.jpdxsolo.com` | `dev` (default) |
+| **Dev** | http://dev.leagueszn.jpdxsolo.com | https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest | `dev.leagueszn.jpdxsolo.com` | `devtest` |
+
+**Note**: Prod uses serverless stage `dev` for historical reasons (to preserve existing table names). Dev uses stage `devtest`.
+
+---
 
 This deploys:
 - Lambda functions for all API endpoints
 - API Gateway
 - DynamoDB tables (Players, Matches, Championships, ChampionshipHistory, Tournaments, Seasons, SeasonStandings)
+### Deploy to PROD
 
-### Deploy Frontend to S3
-```bash
-cd frontend
-npm run build
-aws s3 sync dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
-```
+Deploy backend and frontend to production:
 
-### Full Deployment (Both)
 ```bash
-# From project root
+# Backend only
 cd backend && npx serverless deploy --aws-profile league-szn
-cd ../frontend && npm run build && aws s3 sync dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
+
+# Frontend only
+cd frontend && npm run build && aws s3 sync dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
+
+# Full deployment (both)
+cd backend && npx serverless deploy --aws-profile league-szn && cd ../frontend && npm run build && aws s3 sync dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
 ```
+
+---
+
+### Deploy to DEV
+
+Deploy backend and frontend to dev/testing environment:
+
+```bash
+# Backend only
+cd backend && npx serverless deploy --stage devtest --aws-profile league-szn
+
+# Frontend only (uses .env.devtest)
+cd frontend && npm run build -- --mode devtest && aws s3 sync dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete
+
+# Full deployment (both)
+cd backend && npx serverless deploy --stage devtest --aws-profile league-szn && cd ../frontend && npm run build -- --mode devtest && aws s3 sync dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete
+```
+
+---
 
 ### DNS Configuration (Namecheap)
 
 Domain `jpdxsolo.com` DNS is managed in Namecheap.
 
-CNAME record for subdomain:
+CNAME records for subdomains:
 | Type | Host | Value |
 |------|------|-------|
 | CNAME | leagueszn | leagueszn.jpdxsolo.com.s3-website-us-east-1.amazonaws.com |
+| CNAME | dev.leagueszn | dev.leagueszn.jpdxsolo.com.s3-website-us-east-1.amazonaws.com |
 
 ## Known Limitations / TODO
 
