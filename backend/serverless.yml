@@ -48,12 +48,17 @@ provider:
 plugins:
   - serverless-plugin-typescript
   - serverless-offline
+  - serverless-s3-sync
 
 custom:
   serverless-offline:
     httpPort: 3001
     environment:
       IS_OFFLINE: 'true'
+  s3Sync:
+    - bucketName: leagueszn.jpdxsolo.com
+      localDir: ../frontend/dist
+      deleteRemoved: true
 
 functions:
   # Players
