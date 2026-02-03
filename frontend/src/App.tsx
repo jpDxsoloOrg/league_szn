@@ -3,6 +3,7 @@ import Standings from './components/Standings';
 import Championships from './components/Championships';
 import Matches from './components/Matches';
 import Tournaments from './components/Tournaments';
+import UserGuide from './components/UserGuide';
 import AdminPanel from './components/admin/AdminPanel';
 import './App.css';
 
@@ -17,6 +18,7 @@ function App() {
             <Link to="/championships">Championships</Link>
             <Link to="/matches">Matches</Link>
             <Link to="/tournaments">Tournaments</Link>
+            <Link to="/guide">Help</Link>
             <Link to="/admin">Admin</Link>
           </nav>
         </header>
@@ -26,6 +28,7 @@ function App() {
             <Route path="/championships" element={<Championships />} />
             <Route path="/matches" element={<Matches />} />
             <Route path="/tournaments" element={<Tournaments />} />
+            <Route path="/guide" element={<UserGuide />} />
             <Route path="/admin" element={<AdminPanel />} />
           </Routes>
         </main>
