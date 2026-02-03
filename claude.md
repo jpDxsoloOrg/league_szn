@@ -27,7 +27,8 @@ wwe-2k-league/
 │   │   │       ├── ScheduleMatch.tsx
 │   │   │       ├── RecordResult.tsx
 │   │   │       ├── ManageChampionships.tsx
-│   │   │       └── CreateTournament.tsx
+│   │   │       ├── CreateTournament.tsx
+│   │   │       └── ManageSeasons.tsx    # Season management
 │   │   ├── services/
 │   │   │   └── api.ts           # API client with all endpoints
 │   │   └── types/
@@ -39,7 +40,8 @@ wwe-2k-league/
 │   │   ├── matches/             # GET, POST matches, PUT results
 │   │   ├── championships/       # GET, POST championships, GET history
 │   │   ├── tournaments/         # GET, POST, PUT tournaments
-│   │   └── standings/           # GET standings
+│   │   ├── standings/           # GET standings (supports ?seasonId=)
+│   │   └── seasons/             # GET, POST, PUT seasons
 │   ├── lib/
 │   │   ├── dynamodb.ts         # DynamoDB helper functions
 │   │   └── response.ts         # HTTP response helpers
@@ -59,7 +61,7 @@ wwe-2k-league/
 ### Matches Table
 - **PK**: `matchId`
 - **SK**: `date`
-- Attributes: matchType, stipulation, participants[], winners[], losers[], isChampionship, championshipId, tournamentId, status
+- Attributes: matchType, stipulation, participants[], winners[], losers[], isChampionship, championshipId, tournamentId, seasonId, status
 - **GSI**: TournamentIndex (tournamentId, matchId)
 
 ### Championships Table
@@ -75,10 +77,21 @@ wwe-2k-league/
 - **PK**: `tournamentId`
 - Attributes: name, type (single-elimination/round-robin), status, participants[], brackets, standings, winner, createdAt
 
+### Seasons Table
+- **PK**: `seasonId`
+- Attributes: name, startDate, endDate, status (active/completed), createdAt, updatedAt
+- Only one season can be active at a time
+
+### Season Standings Table
+- **PK**: `seasonId`
+- **SK**: `playerId`
+- Attributes: wins, losses, draws, updatedAt
+- **GSI**: PlayerIndex (playerId, seasonId) - For querying all seasons a player participated in
+
 ## Key Features
 
 ### Public Features (No Auth Required)
-1. **Standings** - View all players ranked by wins
+1. **Standings** - View all players ranked by wins (all-time or per-season)
 2. **Championships** - View all titles with current champions and full history
 3. **Matches** - View scheduled and completed matches with filters
 4. **Tournaments** - View tournament brackets and round-robin standings
@@ -87,20 +100,22 @@ wwe-2k-league/
 Credentials: **admin / FireGreen48!**
 
 1. **Manage Players** - Add new players, edit wrestlers
-2. **Schedule Match** - Create matches with participants, stipulations, championships
+2. **Schedule Match** - Create matches with participants, stipulations, championships (assign to season)
 3. **Record Results** - Select winners from scheduled matches
 4. **Manage Championships** - Create new championships (singles/tag team)
 5. **Create Tournament** - Single elimination or round-robin with automatic bracket/standings generation
+6. **Manage Seasons** - Create new seasons, end active seasons, view historical season standings
 
 ## Important Implementation Details
 
 ### Match Result Recording
 When a match result is recorded (`recordResult.ts`):
 1. Updates match status to 'completed'
-2. Updates player win/loss/draw records
-3. If championship match: updates current champion and creates history entry
-4. If tournament match: updates tournament brackets/standings
-5. All updates are transactional
+2. Updates player win/loss/draw records (all-time standings)
+3. If match has seasonId: updates season-specific standings in SeasonStandings table
+4. If championship match: updates current champion and creates history entry
+5. If tournament match: updates tournament brackets/standings
+6. All updates are transactional
 
 ### Tournament Types
 1. **Single Elimination**: Bracket-style, requires power of 2 participants (or gives byes)
@@ -147,16 +162,19 @@ npm run dev  # Starts at http://localhost:3000
 - `GET /championships` - All championships
 - `GET /championships/{id}/history` - Championship history
 - `GET /tournaments` - All tournaments
-- `GET /standings` - Current standings
+- `GET /standings` - Current standings (optional `?seasonId=` for season-specific)
+- `GET /seasons` - All seasons
 
 ### Admin (Requires Auth)
 - `POST /players` - Create player
 - `PUT /players/{id}` - Update player
-- `POST /matches` - Schedule match
+- `POST /matches` - Schedule match (optional `seasonId` to assign to season)
 - `PUT /matches/{id}/result` - Record match result
 - `POST /championships` - Create championship
 - `POST /tournaments` - Create tournament
 - `PUT /tournaments/{id}` - Update tournament
+- `POST /seasons` - Create season (only one active allowed)
+- `PUT /seasons/{id}` - Update season (end season, change name/dates)
 
 ## Common Tasks
 
@@ -191,6 +209,30 @@ await matchesApi.recordResult(matchId, {
 });
 ```
 
+### Creating a Season
+```typescript
+await seasonsApi.create({
+  name: "Season 1",
+  startDate: new Date().toISOString()
+});
+```
+
+### Ending a Season
+```typescript
+await seasonsApi.update(seasonId, {
+  status: "completed"
+});
+```
+
+### Getting Season-Specific Standings
+```typescript
+// All-time standings
+await standingsApi.get();
+
+// Season-specific standings
+await standingsApi.get(seasonId);
+```
+
 ## Deployment
 
 ### AWS Configuration
@@ -223,7 +265,7 @@ npx serverless deploy --aws-profile league-szn
 This deploys:
 - Lambda functions for all API endpoints
 - API Gateway
-- DynamoDB tables (Players, Matches, Championships, ChampionshipHistory, Tournaments)
+- DynamoDB tables (Players, Matches, Championships, ChampionshipHistory, Tournaments, Seasons, SeasonStandings)
 
 ### Deploy Frontend to S3
 ```bash
@@ -255,8 +297,9 @@ CNAME record for subdomain:
 3. **Tag Team Matches**: Frontend doesn't have special handling for tag teams yet.
 4. **Tournament Progression**: Single-elimination bracket progression needs manual updates.
 5. **Match Statistics**: Not yet tracking which player is best at which match type.
-6. **Image Uploads**: No profile pictures or championship images.
+6. ~~**Image Uploads**: No profile pictures or championship images.~~ **DONE** - Images supported for wrestlers and championships
 7. **Real-time Updates**: No WebSocket support for live updates.
+8. ~~**Seasons Support**: Track standings per season, season resets.~~ **DONE** - Full season management implemented
 
 ## Troubleshooting
 
