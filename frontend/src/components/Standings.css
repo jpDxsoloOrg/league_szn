@@ -54,6 +54,65 @@
   color: #d4af37;
 }
 
+.division-filter {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.division-filter .filter-label {
+  color: #bbb;
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+}
+
+.division-filter .filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.division-filter .filter-btn {
+  padding: 0.5rem 1rem;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #bbb;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.division-filter .filter-btn:hover {
+  border-color: #d4af37;
+  color: #fff;
+}
+
+.division-filter .filter-btn.active {
+  background-color: #d4af37;
+  border-color: #d4af37;
+  color: #000;
+  font-weight: bold;
+}
+
+.standings-table .division-name {
+  color: #bbb;
+}
+
+.standings-table .no-division {
+  color: #666;
+  font-style: italic;
+}
+
+.no-players-message {
+  text-align: center;
+  color: #bbb;
+  padding: 2rem;
+  font-style: italic;
+}
+
 .standings-table-wrapper {
   overflow-x: auto;
   margin-top: 1.5rem;

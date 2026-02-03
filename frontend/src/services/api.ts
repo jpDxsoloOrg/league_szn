@@ -5,7 +5,8 @@ import type {
   ChampionshipReign,
   Tournament,
   Standings,
-  Season
+  Season,
+  Division
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
@@ -156,6 +157,27 @@ export const seasonsApi = {
 
   update: async (seasonId: string, updates: Partial<Season>): Promise<Season> => {
     return fetchWithAuth(`${API_BASE_URL}/seasons/${seasonId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+};
+
+// Divisions API
+export const divisionsApi = {
+  getAll: async (): Promise<Division[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/divisions`);
+  },
+
+  create: async (division: { name: string; description?: string }): Promise<Division> => {
+    return fetchWithAuth(`${API_BASE_URL}/divisions`, {
+      method: 'POST',
+      body: JSON.stringify(division),
+    });
+  },
+
+  update: async (divisionId: string, updates: Partial<Division>): Promise<Division> => {
+    return fetchWithAuth(`${API_BASE_URL}/divisions/${divisionId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });

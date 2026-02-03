@@ -1,29 +1,35 @@
 import { useEffect, useState } from 'react';
-import { standingsApi, seasonsApi } from '../services/api';
-import type { Standings as StandingsType, Season } from '../types';
+import { standingsApi, seasonsApi, divisionsApi } from '../services/api';
+import type { Standings as StandingsType, Season, Division, Player } from '../types';
 import './Standings.css';
 
 export default function Standings() {
   const [standings, setStandings] = useState<StandingsType | null>(null);
+  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [selectedDivision, setSelectedDivision] = useState<string>('all');
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadSeasons();
+    loadInitialData();
   }, []);
 
   useEffect(() => {
     loadStandings();
   }, [selectedSeasonId]);
 
-  const loadSeasons = async () => {
+  const loadInitialData = async () => {
     try {
-      const data = await seasonsApi.getAll();
-      setSeasons(data);
+      const [seasonsData, divisionsData] = await Promise.all([
+        seasonsApi.getAll(),
+        divisionsApi.getAll(),
+      ]);
+      setSeasons(seasonsData);
+      setDivisions(divisionsData);
     } catch (err) {
-      console.error('Failed to load seasons:', err);
+      console.error('Failed to load initial data:', err);
     }
   };
 
@@ -38,6 +44,32 @@ export default function Standings() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getFilteredPlayers = (): Player[] => {
+    if (!standings) return [];
+
+    if (selectedDivision === 'all') {
+      return standings.players;
+    }
+
+    if (selectedDivision === 'none') {
+      return standings.players.filter(p => !p.divisionId);
+    }
+
+    return standings.players.filter(p => p.divisionId === selectedDivision);
+  };
+
+  const getDivisionName = (divisionId?: string) => {
+    if (!divisionId) return null;
+    const division = divisions.find(d => d.divisionId === divisionId);
+    return division?.name || null;
+  };
+
+  const getSeasonName = () => {
+    if (!selectedSeasonId) return 'All-Time';
+    const season = seasons.find(s => s.seasonId === selectedSeasonId);
+    return season ? season.name : 'All-Time';
   };
 
   if (loading) {
@@ -62,11 +94,7 @@ export default function Standings() {
     );
   }
 
-  const getSeasonName = () => {
-    if (!selectedSeasonId) return 'All-Time';
-    const season = seasons.find(s => s.seasonId === selectedSeasonId);
-    return season ? season.name : 'All-Time';
-  };
+  const filteredPlayers = getFilteredPlayers();
 
   return (
     <div className="standings-container">
@@ -90,11 +118,42 @@ export default function Standings() {
           </div>
         )}
       </div>
+
       {selectedSeasonId && (
         <div className="season-badge">
           Showing standings for: <strong>{getSeasonName()}</strong>
         </div>
       )}
+
+      {divisions.length > 0 && (
+        <div className="division-filter">
+          <span className="filter-label">Filter by Division:</span>
+          <div className="filter-buttons">
+            <button
+              className={`filter-btn ${selectedDivision === 'all' ? 'active' : ''}`}
+              onClick={() => setSelectedDivision('all')}
+            >
+              All
+            </button>
+            {divisions.map((division) => (
+              <button
+                key={division.divisionId}
+                className={`filter-btn ${selectedDivision === division.divisionId ? 'active' : ''}`}
+                onClick={() => setSelectedDivision(division.divisionId)}
+              >
+                {division.name}
+              </button>
+            ))}
+            <button
+              className={`filter-btn ${selectedDivision === 'none' ? 'active' : ''}`}
+              onClick={() => setSelectedDivision('none')}
+            >
+              No Division
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="standings-table-wrapper">
         <table className="standings-table">
           <thead>
@@ -103,6 +162,7 @@ export default function Standings() {
               <th className="image-header">Image</th>
               <th>Player</th>
               <th>Wrestler</th>
+              {selectedDivision === 'all' && <th>Division</th>}
               <th>Wins</th>
               <th>Losses</th>
               <th>Draws</th>
@@ -110,7 +170,7 @@ export default function Standings() {
             </tr>
           </thead>
           <tbody>
-            {standings.players.map((player, index) => {
+            {filteredPlayers.map((player, index) => {
               const totalMatches = player.wins + player.losses + player.draws;
               const winPercentage = totalMatches > 0
                 ? ((player.wins / totalMatches) * 100).toFixed(1)
@@ -132,6 +192,11 @@ export default function Standings() {
                   </td>
                   <td className="player-name">{player.name}</td>
                   <td className="wrestler-name">{player.currentWrestler}</td>
+                  {selectedDivision === 'all' && (
+                    <td className="division-name">
+                      {getDivisionName(player.divisionId) || <span className="no-division">-</span>}
+                    </td>
+                  )}
                   <td className="wins">{player.wins}</td>
                   <td className="losses">{player.losses}</td>
                   <td className="draws">{player.draws}</td>
