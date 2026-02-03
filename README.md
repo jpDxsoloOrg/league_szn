@@ -115,56 +115,67 @@ npm run clear-data
 
 ---
 
-## Live Deployment
+## Live Environments
 
-- **Frontend**: http://leagueszn.jpdxsolo.com
-- **Backend API**: https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev
+| Environment | Frontend | Backend API |
+|-------------|----------|-------------|
+| **Production** | http://leagueszn.jpdxsolo.com | https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev |
+| **Dev** | http://dev.leagueszn.jpdxsolo.com | https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest |
 
-## Deployment to AWS
+## Deployment
 
 ### Prerequisites
 
-- Node.js 18+ (nodenv recommended)
+- Node.js 18+
 - AWS CLI configured with the `league-szn` profile
-- Serverless Framework CLI (`npm install -g serverless`)
 
-### AWS Profile Configuration
+---
 
-```bash
-aws configure set aws_access_key_id YOUR_ACCESS_KEY --profile league-szn
-aws configure set aws_secret_access_key YOUR_SECRET_KEY --profile league-szn
-aws configure set region us-east-1 --profile league-szn
-```
-
-### Deploy Backend
+### Deploy to DEV
 
 ```bash
-cd backend
-npm install
-npx serverless deploy --aws-profile league-szn
+# 1. Install dependencies
+cd backend && npm install && cd ../frontend && npm install && cd ..
+
+# 2. Build frontend for dev
+cd frontend && npm run build -- --mode devtest && cd ..
+
+# 3. Deploy backend + sync frontend to S3
+cd backend && npx serverless deploy --stage devtest --aws-profile league-szn && npx serverless s3sync --stage devtest --aws-profile league-szn
 ```
 
-This deploys:
-- Lambda functions for all API endpoints
-- API Gateway
-- DynamoDB tables (Players, Matches, Championships, ChampionshipHistory, Tournaments, Seasons, SeasonStandings)
+**Dev URLs after deployment:**
+- Frontend: http://dev.leagueszn.jpdxsolo.com
+- API: https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest
 
-### Deploy Frontend
+---
+
+### Deploy to PROD
 
 ```bash
-cd frontend
-npm install
-npm run build
-aws s3 sync dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
+# 1. Install dependencies
+cd backend && npm install && cd ../frontend && npm install && cd ..
+
+# 2. Build frontend for prod
+cd frontend && npm run build && cd ..
+
+# 3. Deploy backend + sync frontend to S3
+cd backend && npx serverless deploy --aws-profile league-szn && npx serverless s3sync --aws-profile league-szn
 ```
 
-### Full Deployment (Both)
+**Prod URLs after deployment:**
+- Frontend: http://leagueszn.jpdxsolo.com
+- API: https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev
 
-```bash
-# From project root
-cd backend && npx serverless deploy --aws-profile league-szn
-cd ../frontend && npm run build && aws s3 sync dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
-```
+---
+
+### Quick Reference
+
+| Action | Dev | Prod |
+|--------|-----|------|
+| Build frontend | `npm run build -- --mode devtest` | `npm run build` |
+| Deploy backend | `npx serverless deploy --stage devtest --aws-profile league-szn` | `npx serverless deploy --aws-profile league-szn` |
+| Sync frontend | `npx serverless s3sync --stage devtest --aws-profile league-szn` | `npx serverless s3sync --aws-profile league-szn` |
 
 ## Local Development & Testing
 
