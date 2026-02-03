@@ -53,6 +53,10 @@
   width: 100%;
 }
 
+.players-table td {
+  vertical-align: middle;
+}
+
 .players-table .record {
   font-family: monospace;
   color: #bbb;
