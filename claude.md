@@ -24,6 +24,7 @@ wwe-2k-league/
 │   │   │       ├── AdminPanel.tsx
 │   │   │       ├── AdminLogin.tsx
 │   │   │       ├── ManagePlayers.tsx
+│   │   │       ├── ManageDivisions.tsx
 │   │   │       ├── ScheduleMatch.tsx
 │   │   │       ├── RecordResult.tsx
 │   │   │       ├── ManageChampionships.tsx
@@ -39,6 +40,7 @@ wwe-2k-league/
 │   │   ├── matches/             # GET, POST matches, PUT results
 │   │   ├── championships/       # GET, POST championships, GET history
 │   │   ├── tournaments/         # GET, POST, PUT tournaments
+│   │   ├── divisions/           # GET, POST, PUT, DELETE divisions
 │   │   └── standings/           # GET standings
 │   ├── lib/
 │   │   ├── dynamodb.ts         # DynamoDB helper functions
@@ -54,7 +56,11 @@ wwe-2k-league/
 
 ### Players Table
 - **PK**: `playerId`
-- Attributes: name, currentWrestler, wins, losses, draws, createdAt, updatedAt
+- Attributes: name, currentWrestler, wins, losses, draws, divisionId (optional), imageUrl (optional), createdAt, updatedAt
+
+### Divisions Table
+- **PK**: `divisionId`
+- Attributes: name, description (optional), createdAt, updatedAt
 
 ### Matches Table
 - **PK**: `matchId`
@@ -78,7 +84,7 @@ wwe-2k-league/
 ## Key Features
 
 ### Public Features (No Auth Required)
-1. **Standings** - View all players ranked by wins
+1. **Standings** - View all players ranked by wins, filter by division
 2. **Championships** - View all titles with current champions and full history
 3. **Matches** - View scheduled and completed matches with filters
 4. **Tournaments** - View tournament brackets and round-robin standings
@@ -86,11 +92,12 @@ wwe-2k-league/
 ### Admin Features (Requires Login)
 Credentials: **admin / FireGreen48!**
 
-1. **Manage Players** - Add new players, edit wrestlers
-2. **Schedule Match** - Create matches with participants, stipulations, championships
-3. **Record Results** - Select winners from scheduled matches
-4. **Manage Championships** - Create new championships (singles/tag team)
-5. **Create Tournament** - Single elimination or round-robin with automatic bracket/standings generation
+1. **Manage Players** - Add new players, edit wrestlers, assign to divisions
+2. **Manage Divisions** - Create, edit, delete divisions (e.g., Raw, SmackDown, NXT)
+3. **Schedule Match** - Create matches with participants, stipulations, championships
+4. **Record Results** - Select winners from scheduled matches
+5. **Manage Championships** - Create new championships (singles/tag team)
+6. **Create Tournament** - Single elimination or round-robin with automatic bracket/standings generation
 
 ## Important Implementation Details
 
@@ -147,27 +154,47 @@ npm run dev  # Starts at http://localhost:3000
 - `GET /championships` - All championships
 - `GET /championships/{id}/history` - Championship history
 - `GET /tournaments` - All tournaments
+- `GET /divisions` - All divisions
 - `GET /standings` - Current standings
 
 ### Admin (Requires Auth)
 - `POST /players` - Create player
-- `PUT /players/{id}` - Update player
+- `PUT /players/{id}` - Update player (including division assignment)
 - `POST /matches` - Schedule match
 - `PUT /matches/{id}/result` - Record match result
 - `POST /championships` - Create championship
 - `POST /tournaments` - Create tournament
 - `PUT /tournaments/{id}` - Update tournament
+- `POST /divisions` - Create division
+- `PUT /divisions/{id}` - Update division
+- `DELETE /divisions/{id}` - Delete division (fails if players assigned)
 
 ## Common Tasks
+
+### Creating a Division
+```typescript
+await divisionsApi.create({
+  name: "Raw",
+  description: "Monday Night Raw roster"
+});
+```
 
 ### Adding a New Player
 ```typescript
 await playersApi.create({
   name: "John Doe",
   currentWrestler: "Stone Cold Steve Austin",
+  divisionId: "division-uuid", // optional
   wins: 0,
   losses: 0,
   draws: 0
+});
+```
+
+### Assigning a Player to a Division
+```typescript
+await playersApi.update(playerId, {
+  divisionId: "division-uuid"
 });
 ```
 
@@ -223,7 +250,8 @@ npx serverless deploy --aws-profile league-szn
 This deploys:
 - Lambda functions for all API endpoints
 - API Gateway
-- DynamoDB tables (Players, Matches, Championships, ChampionshipHistory, Tournaments)
+- DynamoDB tables (Players, Matches, Championships, ChampionshipHistory, Tournaments, Divisions)
+- S3 bucket for images
 
 ### Deploy Frontend to S3
 ```bash
@@ -255,8 +283,13 @@ CNAME record for subdomain:
 3. **Tag Team Matches**: Frontend doesn't have special handling for tag teams yet.
 4. **Tournament Progression**: Single-elimination bracket progression needs manual updates.
 5. **Match Statistics**: Not yet tracking which player is best at which match type.
-6. **Image Uploads**: No profile pictures or championship images.
+6. **Seasons**: No season support yet (track standings per season, season resets).
 7. **Real-time Updates**: No WebSocket support for live updates.
+
+## Completed Features
+
+1. **Divisions**: Players can be grouped into divisions (e.g., Raw, SmackDown, NXT). Standings can be filtered by division.
+2. **Image Uploads**: Profile pictures for wrestlers and championship belt images via S3 presigned URLs.
 
 ## Troubleshooting
 

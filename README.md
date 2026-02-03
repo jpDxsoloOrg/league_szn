@@ -5,13 +5,14 @@ A serverless web application for managing a WWE 2K league with player standings,
 ## Features
 
 - **Public Access** (no login required):
-  - View current standings
+  - View current standings (with optional filtering by division)
   - Browse championships and their history
   - See scheduled and completed matches
   - Follow tournament brackets and standings
 
 - **Admin Features** (requires authentication):
   - Manage players and their wrestlers
+  - Create and manage divisions to group players (e.g., Raw, SmackDown, NXT)
   - Schedule matches with various stipulations
   - Record match results
   - Create and manage championships
@@ -46,6 +47,7 @@ wwe-2k-league/
 │   │   ├── matches/
 │   │   ├── championships/
 │   │   ├── tournaments/
+│   │   ├── divisions/
 │   │   └── standings/
 │   ├── lib/              # Shared utilities
 │   └── serverless.yml    # Infrastructure config
@@ -145,7 +147,7 @@ npx serverless deploy --aws-profile league-szn
 This deploys:
 - Lambda functions for all API endpoints
 - API Gateway
-- DynamoDB tables (Players, Matches, Championships, ChampionshipHistory, Tournaments)
+- DynamoDB tables (Players, Matches, Championships, ChampionshipHistory, Tournaments, Divisions)
 
 ### Deploy Frontend
 
@@ -426,22 +428,29 @@ Before deploying to AWS, verify:
 - `GET /championships` - Get all championships
 - `GET /championships/{id}/history` - Get championship history
 - `GET /tournaments` - Get all tournaments
+- `GET /divisions` - Get all divisions
 - `GET /standings` - Get current standings
 
 ### Admin Endpoints (Authentication Required)
 
 - `POST /players` - Create new player
-- `PUT /players/{id}` - Update player
+- `PUT /players/{id}` - Update player (including division assignment)
 - `POST /matches` - Schedule a match
 - `PUT /matches/{id}/result` - Record match result
 - `POST /championships` - Create championship
 - `POST /tournaments` - Create tournament
 - `PUT /tournaments/{id}` - Update tournament
+- `POST /divisions` - Create division
+- `PUT /divisions/{id}` - Update division
+- `DELETE /divisions/{id}` - Delete division (fails if players assigned)
 
 ## Database Schema
 
 ### Players Table
-- Stores player information, current wrestler, and win/loss records
+- Stores player information, current wrestler, win/loss records, and optional division assignment
+
+### Divisions Table
+- Stores division information (name, description) for grouping players
 
 ### Matches Table
 - Stores match details, participants, results, and stipulations
@@ -483,7 +492,7 @@ With AWS Free Tier:
 ## Todo
 
 ### High Priority
-- [ ] Add Divisions support (group players into divisions)
+- [x] Add Divisions support (group players into divisions)
 - [ ] Add Seasons support (track standings per season, season resets)
 - [ ] AWS Cognito integration for admin authentication
 - [ ] Lambda Authorizer to protect admin endpoints
@@ -492,7 +501,7 @@ With AWS Free Tier:
 - [ ] Tag team match handling in frontend
 - [ ] Tournament bracket progression (auto-advance winners)
 - [ ] Match type statistics and analytics
-- [ ] Player profile pictures and championship images
+- [x] Player profile pictures and championship images
 
 ### Low Priority
 - [ ] Advanced filtering and search
