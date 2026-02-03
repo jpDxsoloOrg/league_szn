@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { authApi } from '../../services/api';
 import AdminLogin from './AdminLogin';
 import ManagePlayers from './ManagePlayers';
@@ -17,6 +18,7 @@ type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championship
 
 
 export default function AdminPanel() {
+  const { t } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = useState(authApi.isAuthenticated());
   const [activeTab, setActiveTab] = useState<AdminTab>('players');
 
@@ -36,9 +38,9 @@ export default function AdminPanel() {
   return (
     <div className="admin-panel">
       <div className="admin-header">
-        <h2>Admin Panel</h2>
+        <h2>{t('admin.panel.title')}</h2>
         <button onClick={handleLogout} className="logout-btn">
-          Logout
+          {t('common.logout')}
         </button>
       </div>
 
@@ -47,55 +49,55 @@ export default function AdminPanel() {
           className={`tab ${activeTab === 'players' ? 'active' : ''}`}
           onClick={() => setActiveTab('players')}
         >
-          Manage Players
+          {t('admin.panel.tabs.managePlayers')}
         </button>
         <button
           className={`tab ${activeTab === 'divisions' ? 'active' : ''}`}
           onClick={() => setActiveTab('divisions')}
         >
-          Divisions
+          {t('admin.panel.tabs.divisions')}
         </button>
         <button
           className={`tab ${activeTab === 'schedule' ? 'active' : ''}`}
           onClick={() => setActiveTab('schedule')}
         >
-          Schedule Match
+          {t('admin.panel.tabs.scheduleMatch')}
         </button>
         <button
           className={`tab ${activeTab === 'results' ? 'active' : ''}`}
           onClick={() => setActiveTab('results')}
         >
-          Record Results
+          {t('admin.panel.tabs.recordResults')}
         </button>
         <button
           className={`tab ${activeTab === 'championships' ? 'active' : ''}`}
           onClick={() => setActiveTab('championships')}
         >
-          Championships
+          {t('admin.panel.tabs.championships')}
         </button>
         <button
           className={`tab ${activeTab === 'tournaments' ? 'active' : ''}`}
           onClick={() => setActiveTab('tournaments')}
         >
-          Tournaments
+          {t('admin.panel.tabs.tournaments')}
         </button>
         <button
           className={`tab ${activeTab === 'seasons' ? 'active' : ''}`}
           onClick={() => setActiveTab('seasons')}
         >
-          Seasons
+          {t('admin.panel.tabs.seasons')}
         </button>
         <button
           className={`tab ${activeTab === 'guide' ? 'active' : ''}`}
           onClick={() => setActiveTab('guide')}
         >
-          Help
+          {t('admin.panel.tabs.help')}
         </button>
         <button
           className={`tab danger ${activeTab === 'danger' ? 'active' : ''}`}
           onClick={() => setActiveTab('danger')}
         >
-          Danger Zone
+          {t('admin.panel.tabs.dangerZone')}
         </button>
       </div>
 
