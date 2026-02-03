@@ -329,20 +329,22 @@ export default function ManagePlayers() {
                       {player.wins}W - {player.losses}L - {player.draws}D
                     </span>
                   </td>
-                  <td className="actions-cell">
-                    <button
-                      onClick={() => handleEdit(player)}
-                      className="edit-btn"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(player.playerId, player.name)}
-                      className="delete-btn"
-                      disabled={deleting === player.playerId}
-                    >
-                      {deleting === player.playerId ? 'Deleting...' : 'Delete'}
-                    </button>
+                  <td>
+                    <div className="actions-cell">
+                      <button
+                        onClick={() => handleEdit(player)}
+                        className="edit-btn"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(player.playerId, player.name)}
+                        className="delete-btn"
+                        disabled={deleting === player.playerId}
+                      >
+                        {deleting === player.playerId ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
