@@ -129,6 +129,11 @@ npm run clear-data
 - Node.js 18+
 - AWS CLI configured with the `league-szn` profile
 
+**Note:** If you get `Serverless command "s3sync" not found`, run this first in the backend directory:
+```bash
+npm install serverless-s3-sync --save-dev
+```
+
 ---
 
 ### Deploy to DEV
