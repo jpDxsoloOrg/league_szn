@@ -15,7 +15,7 @@
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .language-switcher-btn:hover {
@@ -23,9 +23,11 @@
   border-color: rgba(255, 255, 255, 0.5);
 }
 
-.language-switcher-btn .flag {
-  font-size: 20px;
-  line-height: 1;
+.language-switcher-btn .flag-icon {
+  width: 24px;
+  height: 16px;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .dropdown-arrow {
@@ -47,7 +49,7 @@
   padding: 4px;
   margin: 0;
   list-style: none;
-  min-width: 140px;
+  min-width: 150px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 1000;
   animation: fadeIn 0.15s ease;
@@ -84,9 +86,11 @@
   color: #daa520;
 }
 
-.language-option .flag {
-  font-size: 18px;
-  line-height: 1;
+.language-option .flag-icon {
+  width: 22px;
+  height: 15px;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .language-option .lang-name {
