@@ -60,6 +60,12 @@ custom:
   frontendBucket:
     dev: leagueszn.jpdxsolo.com
     devtest: dev.leagueszn.jpdxsolo.com
+  frontendDomain:
+    dev: leagueszn.jpdxsolo.com
+    devtest: dev.leagueszn.jpdxsolo.com
+  certificateArn:
+    dev: ${env:PROD_ACM_CERTIFICATE_ARN, ''}
+    devtest: ${env:DEV_ACM_CERTIFICATE_ARN, ''}
   s3Sync:
     - bucketName: ${self:custom.frontendBucket.${self:provider.stage}, 'leagueszn.jpdxsolo.com'}
       localDir: ../frontend/dist
@@ -455,3 +461,67 @@ resources:
                 - s3:GetObject
               Resource:
                 - !Sub '${ImagesBucket.Arn}/*'
+
+    # CloudFront Distribution for HTTPS frontend
+    # Uses S3 website endpoint (existing public bucket) instead of OAI
+    FrontendCloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          Comment: CloudFront distribution for ${self:custom.frontendDomain.${self:provider.stage}, 'leagueszn.jpdxsolo.com'}
+          DefaultRootObject: index.html
+          Aliases:
+            - ${self:custom.frontendDomain.${self:provider.stage}, 'leagueszn.jpdxsolo.com'}
+          Origins:
+            - Id: S3WebsiteOrigin
+              DomainName: ${self:custom.frontendBucket.${self:provider.stage}, 'leagueszn.jpdxsolo.com'}.s3-website-us-east-1.amazonaws.com
+              CustomOriginConfig:
+                HTTPPort: 80
+                HTTPSPort: 443
+                OriginProtocolPolicy: http-only
+          DefaultCacheBehavior:
+            TargetOriginId: S3WebsiteOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+            Compress: true
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+            DefaultTTL: 86400
+            MaxTTL: 31536000
+            MinTTL: 0
+          CustomErrorResponses:
+            - ErrorCode: 403
+              ResponseCode: 200
+              ResponsePagePath: /index.html
+              ErrorCachingMinTTL: 0
+            - ErrorCode: 404
+              ResponseCode: 200
+              ResponsePagePath: /index.html
+              ErrorCachingMinTTL: 0
+          ViewerCertificate:
+            AcmCertificateArn: ${self:custom.certificateArn.${self:provider.stage}}
+            SslSupportMethod: sni-only
+            MinimumProtocolVersion: TLSv1.2_2021
+          HttpVersion: http2
+          PriceClass: PriceClass_100
+
+  Outputs:
+    CloudFrontDistributionId:
+      Description: CloudFront Distribution ID for cache invalidation
+      Value: !Ref FrontendCloudFrontDistribution
+      Export:
+        Name: ${self:service}-${self:provider.stage}-CloudFrontDistributionId
+    CloudFrontDomainName:
+      Description: CloudFront Distribution Domain Name
+      Value: !GetAtt FrontendCloudFrontDistribution.DomainName
+      Export:
+        Name: ${self:service}-${self:provider.stage}-CloudFrontDomainName
