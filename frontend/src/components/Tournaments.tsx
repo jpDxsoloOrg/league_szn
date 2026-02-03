@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { tournamentsApi, playersApi } from '../services/api';
 import type { Tournament, Player } from '../types';
 import './Tournaments.css';
 
 export default function Tournaments() {
+  const { t } = useTranslation();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
@@ -33,7 +35,7 @@ export default function Tournaments() {
 
   const getPlayerName = (playerId: string) => {
     const player = players.find(p => p.playerId === playerId);
-    return player ? player.name : 'Unknown';
+    return player ? player.name : t('common.unknown');
   };
 
   const getStatusBadge = (status: string) => {
@@ -42,7 +44,12 @@ export default function Tournaments() {
       'in-progress': 'status-in-progress',
       completed: 'status-completed',
     };
-    return <span className={`status-badge ${classMap[status as keyof typeof classMap]}`}>{status}</span>;
+    const statusLabels: Record<string, string> = {
+      upcoming: t('tournaments.statusUpcoming'),
+      'in-progress': t('tournaments.statusInProgress'),
+      completed: t('tournaments.statusCompleted'),
+    };
+    return <span className={`status-badge ${classMap[status as keyof typeof classMap]}`}>{statusLabels[status] || status}</span>;
   };
 
   const renderRoundRobinStandings = (tournament: Tournament) => {
@@ -58,16 +65,16 @@ export default function Tournaments() {
 
     return (
       <div className="round-robin-standings">
-        <h4>Standings</h4>
+        <h4>{t('tournaments.standings')}</h4>
         <table>
           <thead>
             <tr>
-              <th>Rank</th>
-              <th>Player</th>
-              <th>W</th>
-              <th>L</th>
-              <th>D</th>
-              <th>Points</th>
+              <th>{t('tournaments.table.rank')}</th>
+              <th>{t('tournaments.table.player')}</th>
+              <th>{t('tournaments.table.w')}</th>
+              <th>{t('tournaments.table.l')}</th>
+              <th>{t('tournaments.table.d')}</th>
+              <th>{t('tournaments.table.points')}</th>
             </tr>
           </thead>
           <tbody>
@@ -92,20 +99,20 @@ export default function Tournaments() {
 
     return (
       <div className="bracket">
-        <h4>Bracket</h4>
+        <h4>{t('tournaments.bracket')}</h4>
         {tournament.brackets.rounds.map((round) => (
           <div key={round.roundNumber} className="bracket-round">
-            <h5>Round {round.roundNumber}</h5>
+            <h5>{t('tournaments.round')} {round.roundNumber}</h5>
             <div className="bracket-matches">
               {round.matches.map((match, idx) => (
                 <div key={idx} className="bracket-match">
                   <div className="bracket-participant">
-                    {match.participant1 ? getPlayerName(match.participant1) : 'TBD'}
+                    {match.participant1 ? getPlayerName(match.participant1) : t('common.tbd')}
                     {match.winner === match.participant1 && <span className="winner-indicator">✓</span>}
                   </div>
-                  <div className="vs">vs</div>
+                  <div className="vs">{t('common.vs')}</div>
                   <div className="bracket-participant">
-                    {match.participant2 ? getPlayerName(match.participant2) : 'TBD'}
+                    {match.participant2 ? getPlayerName(match.participant2) : t('common.tbd')}
                     {match.winner === match.participant2 && <span className="winner-indicator">✓</span>}
                   </div>
                 </div>
@@ -118,14 +125,14 @@ export default function Tournaments() {
   };
 
   if (loading) {
-    return <div className="loading">Loading tournaments...</div>;
+    return <div className="loading">{t('tournaments.loading')}</div>;
   }
 
   if (error) {
     return (
       <div className="error">
-        <p>Error: {error}</p>
-        <button onClick={loadData}>Retry</button>
+        <p>{t('common.error')}: {error}</p>
+        <button onClick={loadData}>{t('common.retry')}</button>
       </div>
     );
   }
@@ -133,15 +140,15 @@ export default function Tournaments() {
   if (tournaments.length === 0) {
     return (
       <div className="empty-state">
-        <h2>Tournaments</h2>
-        <p>No tournaments have been created yet.</p>
+        <h2>{t('tournaments.title')}</h2>
+        <p>{t('tournaments.noTournaments')}</p>
       </div>
     );
   }
 
   return (
     <div className="tournaments-container">
-      <h2>Tournaments</h2>
+      <h2>{t('tournaments.title')}</h2>
 
       <div className="tournaments-grid">
         {tournaments.map((tournament) => (
@@ -153,15 +160,15 @@ export default function Tournaments() {
 
             <div className="tournament-info">
               <p>
-                <strong>Type:</strong>{' '}
-                {tournament.type === 'single-elimination' ? 'Single Elimination' : 'Round Robin'}
+                <strong>{t('tournaments.type')}:</strong>{' '}
+                {tournament.type === 'single-elimination' ? t('tournaments.singleElimination') : t('tournaments.roundRobin')}
               </p>
               <p>
-                <strong>Participants:</strong> {tournament.participants.length}
+                <strong>{t('tournaments.participants')}:</strong> {tournament.participants.length}
               </p>
               {tournament.winner && (
                 <p className="tournament-winner">
-                  <strong>Winner:</strong> {getPlayerName(tournament.winner)}
+                  <strong>{t('tournaments.winner')}:</strong> {getPlayerName(tournament.winner)}
                 </p>
               )}
             </div>
@@ -170,7 +177,7 @@ export default function Tournaments() {
               onClick={() => setSelectedTournament(tournament)}
               className="view-details-btn"
             >
-              View Details
+              {t('tournaments.viewDetails')}
             </button>
           </div>
         ))}
@@ -191,14 +198,14 @@ export default function Tournaments() {
 
             <div className="tournament-details">
               <p>
-                <strong>Type:</strong>{' '}
-                {selectedTournament.type === 'single-elimination' ? 'Single Elimination' : 'Round Robin'}
+                <strong>{t('tournaments.type')}:</strong>{' '}
+                {selectedTournament.type === 'single-elimination' ? t('tournaments.singleElimination') : t('tournaments.roundRobin')}
               </p>
               <p>
-                <strong>Status:</strong> {selectedTournament.status}
+                <strong>{t('tournaments.status')}:</strong> {getStatusBadge(selectedTournament.status)}
               </p>
               <p>
-                <strong>Participants:</strong>
+                <strong>{t('tournaments.participants')}:</strong>
               </p>
               <ul className="participants-list">
                 {selectedTournament.participants.map((playerId) => (

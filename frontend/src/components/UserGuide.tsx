@@ -1,236 +1,231 @@
+import { useTranslation } from 'react-i18next';
 import './UserGuide.css';
 
 export default function UserGuide() {
+  const { t } = useTranslation();
+
   return (
     <div className="user-guide">
-      <h2>How to Use This Site</h2>
+      <h2>{t('userGuide.title')}</h2>
       <p className="guide-intro">
-        Welcome to the WWE 2K League Management System! This guide will help you navigate
-        the site and understand all the features available to you.
+        {t('userGuide.intro')}
       </p>
 
       <section className="guide-section">
-        <h3>Standings Page</h3>
-        <p>The Standings page is the home page and shows the current league rankings.</p>
+        <h3>{t('userGuide.standingsSection.title')}</h3>
+        <p>{t('userGuide.standingsSection.description')}</p>
 
         <div className="guide-subsection">
-          <h4>What You Can See</h4>
+          <h4>{t('userGuide.standingsSection.whatYouCanSee')}</h4>
           <table className="info-table">
             <thead>
               <tr>
-                <th>Column</th>
-                <th>Description</th>
+                <th>{t('userGuide.standingsSection.column')}</th>
+                <th>{t('userGuide.standingsSection.columnDescription')}</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Rank</td>
-                <td>Player's position based on win percentage</td>
+                <td>{t('standings.table.rank')}</td>
+                <td>{t('userGuide.standingsSection.rankDesc')}</td>
               </tr>
               <tr>
-                <td>Player</td>
-                <td>The player's name</td>
+                <td>{t('standings.table.player')}</td>
+                <td>{t('userGuide.standingsSection.playerDesc')}</td>
               </tr>
               <tr>
-                <td>Wrestler</td>
-                <td>The WWE wrestler they currently play as</td>
+                <td>{t('standings.table.wrestler')}</td>
+                <td>{t('userGuide.standingsSection.wrestlerDesc')}</td>
               </tr>
               <tr>
                 <td>W / L / D</td>
-                <td>Total wins, losses, and draws</td>
+                <td>{t('userGuide.standingsSection.wldDesc')}</td>
               </tr>
               <tr>
-                <td>Win %</td>
-                <td>Win percentage calculated from their record</td>
+                <td>{t('standings.table.winPercent')}</td>
+                <td>{t('userGuide.standingsSection.winPercentDesc')}</td>
               </tr>
             </tbody>
           </table>
         </div>
 
         <div className="guide-subsection">
-          <h4>How Rankings Work</h4>
+          <h4>{t('userGuide.standingsSection.howRankingsWork')}</h4>
           <p>
-            Players are ranked by their win percentage. Players with more wins and fewer
-            losses will appear higher on the standings.
+            {t('userGuide.standingsSection.rankingsExplain')}
           </p>
           <div className="formula-box">
-            Win % = Wins / (Wins + Losses + Draws) x 100
+            {t('userGuide.standingsSection.formula')}
           </div>
         </div>
       </section>
 
       <section className="guide-section">
-        <h3>Seasons</h3>
-        <p>The league is organized into seasons, which are distinct competitive periods.</p>
+        <h3>{t('userGuide.seasonsSection.title')}</h3>
+        <p>{t('userGuide.seasonsSection.description')}</p>
 
         <div className="guide-subsection">
-          <h4>What Are Seasons?</h4>
+          <h4>{t('userGuide.seasonsSection.whatAreSeasons')}</h4>
           <p>
-            Seasons allow the league to track standings separately for each competitive period.
-            This means you can view how players performed in a specific season, as well as
-            their all-time record.
+            {t('userGuide.seasonsSection.seasonsExplain')}
           </p>
         </div>
 
         <div className="guide-subsection">
-          <h4>Viewing Season Standings</h4>
+          <h4>{t('userGuide.seasonsSection.viewingSeasonStandings')}</h4>
           <ul className="feature-list">
-            <li><strong>All-Time Standings</strong> - Shows cumulative records across all seasons</li>
-            <li><strong>Season Standings</strong> - Shows records for a specific season only</li>
+            <li><strong>{t('userGuide.seasonsSection.allTimeStandings')}</strong> - {t('userGuide.seasonsSection.allTimeDesc')}</li>
+            <li><strong>{t('userGuide.seasonsSection.seasonStandings')}</strong> - {t('userGuide.seasonsSection.seasonDesc')}</li>
           </ul>
           <p>
-            When a season ends, its records are preserved and can be viewed at any time
-            for historical reference.
+            {t('userGuide.seasonsSection.seasonEndNote')}
           </p>
         </div>
       </section>
 
       <section className="guide-section">
-        <h3>Divisions</h3>
-        <p>Players may be organized into divisions, similar to WWE's brand splits.</p>
+        <h3>{t('userGuide.divisionsSection.title')}</h3>
+        <p>{t('userGuide.divisionsSection.description')}</p>
 
         <div className="guide-subsection">
-          <h4>What Are Divisions?</h4>
+          <h4>{t('userGuide.divisionsSection.whatAreDivisions')}</h4>
           <p>
-            Divisions are groups that players can be assigned to, such as "Raw", "SmackDown",
-            or "NXT". This helps organize the roster and can be used for brand-specific
-            competitions.
+            {t('userGuide.divisionsSection.divisionsExplain')}
           </p>
         </div>
 
         <div className="guide-subsection">
-          <h4>Viewing Player Divisions</h4>
+          <h4>{t('userGuide.divisionsSection.viewingPlayerDivisions')}</h4>
           <p>
-            In the standings, you can see which division each player belongs to. Some players
-            may not be assigned to any division if the league administrator has not set one.
+            {t('userGuide.divisionsSection.viewingExplain')}
           </p>
         </div>
       </section>
 
       <section className="guide-section">
-        <h3>Championships Page</h3>
-        <p>View all the championships in the league and their history.</p>
+        <h3>{t('userGuide.championshipsSection.title')}</h3>
+        <p>{t('userGuide.championshipsSection.description')}</p>
 
         <div className="guide-subsection">
-          <h4>Viewing Championships</h4>
+          <h4>{t('userGuide.championshipsSection.viewingChampionships')}</h4>
           <ol className="steps-list">
-            <li>Navigate to <strong>Championships</strong> in the navigation bar</li>
-            <li>You'll see all active championships displayed as cards</li>
-            <li>Each championship card shows:
+            <li>{t('userGuide.championshipsSection.step1')}</li>
+            <li>{t('userGuide.championshipsSection.step2')}</li>
+            <li>{t('userGuide.championshipsSection.step3')}
               <ul>
-                <li>Championship name and belt image</li>
-                <li>Type (Singles or Tag Team)</li>
-                <li>Current champion(s)</li>
+                <li>{t('userGuide.championshipsSection.cardItem1')}</li>
+                <li>{t('userGuide.championshipsSection.cardItem2')}</li>
+                <li>{t('userGuide.championshipsSection.cardItem3')}</li>
               </ul>
             </li>
           </ol>
         </div>
 
         <div className="guide-subsection">
-          <h4>Viewing Championship History</h4>
+          <h4>{t('userGuide.championshipsSection.viewingHistory')}</h4>
           <ol className="steps-list">
-            <li>Click on any championship card</li>
-            <li>A modal window will appear showing the complete history</li>
-            <li>The history displays all previous champions, dates won/lost, and total days held</li>
+            <li>{t('userGuide.championshipsSection.historyStep1')}</li>
+            <li>{t('userGuide.championshipsSection.historyStep2')}</li>
+            <li>{t('userGuide.championshipsSection.historyStep3')}</li>
           </ol>
         </div>
       </section>
 
       <section className="guide-section">
-        <h3>Matches Page</h3>
-        <p>View all scheduled and completed matches in the league.</p>
+        <h3>{t('userGuide.matchesSection.title')}</h3>
+        <p>{t('userGuide.matchesSection.description')}</p>
 
         <div className="guide-subsection">
-          <h4>Filtering Matches</h4>
-          <p>At the top of the page, you can filter matches by status:</p>
+          <h4>{t('userGuide.matchesSection.filteringMatches')}</h4>
+          <p>{t('userGuide.matchesSection.filterIntro')}</p>
           <ul className="feature-list">
-            <li><strong>All</strong> - Shows all matches</li>
-            <li><strong>Scheduled</strong> - Shows only upcoming matches</li>
-            <li><strong>Completed</strong> - Shows only finished matches</li>
+            <li><strong>{t('userGuide.matchesSection.filterAll')}</strong> - {t('userGuide.matchesSection.filterAllDesc')}</li>
+            <li><strong>{t('userGuide.matchesSection.filterScheduled')}</strong> - {t('userGuide.matchesSection.filterScheduledDesc')}</li>
+            <li><strong>{t('userGuide.matchesSection.filterCompleted')}</strong> - {t('userGuide.matchesSection.filterCompletedDesc')}</li>
           </ul>
         </div>
 
         <div className="guide-subsection">
-          <h4>Match Information</h4>
-          <p>Each match card displays:</p>
+          <h4>{t('userGuide.matchesSection.matchInformation')}</h4>
+          <p>{t('userGuide.matchesSection.matchInfoIntro')}</p>
           <ul className="feature-list">
-            <li><strong>Date</strong> - When the match is scheduled or took place</li>
-            <li><strong>Match Type</strong> - Singles, Tag Team, Triple Threat, Fatal 4-Way, Six Pack Challenge, or Battle Royal</li>
-            <li><strong>Stipulation</strong> - Special match rules (Ladder, Steel Cage, Hell in a Cell, etc.)</li>
-            <li><strong>Participants</strong> - Who is competing in the match</li>
-            <li><strong>Championship Badge</strong> - Indicates if it's a title match</li>
+            <li><strong>{t('userGuide.matchesSection.matchDate')}</strong> - {t('userGuide.matchesSection.matchDateDesc')}</li>
+            <li><strong>{t('userGuide.matchesSection.matchType')}</strong> - {t('userGuide.matchesSection.matchTypeDesc')}</li>
+            <li><strong>{t('userGuide.matchesSection.matchStipulation')}</strong> - {t('userGuide.matchesSection.matchStipulationDesc')}</li>
+            <li><strong>{t('userGuide.matchesSection.matchParticipants')}</strong> - {t('userGuide.matchesSection.matchParticipantsDesc')}</li>
+            <li><strong>{t('userGuide.matchesSection.matchChampionship')}</strong> - {t('userGuide.matchesSection.matchChampionshipDesc')}</li>
           </ul>
         </div>
 
         <div className="guide-subsection">
-          <h4>Match Results</h4>
-          <p>For completed matches, you'll also see:</p>
+          <h4>{t('userGuide.matchesSection.matchResults')}</h4>
+          <p>{t('userGuide.matchesSection.matchResultsIntro')}</p>
           <ul className="feature-list">
-            <li><span className="winner-text">Winners</span> - Highlighted in green</li>
-            <li><span className="loser-text">Losers</span> - Shown in the results section</li>
-            <li><span className="draw-text">Draw</span> - If the match ended in a draw</li>
+            <li><span className="winner-text">{t('userGuide.matchesSection.winners')}</span> - {t('userGuide.matchesSection.winnersDesc')}</li>
+            <li><span className="loser-text">{t('userGuide.matchesSection.losers')}</span> - {t('userGuide.matchesSection.losersDesc')}</li>
+            <li><span className="draw-text">{t('userGuide.matchesSection.draw')}</span> - {t('userGuide.matchesSection.drawDesc')}</li>
           </ul>
         </div>
       </section>
 
       <section className="guide-section">
-        <h3>Tournaments Page</h3>
-        <p>Follow tournament brackets and standings for ongoing and completed tournaments.</p>
+        <h3>{t('userGuide.tournamentsSection.title')}</h3>
+        <p>{t('userGuide.tournamentsSection.description')}</p>
 
         <div className="guide-subsection">
-          <h4>Tournament Types</h4>
-          <p>The league supports two tournament formats:</p>
+          <h4>{t('userGuide.tournamentsSection.tournamentTypes')}</h4>
+          <p>{t('userGuide.tournamentsSection.typesIntro')}</p>
 
           <div className="tournament-type-box">
-            <h5>Single Elimination</h5>
+            <h5>{t('userGuide.tournamentsSection.singleElimination')}</h5>
             <ul>
-              <li>Traditional bracket-style tournament</li>
-              <li>If you lose, you're eliminated</li>
-              <li>Winners advance to the next round</li>
-              <li>Last person standing wins the tournament</li>
+              <li>{t('userGuide.tournamentsSection.singleElimItem1')}</li>
+              <li>{t('userGuide.tournamentsSection.singleElimItem2')}</li>
+              <li>{t('userGuide.tournamentsSection.singleElimItem3')}</li>
+              <li>{t('userGuide.tournamentsSection.singleElimItem4')}</li>
             </ul>
           </div>
 
           <div className="tournament-type-box">
-            <h5>Round Robin (G1 Climax Style)</h5>
+            <h5>{t('userGuide.tournamentsSection.roundRobin')}</h5>
             <ul>
-              <li>Every participant faces every other participant</li>
-              <li>Points awarded: <strong>Win = 2 pts</strong>, <strong>Draw = 1 pt</strong>, <strong>Loss = 0 pts</strong></li>
-              <li>Player with the most points at the end wins</li>
+              <li>{t('userGuide.tournamentsSection.roundRobinItem1')}</li>
+              <li>{t('userGuide.tournamentsSection.roundRobinItem2')}</li>
+              <li>{t('userGuide.tournamentsSection.roundRobinItem3')}</li>
             </ul>
           </div>
         </div>
 
         <div className="guide-subsection">
-          <h4>Tournament Information</h4>
-          <p>Each tournament card shows:</p>
+          <h4>{t('userGuide.tournamentsSection.tournamentInformation')}</h4>
+          <p>{t('userGuide.tournamentsSection.tournamentInfoIntro')}</p>
           <ul className="feature-list">
-            <li>Tournament name and type</li>
-            <li>Status (Upcoming, In Progress, or Completed)</li>
-            <li>Number of participants</li>
-            <li>Current bracket or standings</li>
+            <li>{t('userGuide.tournamentsSection.infoItem1')}</li>
+            <li>{t('userGuide.tournamentsSection.infoItem2')}</li>
+            <li>{t('userGuide.tournamentsSection.infoItem3')}</li>
+            <li>{t('userGuide.tournamentsSection.infoItem4')}</li>
           </ul>
         </div>
       </section>
 
       <section className="guide-section tips-section">
-        <h3>Tips for Following the League</h3>
+        <h3>{t('userGuide.tipsSection.title')}</h3>
         <div className="tips-grid">
           <div className="tip-card">
             <span className="tip-icon">1</span>
-            <p><strong>Check Standings Regularly</strong> - See who's climbing the rankings</p>
+            <p><strong>{t('userGuide.tipsSection.tip1Title')}</strong> - {t('userGuide.tipsSection.tip1Desc')}</p>
           </div>
           <div className="tip-card">
             <span className="tip-icon">2</span>
-            <p><strong>Watch for Championship Matches</strong> - These are marked with a special badge</p>
+            <p><strong>{t('userGuide.tipsSection.tip2Title')}</strong> - {t('userGuide.tipsSection.tip2Desc')}</p>
           </div>
           <div className="tip-card">
             <span className="tip-icon">3</span>
-            <p><strong>Follow Tournament Progress</strong> - Tournaments often determine championship opportunities</p>
+            <p><strong>{t('userGuide.tipsSection.tip3Title')}</strong> - {t('userGuide.tipsSection.tip3Desc')}</p>
           </div>
           <div className="tip-card">
             <span className="tip-icon">4</span>
-            <p><strong>Review Match History</strong> - Filter by "Completed" to catch up on results you missed</p>
+            <p><strong>{t('userGuide.tipsSection.tip4Title')}</strong> - {t('userGuide.tipsSection.tip4Desc')}</p>
           </div>
         </div>
       </section>

@@ -1,25 +1,31 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import './i18n';
 import Standings from './components/Standings';
 import Championships from './components/Championships';
 import Matches from './components/Matches';
 import Tournaments from './components/Tournaments';
 import UserGuide from './components/UserGuide';
 import AdminPanel from './components/admin/AdminPanel';
+import LanguageSwitcher from './components/LanguageSwitcher';
 import './App.css';
 
 function App() {
+  const { t } = useTranslation();
+
   return (
     <Router>
       <div className="App">
         <header>
-          <h1>WWE 2K League</h1>
+          <h1>{t('header.title')}</h1>
           <nav>
-            <Link to="/">Standings</Link>
-            <Link to="/championships">Championships</Link>
-            <Link to="/matches">Matches</Link>
-            <Link to="/tournaments">Tournaments</Link>
-            <Link to="/guide">Help</Link>
-            <Link to="/admin">Admin</Link>
+            <Link to="/">{t('nav.standings')}</Link>
+            <Link to="/championships">{t('nav.championships')}</Link>
+            <Link to="/matches">{t('nav.matches')}</Link>
+            <Link to="/tournaments">{t('nav.tournaments')}</Link>
+            <Link to="/guide">{t('nav.help')}</Link>
+            <Link to="/admin">{t('nav.admin')}</Link>
+            <LanguageSwitcher />
           </nav>
         </header>
         <main>

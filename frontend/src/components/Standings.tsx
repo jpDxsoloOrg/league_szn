@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { standingsApi, seasonsApi, divisionsApi } from '../services/api';
 import type { Standings as StandingsType, Season, Division, Player } from '../types';
 import './Standings.css';
 
 export default function Standings() {
+  const { t } = useTranslation();
   const [standings, setStandings] = useState<StandingsType | null>(null);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [selectedDivision, setSelectedDivision] = useState<string>('all');
@@ -67,20 +69,20 @@ export default function Standings() {
   };
 
   const getSeasonName = () => {
-    if (!selectedSeasonId) return 'All-Time';
+    if (!selectedSeasonId) return t('standings.allTime');
     const season = seasons.find(s => s.seasonId === selectedSeasonId);
-    return season ? season.name : 'All-Time';
+    return season ? season.name : t('standings.allTime');
   };
 
   if (loading) {
-    return <div className="loading">Loading standings...</div>;
+    return <div className="loading">{t('standings.loading')}</div>;
   }
 
   if (error) {
     return (
       <div className="error">
-        <p>Error: {error}</p>
-        <button onClick={loadStandings}>Retry</button>
+        <p>{t('common.error')}: {error}</p>
+        <button onClick={loadStandings}>{t('common.retry')}</button>
       </div>
     );
   }
@@ -88,8 +90,8 @@ export default function Standings() {
   if (!standings || standings.players.length === 0) {
     return (
       <div className="empty-state">
-        <h2>Standings</h2>
-        <p>No players have been added to the league yet.</p>
+        <h2>{t('standings.pageTitle')}</h2>
+        <p>{t('standings.noPlayers')}</p>
       </div>
     );
   }
@@ -99,19 +101,19 @@ export default function Standings() {
   return (
     <div className="standings-container">
       <div className="standings-header">
-        <h2>League Standings</h2>
+        <h2>{t('standings.title')}</h2>
         {seasons.length > 0 && (
           <div className="season-selector">
-            <label htmlFor="season-select">Season:</label>
+            <label htmlFor="season-select">{t('standings.season')}:</label>
             <select
               id="season-select"
               value={selectedSeasonId}
               onChange={(e) => setSelectedSeasonId(e.target.value)}
             >
-              <option value="">All-Time</option>
+              <option value="">{t('standings.allTime')}</option>
               {seasons.map((season) => (
                 <option key={season.seasonId} value={season.seasonId}>
-                  {season.name} {season.status === 'active' ? '(Active)' : ''}
+                  {season.name} {season.status === 'active' ? `(${t('common.active')})` : ''}
                 </option>
               ))}
             </select>
@@ -121,19 +123,19 @@ export default function Standings() {
 
       {selectedSeasonId && (
         <div className="season-badge">
-          Showing standings for: <strong>{getSeasonName()}</strong>
+          {t('standings.showingFor')}: <strong>{getSeasonName()}</strong>
         </div>
       )}
 
       {divisions.length > 0 && (
         <div className="division-filter">
-          <span className="filter-label">Filter by Division:</span>
+          <span className="filter-label">{t('standings.filterByDivision')}:</span>
           <div className="filter-buttons">
             <button
               className={`filter-btn ${selectedDivision === 'all' ? 'active' : ''}`}
               onClick={() => setSelectedDivision('all')}
             >
-              All
+              {t('common.all')}
             </button>
             {divisions.map((division) => (
               <button
@@ -148,7 +150,7 @@ export default function Standings() {
               className={`filter-btn ${selectedDivision === 'none' ? 'active' : ''}`}
               onClick={() => setSelectedDivision('none')}
             >
-              No Division
+              {t('standings.noDivision')}
             </button>
           </div>
         </div>
@@ -158,15 +160,15 @@ export default function Standings() {
         <table className="standings-table">
           <thead>
             <tr>
-              <th>Rank</th>
-              <th className="image-header">Image</th>
-              <th>Player</th>
-              <th>Wrestler</th>
-              {selectedDivision === 'all' && <th>Division</th>}
-              <th>Wins</th>
-              <th>Losses</th>
-              <th>Draws</th>
-              <th>Win %</th>
+              <th>{t('standings.table.rank')}</th>
+              <th className="image-header">{t('standings.table.image')}</th>
+              <th>{t('standings.table.player')}</th>
+              <th>{t('standings.table.wrestler')}</th>
+              {selectedDivision === 'all' && <th>{t('standings.table.division')}</th>}
+              <th>{t('standings.table.wins')}</th>
+              <th>{t('standings.table.losses')}</th>
+              <th>{t('standings.table.draws')}</th>
+              <th>{t('standings.table.winPercent')}</th>
             </tr>
           </thead>
           <tbody>

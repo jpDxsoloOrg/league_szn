@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { championshipsApi, playersApi } from '../services/api';
 import type { Championship, ChampionshipReign, Player } from '../types';
 import './Championships.css';
 
 export default function Championships() {
+  const { t } = useTranslation();
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedChampionship, setSelectedChampionship] = useState<string | null>(null);
@@ -50,22 +52,22 @@ export default function Championships() {
     if (Array.isArray(playerId)) {
       return playerId.map(id => {
         const player = players.find(p => p.playerId === id);
-        return player ? player.name : 'Unknown';
+        return player ? player.name : t('common.unknown');
       }).join(' & ');
     }
     const player = players.find(p => p.playerId === playerId);
-    return player ? player.name : 'Unknown';
+    return player ? player.name : t('common.unknown');
   };
 
   if (loading) {
-    return <div className="loading">Loading championships...</div>;
+    return <div className="loading">{t('championships.loading')}</div>;
   }
 
   if (error) {
     return (
       <div className="error">
-        <p>Error: {error}</p>
-        <button onClick={loadData}>Retry</button>
+        <p>{t('common.error')}: {error}</p>
+        <button onClick={loadData}>{t('common.retry')}</button>
       </div>
     );
   }
@@ -73,15 +75,15 @@ export default function Championships() {
   if (championships.length === 0) {
     return (
       <div className="empty-state">
-        <h2>Championships</h2>
-        <p>No championships have been created yet.</p>
+        <h2>{t('championships.title')}</h2>
+        <p>{t('championships.noChampionships')}</p>
       </div>
     );
   }
 
   return (
     <div className="championships-container">
-      <h2>Championships</h2>
+      <h2>{t('championships.title')}</h2>
 
       <div className="championships-grid">
         {championships.map((championship) => (
@@ -96,22 +98,22 @@ export default function Championships() {
               </div>
             ) : (
               <div className="championship-image-placeholder">
-                <span>No Image</span>
+                <span>{t('common.noImage')}</span>
               </div>
             )}
             <div className="championship-header">
               <h3>{championship.name}</h3>
               <span className="championship-type">
-                {championship.type === 'singles' ? 'Singles' : 'Tag Team'}
+                {championship.type === 'singles' ? t('championships.singles') : t('championships.tagTeam')}
               </span>
             </div>
 
             <div className="current-champion">
-              <label>Current Champion:</label>
+              <label>{t('championships.currentChampion')}:</label>
               <p>
                 {championship.currentChampion
                   ? getPlayerName(championship.currentChampion)
-                  : 'Vacant'}
+                  : t('common.vacant')}
               </p>
             </div>
 
@@ -119,7 +121,7 @@ export default function Championships() {
               onClick={() => loadHistory(championship.championshipId)}
               className="view-history-btn"
             >
-              View Championship History
+              {t('championships.viewHistory')}
             </button>
           </div>
         ))}
@@ -130,7 +132,7 @@ export default function Championships() {
           <div className="history-content">
             <div className="history-header">
               <h3>
-                {championships.find(c => c.championshipId === selectedChampionship)?.name} History
+                {championships.find(c => c.championshipId === selectedChampionship)?.name} {t('championships.history')}
               </h3>
               <button
                 onClick={() => setSelectedChampionship(null)}
@@ -141,18 +143,18 @@ export default function Championships() {
             </div>
 
             {loadingHistory ? (
-              <div className="loading">Loading history...</div>
+              <div className="loading">{t('championships.loadingHistory')}</div>
             ) : history.length === 0 ? (
-              <p>No championship history yet.</p>
+              <p>{t('championships.noHistory')}</p>
             ) : (
               <div className="history-table-wrapper">
                 <table className="history-table">
                   <thead>
                     <tr>
-                      <th>Champion</th>
-                      <th>Won Date</th>
-                      <th>Lost Date</th>
-                      <th>Days Held</th>
+                      <th>{t('championships.table.champion')}</th>
+                      <th>{t('championships.table.wonDate')}</th>
+                      <th>{t('championships.table.lostDate')}</th>
+                      <th>{t('championships.table.daysHeld')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -165,11 +167,11 @@ export default function Championships() {
                         <td>
                           {reign.lostDate
                             ? new Date(reign.lostDate).toLocaleDateString()
-                            : 'Current'}
+                            : t('common.current')}
                         </td>
                         <td>
                           {reign.daysHeld !== undefined
-                            ? `${reign.daysHeld} days`
+                            ? `${reign.daysHeld} ${t('common.days')}`
                             : '-'}
                         </td>
                       </tr>
