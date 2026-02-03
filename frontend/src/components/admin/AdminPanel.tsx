@@ -10,9 +10,10 @@ import CreateTournament from './CreateTournament';
 
 import ManageSeasons from './ManageSeasons';
 import AdminGuide from './AdminGuide';
+import ClearAllData from './ClearAllData';
 import './AdminPanel.css';
 
-type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'seasons' | 'guide';
+type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'seasons' | 'guide' | 'danger';
 
 
 export default function AdminPanel() {
@@ -79,14 +80,22 @@ export default function AdminPanel() {
           Tournaments
         </button>
         <button
-          className={`tab ${activeTab === 'guide' ? 'active' : ''}`}
-          onClick={() => setActiveTab('guide')}
-        >
-          Help
           className={`tab ${activeTab === 'seasons' ? 'active' : ''}`}
           onClick={() => setActiveTab('seasons')}
         >
           Seasons
+        </button>
+        <button
+          className={`tab ${activeTab === 'guide' ? 'active' : ''}`}
+          onClick={() => setActiveTab('guide')}
+        >
+          Help
+        </button>
+        <button
+          className={`tab danger ${activeTab === 'danger' ? 'active' : ''}`}
+          onClick={() => setActiveTab('danger')}
+        >
+          Danger Zone
         </button>
       </div>
 
@@ -99,6 +108,7 @@ export default function AdminPanel() {
         {activeTab === 'tournaments' && <CreateTournament />}
         {activeTab === 'guide' && <AdminGuide />}
         {activeTab === 'seasons' && <ManageSeasons />}
+        {activeTab === 'danger' && <ClearAllData />}
       </div>
     </div>
   );

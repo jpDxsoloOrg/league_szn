@@ -56,6 +56,21 @@
   background-color: #1a1a1a;
 }
 
+.admin-tabs .tab.danger {
+  color: #dc3545;
+}
+
+.admin-tabs .tab.danger:hover {
+  color: #ff6b6b;
+  background-color: #2a1a1a;
+}
+
+.admin-tabs .tab.danger.active {
+  color: #dc3545;
+  border-bottom-color: #dc3545;
+  background-color: #2a1a1a;
+}
+
 .admin-content {
   padding: 1rem 0;
 }

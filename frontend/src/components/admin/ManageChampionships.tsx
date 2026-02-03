@@ -11,6 +11,7 @@ export default function ManageChampionships() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [editingChampionship, setEditingChampionship] = useState<Championship | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -153,6 +154,26 @@ export default function ManageChampionships() {
     setEditingChampionship(null);
   };
 
+  const handleDelete = async (championshipId: string, championshipName: string) => {
+    if (!confirm(`Are you sure you want to delete "${championshipName}"? This will also delete all championship history. This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeleting(championshipId);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await championshipsApi.delete(championshipId);
+      setSuccess('Championship deleted successfully!');
+      await loadChampionships();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete championship');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading championships...</div>;
   }
@@ -274,6 +295,13 @@ export default function ManageChampionships() {
                     className="championship-edit-btn"
                   >
                     Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(championship.championshipId, championship.name)}
+                    className="championship-delete-btn"
+                    disabled={deleting === championship.championshipId}
+                  >
+                    {deleting === championship.championshipId ? 'Deleting...' : 'Delete'}
                   </button>
                 </div>
               </div>

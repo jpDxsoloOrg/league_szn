@@ -11,6 +11,8 @@ export default function ManagePlayers() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -167,6 +169,26 @@ export default function ManagePlayers() {
     setEditingPlayer(null);
   };
 
+  const handleDelete = async (playerId: string, playerName: string) => {
+    if (!confirm(`Are you sure you want to delete ${playerName}? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeleting(playerId);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await playersApi.delete(playerId);
+      setSuccess('Player deleted successfully!');
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete player');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading players...</div>;
   }
@@ -183,6 +205,7 @@ export default function ManagePlayers() {
       </div>
 
       {error && <div className="error-message">{error}</div>}
+      {success && <div className="success-message">{success}</div>}
 
       {showAddForm && (
         <div className="player-form-container">
@@ -306,12 +329,19 @@ export default function ManagePlayers() {
                       {player.wins}W - {player.losses}L - {player.draws}D
                     </span>
                   </td>
-                  <td>
+                  <td className="actions-cell">
                     <button
                       onClick={() => handleEdit(player)}
                       className="edit-btn"
                     >
                       Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(player.playerId, player.name)}
+                      className="delete-btn"
+                      disabled={deleting === player.playerId}
+                    >
+                      {deleting === player.playerId ? 'Deleting...' : 'Delete'}
                     </button>
                   </td>
                 </tr>

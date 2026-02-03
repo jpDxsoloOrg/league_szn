@@ -39,6 +39,16 @@ export default function AdminGuide() {
         </div>
 
         <div className="guide-block">
+          <h5>Deleting a Player</h5>
+          <ol>
+            <li>Find the player in the players table</li>
+            <li>Click the <strong>Delete</strong> button next to their name</li>
+            <li>Confirm the action in the dialog</li>
+          </ol>
+          <p className="note-text"><strong>Note:</strong> You cannot delete a player who is currently a champion. Remove their championship first by having them lose a title match or editing the championship.</p>
+        </div>
+
+        <div className="guide-block">
           <h5>Image Upload Guidelines</h5>
           <ul>
             <li>Supported formats: JPEG, PNG, GIF, WebP</li>
@@ -164,6 +174,16 @@ export default function AdminGuide() {
         </div>
 
         <div className="guide-block">
+          <h5>Deleting a Championship</h5>
+          <ol>
+            <li>Find the championship in the championships grid</li>
+            <li>Click the <strong>Delete</strong> button on the championship card</li>
+            <li>Confirm the action in the dialog</li>
+          </ol>
+          <p className="note-text"><strong>Warning:</strong> Deleting a championship will also permanently delete all championship history (past reigns, dates, etc.).</p>
+        </div>
+
+        <div className="guide-block">
           <h5>How Championships Work</h5>
           <ul>
             <li>When you schedule a championship match, select the title at stake</li>
@@ -264,6 +284,16 @@ export default function AdminGuide() {
         </div>
 
         <div className="guide-block">
+          <h5>Deleting a Season</h5>
+          <ol>
+            <li>Find the season in the seasons grid</li>
+            <li>Click the <strong>Delete</strong> button on the season card</li>
+            <li>Confirm the action in the dialog</li>
+          </ol>
+          <p className="note-text"><strong>Warning:</strong> Deleting a season will also permanently delete all standings for that season. This action cannot be undone.</p>
+        </div>
+
+        <div className="guide-block">
           <h5>How Seasons Work</h5>
           <ul>
             <li>Matches can be associated with a season when scheduled</li>
@@ -320,6 +350,46 @@ export default function AdminGuide() {
             <li>Select the appropriate division or "No Division"</li>
             <li>Save the player to apply the assignment</li>
           </ol>
+        </div>
+      </section>
+
+      <section className="admin-guide-section danger-section">
+        <h4>Danger Zone - Clear All Data</h4>
+        <p>The <strong>Danger Zone</strong> tab provides the ability to completely reset the league by deleting all data.</p>
+
+        <div className="guide-block important-box">
+          <h5>When to Use Clear All Data</h5>
+          <ul>
+            <li>Starting fresh with a completely new league</li>
+            <li>Testing or demonstration purposes</li>
+            <li>Cleaning up after a test run before going live</li>
+          </ul>
+          <p className="note-text"><strong>Extreme Caution:</strong> This action is permanent and irreversible. All data will be lost forever.</p>
+        </div>
+
+        <div className="guide-block">
+          <h5>What Gets Deleted</h5>
+          <ul>
+            <li>All players (wrestlers) and their match records</li>
+            <li>All matches and results</li>
+            <li>All championships and their complete history</li>
+            <li>All tournaments and brackets</li>
+            <li>All seasons and standings</li>
+            <li>All divisions</li>
+          </ul>
+        </div>
+
+        <div className="guide-block">
+          <h5>How to Clear All Data</h5>
+          <ol>
+            <li>Navigate to the <strong>Danger Zone</strong> tab</li>
+            <li>Read the warning carefully</li>
+            <li>Type the exact phrase <strong>DELETE ALL DATA</strong> in the confirmation box</li>
+            <li>Click the <strong>Clear All Data</strong> button</li>
+            <li>Confirm the final warning dialog</li>
+            <li>Wait for the process to complete</li>
+          </ol>
+          <p className="note-text"><strong>Tip:</strong> Consider exporting any important data before using this feature, as there is no way to recover deleted data.</p>
         </div>
       </section>
 

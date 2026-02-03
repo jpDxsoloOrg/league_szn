@@ -60,6 +60,12 @@ export const playersApi = {
       body: JSON.stringify(updates),
     });
   },
+
+  delete: async (playerId: string): Promise<void> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${playerId}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // Matches API
@@ -105,6 +111,12 @@ export const championshipsApi = {
     return fetchWithAuth(`${API_BASE_URL}/championships/${championshipId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
+    });
+  },
+
+  delete: async (championshipId: string): Promise<void> => {
+    return fetchWithAuth(`${API_BASE_URL}/championships/${championshipId}`, {
+      method: 'DELETE',
     });
   },
 };
@@ -161,6 +173,12 @@ export const seasonsApi = {
       body: JSON.stringify(updates),
     });
   },
+
+  delete: async (seasonId: string): Promise<void> => {
+    return fetchWithAuth(`${API_BASE_URL}/seasons/${seasonId}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // Divisions API
@@ -185,6 +203,15 @@ export const divisionsApi = {
 
   delete: async (divisionId: string): Promise<void> => {
     return fetchWithAuth(`${API_BASE_URL}/divisions/${divisionId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Admin API
+export const adminApi = {
+  clearAll: async (): Promise<{ message: string; deletedCounts: Record<string, number> }> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/clear-all`, {
       method: 'DELETE',
     });
   },

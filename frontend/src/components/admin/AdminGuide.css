@@ -143,6 +143,26 @@
   font-size: 0.9rem;
 }
 
+.note-text {
+  color: #f87171;
+  font-size: 0.9rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background-color: #2a1a1a;
+  border-radius: 4px;
+  border-left: 3px solid #dc3545;
+}
+
+.danger-section {
+  background-color: #2a1a1a;
+  border-color: #dc3545;
+}
+
+.danger-section h4 {
+  color: #dc3545;
+  border-bottom-color: #dc3545;
+}
+
 .workflow-section {
   background-color: #1a2a2a;
   border-color: #2a4a4a;
