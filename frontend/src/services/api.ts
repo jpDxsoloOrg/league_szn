@@ -182,6 +182,12 @@ export const divisionsApi = {
       body: JSON.stringify(updates),
     });
   },
+
+  delete: async (divisionId: string): Promise<void> => {
+    return fetchWithAuth(`${API_BASE_URL}/divisions/${divisionId}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // Auth API

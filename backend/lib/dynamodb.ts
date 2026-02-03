@@ -71,4 +71,5 @@ export const TableNames = {
   TOURNAMENTS: process.env.TOURNAMENTS_TABLE!,
   SEASONS: process.env.SEASONS_TABLE!,
   SEASON_STANDINGS: process.env.SEASON_STANDINGS_TABLE!,
+  DIVISIONS: process.env.DIVISIONS_TABLE!,
 };
