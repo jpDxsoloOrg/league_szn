@@ -229,42 +229,150 @@ export default function AdminGuide() {
         </div>
       </section>
 
+      <section className="admin-guide-section">
+        <h4>Managing Seasons</h4>
+        <p>The <strong>Seasons</strong> tab allows you to organize the league into distinct competitive periods.</p>
+
+        <div className="guide-block">
+          <h5>Creating a Season</h5>
+          <ol>
+            <li>Navigate to the <strong>Seasons</strong> tab</li>
+            <li>Fill in the season details:
+              <ul>
+                <li><strong>Season Name</strong> - e.g., "Season 1", "Summer 2024"</li>
+                <li><strong>Start Date</strong> - When the season begins</li>
+                <li><strong>End Date</strong> (optional) - When the season ends</li>
+              </ul>
+            </li>
+            <li>Click <strong>Create New Season</strong> to save</li>
+          </ol>
+        </div>
+
+        <div className="guide-block important-box">
+          <h5>Important: One Active Season Rule</h5>
+          <p>Only one season can be active at a time. You must end the current season before creating a new one.</p>
+        </div>
+
+        <div className="guide-block">
+          <h5>Ending a Season</h5>
+          <ol>
+            <li>Find the active season displayed with the "Active Season" banner</li>
+            <li>Click the <strong>End Season</strong> button</li>
+            <li>Confirm the action in the dialog</li>
+            <li>The season's status will change to "Completed" and the end date will be recorded</li>
+          </ol>
+        </div>
+
+        <div className="guide-block">
+          <h5>How Seasons Work</h5>
+          <ul>
+            <li>Matches can be associated with a season when scheduled</li>
+            <li>Season-specific standings are tracked separately from all-time standings</li>
+            <li>When a match result is recorded, both all-time and season standings update automatically</li>
+            <li>Completed seasons preserve historical records and can be viewed at any time</li>
+          </ul>
+        </div>
+      </section>
+
+      <section className="admin-guide-section">
+        <h4>Managing Divisions</h4>
+        <p>The <strong>Divisions</strong> tab allows you to organize players into groups like brand splits.</p>
+
+        <div className="guide-block">
+          <h5>Creating a Division</h5>
+          <ol>
+            <li>Navigate to the <strong>Divisions</strong> tab</li>
+            <li>Fill in the division details:
+              <ul>
+                <li><strong>Division Name</strong> - e.g., "Raw", "SmackDown", "NXT"</li>
+                <li><strong>Description</strong> (optional) - A brief description of the division</li>
+              </ul>
+            </li>
+            <li>Click <strong>Create Division</strong> to save</li>
+          </ol>
+        </div>
+
+        <div className="guide-block">
+          <h5>Editing a Division</h5>
+          <ol>
+            <li>Find the division in the divisions grid</li>
+            <li>Click the <strong>Edit</strong> button on the division card</li>
+            <li>Update the name or description</li>
+            <li>Click <strong>Update Division</strong> to confirm changes</li>
+          </ol>
+        </div>
+
+        <div className="guide-block">
+          <h5>Deleting a Division</h5>
+          <ol>
+            <li>Find the division in the divisions grid</li>
+            <li>Click the <strong>Delete</strong> button on the division card</li>
+            <li>Confirm the action in the dialog</li>
+          </ol>
+          <p className="note-text"><strong>Note:</strong> You cannot delete a division that has players assigned to it. Reassign or remove players from the division first.</p>
+        </div>
+
+        <div className="guide-block">
+          <h5>Assigning Players to Divisions</h5>
+          <ol>
+            <li>Navigate to the <strong>Manage Players</strong> tab</li>
+            <li>When adding or editing a player, use the <strong>Division</strong> dropdown</li>
+            <li>Select the appropriate division or "No Division"</li>
+            <li>Save the player to apply the assignment</li>
+          </ol>
+        </div>
+      </section>
+
       <section className="admin-guide-section workflow-section">
         <h4>Typical Admin Workflow</h4>
         <div className="workflow-steps">
           <div className="workflow-step">
             <span className="step-number">1</span>
             <div className="step-content">
-              <strong>Add Players</strong>
-              <p>Set up all league participants with their wrestlers</p>
+              <strong>Create a Season</strong>
+              <p>Start a new season to track standings for this competitive period</p>
             </div>
           </div>
           <div className="workflow-step">
             <span className="step-number">2</span>
+            <div className="step-content">
+              <strong>Set Up Divisions</strong>
+              <p>Create divisions to organize players (e.g., Raw, SmackDown)</p>
+            </div>
+          </div>
+          <div className="workflow-step">
+            <span className="step-number">3</span>
+            <div className="step-content">
+              <strong>Add Players</strong>
+              <p>Set up all league participants with their wrestlers and assign to divisions</p>
+            </div>
+          </div>
+          <div className="workflow-step">
+            <span className="step-number">4</span>
             <div className="step-content">
               <strong>Create Championships</strong>
               <p>Set up the titles that will be contested</p>
             </div>
           </div>
           <div className="workflow-step">
-            <span className="step-number">3</span>
+            <span className="step-number">5</span>
             <div className="step-content">
               <strong>Schedule Matches</strong>
               <p>Create the match card for upcoming events</p>
             </div>
           </div>
           <div className="workflow-step">
-            <span className="step-number">4</span>
+            <span className="step-number">6</span>
             <div className="step-content">
               <strong>Record Results</strong>
               <p>Enter outcomes after matches are played</p>
             </div>
           </div>
           <div className="workflow-step">
-            <span className="step-number">5</span>
+            <span className="step-number">7</span>
             <div className="step-content">
-              <strong>Repeat</strong>
-              <p>Continue scheduling and recording as the season progresses</p>
+              <strong>End Season & Repeat</strong>
+              <p>When the season concludes, end it and create a new one</p>
             </div>
           </div>
         </div>
