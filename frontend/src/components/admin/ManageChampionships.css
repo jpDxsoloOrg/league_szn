@@ -101,7 +101,10 @@
   display: none;
 }
 
-.file-input-label {
+.file-input-label,
+.form-group .file-input-label,
+.image-upload-box .file-input-label,
+label.file-input-label {
   display: inline-block;
   padding: 0.75rem 1.5rem;
   background-color: #d4af37;
@@ -110,10 +113,15 @@
   cursor: pointer;
   font-weight: bold;
   transition: background-color 0.2s;
+  text-shadow: none;
 }
 
-.file-input-label:hover {
+.file-input-label:hover,
+.form-group .file-input-label:hover,
+.image-upload-box .file-input-label:hover,
+label.file-input-label:hover {
   background-color: #b8962e;
+  color: #000 !important;
 }
 
 .upload-hint {
