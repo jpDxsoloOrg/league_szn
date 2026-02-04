@@ -1,0 +1,30 @@
+{
+  "name": "league-szn-e2e",
+  "version": "1.0.0",
+  "description": "E2E tests for WWE 2K League Management Application",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:ui": "npx playwright test --ui",
+    "test:debug": "npx playwright test --debug",
+    "test:admin": "npx playwright test tests/admin/",
+    "test:public": "npx playwright test tests/public/",
+    "test:integration": "npx playwright test tests/integration/",
+    "test:local": "TEST_ENV=local npx playwright test",
+    "test:dev": "TEST_ENV=dev npx playwright test",
+    "test:prod": "TEST_ENV=prod npx playwright test",
+    "verify-site": "npx ts-node run-verification.ts",
+    "verify-site:dev": "TEST_ENV=dev npx ts-node run-verification.ts",
+    "verify-site:prod": "TEST_ENV=prod npx ts-node run-verification.ts",
+    "report": "npx playwright show-report ./reports/html",
+    "install-browsers": "npx playwright install"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.40.0",
+    "typescript": "^5.3.0",
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0"
+  }
+}
