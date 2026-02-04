@@ -17,8 +17,8 @@ provider:
     SEASON_STANDINGS_TABLE: ${self:service}-season-standings-${self:provider.stage}
     DIVISIONS_TABLE: ${self:service}-divisions-${self:provider.stage}
     IMAGES_BUCKET: ${self:service}-images-${self:provider.stage}
-    COGNITO_USER_POOL_ID: !Ref CognitoUserPool
-    COGNITO_CLIENT_ID: !Ref CognitoUserPoolClient
+    COGNITO_USER_POOL_ID: !Ref AdminUserPool
+    COGNITO_CLIENT_ID: !Ref AdminUserPoolClient
   iam:
     role:
       statements:
@@ -54,7 +54,7 @@ provider:
             - cognito-idp:AdminSetUserPassword
             - cognito-idp:AdminGetUser
           Resource:
-            - !GetAtt CognitoUserPool.Arn
+            - !GetAtt AdminUserPool.Arn
 
 plugins:
   - serverless-plugin-typescript
@@ -384,11 +384,11 @@ resources:
         RestApiId:
           Ref: ApiGatewayRestApi
 
-    # Cognito User Pool for Admin Authentication
-    CognitoUserPool:
+    # Cognito User Pool for Admin Authentication (username-based)
+    AdminUserPool:
       Type: AWS::Cognito::UserPool
       Properties:
-        UserPoolName: ${self:service}-admin-pool-${self:provider.stage}
+        UserPoolName: ${self:service}-admin-pool-v2-${self:provider.stage}
         AdminCreateUserConfig:
           AllowAdminCreateUserOnly: true
         Policies:
@@ -399,11 +399,11 @@ resources:
             RequireSymbols: false
             RequireUppercase: true
 
-    CognitoUserPoolClient:
+    AdminUserPoolClient:
       Type: AWS::Cognito::UserPoolClient
       Properties:
-        ClientName: ${self:service}-admin-client-${self:provider.stage}
-        UserPoolId: !Ref CognitoUserPool
+        ClientName: ${self:service}-admin-client-v2-${self:provider.stage}
+        UserPoolId: !Ref AdminUserPool
         GenerateSecret: false
         ExplicitAuthFlows:
           - ALLOW_USER_PASSWORD_AUTH
@@ -646,11 +646,11 @@ resources:
         Name: ${self:service}-${self:provider.stage}-CloudFrontDomainName
     CognitoUserPoolId:
       Description: Cognito User Pool ID
-      Value: !Ref CognitoUserPool
+      Value: !Ref AdminUserPool
       Export:
         Name: ${self:service}-${self:provider.stage}-CognitoUserPoolId
     CognitoUserPoolClientId:
       Description: Cognito User Pool Client ID
-      Value: !Ref CognitoUserPoolClient
+      Value: !Ref AdminUserPoolClient
       Export:
         Name: ${self:service}-${self:provider.stage}-CognitoUserPoolClientId
