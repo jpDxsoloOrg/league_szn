@@ -69,7 +69,8 @@ export default function RecordResult() {
     } else {
       // Select this team as winner
       setWinningTeamIndex(teamIndex);
-      setWinners(selectedMatch.teams[teamIndex]);
+      const team = selectedMatch.teams[teamIndex];
+      setWinners(team ?? []);
     }
   };
 

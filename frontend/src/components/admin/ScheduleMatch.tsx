@@ -165,7 +165,8 @@ export default function ScheduleMatch() {
   const handleTeamMemberToggle = (teamIndex: number, playerId: string) => {
     setTeams(prev => {
       const newTeams = [...prev];
-      const team = [...newTeams[teamIndex]];
+      const currentTeam = newTeams[teamIndex];
+      const team = currentTeam ? [...currentTeam] : [];
 
       if (team.includes(playerId)) {
         // Remove from this team
@@ -173,7 +174,7 @@ export default function ScheduleMatch() {
       } else {
         // Remove from other teams first
         newTeams.forEach((t, i) => {
-          if (i !== teamIndex) {
+          if (i !== teamIndex && t) {
             newTeams[i] = t.filter(id => id !== playerId);
           }
         });

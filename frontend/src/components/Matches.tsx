@@ -100,9 +100,13 @@ export default function Matches() {
     }
 
     // For tag team matches, show team-based results
-    if (isTagTeamMatch(match) && match.winningTeam !== undefined) {
-      const winningTeam = match.teams![match.winningTeam];
-      const losingTeams = match.teams!.filter((_, index) => index !== match.winningTeam);
+    if (isTagTeamMatch(match) && match.winningTeam !== undefined && match.teams) {
+      const winningTeam = match.teams[match.winningTeam];
+      const losingTeams = match.teams.filter((_, index) => index !== match.winningTeam);
+
+      if (!winningTeam) {
+        return <span className="status-completed">{t('common.completed')}</span>;
+      }
 
       return (
         <div className="match-result tag-team-result">
