@@ -39,6 +39,11 @@ const fetchWithAuth = async (url: string, options: RequestInit = {}, signal?: Ab
     throw new Error(error.message || `HTTP ${response.status}`);
   }
 
+  // Handle 204 No Content responses (e.g., from DELETE operations)
+  if (response.status === 204) {
+    return undefined;
+  }
+
   return response.json();
 };
 

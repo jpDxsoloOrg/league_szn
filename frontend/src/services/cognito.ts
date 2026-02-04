@@ -34,6 +34,14 @@ export const cognitoAuth = {
     try {
       logger.debug('Attempting sign in');
 
+      // Clear any existing session before attempting new sign in
+      // This handles cases where Amplify has cached tokens from previous sessions
+      try {
+        await signOut();
+      } catch {
+        // Ignore errors from signOut - user may not be signed in
+      }
+
       const result = await signIn({
         username,
         password,
