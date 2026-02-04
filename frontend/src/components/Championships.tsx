@@ -129,15 +129,21 @@ export default function Championships() {
       </div>
 
       {selectedChampionship && (
-        <div className="history-modal">
+        <div
+          className="history-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="history-modal-title"
+        >
           <div className="history-content">
             <div className="history-header">
-              <h3>
+              <h3 id="history-modal-title">
                 {championships.find(c => c.championshipId === selectedChampionship)?.name} {t('championships.history')}
               </h3>
               <button
                 onClick={() => setSelectedChampionship(null)}
                 className="close-btn"
+                aria-label={t('common.closeModal') || 'Close modal'}
               >
                 ×
               </button>
