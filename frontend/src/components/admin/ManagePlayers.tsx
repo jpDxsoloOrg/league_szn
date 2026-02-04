@@ -94,20 +94,38 @@ export default function ManagePlayers() {
 
     try {
       setUploading(true);
-      // Get presigned URL
-      const { uploadUrl, imageUrl } = await imagesApi.generateUploadUrl(
-        selectedFile.name,
-        selectedFile.type,
-        'wrestlers'
-      );
 
-      // Upload to S3
-      await imagesApi.uploadToS3(uploadUrl, selectedFile);
+      // Get presigned URL with specific error handling
+      let uploadUrl: string;
+      let imageUrl: string;
+      try {
+        const response = await imagesApi.generateUploadUrl(
+          selectedFile.name,
+          selectedFile.type,
+          'wrestlers'
+        );
+        uploadUrl = response.uploadUrl;
+        imageUrl = response.imageUrl;
+      } catch (err) {
+        logger.error('Failed to get upload URL for player image');
+        if (err instanceof Error && err.message.includes('401')) {
+          throw new Error('Session expired. Please log in again to upload images.');
+        }
+        throw new Error('Unable to prepare image upload. Please check your connection and try again.');
+      }
+
+      // Upload to S3 with specific error handling
+      try {
+        await imagesApi.uploadToS3(uploadUrl, selectedFile);
+      } catch (err) {
+        logger.error('Failed to upload player image to storage');
+        if (err instanceof TypeError && err.message.includes('network')) {
+          throw new Error('Network error during upload. Please check your internet connection and try again.');
+        }
+        throw new Error('Failed to upload image to storage. Please try again or use a different image.');
+      }
 
       return imageUrl;
-    } catch (_err) {
-      logger.error('Error uploading player image');
-      throw new Error('Failed to upload image');
     } finally {
       setUploading(false);
     }
