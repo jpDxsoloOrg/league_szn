@@ -7,12 +7,22 @@ const deleteAllFromTable = async (
   keyName: string,
   sortKeyName?: string
 ): Promise<number> => {
+  // Use ExpressionAttributeNames to handle reserved words like 'date', 'name', etc.
+  const expressionAttributeNames: Record<string, string> = {
+    '#pk': keyName,
+  };
+  let projectionExpression = '#pk';
+
+  if (sortKeyName) {
+    expressionAttributeNames['#sk'] = sortKeyName;
+    projectionExpression += ', #sk';
+  }
+
   // Use scanAll to handle pagination for tables with >1MB of data
   const items = await dynamoDb.scanAll({
     TableName: tableName,
-    ProjectionExpression: sortKeyName
-      ? `${keyName}, ${sortKeyName}`
-      : keyName,
+    ProjectionExpression: projectionExpression,
+    ExpressionAttributeNames: expressionAttributeNames,
   });
 
   if (items.length === 0) {
