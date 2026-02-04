@@ -4,16 +4,16 @@ import { selectors } from '../../config/selectors';
 
 type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'seasons' | 'help' | 'danger';
 
-const tabIndices: Record<AdminTab, number> = {
-  players: 0,
-  divisions: 1,
-  schedule: 2,
-  results: 3,
-  championships: 4,
-  tournaments: 5,
-  seasons: 6,
-  help: 7,
-  danger: 8,
+const tabSelectors: Record<AdminTab, string> = {
+  players: selectors.admin.tabPlayers,
+  divisions: selectors.admin.tabDivisions,
+  schedule: selectors.admin.tabSchedule,
+  results: selectors.admin.tabResults,
+  championships: selectors.admin.tabChampionships,
+  tournaments: selectors.admin.tabTournaments,
+  seasons: selectors.admin.tabSeasons,
+  help: selectors.admin.tabHelp,
+  danger: selectors.admin.tabDangerZone,
 };
 
 export class AdminPanelPage extends BasePage {
@@ -22,22 +22,18 @@ export class AdminPanelPage extends BasePage {
   }
 
   async selectTab(tab: AdminTab): Promise<void> {
-    const tabIndex = tabIndices[tab];
-    const tabButton = this.page.locator(`${selectors.admin.tabButton}`).nth(tabIndex);
-    await tabButton.click();
+    const selector = tabSelectors[tab];
+    await this.page.locator(selector).click();
     await this.waitForNetworkIdle();
-  }
-
-  async getActiveTabName(): Promise<string> {
-    return await this.getText(selectors.admin.activeTab);
+    await this.page.waitForTimeout(500); // Wait for tab content to load
   }
 
   async isAdminPanelVisible(): Promise<boolean> {
-    return await this.isElementVisible(selectors.admin.panel);
+    return await this.page.locator(selectors.admin.title).isVisible({ timeout: 5000 }).catch(() => false);
   }
 
   async logout(): Promise<void> {
-    await this.clickElement(selectors.admin.logoutButton);
+    await this.page.locator(selectors.admin.logoutButton).click();
     await this.waitForNetworkIdle();
   }
 }

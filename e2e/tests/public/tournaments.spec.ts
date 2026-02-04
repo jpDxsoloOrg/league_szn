@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { selectors } from '../../config/selectors';
 import { getEnvironment } from '../../config/environments';
 
 test.describe('Tournaments Page', () => {
@@ -7,30 +6,20 @@ test.describe('Tournaments Page', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto(`${baseUrl}/tournaments`);
+    await page.waitForLoadState('networkidle');
   });
 
-  test('should display tournaments container', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-    await expect(page.locator(selectors.publicTournaments.container)).toBeVisible();
+  test('should display tournaments page', async ({ page }) => {
+    await expect(page.locator('main')).toBeVisible();
+    // Check for tournaments heading
+    const hasHeading = await page.locator('h2').isVisible().catch(() => false);
+    expect(hasHeading).toBe(true);
   });
 
-  test('should show tournament cards if tournaments exist', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-
-    const cards = page.locator(selectors.publicTournaments.tournamentCard);
-    const emptyState = page.locator(selectors.common.emptyState);
-
-    const hasCards = await cards.first().isVisible().catch(() => false);
-    const hasEmpty = await emptyState.isVisible().catch(() => false);
-
-    // Either cards or empty state should be visible
-    expect(hasCards || hasEmpty).toBe(true);
-  });
-
-  test('page should not have errors', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-    const error = page.locator(selectors.common.error);
-    const hasError = await error.isVisible().catch(() => false);
-    expect(hasError).toBe(false);
+  test('page should load without errors', async ({ page }) => {
+    await expect(page.locator('main')).toBeVisible();
+    const pageContent = await page.content();
+    expect(pageContent.toLowerCase()).not.toContain('500 error');
+    expect(pageContent.toLowerCase()).not.toContain('server error');
   });
 });

@@ -1,4 +1,4 @@
-import { Page, expect } from '@playwright/test';
+import { Page } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { selectors } from '../config/selectors';
 import { adminCredentials } from '../config/credentials';
@@ -14,15 +14,33 @@ export class LoginPage extends BasePage {
   }
 
   async login(username: string = adminCredentials.username, password: string = adminCredentials.password): Promise<void> {
-    await this.page.locator(selectors.login.username).fill(username);
-    await this.page.locator(selectors.login.password).fill(password);
+    // Wait for login form to be visible
+    await this.page.waitForSelector(selectors.login.heading, { timeout: 10000 }).catch(() => {});
+
+    // Fill username - try multiple approaches
+    const usernameInput = this.page.locator('input').first();
+    await usernameInput.fill(username);
+
+    // Fill password
+    const passwordInput = this.page.locator('input[type="password"]');
+    await passwordInput.fill(password);
+
+    // Click login button
     await this.page.locator(selectors.login.submitButton).click();
+
+    // Wait for either admin panel or error to appear
+    await Promise.race([
+      this.page.waitForSelector(selectors.admin.title, { timeout: 15000 }),
+      this.page.waitForSelector('text=/error|invalid|failed|incorrect/i', { timeout: 15000 }),
+      this.page.waitForTimeout(10000) // Fallback timeout
+    ]).catch(() => {});
+
     await this.waitForNetworkIdle();
   }
 
   async isLoggedIn(): Promise<boolean> {
     try {
-      await this.page.locator(selectors.admin.panel).waitFor({ state: 'visible', timeout: 10000 });
+      await this.page.waitForSelector(selectors.admin.title, { state: 'visible', timeout: 10000 });
       return true;
     } catch {
       return false;
@@ -30,22 +48,39 @@ export class LoginPage extends BasePage {
   }
 
   async isLoginFormVisible(): Promise<boolean> {
-    return await this.isElementVisible(selectors.login.form);
+    try {
+      // Wait a bit for page to settle after logout
+      await this.page.waitForTimeout(1000);
+      const heading = await this.page.locator(selectors.login.heading).isVisible();
+      const loginBtn = await this.page.locator(selectors.login.submitButton).isVisible();
+      return heading || loginBtn;
+    } catch {
+      return false;
+    }
   }
 
   async logout(): Promise<void> {
     const logoutBtn = this.page.locator(selectors.admin.logoutButton);
-    if (await logoutBtn.isVisible()) {
+    if (await logoutBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
       await logoutBtn.click();
+      // Wait for navigation back to login page
+      await this.page.waitForSelector(selectors.login.heading, { timeout: 10000 }).catch(() => {});
       await this.waitForNetworkIdle();
     }
   }
 
   async getLoginError(): Promise<string> {
-    return await this.getText(selectors.login.errorMessage);
+    const errorEl = this.page.locator('text=/error|invalid|failed|incorrect/i');
+    if (await errorEl.isVisible({ timeout: 5000 }).catch(() => false)) {
+      return await errorEl.textContent() || '';
+    }
+    return '';
   }
 
   async hasLoginError(): Promise<boolean> {
-    return await this.isElementVisible(selectors.login.errorMessage);
+    // Wait for login to complete and check for error
+    await this.page.waitForTimeout(2000);
+    const pageContent = await this.page.content();
+    return /error|invalid|failed|incorrect/i.test(pageContent.toLowerCase());
   }
 }
