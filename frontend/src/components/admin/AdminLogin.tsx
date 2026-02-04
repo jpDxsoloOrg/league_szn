@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { authApi } from '../../services/api';
+import { cognitoAuth } from '../../services/cognito';
 import './AdminLogin.css';
 
 interface AdminLoginProps {
@@ -7,7 +7,7 @@ interface AdminLoginProps {
 }
 
 export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -18,8 +18,8 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
     setLoading(true);
 
     try {
-      // Authenticate with the backend API
-      await authApi.login(username, password);
+      // Authenticate with Cognito
+      await cognitoAuth.signIn(email, password);
       onLoginSuccess();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
@@ -35,12 +35,12 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
         <h2>Admin Login</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="email">Email</label>
             <input
-              type="text"
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               autoFocus
             />

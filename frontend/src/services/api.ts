@@ -11,9 +11,9 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
-// Helper to get auth token from session storage
+// Helper to get auth token from session storage (uses Cognito access token)
 const getAuthToken = (): string | null => {
-  return sessionStorage.getItem('authToken');
+  return sessionStorage.getItem('accessToken');
 };
 
 // Helper to make authenticated requests
@@ -223,34 +223,15 @@ export const adminApi = {
   },
 };
 
-// Auth API
+// Auth API (uses Cognito via cognito.ts service)
 export const authApi = {
-  login: async (username: string, password: string): Promise<{ token: string; expiresIn: string }> => {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Login failed' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    // Store the token after successful login
-    sessionStorage.setItem('authToken', data.token);
-    return data;
-  },
-
   setToken: (token: string) => {
-    sessionStorage.setItem('authToken', token);
+    sessionStorage.setItem('accessToken', token);
   },
 
   clearToken: () => {
-    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('idToken');
   },
 
   isAuthenticated: (): boolean => {

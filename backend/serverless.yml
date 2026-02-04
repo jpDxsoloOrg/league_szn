@@ -17,9 +17,8 @@ provider:
     SEASON_STANDINGS_TABLE: ${self:service}-season-standings-${self:provider.stage}
     DIVISIONS_TABLE: ${self:service}-divisions-${self:provider.stage}
     IMAGES_BUCKET: ${self:service}-images-${self:provider.stage}
-    JWT_SECRET: ${env:JWT_SECRET, 'league-szn-admin-secret-key-change-in-production'}
-    ADMIN_USERNAME: ${env:ADMIN_USERNAME, 'admin'}
-    ADMIN_PASSWORD: ${env:ADMIN_PASSWORD, 'FireGreen48!'}
+    COGNITO_USER_POOL_ID: !Ref CognitoUserPool
+    COGNITO_CLIENT_ID: !Ref CognitoUserPoolClient
   iam:
     role:
       statements:
@@ -49,6 +48,13 @@ provider:
             - s3:DeleteObject
           Resource:
             - arn:aws:s3:::${self:provider.environment.IMAGES_BUCKET}/*
+        - Effect: Allow
+          Action:
+            - cognito-idp:AdminCreateUser
+            - cognito-idp:AdminSetUserPassword
+            - cognito-idp:AdminGetUser
+          Resource:
+            - !GetAtt CognitoUserPool.Arn
 
 plugins:
   - serverless-plugin-typescript
@@ -79,11 +85,11 @@ functions:
   adminAuthorizer:
     handler: functions/auth/authorizer.handler
 
-  adminLogin:
-    handler: functions/auth/login.handler
+  createAdminUser:
+    handler: functions/auth/createAdminUser.handler
     events:
       - http:
-          path: auth/login
+          path: auth/setup
           method: post
           cors: true
 
@@ -378,6 +384,51 @@ resources:
         RestApiId:
           Ref: ApiGatewayRestApi
 
+    # Cognito User Pool for Admin Authentication
+    CognitoUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: ${self:service}-admin-pool-${self:provider.stage}
+        AdminCreateUserConfig:
+          AllowAdminCreateUserOnly: true
+        AutoVerifiedAttributes:
+          - email
+        UsernameAttributes:
+          - email
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireLowercase: true
+            RequireNumbers: true
+            RequireSymbols: false
+            RequireUppercase: true
+        Schema:
+          - Name: email
+            Required: true
+            Mutable: true
+          - Name: name
+            Required: false
+            Mutable: true
+
+    CognitoUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: ${self:service}-admin-client-${self:provider.stage}
+        UserPoolId: !Ref CognitoUserPool
+        GenerateSecret: false
+        ExplicitAuthFlows:
+          - ALLOW_USER_PASSWORD_AUTH
+          - ALLOW_REFRESH_TOKEN_AUTH
+          - ALLOW_USER_SRP_AUTH
+        PreventUserExistenceErrors: ENABLED
+        AccessTokenValidity: 24
+        IdTokenValidity: 24
+        RefreshTokenValidity: 30
+        TokenValidityUnits:
+          AccessToken: hours
+          IdToken: hours
+          RefreshToken: days
+
     PlayersTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -604,3 +655,13 @@ resources:
       Value: !GetAtt FrontendCloudFrontDistribution.DomainName
       Export:
         Name: ${self:service}-${self:provider.stage}-CloudFrontDomainName
+    CognitoUserPoolId:
+      Description: Cognito User Pool ID
+      Value: !Ref CognitoUserPool
+      Export:
+        Name: ${self:service}-${self:provider.stage}-CognitoUserPoolId
+    CognitoUserPoolClientId:
+      Description: Cognito User Pool Client ID
+      Value: !Ref CognitoUserPoolClient
+      Export:
+        Name: ${self:service}-${self:provider.stage}-CognitoUserPoolClientId

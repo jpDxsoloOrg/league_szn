@@ -1,5 +1,15 @@
 import { APIGatewayTokenAuthorizerHandler, APIGatewayAuthorizerResult } from 'aws-lambda';
-import { verifyToken, AdminTokenPayload } from '../../lib/jwt';
+import { CognitoJwtVerifier } from 'aws-jwt-verify';
+
+const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
+const CLIENT_ID = process.env.COGNITO_CLIENT_ID!;
+
+// Create a verifier that expects valid access tokens from Cognito
+const verifier = CognitoJwtVerifier.create({
+  userPoolId: USER_POOL_ID,
+  tokenUse: 'access',
+  clientId: CLIENT_ID,
+});
 
 const generatePolicy = (
   principalId: string,
@@ -48,23 +58,16 @@ export const handler: APIGatewayTokenAuthorizerHandler = async (event) => {
   const token = tokenParts[1];
 
   try {
-    // Verify the JWT token
-    const decoded: AdminTokenPayload = verifyToken(token);
-    console.log('Token verified for user:', decoded.username);
+    // Verify the Cognito JWT token
+    const payload = await verifier.verify(token);
+    console.log('Token verified for user:', payload.sub);
 
-    // Check if the user has admin role
-    if (decoded.role !== 'admin') {
-      console.log('User does not have admin role');
-      throw new Error('Unauthorized');
-    }
-
-    // Generate an Allow policy for all resources (you can be more restrictive if needed)
-    // Using a wildcard to allow access to all methods and resources in the API
+    // Generate an Allow policy for all resources
     const resource = event.methodArn.split('/').slice(0, 2).join('/') + '/*';
 
-    return generatePolicy(decoded.username, 'Allow', resource, {
-      username: decoded.username,
-      role: decoded.role,
+    return generatePolicy(payload.sub, 'Allow', resource, {
+      username: payload.username || payload.sub,
+      email: (payload['email'] as string) || '',
     });
   } catch (error) {
     console.error('Token verification failed:', error);
