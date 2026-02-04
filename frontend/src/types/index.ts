@@ -55,7 +55,7 @@ export interface Tournament {
   status: 'upcoming' | 'in-progress' | 'completed';
   participants: string[]; // playerIds
   brackets?: TournamentBracket; // for single-elimination
-  standings?: RoundRobinStanding[]; // for round-robin
+  standings?: Record<string, Omit<RoundRobinStanding, 'playerId'>>; // for round-robin
   winner?: string;
   createdAt: string;
 }

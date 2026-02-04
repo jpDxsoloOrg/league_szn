@@ -55,7 +55,7 @@ export default function Tournaments() {
   const renderRoundRobinStandings = (tournament: Tournament) => {
     if (!tournament.standings) return null;
 
-    const standingsArray = Object.entries(tournament.standings).map(([playerId, stats]: [string, any]) => ({
+    const standingsArray = Object.entries(tournament.standings).map(([playerId, stats]) => ({
       playerId,
       ...stats,
     }));

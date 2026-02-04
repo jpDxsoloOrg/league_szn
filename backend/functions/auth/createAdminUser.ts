@@ -1,11 +1,12 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
+import { timingSafeEqual } from 'crypto';
 import {
   CognitoIdentityProviderClient,
   AdminCreateUserCommand,
   AdminSetUserPasswordCommand,
   AdminGetUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
-import { success, badRequest, serverError } from '../../lib/response';
+import { success, badRequest, serverError, unauthorized } from '../../lib/response';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
@@ -14,25 +15,42 @@ interface CreateAdminRequest {
   email: string;
   password: string;
   name?: string;
-  setupKey: string;
 }
 
-// Setup key to prevent unauthorized admin creation
-// In production, this should be a secure environment variable
-const SETUP_KEY = process.env.ADMIN_SETUP_KEY || 'league-szn-setup-2024';
-
 export const handler: APIGatewayProxyHandler = async (event) => {
+  // Validate setup key FIRST - before any other operations
+  // This prevents unauthorized access to the admin creation endpoint
+  const setupKey = event.headers['x-setup-key'] || event.headers['X-Setup-Key'];
+  const expectedKey = process.env.ADMIN_SETUP_KEY;
+
+  if (!expectedKey || !setupKey) {
+    return unauthorized('Invalid or missing setup key');
+  }
+
+  // Use constant-time comparison to prevent timing attacks
+  try {
+    const keyBuffer = Buffer.from(setupKey);
+    const expectedBuffer = Buffer.from(expectedKey);
+    if (keyBuffer.length !== expectedBuffer.length || !timingSafeEqual(keyBuffer, expectedBuffer)) {
+      return unauthorized('Invalid or missing setup key');
+    }
+  } catch {
+    return unauthorized('Invalid or missing setup key');
+  }
+
   try {
     if (!event.body) {
       return badRequest('Request body is required');
     }
 
-    const { email, password, name, setupKey }: CreateAdminRequest = JSON.parse(event.body);
-
-    // Validate setup key
-    if (setupKey !== SETUP_KEY) {
-      return badRequest('Invalid setup key');
+    let parsedBody: CreateAdminRequest;
+    try {
+      parsedBody = JSON.parse(event.body);
+    } catch {
+      return badRequest('Invalid JSON in request body');
     }
+
+    const { email, password, name } = parsedBody;
 
     if (!email || !password) {
       return badRequest('Email and password are required');
@@ -52,9 +70,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         })
       );
       return badRequest('Admin user already exists');
-    } catch (error: any) {
+    } catch (error: unknown) {
       // UserNotFoundException means we can create the user
-      if (error.name !== 'UserNotFoundException') {
+      const cognitoError = error as Error & { name?: string };
+      if (cognitoError.name !== 'UserNotFoundException') {
         throw error;
       }
     }
@@ -87,7 +106,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       message: 'Admin user created successfully',
       email,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Create admin user error:', error);
     return serverError('Failed to create admin user');
   }
