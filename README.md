@@ -43,7 +43,7 @@ A serverless web application for managing a WWE 2K league with player standings,
 
 | Technology | Version | Description |
 |------------|---------|-------------|
-| **Node.js** | 18.x | JavaScript runtime for serverless Lambda functions |
+| **Node.js** | 20.x | JavaScript runtime for serverless Lambda functions |
 | **TypeScript** | 5.3.3 | Type-safe backend code with compile-time checking |
 | **@aws-sdk/client-dynamodb** | 3.450.0 | AWS SDK v3 for DynamoDB database operations |
 | **@aws-sdk/lib-dynamodb** | 3.450.0 | High-level DynamoDB Document Client for simplified operations |
@@ -172,7 +172,7 @@ npm run clear-data
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - AWS CLI configured with the `league-szn` profile
 
 ---
@@ -246,9 +246,9 @@ docker pull amazon/dynamodb-local
 # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html
 ```
 
-2. Make sure you have Node.js installed (v18+):
+2. Make sure you have Node.js installed (v20+):
 ```bash
-node --version  # Should be 18 or higher
+node --version  # Should be 20 or higher
 ```
 
 ### Step-by-Step Local Setup
