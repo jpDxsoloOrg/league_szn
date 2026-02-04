@@ -49,3 +49,15 @@ export const unauthorized = (message: string = 'Unauthorized'): APIGatewayProxyR
 export const forbidden = (message: string = 'Forbidden'): APIGatewayProxyResult => {
   return error(403, message);
 };
+
+export const conflict = (message: string = 'Conflict'): APIGatewayProxyResult => {
+  return error(409, message);
+};
+
+export const noContent = (): APIGatewayProxyResult => {
+  return {
+    statusCode: 204,
+    headers,
+    body: '',
+  };
+};

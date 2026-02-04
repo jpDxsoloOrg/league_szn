@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { created, badRequest, serverError } from '../../lib/response';
+import { created, badRequest, serverError, conflict } from '../../lib/response';
 
 interface CreateSeasonBody {
   name: string;
@@ -30,7 +30,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
 
     if (existingSeasons.Items && existingSeasons.Items.length > 0) {
-      return badRequest('There is already an active season. Please end the current season before creating a new one.');
+      return conflict('There is already an active season. Please end the current season before creating a new one.');
     }
 
     const season = {
