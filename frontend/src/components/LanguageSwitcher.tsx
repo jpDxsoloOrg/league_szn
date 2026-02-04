@@ -44,8 +44,11 @@ export default function LanguageSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const currentLang = languages.find(lang => lang.code === i18n.language) || languages[0];
-  const CurrentFlag = flags[currentLang.code];
+  const foundLang = languages.find(lang => lang.code === i18n.language);
+  const currentLang = foundLang ?? languages[0];
+  // Get flag component, with a safe default
+  const flagComponent = currentLang ? flags[currentLang.code] : undefined;
+  const CurrentFlag = flagComponent ?? FlagUK;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -86,6 +89,7 @@ export default function LanguageSwitcher() {
         <ul className="language-dropdown" role="listbox">
           {languages.map((lang) => {
             const Flag = flags[lang.code];
+            if (!Flag) return null;
             return (
               <li
                 key={lang.code}

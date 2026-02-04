@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { standingsApi, seasonsApi, divisionsApi } from '../services/api';
+import { logger } from '../utils/logger';
 import type { Standings as StandingsType, Season, Division, Player } from '../types';
 import './Standings.css';
 
@@ -14,28 +15,8 @@ export default function Standings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  useEffect(() => {
-    loadStandings();
-  }, [selectedSeasonId]);
-
-  const loadInitialData = async () => {
-    try {
-      const [seasonsData, divisionsData] = await Promise.all([
-        seasonsApi.getAll(),
-        divisionsApi.getAll(),
-      ]);
-      setSeasons(seasonsData);
-      setDivisions(divisionsData);
-    } catch (err) {
-      console.error('Failed to load initial data:', err);
-    }
-  };
-
-  const loadStandings = async () => {
+  // Reload standings when retry button is clicked
+  const loadStandings = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -46,9 +27,60 @@ export default function Standings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedSeasonId]);
 
-  const getFilteredPlayers = (): Player[] => {
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    const fetchInitialData = async () => {
+      try {
+        const [seasonsData, divisionsData] = await Promise.all([
+          seasonsApi.getAll(abortController.signal),
+          divisionsApi.getAll(abortController.signal),
+        ]);
+        if (!abortController.signal.aborted) {
+          setSeasons(seasonsData);
+          setDivisions(divisionsData);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          logger.error('Failed to load initial standings data');
+        }
+      }
+    };
+
+    fetchInitialData();
+    return () => abortController.abort();
+  }, []);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    const fetchStandings = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await standingsApi.get(selectedSeasonId || undefined, abortController.signal);
+        if (!abortController.signal.aborted) {
+          setStandings(data);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError(err.message || 'Failed to load standings');
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchStandings();
+    return () => abortController.abort();
+  }, [selectedSeasonId]);
+
+  // Memoize filtered players to avoid recalculation on every render
+  const filteredPlayers = useMemo((): Player[] => {
     if (!standings) return [];
 
     if (selectedDivision === 'all') {
@@ -60,19 +92,30 @@ export default function Standings() {
     }
 
     return standings.players.filter(p => p.divisionId === selectedDivision);
-  };
+  }, [standings, selectedDivision]);
 
-  const getDivisionName = (divisionId?: string) => {
+  // Memoize player data with calculated win percentages
+  const playersWithStats = useMemo(() => {
+    return filteredPlayers.map(player => {
+      const totalMatches = player.wins + player.losses + player.draws;
+      const winPercentage = totalMatches > 0
+        ? ((player.wins / totalMatches) * 100).toFixed(1)
+        : '0.0';
+      return { ...player, winPercentage };
+    });
+  }, [filteredPlayers]);
+
+  const getDivisionName = useCallback((divisionId?: string) => {
     if (!divisionId) return null;
     const division = divisions.find(d => d.divisionId === divisionId);
     return division?.name || null;
-  };
+  }, [divisions]);
 
-  const getSeasonName = () => {
+  const getSeasonName = useCallback(() => {
     if (!selectedSeasonId) return t('standings.allTime');
     const season = seasons.find(s => s.seasonId === selectedSeasonId);
     return season ? season.name : t('standings.allTime');
-  };
+  }, [selectedSeasonId, seasons, t]);
 
   if (loading) {
     return <div className="loading">{t('standings.loading')}</div>;
@@ -95,8 +138,6 @@ export default function Standings() {
       </div>
     );
   }
-
-  const filteredPlayers = getFilteredPlayers();
 
   return (
     <div className="standings-container">
@@ -172,40 +213,33 @@ export default function Standings() {
             </tr>
           </thead>
           <tbody>
-            {filteredPlayers.map((player, index) => {
-              const totalMatches = player.wins + player.losses + player.draws;
-              const winPercentage = totalMatches > 0
-                ? ((player.wins / totalMatches) * 100).toFixed(1)
-                : '0.0';
-
-              return (
-                <tr key={player.playerId}>
-                  <td className="rank">{index + 1}</td>
-                  <td className="wrestler-image-cell">
-                    {player.imageUrl ? (
-                      <img
-                        src={player.imageUrl}
-                        alt={player.currentWrestler}
-                        className="wrestler-thumbnail"
-                      />
-                    ) : (
-                      <div className="no-image-placeholder">-</div>
-                    )}
-                  </td>
-                  <td className="player-name">{player.name}</td>
-                  <td className="wrestler-name">{player.currentWrestler}</td>
-                  {selectedDivision === 'all' && (
-                    <td className="division-name">
-                      {getDivisionName(player.divisionId) || <span className="no-division">-</span>}
-                    </td>
+            {playersWithStats.map((player, index) => (
+              <tr key={player.playerId}>
+                <td className="rank">{index + 1}</td>
+                <td className="wrestler-image-cell">
+                  {player.imageUrl ? (
+                    <img
+                      src={player.imageUrl}
+                      alt={player.currentWrestler}
+                      className="wrestler-thumbnail"
+                    />
+                  ) : (
+                    <div className="no-image-placeholder">-</div>
                   )}
-                  <td className="wins">{player.wins}</td>
-                  <td className="losses">{player.losses}</td>
-                  <td className="draws">{player.draws}</td>
-                  <td className="win-percentage">{winPercentage}%</td>
-                </tr>
-              );
-            })}
+                </td>
+                <td className="player-name">{player.name}</td>
+                <td className="wrestler-name">{player.currentWrestler}</td>
+                {selectedDivision === 'all' && (
+                  <td className="division-name">
+                    {getDivisionName(player.divisionId) || <span className="no-division">-</span>}
+                  </td>
+                )}
+                <td className="wins">{player.wins}</td>
+                <td className="losses">{player.losses}</td>
+                <td className="draws">{player.draws}</td>
+                <td className="win-percentage">{player.winPercentage}%</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

@@ -2,25 +2,37 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, serverError } from '../../lib/response';
 
-const deleteAllFromTable = async (tableName: string, keyName: string, sortKeyName?: string) => {
-  const result = await dynamoDb.scan({
+const deleteAllFromTable = async (
+  tableName: string,
+  keyName: string,
+  sortKeyName?: string
+): Promise<number> => {
+  // Use scanAll to handle pagination for tables with >1MB of data
+  const items = await dynamoDb.scanAll({
     TableName: tableName,
+    ProjectionExpression: sortKeyName
+      ? `${keyName}, ${sortKeyName}`
+      : keyName,
   });
 
-  if (result.Items && result.Items.length > 0) {
-    for (const item of result.Items) {
-      const key: Record<string, any> = { [keyName]: (item as any)[keyName] };
-      if (sortKeyName) {
-        key[sortKeyName] = (item as any)[sortKeyName];
-      }
-      await dynamoDb.delete({
-        TableName: tableName,
-        Key: key,
-      });
-    }
+  if (items.length === 0) {
+    return 0;
   }
 
-  return result.Items?.length || 0;
+  // Delete items sequentially to avoid throttling
+  // For very large datasets, consider using BatchWriteItem for better performance
+  for (const item of items) {
+    const key: Record<string, unknown> = { [keyName]: item[keyName] };
+    if (sortKeyName) {
+      key[sortKeyName] = item[sortKeyName];
+    }
+    await dynamoDb.delete({
+      TableName: tableName,
+      Key: key,
+    });
+  }
+
+  return items.length;
 };
 
 export const handler: APIGatewayProxyHandler = async () => {

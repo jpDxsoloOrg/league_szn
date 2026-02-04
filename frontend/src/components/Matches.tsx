@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi } from '../services/api';
+import { formatDateTime } from '../utils/dateUtils';
 import type { Match, Player } from '../types';
 import './Matches.css';
 
@@ -12,11 +13,8 @@ export default function Matches() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [filter]);
-
-  const loadData = async () => {
+  // Reload data when retry button is clicked
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -31,7 +29,37 @@ export default function Matches() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const [matchData, playerData] = await Promise.all([
+          matchesApi.getAll(filter === 'all' ? {} : { status: filter }, abortController.signal),
+          playersApi.getAll(abortController.signal),
+        ]);
+        if (!abortController.signal.aborted) {
+          setMatches(matchData);
+          setPlayers(playerData);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError(err.message || 'Failed to load matches');
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+    return () => abortController.abort();
+  }, [filter]);
 
   const getPlayerName = (playerId: string) => {
     const player = players.find(p => p.playerId === playerId);
@@ -62,11 +90,6 @@ export default function Matches() {
     ));
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
   const getMatchResult = (match: Match) => {
     if (match.status === 'scheduled') {
       return <span className="status-scheduled">{t('common.scheduled')}</span>;
@@ -77,9 +100,13 @@ export default function Matches() {
     }
 
     // For tag team matches, show team-based results
-    if (isTagTeamMatch(match) && match.winningTeam !== undefined) {
-      const winningTeam = match.teams![match.winningTeam];
-      const losingTeams = match.teams!.filter((_, index) => index !== match.winningTeam);
+    if (isTagTeamMatch(match) && match.winningTeam !== undefined && match.teams) {
+      const winningTeam = match.teams[match.winningTeam];
+      const losingTeams = match.teams.filter((_, index) => index !== match.winningTeam);
+
+      if (!winningTeam) {
+        return <span className="status-completed">{t('common.completed')}</span>;
+      }
 
       return (
         <div className="match-result tag-team-result">
@@ -173,7 +200,7 @@ export default function Matches() {
                     <span className="championship-badge">{t('matches.championship')}</span>
                   )}
                 </div>
-                <div className="match-date">{formatDate(match.date)}</div>
+                <div className="match-date">{formatDateTime(match.date)}</div>
               </div>
 
               <div className="match-participants">

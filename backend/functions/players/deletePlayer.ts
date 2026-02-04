@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { noContent, badRequest, notFound, serverError, conflict } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -33,8 +33,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
 
     if (championshipsResult.Items && championshipsResult.Items.length > 0) {
-      const championshipNames = championshipsResult.Items.map((c: any) => c.name).join(', ');
-      return badRequest(
+      const championshipNames = championshipsResult.Items.map((c: Record<string, unknown>) => c.name).join(', ');
+      return conflict(
         `Cannot delete player. They are currently champion of: ${championshipNames}. Remove their championship first.`
       );
     }
@@ -70,7 +70,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    return success({ message: 'Player deleted successfully' });
+    return noContent();
   } catch (err) {
     console.error('Error deleting player:', err);
     return serverError('Failed to delete player');

@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { noContent, badRequest, notFound, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -50,7 +50,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    return success({ message: 'Season deleted successfully' });
+    return noContent();
   } catch (err) {
     console.error('Error deleting season:', err);
     return serverError('Failed to delete season');

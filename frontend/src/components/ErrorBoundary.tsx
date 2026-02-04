@@ -1,4 +1,5 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
+import { logger } from '../utils/logger';
 import './ErrorBoundary.css';
 
 interface Props {
@@ -21,15 +22,15 @@ export default class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    logger.error('Error caught by boundary:', error.message, errorInfo.componentStack);
   }
 
   handleReload = () => {
     window.location.reload();
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;

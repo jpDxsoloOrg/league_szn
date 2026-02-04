@@ -126,25 +126,25 @@ export default function ClearAllData() {
               <ul>
                 {resultType === 'deleted' ? (
                   <>
-                    <li>Players: {resultCounts.players || 0}</li>
-                    <li>Matches: {resultCounts.matches || 0}</li>
-                    <li>Championships: {resultCounts.championships || 0}</li>
-                    <li>Championship History: {resultCounts.championshipHistory || 0}</li>
-                    <li>Tournaments: {resultCounts.tournaments || 0}</li>
-                    <li>Seasons: {resultCounts.seasons || 0}</li>
-                    <li>Season Standings: {resultCounts.seasonStandings || 0}</li>
-                    <li>Divisions: {resultCounts.divisions || 0}</li>
+                    <li>Players: {resultCounts['players'] ?? 0}</li>
+                    <li>Matches: {resultCounts['matches'] ?? 0}</li>
+                    <li>Championships: {resultCounts['championships'] ?? 0}</li>
+                    <li>Championship History: {resultCounts['championshipHistory'] ?? 0}</li>
+                    <li>Tournaments: {resultCounts['tournaments'] ?? 0}</li>
+                    <li>Seasons: {resultCounts['seasons'] ?? 0}</li>
+                    <li>Season Standings: {resultCounts['seasonStandings'] ?? 0}</li>
+                    <li>Divisions: {resultCounts['divisions'] ?? 0}</li>
                   </>
                 ) : (
                   <>
-                    <li>Divisions: {resultCounts.divisions || 0}</li>
-                    <li>Players: {resultCounts.players || 0}</li>
-                    <li>Seasons: {resultCounts.seasons || 0}</li>
-                    <li>Season Standings: {resultCounts.seasonStandings || 0}</li>
-                    <li>Championships: {resultCounts.championships || 0}</li>
-                    <li>Championship History: {resultCounts.championshipHistory || 0}</li>
-                    <li>Matches: {resultCounts.matches || 0}</li>
-                    <li>Tournaments: {resultCounts.tournaments || 0}</li>
+                    <li>Divisions: {resultCounts['divisions'] ?? 0}</li>
+                    <li>Players: {resultCounts['players'] ?? 0}</li>
+                    <li>Seasons: {resultCounts['seasons'] ?? 0}</li>
+                    <li>Season Standings: {resultCounts['seasonStandings'] ?? 0}</li>
+                    <li>Championships: {resultCounts['championships'] ?? 0}</li>
+                    <li>Championship History: {resultCounts['championshipHistory'] ?? 0}</li>
+                    <li>Matches: {resultCounts['matches'] ?? 0}</li>
+                    <li>Tournaments: {resultCounts['tournaments'] ?? 0}</li>
                   </>
                 )}
               </ul>

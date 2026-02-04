@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { championshipsApi, playersApi } from '../services/api';
+import { formatDate } from '../utils/dateUtils';
+import { logger } from '../utils/logger';
 import type { Championship, ChampionshipReign, Player } from '../types';
 import './Championships.css';
 
@@ -13,12 +15,10 @@ export default function Championships() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const historyAbortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  // Reload data when retry button is clicked
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -33,20 +33,61 @@ export default function Championships() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadHistory = async (championshipId: string) => {
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const [champData, playerData] = await Promise.all([
+          championshipsApi.getAll(abortController.signal),
+          playersApi.getAll(abortController.signal),
+        ]);
+        if (!abortController.signal.aborted) {
+          setChampionships(champData);
+          setPlayers(playerData);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError(err.message || 'Failed to load championships');
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+    return () => abortController.abort();
+  }, []);
+
+  const loadHistory = useCallback(async (championshipId: string) => {
+    // Cancel any previous history request
+    if (historyAbortRef.current) {
+      historyAbortRef.current.abort();
+    }
+    historyAbortRef.current = new AbortController();
+
     try {
       setLoadingHistory(true);
-      const historyData = await championshipsApi.getHistory(championshipId);
+      const historyData = await championshipsApi.getHistory(
+        championshipId,
+        historyAbortRef.current.signal
+      );
       setHistory(historyData);
       setSelectedChampionship(championshipId);
     } catch (err) {
-      console.error('Failed to load history:', err);
+      if (err instanceof Error && err.name !== 'AbortError') {
+        logger.error('Failed to load championship history');
+      }
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }, []);
 
   const getPlayerName = (playerId: string | string[]) => {
     if (Array.isArray(playerId)) {
@@ -128,15 +169,21 @@ export default function Championships() {
       </div>
 
       {selectedChampionship && (
-        <div className="history-modal">
+        <div
+          className="history-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="history-modal-title"
+        >
           <div className="history-content">
             <div className="history-header">
-              <h3>
+              <h3 id="history-modal-title">
                 {championships.find(c => c.championshipId === selectedChampionship)?.name} {t('championships.history')}
               </h3>
               <button
                 onClick={() => setSelectedChampionship(null)}
                 className="close-btn"
+                aria-label={t('common.closeModal') || 'Close modal'}
               >
                 ×
               </button>
@@ -163,10 +210,10 @@ export default function Championships() {
                         <td className="champion-name">
                           {getPlayerName(reign.champion)}
                         </td>
-                        <td>{new Date(reign.wonDate).toLocaleDateString()}</td>
+                        <td>{formatDate(reign.wonDate)}</td>
                         <td>
                           {reign.lostDate
-                            ? new Date(reign.lostDate).toLocaleDateString()
+                            ? formatDate(reign.lostDate)
                             : t('common.current')}
                         </td>
                         <td>

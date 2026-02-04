@@ -1,11 +1,13 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { tournamentsApi, playersApi } from '../../services/api';
+import { sanitizeName } from '../../utils/sanitize';
 import type { Player } from '../../types';
 import './CreateTournament.css';
 
 export default function CreateTournament() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -24,7 +26,7 @@ export default function CreateTournament() {
       setLoading(true);
       const data = await playersApi.getAll();
       setPlayers(data);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load players');
     } finally {
       setLoading(false);
@@ -33,6 +35,8 @@ export default function CreateTournament() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (submitting) return; // Prevent double submission
+
     setError(null);
     setSuccess(null);
 
@@ -46,9 +50,20 @@ export default function CreateTournament() {
       return;
     }
 
+    setSubmitting(true);
+
     try {
+      // Sanitize tournament name input
+      const sanitizedName = sanitizeName(formData.name, 100);
+
+      if (!sanitizedName) {
+        setError('Tournament name cannot be empty');
+        setSubmitting(false);
+        return;
+      }
+
       await tournamentsApi.create({
-        name: formData.name,
+        name: sanitizedName,
         type: formData.type,
         participants: formData.participants,
         status: 'upcoming',
@@ -62,6 +77,8 @@ export default function CreateTournament() {
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create tournament');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -103,7 +120,7 @@ export default function CreateTournament() {
           <select
             id="type"
             value={formData.type}
-            onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+            onChange={(e) => setFormData({ ...formData, type: e.target.value as 'single-elimination' | 'round-robin' })}
             required
           >
             <option value="single-elimination">Single Elimination</option>
@@ -135,7 +152,9 @@ export default function CreateTournament() {
           </div>
         </div>
 
-        <button type="submit">Create Tournament</button>
+        <button type="submit" disabled={submitting}>
+          {submitting ? 'Creating...' : 'Create Tournament'}
+        </button>
       </form>
     </div>
   );

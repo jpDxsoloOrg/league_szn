@@ -74,9 +74,12 @@ export class ManageSeasonsPage extends BasePage {
 
   async seasonExists(seasonName: string): Promise<boolean> {
     await this.waitForNetworkIdle();
+    // Wait for any pending React updates to complete
     await this.page.waitForTimeout(500);
-    const pageContent = await this.page.content();
-    return pageContent.includes(seasonName);
+    // Use locator-based check - more reliable than raw page content
+    const seasonLocator = this.page.locator(`h4:has-text("${seasonName}")`);
+    const count = await seasonLocator.count();
+    return count > 0;
   }
 
   async deleteSeason(seasonName: string): Promise<void> {

@@ -7,12 +7,14 @@ import {
   DeleteCommand,
   ScanCommand,
   QueryCommand,
+  TransactWriteCommand,
   GetCommandInput,
   PutCommandInput,
   UpdateCommandInput,
   DeleteCommandInput,
   ScanCommandInput,
   QueryCommandInput,
+  TransactWriteCommandInput,
 } from '@aws-sdk/lib-dynamodb';
 
 const isOffline = process.env.IS_OFFLINE === 'true';
@@ -60,6 +62,53 @@ export const dynamoDb = {
   query: async (params: QueryCommandInput) => {
     const command = new QueryCommand(params);
     return docClient.send(command);
+  },
+
+  transactWrite: async (params: TransactWriteCommandInput) => {
+    const command = new TransactWriteCommand(params);
+    return docClient.send(command);
+  },
+
+  /**
+   * Scans all items from a table, handling pagination automatically.
+   * Use this when you need to retrieve all items and the table may have >1MB of data.
+   */
+  scanAll: async (params: ScanCommandInput): Promise<Record<string, unknown>[]> => {
+    const items: Record<string, unknown>[] = [];
+    let lastKey: Record<string, unknown> | undefined;
+
+    do {
+      const command = new ScanCommand({
+        ...params,
+        ExclusiveStartKey: lastKey,
+      });
+      const result = await docClient.send(command);
+      items.push(...((result.Items || []) as Record<string, unknown>[]));
+      lastKey = result.LastEvaluatedKey;
+    } while (lastKey);
+
+    return items;
+  },
+
+  /**
+   * Queries all items matching the condition, handling pagination automatically.
+   * Use this when you need to retrieve all matching items and results may exceed 1MB.
+   */
+  queryAll: async (params: QueryCommandInput): Promise<Record<string, unknown>[]> => {
+    const items: Record<string, unknown>[] = [];
+    let lastKey: Record<string, unknown> | undefined;
+
+    do {
+      const command = new QueryCommand({
+        ...params,
+        ExclusiveStartKey: lastKey,
+      });
+      const result = await docClient.send(command);
+      items.push(...((result.Items || []) as Record<string, unknown>[]));
+      lastKey = result.LastEvaluatedKey;
+    } while (lastKey);
+
+    return items;
   },
 };
 

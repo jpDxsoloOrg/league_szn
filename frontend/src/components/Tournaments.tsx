@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tournamentsApi, playersApi } from '../services/api';
 import type { Tournament, Player } from '../types';
@@ -12,11 +12,8 @@ export default function Tournaments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  // Reload data when retry button is clicked
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -31,7 +28,37 @@ export default function Tournaments() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const [tournamentData, playerData] = await Promise.all([
+          tournamentsApi.getAll(abortController.signal),
+          playersApi.getAll(abortController.signal),
+        ]);
+        if (!abortController.signal.aborted) {
+          setTournaments(tournamentData);
+          setPlayers(playerData);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError(err.message || 'Failed to load tournaments');
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+    return () => abortController.abort();
+  }, []);
 
   const getPlayerName = (playerId: string) => {
     const player = players.find(p => p.playerId === playerId);

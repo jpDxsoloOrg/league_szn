@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { noContent, badRequest, notFound, serverError, conflict } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -33,7 +33,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
 
     if (playersResult.Items && playersResult.Items.length > 0) {
-      return badRequest(
+      return conflict(
         `Cannot delete division. ${playersResult.Items.length} player(s) are still assigned to this division.`
       );
     }
@@ -43,7 +43,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       Key: { divisionId },
     });
 
-    return success({ message: 'Division deleted successfully' });
+    return noContent();
   } catch (err) {
     console.error('Error deleting division:', err);
     return serverError('Failed to delete division');

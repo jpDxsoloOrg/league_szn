@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { success, badRequest, notFound, serverError, conflict } from '../../lib/response';
 
 interface UpdateSeasonBody {
   name?: string;
@@ -45,7 +45,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       });
 
       if (activeSeasons.Items && activeSeasons.Items.length > 0) {
-        return badRequest('There is already an active season. Please end the current season first.');
+        return conflict('There is already an active season. Please end the current season first.');
       }
     }
 

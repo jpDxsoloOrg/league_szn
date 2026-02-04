@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi } from '../../services/api';
+import { sanitizeInput } from '../../utils/sanitize';
 import type { Player, Championship, Tournament, Season } from '../../types';
 import './ScheduleMatch.css';
 
@@ -11,6 +12,7 @@ export default function ScheduleMatch() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -51,7 +53,7 @@ export default function ScheduleMatch() {
       if (activeSeason) {
         setFormData(prev => ({ ...prev, seasonId: activeSeason.seasonId }));
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load data');
     } finally {
       setLoading(false);
@@ -62,8 +64,11 @@ export default function ScheduleMatch() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (submitting) return; // Prevent double submission
+
     setError(null);
     setSuccess(null);
+    setSubmitting(true);
 
     if (isTagTeamMatch) {
       // For tag team matches, validate teams
@@ -76,10 +81,13 @@ export default function ScheduleMatch() {
       const allParticipants = teams.flat();
 
       try {
+        // Sanitize stipulation input
+        const sanitizedStipulation = sanitizeInput(formData.stipulation, 200);
+
         await matchesApi.schedule({
           date: new Date(formData.date).toISOString(),
           matchType: formData.matchType,
-          stipulation: formData.stipulation,
+          stipulation: sanitizedStipulation,
           participants: allParticipants,
           teams: validTeams,
           isChampionship: formData.isChampionship,
@@ -93,6 +101,8 @@ export default function ScheduleMatch() {
         resetForm();
       } catch (err) {
         setError(err instanceof Error ? err.message : t('scheduleMatch.error'));
+      } finally {
+        setSubmitting(false);
       }
     } else {
       // Non-tag team match validation
@@ -102,10 +112,13 @@ export default function ScheduleMatch() {
       }
 
       try {
+        // Sanitize stipulation input
+        const sanitizedStipulation = sanitizeInput(formData.stipulation, 200);
+
         await matchesApi.schedule({
           date: new Date(formData.date).toISOString(),
           matchType: formData.matchType,
-          stipulation: formData.stipulation,
+          stipulation: sanitizedStipulation,
           participants: formData.participants,
           isChampionship: formData.isChampionship,
           championshipId: formData.championshipId || undefined,
@@ -118,6 +131,8 @@ export default function ScheduleMatch() {
         resetForm();
       } catch (err) {
         setError(err instanceof Error ? err.message : t('scheduleMatch.error'));
+      } finally {
+        setSubmitting(false);
       }
     }
   };
@@ -150,7 +165,8 @@ export default function ScheduleMatch() {
   const handleTeamMemberToggle = (teamIndex: number, playerId: string) => {
     setTeams(prev => {
       const newTeams = [...prev];
-      const team = [...newTeams[teamIndex]];
+      const currentTeam = newTeams[teamIndex];
+      const team = currentTeam ? [...currentTeam] : [];
 
       if (team.includes(playerId)) {
         // Remove from this team
@@ -158,7 +174,7 @@ export default function ScheduleMatch() {
       } else {
         // Remove from other teams first
         newTeams.forEach((t, i) => {
-          if (i !== teamIndex) {
+          if (i !== teamIndex && t) {
             newTeams[i] = t.filter(id => id !== playerId);
           }
         });
@@ -412,7 +428,9 @@ export default function ScheduleMatch() {
           </div>
         )}
 
-        <button type="submit">{t('scheduleMatch.submit')}</button>
+        <button type="submit" disabled={submitting}>
+          {submitting ? 'Scheduling...' : t('scheduleMatch.submit')}
+        </button>
       </form>
     </div>
   );

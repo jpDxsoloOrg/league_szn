@@ -33,7 +33,7 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
     <div className="admin-login-container">
       <div className="admin-login-card">
         <h2>Admin Login</h2>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} aria-describedby={error ? 'login-error' : undefined}>
           <div className="form-group">
             <label htmlFor="username">Username</label>
             <input
@@ -43,6 +43,7 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
               onChange={(e) => setUsername(e.target.value)}
               required
               autoFocus
+              aria-invalid={error ? 'true' : undefined}
             />
           </div>
 
@@ -54,12 +55,17 @@ export default function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              aria-invalid={error ? 'true' : undefined}
             />
           </div>
 
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div id="login-error" className="error-message" role="alert" aria-live="polite">
+              {error}
+            </div>
+          )}
 
-          <button type="submit" disabled={loading}>
+          <button type="submit" disabled={loading} aria-busy={loading}>
             {loading ? 'Logging in...' : 'Login'}
           </button>
 

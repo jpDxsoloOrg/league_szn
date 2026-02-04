@@ -1,11 +1,12 @@
 import { Amplify } from 'aws-amplify';
 import { signIn, signOut, fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
+import { logger } from '../utils/logger';
 
 // Cognito configuration from environment variables
 const cognitoConfig = {
-  userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID || '',
-  userPoolClientId: import.meta.env.VITE_COGNITO_CLIENT_ID || '',
-  region: import.meta.env.VITE_AWS_REGION || 'us-east-1',
+  userPoolId: import.meta.env['VITE_COGNITO_USER_POOL_ID'] ?? '',
+  userPoolClientId: import.meta.env['VITE_COGNITO_CLIENT_ID'] ?? '',
+  region: import.meta.env['VITE_AWS_REGION'] ?? 'us-east-1',
 };
 
 // Configure Amplify
@@ -31,18 +32,22 @@ export const cognitoAuth = {
    */
   signIn: async (username: string, password: string): Promise<CognitoAuthResult> => {
     try {
-      console.log('Attempting sign in for:', username);
-      console.log('Cognito config:', {
-        userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
-        clientId: import.meta.env.VITE_COGNITO_CLIENT_ID,
-      });
+      logger.debug('Attempting sign in');
+
+      // Clear any existing session before attempting new sign in
+      // This handles cases where Amplify has cached tokens from previous sessions
+      try {
+        await signOut();
+      } catch {
+        // Ignore errors from signOut - user may not be signed in
+      }
 
       const result = await signIn({
         username,
         password,
       });
 
-      console.log('Sign in result:', result);
+      logger.debug('Sign in completed');
 
       if (result.isSignedIn) {
         const session = await fetchAuthSession();
@@ -78,7 +83,7 @@ export const cognitoAuth = {
 
       throw new Error('Sign in failed - unexpected state');
     } catch (error: unknown) {
-      console.error('Cognito sign in error:', error);
+      logger.error('Cognito sign in error');
 
       // Handle specific Cognito errors with type narrowing
       if (error instanceof Error) {
@@ -105,8 +110,8 @@ export const cognitoAuth = {
       await signOut();
       sessionStorage.removeItem('accessToken');
       sessionStorage.removeItem('idToken');
-    } catch (error) {
-      console.error('Sign out error:', error);
+    } catch (_error) {
+      logger.error('Sign out error');
       // Clear tokens anyway
       sessionStorage.removeItem('accessToken');
       sessionStorage.removeItem('idToken');
@@ -173,8 +178,8 @@ export const cognitoAuth = {
         };
       }
       return null;
-    } catch (error) {
-      console.error('Session refresh error:', error);
+    } catch (_error) {
+      logger.error('Session refresh error');
       return null;
     }
   },

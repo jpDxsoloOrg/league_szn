@@ -55,9 +55,12 @@ export class ManageChampionshipsPage extends BasePage {
 
   async championshipExists(championshipName: string): Promise<boolean> {
     await this.waitForNetworkIdle();
+    // Wait for any pending React updates to complete
     await this.page.waitForTimeout(500);
-    const pageContent = await this.page.content();
-    return pageContent.includes(championshipName);
+    // Use locator-based check - more reliable than raw page content
+    const championshipLocator = this.page.locator(`h4:has-text("${championshipName}")`);
+    const count = await championshipLocator.count();
+    return count > 0;
   }
 
   async deleteChampionship(championshipName: string): Promise<void> {

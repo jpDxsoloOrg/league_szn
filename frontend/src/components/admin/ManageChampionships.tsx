@@ -1,5 +1,8 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { championshipsApi, imagesApi } from '../../services/api';
+import { sanitizeName } from '../../utils/sanitize';
+import { logger } from '../../utils/logger';
+import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
 import type { Championship } from '../../types';
 import './ManageChampionships.css';
 
@@ -10,6 +13,7 @@ export default function ManageChampionships() {
   const [success, setSuccess] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [editingChampionship, setEditingChampionship] = useState<Championship | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -32,7 +36,7 @@ export default function ManageChampionships() {
       setLoading(true);
       const data = await championshipsApi.getAll();
       setChampionships(data);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load championships');
     } finally {
       setLoading(false);
@@ -43,15 +47,14 @@ export default function ManageChampionships() {
     const file = e.target.files?.[0];
     if (file) {
       // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
-        setError('Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.');
+      if (!FILE_UPLOAD_LIMITS.ALLOWED_TYPES.includes(file.type as typeof FILE_UPLOAD_LIMITS.ALLOWED_TYPES[number])) {
+        setError(`Invalid file type. Only ${FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS} images are allowed.`);
         return;
       }
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('File too large. Maximum size is 5MB.');
+      // Validate file size
+      if (file.size > FILE_UPLOAD_LIMITS.MAX_SIZE) {
+        setError(`File too large. Maximum size is ${FILE_UPLOAD_LIMITS.MAX_SIZE_MB}MB.`);
         return;
       }
 
@@ -78,20 +81,38 @@ export default function ManageChampionships() {
 
     try {
       setUploading(true);
-      // Get presigned URL
-      const { uploadUrl, imageUrl } = await imagesApi.generateUploadUrl(
-        selectedFile.name,
-        selectedFile.type,
-        'championships'
-      );
 
-      // Upload to S3
-      await imagesApi.uploadToS3(uploadUrl, selectedFile);
+      // Get presigned URL with specific error handling
+      let uploadUrl: string;
+      let imageUrl: string;
+      try {
+        const response = await imagesApi.generateUploadUrl(
+          selectedFile.name,
+          selectedFile.type,
+          'championships'
+        );
+        uploadUrl = response.uploadUrl;
+        imageUrl = response.imageUrl;
+      } catch (err) {
+        logger.error('Failed to get upload URL for championship image');
+        if (err instanceof Error && err.message.includes('401')) {
+          throw new Error('Session expired. Please log in again to upload images.');
+        }
+        throw new Error('Unable to prepare image upload. Please check your connection and try again.');
+      }
+
+      // Upload to S3 with specific error handling
+      try {
+        await imagesApi.uploadToS3(uploadUrl, selectedFile);
+      } catch (err) {
+        logger.error('Failed to upload championship image to storage');
+        if (err instanceof TypeError && err.message.includes('network')) {
+          throw new Error('Network error during upload. Please check your internet connection and try again.');
+        }
+        throw new Error('Failed to upload image to storage. Please try again or use a different image.');
+      }
 
       return imageUrl;
-    } catch (err) {
-      console.error('Error uploading image:', err);
-      throw new Error('Failed to upload image');
     } finally {
       setUploading(false);
     }
@@ -99,23 +120,34 @@ export default function ManageChampionships() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (submitting || uploading) return; // Prevent double submission
+
     setError(null);
     setSuccess(null);
+    setSubmitting(true);
 
     try {
+      // Sanitize inputs before sending to API
+      const sanitizedName = sanitizeName(formData.name, VALIDATION.MAX_NAME_LENGTH);
+
+      if (!sanitizedName) {
+        setError('Championship name cannot be empty');
+        return;
+      }
+
       // Upload image first if one is selected
       const imageUrl = await uploadImage();
 
       if (editingChampionship) {
         await championshipsApi.update(editingChampionship.championshipId, {
-          name: formData.name,
+          name: sanitizedName,
           type: formData.type,
           imageUrl: imageUrl || undefined,
         });
         setSuccess('Championship updated successfully!');
       } else {
         await championshipsApi.create({
-          name: formData.name,
+          name: sanitizedName,
           type: formData.type,
           imageUrl: imageUrl || undefined,
           isActive: true,
@@ -131,6 +163,8 @@ export default function ManageChampionships() {
       await loadChampionships();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save championship');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -243,17 +277,17 @@ export default function ManageChampionships() {
                     <label htmlFor="championship-image" className="file-input-label">
                       Click to upload image
                     </label>
-                    <p className="upload-hint">JPEG, PNG, GIF, or WebP (max 5MB)</p>
+                    <p className="upload-hint">{FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS} (max {FILE_UPLOAD_LIMITS.MAX_SIZE_MB}MB)</p>
                   </div>
                 )}
               </div>
             </div>
 
             <div className="form-actions">
-              <button type="submit" disabled={uploading}>
-                {uploading ? 'Uploading...' : editingChampionship ? 'Update Championship' : 'Create Championship'}
+              <button type="submit" disabled={submitting || uploading}>
+                {submitting ? 'Saving...' : uploading ? 'Uploading...' : editingChampionship ? 'Update Championship' : 'Create Championship'}
               </button>
-              <button type="button" onClick={handleCancel} className="cancel-btn">
+              <button type="button" onClick={handleCancel} className="cancel-btn" disabled={submitting || uploading}>
                 Cancel
               </button>
             </div>
