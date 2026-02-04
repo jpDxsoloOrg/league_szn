@@ -19,7 +19,7 @@ A serverless web application for managing a WWE 2K league with player standings,
 | **amazon-cognito-identity-js** | 6.3.7 | Handles admin login/logout with Cognito User Pool |
 | **@aws-sdk/client-s3** | 3.981.0 | Browser-side S3 uploads for player/championship images |
 | **@aws-sdk/lib-storage** | 3.981.0 | Multi-part upload support for larger images |
-| **ESLint** | 8.55.0 | Code quality with React Hooks and TypeScript rules |
+| **ESLint** | 9.x | Code quality with React Hooks and TypeScript rules (flat config) |
 
 ### Backend Technologies
 

@@ -37,7 +37,7 @@ A serverless web application for managing a WWE 2K league with player standings,
 | **AWS Amplify** | 6.16.0 | AWS integration library for authentication and cloud services |
 | **amazon-cognito-identity-js** | 6.3.7 | Cognito SDK for client-side user authentication |
 | **@aws-sdk/client-s3** | 3.981.0 | AWS SDK v3 for S3 operations (image uploads) |
-| **ESLint** | 8.55.0 | JavaScript/TypeScript linter with React Hooks and TypeScript plugins |
+| **ESLint** | 9.x | JavaScript/TypeScript linter with React Hooks and TypeScript plugins |
 
 ### Backend
 
