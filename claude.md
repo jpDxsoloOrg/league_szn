@@ -4,10 +4,67 @@
 A serverless web application for managing a WWE 2K league with player standings, championships, matches, and tournaments.
 
 ## Tech Stack
-- **Frontend**: React 18 + TypeScript, Vite, React Router
-- **Backend**: AWS Lambda (Node.js 18), API Gateway, DynamoDB
-- **Infrastructure**: Serverless Framework
-- **Local Development**: serverless-offline, DynamoDB Local (Docker)
+
+### Frontend Technologies
+
+| Technology | Version | How It's Used |
+|------------|---------|---------------|
+| **React** | 18.2.0 | Core UI framework - builds all components (Standings, Championships, Matches, Tournaments, Admin panels) |
+| **TypeScript** | 5.2.2 | Provides type safety across all frontend code; interfaces defined in `types/index.ts` |
+| **Vite** | 5.0.8 | Development server with HMR; production bundler with optimized builds |
+| **React Router DOM** | 6.20.1 | Client-side routing - handles navigation between all pages without full reloads |
+| **i18next** | 25.8.1 | Internationalization - supports English and German; auto-detects browser language |
+| **react-i18next** | 16.5.4 | React hooks (`useTranslation`) for i18next integration |
+| **AWS Amplify** | 6.16.0 | Configures and initializes AWS services (Cognito auth) |
+| **amazon-cognito-identity-js** | 6.3.7 | Handles admin login/logout with Cognito User Pool |
+| **@aws-sdk/client-s3** | 3.981.0 | Browser-side S3 uploads for player/championship images |
+| **@aws-sdk/lib-storage** | 3.981.0 | Multi-part upload support for larger images |
+| **ESLint** | 8.55.0 | Code quality with React Hooks and TypeScript rules |
+
+### Backend Technologies
+
+| Technology | Version | How It's Used |
+|------------|---------|---------------|
+| **Node.js** | 18.x | Lambda runtime - all API handlers run on Node.js 18 |
+| **TypeScript** | 5.3.3 | Type-safe Lambda functions; compiled to JS before deployment |
+| **@aws-sdk/client-dynamodb** | 3.450.0 | Low-level DynamoDB operations |
+| **@aws-sdk/lib-dynamodb** | 3.450.0 | Document Client for simplified DynamoDB CRUD operations |
+| **@aws-sdk/client-s3** | 3.450.0 | Generates presigned URLs for secure image uploads |
+| **@aws-sdk/s3-request-presigner** | 3.450.0 | Creates time-limited signed URLs for S3 |
+| **@aws-sdk/client-cognito-identity-provider** | 3.982.0 | Admin operations on Cognito users |
+| **aws-jwt-verify** | 5.1.1 | Validates Cognito JWT tokens in Lambda authorizer (`functions/auth/authorizer.ts`) |
+| **uuid** | 9.0.1 | Generates unique IDs for players, matches, championships, etc. |
+| **ts-node** | 10.9.2 | Runs TypeScript scripts directly (`seed-data.ts`, `clear-data.ts`) |
+| **Serverless Framework** | 3.38.0 | Deploys all infrastructure defined in `serverless.yml` |
+| **serverless-plugin-typescript** | 2.1.5 | Auto-compiles TypeScript during serverless deploy |
+| **serverless-offline** | 13.3.0 | Local API Gateway + Lambda emulation for development |
+| **serverless-s3-sync** | 3.5.1 | Syncs frontend build to S3 bucket |
+
+### AWS Infrastructure
+
+| Service | How It's Used |
+|---------|---------------|
+| **AWS Lambda** | Serverless functions for all API endpoints - organized by feature: `auth/`, `players/`, `matches/`, `championships/`, `tournaments/`, `standings/`, `seasons/`, `divisions/`, `images/`, `admin/` |
+| **API Gateway** | REST API exposing Lambda functions via HTTP; CORS configured for browser access; custom authorizer validates JWT tokens for admin routes |
+| **DynamoDB** | NoSQL database with 8 tables: Players, Matches (with TournamentIndex GSI), Championships, ChampionshipHistory, Tournaments, Seasons, SeasonStandings (with PlayerIndex GSI), Divisions - all use on-demand (PAY_PER_REQUEST) billing |
+| **Amazon S3** | Two purposes: (1) hosts frontend static files, (2) stores player/championship images with public read access and presigned URL uploads |
+| **CloudFront** | CDN in front of S3; custom error responses redirect 403/404 to /index.html for SPA routing; HTTPS enforced |
+| **AWS Cognito** | User Pool for admin authentication - username-based login (not email), 24hr access tokens, 30-day refresh tokens |
+| **ACM** | SSL/TLS certificates for CloudFront HTTPS |
+
+### CI/CD & DevOps
+
+| Technology | How It's Used |
+|------------|---------------|
+| **GitHub Actions** | Two workflows automate deployment |
+| **deploy-dev.yml** | Triggered on PRs to main - builds frontend with `.env.devtest`, deploys backend to `devtest` stage, syncs to dev S3 bucket |
+| **deploy-prod.yml** | Triggered on merged PRs - builds frontend with `.env.production`, deploys backend to `dev` stage (production), syncs to prod S3 bucket, invalidates CloudFront cache |
+| **Docker** | Runs DynamoDB Local (`amazon/dynamodb-local`) for offline development |
+
+### Local Development Stack
+- **DynamoDB Local**: Docker container on port 8000 for local database
+- **serverless-offline**: API Gateway + Lambda emulation on port 3001
+- **Vite dev server**: Frontend on port 3000 with HMR
 
 ## Project Structure
 
