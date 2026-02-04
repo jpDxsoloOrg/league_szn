@@ -27,14 +27,22 @@ export interface CognitoAuthResult {
 
 export const cognitoAuth = {
   /**
-   * Sign in with email and password
+   * Sign in with username and password
    */
-  signIn: async (email: string, password: string): Promise<CognitoAuthResult> => {
+  signIn: async (username: string, password: string): Promise<CognitoAuthResult> => {
     try {
+      console.log('Attempting sign in for:', username);
+      console.log('Cognito config:', {
+        userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
+        clientId: import.meta.env.VITE_COGNITO_CLIENT_ID,
+      });
+
       const result = await signIn({
-        username: email,
+        username,
         password,
       });
+
+      console.log('Sign in result:', result);
 
       if (result.isSignedIn) {
         const session = await fetchAuthSession();
@@ -58,13 +66,23 @@ export const cognitoAuth = {
         };
       }
 
-      throw new Error('Sign in failed');
+      // Handle different sign-in states
+      const nextStep = result.nextStep?.signInStep;
+      if (nextStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+        throw new Error('Password change required. Please contact administrator.');
+      } else if (nextStep === 'CONFIRM_SIGN_UP') {
+        throw new Error('Account not confirmed. Please contact administrator.');
+      } else if (nextStep) {
+        throw new Error(`Additional step required: ${nextStep}`);
+      }
+
+      throw new Error('Sign in failed - unexpected state');
     } catch (error: any) {
       console.error('Cognito sign in error:', error);
 
       // Handle specific Cognito errors
       if (error.name === 'NotAuthorizedException') {
-        throw new Error('Invalid email or password');
+        throw new Error('Invalid username or password');
       } else if (error.name === 'UserNotFoundException') {
         throw new Error('User not found');
       } else if (error.name === 'UserNotConfirmedException') {
