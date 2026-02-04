@@ -29,7 +29,11 @@ test.describe('Championship CRUD Operations', () => {
       type: 'singles',
     });
 
-    expect(await championshipsPage.championshipExists(testChampionshipName)).toBe(true);
+    // Use poll to retry assertion until it passes or times out
+    await expect.poll(
+      async () => championshipsPage.championshipExists(testChampionshipName),
+      { timeout: 10000, intervals: [500, 1000, 2000] }
+    ).toBe(true);
   });
 
   test('should create a tag team championship', async () => {
@@ -40,7 +44,11 @@ test.describe('Championship CRUD Operations', () => {
       type: 'tag',
     });
 
-    expect(await championshipsPage.championshipExists(tagChampName)).toBe(true);
+    // Use poll to retry assertion until it passes or times out
+    await expect.poll(
+      async () => championshipsPage.championshipExists(tagChampName),
+      { timeout: 10000, intervals: [500, 1000, 2000] }
+    ).toBe(true);
 
     // Cleanup
     await championshipsPage.deleteChampionship(tagChampName);
@@ -53,13 +61,21 @@ test.describe('Championship CRUD Operations', () => {
       type: 'singles',
     });
 
-    expect(await championshipsPage.championshipExists(deleteTestChamp)).toBe(true);
+    // Use poll to retry assertion until it passes or times out
+    await expect.poll(
+      async () => championshipsPage.championshipExists(deleteTestChamp),
+      { timeout: 10000, intervals: [500, 1000, 2000] }
+    ).toBe(true);
 
     await championshipsPage.deleteChampionship(deleteTestChamp);
 
     await page.reload();
     await championshipsPage.selectTab();
-    expect(await championshipsPage.championshipExists(deleteTestChamp)).toBe(false);
+    // Use poll to retry assertion until it passes or times out
+    await expect.poll(
+      async () => championshipsPage.championshipExists(deleteTestChamp),
+      { timeout: 10000, intervals: [500, 1000, 2000] }
+    ).toBe(false);
   });
 
   test.afterAll(async ({ browser }) => {

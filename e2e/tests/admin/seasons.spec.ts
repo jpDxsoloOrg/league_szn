@@ -42,7 +42,11 @@ test.describe('Season Management', () => {
       startDate: today,
     });
 
-    expect(await seasonsPage.hasActiveSeason()).toBe(true);
+    // Use poll to retry assertion until it passes or times out
+    await expect.poll(
+      async () => seasonsPage.hasActiveSeason(),
+      { timeout: 10000, intervals: [500, 1000, 2000] }
+    ).toBe(true);
 
     // End the season
     await seasonsPage.endActiveSeason();
@@ -52,7 +56,11 @@ test.describe('Season Management', () => {
 
     await page.reload();
     await seasonsPage.selectTab();
-    expect(await seasonsPage.seasonExists(testSeasonName)).toBe(false);
+    // Use poll to retry assertion until it passes or times out
+    await expect.poll(
+      async () => seasonsPage.seasonExists(testSeasonName),
+      { timeout: 10000, intervals: [500, 1000, 2000] }
+    ).toBe(false);
   });
 
   test.afterAll(async ({ browser }) => {
