@@ -7,12 +7,14 @@ import {
   DeleteCommand,
   ScanCommand,
   QueryCommand,
+  TransactWriteCommand,
   GetCommandInput,
   PutCommandInput,
   UpdateCommandInput,
   DeleteCommandInput,
   ScanCommandInput,
   QueryCommandInput,
+  TransactWriteCommandInput,
 } from '@aws-sdk/lib-dynamodb';
 
 const isOffline = process.env.IS_OFFLINE === 'true';
@@ -59,6 +61,11 @@ export const dynamoDb = {
 
   query: async (params: QueryCommandInput) => {
     const command = new QueryCommand(params);
+    return docClient.send(command);
+  },
+
+  transactWrite: async (params: TransactWriteCommandInput) => {
+    const command = new TransactWriteCommand(params);
     return docClient.send(command);
   },
 };
