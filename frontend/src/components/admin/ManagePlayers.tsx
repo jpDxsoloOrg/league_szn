@@ -13,6 +13,7 @@ export default function ManagePlayers() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -114,7 +115,10 @@ export default function ManagePlayers() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (submitting || uploading) return; // Prevent double submission
+
     setError(null);
+    setSubmitting(true);
 
     try {
       // Upload image first if one is selected
@@ -153,9 +157,12 @@ export default function ManagePlayers() {
       setImagePreview(null);
       setShowAddForm(false);
       setEditingPlayer(null);
+      setSuccess(editingPlayer ? 'Player updated successfully!' : 'Player created successfully!');
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save player');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -291,10 +298,10 @@ export default function ManagePlayers() {
             </div>
 
             <div className="form-actions">
-              <button type="submit" disabled={uploading}>
-                {uploading ? 'Uploading...' : editingPlayer ? 'Update Player' : 'Add Player'}
+              <button type="submit" disabled={submitting || uploading}>
+                {submitting ? 'Saving...' : uploading ? 'Uploading...' : editingPlayer ? 'Update Player' : 'Add Player'}
               </button>
-              <button type="button" onClick={handleCancel} className="cancel-btn">
+              <button type="button" onClick={handleCancel} className="cancel-btn" disabled={submitting || uploading}>
                 Cancel
               </button>
             </div>

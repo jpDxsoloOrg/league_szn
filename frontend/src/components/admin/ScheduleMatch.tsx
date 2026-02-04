@@ -12,6 +12,7 @@ export default function ScheduleMatch() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -63,8 +64,11 @@ export default function ScheduleMatch() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (submitting) return; // Prevent double submission
+
     setError(null);
     setSuccess(null);
+    setSubmitting(true);
 
     if (isTagTeamMatch) {
       // For tag team matches, validate teams
@@ -97,6 +101,8 @@ export default function ScheduleMatch() {
         resetForm();
       } catch (err) {
         setError(err instanceof Error ? err.message : t('scheduleMatch.error'));
+      } finally {
+        setSubmitting(false);
       }
     } else {
       // Non-tag team match validation
@@ -125,6 +131,8 @@ export default function ScheduleMatch() {
         resetForm();
       } catch (err) {
         setError(err instanceof Error ? err.message : t('scheduleMatch.error'));
+      } finally {
+        setSubmitting(false);
       }
     }
   };
@@ -419,7 +427,9 @@ export default function ScheduleMatch() {
           </div>
         )}
 
-        <button type="submit">{t('scheduleMatch.submit')}</button>
+        <button type="submit" disabled={submitting}>
+          {submitting ? 'Scheduling...' : t('scheduleMatch.submit')}
+        </button>
       </form>
     </div>
   );

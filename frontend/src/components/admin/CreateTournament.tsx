@@ -7,6 +7,7 @@ import './CreateTournament.css';
 export default function CreateTournament() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -34,6 +35,8 @@ export default function CreateTournament() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (submitting) return; // Prevent double submission
+
     setError(null);
     setSuccess(null);
 
@@ -47,12 +50,15 @@ export default function CreateTournament() {
       return;
     }
 
+    setSubmitting(true);
+
     try {
       // Sanitize tournament name input
       const sanitizedName = sanitizeName(formData.name, 100);
 
       if (!sanitizedName) {
         setError('Tournament name cannot be empty');
+        setSubmitting(false);
         return;
       }
 
@@ -71,6 +77,8 @@ export default function CreateTournament() {
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create tournament');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -144,7 +152,9 @@ export default function CreateTournament() {
           </div>
         </div>
 
-        <button type="submit">Create Tournament</button>
+        <button type="submit" disabled={submitting}>
+          {submitting ? 'Creating...' : 'Create Tournament'}
+        </button>
       </form>
     </div>
   );

@@ -12,6 +12,7 @@ export default function RecordResult() {
   const [winners, setWinners] = useState<string[]>([]);
   const [winningTeamIndex, setWinningTeamIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -78,7 +79,9 @@ export default function RecordResult() {
   };
 
   const handleSubmit = async () => {
-    if (!selectedMatch) return;
+    if (!selectedMatch || submitting) return;
+
+    setSubmitting(true);
 
     if (isTagTeamMatch) {
       // Tag team match validation
@@ -104,6 +107,8 @@ export default function RecordResult() {
         await loadData();
       } catch (err) {
         setError(err instanceof Error ? err.message : t('recordResult.error'));
+      } finally {
+        setSubmitting(false);
       }
     } else {
       // Standard match validation
@@ -123,6 +128,8 @@ export default function RecordResult() {
         await loadData();
       } catch (err) {
         setError(err instanceof Error ? err.message : t('recordResult.error'));
+      } finally {
+        setSubmitting(false);
       }
     }
   };
@@ -240,10 +247,10 @@ export default function RecordResult() {
                 </div>
 
                 <div className="result-actions">
-                  <button onClick={handleSubmit} disabled={winners.length === 0}>
-                    Record Result
+                  <button onClick={handleSubmit} disabled={winners.length === 0 || submitting}>
+                    {submitting ? 'Recording...' : 'Record Result'}
                   </button>
-                  <button onClick={() => setSelectedMatch(null)} className="cancel-btn">
+                  <button onClick={() => setSelectedMatch(null)} className="cancel-btn" disabled={submitting}>
                     Cancel
                   </button>
                 </div>

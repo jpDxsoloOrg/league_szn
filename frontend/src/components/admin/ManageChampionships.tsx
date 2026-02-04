@@ -12,6 +12,7 @@ export default function ManageChampionships() {
   const [success, setSuccess] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [editingChampionship, setEditingChampionship] = useState<Championship | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -101,8 +102,11 @@ export default function ManageChampionships() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (submitting || uploading) return; // Prevent double submission
+
     setError(null);
     setSuccess(null);
+    setSubmitting(true);
 
     try {
       // Sanitize inputs before sending to API
@@ -141,6 +145,8 @@ export default function ManageChampionships() {
       await loadChampionships();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save championship');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -260,10 +266,10 @@ export default function ManageChampionships() {
             </div>
 
             <div className="form-actions">
-              <button type="submit" disabled={uploading}>
-                {uploading ? 'Uploading...' : editingChampionship ? 'Update Championship' : 'Create Championship'}
+              <button type="submit" disabled={submitting || uploading}>
+                {submitting ? 'Saving...' : uploading ? 'Uploading...' : editingChampionship ? 'Update Championship' : 'Create Championship'}
               </button>
-              <button type="button" onClick={handleCancel} className="cancel-btn">
+              <button type="button" onClick={handleCancel} className="cancel-btn" disabled={submitting || uploading}>
                 Cancel
               </button>
             </div>
