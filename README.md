@@ -25,15 +25,55 @@ A serverless web application for managing a WWE 2K league with player standings,
 ## Tech Stack
 
 ### Frontend
-- React 18 with TypeScript
-- Vite for build tooling
-- React Router for navigation
+
+| Technology | Version | Description |
+|------------|---------|-------------|
+| **React** | 18.2.0 | UI framework for building interactive, component-based user interfaces |
+| **TypeScript** | 5.2.2 | Typed superset of JavaScript providing compile-time type checking and IDE support |
+| **Vite** | 5.0.8 | Modern build tool with hot module replacement for fast development |
+| **React Router DOM** | 6.20.1 | Client-side routing for SPA navigation between pages (Standings, Championships, Matches, etc.) |
+| **i18next** | 25.8.1 | Internationalization framework supporting multiple languages (English and German) |
+| **react-i18next** | 16.5.4 | React bindings for i18next with hooks and components |
+| **AWS Amplify** | 6.16.0 | AWS integration library for authentication and cloud services |
+| **amazon-cognito-identity-js** | 6.3.7 | Cognito SDK for client-side user authentication |
+| **@aws-sdk/client-s3** | 3.981.0 | AWS SDK v3 for S3 operations (image uploads) |
+| **ESLint** | 8.55.0 | JavaScript/TypeScript linter with React Hooks and TypeScript plugins |
 
 ### Backend
-- AWS Lambda (Node.js 18)
-- API Gateway
-- DynamoDB
-- Serverless Framework
+
+| Technology | Version | Description |
+|------------|---------|-------------|
+| **Node.js** | 18.x | JavaScript runtime for serverless Lambda functions |
+| **TypeScript** | 5.3.3 | Type-safe backend code with compile-time checking |
+| **@aws-sdk/client-dynamodb** | 3.450.0 | AWS SDK v3 for DynamoDB database operations |
+| **@aws-sdk/lib-dynamodb** | 3.450.0 | High-level DynamoDB Document Client for simplified operations |
+| **@aws-sdk/client-s3** | 3.450.0 | S3 client for image storage and presigned URL generation |
+| **@aws-sdk/client-cognito-identity-provider** | 3.982.0 | Cognito IDP client for admin user management |
+| **aws-jwt-verify** | 5.1.1 | JWT verification library for validating Cognito tokens in Lambda authorizer |
+| **uuid** | 9.0.1 | UUID generation for unique entity identifiers |
+| **Serverless Framework** | 3.38.0 | Infrastructure as Code framework for deploying serverless applications |
+| **serverless-offline** | 13.3.0 | Local emulation of API Gateway and Lambda for development |
+
+### AWS Infrastructure
+
+| Service | Purpose |
+|---------|---------|
+| **AWS Lambda** | Serverless compute for API handlers (auth, players, matches, championships, tournaments, standings, seasons, divisions, images, admin) |
+| **API Gateway** | REST API with CORS support and custom JWT authorizer for admin endpoints |
+| **DynamoDB** | NoSQL database with on-demand billing for Players, Matches, Championships, Championship History, Tournaments, Seasons, Season Standings, and Divisions tables |
+| **Amazon S3** | Object storage for frontend static files and player/championship images with presigned URLs |
+| **CloudFront** | CDN for global content delivery with HTTPS enforcement and SPA routing support |
+| **AWS Cognito** | User pool for admin authentication with username-based sign-in and JWT tokens |
+| **AWS Certificate Manager** | SSL/TLS certificate management for HTTPS on custom domains |
+
+### CI/CD & DevOps
+
+| Technology | Description |
+|------------|-------------|
+| **GitHub Actions** | Automated CI/CD pipelines for deployment |
+| **deploy-dev.yml** | Triggered on pull requests to main - deploys to devtest stage |
+| **deploy-prod.yml** | Triggered on merged pull requests - deploys to production |
+| **Docker** | Used for running DynamoDB Local in development |
 
 ## Project Structure
 
