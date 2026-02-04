@@ -92,12 +92,15 @@ wwe-2k-league/
 │   └── package.json
 ├── backend/
 │   ├── functions/               # Lambda functions
-│   │   ├── players/             # GET, POST, PUT players
+│   │   ├── auth/                # Authentication & JWT authorization
+│   │   ├── players/             # GET, POST, PUT, DELETE players
 │   │   ├── matches/             # GET, POST matches, PUT results
-│   │   ├── championships/       # GET, POST championships, GET history
+│   │   ├── championships/       # GET, POST, PUT, DELETE championships, GET history
 │   │   ├── tournaments/         # GET, POST, PUT tournaments
 │   │   ├── standings/           # GET standings (supports ?seasonId=)
-│   │   └── seasons/             # GET, POST, PUT seasons
+│   │   ├── seasons/             # GET, POST, PUT, DELETE seasons
+│   │   ├── divisions/           # GET, POST, PUT, DELETE divisions
+│   │   └── images/              # POST generate presigned upload URLs
 │   ├── lib/
 │   │   ├── dynamodb.ts         # DynamoDB helper functions
 │   │   └── response.ts         # HTTP response helpers
@@ -112,7 +115,7 @@ wwe-2k-league/
 
 ### Players Table
 - **PK**: `playerId`
-- Attributes: name, currentWrestler, wins, losses, draws, createdAt, updatedAt
+- Attributes: name, currentWrestler, wins, losses, draws, imageUrl, divisionId, createdAt, updatedAt
 
 ### Matches Table
 - **PK**: `matchId`
@@ -122,7 +125,7 @@ wwe-2k-league/
 
 ### Championships Table
 - **PK**: `championshipId`
-- Attributes: name, type (singles/tag), currentChampion, createdAt, isActive
+- Attributes: name, type (singles/tag), currentChampion, imageUrl, createdAt, isActive
 
 ### Championship History Table
 - **PK**: `championshipId`
@@ -155,12 +158,14 @@ wwe-2k-league/
 ### Admin Features (Requires Login)
 Credentials: **admin / FireGreen48!**
 
-1. **Manage Players** - Add new players, edit wrestlers
+1. **Manage Players** - Add new players, edit wrestlers, upload images, delete players
 2. **Schedule Match** - Create matches with participants, stipulations, championships (assign to season)
 3. **Record Results** - Select winners from scheduled matches
-4. **Manage Championships** - Create new championships (singles/tag team)
+4. **Manage Championships** - Create new championships (singles/tag team), upload images, delete championships
 5. **Create Tournament** - Single elimination or round-robin with automatic bracket/standings generation
-6. **Manage Seasons** - Create new seasons, end active seasons, view historical season standings
+6. **Manage Seasons** - Create new seasons, end active seasons, view historical season standings, delete seasons
+7. **Manage Divisions** - Create divisions, assign players to divisions, delete divisions
+8. **Image Management** - Upload wrestler and championship images via presigned S3 URLs
 
 ## Important Implementation Details
 
@@ -177,10 +182,12 @@ When a match result is recorded (`recordResult.ts`):
 1. **Single Elimination**: Bracket-style, requires power of 2 participants (or gives byes)
 2. **Round Robin**: Everyone faces everyone, 2pts for win, 1pt for draw (G1 Climax style)
 
-### Authentication
-- Currently uses simple session storage with dummy token
-- **TODO**: Integrate AWS Cognito for real authentication
-- Admin endpoints should be protected with Lambda authorizer (not yet implemented)
+### Authentication & Authorization
+- Uses AWS Cognito User Pool for admin authentication
+- Username-based login (not email)
+- JWT tokens with 24-hour validity, 30-day refresh tokens
+- Lambda authorizer (`functions/auth/authorizer.ts`) validates tokens using aws-jwt-verify
+- All admin endpoints protected with custom authorizer in API Gateway
 
 ## Local Development
 
@@ -199,7 +206,7 @@ npm run offline  # Starts at http://localhost:3001/dev
 ### Seed Test Data
 ```bash
 cd backend
-npm run seed      # Creates 6 players, 3 championships, 4 matches, 2 tournaments
+npm run seed      # Creates 12 players, 4 championships, 12 matches, 2 tournaments, 3 divisions, 1 season
 npm run clear-data  # Clears all data
 ```
 
@@ -220,17 +227,29 @@ npm run dev  # Starts at http://localhost:3000
 - `GET /tournaments` - All tournaments
 - `GET /standings` - Current standings (optional `?seasonId=` for season-specific)
 - `GET /seasons` - All seasons
+- `GET /divisions` - All divisions
 
 ### Admin (Requires Auth)
+All admin endpoints require a valid JWT token from Cognito in the `Authorization` header.
+
+- `POST /auth/setup` - Create admin user (one-time setup)
 - `POST /players` - Create player
 - `PUT /players/{id}` - Update player
+- `DELETE /players/{id}` - Delete player (fails if holds championship)
 - `POST /matches` - Schedule match (optional `seasonId` to assign to season)
 - `PUT /matches/{id}/result` - Record match result
 - `POST /championships` - Create championship
+- `PUT /championships/{id}` - Update championship
+- `DELETE /championships/{id}` - Delete championship (cascade delete history)
 - `POST /tournaments` - Create tournament
 - `PUT /tournaments/{id}` - Update tournament
 - `POST /seasons` - Create season (only one active allowed)
 - `PUT /seasons/{id}` - Update season (end season, change name/dates)
+- `DELETE /seasons/{id}` - Delete season (cascade delete season standings)
+- `POST /divisions` - Create division
+- `PUT /divisions/{id}` - Update division
+- `DELETE /divisions/{id}` - Delete division (fails if players assigned)
+- `POST /images/upload-url` - Generate presigned URL for image upload
 
 ## Common Tasks
 
@@ -382,14 +401,15 @@ aws cloudformation describe-stacks --stack-name wwe-2k-league-api-devtest \
 
 ## Known Limitations / TODO
 
-1. **Authentication**: Currently using dummy tokens. Need AWS Cognito integration.
-2. **Lambda Authorizer**: Admin endpoints not yet protected.
+1. ~~**Authentication**: AWS Cognito integration.~~ **DONE** - Full Cognito integration with JWT tokens
+2. ~~**Lambda Authorizer**: Admin endpoints protected.~~ **DONE** - Custom authorizer validates JWT tokens
 3. **Tag Team Matches**: Frontend doesn't have special handling for tag teams yet.
 4. **Tournament Progression**: Single-elimination bracket progression needs manual updates.
 5. **Match Statistics**: Not yet tracking which player is best at which match type.
 6. ~~**Image Uploads**: No profile pictures or championship images.~~ **DONE** - Images supported for wrestlers and championships
 7. **Real-time Updates**: No WebSocket support for live updates.
 8. ~~**Seasons Support**: Track standings per season, season resets.~~ **DONE** - Full season management implemented
+9. **Advanced Search**: No filtering/search beyond basic status filters.
 
 ## Troubleshooting
 
