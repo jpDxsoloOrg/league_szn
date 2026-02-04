@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { playersApi, imagesApi, divisionsApi } from '../../services/api';
+import { sanitizeName } from '../../utils/sanitize';
 import type { Player, Division } from '../../types';
 import './ManagePlayers.css';
 
@@ -118,17 +119,26 @@ export default function ManagePlayers() {
       // Upload image first if one is selected
       const imageUrl = await uploadImage();
 
+      // Sanitize inputs before sending to API
+      const sanitizedName = sanitizeName(formData.name, 100);
+      const sanitizedWrestler = sanitizeName(formData.currentWrestler, 100);
+
+      if (!sanitizedName || !sanitizedWrestler) {
+        setError('Name and wrestler fields cannot be empty');
+        return;
+      }
+
       if (editingPlayer) {
         await playersApi.update(editingPlayer.playerId, {
-          name: formData.name,
-          currentWrestler: formData.currentWrestler,
+          name: sanitizedName,
+          currentWrestler: sanitizedWrestler,
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || undefined,
         });
       } else {
         await playersApi.create({
-          name: formData.name,
-          currentWrestler: formData.currentWrestler,
+          name: sanitizedName,
+          currentWrestler: sanitizedWrestler,
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || undefined,
           wins: 0,

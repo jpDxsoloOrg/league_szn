@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { tournamentsApi, playersApi } from '../../services/api';
+import { sanitizeName } from '../../utils/sanitize';
 import type { Player } from '../../types';
 import './CreateTournament.css';
 
@@ -47,8 +48,16 @@ export default function CreateTournament() {
     }
 
     try {
+      // Sanitize tournament name input
+      const sanitizedName = sanitizeName(formData.name, 100);
+
+      if (!sanitizedName) {
+        setError('Tournament name cannot be empty');
+        return;
+      }
+
       await tournamentsApi.create({
-        name: formData.name,
+        name: sanitizedName,
         type: formData.type,
         participants: formData.participants,
         status: 'upcoming',

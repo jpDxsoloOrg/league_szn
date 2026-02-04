@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { championshipsApi, imagesApi } from '../../services/api';
+import { sanitizeName } from '../../utils/sanitize';
 import type { Championship } from '../../types';
 import './ManageChampionships.css';
 
@@ -103,19 +104,27 @@ export default function ManageChampionships() {
     setSuccess(null);
 
     try {
+      // Sanitize inputs before sending to API
+      const sanitizedName = sanitizeName(formData.name, 100);
+
+      if (!sanitizedName) {
+        setError('Championship name cannot be empty');
+        return;
+      }
+
       // Upload image first if one is selected
       const imageUrl = await uploadImage();
 
       if (editingChampionship) {
         await championshipsApi.update(editingChampionship.championshipId, {
-          name: formData.name,
+          name: sanitizedName,
           type: formData.type,
           imageUrl: imageUrl || undefined,
         });
         setSuccess('Championship updated successfully!');
       } else {
         await championshipsApi.create({
-          name: formData.name,
+          name: sanitizedName,
           type: formData.type,
           imageUrl: imageUrl || undefined,
           isActive: true,

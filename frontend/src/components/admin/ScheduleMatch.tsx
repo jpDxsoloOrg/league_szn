@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi } from '../../services/api';
+import { sanitizeInput } from '../../utils/sanitize';
 import type { Player, Championship, Tournament, Season } from '../../types';
 import './ScheduleMatch.css';
 
@@ -76,10 +77,13 @@ export default function ScheduleMatch() {
       const allParticipants = teams.flat();
 
       try {
+        // Sanitize stipulation input
+        const sanitizedStipulation = sanitizeInput(formData.stipulation, 200);
+
         await matchesApi.schedule({
           date: new Date(formData.date).toISOString(),
           matchType: formData.matchType,
-          stipulation: formData.stipulation,
+          stipulation: sanitizedStipulation,
           participants: allParticipants,
           teams: validTeams,
           isChampionship: formData.isChampionship,
@@ -102,10 +106,13 @@ export default function ScheduleMatch() {
       }
 
       try {
+        // Sanitize stipulation input
+        const sanitizedStipulation = sanitizeInput(formData.stipulation, 200);
+
         await matchesApi.schedule({
           date: new Date(formData.date).toISOString(),
           matchType: formData.matchType,
-          stipulation: formData.stipulation,
+          stipulation: sanitizedStipulation,
           participants: formData.participants,
           isChampionship: formData.isChampionship,
           championshipId: formData.championshipId || undefined,
