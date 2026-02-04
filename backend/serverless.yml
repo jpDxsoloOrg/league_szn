@@ -391,10 +391,6 @@ resources:
         UserPoolName: ${self:service}-admin-pool-${self:provider.stage}
         AdminCreateUserConfig:
           AllowAdminCreateUserOnly: true
-        AutoVerifiedAttributes:
-          - email
-        UsernameAttributes:
-          - email
         Policies:
           PasswordPolicy:
             MinimumLength: 8
@@ -402,13 +398,6 @@ resources:
             RequireNumbers: true
             RequireSymbols: false
             RequireUppercase: true
-        Schema:
-          - Name: email
-            Required: true
-            Mutable: true
-          - Name: name
-            Required: false
-            Mutable: true
 
     CognitoUserPoolClient:
       Type: AWS::Cognito::UserPoolClient
