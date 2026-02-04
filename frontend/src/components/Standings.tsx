@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { standingsApi, seasonsApi, divisionsApi } from '../services/api';
 import { logger } from '../utils/logger';
@@ -15,15 +15,7 @@ export default function Standings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  useEffect(() => {
-    loadStandings();
-  }, [selectedSeasonId]);
-
-  const loadInitialData = async () => {
+  const loadInitialData = useCallback(async () => {
     try {
       const [seasonsData, divisionsData] = await Promise.all([
         seasonsApi.getAll(),
@@ -34,9 +26,9 @@ export default function Standings() {
     } catch (_err) {
       logger.error('Failed to load initial standings data');
     }
-  };
+  }, []);
 
-  const loadStandings = async () => {
+  const loadStandings = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -47,7 +39,15 @@ export default function Standings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedSeasonId]);
+
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
+
+  useEffect(() => {
+    loadStandings();
+  }, [loadStandings]);
 
   const getFilteredPlayers = (): Player[] => {
     if (!standings) return [];
