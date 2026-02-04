@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi } from '../services/api';
+import { formatDateTime } from '../utils/dateUtils';
 import type { Match, Player } from '../types';
 import './Matches.css';
 
@@ -60,11 +61,6 @@ export default function Matches() {
         )}
       </span>
     ));
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   const getMatchResult = (match: Match) => {
@@ -173,7 +169,7 @@ export default function Matches() {
                     <span className="championship-badge">{t('matches.championship')}</span>
                   )}
                 </div>
-                <div className="match-date">{formatDate(match.date)}</div>
+                <div className="match-date">{formatDateTime(match.date)}</div>
               </div>
 
               <div className="match-participants">

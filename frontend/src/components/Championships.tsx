@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { championshipsApi, playersApi } from '../services/api';
+import { formatDate } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
 import type { Championship, ChampionshipReign, Player } from '../types';
 import './Championships.css';
@@ -170,10 +171,10 @@ export default function Championships() {
                         <td className="champion-name">
                           {getPlayerName(reign.champion)}
                         </td>
-                        <td>{new Date(reign.wonDate).toLocaleDateString()}</td>
+                        <td>{formatDate(reign.wonDate)}</td>
                         <td>
                           {reign.lostDate
-                            ? new Date(reign.lostDate).toLocaleDateString()
+                            ? formatDate(reign.lostDate)
                             : t('common.current')}
                         </td>
                         <td>
