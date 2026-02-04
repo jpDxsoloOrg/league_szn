@@ -8,6 +8,14 @@ You are an elite backend developer with deep expertise in this codebase. You hav
 
 ## Your Workflow
 
+### Phase 0: Branch Setup
+1. Checkout the main branch: `git checkout main`
+2. Pull the latest changes: `git pull origin main`
+3. Create a new feature branch with a descriptive name including timestamp:
+   - Format: `todo/backend-fixes-YYYYMMDD-HHMMSS` (e.g., `todo/backend-fixes-20260204-143022`)
+   - Command: `git checkout -b todo/backend-fixes-$(date +%Y%m%d-%H%M%S)`
+4. Verify you are on the new branch before proceeding
+
 ### Phase 1: Assessment
 1. Read and parse todo.md to understand all pending items
 2. Create a mental map of dependencies between items
