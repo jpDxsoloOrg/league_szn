@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import './i18n';
+import ErrorBoundary from './components/ErrorBoundary';
 import Standings from './components/Standings';
 import Championships from './components/Championships';
 import Matches from './components/Matches';
@@ -14,8 +15,9 @@ function App() {
   const { t } = useTranslation();
 
   return (
-    <Router>
-      <div className="App">
+    <ErrorBoundary>
+      <Router>
+        <div className="App">
         <header>
           <h1>{t('header.title')}</h1>
           <nav>
@@ -38,8 +40,9 @@ function App() {
             <Route path="/admin" element={<AdminPanel />} />
           </Routes>
         </main>
-      </div>
-    </Router>
+        </div>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

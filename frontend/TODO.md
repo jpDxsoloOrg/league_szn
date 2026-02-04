@@ -47,61 +47,23 @@ This document tracks issues identified during the comprehensive frontend code re
 
 ## High Priority Issues
 
-### 4. Use of `any` Type
+### 4. ~~Use of `any` Type~~ ✅ COMPLETED
 - **Location:** `src/services/cognito.ts` (Line 80), `src/components/Tournaments.tsx` (Line 58)
 - **Issue:** Defeats TypeScript type safety
 - **Fix:**
-  - [ ] Replace `error: any` with `error: unknown` in cognito.ts and use type narrowing
-  - [ ] Define `RoundRobinStats` interface in `src/types/index.ts`:
-    ```typescript
-    interface RoundRobinStats {
-      wins: number;
-      losses: number;
-      draws: number;
-      points: number;
-    }
-    ```
-  - [ ] Update Tournaments.tsx to use proper type instead of `any`
+  - [x] Replace `error: any` with `error: unknown` in cognito.ts and use type narrowing
+  - [x] Fix Tournament.standings type from `RoundRobinStanding[]` to `Record<string, Omit<RoundRobinStanding, 'playerId'>>` to match backend API
+  - [x] Update Tournaments.tsx to use proper type instead of `any`
 
-### 5. Missing Error Boundaries
+  *Note: RoundRobinStanding interface already existed in types/index.ts - fixed the Tournament.standings type to match backend*
+
+### 5. ~~Missing Error Boundaries~~ ✅ COMPLETED
 - **Location:** `src/App.tsx`
 - **Issue:** If any component throws an error, the entire app crashes with white screen
 - **Fix:**
-  - [ ] Create `src/components/ErrorBoundary.tsx`:
-    ```typescript
-    import { Component, ReactNode } from 'react';
-
-    interface Props { children: ReactNode; fallback?: ReactNode; }
-    interface State { hasError: boolean; error: Error | null; }
-
-    export class ErrorBoundary extends Component<Props, State> {
-      constructor(props: Props) {
-        super(props);
-        this.state = { hasError: false, error: null };
-      }
-
-      static getDerivedStateFromError(error: Error): State {
-        return { hasError: true, error };
-      }
-
-      componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-        console.error('Error caught by boundary:', error, errorInfo);
-      }
-
-      render() {
-        if (this.state.hasError) {
-          return this.props.fallback || (
-            <div className="error-boundary">
-              <h1>Something went wrong</h1>
-              <button onClick={() => window.location.reload()}>Reload Page</button>
-            </div>
-          );
-        }
-        return this.props.children;
-      }
-    }
-    ```
-  - [ ] Wrap `<Router>` in App.tsx with `<ErrorBoundary>`
+  - [x] Create `src/components/ErrorBoundary.tsx` with proper error handling and reload button
+  - [x] Wrap `<Router>` in App.tsx with `<ErrorBoundary>`
+  - [x] Add error boundary CSS styles to App.css
 
 ### 6. Console Statements Exposing Sensitive Data
 - **Location:** `src/services/cognito.ts` (Lines 34-36, 45, 81, 105, 173), `src/components/Championships.tsx` (Line 45), admin components
@@ -276,10 +238,10 @@ This document tracks issues identified during the comprehensive frontend code re
 | Priority | Total | Completed |
 |----------|-------|-----------|
 | Critical | 3 | 0 |
-| High | 3 | 0 |
+| High | 3 | 2 |
 | Medium | 6 | 0 |
 | Low | 4 | 0 |
-| **Total** | **16** | **0** |
+| **Total** | **16** | **2** |
 
 ---
 
@@ -289,7 +251,7 @@ This document tracks issues identified during the comprehensive frontend code re
 - [ ] `src/utils/logger.ts` - Development-only logging
 - [ ] `src/utils/dateUtils.ts` - Consistent date formatting
 - [ ] `src/constants/index.ts` - Magic numbers and configuration
-- [ ] `src/components/ErrorBoundary.tsx` - Error boundary component
+- [x] `src/components/ErrorBoundary.tsx` - Error boundary component ✅
 
 ---
 
@@ -298,14 +260,14 @@ This document tracks issues identified during the comprehensive frontend code re
 - [ ] `eslint.config.js` - Fix configuration
 - [ ] `tsconfig.json` - Add strict flags
 - [ ] `vite.config.ts` - Add production optimizations
-- [ ] `src/App.tsx` - Add ErrorBoundary wrapper
+- [x] `src/App.tsx` - Add ErrorBoundary wrapper ✅
 - [ ] `src/services/api.ts` - Add AbortController support
-- [ ] `src/services/cognito.ts` - Remove console.log, fix any types
-- [ ] `src/types/index.ts` - Add RoundRobinStats interface
+- [x] `src/services/cognito.ts` - Remove console.log, fix any types ✅ (any types fixed)
+- [x] `src/types/index.ts` - Add RoundRobinStats interface ✅ (fixed Tournament.standings type)
 - [ ] `src/components/Standings.tsx` - Add memoization, fix useEffect
 - [ ] `src/components/Matches.tsx` - Use date utils, fix useEffect
 - [ ] `src/components/Championships.tsx` - Add accessibility, use date utils
-- [ ] `src/components/Tournaments.tsx` - Fix any type, fix useEffect
+- [x] `src/components/Tournaments.tsx` - Fix any type, fix useEffect ✅ (any type fixed)
 - [ ] `src/components/admin/AdminLogin.tsx` - Add accessibility attributes
 - [ ] `src/components/admin/ManagePlayers.tsx` - Add loading states, sanitization
 - [ ] `src/components/admin/ManageChampionships.tsx` - Add loading states, sanitization

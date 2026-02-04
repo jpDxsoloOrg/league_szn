@@ -77,19 +77,23 @@ export const cognitoAuth = {
       }
 
       throw new Error('Sign in failed - unexpected state');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Cognito sign in error:', error);
 
-      // Handle specific Cognito errors
-      if (error.name === 'NotAuthorizedException') {
-        throw new Error('Invalid username or password');
-      } else if (error.name === 'UserNotFoundException') {
-        throw new Error('User not found');
-      } else if (error.name === 'UserNotConfirmedException') {
-        throw new Error('User not confirmed');
+      // Handle specific Cognito errors with type narrowing
+      if (error instanceof Error) {
+        const cognitoError = error as Error & { name?: string };
+        if (cognitoError.name === 'NotAuthorizedException') {
+          throw new Error('Invalid username or password');
+        } else if (cognitoError.name === 'UserNotFoundException') {
+          throw new Error('User not found');
+        } else if (cognitoError.name === 'UserNotConfirmedException') {
+          throw new Error('User not confirmed');
+        }
+        throw new Error(error.message || 'Authentication failed');
       }
 
-      throw new Error(error.message || 'Authentication failed');
+      throw new Error('Authentication failed');
     }
   },
 
