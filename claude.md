@@ -38,7 +38,6 @@ A serverless web application for managing a WWE 2K league with player standings,
 | **Serverless Framework** | 3.38.0 | Deploys all infrastructure defined in `serverless.yml` |
 | **serverless-plugin-typescript** | 2.1.5 | Auto-compiles TypeScript during serverless deploy |
 | **serverless-offline** | 13.3.0 | Local API Gateway + Lambda emulation for development |
-| **serverless-s3-sync** | 3.5.1 | Syncs frontend build to S3 bucket |
 
 ### AWS Infrastructure
 
