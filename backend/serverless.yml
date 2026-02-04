@@ -316,6 +316,7 @@ functions:
   # Admin
   clearAll:
     handler: functions/admin/clearAll.handler
+    timeout: 29  # Increased timeout for bulk delete operations (API Gateway max is 29s)
     events:
       - http:
           path: admin/clear-all
@@ -325,6 +326,7 @@ functions:
 
   seedData:
     handler: functions/admin/seedData.handler
+    timeout: 29  # Increased timeout for bulk insert operations (API Gateway max is 29s)
     events:
       - http:
           path: admin/seed-data
