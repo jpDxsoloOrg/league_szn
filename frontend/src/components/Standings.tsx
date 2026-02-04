@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { standingsApi, seasonsApi, divisionsApi } from '../services/api';
+import { logger } from '../utils/logger';
 import type { Standings as StandingsType, Season, Division, Player } from '../types';
 import './Standings.css';
 
@@ -30,8 +31,8 @@ export default function Standings() {
       ]);
       setSeasons(seasonsData);
       setDivisions(divisionsData);
-    } catch (err) {
-      console.error('Failed to load initial data:', err);
+    } catch (_err) {
+      logger.error('Failed to load initial standings data');
     }
   };
 

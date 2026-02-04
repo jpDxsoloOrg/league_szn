@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { championshipsApi, playersApi } from '../services/api';
+import { logger } from '../utils/logger';
 import type { Championship, ChampionshipReign, Player } from '../types';
 import './Championships.css';
 
@@ -41,8 +42,8 @@ export default function Championships() {
       const historyData = await championshipsApi.getHistory(championshipId);
       setHistory(historyData);
       setSelectedChampionship(championshipId);
-    } catch (err) {
-      console.error('Failed to load history:', err);
+    } catch (_err) {
+      logger.error('Failed to load championship history');
     } finally {
       setLoadingHistory(false);
     }

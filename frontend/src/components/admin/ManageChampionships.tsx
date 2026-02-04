@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { championshipsApi, imagesApi } from '../../services/api';
 import { sanitizeName } from '../../utils/sanitize';
+import { logger } from '../../utils/logger';
 import type { Championship } from '../../types';
 import './ManageChampionships.css';
 
@@ -90,8 +91,8 @@ export default function ManageChampionships() {
       await imagesApi.uploadToS3(uploadUrl, selectedFile);
 
       return imageUrl;
-    } catch (err) {
-      console.error('Error uploading image:', err);
+    } catch (_err) {
+      logger.error('Error uploading championship image');
       throw new Error('Failed to upload image');
     } finally {
       setUploading(false);

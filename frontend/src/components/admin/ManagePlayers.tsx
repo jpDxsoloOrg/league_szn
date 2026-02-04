@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { playersApi, imagesApi, divisionsApi } from '../../services/api';
 import { sanitizeName } from '../../utils/sanitize';
+import { logger } from '../../utils/logger';
 import type { Player, Division } from '../../types';
 import './ManagePlayers.css';
 
@@ -103,8 +104,8 @@ export default function ManagePlayers() {
       await imagesApi.uploadToS3(uploadUrl, selectedFile);
 
       return imageUrl;
-    } catch (err) {
-      console.error('Error uploading image:', err);
+    } catch (_err) {
+      logger.error('Error uploading player image');
       throw new Error('Failed to upload image');
     } finally {
       setUploading(false);

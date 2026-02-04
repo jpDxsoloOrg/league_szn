@@ -1,5 +1,6 @@
 import { Amplify } from 'aws-amplify';
 import { signIn, signOut, fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
+import { logger } from '../utils/logger';
 
 // Cognito configuration from environment variables
 const cognitoConfig = {
@@ -31,18 +32,14 @@ export const cognitoAuth = {
    */
   signIn: async (username: string, password: string): Promise<CognitoAuthResult> => {
     try {
-      console.log('Attempting sign in for:', username);
-      console.log('Cognito config:', {
-        userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
-        clientId: import.meta.env.VITE_COGNITO_CLIENT_ID,
-      });
+      logger.debug('Attempting sign in');
 
       const result = await signIn({
         username,
         password,
       });
 
-      console.log('Sign in result:', result);
+      logger.debug('Sign in completed');
 
       if (result.isSignedIn) {
         const session = await fetchAuthSession();
@@ -78,7 +75,7 @@ export const cognitoAuth = {
 
       throw new Error('Sign in failed - unexpected state');
     } catch (error: unknown) {
-      console.error('Cognito sign in error:', error);
+      logger.error('Cognito sign in error');
 
       // Handle specific Cognito errors with type narrowing
       if (error instanceof Error) {
@@ -105,8 +102,8 @@ export const cognitoAuth = {
       await signOut();
       sessionStorage.removeItem('accessToken');
       sessionStorage.removeItem('idToken');
-    } catch (error) {
-      console.error('Sign out error:', error);
+    } catch (_error) {
+      logger.error('Sign out error');
       // Clear tokens anyway
       sessionStorage.removeItem('accessToken');
       sessionStorage.removeItem('idToken');
@@ -173,8 +170,8 @@ export const cognitoAuth = {
         };
       }
       return null;
-    } catch (error) {
-      console.error('Session refresh error:', error);
+    } catch (_error) {
+      logger.error('Session refresh error');
       return null;
     }
   },
