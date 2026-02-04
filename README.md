@@ -87,6 +87,7 @@ wwe-2k-league/
 │   └── package.json
 ├── backend/           # Serverless backend API
 │   ├── functions/         # Lambda functions
+│   │   ├── auth/          # Authentication & JWT authorization
 │   │   ├── players/
 │   │   ├── matches/
 │   │   ├── championships/
@@ -94,6 +95,7 @@ wwe-2k-league/
 │   │   ├── standings/
 │   │   ├── seasons/       # Season management
 │   │   ├── divisions/     # Division management
+│   │   ├── images/        # Image upload URL generation
 │   │   └── admin/         # Admin utilities (clear-all, seed-data)
 │   ├── lib/              # Shared utilities
 │   └── serverless.yml    # Infrastructure config
@@ -134,7 +136,7 @@ cd backend
 npm run seed
 ```
 
-This creates 6 players, 3 championships, 4 matches, and 2 tournaments.
+This creates 12 players, 4 championships, 12 matches, 2 tournaments, 3 divisions, and 1 active season.
 
 ### 4. Start Frontend
 
@@ -350,11 +352,14 @@ npm run seed
 ```
 
 This will create:
-- 6 sample players with wins/losses
-- 3 championships (World, Intercontinental, Tag Team)
-- Championship history
-- 4 matches (2 completed, 2 scheduled)
-- 2 tournaments (Single Elimination and Round Robin)
+- 3 divisions (Raw, SmackDown, NXT)
+- 12 players with random wrestlers and win/loss records
+- 1 active season (30-day duration)
+- Season standings for all players
+- 4 championships (World Heavyweight, Intercontinental, Tag Team, US)
+- Championship history entries
+- 12 matches (8 completed, 4 scheduled)
+- 2 tournaments (King of the Ring - Single Elimination, G1 Climax - Round Robin)
 
 After running the seed script, refresh your frontend at http://localhost:3000 to see all the data!
 
@@ -501,6 +506,9 @@ Before deploying to AWS, verify:
 
 ### Admin Endpoints (Authentication Required)
 
+All admin endpoints require a valid JWT token from Cognito in the `Authorization` header.
+
+- `POST /auth/setup` - Create admin user (one-time setup)
 - `POST /players` - Create new player
 - `PUT /players/{id}` - Update player
 - `DELETE /players/{id}` - Delete player (fails if player holds a championship)
@@ -517,6 +525,7 @@ Before deploying to AWS, verify:
 - `POST /divisions` - Create a new division
 - `PUT /divisions/{id}` - Update division
 - `DELETE /divisions/{id}` - Delete division (fails if players are assigned)
+- `POST /images/upload-url` - Generate presigned S3 URL for image uploads
 - `DELETE /admin/clear-all` - Clear all data from all tables
 - `POST /admin/seed-data` - Generate sample data for testing
 
@@ -636,6 +645,7 @@ With AWS Free Tier:
 - Lambda: Free for first 1M requests
 - API Gateway: Free for first 1M requests
 - S3 + CloudFront: ~$0-2/month
+- Cognito: Free for up to 50,000 monthly active users
 
 **Expected monthly cost for low traffic: $1-5/month**
 
@@ -644,14 +654,14 @@ With AWS Free Tier:
 ### High Priority
 - [x] ~~Add Divisions support (group players into divisions)~~ **DONE**
 - [x] ~~Add Seasons support (track standings per season, season resets)~~ **DONE**
-- [ ] AWS Cognito integration for admin authentication
-- [ ] Lambda Authorizer to protect admin endpoints
+- [x] ~~AWS Cognito integration for admin authentication~~ **DONE**
+- [x] ~~Lambda Authorizer to protect admin endpoints~~ **DONE**
+- [x] ~~Player profile pictures and championship images~~ **DONE**
 
 ### Medium Priority
 - [ ] Tag team match handling in frontend
 - [ ] Tournament bracket progression (auto-advance winners)
 - [ ] Match type statistics and analytics
-- [ ] Player profile pictures and championship images
 
 ### Low Priority
 - [ ] Advanced filtering and search
