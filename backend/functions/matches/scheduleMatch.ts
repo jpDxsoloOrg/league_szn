@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { created, badRequest, serverError } from '../../lib/response';
+import { created, badRequest, notFound, serverError } from '../../lib/response';
 
 interface ScheduleMatchBody {
   date: string;
@@ -28,6 +28,74 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     if (body.isChampionship && !body.championshipId) {
       return badRequest('Championship ID is required for championship matches');
+    }
+
+    // Check for duplicate participants
+    const uniqueParticipants = new Set(body.participants);
+    if (uniqueParticipants.size !== body.participants.length) {
+      return badRequest('Duplicate participants are not allowed');
+    }
+
+    // Validate all participants exist
+    const playerValidationPromises = body.participants.map(async (playerId) => {
+      const player = await dynamoDb.get({
+        TableName: TableNames.PLAYERS,
+        Key: { playerId },
+      });
+      return { playerId, exists: !!player.Item };
+    });
+
+    const playerResults = await Promise.all(playerValidationPromises);
+    const missingPlayers = playerResults.filter((p) => !p.exists).map((p) => p.playerId);
+
+    if (missingPlayers.length > 0) {
+      return notFound(`Players not found: ${missingPlayers.join(', ')}`);
+    }
+
+    // Validate championship exists if provided
+    if (body.championshipId) {
+      const championship = await dynamoDb.get({
+        TableName: TableNames.CHAMPIONSHIPS,
+        Key: { championshipId: body.championshipId },
+      });
+
+      if (!championship.Item) {
+        return notFound(`Championship not found: ${body.championshipId}`);
+      }
+    }
+
+    // Validate tournament exists if provided
+    if (body.tournamentId) {
+      const tournament = await dynamoDb.get({
+        TableName: TableNames.TOURNAMENTS,
+        Key: { tournamentId: body.tournamentId },
+      });
+
+      if (!tournament.Item) {
+        return notFound(`Tournament not found: ${body.tournamentId}`);
+      }
+
+      // Ensure tournament is not completed
+      if (tournament.Item.status === 'completed') {
+        return badRequest('Cannot schedule match for a completed tournament');
+      }
+    }
+
+    // Validate season exists and is active if provided
+    if (body.seasonId) {
+      const season = await dynamoDb.get({
+        TableName: TableNames.SEASONS,
+        Key: { seasonId: body.seasonId },
+      });
+
+      if (!season.Item) {
+        return notFound(`Season not found: ${body.seasonId}`);
+      }
+
+      // Ensure season is active
+      if (season.Item.status !== 'active') {
+        return badRequest('Cannot schedule match for an inactive season');
+      }
     }
 
     const match = {
