@@ -26,7 +26,7 @@ export default function ManageDivisions() {
       setLoading(true);
       const data = await divisionsApi.getAll();
       setDivisions(data);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load divisions');
     } finally {
       setLoading(false);

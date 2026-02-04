@@ -51,7 +51,7 @@ export default function ScheduleMatch() {
       if (activeSeason) {
         setFormData(prev => ({ ...prev, seasonId: activeSeason.seasonId }));
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load data');
     } finally {
       setLoading(false);

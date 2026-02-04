@@ -24,7 +24,7 @@ export default function CreateTournament() {
       setLoading(true);
       const data = await playersApi.getAll();
       setPlayers(data);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load players');
     } finally {
       setLoading(false);
@@ -103,7 +103,7 @@ export default function CreateTournament() {
           <select
             id="type"
             value={formData.type}
-            onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+            onChange={(e) => setFormData({ ...formData, type: e.target.value as 'single-elimination' | 'round-robin' })}
             required
           >
             <option value="single-elimination">Single Elimination</option>

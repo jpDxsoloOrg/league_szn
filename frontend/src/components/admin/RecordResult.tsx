@@ -28,7 +28,7 @@ export default function RecordResult() {
       ]);
       setMatches(matchesData);
       setPlayers(playersData);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load data');
     } finally {
       setLoading(false);

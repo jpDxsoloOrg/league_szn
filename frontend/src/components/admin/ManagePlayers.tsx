@@ -39,7 +39,7 @@ export default function ManagePlayers() {
       ]);
       setPlayers(playersData);
       setDivisions(divisionsData);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load data');
     } finally {
       setLoading(false);

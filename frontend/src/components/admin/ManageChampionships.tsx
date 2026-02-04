@@ -32,7 +32,7 @@ export default function ManageChampionships() {
       setLoading(true);
       const data = await championshipsApi.getAll();
       setChampionships(data);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to load championships');
     } finally {
       setLoading(false);
