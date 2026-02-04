@@ -19,13 +19,13 @@ A serverless web application for managing a WWE 2K league with player standings,
 | **amazon-cognito-identity-js** | 6.3.7 | Handles admin login/logout with Cognito User Pool |
 | **@aws-sdk/client-s3** | 3.981.0 | Browser-side S3 uploads for player/championship images |
 | **@aws-sdk/lib-storage** | 3.981.0 | Multi-part upload support for larger images |
-| **ESLint** | 8.55.0 | Code quality with React Hooks and TypeScript rules |
+| **ESLint** | 9.x | Code quality with React Hooks and TypeScript rules (flat config) |
 
 ### Backend Technologies
 
 | Technology | Version | How It's Used |
 |------------|---------|---------------|
-| **Node.js** | 18.x | Lambda runtime - all API handlers run on Node.js 18 |
+| **Node.js** | 20.x | Lambda runtime - all API handlers run on Node.js 20 |
 | **TypeScript** | 5.3.3 | Type-safe Lambda functions; compiled to JS before deployment |
 | **@aws-sdk/client-dynamodb** | 3.450.0 | Low-level DynamoDB operations |
 | **@aws-sdk/lib-dynamodb** | 3.450.0 | Document Client for simplified DynamoDB CRUD operations |
@@ -38,7 +38,6 @@ A serverless web application for managing a WWE 2K league with player standings,
 | **Serverless Framework** | 3.38.0 | Deploys all infrastructure defined in `serverless.yml` |
 | **serverless-plugin-typescript** | 2.1.5 | Auto-compiles TypeScript during serverless deploy |
 | **serverless-offline** | 13.3.0 | Local API Gateway + Lambda emulation for development |
-| **serverless-s3-sync** | 3.5.1 | Syncs frontend build to S3 bucket |
 
 ### AWS Infrastructure
 
@@ -362,11 +361,24 @@ cd backend && npx serverless deploy --stage devtest --aws-profile league-szn && 
 
 Domain `jpdxsolo.com` DNS is managed in Namecheap.
 
-CNAME records for subdomains:
+CNAME records for subdomains should point to CloudFront distributions (not S3 website endpoints):
 | Type | Host | Value |
 |------|------|-------|
-| CNAME | leagueszn | leagueszn.jpdxsolo.com.s3-website-us-east-1.amazonaws.com |
-| CNAME | dev.leagueszn | dev.leagueszn.jpdxsolo.com.s3-website-us-east-1.amazonaws.com |
+| CNAME | leagueszn | `<CloudFront-Distribution-Domain>.cloudfront.net` |
+| CNAME | dev.leagueszn | `<CloudFront-Distribution-Domain>.cloudfront.net` |
+
+**To get the CloudFront domain names:**
+```bash
+# For production (dev stage)
+aws cloudformation describe-stacks --stack-name wwe-2k-league-api-dev \
+  --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDomainName'].OutputValue" \
+  --output text --profile league-szn
+
+# For dev (devtest stage)
+aws cloudformation describe-stacks --stack-name wwe-2k-league-api-devtest \
+  --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDomainName'].OutputValue" \
+  --output text --profile league-szn
+```
 
 ## Known Limitations / TODO
 

@@ -4,7 +4,7 @@ frameworkVersion: '3'
 
 provider:
   name: aws
-  runtime: nodejs18.x
+  runtime: nodejs20.x
   region: us-east-1
   stage: ${opt:stage, 'dev'}
   environment:
@@ -59,7 +59,6 @@ provider:
 plugins:
   - serverless-plugin-typescript
   - serverless-offline
-  - serverless-s3-sync
 
 custom:
   serverless-offline:
@@ -75,10 +74,6 @@ custom:
   certificateArn:
     dev: ${env:PROD_ACM_CERTIFICATE_ARN, ''}
     devtest: ${env:DEV_ACM_CERTIFICATE_ARN, ''}
-  s3Sync:
-    - bucketName: ${self:custom.frontendBucket.${self:provider.stage}, 'leagueszn.jpdxsolo.com'}
-      localDir: ../frontend/dist
-      deleteRemoved: true
 
 functions:
   # Auth

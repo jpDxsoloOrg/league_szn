@@ -37,13 +37,13 @@ A serverless web application for managing a WWE 2K league with player standings,
 | **AWS Amplify** | 6.16.0 | AWS integration library for authentication and cloud services |
 | **amazon-cognito-identity-js** | 6.3.7 | Cognito SDK for client-side user authentication |
 | **@aws-sdk/client-s3** | 3.981.0 | AWS SDK v3 for S3 operations (image uploads) |
-| **ESLint** | 8.55.0 | JavaScript/TypeScript linter with React Hooks and TypeScript plugins |
+| **ESLint** | 9.x | JavaScript/TypeScript linter with React Hooks and TypeScript plugins |
 
 ### Backend
 
 | Technology | Version | Description |
 |------------|---------|-------------|
-| **Node.js** | 18.x | JavaScript runtime for serverless Lambda functions |
+| **Node.js** | 20.x | JavaScript runtime for serverless Lambda functions |
 | **TypeScript** | 5.3.3 | Type-safe backend code with compile-time checking |
 | **@aws-sdk/client-dynamodb** | 3.450.0 | AWS SDK v3 for DynamoDB database operations |
 | **@aws-sdk/lib-dynamodb** | 3.450.0 | High-level DynamoDB Document Client for simplified operations |
@@ -172,7 +172,7 @@ npm run clear-data
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - AWS CLI configured with the `league-szn` profile
 
 ---
@@ -246,9 +246,9 @@ docker pull amazon/dynamodb-local
 # https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html
 ```
 
-2. Make sure you have Node.js installed (v18+):
+2. Make sure you have Node.js installed (v20+):
 ```bash
-node --version  # Should be 18 or higher
+node --version  # Should be 20 or higher
 ```
 
 ### Step-by-Step Local Setup
