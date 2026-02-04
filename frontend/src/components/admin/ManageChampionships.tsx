@@ -2,6 +2,7 @@ import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { championshipsApi, imagesApi } from '../../services/api';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
+import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
 import type { Championship } from '../../types';
 import './ManageChampionships.css';
 
@@ -46,15 +47,14 @@ export default function ManageChampionships() {
     const file = e.target.files?.[0];
     if (file) {
       // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
-        setError('Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.');
+      if (!FILE_UPLOAD_LIMITS.ALLOWED_TYPES.includes(file.type as typeof FILE_UPLOAD_LIMITS.ALLOWED_TYPES[number])) {
+        setError(`Invalid file type. Only ${FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS} images are allowed.`);
         return;
       }
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('File too large. Maximum size is 5MB.');
+      // Validate file size
+      if (file.size > FILE_UPLOAD_LIMITS.MAX_SIZE) {
+        setError(`File too large. Maximum size is ${FILE_UPLOAD_LIMITS.MAX_SIZE_MB}MB.`);
         return;
       }
 
@@ -128,7 +128,7 @@ export default function ManageChampionships() {
 
     try {
       // Sanitize inputs before sending to API
-      const sanitizedName = sanitizeName(formData.name, 100);
+      const sanitizedName = sanitizeName(formData.name, VALIDATION.MAX_NAME_LENGTH);
 
       if (!sanitizedName) {
         setError('Championship name cannot be empty');
@@ -277,7 +277,7 @@ export default function ManageChampionships() {
                     <label htmlFor="championship-image" className="file-input-label">
                       Click to upload image
                     </label>
-                    <p className="upload-hint">JPEG, PNG, GIF, or WebP (max 5MB)</p>
+                    <p className="upload-hint">{FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS} (max {FILE_UPLOAD_LIMITS.MAX_SIZE_MB}MB)</p>
                   </div>
                 )}
               </div>
