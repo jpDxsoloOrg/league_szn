@@ -42,10 +42,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Winners and losers are required');
     }
 
-    // Get the match using query (matchId is the hash key)
-    const matchResult = await dynamoDb.scan({
+    // Get the match using query (matchId is the partition key)
+    const matchResult = await dynamoDb.query({
       TableName: TableNames.MATCHES,
-      FilterExpression: 'matchId = :matchId',
+      KeyConditionExpression: 'matchId = :matchId',
       ExpressionAttributeValues: { ':matchId': matchId },
     });
 
