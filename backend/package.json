@@ -12,14 +12,18 @@
     "clear-data": "ts-node scripts/clear-data.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.982.0",
     "@aws-sdk/client-dynamodb": "^3.450.0",
     "@aws-sdk/client-s3": "^3.450.0",
     "@aws-sdk/lib-dynamodb": "^3.450.0",
     "@aws-sdk/s3-request-presigner": "^3.450.0",
+    "aws-jwt-verify": "^5.1.1",
+    "jsonwebtoken": "^9.0.3",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.130",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.10.5",
     "@types/uuid": "^9.0.7",
     "serverless": "^3.38.0",

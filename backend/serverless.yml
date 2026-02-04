@@ -17,6 +17,8 @@ provider:
     SEASON_STANDINGS_TABLE: ${self:service}-season-standings-${self:provider.stage}
     DIVISIONS_TABLE: ${self:service}-divisions-${self:provider.stage}
     IMAGES_BUCKET: ${self:service}-images-${self:provider.stage}
+    COGNITO_USER_POOL_ID: !Ref AdminUserPool
+    COGNITO_CLIENT_ID: !Ref AdminUserPoolClient
   iam:
     role:
       statements:
@@ -46,6 +48,13 @@ provider:
             - s3:DeleteObject
           Resource:
             - arn:aws:s3:::${self:provider.environment.IMAGES_BUCKET}/*
+        - Effect: Allow
+          Action:
+            - cognito-idp:AdminCreateUser
+            - cognito-idp:AdminSetUserPassword
+            - cognito-idp:AdminGetUser
+          Resource:
+            - !GetAtt AdminUserPool.Arn
 
 plugins:
   - serverless-plugin-typescript
@@ -72,6 +81,18 @@ custom:
       deleteRemoved: true
 
 functions:
+  # Auth
+  adminAuthorizer:
+    handler: functions/auth/authorizer.handler
+
+  createAdminUser:
+    handler: functions/auth/createAdminUser.handler
+    events:
+      - http:
+          path: auth/setup
+          method: post
+          cors: true
+
   # Players
   getPlayers:
     handler: functions/players/getPlayers.handler
@@ -88,6 +109,7 @@ functions:
           path: players
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
   updatePlayer:
     handler: functions/players/updatePlayer.handler
@@ -96,6 +118,7 @@ functions:
           path: players/{playerId}
           method: put
           cors: true
+          authorizer: adminAuthorizer
 
   deletePlayer:
     handler: functions/players/deletePlayer.handler
@@ -104,6 +127,7 @@ functions:
           path: players/{playerId}
           method: delete
           cors: true
+          authorizer: adminAuthorizer
 
   # Matches
   getMatches:
@@ -121,6 +145,7 @@ functions:
           path: matches
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
   recordResult:
     handler: functions/matches/recordResult.handler
@@ -129,6 +154,7 @@ functions:
           path: matches/{matchId}/result
           method: put
           cors: true
+          authorizer: adminAuthorizer
 
   # Championships
   getChampionships:
@@ -146,6 +172,7 @@ functions:
           path: championships
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
   getChampionshipHistory:
     handler: functions/championships/getChampionshipHistory.handler
@@ -162,6 +189,7 @@ functions:
           path: championships/{championshipId}
           method: put
           cors: true
+          authorizer: adminAuthorizer
 
   deleteChampionship:
     handler: functions/championships/deleteChampionship.handler
@@ -170,6 +198,7 @@ functions:
           path: championships/{championshipId}
           method: delete
           cors: true
+          authorizer: adminAuthorizer
 
   # Tournaments
   getTournaments:
@@ -187,6 +216,7 @@ functions:
           path: tournaments
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
   updateTournament:
     handler: functions/tournaments/updateTournament.handler
@@ -195,6 +225,7 @@ functions:
           path: tournaments/{tournamentId}
           method: put
           cors: true
+          authorizer: adminAuthorizer
 
   # Standings
   getStandings:
@@ -221,6 +252,7 @@ functions:
           path: seasons
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
   updateSeason:
     handler: functions/seasons/updateSeason.handler
@@ -229,6 +261,7 @@ functions:
           path: seasons/{seasonId}
           method: put
           cors: true
+          authorizer: adminAuthorizer
 
   deleteSeason:
     handler: functions/seasons/deleteSeason.handler
@@ -237,6 +270,7 @@ functions:
           path: seasons/{seasonId}
           method: delete
           cors: true
+          authorizer: adminAuthorizer
 
   # Divisions
   getDivisions:
@@ -254,6 +288,7 @@ functions:
           path: divisions
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
   updateDivision:
     handler: functions/divisions/updateDivision.handler
@@ -262,6 +297,7 @@ functions:
           path: divisions/{divisionId}
           method: put
           cors: true
+          authorizer: adminAuthorizer
 
   deleteDivision:
     handler: functions/divisions/deleteDivision.handler
@@ -270,6 +306,7 @@ functions:
           path: divisions/{divisionId}
           method: delete
           cors: true
+          authorizer: adminAuthorizer
 
   # Images
   generateUploadUrl:
@@ -279,6 +316,7 @@ functions:
           path: images/upload-url
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
   # Admin
   clearAll:
@@ -288,6 +326,7 @@ functions:
           path: admin/clear-all
           method: delete
           cors: true
+          authorizer: adminAuthorizer
 
   seedData:
     handler: functions/admin/seedData.handler
@@ -296,9 +335,89 @@ functions:
           path: admin/seed-data
           method: post
           cors: true
+          authorizer: adminAuthorizer
 
 resources:
   Resources:
+    # API Gateway Response for CORS with Authorizer
+    GatewayResponseDefault4XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: ApiGatewayRestApi
+
+    GatewayResponseDefault5XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        ResponseType: DEFAULT_5XX
+        RestApiId:
+          Ref: ApiGatewayRestApi
+
+    GatewayResponseUnauthorized:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        ResponseType: UNAUTHORIZED
+        RestApiId:
+          Ref: ApiGatewayRestApi
+
+    GatewayResponseAccessDenied:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        ResponseType: ACCESS_DENIED
+        RestApiId:
+          Ref: ApiGatewayRestApi
+
+    # Cognito User Pool for Admin Authentication (username-based)
+    AdminUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: ${self:service}-admin-pool-v2-${self:provider.stage}
+        AdminCreateUserConfig:
+          AllowAdminCreateUserOnly: true
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireLowercase: true
+            RequireNumbers: true
+            RequireSymbols: false
+            RequireUppercase: true
+
+    AdminUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: ${self:service}-admin-client-v2-${self:provider.stage}
+        UserPoolId: !Ref AdminUserPool
+        GenerateSecret: false
+        ExplicitAuthFlows:
+          - ALLOW_USER_PASSWORD_AUTH
+          - ALLOW_REFRESH_TOKEN_AUTH
+          - ALLOW_USER_SRP_AUTH
+        PreventUserExistenceErrors: ENABLED
+        AccessTokenValidity: 24
+        IdTokenValidity: 24
+        RefreshTokenValidity: 30
+        TokenValidityUnits:
+          AccessToken: hours
+          IdToken: hours
+          RefreshToken: days
+
     PlayersTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -525,3 +644,13 @@ resources:
       Value: !GetAtt FrontendCloudFrontDistribution.DomainName
       Export:
         Name: ${self:service}-${self:provider.stage}-CloudFrontDomainName
+    CognitoUserPoolId:
+      Description: Cognito User Pool ID
+      Value: !Ref AdminUserPool
+      Export:
+        Name: ${self:service}-${self:provider.stage}-CognitoUserPoolId
+    CognitoUserPoolClientId:
+      Description: Cognito User Pool Client ID
+      Value: !Ref AdminUserPoolClient
+      Export:
+        Name: ${self:service}-${self:provider.stage}-CognitoUserPoolClientId

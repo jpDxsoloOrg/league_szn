@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../../services/api';
+import { cognitoAuth } from '../../services/cognito';
 import AdminLogin from './AdminLogin';
 import ManagePlayers from './ManagePlayers';
 import ManageDivisions from './ManageDivisions';
@@ -26,7 +27,8 @@ export default function AdminPanel() {
     setIsAuthenticated(true);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await cognitoAuth.signOut();
     authApi.clearToken();
     setIsAuthenticated(false);
   };

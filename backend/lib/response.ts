@@ -41,3 +41,11 @@ export const notFound = (message: string = 'Resource not found'): APIGatewayProx
 export const serverError = (message: string = 'Internal server error'): APIGatewayProxyResult => {
   return error(500, message);
 };
+
+export const unauthorized = (message: string = 'Unauthorized'): APIGatewayProxyResult => {
+  return error(401, message);
+};
+
+export const forbidden = (message: string = 'Forbidden'): APIGatewayProxyResult => {
+  return error(403, message);
+};
