@@ -13,6 +13,7 @@ export default function Matches() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Reload data when retry button is clicked
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
@@ -31,8 +32,34 @@ export default function Matches() {
   }, [filter]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    const abortController = new AbortController();
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const [matchData, playerData] = await Promise.all([
+          matchesApi.getAll(filter === 'all' ? {} : { status: filter }, abortController.signal),
+          playersApi.getAll(abortController.signal),
+        ]);
+        if (!abortController.signal.aborted) {
+          setMatches(matchData);
+          setPlayers(playerData);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError(err.message || 'Failed to load matches');
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+    return () => abortController.abort();
+  }, [filter]);
 
   const getPlayerName = (playerId: string) => {
     const player = players.find(p => p.playerId === playerId);

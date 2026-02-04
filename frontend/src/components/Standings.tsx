@@ -15,19 +15,7 @@ export default function Standings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadInitialData = useCallback(async () => {
-    try {
-      const [seasonsData, divisionsData] = await Promise.all([
-        seasonsApi.getAll(),
-        divisionsApi.getAll(),
-      ]);
-      setSeasons(seasonsData);
-      setDivisions(divisionsData);
-    } catch (_err) {
-      logger.error('Failed to load initial standings data');
-    }
-  }, []);
-
+  // Reload standings when retry button is clicked
   const loadStandings = useCallback(async () => {
     try {
       setLoading(true);
@@ -42,12 +30,54 @@ export default function Standings() {
   }, [selectedSeasonId]);
 
   useEffect(() => {
-    loadInitialData();
-  }, [loadInitialData]);
+    const abortController = new AbortController();
+
+    const fetchInitialData = async () => {
+      try {
+        const [seasonsData, divisionsData] = await Promise.all([
+          seasonsApi.getAll(abortController.signal),
+          divisionsApi.getAll(abortController.signal),
+        ]);
+        if (!abortController.signal.aborted) {
+          setSeasons(seasonsData);
+          setDivisions(divisionsData);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          logger.error('Failed to load initial standings data');
+        }
+      }
+    };
+
+    fetchInitialData();
+    return () => abortController.abort();
+  }, []);
 
   useEffect(() => {
-    loadStandings();
-  }, [loadStandings]);
+    const abortController = new AbortController();
+
+    const fetchStandings = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await standingsApi.get(selectedSeasonId || undefined, abortController.signal);
+        if (!abortController.signal.aborted) {
+          setStandings(data);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError(err.message || 'Failed to load standings');
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchStandings();
+    return () => abortController.abort();
+  }, [selectedSeasonId]);
 
   // Memoize filtered players to avoid recalculation on every render
   const filteredPlayers = useMemo((): Player[] => {

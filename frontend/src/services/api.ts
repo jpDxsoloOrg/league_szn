@@ -16,8 +16,8 @@ const getAuthToken = (): string | null => {
   return sessionStorage.getItem('accessToken');
 };
 
-// Helper to make authenticated requests
-const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+// Helper to make authenticated requests with optional abort signal
+const fetchWithAuth = async (url: string, options: RequestInit = {}, signal?: AbortSignal) => {
   const token = getAuthToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -31,6 +31,7 @@ const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
   const response = await fetch(url, {
     ...options,
     headers,
+    signal,
   });
 
   if (!response.ok) {
@@ -43,8 +44,8 @@ const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
 
 // Players API
 export const playersApi = {
-  getAll: async (): Promise<Player[]> => {
-    return fetchWithAuth(`${API_BASE_URL}/players`);
+  getAll: async (signal?: AbortSignal): Promise<Player[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/players`, {}, signal);
   },
 
   create: async (player: Omit<Player, 'playerId' | 'createdAt' | 'updatedAt'>): Promise<Player> => {
@@ -70,9 +71,9 @@ export const playersApi = {
 
 // Matches API
 export const matchesApi = {
-  getAll: async (filters?: { status?: string }): Promise<Match[]> => {
+  getAll: async (filters?: { status?: string }, signal?: AbortSignal): Promise<Match[]> => {
     const params = new URLSearchParams(filters as Record<string, string>);
-    return fetchWithAuth(`${API_BASE_URL}/matches?${params}`);
+    return fetchWithAuth(`${API_BASE_URL}/matches?${params}`, {}, signal);
   },
 
   schedule: async (match: Omit<Match, 'matchId' | 'createdAt'>): Promise<Match> => {
@@ -92,8 +93,8 @@ export const matchesApi = {
 
 // Championships API
 export const championshipsApi = {
-  getAll: async (): Promise<Championship[]> => {
-    return fetchWithAuth(`${API_BASE_URL}/championships`);
+  getAll: async (signal?: AbortSignal): Promise<Championship[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/championships`, {}, signal);
   },
 
   create: async (championship: Omit<Championship, 'championshipId' | 'createdAt'>): Promise<Championship> => {
@@ -103,8 +104,8 @@ export const championshipsApi = {
     });
   },
 
-  getHistory: async (championshipId: string): Promise<ChampionshipReign[]> => {
-    return fetchWithAuth(`${API_BASE_URL}/championships/${championshipId}/history`);
+  getHistory: async (championshipId: string, signal?: AbortSignal): Promise<ChampionshipReign[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/championships/${championshipId}/history`, {}, signal);
   },
 
   update: async (championshipId: string, updates: Partial<Championship>): Promise<Championship> => {
@@ -123,12 +124,12 @@ export const championshipsApi = {
 
 // Tournaments API
 export const tournamentsApi = {
-  getAll: async (): Promise<Tournament[]> => {
-    return fetchWithAuth(`${API_BASE_URL}/tournaments`);
+  getAll: async (signal?: AbortSignal): Promise<Tournament[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/tournaments`, {}, signal);
   },
 
-  getById: async (tournamentId: string): Promise<Tournament> => {
-    return fetchWithAuth(`${API_BASE_URL}/tournaments/${tournamentId}`);
+  getById: async (tournamentId: string, signal?: AbortSignal): Promise<Tournament> => {
+    return fetchWithAuth(`${API_BASE_URL}/tournaments/${tournamentId}`, {}, signal);
   },
 
   create: async (tournament: Omit<Tournament, 'tournamentId' | 'createdAt'>): Promise<Tournament> => {
@@ -148,16 +149,16 @@ export const tournamentsApi = {
 
 // Standings API
 export const standingsApi = {
-  get: async (seasonId?: string): Promise<Standings> => {
+  get: async (seasonId?: string, signal?: AbortSignal): Promise<Standings> => {
     const params = seasonId ? `?seasonId=${seasonId}` : '';
-    return fetchWithAuth(`${API_BASE_URL}/standings${params}`);
+    return fetchWithAuth(`${API_BASE_URL}/standings${params}`, {}, signal);
   },
 };
 
 // Seasons API
 export const seasonsApi = {
-  getAll: async (): Promise<Season[]> => {
-    return fetchWithAuth(`${API_BASE_URL}/seasons`);
+  getAll: async (signal?: AbortSignal): Promise<Season[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/seasons`, {}, signal);
   },
 
   create: async (season: { name: string; startDate: string; endDate?: string }): Promise<Season> => {
@@ -183,8 +184,8 @@ export const seasonsApi = {
 
 // Divisions API
 export const divisionsApi = {
-  getAll: async (): Promise<Division[]> => {
-    return fetchWithAuth(`${API_BASE_URL}/divisions`);
+  getAll: async (signal?: AbortSignal): Promise<Division[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/divisions`, {}, signal);
   },
 
   create: async (division: { name: string; description?: string }): Promise<Division> => {

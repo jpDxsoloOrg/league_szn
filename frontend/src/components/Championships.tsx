@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { championshipsApi, playersApi } from '../services/api';
 import { formatDate } from '../utils/dateUtils';
@@ -15,12 +15,10 @@ export default function Championships() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const historyAbortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  // Reload data when retry button is clicked
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -35,20 +33,61 @@ export default function Championships() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadHistory = async (championshipId: string) => {
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const [champData, playerData] = await Promise.all([
+          championshipsApi.getAll(abortController.signal),
+          playersApi.getAll(abortController.signal),
+        ]);
+        if (!abortController.signal.aborted) {
+          setChampionships(champData);
+          setPlayers(playerData);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError(err.message || 'Failed to load championships');
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+    return () => abortController.abort();
+  }, []);
+
+  const loadHistory = useCallback(async (championshipId: string) => {
+    // Cancel any previous history request
+    if (historyAbortRef.current) {
+      historyAbortRef.current.abort();
+    }
+    historyAbortRef.current = new AbortController();
+
     try {
       setLoadingHistory(true);
-      const historyData = await championshipsApi.getHistory(championshipId);
+      const historyData = await championshipsApi.getHistory(
+        championshipId,
+        historyAbortRef.current.signal
+      );
       setHistory(historyData);
       setSelectedChampionship(championshipId);
-    } catch (_err) {
-      logger.error('Failed to load championship history');
+    } catch (err) {
+      if (err instanceof Error && err.name !== 'AbortError') {
+        logger.error('Failed to load championship history');
+      }
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }, []);
 
   const getPlayerName = (playerId: string | string[]) => {
     if (Array.isArray(playerId)) {
