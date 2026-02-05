@@ -1,0 +1,62 @@
+.division-picker {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.division-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #333;
+}
+
+.division-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #d4af37;
+}
+
+.selection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+.maxed-badge {
+  padding: 0.125rem 0.5rem;
+  background-color: #4ade80;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: #000;
+  text-transform: uppercase;
+}
+
+.wrestlers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.no-wrestlers {
+  text-align: center;
+  color: #888;
+  padding: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .division-picker {
+    padding: 1rem;
+  }
+
+  .wrestlers-grid {
+    grid-template-columns: 1fr;
+  }
+}

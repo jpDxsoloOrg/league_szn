@@ -1,0 +1,344 @@
+.fantasy-landing {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Hero Section */
+.fantasy-hero {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border: 1px solid #333;
+}
+
+.fantasy-hero h1 {
+  font-size: 2.5rem;
+  margin: 0 0 0.5rem 0;
+  color: #d4af37;
+}
+
+.fantasy-tagline {
+  font-size: 1.25rem;
+  color: #bbb;
+  margin-bottom: 2rem;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: bold;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-primary {
+  background-color: #d4af37;
+  color: #000;
+}
+
+.btn-primary:hover {
+  background-color: #e5c04a;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: #d4af37;
+  border: 2px solid #d4af37;
+}
+
+.btn-secondary:hover {
+  background-color: #d4af37;
+  color: #000;
+}
+
+.btn-large {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+/* How It Works Section */
+.fantasy-how-it-works {
+  margin-bottom: 2rem;
+}
+
+.fantasy-how-it-works h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.step-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  background-color: #d4af37;
+  color: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin: 0 auto 1rem;
+}
+
+.step-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.step-card p {
+  margin: 0;
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+/* Current Show Banner */
+.current-show-banner {
+  background: linear-gradient(90deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.show-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.show-status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.show-status.open {
+  background-color: #4ade80;
+  color: #000;
+}
+
+.show-status.locked {
+  background-color: #f87171;
+  color: #000;
+}
+
+.show-status.completed {
+  background-color: #60a5fa;
+  color: #000;
+}
+
+.show-info h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.show-info p {
+  margin: 0;
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+/* Preview Section */
+.fantasy-preview-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.preview-leaderboard,
+.preview-stats {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.preview-leaderboard h2,
+.preview-stats h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+}
+
+.mini-leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mini-leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background-color: #222;
+  border-radius: 4px;
+}
+
+.mini-leaderboard-row .rank {
+  color: #d4af37;
+  font-weight: bold;
+  min-width: 30px;
+}
+
+.mini-leaderboard-row .username {
+  flex: 1;
+}
+
+.mini-leaderboard-row .points {
+  color: #4ade80;
+  font-weight: bold;
+}
+
+.view-all-link {
+  display: block;
+  text-align: center;
+  margin-top: 1rem;
+  color: #d4af37;
+  text-decoration: none;
+}
+
+.view-all-link:hover {
+  text-decoration: underline;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 1rem;
+  background-color: #222;
+  border-radius: 4px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #bbb;
+  margin-top: 0.25rem;
+}
+
+/* Points Preview Section */
+.points-preview {
+  margin-bottom: 2rem;
+}
+
+.points-preview h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.points-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.points-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.points-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #4ade80;
+}
+
+.points-label {
+  display: block;
+  font-size: 0.875rem;
+  color: #bbb;
+  margin-top: 0.5rem;
+}
+
+/* CTA Section */
+.cta-section {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.cta-section h2 {
+  margin: 0 0 0.5rem 0;
+}
+
+.cta-section p {
+  color: #bbb;
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .fantasy-hero h1 {
+    font-size: 1.75rem;
+  }
+
+  .fantasy-tagline {
+    font-size: 1rem;
+  }
+
+  .current-show-banner {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .show-info {
+    align-items: center;
+  }
+}
