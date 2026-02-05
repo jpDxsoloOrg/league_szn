@@ -308,8 +308,68 @@ Response:
 
 ## Implementation Phases
 
-### Phase 1: Core Data Model & Calculation
+### PHASE 0: UI Prototypes with Mock Data
 **Prerequisites**: None
+**Estimated Complexity**: Medium
+
+This phase creates all UI components with hardcoded data so stakeholders can see the look and flow before backend work begins.
+
+#### Steps:
+1. Create contender types file with interfaces
+   - File: `frontend/src/types/contender.ts`
+   - Details: All TypeScript interfaces for contender rankings feature
+   - Validation: TypeScript compiles without errors
+
+2. Create mock data file
+   - File: `frontend/src/mocks/contenderMockData.ts`
+   - Details: Hardcoded rankings, movements, player contender status
+   - Validation: Data matches interface shapes
+
+3. Create `ContenderRankings.tsx` component
+   - File: `frontend/src/components/ContenderRankings.tsx`
+   - Details: Full rankings page with championship tabs using mock data
+   - Validation: Displays rankings correctly
+
+4. Create `ContenderRankings.css` styles
+   - File: `frontend/src/components/ContenderRankings.css`
+   - Details: Movement arrows, rank badges, responsive design
+   - Validation: Visually appealing, matches dark theme
+
+5. Create `ContenderCard.tsx` reusable component
+   - File: `frontend/src/components/ContenderCard.tsx`
+   - Details: Single contender display with rank, movement, stats
+   - Validation: Consistent display across contexts
+
+6. Create `MyContenderStatus.tsx` component
+   - File: `frontend/src/components/MyContenderStatus.tsx`
+   - Details: Player's ranking for each title with progress bars
+   - Validation: Shows player's contender status
+
+7. Create `AdminContenderConfig.tsx` component
+   - File: `frontend/src/components/admin/AdminContenderConfig.tsx`
+   - Details: Configuration form per championship using mock data
+   - Validation: Form renders, values editable
+
+8. Add routing for contender pages
+   - File: Update `App.tsx`
+   - Details: Add routes for `/contenders` and related paths
+   - Validation: All routes accessible
+
+9. Add i18n strings for contender feature
+   - Files: Update `en.json`, `de.json`
+   - Details: All user-facing text translatable
+   - Validation: Language switch works
+
+#### Testing Criteria:
+- All pages render without errors with mock data
+- Navigation between pages works
+- Responsive on mobile devices
+- Consistent styling with existing app
+
+---
+
+### PHASE 1: Core Data Model & Calculation
+**Prerequisites**: Phase 0
 **Estimated Complexity**: High
 
 #### Steps:
@@ -349,7 +409,7 @@ interface RankingCalculationOutput {
 
 ---
 
-### Phase 2: Public API Endpoints
+### PHASE 2: Public API Endpoints
 **Prerequisites**: Phase 1
 **Estimated Complexity**: Medium
 
@@ -376,7 +436,7 @@ interface RankingCalculationOutput {
 
 ---
 
-### Phase 3: Admin Configuration
+### PHASE 3: Admin Configuration Backend
 **Prerequisites**: Phase 1
 **Estimated Complexity**: Low
 
@@ -403,7 +463,7 @@ interface RankingCalculationOutput {
 
 ---
 
-### Phase 4: EventBridge Automation
+### PHASE 4: EventBridge Automation
 **Prerequisites**: Phase 1
 **Estimated Complexity**: Medium
 
@@ -426,60 +486,35 @@ interface RankingCalculationOutput {
 
 ---
 
-### Phase 5: Frontend - Public Views
-**Prerequisites**: Phase 2
+### PHASE 5: Connect Frontend to Backend
+**Prerequisites**: Phase 2, Phase 3
 **Estimated Complexity**: Medium
 
 #### Steps:
-1. Add contender types to frontend
-   - Details: TypeScript interfaces in `types/index.ts`
-   - Validation: Types compile correctly
-
-2. Add contender API service functions
+1. Add contender API service functions
    - Details: Add to `services/api.ts`
    - Validation: Can fetch contender data
 
-3. Create `ContenderRankings.tsx` component
-   - Details: Full rankings page with championship tabs
-   - Validation: Displays rankings correctly
+2. Replace mock data in `ContenderRankings.tsx` with API calls
+   - Details: Remove mock imports, add useEffect for data fetching
+   - Validation: Displays real rankings from backend
 
-4. Create `ContenderRankings.css` styles
-   - Details: Movement arrows, rank badges, responsive
-   - Validation: Visually appealing
+3. Replace mock data in `AdminContenderConfig.tsx` with API calls
+   - Details: Connect to admin configuration endpoints
+   - Validation: Can update settings and trigger recalculation
 
-5. Create `ContenderCard.tsx` reusable component
-   - Details: Used in rankings and championships page
-   - Validation: Consistent display
-
-6. Integrate with Championships page
+4. Integrate with Championships page
    - Details: Add "Top Contenders" section to each championship
-   - Validation: Shows top 3 contenders
+   - Validation: Shows top 3 contenders from real data
+
+5. Add loading and error states
+   - Details: Skeleton loaders, error boundaries
+   - Validation: Graceful handling of loading/errors
 
 #### Testing Criteria:
-- Rankings page loads and displays correctly
+- Rankings page loads real data correctly
 - Movement indicators accurate
 - Mobile responsive
-
----
-
-### Phase 6: Frontend - Admin Features
-**Prerequisites**: Phase 3, Phase 5
-**Estimated Complexity**: Low
-
-#### Steps:
-1. Create `AdminContenderConfig.tsx` component
-   - Details: Configuration form per championship
-   - Validation: Can update settings
-
-2. Add recalculate button to admin panel
-   - Details: Manual trigger with confirmation
-   - Validation: Triggers recalculation
-
-3. Add i18n translations
-   - Details: English and German strings
-   - Validation: All text translatable
-
-#### Testing Criteria:
 - Admin can configure rankings
 - Manual recalculation works
 
@@ -524,10 +559,10 @@ For future enhancement:
 
 | Phase | Effort |
 |-------|--------|
+| Phase 0 (UI Prototypes) | 5-6 hours |
 | Phase 1 | 6-8 hours |
 | Phase 2 | 3-4 hours |
 | Phase 3 | 2-3 hours |
 | Phase 4 | 3-4 hours |
-| Phase 5 | 5-6 hours |
-| Phase 6 | 2-3 hours |
-| **Total** | **21-28 hours** |
+| Phase 5 (Connect Frontend) | 3-4 hours |
+| **Total** | **22-29 hours** |
