@@ -552,8 +552,78 @@ Response:
 
 ## Implementation Phases
 
-### Phase 1: Core Statistics Tables
+### PHASE 0: UI Prototypes with Mock Data
 **Prerequisites**: None
+**Estimated Complexity**: High
+
+This phase creates all UI components with hardcoded data so stakeholders can see the look and flow before backend work begins.
+
+#### Steps:
+1. Create statistics types file with interfaces
+   - File: `frontend/src/types/statistics.ts`
+   - Details: All TypeScript interfaces for statistics feature
+   - Validation: TypeScript compiles without errors
+
+2. Create mock data file
+   - File: `frontend/src/mocks/statisticsMockData.ts`
+   - Details: Hardcoded player stats, leaderboards, head-to-head, achievements
+   - Validation: Data matches interface shapes
+
+3. Create `PlayerStats.tsx` component
+   - File: `frontend/src/components/PlayerStats.tsx`
+   - Details: Full statistics display with charts using mock data
+   - Validation: Renders correctly with all stat categories
+
+4. Create `HeadToHeadComparison.tsx` component
+   - File: `frontend/src/components/HeadToHeadComparison.tsx`
+   - Details: Side-by-side player comparison with rivalry history
+   - Validation: Shows both players with mock data
+
+5. Create `Leaderboards.tsx` page
+   - File: `frontend/src/components/Leaderboards.tsx`
+   - Details: Multiple leaderboard categories with tabs/filters
+   - Validation: All categories render with mock data
+
+6. Create `RecordBook.tsx` page
+   - File: `frontend/src/components/RecordBook.tsx`
+   - Details: League records display with record holders
+   - Validation: Records display correctly
+
+7. Create `TaleOfTheTape.tsx` component
+   - File: `frontend/src/components/TaleOfTheTape.tsx`
+   - Details: Boxing-style stat comparison for matches
+   - Validation: Pre-fight style comparison renders
+
+8. Create `Achievements.tsx` component
+   - File: `frontend/src/components/Achievements.tsx`
+   - Details: Achievement gallery with earned/unearned badges
+   - Validation: Shows achievement icons and descriptions
+
+9. Create CSS styles for statistics components
+   - Files: `Stats*.css`, `Leaderboards.css`, etc.
+   - Details: Charts styling, comparison layouts, responsive
+   - Validation: Visually appealing, consistent with app
+
+10. Add routing for statistics pages
+    - File: Update `App.tsx`
+    - Details: Add routes for `/stats/*`, `/leaderboards`, `/records`
+    - Validation: All routes accessible
+
+11. Add i18n strings for statistics feature
+    - Files: Update `en.json`, `de.json`
+    - Details: All user-facing text translatable
+    - Validation: Language switch works
+
+#### Testing Criteria:
+- All pages render without errors with mock data
+- Charts render properly
+- Responsive on mobile devices
+- Consistent styling with existing app
+
+---
+
+### PHASE 1: Core Statistics Tables (Backend)
+**Prerequisites**: Phase 0
 **Estimated Complexity**: Medium
 
 #### Steps:
@@ -579,7 +649,7 @@ Response:
 
 ---
 
-### Phase 2: Statistics API Endpoints
+### PHASE 2: Statistics API Endpoints (Backend)
 **Prerequisites**: Phase 1
 **Estimated Complexity**: Medium
 
@@ -606,7 +676,7 @@ Response:
 
 ---
 
-### Phase 3: Achievements System
+### PHASE 3: Achievements System (Backend)
 **Prerequisites**: Phase 1
 **Estimated Complexity**: Medium
 
@@ -633,7 +703,7 @@ Response:
 
 ---
 
-### Phase 4: Tale of the Tape
+### PHASE 4: Tale of the Tape (Backend)
 **Prerequisites**: Phase 2
 **Estimated Complexity**: Low
 
@@ -652,30 +722,30 @@ Response:
 
 ---
 
-### Phase 5: Frontend - Player Statistics
+### PHASE 5: Connect Frontend to Backend (Player Statistics)
 **Prerequisites**: Phase 2
-**Estimated Complexity**: High
+**Estimated Complexity**: Medium
 
 #### Steps:
-1. Add statistics types to frontend
-   - Details: Mirror backend types
-   - Validation: Types compile
-
-2. Add statistics API functions
+1. Add statistics API functions
    - Details: Add to `services/api.ts`
    - Validation: Can fetch statistics
 
-3. Create `PlayerStats.tsx` component
-   - Details: Full statistics display with charts
-   - Validation: Renders correctly
+2. Replace mock data in `PlayerStats.tsx` with API calls
+   - Details: Remove mock imports, add useEffect for data fetching
+   - Validation: Displays real statistics from backend
 
-4. Create `HeadToHeadComparison.tsx` component
-   - Details: Rivalry comparison view
-   - Validation: Shows both players
+3. Replace mock data in `HeadToHeadComparison.tsx` with API calls
+   - Details: Fetch rivalry data from API
+   - Validation: Shows real head-to-head data
 
-5. Integrate into player profile
+4. Integrate into player profile
    - Details: Add Statistics tab
    - Validation: Accessible from profile
+
+5. Add loading and error states
+   - Details: Skeleton loaders, error boundaries
+   - Validation: Graceful handling of loading/errors
 
 #### Testing Criteria:
 - Statistics display correctly
@@ -684,26 +754,22 @@ Response:
 
 ---
 
-### Phase 6: Frontend - Leaderboards & Records
+### PHASE 6: Connect Frontend to Backend (Leaderboards & Records)
 **Prerequisites**: Phase 5
 **Estimated Complexity**: Medium
 
 #### Steps:
-1. Create `Leaderboards.tsx` page
-   - Details: Multiple leaderboard categories
-   - Validation: All categories work
+1. Replace mock data in `Leaderboards.tsx` with API calls
+   - Details: Fetch leaderboard data from API
+   - Validation: All categories work with real data
 
-2. Create `RecordBook.tsx` page
-   - Details: League records display
+2. Replace mock data in `RecordBook.tsx` with API calls
+   - Details: Fetch records from API
    - Validation: Records accurate
 
 3. Add navigation links
    - Details: Add to main nav
    - Validation: Navigable
-
-4. Add i18n translations
-   - Details: English and German
-   - Validation: All text translatable
 
 #### Testing Criteria:
 - Leaderboards load correctly
@@ -712,18 +778,18 @@ Response:
 
 ---
 
-### Phase 7: Frontend - Tale of the Tape & Achievements
+### PHASE 7: Connect Frontend to Backend (Tale of Tape & Achievements)
 **Prerequisites**: Phase 4, Phase 3
 **Estimated Complexity**: Medium
 
 #### Steps:
-1. Create `TaleOfTheTape.tsx` component
-   - Details: Match comparison display
-   - Validation: Shows before scheduled matches
+1. Replace mock data in `TaleOfTheTape.tsx` with API calls
+   - Details: Fetch match comparison data
+   - Validation: Shows real stats before matches
 
-2. Create `Achievements.tsx` component
-   - Details: Achievement gallery
-   - Validation: Shows earned/unearned
+2. Replace mock data in `Achievements.tsx` with API calls
+   - Details: Fetch player achievements
+   - Validation: Shows earned/unearned correctly
 
 3. Integrate Tale of the Tape into match cards
    - Details: Show for scheduled matches
@@ -739,7 +805,7 @@ Response:
 
 ---
 
-### Phase 8: Historical Data Migration
+### PHASE 8: Historical Data Migration
 **Prerequisites**: Phase 1
 **Estimated Complexity**: Low
 
@@ -790,12 +856,13 @@ For statistics visualization:
 
 | Phase | Effort |
 |-------|--------|
+| Phase 0 (UI Prototypes) | 8-10 hours |
 | Phase 1 | 5-7 hours |
 | Phase 2 | 4-5 hours |
 | Phase 3 | 4-5 hours |
 | Phase 4 | 2-3 hours |
-| Phase 5 | 6-8 hours |
-| Phase 6 | 4-5 hours |
-| Phase 7 | 4-5 hours |
+| Phase 5 (Connect Player Stats) | 3-4 hours |
+| Phase 6 (Connect Leaderboards) | 3-4 hours |
+| Phase 7 (Connect TotT & Achievements) | 3-4 hours |
 | Phase 8 | 2-3 hours |
-| **Total** | **31-41 hours** |
+| **Total** | **34-45 hours** |

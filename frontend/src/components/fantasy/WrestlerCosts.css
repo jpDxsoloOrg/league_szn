@@ -1,0 +1,316 @@
+.wrestler-costs {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Header */
+.costs-header {
+  margin-bottom: 1.5rem;
+}
+
+.costs-header h1 {
+  margin: 0 0 0.25rem 0;
+}
+
+.costs-header .subtitle {
+  color: #888;
+  margin: 0;
+}
+
+/* Filters */
+.costs-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+.search-box input::placeholder {
+  color: #666;
+}
+
+.division-filter {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 0.5rem 1rem;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #bbb;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  border-color: #d4af37;
+  color: #fff;
+}
+
+.filter-btn.active {
+  background-color: #d4af37;
+  border-color: #d4af37;
+  color: #000;
+}
+
+/* Table */
+.costs-table-wrapper {
+  overflow-x: auto;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+
+.costs-table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: collapse;
+}
+
+.costs-table thead {
+  background-color: #222;
+}
+
+.costs-table th {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.8rem;
+  color: #888;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.costs-table th button {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.costs-table th button:hover {
+  color: #d4af37;
+}
+
+.sort-indicator {
+  font-size: 0.625rem;
+}
+
+.costs-table td {
+  padding: 1rem;
+  border-top: 1px solid #333;
+  vertical-align: middle;
+}
+
+.costs-table tbody tr:hover {
+  background-color: rgba(212, 175, 55, 0.05);
+}
+
+/* Columns */
+.col-wrestler {
+  min-width: 200px;
+}
+
+.wrestler-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wrestler-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.wrestler-thumb.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #333;
+  color: #666;
+  font-weight: bold;
+}
+
+.wrestler-info .wrestler-name {
+  display: block;
+  font-weight: 500;
+}
+
+.wrestler-info .player-name {
+  display: block;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.col-division {
+  color: #bbb;
+}
+
+.col-cost {
+  white-space: nowrap;
+}
+
+.cost-value {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #d4af37;
+}
+
+.base-cost {
+  display: block;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.col-trend {
+  white-space: nowrap;
+}
+
+.trend {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.trend.up {
+  color: #f87171;
+}
+
+.trend.down {
+  color: #4ade80;
+}
+
+.trend.stable {
+  color: #888;
+}
+
+.col-record {
+  font-weight: 500;
+  color: #bbb;
+}
+
+.col-winrate {
+  min-width: 120px;
+}
+
+.winrate-bar-container {
+  position: relative;
+  height: 20px;
+  background-color: #333;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.winrate-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: #4ade80;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.winrate-value {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* No Results */
+.no-results {
+  text-align: center;
+  padding: 3rem;
+  color: #888;
+}
+
+/* Info Box */
+.costs-info {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+
+.costs-info h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  color: #d4af37;
+}
+
+.costs-info ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+.costs-info li {
+  margin-bottom: 0.5rem;
+}
+
+.costs-info li:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .costs-filters {
+    flex-direction: column;
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  .division-filter {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.5rem;
+  }
+
+  .filter-btn {
+    white-space: nowrap;
+  }
+}

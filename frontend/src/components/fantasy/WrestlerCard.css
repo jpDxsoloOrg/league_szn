@@ -1,0 +1,199 @@
+.wrestler-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: #222;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wrestler-card:hover:not(.disabled) {
+  border-color: #d4af37;
+}
+
+.wrestler-card:focus {
+  outline: none;
+  border-color: #d4af37;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+}
+
+.wrestler-card.selected {
+  border-color: #4ade80;
+  background-color: rgba(74, 222, 128, 0.1);
+}
+
+.wrestler-card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Checkbox */
+.card-checkbox {
+  flex-shrink: 0;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #444;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: transparent;
+}
+
+.checkbox.checked {
+  background-color: #4ade80;
+  border-color: #4ade80;
+  color: #000;
+}
+
+/* Image */
+.card-image {
+  flex-shrink: 0;
+  width: 50px;
+  height: 50px;
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.placeholder-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #333;
+  border-radius: 4px;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #666;
+}
+
+/* Info */
+.card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-info .wrestler-name {
+  margin: 0 0 0.125rem 0;
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-info .player-name {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.wrestler-stats {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+}
+
+.wrestler-stats .record {
+  color: #bbb;
+}
+
+.wrestler-stats .win-rate {
+  color: #888;
+}
+
+/* Cost */
+.card-cost {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.cost-value {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+.cost-trend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.trend-icon {
+  font-size: 0.625rem;
+}
+
+.trend-icon.up {
+  color: #f87171;
+}
+
+.trend-icon.down {
+  color: #4ade80;
+}
+
+.trend-icon.stable {
+  color: #888;
+}
+
+.trend-diff {
+  color: #888;
+}
+
+/* Over Budget Overlay */
+.over-budget-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 6px;
+}
+
+.over-budget-overlay span {
+  padding: 0.25rem 0.75rem;
+  background-color: #f87171;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #000;
+  text-transform: uppercase;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .wrestler-card {
+    flex-wrap: wrap;
+  }
+
+  .card-cost {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #333;
+  }
+
+  .cost-value {
+    font-size: 1rem;
+  }
+}

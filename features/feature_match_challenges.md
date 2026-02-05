@@ -274,8 +274,78 @@ POST /challenges/{challengeId}/counter
 
 ## Implementation Phases
 
-### Phase 1: Core Infrastructure (Backend)
+### PHASE 0: UI Prototypes with Mock Data
 **Prerequisites**: None
+**Estimated Complexity**: Medium
+
+This phase creates all UI components with hardcoded data so stakeholders can see the look and flow before backend work begins.
+
+#### Steps:
+1. Create challenge types file with interfaces
+   - File: `frontend/src/types/challenge.ts`
+   - Details: All TypeScript interfaces for challenges feature
+   - Validation: TypeScript compiles without errors
+
+2. Create mock data file
+   - File: `frontend/src/mocks/challengeMockData.ts`
+   - Details: Hardcoded challenges, statuses, player data
+   - Validation: Data matches interface shapes
+
+3. Create `ChallengeBoard.tsx` component
+   - File: `frontend/src/components/ChallengeBoard.tsx`
+   - Details: Grid of challenge cards with status filters using mock data
+   - Validation: Displays challenges correctly
+
+4. Create `ChallengeBoard.css` styles
+   - File: `frontend/src/components/ChallengeBoard.css`
+   - Details: Wrestling poster aesthetic, status badges, countdown timers
+   - Validation: Visually appealing, responsive
+
+5. Create `ChallengeDetail.tsx` component
+   - File: `frontend/src/components/ChallengeDetail.tsx`
+   - Details: Full view of a single challenge with message chain
+   - Validation: Shows challenge and response messages
+
+6. Create `IssueChallenge.tsx` component
+   - File: `frontend/src/components/IssueChallenge.tsx`
+   - Details: Form with opponent select, match options, message
+   - Validation: Form renders, can "submit" with mock
+
+7. Create `MyChallenges.tsx` component
+   - File: `frontend/src/components/MyChallenges.tsx`
+   - Details: Tabs for sent/received, action buttons
+   - Validation: Tab switching works, correct data per tab
+
+8. Create challenge response modals
+   - Files: `AcceptChallengeModal.tsx`, `DeclineChallengeModal.tsx`, `CounterChallengeModal.tsx`
+   - Details: Modal dialogs for responding to challenges
+   - Validation: Modals open/close correctly
+
+9. Create `AdminChallenges.tsx` component
+   - File: `frontend/src/components/admin/AdminChallenges.tsx`
+   - Details: Table view with filters using mock data
+   - Validation: Filters work, bulk actions visible
+
+10. Add routing for challenge pages
+    - File: Update `App.tsx`
+    - Details: Add routes for `/challenges/*` paths
+    - Validation: All routes accessible
+
+11. Add i18n strings for challenges feature
+    - Files: Update `en.json`, `de.json`
+    - Details: All user-facing text translatable
+    - Validation: Language switch works
+
+#### Testing Criteria:
+- All pages render without errors with mock data
+- Navigation between pages works
+- Responsive on mobile devices
+- Consistent styling with existing app
+
+---
+
+### PHASE 1: Core Infrastructure (Backend)
+**Prerequisites**: Phase 0
 **Estimated Complexity**: Medium
 
 #### Steps:
@@ -305,7 +375,7 @@ POST /challenges/{challengeId}/counter
 
 ---
 
-### Phase 2: Challenge Responses (Backend)
+### PHASE 2: Challenge Responses (Backend)
 **Prerequisites**: Phase 1
 **Estimated Complexity**: Medium
 
@@ -336,7 +406,7 @@ POST /challenges/{challengeId}/counter
 
 ---
 
-### Phase 3: Admin Management (Backend)
+### PHASE 3: Admin Management (Backend)
 **Prerequisites**: Phase 2
 **Estimated Complexity**: Low
 
@@ -359,58 +429,54 @@ POST /challenges/{challengeId}/counter
 
 ---
 
-### Phase 4: Frontend - Public Views
+### PHASE 4: Connect Frontend to Backend (Public Views)
 **Prerequisites**: Phase 1
 **Estimated Complexity**: Medium
 
 #### Steps:
-1. Add Challenge TypeScript types to frontend
-   - Details: Mirror backend types in `types/index.ts`
-   - Validation: Types compile correctly
-
-2. Add challenges API service functions
+1. Add challenges API service functions
    - Details: Add to `services/api.ts`
    - Validation: Can fetch challenges from backend
 
-3. Create `ChallengeBoard.tsx` component
-   - Details: Grid of challenge cards, status filters
-   - Validation: Displays challenges correctly
+2. Replace mock data in `ChallengeBoard.tsx` with API calls
+   - Details: Remove mock imports, add useEffect for data fetching
+   - Validation: Displays real challenges from backend
 
-4. Create `ChallengeBoard.css` styles
-   - Details: Wrestling poster aesthetic, status badges
-   - Validation: Visually appealing, responsive
+3. Replace mock data in `ChallengeDetail.tsx` with API calls
+   - Details: Fetch single challenge with full context
+   - Validation: Shows real challenge data
+
+4. Add loading and error states
+   - Details: Skeleton loaders, error boundaries
+   - Validation: Graceful handling of loading/errors
 
 5. Add route and navigation link
    - Details: Update `App.tsx` and navigation
    - Validation: Can navigate to challenge board
 
 #### Testing Criteria:
-- Challenge board loads without errors
+- Challenge board loads real data without errors
 - Filters work correctly
 - Responsive on mobile
 
 ---
 
-### Phase 5: Frontend - Player Features
+### PHASE 5: Connect Frontend to Backend (Player Features)
 **Prerequisites**: Phase 4, Player Auth System
 **Estimated Complexity**: High
 
 #### Steps:
-1. Create `IssueChallenge.tsx` component
-   - Details: Form with opponent select, match options, message
+1. Connect `IssueChallenge.tsx` to API
+   - Details: Submit real challenge via API
    - Validation: Can submit challenge successfully
 
-2. Create `MyChallenges.tsx` component
-   - Details: Tabs for sent/received, action buttons
+2. Connect `MyChallenges.tsx` to API
+   - Details: Fetch user's sent/received challenges
    - Validation: Correct challenges shown per tab
 
-3. Implement challenge response UI
-   - Details: Accept/decline/counter modals
+3. Connect challenge response modals to API
+   - Details: Accept/decline/counter via real endpoints
    - Validation: Responses submitted correctly
-
-4. Add i18n translations
-   - Details: English and German strings
-   - Validation: All text translatable
 
 #### Testing Criteria:
 - Full challenge flow works end-to-end
@@ -419,14 +485,14 @@ POST /challenges/{challengeId}/counter
 
 ---
 
-### Phase 6: Frontend - Admin Features
+### PHASE 6: Connect Frontend to Backend (Admin Features)
 **Prerequisites**: Phase 3, Phase 4
 **Estimated Complexity**: Low
 
 #### Steps:
-1. Create `AdminChallenges.tsx` component
-   - Details: Table view with filters, bulk actions
-   - Validation: Admin can manage all challenges
+1. Connect `AdminChallenges.tsx` to API
+   - Details: Fetch all challenges with filters
+   - Validation: Admin can view all challenges
 
 2. Implement "Schedule from Challenge" flow
    - Details: Pre-populated match form, link creation
@@ -484,12 +550,13 @@ Use AWS EventBridge scheduled rules to run a Lambda daily that:
 
 | Phase | Effort |
 |-------|--------|
+| Phase 0 (UI Prototypes) | 6-8 hours |
 | Phase 1 | 4-6 hours |
 | Phase 2 | 4-6 hours |
 | Phase 3 | 2-3 hours |
-| Phase 4 | 4-6 hours |
-| Phase 5 | 6-8 hours |
-| Phase 6 | 2-3 hours |
-| **Total** | **22-32 hours** |
+| Phase 4 (Connect Public Views) | 3-4 hours |
+| Phase 5 (Connect Player Features) | 4-6 hours |
+| Phase 6 (Connect Admin Features) | 2-3 hours |
+| **Total** | **25-36 hours** |
 
 Note: Player authentication extension not included; estimate separately.

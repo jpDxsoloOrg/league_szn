@@ -516,8 +516,83 @@ Response:
 
 ## Implementation Phases
 
-### Phase 1: Core Event Model (Backend)
+### PHASE 0: UI Prototypes with Mock Data
 **Prerequisites**: None
+**Estimated Complexity**: Medium
+
+This phase creates all UI components with hardcoded data so stakeholders can see the look and flow before backend work begins.
+
+#### Steps:
+1. Create event types file with interfaces
+   - File: `frontend/src/types/event.ts`
+   - Details: All TypeScript interfaces for events feature
+   - Validation: TypeScript compiles without errors
+
+2. Create mock data file
+   - File: `frontend/src/mocks/eventMockData.ts`
+   - Details: Hardcoded events, match cards, calendar entries
+   - Validation: Data matches interface shapes
+
+3. Create `EventsCalendar.tsx` page
+   - File: `frontend/src/components/EventsCalendar.tsx`
+   - Details: Monthly calendar view with events using mock data
+   - Validation: Events display on correct dates
+
+4. Create `EventCard.tsx` component
+   - File: `frontend/src/components/EventCard.tsx`
+   - Details: Event poster thumbnail, name, date, match count badge
+   - Validation: Renders correctly
+
+5. Create `EventDetail.tsx` page
+   - File: `frontend/src/components/EventDetail.tsx`
+   - Details: Full event view with match card using mock data
+   - Validation: Displays all event data
+
+6. Create `MatchCardDisplay.tsx` component
+   - File: `frontend/src/components/MatchCardDisplay.tsx`
+   - Details: Ordered match list with designations (pre-show, main event)
+   - Validation: Shows matches in correct order
+
+7. Create `EventResults.tsx` component
+   - File: `frontend/src/components/EventResults.tsx`
+   - Details: Results view for completed events with title changes
+   - Validation: Results display correctly
+
+8. Create `CreateEvent.tsx` admin page
+   - File: `frontend/src/components/admin/CreateEvent.tsx`
+   - Details: Event creation form with image upload placeholder
+   - Validation: Form renders, can "create" with mock
+
+9. Create `MatchCardBuilder.tsx` component
+   - File: `frontend/src/components/admin/MatchCardBuilder.tsx`
+   - Details: Drag-drop match ordering interface
+   - Validation: Can reorder matches visually
+
+10. Create CSS files for all event components
+    - Files: `Events*.css` for each component
+    - Details: Dark theme, event branding colors, responsive
+    - Validation: Consistent with existing app styling
+
+11. Add routing for event pages
+    - File: Update `App.tsx`
+    - Details: Add routes for `/events/*` paths
+    - Validation: All routes accessible
+
+12. Add i18n strings for events feature
+    - Files: Update `en.json`, `de.json`
+    - Details: All user-facing text translatable
+    - Validation: Language switch works
+
+#### Testing Criteria:
+- All pages render without errors with mock data
+- Calendar navigation works
+- Responsive on mobile devices
+- Consistent styling with existing app
+
+---
+
+### PHASE 1: Core Event Model (Backend)
+**Prerequisites**: Phase 0
 **Estimated Complexity**: Medium
 
 #### Steps:
@@ -547,7 +622,7 @@ Response:
 
 ---
 
-### Phase 2: Match Card Management (Backend)
+### PHASE 2: Match Card Management (Backend)
 **Prerequisites**: Phase 1
 **Estimated Complexity**: Medium
 
@@ -574,7 +649,7 @@ Response:
 
 ---
 
-### Phase 3: Event Status & Workflow (Backend)
+### PHASE 3: Event Status & Workflow (Backend)
 **Prerequisites**: Phase 2
 **Estimated Complexity**: Low
 
@@ -597,96 +672,43 @@ Response:
 
 ---
 
-### Phase 4: Frontend - Calendar & Listing
-**Prerequisites**: Phase 1
-**Estimated Complexity**: Medium
+### PHASE 4: Connect Frontend to Backend
+**Prerequisites**: Phase 1, Phase 2, Phase 3
+**Estimated Complexity**: High
 
 #### Steps:
-1. Add event types to frontend
-   - Details: TypeScript interfaces
-   - Validation: Types compile
-
-2. Add events API functions
+1. Add events API functions
    - Details: Add to `services/api.ts`
    - Validation: Can fetch events
 
-3. Create `EventsCalendar.tsx` page
-   - Details: Calendar view with events
-   - Validation: Events display on dates
+2. Replace mock data in `EventsCalendar.tsx` with API calls
+   - Details: Remove mock imports, add useEffect for data fetching
+   - Validation: Displays real events from backend
 
-4. Create `EventCard.tsx` component
-   - Details: Event summary card
-   - Validation: Renders correctly
+3. Replace mock data in `EventDetail.tsx` with API calls
+   - Details: Fetch event details and match card
+   - Validation: Shows real event data
 
-5. Add navigation and routing
+4. Replace mock data in admin components with API calls
+   - Details: Connect CreateEvent and MatchCardBuilder to backend
+   - Validation: Can create and manage events
+
+5. Add loading and error states to all components
+   - Details: Skeleton loaders, error boundaries
+   - Validation: Graceful handling of loading/errors
+
+6. Add navigation and update routing
    - Details: Events link in navigation
    - Validation: Can navigate to events
 
 #### Testing Criteria:
-- Calendar displays correctly
+- Calendar displays real data correctly
 - Event cards render properly
+- Full event management workflow works
 
 ---
 
-### Phase 5: Frontend - Event Detail
-**Prerequisites**: Phase 4
-**Estimated Complexity**: Medium
-
-#### Steps:
-1. Create `EventDetail.tsx` page
-   - Details: Full event view with match card
-   - Validation: Displays all event data
-
-2. Create `MatchCardDisplay.tsx` component
-   - Details: Ordered match list with designations
-   - Validation: Shows matches correctly
-
-3. Create `EventResults.tsx` component
-   - Details: Results view for completed events
-   - Validation: Results display correctly
-
-4. Style with event branding
-   - Details: Use theme colors, responsive
-   - Validation: Looks professional
-
-#### Testing Criteria:
-- Event details display completely
-- Results show for completed events
-
----
-
-### Phase 6: Frontend - Admin Event Management
-**Prerequisites**: Phase 2, Phase 4
-**Estimated Complexity**: High
-
-#### Steps:
-1. Create `CreateEvent.tsx` admin page
-   - Details: Event creation form
-   - Validation: Can create events
-
-2. Create `MatchCardBuilder.tsx` component
-   - Details: Drag-drop match ordering
-   - Validation: Can reorder matches
-
-3. Create `EventManager.tsx` admin page
-   - Details: Edit existing events
-   - Validation: Can update events
-
-4. Add event image upload
-   - Details: Event poster upload
-   - Validation: Images upload and display
-
-5. Add i18n translations
-   - Details: English and German
-   - Validation: All text translatable
-
-#### Testing Criteria:
-- Full event management workflow
-- Drag-drop ordering intuitive
-
----
-
-### Phase 7: Integration Updates
+### PHASE 5: Integration Updates
 **Prerequisites**: Phase 2
 **Estimated Complexity**: Low
 
@@ -763,11 +785,10 @@ For the league to use as event names:
 
 | Phase | Effort |
 |-------|--------|
+| Phase 0 (UI Prototypes) | 8-10 hours |
 | Phase 1 | 4-5 hours |
 | Phase 2 | 4-5 hours |
 | Phase 3 | 2-3 hours |
-| Phase 4 | 4-5 hours |
-| Phase 5 | 4-5 hours |
-| Phase 6 | 6-8 hours |
-| Phase 7 | 2-3 hours |
+| Phase 4 (Connect Frontend) | 6-8 hours |
+| Phase 5 | 2-3 hours |
 | **Total** | **26-34 hours** |

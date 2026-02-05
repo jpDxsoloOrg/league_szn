@@ -397,8 +397,78 @@ POST /promos/{promoId}/react
 
 ## Implementation Phases
 
-### Phase 1: Core Infrastructure (Backend)
-**Prerequisites**: Player authentication system
+### PHASE 0: UI Prototypes with Mock Data
+**Prerequisites**: None
+**Estimated Complexity**: High
+
+This phase creates all UI components with hardcoded data so stakeholders can see the look and flow before backend work begins.
+
+#### Steps:
+1. Create promo types file with interfaces
+   - File: `frontend/src/types/promo.ts`
+   - Details: All TypeScript interfaces for promos feature
+   - Validation: TypeScript compiles without errors
+
+2. Create mock data file
+   - File: `frontend/src/mocks/promoMockData.ts`
+   - Details: Hardcoded promos, reactions, player data, response threads
+   - Validation: Data matches interface shapes
+
+3. Create `PromoCard.tsx` component
+   - File: `frontend/src/components/PromoCard.tsx`
+   - Details: Display single promo with player avatar, type badge, reactions
+   - Validation: Renders all promo types correctly
+
+4. Create `PromoFeed.tsx` page
+   - File: `frontend/src/components/PromoFeed.tsx`
+   - Details: Infinite scroll feed with filters, pinned section using mock data
+   - Validation: Feed renders and scrolls
+
+5. Create `PromoThread.tsx` component
+   - File: `frontend/src/components/PromoThread.tsx`
+   - Details: Original promo + response chain
+   - Validation: Thread displays correctly
+
+6. Create `PromoEditor.tsx` component
+   - File: `frontend/src/components/PromoEditor.tsx`
+   - Details: Full editor with type selection, targets, preview
+   - Validation: Form renders, can "submit" with mock
+
+7. Create reaction buttons component
+   - File: `frontend/src/components/PromoReactions.tsx`
+   - Details: Emoji buttons with counts, visual feedback
+   - Validation: Click interactions work
+
+8. Create admin promo management component
+   - File: `frontend/src/components/admin/AdminPromos.tsx`
+   - Details: List all promos with pin/hide/delete actions
+   - Validation: Actions work visually with mock
+
+9. Create CSS styles for promo components
+   - Files: `Promo*.css` for each component
+   - Details: Wrestling poster aesthetic, reaction animations, responsive
+   - Validation: Visually appealing, consistent with app
+
+10. Add routing for promo pages
+    - File: Update `App.tsx`
+    - Details: Add routes for `/promos/*` paths
+    - Validation: All routes accessible
+
+11. Add i18n strings for promos feature
+    - Files: Update `en.json`, `de.json`
+    - Details: All user-facing text translatable
+    - Validation: Language switch works
+
+#### Testing Criteria:
+- All pages render without errors with mock data
+- Feed scrolls and filters work
+- Responsive on mobile devices
+- Consistent styling with existing app
+
+---
+
+### PHASE 1: Core Infrastructure (Backend)
+**Prerequisites**: Phase 0, Player authentication system
 **Estimated Complexity**: Medium
 
 #### Steps:
@@ -428,7 +498,7 @@ POST /promos/{promoId}/react
 
 ---
 
-### Phase 2: Reactions & Responses (Backend)
+### PHASE 2: Reactions & Responses (Backend)
 **Prerequisites**: Phase 1
 **Estimated Complexity**: Medium
 
@@ -455,7 +525,7 @@ POST /promos/{promoId}/react
 
 ---
 
-### Phase 3: Admin & Moderation (Backend)
+### PHASE 3: Admin & Moderation (Backend)
 **Prerequisites**: Phase 1
 **Estimated Complexity**: Low
 
@@ -478,7 +548,7 @@ POST /promos/{promoId}/react
 
 ---
 
-### Phase 4: Image Uploads (Backend)
+### PHASE 4: Image Uploads (Backend)
 **Prerequisites**: Phase 1, existing image upload system
 **Estimated Complexity**: Low
 
@@ -497,58 +567,50 @@ POST /promos/{promoId}/react
 
 ---
 
-### Phase 5: Frontend - Feed & Viewing
+### PHASE 5: Connect Frontend to Backend (Feed & Viewing)
 **Prerequisites**: Phase 2
-**Estimated Complexity**: High
+**Estimated Complexity**: Medium
 
 #### Steps:
-1. Add promo types to frontend
-   - Details: TypeScript interfaces in `types/index.ts`
-   - Validation: Types compile correctly
-
-2. Add promo API service functions
+1. Add promo API service functions
    - Details: Add to `services/api.ts`
    - Validation: Can fetch promos from backend
 
-3. Create `PromoCard.tsx` component
-   - Details: Display single promo with all features
-   - Validation: Renders all promo types correctly
+2. Replace mock data in `PromoFeed.tsx` with API calls
+   - Details: Remove mock imports, add useEffect for data fetching
+   - Validation: Displays real promos from backend
 
-4. Create `PromoFeed.tsx` page
-   - Details: Infinite scroll, filters, pinned section
-   - Validation: Feed loads and paginates
+3. Replace mock data in `PromoThread.tsx` with API calls
+   - Details: Fetch promo and responses
+   - Validation: Thread displays real data
 
-5. Create `PromoThread.tsx` component
-   - Details: Original promo + response chain
-   - Validation: Thread displays correctly
+4. Add loading and error states
+   - Details: Skeleton loaders, error boundaries
+   - Validation: Graceful handling of loading/errors
 
-6. Create CSS styles for promo components
-   - Details: Wrestling poster aesthetic, reaction animations
-   - Validation: Visually appealing, responsive
-
-7. Add route and navigation
+5. Add route and navigation
    - Details: Add to main nav as "Promos"
    - Validation: Can navigate to promo feed
 
 #### Testing Criteria:
-- Feed loads without errors
+- Feed loads real data without errors
 - Filters work correctly
 - Infinite scroll works
 - Mobile responsive
 
 ---
 
-### Phase 6: Frontend - Creation & Interaction
+### PHASE 6: Connect Frontend to Backend (Creation & Interaction)
 **Prerequisites**: Phase 5, Player auth
 **Estimated Complexity**: High
 
 #### Steps:
-1. Create `PromoEditor.tsx` component
-   - Details: Full editor with type selection, targets, preview
+1. Connect `PromoEditor.tsx` to API
+   - Details: Submit real promos via API
    - Validation: Can create all promo types
 
-2. Implement reaction buttons
-   - Details: Click to react, visual feedback
+2. Connect reaction buttons to API
+   - Details: Add/remove reactions via real endpoints
    - Validation: Reactions update in real-time
 
 3. Integrate promos into match cards
@@ -559,10 +621,6 @@ POST /promos/{promoId}/react
    - Details: Promos tab on player view
    - Validation: Player's promos displayed
 
-5. Add i18n translations
-   - Details: English and German strings
-   - Validation: All text translatable
-
 #### Testing Criteria:
 - Full promo creation flow works
 - Reactions update counts correctly
@@ -570,13 +628,13 @@ POST /promos/{promoId}/react
 
 ---
 
-### Phase 7: Frontend - Admin Features
+### PHASE 7: Connect Frontend to Backend (Admin Features)
 **Prerequisites**: Phase 3, Phase 5
 **Estimated Complexity**: Low
 
 #### Steps:
-1. Create admin promo management section
-   - Details: List all promos, pin/hide/delete actions
+1. Connect `AdminPromos.tsx` to API
+   - Details: Fetch all promos, pin/hide/delete via API
    - Validation: Admin can manage promos
 
 2. Add moderation indicators
@@ -629,13 +687,14 @@ Prevent promo spam:
 
 | Phase | Effort |
 |-------|--------|
+| Phase 0 (UI Prototypes) | 8-10 hours |
 | Phase 1 | 4-6 hours |
 | Phase 2 | 3-4 hours |
 | Phase 3 | 2-3 hours |
 | Phase 4 | 1-2 hours |
-| Phase 5 | 6-8 hours |
-| Phase 6 | 6-8 hours |
-| Phase 7 | 2-3 hours |
-| **Total** | **24-34 hours** |
+| Phase 5 (Connect Feed) | 3-4 hours |
+| Phase 6 (Connect Creation) | 4-6 hours |
+| Phase 7 (Connect Admin) | 2-3 hours |
+| **Total** | **27-38 hours** |
 
 Note: Requires player authentication system to be implemented first.
