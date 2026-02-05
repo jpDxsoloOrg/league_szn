@@ -11,11 +11,13 @@ import ManageChampionships from './ManageChampionships';
 import CreateTournament from './CreateTournament';
 
 import ManageSeasons from './ManageSeasons';
+import ManageFantasyShows from './ManageFantasyShows';
+import FantasyConfig from './FantasyConfig';
 import AdminGuide from './AdminGuide';
 import ClearAllData from './ClearAllData';
 import './AdminPanel.css';
 
-type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'seasons' | 'guide' | 'danger';
+type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'seasons' | 'fantasyShows' | 'fantasyConfig' | 'guide' | 'danger';
 
 
 export default function AdminPanel() {
@@ -90,6 +92,18 @@ export default function AdminPanel() {
           {t('admin.panel.tabs.seasons')}
         </button>
         <button
+          className={`tab ${activeTab === 'fantasyShows' ? 'active' : ''}`}
+          onClick={() => setActiveTab('fantasyShows')}
+        >
+          {t('admin.panel.tabs.fantasyShows')}
+        </button>
+        <button
+          className={`tab ${activeTab === 'fantasyConfig' ? 'active' : ''}`}
+          onClick={() => setActiveTab('fantasyConfig')}
+        >
+          {t('admin.panel.tabs.fantasyConfig')}
+        </button>
+        <button
           className={`tab ${activeTab === 'guide' ? 'active' : ''}`}
           onClick={() => setActiveTab('guide')}
         >
@@ -112,6 +126,8 @@ export default function AdminPanel() {
         {activeTab === 'tournaments' && <CreateTournament />}
         {activeTab === 'guide' && <AdminGuide />}
         {activeTab === 'seasons' && <ManageSeasons />}
+        {activeTab === 'fantasyShows' && <ManageFantasyShows />}
+        {activeTab === 'fantasyConfig' && <FantasyConfig />}
         {activeTab === 'danger' && <ClearAllData />}
       </div>
     </div>
