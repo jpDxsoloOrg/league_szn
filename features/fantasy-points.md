@@ -52,14 +52,14 @@ Currently, the WWE 2K League is a closed system where only the players (wrestler
 
 ### Core Concepts
 
-#### Shows (Episodes)
-A "show" represents a single event/episode where matches occur. Fantasy users make picks for each show. Shows belong to a season and can be locked/unlocked by admins.
+#### Shows (Events Integration)
+Fantasy "shows" integrate with the **Events/PPV feature** (see [feature_events_ppv.md](feature_events_ppv.md)). An event contains matches, and fantasy users make picks for each event. Events belong to a season and can be locked/unlocked by admins.
 
 #### Wrestler Costs
 Each wrestler has a cost that reflects their expected performance. Costs fluctuate based on recent performance (configurable algorithm). Starting cost is configurable (default: 100).
 
 #### Budget System
-Users have a configurable budget per show (default: 500). They must pick a configurable number of wrestlers from EACH division without exceeding the total budget.
+Users have a configurable budget per show (default: 500). They can pick **up to** a configurable maximum number of wrestlers from each division without exceeding the total budget. The budget naturally limits total picks - users don't have to hit the max.
 
 #### Points System
 Points are awarded based on match outcomes:
@@ -79,9 +79,16 @@ After analyzing the requirements, I recommend these additions to make fantasy pi
 1. **Streak Bonuses**: Extra points for picking winners N shows in a row
 2. **Underdog Multiplier**: Higher-cost wrestlers beaten by lower-cost wrestlers = bonus for those who picked the underdog
 3. **Perfect Pick Bonus**: Bonus points if ALL your picks win
-4. **Lock Pick Feature**: One "lock pick" per show that doubles points for that wrestler (but doubles loss penalty too)
-5. **Weekly Power Rankings**: Show how hot/cold each wrestler is trending
-6. **Head-to-Head Mode**: Optional direct competition with another fantasy user
+4. **Weekly Power Rankings**: Show how hot/cold each wrestler is trending
+5. **Head-to-Head Mode**: Optional direct competition with another fantasy user
+
+### Show Locking (Admin Feature)
+
+Admins control when picks are locked via show status:
+- **draft**: Show being set up, not visible to fantasy users
+- **open**: Users can submit and modify picks
+- **locked**: Admin locks the show before/when event starts - NO MORE PICK CHANGES
+- **completed**: Match results recorded, points calculated
 
 ## Technical Specification
 
@@ -138,7 +145,6 @@ After analyzing the requirements, I recommend these additions to make fantasy pi
 | `showId` (PK) | String | The show |
 | `fantasyUserId` (SK) | String | The user making picks |
 | `picks` | Map | `{ divisionId: [playerId, playerId, ...] }` |
-| `lockPick` | String | Optional playerId for 2x multiplier |
 | `totalSpent` | Number | Total cost of picks |
 | `pointsEarned` | Number | Points earned (after show completes) |
 | `breakdown` | Map | `{ playerId: { points, reason } }` |
@@ -178,6 +184,7 @@ After analyzing the requirements, I recommend these additions to make fantasy pi
 | `costFluctuationEnabled` | Boolean | Whether costs change |
 | `costChangePerWin` | Number | How much cost increases on win |
 | `costChangePerLoss` | Number | How much cost decreases on loss |
+| `costResetStrategy` | String | `reset` / `carry_over` / `partial` (default: reset) |
 | `underdogMultiplier` | Number | Multiplier for underdog wins |
 | `perfectPickBonus` | Number | Bonus for all correct picks |
 | `streakBonusThreshold` | Number | Wins needed for streak bonus |
@@ -219,7 +226,6 @@ export interface FantasyPicks {
   showId: string;
   fantasyUserId: string;
   picks: Record<string, string[]>; // divisionId -> playerIds
-  lockPick?: string;
   totalSpent: number;
   pointsEarned?: number;
   breakdown?: Record<string, PointBreakdown>;
@@ -262,6 +268,7 @@ export interface FantasyConfig {
   costFluctuationEnabled: boolean;
   costChangePerWin: number;
   costChangePerLoss: number;
+  costResetStrategy: 'reset' | 'carry_over' | 'partial';
   underdogMultiplier: number;
   perfectPickBonus: number;
   streakBonusThreshold: number;
@@ -326,8 +333,7 @@ function calculatePointsForPick(
   playerId: string,
   match: Match,
   config: FantasyConfig,
-  wrestlerCosts: Map<string, number>,
-  isLockPick: boolean
+  wrestlerCosts: Map<string, number>
 ): PointBreakdown {
   const breakdown: PointBreakdown = {
     points: 0,
@@ -347,11 +353,6 @@ function calculatePointsForPick(
   const isWinner = match.winners?.includes(playerId);
   if (!isWinner) {
     breakdown.reason = 'Lost match';
-    // Lock pick penalty: lose points for loss
-    if (isLockPick) {
-      breakdown.points = -config.baseWinPoints;
-      breakdown.multipliers.push('Lock Pick Penalty (-1x)');
-    }
     return breakdown;
   }
 
@@ -372,12 +373,6 @@ function calculatePointsForPick(
   if (match.isChampionship && isWinner) {
     breakdown.points += config.titleWinBonus;
     breakdown.multipliers.push(`Won championship (+${config.titleWinBonus})`);
-  }
-
-  // Lock pick double
-  if (isLockPick) {
-    breakdown.points *= 2;
-    breakdown.multipliers.push('Lock Pick (2x)');
   }
 
   // Underdog bonus
@@ -501,7 +496,6 @@ function calculateNewCost(
     DivisionPicker.tsx
     WrestlerCard.tsx (with cost)
     BudgetTracker.tsx
-    LockPickSelector.tsx
   /leaderboard
     FantasyLeaderboard.tsx
     LeaderboardEntry.tsx
@@ -547,13 +541,6 @@ function calculateNewCost(
 +------------------------------------------------------------------+
 |  [x] CM Punk ($115)       [ ] John Cena ($130)   [ ] Edge ($90)   |
 |      5-1 recent           OVER BUDGET             3-3 recent      |
-+------------------------------------------------------------------+
-
-+------------------------------------------------------------------+
-|  LOCK PICK (Double Points - Double Risk)                          |
-+------------------------------------------------------------------+
-|  Currently Locked: Stone Cold Steve Austin                        |
-|  [Change Lock Pick]                                               |
 +------------------------------------------------------------------+
 
 |  [Clear All Picks]                    [Submit Picks]              |
@@ -614,7 +601,7 @@ This phase creates all UI components with hardcoded data so stakeholders can see
    - Validation: All sections render with mock data
 
 6. Create MakePicks page and subcomponents
-   - Files: `MakePicks.tsx`, `DivisionPicker.tsx`, `WrestlerCard.tsx`, `BudgetTracker.tsx`, `LockPickSelector.tsx`
+   - Files: `MakePicks.tsx`, `DivisionPicker.tsx`, `WrestlerCard.tsx`, `BudgetTracker.tsx`
    - Details: Full pick flow with division tabs, budget tracking
    - Validation: Can "select" wrestlers, budget updates
 
@@ -924,7 +911,7 @@ Response: { message: string; show: Show }
 ```typescript
 // Submit Picks
 POST /fantasy/picks/{showId}
-Body: { picks: Record<string, string[]>; lockPick?: string }
+Body: { picks: Record<string, string[]> }
 Response: FantasyPicks
 
 // Validation Errors
@@ -1230,27 +1217,29 @@ Track:
 | User frustration with costs | Medium | Transparent cost algorithm explanation |
 | Database hot partitions | Low | Use randomized partition keys if needed |
 
-## Open Questions
+## Design Decisions
 
-1. **Pick Editing Window**: Can users edit picks any time before lock, or is there a soft deadline (e.g., no changes 1 hour before)?
+These decisions were finalized during feature planning:
 
-2. **Show Assignment**: How are matches assigned to shows? Manual by admin, or automatic based on date range?
+1. **Pick Editing Window**: Users can edit picks **anytime until admin locks the show**. No soft deadline.
 
-3. **Cost Reset**: Should wrestler costs reset each season, or carry over?
+2. **Show Assignment**: Fantasy shows **integrate with the Events/PPV feature**. Matches are assigned to events there, and fantasy picks are tied to those events. See [feature_events_ppv.md](feature_events_ppv.md).
 
-4. **Division Requirement**: If a division has fewer wrestlers than required picks, what happens?
+3. **Cost Reset**: Default behavior is to **reset costs each season**, but this is **admin configurable** with options for: full reset, carry over, or partial reset (move 50% toward base).
 
-5. **Tag Team Handling**: For tag matches, do users pick the team or individual wrestlers? If team wins, do both picked wrestlers earn points?
+4. **Division Requirement**: `picksPerDivision` is a **maximum, not a requirement**. Users can pick up to that many from each division. Budget naturally limits total picks.
 
-6. **Tie Breakers**: How to handle tied fantasy users? Most perfect picks? Head-to-head? First to achieve score?
+5. **Tag Team Handling**: **Pick individuals**. If a tag team wins, any picked member of that team earns points.
 
-7. **Guest Picks**: Should there be a "guest mode" where non-registered users can make picks for fun (no leaderboard)?
+6. **Tie Breakers**: **Show as tied**. Users with the same points share the same rank on the leaderboard.
 
-8. **Social Features**: Should users be able to see each other's picks before show completion? Create private leagues?
+7. **Guest Picks**: **Future feature**. Registration required for initial release.
 
-9. **Notifications**: Should users receive email notifications for show opens/locks/results?
+8. **Social Features**: **Picks hidden until show completes**, then all picks become visible. No private leagues initially.
 
-10. **Historical Data**: How long to retain historical picks and show data?
+9. **Notifications**: **No email notifications**. Users check the app manually.
+
+10. **Historical Data**: Retain data from the **last 3 seasons**. Older data is archived/deleted.
 
 ## Estimated Total Effort
 
