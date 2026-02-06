@@ -1,0 +1,276 @@
+.achievements-page {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.ach-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ach-header h2 {
+  margin-bottom: 0;
+}
+
+.ach-nav-links {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.ach-nav-links a {
+  color: #d4af37;
+  text-decoration: none;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.ach-nav-links a:hover {
+  background-color: #333;
+}
+
+/* Player Selector */
+.ach-player-selector {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ach-player-selector label {
+  color: #bbb;
+  font-size: 0.95rem;
+}
+
+.ach-player-selector select {
+  min-width: 250px;
+  padding: 0.6rem;
+  background-color: #2d2d2d;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+/* Summary */
+.ach-summary {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.ach-summary-name {
+  font-weight: bold;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.ach-summary-count {
+  color: #d4af37;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.ach-progress-bar {
+  flex: 1;
+  min-width: 200px;
+  height: 8px;
+  background-color: #333;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ach-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d4af37, #b8941f);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+/* Filter Tabs */
+.ach-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.ach-filter-btn {
+  padding: 0.5rem 1rem;
+  background-color: #222;
+  color: #bbb;
+  border: 1px solid #333;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.3s;
+}
+
+.ach-filter-btn:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+.ach-filter-active {
+  background-color: #d4af37;
+  color: #000;
+  border-color: #d4af37;
+  font-weight: bold;
+}
+
+/* Achievement Grid */
+.ach-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.ach-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+
+.ach-card-earned {
+  border-color: #d4af37;
+}
+
+.ach-card-earned:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
+}
+
+.ach-card-locked {
+  opacity: 0.45;
+}
+
+.ach-card-locked:hover {
+  opacity: 0.6;
+}
+
+.ach-icon {
+  font-size: 2.5rem;
+  text-align: center;
+}
+
+.ach-icon-locked {
+  filter: grayscale(100%);
+}
+
+.ach-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.ach-name {
+  font-weight: bold;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.ach-card-locked .ach-name {
+  color: #888;
+}
+
+.ach-desc {
+  font-size: 0.8rem;
+  color: #bbb;
+  line-height: 1.3;
+}
+
+.ach-card-locked .ach-desc {
+  color: #666;
+}
+
+.ach-type-badge {
+  display: inline-block;
+  margin: 0.25rem auto 0;
+  padding: 0.15rem 0.6rem;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.ach-type-badge[data-type="milestone"] {
+  background-color: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+}
+
+.ach-type-badge[data-type="record"] {
+  background-color: rgba(212, 175, 55, 0.2);
+  color: #d4af37;
+}
+
+.ach-type-badge[data-type="special"] {
+  background-color: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+}
+
+.ach-earned-date {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #4ade80;
+  font-weight: bold;
+}
+
+.ach-locked-label {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #666;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ach-empty {
+  text-align: center;
+  color: #bbb;
+  padding: 3rem;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .ach-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ach-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ach-player-selector {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ach-player-selector select {
+    min-width: 100%;
+  }
+
+  .ach-summary {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
