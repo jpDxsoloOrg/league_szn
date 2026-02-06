@@ -1,14 +1,15 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import './i18n';
 import ErrorBoundary from './components/ErrorBoundary';
+import Sidebar from './components/Sidebar';
 import Standings from './components/Standings';
 import Championships from './components/Championships';
 import Matches from './components/Matches';
 import Tournaments from './components/Tournaments';
 import UserGuide from './components/UserGuide';
 import AdminPanel from './components/admin/AdminPanel';
-import LanguageSwitcher from './components/LanguageSwitcher';
 // Challenge components
 import ChallengeBoard from './components/challenges/ChallengeBoard';
 import ChallengeDetail from './components/challenges/ChallengeDetail';
@@ -45,28 +46,18 @@ import './App.css';
 
 function App() {
   const { t } = useTranslation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <ErrorBoundary>
       <Router>
         <div className="App">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <header>
+          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+            &#9776;
+          </button>
           <h1>{t('header.title')}</h1>
-          <nav>
-            <Link to="/">{t('nav.standings')}</Link>
-            <Link to="/championships">{t('nav.championships')}</Link>
-            <Link to="/matches">{t('nav.matches')}</Link>
-            <Link to="/tournaments">{t('nav.tournaments')}</Link>
-            <Link to="/challenges">{t('nav.challenges')}</Link>
-            <Link to="/promos">{t('nav.promos')}</Link>
-            <Link to="/stats/leaderboards">{t('nav.statistics')}</Link>
-            <Link to="/events">{t('nav.events')}</Link>
-            <Link to="/contenders">{t('nav.contenders')}</Link>
-            <Link to="/fantasy">{t('nav.fantasy')}</Link>
-            <Link to="/guide">{t('nav.help')}</Link>
-            <Link to="/admin">{t('nav.admin')}</Link>
-            <LanguageSwitcher />
-          </nav>
         </header>
         <main>
           <Routes>
@@ -75,7 +66,9 @@ function App() {
             <Route path="/matches" element={<Matches />} />
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/guide" element={<UserGuide />} />
+            {/* Admin Routes */}
             <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/admin/:tab" element={<AdminPanel />} />
             {/* Challenge Routes */}
             <Route path="/challenges" element={<ChallengeBoard />} />
             <Route path="/challenges/issue" element={<IssueChallenge />} />

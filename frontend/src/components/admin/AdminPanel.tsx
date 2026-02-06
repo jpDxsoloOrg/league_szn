@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../../services/api';
 import { cognitoAuth } from '../../services/cognito';
@@ -23,16 +24,23 @@ import './AdminPanel.css';
 
 import AdminContenderConfig from './AdminContenderConfig';
 
-type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'events' | 'fantasyShows' | 'fantasyConfig' | 'contenderConfig' | 'guide' | 'danger';
+type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'guide' | 'danger';
+
+const VALID_TABS: AdminTab[] = ['players', 'divisions', 'schedule', 'results', 'championships', 'tournaments', 'challenges', 'promos', 'seasons', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'guide', 'danger'];
 
 
 export default function AdminPanel() {
   const { t } = useTranslation();
+  const { tab } = useParams<{ tab: string }>();
+  const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(authApi.isAuthenticated());
-  const [activeTab, setActiveTab] = useState<AdminTab>('players');
+
+  const activeTab: AdminTab = (tab && VALID_TABS.includes(tab as AdminTab)) ? tab as AdminTab : 'players';
 
   const handleLogin = () => {
     setIsAuthenticated(true);
+    // After login, redirect to default admin page
+    navigate('/admin/players');
   };
 
   const handleLogout = async () => {
@@ -54,99 +62,6 @@ export default function AdminPanel() {
         </button>
       </div>
 
-      <div className="admin-tabs">
-        <button
-          className={`tab ${activeTab === 'players' ? 'active' : ''}`}
-          onClick={() => setActiveTab('players')}
-        >
-          {t('admin.panel.tabs.managePlayers')}
-        </button>
-        <button
-          className={`tab ${activeTab === 'divisions' ? 'active' : ''}`}
-          onClick={() => setActiveTab('divisions')}
-        >
-          {t('admin.panel.tabs.divisions')}
-        </button>
-        <button
-          className={`tab ${activeTab === 'schedule' ? 'active' : ''}`}
-          onClick={() => setActiveTab('schedule')}
-        >
-          {t('admin.panel.tabs.scheduleMatch')}
-        </button>
-        <button
-          className={`tab ${activeTab === 'results' ? 'active' : ''}`}
-          onClick={() => setActiveTab('results')}
-        >
-          {t('admin.panel.tabs.recordResults')}
-        </button>
-        <button
-          className={`tab ${activeTab === 'championships' ? 'active' : ''}`}
-          onClick={() => setActiveTab('championships')}
-        >
-          {t('admin.panel.tabs.championships')}
-        </button>
-        <button
-          className={`tab ${activeTab === 'tournaments' ? 'active' : ''}`}
-          onClick={() => setActiveTab('tournaments')}
-        >
-          {t('admin.panel.tabs.tournaments')}
-        </button>
-        <button
-          className={`tab ${activeTab === 'challenges' ? 'active' : ''}`}
-          onClick={() => setActiveTab('challenges')}
-        >
-          {t('admin.panel.tabs.challenges')}
-        </button>
-        <button
-          className={`tab ${activeTab === 'promos' ? 'active' : ''}`}
-          onClick={() => setActiveTab('promos')}
-        >
-          {t('admin.panel.tabs.promos')}
-        </button>
-        <button
-          className={`tab ${activeTab === 'seasons' ? 'active' : ''}`}
-          onClick={() => setActiveTab('seasons')}
-        >
-          {t('admin.panel.tabs.seasons')}
-        </button>
-        <button
-          className={`tab ${activeTab === 'events' ? 'active' : ''}`}
-          onClick={() => setActiveTab('events')}
-        >
-          {t('admin.panel.tabs.events')}
-        </button>
-        <button
-          className={`tab ${activeTab === 'fantasyShows' ? 'active' : ''}`}
-          onClick={() => setActiveTab('fantasyShows')}
-        >
-          {t('admin.panel.tabs.fantasyShows')}
-        </button>
-        <button
-          className={`tab ${activeTab === 'fantasyConfig' ? 'active' : ''}`}
-          onClick={() => setActiveTab('fantasyConfig')}
-        >
-          {t('admin.panel.tabs.fantasyConfig')}
-        </button>
-        <button
-          className={`tab ${activeTab === 'contenderConfig' ? 'active' : ''}`}
-          onClick={() => setActiveTab('contenderConfig')}
-        >
-          {t('admin.panel.tabs.contenderConfig')}
-        </button>
-        <button
-          className={`tab ${activeTab === 'guide' ? 'active' : ''}`}
-          onClick={() => setActiveTab('guide')}
-        >
-          {t('admin.panel.tabs.help')}
-        </button>
-        <button
-          className={`tab danger ${activeTab === 'danger' ? 'active' : ''}`}
-          onClick={() => setActiveTab('danger')}
-        >
-          {t('admin.panel.tabs.dangerZone')}
-        </button>
-      </div>
-
       <div className="admin-content">
         {activeTab === 'players' && <ManagePlayers />}
         {activeTab === 'divisions' && <ManageDivisions />}
@@ -164,9 +79,9 @@ export default function AdminPanel() {
             <MatchCardBuilder />
           </>
         )}
-        {activeTab === 'fantasyShows' && <ManageFantasyShows />}
-        {activeTab === 'fantasyConfig' && <FantasyConfig />}
-        {activeTab === 'contenderConfig' && <AdminContenderConfig />}
+        {activeTab === 'fantasy-shows' && <ManageFantasyShows />}
+        {activeTab === 'fantasy-config' && <FantasyConfig />}
+        {activeTab === 'contender-config' && <AdminContenderConfig />}
         {activeTab === 'danger' && <ClearAllData />}
       </div>
     </div>
