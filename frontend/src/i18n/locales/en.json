@@ -33,6 +33,7 @@
     "championships": "Championships",
     "matches": "Matches",
     "tournaments": "Tournaments",
+    "events": "Events",
     "fantasy": "Fantasy",
     "help": "Help",
     "admin": "Admin"
@@ -306,11 +307,124 @@
         "championships": "Championships",
         "tournaments": "Tournaments",
         "seasons": "Seasons",
+        "events": "Events",
         "fantasyShows": "Fantasy Shows",
         "fantasyConfig": "Fantasy Config",
         "help": "Help",
         "dangerZone": "Danger Zone"
       }
+    }
+  },
+  "events": {
+    "title": "Events & PPV",
+    "types": {
+      "ppv": "PPV",
+      "weekly": "Weekly",
+      "special": "Special",
+      "house": "House Show"
+    },
+    "status": {
+      "upcoming": "Upcoming",
+      "in-progress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "filters": {
+      "all": "All",
+      "ppv": "PPV",
+      "weekly": "Weekly",
+      "special": "Special",
+      "house": "House Show"
+    },
+    "card": {
+      "matches": "matches",
+      "titleMatches": "title matches"
+    },
+    "calendar": {
+      "upcoming": "Upcoming Events",
+      "noUpcoming": "No upcoming events scheduled.",
+      "months": {
+        "january": "January",
+        "february": "February",
+        "march": "March",
+        "april": "April",
+        "may": "May",
+        "june": "June",
+        "july": "July",
+        "august": "August",
+        "september": "September",
+        "october": "October",
+        "november": "November",
+        "december": "December"
+      },
+      "days": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+      }
+    },
+    "designations": {
+      "preShow": "Pre-Show",
+      "opener": "Opener",
+      "midcard": "Midcard",
+      "coMain": "Co-Main Event",
+      "mainEvent": "Main Event"
+    },
+    "detail": {
+      "backToEvents": "Back to Events",
+      "notFound": "Event not found.",
+      "date": "Date",
+      "venue": "Venue",
+      "attendance": "Attendance",
+      "rating": "Rating",
+      "viewResults": "View Full Results",
+      "matchCard": "Match Card",
+      "noMatches": "No matches have been added to this event yet.",
+      "preShow": "Pre-Show",
+      "mainCard": "Main Card",
+      "championshipMatch": "Championship Match",
+      "winner": "W"
+    },
+    "results": {
+      "title": "Event Results",
+      "notFound": "Event not found.",
+      "notCompleted": "This event has not been completed yet. Results will be available after the event.",
+      "backToEvent": "Back to Event",
+      "totalMatches": "Total Matches",
+      "titleChanges": "Title Matches",
+      "attendance": "Attendance",
+      "matchResults": "Match Results",
+      "winnersLabel": "Winner",
+      "defeatedLabel": "Defeated",
+      "titleChange": "Championship Match"
+    },
+    "admin": {
+      "createEvent": "Create Event",
+      "name": "Event Name",
+      "namePlaceholder": "e.g., WrestleMania 41, Monday Night Raw",
+      "eventType": "Event Type",
+      "date": "Date & Time",
+      "venue": "Venue",
+      "venuePlaceholder": "e.g., Madison Square Garden, New York, NY",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter a description for this event...",
+      "themeColor": "Theme Color",
+      "season": "Season",
+      "noSeason": "No Season",
+      "saveEvent": "Save Event",
+      "saveSuccess": "Event saved successfully!",
+      "matchCardBuilder": "Match Card Builder",
+      "noMatchesOnCard": "No matches on this card yet. Add matches below.",
+      "championshipMatch": "Title Match",
+      "moveUp": "Move Up",
+      "moveDown": "Move Down",
+      "removeMatch": "Remove Match",
+      "selectMatch": "Select a match to add...",
+      "addMatch": "Add Match"
     }
   },
   "fantasy": {

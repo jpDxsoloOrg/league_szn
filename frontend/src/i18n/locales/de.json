@@ -33,6 +33,7 @@
     "championships": "Meisterschaften",
     "matches": "Kämpfe",
     "tournaments": "Turniere",
+    "events": "Veranstaltungen",
     "fantasy": "Fantasy",
     "help": "Hilfe",
     "admin": "Admin"
@@ -306,11 +307,124 @@
         "championships": "Meisterschaften",
         "tournaments": "Turniere",
         "seasons": "Saisons",
+        "events": "Veranstaltungen",
         "fantasyShows": "Fantasy Shows",
         "fantasyConfig": "Fantasy Konfig",
         "help": "Hilfe",
         "dangerZone": "Gefahrenzone"
       }
+    }
+  },
+  "events": {
+    "title": "Veranstaltungen & PPV",
+    "types": {
+      "ppv": "PPV",
+      "weekly": "Wöchentlich",
+      "special": "Spezial",
+      "house": "Hausshow"
+    },
+    "status": {
+      "upcoming": "Bevorstehend",
+      "in-progress": "Laufend",
+      "completed": "Abgeschlossen",
+      "cancelled": "Abgesagt"
+    },
+    "filters": {
+      "all": "Alle",
+      "ppv": "PPV",
+      "weekly": "Wöchentlich",
+      "special": "Spezial",
+      "house": "Hausshow"
+    },
+    "card": {
+      "matches": "Kämpfe",
+      "titleMatches": "Titelkämpfe"
+    },
+    "calendar": {
+      "upcoming": "Bevorstehende Veranstaltungen",
+      "noUpcoming": "Keine bevorstehenden Veranstaltungen geplant.",
+      "months": {
+        "january": "Januar",
+        "february": "Februar",
+        "march": "März",
+        "april": "April",
+        "may": "Mai",
+        "june": "Juni",
+        "july": "Juli",
+        "august": "August",
+        "september": "September",
+        "october": "Oktober",
+        "november": "November",
+        "december": "Dezember"
+      },
+      "days": {
+        "sun": "So",
+        "mon": "Mo",
+        "tue": "Di",
+        "wed": "Mi",
+        "thu": "Do",
+        "fri": "Fr",
+        "sat": "Sa"
+      }
+    },
+    "designations": {
+      "preShow": "Vorshow",
+      "opener": "Eröffnung",
+      "midcard": "Midcard",
+      "coMain": "Co-Main Event",
+      "mainEvent": "Main Event"
+    },
+    "detail": {
+      "backToEvents": "Zurück zu Veranstaltungen",
+      "notFound": "Veranstaltung nicht gefunden.",
+      "date": "Datum",
+      "venue": "Veranstaltungsort",
+      "attendance": "Zuschauer",
+      "rating": "Bewertung",
+      "viewResults": "Vollständige Ergebnisse anzeigen",
+      "matchCard": "Kampfkarte",
+      "noMatches": "Es wurden noch keine Kämpfe zu dieser Veranstaltung hinzugefügt.",
+      "preShow": "Vorshow",
+      "mainCard": "Hauptkarte",
+      "championshipMatch": "Meisterschaftskampf",
+      "winner": "S"
+    },
+    "results": {
+      "title": "Veranstaltungsergebnisse",
+      "notFound": "Veranstaltung nicht gefunden.",
+      "notCompleted": "Diese Veranstaltung ist noch nicht abgeschlossen. Ergebnisse sind nach der Veranstaltung verfügbar.",
+      "backToEvent": "Zurück zur Veranstaltung",
+      "totalMatches": "Gesamtkämpfe",
+      "titleChanges": "Titelkämpfe",
+      "attendance": "Zuschauer",
+      "matchResults": "Kampfergebnisse",
+      "winnersLabel": "Sieger",
+      "defeatedLabel": "Besiegt",
+      "titleChange": "Meisterschaftskampf"
+    },
+    "admin": {
+      "createEvent": "Veranstaltung erstellen",
+      "name": "Veranstaltungsname",
+      "namePlaceholder": "z.B. WrestleMania 41, Monday Night Raw",
+      "eventType": "Veranstaltungstyp",
+      "date": "Datum & Uhrzeit",
+      "venue": "Veranstaltungsort",
+      "venuePlaceholder": "z.B. Madison Square Garden, New York, NY",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "Beschreibung für diese Veranstaltung eingeben...",
+      "themeColor": "Themenfarbe",
+      "season": "Saison",
+      "noSeason": "Keine Saison",
+      "saveEvent": "Veranstaltung speichern",
+      "saveSuccess": "Veranstaltung erfolgreich gespeichert!",
+      "matchCardBuilder": "Kampfkarten-Ersteller",
+      "noMatchesOnCard": "Noch keine Kämpfe auf dieser Karte. Fügen Sie unten Kämpfe hinzu.",
+      "championshipMatch": "Titelkampf",
+      "moveUp": "Nach oben",
+      "moveDown": "Nach unten",
+      "removeMatch": "Kampf entfernen",
+      "selectMatch": "Kampf zum Hinzufügen auswählen...",
+      "addMatch": "Kampf hinzufügen"
     }
   },
   "fantasy": {

@@ -18,6 +18,10 @@ import MakePicks from './components/fantasy/MakePicks';
 import FantasyLeaderboard from './components/fantasy/FantasyLeaderboard';
 import WrestlerCosts from './components/fantasy/WrestlerCosts';
 import ShowResults from './components/fantasy/ShowResults';
+// Events components
+import EventsCalendar from './components/events/EventsCalendar';
+import EventDetail from './components/events/EventDetail';
+import EventResults from './components/events/EventResults';
 import './App.css';
 
 function App() {
@@ -34,6 +38,7 @@ function App() {
             <Link to="/championships">{t('nav.championships')}</Link>
             <Link to="/matches">{t('nav.matches')}</Link>
             <Link to="/tournaments">{t('nav.tournaments')}</Link>
+            <Link to="/events">{t('nav.events')}</Link>
             <Link to="/fantasy">{t('nav.fantasy')}</Link>
             <Link to="/guide">{t('nav.help')}</Link>
             <Link to="/admin">{t('nav.admin')}</Link>
@@ -48,6 +53,10 @@ function App() {
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/guide" element={<UserGuide />} />
             <Route path="/admin" element={<AdminPanel />} />
+            {/* Events Routes */}
+            <Route path="/events" element={<EventsCalendar />} />
+            <Route path="/events/:eventId" element={<EventDetail />} />
+            <Route path="/events/:eventId/results" element={<EventResults />} />
             {/* Fantasy Routes */}
             <Route path="/fantasy" element={<FantasyLanding />} />
             <Route path="/fantasy/login" element={<FantasyLogin />} />
