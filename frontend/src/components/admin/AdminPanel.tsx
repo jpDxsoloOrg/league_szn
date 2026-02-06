@@ -13,11 +13,12 @@ import CreateTournament from './CreateTournament';
 import ManageSeasons from './ManageSeasons';
 import ManageFantasyShows from './ManageFantasyShows';
 import FantasyConfig from './FantasyConfig';
+import AdminChallenges from './AdminChallenges';
 import AdminGuide from './AdminGuide';
 import ClearAllData from './ClearAllData';
 import './AdminPanel.css';
 
-type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'seasons' | 'fantasyShows' | 'fantasyConfig' | 'guide' | 'danger';
+type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'seasons' | 'fantasyShows' | 'fantasyConfig' | 'guide' | 'danger';
 
 
 export default function AdminPanel() {
@@ -86,6 +87,12 @@ export default function AdminPanel() {
           {t('admin.panel.tabs.tournaments')}
         </button>
         <button
+          className={`tab ${activeTab === 'challenges' ? 'active' : ''}`}
+          onClick={() => setActiveTab('challenges')}
+        >
+          {t('admin.panel.tabs.challenges')}
+        </button>
+        <button
           className={`tab ${activeTab === 'seasons' ? 'active' : ''}`}
           onClick={() => setActiveTab('seasons')}
         >
@@ -124,6 +131,7 @@ export default function AdminPanel() {
         {activeTab === 'results' && <RecordResult />}
         {activeTab === 'championships' && <ManageChampionships />}
         {activeTab === 'tournaments' && <CreateTournament />}
+        {activeTab === 'challenges' && <AdminChallenges />}
         {activeTab === 'guide' && <AdminGuide />}
         {activeTab === 'seasons' && <ManageSeasons />}
         {activeTab === 'fantasyShows' && <ManageFantasyShows />}

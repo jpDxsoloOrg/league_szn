@@ -1,0 +1,254 @@
+.issue-challenge {
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.issue-challenge-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #bbb;
+  text-decoration: none;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+  transition: color 0.3s;
+}
+
+.issue-challenge-back:hover {
+  color: #d4af37;
+}
+
+.issue-challenge h2 {
+  margin-bottom: 1.5rem;
+}
+
+.issue-challenge-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.issue-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.issue-form-group label {
+  font-size: 0.9rem;
+  color: #bbb;
+  font-weight: 500;
+}
+
+.issue-form-group select,
+.issue-form-group textarea {
+  width: 100%;
+  background-color: #1a1a1a;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.issue-form-group select:focus,
+.issue-form-group textarea:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+.issue-form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.issue-char-count {
+  font-size: 0.8rem;
+  color: #888;
+  text-align: right;
+}
+
+.issue-char-count.over-limit {
+  color: #f87171;
+}
+
+.issue-championship-check {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background-color: #222;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.issue-championship-check input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: #d4af37;
+  cursor: pointer;
+}
+
+.issue-championship-check span {
+  color: #ccc;
+  font-size: 0.95rem;
+}
+
+.issue-preview {
+  background-color: #2d2d2d;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #444;
+  margin-top: 0.5rem;
+}
+
+.issue-preview h3 {
+  color: #d4af37;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.issue-preview-versus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.issue-preview-player {
+  text-align: center;
+}
+
+.issue-preview-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #d4af37;
+  margin: 0 auto 0.4rem;
+}
+
+.issue-preview-wrestler {
+  font-weight: 600;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.issue-preview-name {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.issue-preview-vs {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+.issue-preview-details {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.issue-preview-detail-tag {
+  background-color: #333;
+  color: #ccc;
+  padding: 0.3rem 0.7rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.issue-preview-message {
+  background-color: #222;
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-style: italic;
+  color: #ccc;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.issue-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.issue-form-actions .btn-submit {
+  background-color: #d4af37;
+  color: #000;
+  font-weight: bold;
+  padding: 0.75rem 2rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.issue-form-actions .btn-submit:hover {
+  background-color: #b8941f;
+}
+
+.issue-form-actions .btn-submit:disabled {
+  background-color: #555;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.issue-form-actions .btn-cancel-form {
+  background-color: #444;
+  color: #ccc;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+}
+
+.issue-form-actions .btn-cancel-form:hover {
+  background-color: #555;
+}
+
+.issue-success-message {
+  text-align: center;
+  padding: 2rem;
+  background-color: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 8px;
+}
+
+.issue-success-message p {
+  color: #4ade80;
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .issue-form-actions {
+    flex-direction: column;
+  }
+
+  .issue-form-actions button {
+    width: 100%;
+  }
+
+  .issue-preview-versus {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
