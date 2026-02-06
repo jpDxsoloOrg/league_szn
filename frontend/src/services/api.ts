@@ -83,7 +83,7 @@ export const matchesApi = {
     return fetchWithAuth(`${API_BASE_URL}/matches?${params}`, {}, signal);
   },
 
-  schedule: async (match: Omit<Match, 'matchId' | 'createdAt'>): Promise<Match> => {
+  schedule: async (match: Omit<Match, 'matchId' | 'createdAt'> & { eventId?: string; designation?: string }): Promise<Match> => {
     return fetchWithAuth(`${API_BASE_URL}/matches`, {
       method: 'POST',
       body: JSON.stringify(match),

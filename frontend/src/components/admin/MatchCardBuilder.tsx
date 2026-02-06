@@ -197,6 +197,9 @@ export default function MatchCardBuilder() {
   return (
     <div className="match-card-builder">
       <h3 className="builder-title">{t('events.admin.matchCardBuilder')}</h3>
+      <p className="config-subtitle" style={{ marginBottom: '1rem', color: '#9ca3af', fontSize: '0.85rem' }}>
+        {t('events.admin.matchCardBuilderHint', 'Reorder matches, change designations, or add unassigned matches to an event card. Matches can be assigned to events when scheduling them.')}
+      </p>
 
       {/* Event Selector */}
       <div className="builder-event-selector" style={{ marginBottom: '1rem' }}>
