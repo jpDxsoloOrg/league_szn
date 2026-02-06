@@ -36,13 +36,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           };
         }
 
-        // Fetch the match
-        const matchResult = await dynamoDb.get({
+        // Fetch the match (Matches table uses composite key: matchId + date)
+        const matchQuery = await dynamoDb.query({
           TableName: TableNames.MATCHES,
-          Key: { matchId: card.matchId },
+          KeyConditionExpression: 'matchId = :matchId',
+          ExpressionAttributeValues: { ':matchId': card.matchId },
+          Limit: 1,
         });
 
-        if (!matchResult.Item) {
+        if (!matchQuery.Items || matchQuery.Items.length === 0) {
           return {
             position: card.position,
             matchId: card.matchId,
@@ -52,7 +54,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           };
         }
 
-        const match = matchResult.Item as Record<string, any>;
+        const match = matchQuery.Items[0] as Record<string, any>;
 
         // Fetch participant player data
         const participants: { playerId: string; playerName: string; wrestlerName: string }[] = [];
