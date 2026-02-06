@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { EventType } from '../../types/event';
-import { mockEventSeasons } from '../../mocks/eventMockData';
+import type { Season } from '../../types';
+import { eventsApi, seasonsApi } from '../../services/api';
 import './CreateEvent.css';
 
 const eventTypeOptions: { value: EventType; labelKey: string }[] = [
@@ -25,12 +26,42 @@ export default function CreateEvent() {
   const [description, setDescription] = useState('');
   const [themeColor, setThemeColor] = useState('#d4af37');
   const [seasonId, setSeasonId] = useState('');
+  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSave = () => {
+  useEffect(() => {
+    seasonsApi.getAll().then(setSeasons).catch(() => {});
+  }, []);
+
+  const handleSave = async () => {
     if (!name || !date) return;
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      setSaving(true);
+      setError(null);
+      await eventsApi.create({
+        name,
+        eventType,
+        date: new Date(date).toISOString(),
+        venue: venue || undefined,
+        description: description || undefined,
+        themeColor,
+        seasonId: seasonId || undefined,
+      });
+      setSaved(true);
+      // Reset form
+      setName('');
+      setDate('');
+      setVenue('');
+      setDescription('');
+      setSeasonId('');
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create event');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -132,7 +163,7 @@ export default function CreateEvent() {
             onChange={(e) => setSeasonId(e.target.value)}
           >
             <option value="">{t('events.admin.noSeason')}</option>
-            {mockEventSeasons.map((s) => (
+            {seasons.map((s) => (
               <option key={s.seasonId} value={s.seasonId}>
                 {s.name}
               </option>
@@ -144,14 +175,20 @@ export default function CreateEvent() {
         <button
           className="save-event-btn"
           onClick={handleSave}
-          disabled={!name || !date}
+          disabled={!name || !date || saving}
         >
-          {t('events.admin.saveEvent')}
+          {saving ? t('common.saving', 'Saving...') : t('events.admin.saveEvent')}
         </button>
 
         {saved && (
           <div className="save-success-msg">
             {t('events.admin.saveSuccess')}
+          </div>
+        )}
+
+        {error && (
+          <div className="save-error-msg" style={{ color: '#f87171', marginTop: '0.5rem' }}>
+            {error}
           </div>
         )}
       </div>
