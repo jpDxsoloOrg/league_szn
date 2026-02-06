@@ -177,7 +177,17 @@ async function main(): Promise<void> {
     await waitForServer(SERVER_STARTUP_TIMEOUT_MS);
 
     // Launch the browser.
-    const browser: Browser = await chromium.launch();
+    const browser: Browser = await chromium.launch({
+      executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+        '--disable-software-rasterizer',
+        '--single-process',
+      ],
+    });
     const context = await browser.newContext({
       viewport: VIEWPORT,
     });
