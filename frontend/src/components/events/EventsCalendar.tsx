@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { EventType } from '../../types/event';
-import { mockCalendarEntries } from '../../mocks/eventMockData';
+import type { EventType, EventCalendarEntry } from '../../types/event';
+import { eventsApi } from '../../services/api';
 import EventCard from './EventCard';
 import './EventsCalendar.css';
 
@@ -16,9 +16,43 @@ type FilterTab = 'all' | EventType;
 
 export default function EventsCalendar() {
   const { t } = useTranslation();
-  const [currentMonth, setCurrentMonth] = useState(3); // April = index 3
-  const [currentYear, setCurrentYear] = useState(2026);
+  const now = new Date();
+  const [currentMonth, setCurrentMonth] = useState(now.getMonth());
+  const [currentYear, setCurrentYear] = useState(now.getFullYear());
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+  const [calendarEntries, setCalendarEntries] = useState<EventCalendarEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const loadEvents = async () => {
+      try {
+        setLoading(true);
+        const events = await eventsApi.getAll(undefined, controller.signal);
+        const entries: EventCalendarEntry[] = events.map((e) => ({
+          eventId: e.eventId,
+          name: e.name,
+          eventType: e.eventType,
+          date: e.date,
+          status: e.status,
+          matchCount: e.matchCards?.length || 0,
+          championshipMatchCount: 0,
+          imageUrl: e.imageUrl,
+        }));
+        setCalendarEntries(entries);
+        setError(null);
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          setError(err instanceof Error ? err.message : 'Failed to load events');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadEvents();
+    return () => controller.abort();
+  }, []);
 
   const monthNames = [
     t('events.calendar.months.january'),
@@ -46,9 +80,9 @@ export default function EventsCalendar() {
   ];
 
   const filteredEntries = useMemo(() => {
-    if (activeFilter === 'all') return mockCalendarEntries;
-    return mockCalendarEntries.filter((e) => e.eventType === activeFilter);
-  }, [activeFilter]);
+    if (activeFilter === 'all') return calendarEntries;
+    return calendarEntries.filter((e) => e.eventType === activeFilter);
+  }, [activeFilter, calendarEntries]);
 
   // Events for the current calendar month
   const monthEvents = useMemo(() => {
@@ -117,6 +151,24 @@ export default function EventsCalendar() {
     { key: 'special', label: t('events.filters.special') },
     { key: 'house', label: t('events.filters.house') },
   ];
+
+  if (loading) {
+    return (
+      <div className="events-calendar-page">
+        <h2 className="events-title">{t('events.title')}</h2>
+        <div className="loading-message">{t('common.loading')}</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="events-calendar-page">
+        <h2 className="events-title">{t('events.title')}</h2>
+        <div className="error-message">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="events-calendar-page">

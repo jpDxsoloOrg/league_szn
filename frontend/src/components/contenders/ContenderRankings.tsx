@@ -1,26 +1,65 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { mockChampionshipContenders } from '../../mocks/contenderMockData';
+import { championshipsApi, contendersApi } from '../../services/api';
+import type { Championship } from '../../types';
+import type { ChampionshipContenders } from '../../types/contender';
 import ContenderCard from './ContenderCard';
 import './ContenderRankings.css';
 
 export default function ContenderRankings() {
   const { t } = useTranslation();
-  const [selectedChampionship, setSelectedChampionship] = useState(
-    mockChampionshipContenders[0]!.championshipId
-  );
+  const [championships, setChampionships] = useState<Championship[]>([]);
+  const [selectedChampionshipId, setSelectedChampionshipId] = useState<string | null>(null);
+  const [contenderData, setContenderData] = useState<ChampionshipContenders | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [contendersLoading, setContendersLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const currentChampionship = mockChampionshipContenders.find(
-    (c) => c.championshipId === selectedChampionship
-  );
+  // Load championships on mount
+  useEffect(() => {
+    const controller = new AbortController();
+    const loadChampionships = async () => {
+      try {
+        setLoading(true);
+        const data = await championshipsApi.getAll(controller.signal);
+        const activeChamps = data.filter((c) => c.isActive);
+        setChampionships(activeChamps);
+        if (activeChamps.length > 0 && activeChamps[0]) {
+          setSelectedChampionshipId(activeChamps[0].championshipId);
+        }
+        setError(null);
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          setError(err instanceof Error ? err.message : 'Failed to load championships');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadChampionships();
+    return () => controller.abort();
+  }, []);
 
-  if (!currentChampionship) {
-    return (
-      <div className="contender-rankings">
-        <div className="error-message">{t('contenders.noData')}</div>
-      </div>
-    );
-  }
+  // Load contenders when selected championship changes
+  useEffect(() => {
+    if (!selectedChampionshipId) return;
+    const controller = new AbortController();
+    const loadContenders = async () => {
+      try {
+        setContendersLoading(true);
+        const data = await contendersApi.getForChampionship(selectedChampionshipId, controller.signal);
+        setContenderData(data);
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          setContenderData(null);
+        }
+      } finally {
+        setContendersLoading(false);
+      }
+    };
+    loadContenders();
+    return () => controller.abort();
+  }, [selectedChampionshipId]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -33,6 +72,36 @@ export default function ContenderRankings() {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="contender-rankings">
+        <div className="loading-message">{t('common.loading')}</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="contender-rankings">
+        <div className="error-message">{error}</div>
+      </div>
+    );
+  }
+
+  if (championships.length === 0) {
+    return (
+      <div className="contender-rankings">
+        <header className="rankings-header">
+          <h2>{t('contenders.title')}</h2>
+          <p className="subtitle">{t('contenders.subtitle')}</p>
+        </header>
+        <div className="empty-state">
+          <p>{t('contenders.noData')}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="contender-rankings">
       <header className="rankings-header">
@@ -42,90 +111,91 @@ export default function ContenderRankings() {
 
       {/* Championship Selector Tabs */}
       <div className="championship-tabs">
-        {mockChampionshipContenders.map((championship) => (
+        {championships.map((championship) => (
           <button
             key={championship.championshipId}
             className={`tab ${
-              selectedChampionship === championship.championshipId ? 'active' : ''
+              selectedChampionshipId === championship.championshipId ? 'active' : ''
             }`}
-            onClick={() => setSelectedChampionship(championship.championshipId)}
+            onClick={() => setSelectedChampionshipId(championship.championshipId)}
           >
-            {championship.championshipName}
+            {championship.name}
           </button>
         ))}
       </div>
 
-      {/* Current Champion Section */}
-      <section className="current-champion-section">
-        <h3>{t('contenders.currentChampion')}</h3>
-        <div className="champion-card">
-          <div className="champion-badge">
-            <span className="trophy-icon">🏆</span>
-          </div>
-          <div className="champion-image">
-            {currentChampionship.currentChampion.imageUrl ? (
-              <img
-                src={currentChampionship.currentChampion.imageUrl}
-                alt={currentChampionship.currentChampion.wrestlerName}
-              />
-            ) : (
-              <div className="placeholder-image">
-                {currentChampionship.currentChampion.wrestlerName.charAt(0)}
+      {contendersLoading ? (
+        <div className="loading-message">{t('common.loading')}</div>
+      ) : contenderData ? (
+        <>
+          {/* Current Champion Section */}
+          {contenderData.currentChampion && (
+            <section className="current-champion-section">
+              <h3>{t('contenders.currentChampion')}</h3>
+              <div className="champion-card">
+                <div className="champion-badge">
+                  <span className="trophy-icon">&#127942;</span>
+                </div>
+                <div className="champion-image">
+                  {contenderData.currentChampion.imageUrl ? (
+                    <img
+                      src={contenderData.currentChampion.imageUrl}
+                      alt={contenderData.currentChampion.wrestlerName}
+                    />
+                  ) : (
+                    <div className="placeholder-image">
+                      {contenderData.currentChampion.wrestlerName?.charAt(0) || '?'}
+                    </div>
+                  )}
+                </div>
+                <div className="champion-info">
+                  <h4 className="champion-wrestler-name">
+                    {contenderData.currentChampion.wrestlerName}
+                  </h4>
+                  <p className="champion-player-name">
+                    {contenderData.currentChampion.playerName}
+                  </p>
+                </div>
               </div>
-            )}
-          </div>
-          <div className="champion-info">
-            <h4 className="champion-wrestler-name">
-              {currentChampionship.currentChampion.wrestlerName}
-            </h4>
-            <p className="champion-player-name">
-              {currentChampionship.currentChampion.playerName}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Contenders List */}
-      <section className="contenders-section">
-        <h3>{t('contenders.rankings')}</h3>
-        <div className="contenders-list">
-          {currentChampionship.contenders.length === 0 ? (
-            <div className="empty-state">
-              <p>{t('contenders.noContenders')}</p>
-              <span className="hint">
-                {t('contenders.noContendersHint', {
-                  minMatches: currentChampionship.config.minimumMatches,
-                })}
-              </span>
-            </div>
-          ) : (
-            currentChampionship.contenders.map((contender) => (
-              <ContenderCard key={contender.playerId} contender={contender} />
-            ))
+            </section>
           )}
-        </div>
-      </section>
 
-      {/* Last Calculated */}
-      <footer className="rankings-footer">
-        <p className="last-calculated">
-          {t('contenders.lastCalculated')}: {formatDate(currentChampionship.calculatedAt)}
-        </p>
-        <div className="config-info">
-          <span>
-            {t('contenders.rankingPeriod')}: {currentChampionship.config.rankingPeriodDays}{' '}
-            {t('contenders.days')}
-          </span>
-          <span className="separator">•</span>
-          <span>
-            {t('contenders.minMatches')}: {currentChampionship.config.minimumMatches}
-          </span>
-          <span className="separator">•</span>
-          <span>
-            {t('contenders.maxContenders')}: {currentChampionship.config.maxContenders}
+          {/* Contenders List */}
+          <section className="contenders-section">
+            <h3>{t('contenders.rankings')}</h3>
+            <div className="contenders-list">
+              {contenderData.contenders.length === 0 ? (
+                <div className="empty-state">
+                  <p>{t('contenders.noContenders')}</p>
+                  <span className="hint">
+                    {t('contenders.noContendersHint', { minMatches: 3 })}
+                  </span>
+                </div>
+              ) : (
+                contenderData.contenders.map((contender) => (
+                  <ContenderCard key={contender.playerId} contender={contender} />
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* Last Calculated */}
+          {contenderData.calculatedAt && (
+            <footer className="rankings-footer">
+              <p className="last-calculated">
+                {t('contenders.lastCalculated')}: {formatDate(contenderData.calculatedAt)}
+              </p>
+            </footer>
+          )}
+        </>
+      ) : (
+        <div className="empty-state">
+          <p>{t('contenders.noContenders')}</p>
+          <span className="hint">
+            {t('contenders.noContendersHint', { minMatches: 3 })}
           </span>
         </div>
-      </footer>
+      )}
     </div>
   );
 }
