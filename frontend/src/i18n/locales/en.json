@@ -33,12 +33,14 @@
     "championships": "Championships",
     "matches": "Matches",
     "tournaments": "Tournaments",
+    "events": "Events",
     "fantasy": "Fantasy",
     "challenges": "Challenges",
     "promos": "Promos",
     "statistics": "Stats",
     "help": "Help",
-    "admin": "Admin"
+    "admin": "Admin",
+    "contenders": "Contenders"
   },
   "header": {
     "title": "WWE 2K League"
@@ -309,10 +311,12 @@
         "championships": "Championships",
         "tournaments": "Tournaments",
         "seasons": "Seasons",
+        "events": "Events",
         "fantasyShows": "Fantasy Shows",
         "fantasyConfig": "Fantasy Config",
         "challenges": "Challenges",
         "promos": "Promos",
+        "contenderConfig": "Contender Config",
         "help": "Help",
         "dangerZone": "Danger Zone"
       }
@@ -524,6 +528,118 @@
         "records": "Records",
         "special": "Special"
       }
+    }
+  },
+  "events": {
+    "title": "Events & PPV",
+    "types": {
+      "ppv": "PPV",
+      "weekly": "Weekly",
+      "special": "Special",
+      "house": "House Show"
+    },
+    "status": {
+      "upcoming": "Upcoming",
+      "in-progress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "filters": {
+      "all": "All",
+      "ppv": "PPV",
+      "weekly": "Weekly",
+      "special": "Special",
+      "house": "House Show"
+    },
+    "card": {
+      "matches": "matches",
+      "titleMatches": "title matches"
+    },
+    "calendar": {
+      "upcoming": "Upcoming Events",
+      "noUpcoming": "No upcoming events scheduled.",
+      "months": {
+        "january": "January",
+        "february": "February",
+        "march": "March",
+        "april": "April",
+        "may": "May",
+        "june": "June",
+        "july": "July",
+        "august": "August",
+        "september": "September",
+        "october": "October",
+        "november": "November",
+        "december": "December"
+      },
+      "days": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+      }
+    },
+    "designations": {
+      "preShow": "Pre-Show",
+      "opener": "Opener",
+      "midcard": "Midcard",
+      "coMain": "Co-Main Event",
+      "mainEvent": "Main Event"
+    },
+    "detail": {
+      "backToEvents": "Back to Events",
+      "notFound": "Event not found.",
+      "date": "Date",
+      "venue": "Venue",
+      "attendance": "Attendance",
+      "rating": "Rating",
+      "viewResults": "View Full Results",
+      "matchCard": "Match Card",
+      "noMatches": "No matches have been added to this event yet.",
+      "preShow": "Pre-Show",
+      "mainCard": "Main Card",
+      "championshipMatch": "Championship Match",
+      "winner": "W"
+    },
+    "results": {
+      "title": "Event Results",
+      "notFound": "Event not found.",
+      "notCompleted": "This event has not been completed yet. Results will be available after the event.",
+      "backToEvent": "Back to Event",
+      "totalMatches": "Total Matches",
+      "titleChanges": "Title Matches",
+      "attendance": "Attendance",
+      "matchResults": "Match Results",
+      "winnersLabel": "Winner",
+      "defeatedLabel": "Defeated",
+      "titleChange": "Championship Match"
+    },
+    "admin": {
+      "createEvent": "Create Event",
+      "name": "Event Name",
+      "namePlaceholder": "e.g., WrestleMania 41, Monday Night Raw",
+      "eventType": "Event Type",
+      "date": "Date & Time",
+      "venue": "Venue",
+      "venuePlaceholder": "e.g., Madison Square Garden, New York, NY",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter a description for this event...",
+      "themeColor": "Theme Color",
+      "season": "Season",
+      "noSeason": "No Season",
+      "saveEvent": "Save Event",
+      "saveSuccess": "Event saved successfully!",
+      "matchCardBuilder": "Match Card Builder",
+      "noMatchesOnCard": "No matches on this card yet. Add matches below.",
+      "championshipMatch": "Title Match",
+      "moveUp": "Move Up",
+      "moveDown": "Move Down",
+      "removeMatch": "Remove Match",
+      "selectMatch": "Select a match to add...",
+      "addMatch": "Add Match"
     }
   },
   "fantasy": {
@@ -872,6 +988,59 @@
       "confirmDelete": "Are you sure you want to delete this promo?",
       "filterByType": "Filter by Type",
       "all": "All"
+    }
+  },
+  "contenders": {
+    "title": "Contender Rankings",
+    "subtitle": "Official rankings determining championship contenders",
+    "noData": "No contender data available",
+    "currentChampion": "Current Champion",
+    "rankings": "Rankings",
+    "noContenders": "No contenders ranked yet",
+    "noContendersHint": "Players need at least {{minMatches}} matches in the ranking period to qualify",
+    "lastCalculated": "Last calculated",
+    "rankingPeriod": "Ranking period",
+    "days": "days",
+    "minMatches": "Min. matches",
+    "maxContenders": "Max contenders",
+    "new": "NEW",
+    "score": "Score",
+    "winRate": "Win %",
+    "streak": "Streak",
+    "matches": "Matches",
+    "topContender": "#1 Contender",
+    "eligible": "Eligible",
+    "notEligible": "Not Eligible",
+    "currentRank": "Current Rank",
+    "rankingScore": "Ranking Score",
+    "myStatus": {
+      "title": "My Contender Status",
+      "subtitle": "Championship contender status for {{playerName}}",
+      "progressToTop": "Progress to #1",
+      "pathToTitle": "Path to Title",
+      "matchesNeeded": "Matches Needed to Qualify",
+      "eligibleChampionships": "Eligible Championships",
+      "topContenderPositions": "#1 Contender Positions",
+      "topThreePositions": "Top 3 Positions"
+    },
+    "admin": {
+      "title": "Contender Configuration",
+      "subtitle": "Configure contender ranking settings per championship",
+      "selectChampionship": "Select Championship",
+      "rankingPeriodDays": "Ranking Period (Days)",
+      "rankingPeriodHint": "Number of days to consider for rankings (7-365)",
+      "minimumMatches": "Minimum Matches",
+      "minimumMatchesHint": "Minimum matches required to appear in rankings",
+      "maxContenders": "Maximum Contenders",
+      "maxContendersHint": "Maximum number of ranked contenders per championship",
+      "includeDraws": "Include Draws in Rankings",
+      "includeDrawsHint": "When enabled, draws will count partially toward ranking score",
+      "divisionRestricted": "Division Restricted",
+      "divisionRestrictedHint": "When enabled, only players in the same division can contend",
+      "save": "Save Configuration",
+      "recalculate": "Recalculate Rankings",
+      "saveSuccess": "Configuration saved for {{championship}}",
+      "recalculateSuccess": "Rankings recalculated for {{championship}}"
     }
   }
 }

@@ -25,6 +25,9 @@ import Leaderboards from './components/statistics/Leaderboards';
 import RecordBook from './components/statistics/RecordBook';
 import TaleOfTheTape from './components/statistics/TaleOfTheTape';
 import Achievements from './components/statistics/Achievements';
+// Contender components
+import ContenderRankings from './components/contenders/ContenderRankings';
+import MyContenderStatus from './components/contenders/MyContenderStatus';
 // Fantasy components
 import FantasyLanding from './components/fantasy/FantasyLanding';
 import FantasyLogin from './components/fantasy/FantasyLogin';
@@ -34,6 +37,10 @@ import MakePicks from './components/fantasy/MakePicks';
 import FantasyLeaderboard from './components/fantasy/FantasyLeaderboard';
 import WrestlerCosts from './components/fantasy/WrestlerCosts';
 import ShowResults from './components/fantasy/ShowResults';
+// Events components
+import EventsCalendar from './components/events/EventsCalendar';
+import EventDetail from './components/events/EventDetail';
+import EventResults from './components/events/EventResults';
 import './App.css';
 
 function App() {
@@ -53,6 +60,8 @@ function App() {
             <Link to="/challenges">{t('nav.challenges')}</Link>
             <Link to="/promos">{t('nav.promos')}</Link>
             <Link to="/stats/leaderboards">{t('nav.statistics')}</Link>
+            <Link to="/events">{t('nav.events')}</Link>
+            <Link to="/contenders">{t('nav.contenders')}</Link>
             <Link to="/fantasy">{t('nav.fantasy')}</Link>
             <Link to="/guide">{t('nav.help')}</Link>
             <Link to="/admin">{t('nav.admin')}</Link>
@@ -84,6 +93,13 @@ function App() {
             <Route path="/stats/records" element={<RecordBook />} />
             <Route path="/stats/tale-of-tape" element={<TaleOfTheTape />} />
             <Route path="/stats/achievements" element={<Achievements />} />
+            {/* Events Routes */}
+            <Route path="/events" element={<EventsCalendar />} />
+            <Route path="/events/:eventId" element={<EventDetail />} />
+            <Route path="/events/:eventId/results" element={<EventResults />} />
+            {/* Contender Routes */}
+            <Route path="/contenders" element={<ContenderRankings />} />
+            <Route path="/contenders/my-status" element={<MyContenderStatus />} />
             {/* Fantasy Routes */}
             <Route path="/fantasy" element={<FantasyLanding />} />
             <Route path="/fantasy/login" element={<FantasyLogin />} />

@@ -1,0 +1,290 @@
+.event-detail-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.back-link {
+  color: #60a5fa;
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: inline-block;
+  margin-bottom: 16px;
+  transition: color 0.15s;
+}
+
+.back-link:hover {
+  color: #93bbfd;
+}
+
+.event-not-found {
+  text-align: center;
+  padding: 60px 20px;
+  color: #bbb;
+}
+
+.event-not-found p {
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+}
+
+/* ── Event Header ──────────────────────────────────────────────────────────── */
+
+.event-detail-header {
+  background: #2d2d2d;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  border-top: 4px solid #d4af37;
+}
+
+.event-detail-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.event-detail-name {
+  margin: 0;
+  font-size: 1.8rem;
+  color: white;
+}
+
+.event-detail-badges {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.event-detail-type-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  color: #1a1a1a;
+}
+
+.event-detail-status-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.event-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.event-detail-info-item {
+  color: #bbb;
+  font-size: 0.95rem;
+  display: flex;
+  gap: 8px;
+}
+
+.info-label {
+  color: #888;
+  font-weight: 600;
+  min-width: 90px;
+}
+
+.event-rating {
+  color: #d4af37;
+  font-weight: 600;
+}
+
+.event-detail-description {
+  color: #bbb;
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+  padding-top: 12px;
+  border-top: 1px solid #333;
+}
+
+.view-results-btn {
+  display: inline-block;
+  background: #d4af37;
+  color: #1a1a1a;
+  padding: 8px 20px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.15s;
+}
+
+.view-results-btn:hover {
+  background: #e5c44d;
+}
+
+/* ── Match Card Section ────────────────────────────────────────────────────── */
+
+.event-match-card-section {
+  background: #222;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.match-card-title {
+  color: white;
+  margin: 0 0 20px 0;
+  font-size: 1.4rem;
+}
+
+.no-matches-message {
+  color: #bbb;
+  text-align: center;
+  padding: 32px;
+}
+
+/* ── Pre-show / Main Card Dividers ─────────────────────────────────────────── */
+
+.pre-show-divider,
+.main-card-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.pre-show-divider::before,
+.pre-show-divider::after,
+.main-card-divider::before,
+.main-card-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #444;
+}
+
+.pre-show-divider span {
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.main-card-divider span {
+  color: #d4af37;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.pre-show-section {
+  margin-bottom: 24px;
+}
+
+/* ── Match Entry ───────────────────────────────────────────────────────────── */
+
+.match-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.match-entry {
+  background: #2d2d2d;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 3px solid #444;
+}
+
+.match-entry.main-event-match {
+  border-left: 3px solid #d4af37;
+  background: linear-gradient(135deg, #2d2d2d 0%, #332d1a 100%);
+}
+
+.match-entry-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.match-designation-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #1a1a1a;
+}
+
+.match-type-label {
+  color: #bbb;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+.match-championship-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #d4af37;
+  background: rgba(212, 175, 55, 0.15);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.match-participants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.participant {
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  background: #333;
+  border-radius: 4px;
+}
+
+.participant.winner {
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid #4ade80;
+  color: #4ade80;
+}
+
+.participant.loser {
+  opacity: 0.6;
+}
+
+.participant-player {
+  font-size: 0.8rem;
+  color: #888;
+  margin-left: 4px;
+  font-weight: 400;
+}
+
+.winner-indicator {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #4ade80;
+}
+
+.match-notes {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: #888;
+  font-style: italic;
+}

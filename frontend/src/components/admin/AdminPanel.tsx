@@ -12,6 +12,8 @@ import CreateTournament from './CreateTournament';
 
 import AdminPromos from './AdminPromos';
 import ManageSeasons from './ManageSeasons';
+import CreateEvent from './CreateEvent';
+import MatchCardBuilder from './MatchCardBuilder';
 import ManageFantasyShows from './ManageFantasyShows';
 import FantasyConfig from './FantasyConfig';
 import AdminChallenges from './AdminChallenges';
@@ -19,7 +21,9 @@ import AdminGuide from './AdminGuide';
 import ClearAllData from './ClearAllData';
 import './AdminPanel.css';
 
-type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'fantasyShows' | 'fantasyConfig' | 'guide' | 'danger';
+import AdminContenderConfig from './AdminContenderConfig';
+
+type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'events' | 'fantasyShows' | 'fantasyConfig' | 'contenderConfig' | 'guide' | 'danger';
 
 
 export default function AdminPanel() {
@@ -106,6 +110,12 @@ export default function AdminPanel() {
           {t('admin.panel.tabs.seasons')}
         </button>
         <button
+          className={`tab ${activeTab === 'events' ? 'active' : ''}`}
+          onClick={() => setActiveTab('events')}
+        >
+          {t('admin.panel.tabs.events')}
+        </button>
+        <button
           className={`tab ${activeTab === 'fantasyShows' ? 'active' : ''}`}
           onClick={() => setActiveTab('fantasyShows')}
         >
@@ -116,6 +126,12 @@ export default function AdminPanel() {
           onClick={() => setActiveTab('fantasyConfig')}
         >
           {t('admin.panel.tabs.fantasyConfig')}
+        </button>
+        <button
+          className={`tab ${activeTab === 'contenderConfig' ? 'active' : ''}`}
+          onClick={() => setActiveTab('contenderConfig')}
+        >
+          {t('admin.panel.tabs.contenderConfig')}
         </button>
         <button
           className={`tab ${activeTab === 'guide' ? 'active' : ''}`}
@@ -142,8 +158,15 @@ export default function AdminPanel() {
         {activeTab === 'promos' && <AdminPromos />}
         {activeTab === 'guide' && <AdminGuide />}
         {activeTab === 'seasons' && <ManageSeasons />}
+        {activeTab === 'events' && (
+          <>
+            <CreateEvent />
+            <MatchCardBuilder />
+          </>
+        )}
         {activeTab === 'fantasyShows' && <ManageFantasyShows />}
         {activeTab === 'fantasyConfig' && <FantasyConfig />}
+        {activeTab === 'contenderConfig' && <AdminContenderConfig />}
         {activeTab === 'danger' && <ClearAllData />}
       </div>
     </div>
