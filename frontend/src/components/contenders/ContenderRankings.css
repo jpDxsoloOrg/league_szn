@@ -1,0 +1,249 @@
+.contender-rankings {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Header */
+.rankings-header {
+  margin-bottom: 2rem;
+}
+
+.rankings-header h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+  color: #fff;
+}
+
+.rankings-header .subtitle {
+  margin: 0;
+  font-size: 1rem;
+  color: #888;
+}
+
+/* Championship Tabs */
+.championship-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #333;
+}
+
+.championship-tabs .tab {
+  flex: 1;
+  padding: 1rem;
+  background-color: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #888;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  bottom: -2px;
+}
+
+.championship-tabs .tab:hover {
+  color: #bbb;
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.championship-tabs .tab.active {
+  color: #d4af37;
+  border-bottom-color: #d4af37;
+  background-color: rgba(212, 175, 55, 0.05);
+}
+
+/* Current Champion Section */
+.current-champion-section {
+  margin-bottom: 2rem;
+}
+
+.current-champion-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  color: #d4af37;
+}
+
+.champion-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), transparent);
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
+}
+
+.champion-badge {
+  flex-shrink: 0;
+}
+
+.trophy-icon {
+  font-size: 3rem;
+  filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.5));
+}
+
+.champion-image {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+}
+
+.champion-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 3px solid #d4af37;
+}
+
+.champion-image .placeholder-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #333;
+  border-radius: 8px;
+  border: 3px solid #d4af37;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+.champion-info {
+  flex: 1;
+}
+
+.champion-wrestler-name {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.champion-player-name {
+  margin: 0;
+  font-size: 1rem;
+  color: #888;
+}
+
+/* Contenders Section */
+.contenders-section {
+  margin-bottom: 2rem;
+}
+
+.contenders-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  color: #d4af37;
+}
+
+.contenders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Empty State */
+.empty-state {
+  padding: 3rem 2rem;
+  text-align: center;
+  background-color: #1a1a1a;
+  border: 2px dashed #333;
+  border-radius: 8px;
+}
+
+.empty-state p {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  color: #bbb;
+}
+
+.empty-state .hint {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+/* Footer */
+.rankings-footer {
+  padding: 1.5rem;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+
+.last-calculated {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  color: #888;
+}
+
+.config-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.config-info .separator {
+  color: #444;
+}
+
+/* Error Message */
+.error-message {
+  padding: 2rem;
+  text-align: center;
+  background-color: rgba(248, 113, 113, 0.1);
+  border: 1px solid #f87171;
+  border-radius: 8px;
+  color: #f87171;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .championship-tabs {
+    flex-direction: column;
+    border-bottom: none;
+  }
+
+  .championship-tabs .tab {
+    border-bottom: 2px solid #333;
+  }
+
+  .championship-tabs .tab.active {
+    border-bottom-color: #d4af37;
+  }
+
+  .champion-card {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .trophy-icon {
+    font-size: 2.5rem;
+  }
+
+  .champion-image {
+    width: 70px;
+    height: 70px;
+  }
+
+  .champion-wrestler-name {
+    font-size: 1.25rem;
+  }
+
+  .config-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .config-info .separator {
+    display: none;
+  }
+}

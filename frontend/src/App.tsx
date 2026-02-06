@@ -9,6 +9,9 @@ import Tournaments from './components/Tournaments';
 import UserGuide from './components/UserGuide';
 import AdminPanel from './components/admin/AdminPanel';
 import LanguageSwitcher from './components/LanguageSwitcher';
+// Contender components
+import ContenderRankings from './components/contenders/ContenderRankings';
+import MyContenderStatus from './components/contenders/MyContenderStatus';
 // Fantasy components
 import FantasyLanding from './components/fantasy/FantasyLanding';
 import FantasyLogin from './components/fantasy/FantasyLogin';
@@ -34,6 +37,7 @@ function App() {
             <Link to="/championships">{t('nav.championships')}</Link>
             <Link to="/matches">{t('nav.matches')}</Link>
             <Link to="/tournaments">{t('nav.tournaments')}</Link>
+            <Link to="/contenders">{t('nav.contenders')}</Link>
             <Link to="/fantasy">{t('nav.fantasy')}</Link>
             <Link to="/guide">{t('nav.help')}</Link>
             <Link to="/admin">{t('nav.admin')}</Link>
@@ -48,6 +52,9 @@ function App() {
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/guide" element={<UserGuide />} />
             <Route path="/admin" element={<AdminPanel />} />
+            {/* Contender Routes */}
+            <Route path="/contenders" element={<ContenderRankings />} />
+            <Route path="/contenders/my-status" element={<MyContenderStatus />} />
             {/* Fantasy Routes */}
             <Route path="/fantasy" element={<FantasyLanding />} />
             <Route path="/fantasy/login" element={<FantasyLogin />} />
