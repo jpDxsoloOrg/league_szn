@@ -9,6 +9,25 @@ import Tournaments from './components/Tournaments';
 import UserGuide from './components/UserGuide';
 import AdminPanel from './components/admin/AdminPanel';
 import LanguageSwitcher from './components/LanguageSwitcher';
+// Challenge components
+import ChallengeBoard from './components/challenges/ChallengeBoard';
+import ChallengeDetail from './components/challenges/ChallengeDetail';
+import IssueChallenge from './components/challenges/IssueChallenge';
+import MyChallenges from './components/challenges/MyChallenges';
+// Promo components
+import PromoFeed from './components/promos/PromoFeed';
+import PromoThread from './components/promos/PromoThread';
+import PromoEditor from './components/promos/PromoEditor';
+// Statistics components
+import PlayerStats from './components/statistics/PlayerStats';
+import HeadToHeadComparison from './components/statistics/HeadToHeadComparison';
+import Leaderboards from './components/statistics/Leaderboards';
+import RecordBook from './components/statistics/RecordBook';
+import TaleOfTheTape from './components/statistics/TaleOfTheTape';
+import Achievements from './components/statistics/Achievements';
+// Contender components
+import ContenderRankings from './components/contenders/ContenderRankings';
+import MyContenderStatus from './components/contenders/MyContenderStatus';
 // Fantasy components
 import FantasyLanding from './components/fantasy/FantasyLanding';
 import FantasyLogin from './components/fantasy/FantasyLogin';
@@ -18,6 +37,10 @@ import MakePicks from './components/fantasy/MakePicks';
 import FantasyLeaderboard from './components/fantasy/FantasyLeaderboard';
 import WrestlerCosts from './components/fantasy/WrestlerCosts';
 import ShowResults from './components/fantasy/ShowResults';
+// Events components
+import EventsCalendar from './components/events/EventsCalendar';
+import EventDetail from './components/events/EventDetail';
+import EventResults from './components/events/EventResults';
 import './App.css';
 
 function App() {
@@ -34,6 +57,11 @@ function App() {
             <Link to="/championships">{t('nav.championships')}</Link>
             <Link to="/matches">{t('nav.matches')}</Link>
             <Link to="/tournaments">{t('nav.tournaments')}</Link>
+            <Link to="/challenges">{t('nav.challenges')}</Link>
+            <Link to="/promos">{t('nav.promos')}</Link>
+            <Link to="/stats/leaderboards">{t('nav.statistics')}</Link>
+            <Link to="/events">{t('nav.events')}</Link>
+            <Link to="/contenders">{t('nav.contenders')}</Link>
             <Link to="/fantasy">{t('nav.fantasy')}</Link>
             <Link to="/guide">{t('nav.help')}</Link>
             <Link to="/admin">{t('nav.admin')}</Link>
@@ -48,6 +76,30 @@ function App() {
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/guide" element={<UserGuide />} />
             <Route path="/admin" element={<AdminPanel />} />
+            {/* Challenge Routes */}
+            <Route path="/challenges" element={<ChallengeBoard />} />
+            <Route path="/challenges/issue" element={<IssueChallenge />} />
+            <Route path="/challenges/my" element={<MyChallenges />} />
+            <Route path="/challenges/:challengeId" element={<ChallengeDetail />} />
+            {/* Promo Routes */}
+            <Route path="/promos" element={<PromoFeed />} />
+            <Route path="/promos/new" element={<PromoEditor />} />
+            <Route path="/promos/:promoId" element={<PromoThread />} />
+            {/* Statistics Routes */}
+            <Route path="/stats" element={<PlayerStats />} />
+            <Route path="/stats/player/:playerId" element={<PlayerStats />} />
+            <Route path="/stats/head-to-head" element={<HeadToHeadComparison />} />
+            <Route path="/stats/leaderboards" element={<Leaderboards />} />
+            <Route path="/stats/records" element={<RecordBook />} />
+            <Route path="/stats/tale-of-tape" element={<TaleOfTheTape />} />
+            <Route path="/stats/achievements" element={<Achievements />} />
+            {/* Events Routes */}
+            <Route path="/events" element={<EventsCalendar />} />
+            <Route path="/events/:eventId" element={<EventDetail />} />
+            <Route path="/events/:eventId/results" element={<EventResults />} />
+            {/* Contender Routes */}
+            <Route path="/contenders" element={<ContenderRankings />} />
+            <Route path="/contenders/my-status" element={<MyContenderStatus />} />
             {/* Fantasy Routes */}
             <Route path="/fantasy" element={<FantasyLanding />} />
             <Route path="/fantasy/login" element={<FantasyLogin />} />

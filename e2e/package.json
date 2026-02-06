@@ -17,12 +17,14 @@
     "verify-site:dev": "TEST_ENV=dev npx ts-node run-verification.ts",
     "verify-site:prod": "TEST_ENV=prod npx ts-node run-verification.ts",
     "report": "npx playwright show-report ./reports/html",
-    "install-browsers": "npx playwright install"
+    "install-browsers": "npx playwright install",
+    "screenshots": "npx ts-node take-screenshots.ts",
+    "screenshots:dev": "SCREENSHOT_BASE_URL=https://dev.leagueszn.jpdxsolo.com npx ts-node take-screenshots.ts"
   },
   "dependencies": {
-    "@playwright/test": "^1.40.0",
-    "typescript": "^5.3.0",
-    "ts-node": "^10.9.2"
+    "@playwright/test": "^1.56.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0"

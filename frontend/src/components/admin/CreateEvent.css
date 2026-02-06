@@ -1,0 +1,135 @@
+.create-event {
+  max-width: 700px;
+}
+
+.create-event-title {
+  color: white;
+  margin: 0 0 20px 0;
+  font-size: 1.3rem;
+}
+
+.create-event-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  color: #bbb;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: white;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.form-select {
+  cursor: pointer;
+}
+
+/* ── Color Picker ──────────────────────────────────────────────────────────── */
+
+.color-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.color-preset {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.color-preset:hover {
+  transform: scale(1.15);
+}
+
+.color-preset.selected {
+  border-color: white;
+  transform: scale(1.15);
+}
+
+.color-input {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+  padding: 0;
+}
+
+.color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-input::-webkit-color-swatch {
+  border: 1px solid #444;
+  border-radius: 4px;
+}
+
+/* ── Save Button ───────────────────────────────────────────────────────────── */
+
+.save-event-btn {
+  background: #d4af37;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background 0.15s;
+}
+
+.save-event-btn:hover:not(:disabled) {
+  background: #e5c44d;
+}
+
+.save-event-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.save-success-msg {
+  color: #4ade80;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  background: rgba(74, 222, 128, 0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}

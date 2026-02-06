@@ -33,9 +33,14 @@
     "championships": "Meisterschaften",
     "matches": "Kämpfe",
     "tournaments": "Turniere",
+    "events": "Veranstaltungen",
     "fantasy": "Fantasy",
+    "challenges": "Herausforderungen",
+    "promos": "Promos",
+    "statistics": "Statistiken",
     "help": "Hilfe",
-    "admin": "Admin"
+    "admin": "Admin",
+    "contenders": "Herausforderer"
   },
   "header": {
     "title": "WWE 2K Liga"
@@ -306,11 +311,335 @@
         "championships": "Meisterschaften",
         "tournaments": "Turniere",
         "seasons": "Saisons",
+        "events": "Veranstaltungen",
         "fantasyShows": "Fantasy Shows",
         "fantasyConfig": "Fantasy Konfig",
+        "challenges": "Herausforderungen",
+        "promos": "Promos",
+        "contenderConfig": "Herausforderer Konfig",
         "help": "Hilfe",
         "dangerZone": "Gefahrenzone"
       }
+    }
+  },
+  "challenges": {
+    "board": {
+      "title": "Herausforderungs-Board",
+      "myChallenges": "Meine Herausforderungen",
+      "issueChallenge": "Herausforderung aussprechen",
+      "filters": "Filter",
+      "filterActive": "Aktiv",
+      "filterPending": "Ausstehend",
+      "filterAccepted": "Angenommen",
+      "filterRecent": "Kürzlich",
+      "active": "Aktiv",
+      "pending": "Ausstehend",
+      "accepted": "Angenommen",
+      "recent": "Kürzlich",
+      "noChallenges": "Keine Herausforderungen gefunden.",
+      "titleMatch": "Titelkampf",
+      "remaining": "verbleibend"
+    },
+    "detail": {
+      "title": "Herausforderungsdetails",
+      "vs": "gegen",
+      "matchType": "Kampftyp",
+      "stipulation": "Stipulation",
+      "message": "Nachricht",
+      "response": "Antwort",
+      "status": "Status",
+      "accept": "Annehmen",
+      "decline": "Ablehnen",
+      "counter": "Kontern",
+      "cancel": "Herausforderung zurückziehen",
+      "backToBoard": "Zurück zum Board",
+      "expires": "Läuft ab",
+      "scheduledMatch": "Geplanter Kampf",
+      "notFound": "Herausforderung nicht gefunden.",
+      "challenger": "Herausforderer",
+      "challenged": "Herausgeforderter",
+      "messages": "Nachrichten",
+      "created": "Erstellt",
+      "actionConfirmed": "{{action}} bestätigt!",
+      "counterChallenge": "Gegenherausforderung",
+      "viewScheduledMatch": "Geplanten Kampf anzeigen"
+    },
+    "issue": {
+      "title": "Herausforderung aussprechen",
+      "selectOpponent": "Gegner auswählen",
+      "selectOpponentPlaceholder": "Gegner wählen...",
+      "matchType": "Kampftyp",
+      "selectMatchType": "Kampftyp wählen...",
+      "stipulation": "Stipulation",
+      "championshipMatch": "Meisterschaftskampf",
+      "message": "Nachricht",
+      "messagePlaceholder": "Schreibe eine Nachricht an deinen Gegner...",
+      "charLimit": "Zeichen verbleibend",
+      "hidePreview": "Vorschau ausblenden",
+      "showPreview": "Vorschau anzeigen",
+      "preview": "Vorschau",
+      "submit": "Herausforderung absenden",
+      "success": "Herausforderung erfolgreich ausgesprochen!",
+      "issueAnother": "Weitere aussprechen"
+    },
+    "my": {
+      "title": "Meine Herausforderungen",
+      "sent": "Gesendet",
+      "received": "Empfangen",
+      "noSent": "Du hast noch keine Herausforderungen gesendet.",
+      "noReceived": "Du hast noch keine Herausforderungen empfangen.",
+      "actionFeedback": "{{action}} für Herausforderung gegen {{opponent}}",
+      "response": "Antwort",
+      "viewDetails": "Details anzeigen"
+    },
+    "admin": {
+      "title": "Herausforderungen verwalten",
+      "challenger": "Herausforderer",
+      "challenged": "Herausgeforderter",
+      "type": "Typ",
+      "status": "Status",
+      "date": "Datum",
+      "actions": "Aktionen",
+      "schedule": "Kampf planen",
+      "expire": "Ablaufen lassen",
+      "filterByStatus": "Nach Status filtern",
+      "all": "Alle"
+    },
+    "status": {
+      "pending": "Ausstehend",
+      "accepted": "Angenommen",
+      "declined": "Abgelehnt",
+      "countered": "Gekontert",
+      "scheduled": "Geplant",
+      "expired": "Abgelaufen",
+      "cancelled": "Abgebrochen"
+    }
+  },
+  "statistics": {
+    "nav": {
+      "playerStats": "Spieler-Statistiken",
+      "headToHead": "Direktvergleich",
+      "leaderboards": "Ranglisten",
+      "records": "Rekordbuch",
+      "taleOfTape": "Tale of the Tape",
+      "achievements": "Erfolge"
+    },
+    "labels": {
+      "wins": "Siege",
+      "losses": "Niederlagen",
+      "draws": "Unentschieden",
+      "winPercentage": "Sieg %",
+      "matchesPlayed": "Gespielte Kämpfe",
+      "currentStreak": "Aktuelle Serie",
+      "longestWinStreak": "Beste Siegesserie",
+      "longestLossStreak": "Schlechteste Niederlagenserie",
+      "titleWins": "Titelgewinne",
+      "titleLosses": "Titelverluste",
+      "matchType": "Kampftyp",
+      "bestStreak": "Beste Serie",
+      "reigns": "Regentschaften",
+      "daysHeld": "Tage gehalten",
+      "defenses": "Titelverteidigungen",
+      "longestReign": "Längste Regentschaft",
+      "currentChampion": "AKTUELL",
+      "active": "Aktiv",
+      "present": "Gegenwart",
+      "totalMatches": "Kämpfe gesamt",
+      "championshipMatches": "Titelkämpfe"
+    },
+    "matchTypes": {
+      "singles": "Einzel",
+      "tag": "Tag Team",
+      "ladder": "Leiter",
+      "cage": "Käfig"
+    },
+    "championshipNames": {
+      "world": "Weltmeisterschaft",
+      "intercontinental": "Intercontinental-Meisterschaft",
+      "tag": "Tag-Team-Meisterschaft"
+    },
+    "playerStats": {
+      "title": "Spieler-Statistiken",
+      "selectPlayer": "Spieler auswählen",
+      "noData": "Keine Statistikdaten für diesen Spieler verfügbar.",
+      "streaks": "Serien & Rekorde",
+      "matchTypeBreakdown": "Aufschlüsselung nach Kampftyp",
+      "championshipHistory": "Meisterschafts-Historie",
+      "recentAchievements": "Letzte Erfolge",
+      "viewAllAchievements": "Alle Erfolge anzeigen"
+    },
+    "headToHead": {
+      "title": "Direktvergleich",
+      "player1": "Spieler 1",
+      "player2": "Spieler 2",
+      "selectDifferent": "Bitte wählen Sie zwei verschiedene Spieler zum Vergleich.",
+      "statComparison": "Statistischer Vergleich",
+      "headToHeadRecord": "Direktvergleich-Bilanz",
+      "noHistory": "Keine Direktvergleich-Historie zwischen diesen Spielern.",
+      "recentResults": "Letzte Ergebnisse",
+      "player1Win": "S1 Sieg",
+      "player2Win": "S2 Sieg",
+      "statisticalEdge": "Statistischer Vorteil",
+      "advantages": "Vorteile"
+    },
+    "leaderboards": {
+      "title": "Ranglisten",
+      "allTime": "Gesamt",
+      "season": "Saison",
+      "categories": {
+        "mostWins": "Meiste Siege",
+        "winPercentage": "Sieg %",
+        "streaks": "Serien",
+        "championships": "Meisterschaften",
+        "longestReign": "Längste Regentschaft"
+      }
+    },
+    "recordBook": {
+      "title": "Rekordbuch",
+      "categories": {
+        "overall": "Gesamt",
+        "championships": "Meisterschaften",
+        "streaks": "Serien",
+        "matchTypes": "Kampftypen"
+      },
+      "setOn": "Aufgestellt am",
+      "activeThreats": "Aktive Bedrohungen",
+      "activeThreatsDesc": "Diese Rekorde werden derzeit herausgefordert. Behalten Sie diese Spieler im Auge!",
+      "currentHolder": "Aktueller Halter",
+      "challenger": "Herausforderer"
+    },
+    "taleOfTape": {
+      "title": "Tale of the Tape",
+      "comparison": "TALE OF THE TAPE",
+      "advantagesSummary": "Vorteile-Zusammenfassung",
+      "tied": "Gleichstand",
+      "hasTheEdge": "hat den statistischen Vorteil",
+      "evenlyMatched": "Diese Kontrahenten sind gleichwertig!"
+    },
+    "achievements": {
+      "title": "Erfolge",
+      "earned": "Erreicht",
+      "earnedOn": "Erreicht am",
+      "locked": "Gesperrt",
+      "noAchievements": "Keine Erfolge in dieser Kategorie gefunden.",
+      "filters": {
+        "all": "Alle",
+        "milestones": "Meilensteine",
+        "records": "Rekorde",
+        "special": "Spezial"
+      }
+    }
+  },
+  "events": {
+    "title": "Veranstaltungen & PPV",
+    "types": {
+      "ppv": "PPV",
+      "weekly": "Wöchentlich",
+      "special": "Spezial",
+      "house": "Hausshow"
+    },
+    "status": {
+      "upcoming": "Bevorstehend",
+      "in-progress": "Laufend",
+      "completed": "Abgeschlossen",
+      "cancelled": "Abgesagt"
+    },
+    "filters": {
+      "all": "Alle",
+      "ppv": "PPV",
+      "weekly": "Wöchentlich",
+      "special": "Spezial",
+      "house": "Hausshow"
+    },
+    "card": {
+      "matches": "Kämpfe",
+      "titleMatches": "Titelkämpfe"
+    },
+    "calendar": {
+      "upcoming": "Bevorstehende Veranstaltungen",
+      "noUpcoming": "Keine bevorstehenden Veranstaltungen geplant.",
+      "months": {
+        "january": "Januar",
+        "february": "Februar",
+        "march": "März",
+        "april": "April",
+        "may": "Mai",
+        "june": "Juni",
+        "july": "Juli",
+        "august": "August",
+        "september": "September",
+        "october": "Oktober",
+        "november": "November",
+        "december": "Dezember"
+      },
+      "days": {
+        "sun": "So",
+        "mon": "Mo",
+        "tue": "Di",
+        "wed": "Mi",
+        "thu": "Do",
+        "fri": "Fr",
+        "sat": "Sa"
+      }
+    },
+    "designations": {
+      "preShow": "Vorshow",
+      "opener": "Eröffnung",
+      "midcard": "Midcard",
+      "coMain": "Co-Main Event",
+      "mainEvent": "Main Event"
+    },
+    "detail": {
+      "backToEvents": "Zurück zu Veranstaltungen",
+      "notFound": "Veranstaltung nicht gefunden.",
+      "date": "Datum",
+      "venue": "Veranstaltungsort",
+      "attendance": "Zuschauer",
+      "rating": "Bewertung",
+      "viewResults": "Vollständige Ergebnisse anzeigen",
+      "matchCard": "Kampfkarte",
+      "noMatches": "Es wurden noch keine Kämpfe zu dieser Veranstaltung hinzugefügt.",
+      "preShow": "Vorshow",
+      "mainCard": "Hauptkarte",
+      "championshipMatch": "Meisterschaftskampf",
+      "winner": "S"
+    },
+    "results": {
+      "title": "Veranstaltungsergebnisse",
+      "notFound": "Veranstaltung nicht gefunden.",
+      "notCompleted": "Diese Veranstaltung ist noch nicht abgeschlossen. Ergebnisse sind nach der Veranstaltung verfügbar.",
+      "backToEvent": "Zurück zur Veranstaltung",
+      "totalMatches": "Gesamtkämpfe",
+      "titleChanges": "Titelkämpfe",
+      "attendance": "Zuschauer",
+      "matchResults": "Kampfergebnisse",
+      "winnersLabel": "Sieger",
+      "defeatedLabel": "Besiegt",
+      "titleChange": "Meisterschaftskampf"
+    },
+    "admin": {
+      "createEvent": "Veranstaltung erstellen",
+      "name": "Veranstaltungsname",
+      "namePlaceholder": "z.B. WrestleMania 41, Monday Night Raw",
+      "eventType": "Veranstaltungstyp",
+      "date": "Datum & Uhrzeit",
+      "venue": "Veranstaltungsort",
+      "venuePlaceholder": "z.B. Madison Square Garden, New York, NY",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "Beschreibung für diese Veranstaltung eingeben...",
+      "themeColor": "Themenfarbe",
+      "season": "Saison",
+      "noSeason": "Keine Saison",
+      "saveEvent": "Veranstaltung speichern",
+      "saveSuccess": "Veranstaltung erfolgreich gespeichert!",
+      "matchCardBuilder": "Kampfkarten-Ersteller",
+      "noMatchesOnCard": "Noch keine Kämpfe auf dieser Karte. Fügen Sie unten Kämpfe hinzu.",
+      "championshipMatch": "Titelkampf",
+      "moveUp": "Nach oben",
+      "moveDown": "Nach unten",
+      "removeMatch": "Kampf entfernen",
+      "selectMatch": "Kampf zum Hinzufügen auswählen...",
+      "addMatch": "Kampf hinzufügen"
     }
   },
   "fantasy": {
@@ -554,6 +883,164 @@
         "saveSuccess": "Konfiguration erfolgreich gespeichert",
         "error": "Konfiguration konnte nicht gespeichert werden"
       }
+    }
+  },
+  "promos": {
+    "feed": {
+      "title": "Wrestler Promos",
+      "filterAll": "Alle",
+      "filterCallOuts": "Ansagen",
+      "filterResponses": "Antworten",
+      "filterChampionship": "Meisterschaft",
+      "filterMatch": "Vor-/Nachkampf",
+      "pinnedPromos": "Angepinnt",
+      "cutPromo": "Promo schneiden",
+      "noPromos": "Keine Promos gefunden. Sei der Erste, der eine Promo schneidet!"
+    },
+    "card": {
+      "by": "von",
+      "targeting": "Ziel",
+      "callingOut": "Fordert heraus",
+      "respondingTo": "Antwort auf",
+      "aPromo": "eine Promo",
+      "viewThread": "Thread anzeigen",
+      "response": "Antwort",
+      "responses": "Antworten",
+      "ago": "her",
+      "pinned": "Angepinnt"
+    },
+    "thread": {
+      "title": "Promo-Thread",
+      "originalPromo": "Original-Promo",
+      "responses": "Antworten",
+      "writeResponse": "Antwort schreiben",
+      "backToFeed": "Zurueck zu Promos",
+      "notFound": "Promo nicht gefunden."
+    },
+    "editor": {
+      "title": "Promo schneiden",
+      "subtitle": "Schnapp dir das Mikro und lass das WWE-Universum deine Stimme hoeren.",
+      "promoType": "Promo-Typ",
+      "selectType": "Waehle einen Promo-Typ",
+      "typeDesc": {
+        "open-mic": "Sprich frei ueber jedes Thema. Kein Ziel erforderlich.",
+        "call-out": "Fordere einen anderen Wrestler direkt heraus.",
+        "response": "Antworte auf die Promo eines anderen Wrestlers.",
+        "pre-match": "Heize einen bevorstehenden Kampf an.",
+        "post-match": "Reagiere auf einen abgeschlossenen Kampf.",
+        "championship": "Sprich eine Meisterschaftssituation an.",
+        "return": "Kuendige deine Rueckkehr in die Liga an."
+      },
+      "promoTitle": "Titel",
+      "titlePlaceholder": "Gib deiner Promo einen einpragsamen Titel...",
+      "optional": "optional",
+      "content": "Inhalt",
+      "contentPlaceholder": "Schreib deine Promo hier... Verwende @WrestlerName um andere zu erwaehnen.",
+      "minChars": "Mindestens {{min}} Zeichen",
+      "maxChars": "Maximal {{max}} Zeichen",
+      "targetPlayer": "Ziel-Wrestler",
+      "selectPlayer": "-- Wrestler auswaehlen --",
+      "targetPromo": "Antwort auf Promo",
+      "selectPromo": "-- Promo auswaehlen --",
+      "match": "Kampf",
+      "selectMatch": "-- Kampf auswaehlen --",
+      "championship": "Meisterschaft",
+      "selectChampionship": "-- Meisterschaft auswaehlen --",
+      "preview": "Vorschau",
+      "showPreview": "Vorschau anzeigen",
+      "hidePreview": "Vorschau ausblenden",
+      "previewPlaceholder": "Dein Promo-Inhalt wird hier angezeigt...",
+      "submit": "Mikro fallen lassen",
+      "successTitle": "Promo eingereicht!",
+      "successMessage": "Deine Promo wurde im Feed veroeffentlicht.",
+      "viewFeed": "Promo-Feed anzeigen",
+      "cutAnother": "Weitere Promo schneiden"
+    },
+    "reactions": {
+      "fire": "Feuer",
+      "mic": "Mikro",
+      "trash": "Muell",
+      "mind-blown": "Wahnsinn",
+      "clap": "Applaus"
+    },
+    "types": {
+      "open-mic": "Offenes Mikro",
+      "call-out": "Ansage",
+      "response": "Antwort",
+      "pre-match": "Vor dem Kampf",
+      "post-match": "Nach dem Kampf",
+      "championship": "Meisterschaft",
+      "return": "Rueckkehr"
+    },
+    "admin": {
+      "title": "Promos verwalten",
+      "player": "Spieler",
+      "type": "Typ",
+      "content": "Inhalt",
+      "reactions": "Reaktionen",
+      "date": "Datum",
+      "actions": "Aktionen",
+      "pin": "Anpinnen",
+      "unpin": "Lospinnen",
+      "hide": "Verbergen",
+      "unhide": "Anzeigen",
+      "delete": "Loeschen",
+      "confirmDelete": "Bist du sicher, dass du diese Promo loeschen moechtest?",
+      "filterByType": "Nach Typ filtern",
+      "all": "Alle"
+    }
+  },
+  "contenders": {
+    "title": "Herausforderer-Rangliste",
+    "subtitle": "Offizielle Rangliste zur Ermittlung der Meisterschafts-Herausforderer",
+    "noData": "Keine Herausforderer-Daten verfügbar",
+    "currentChampion": "Aktueller Champion",
+    "rankings": "Rangliste",
+    "noContenders": "Noch keine Herausforderer eingestuft",
+    "noContendersHint": "Spieler benötigen mindestens {{minMatches}} Kämpfe im Bewertungszeitraum",
+    "lastCalculated": "Zuletzt berechnet",
+    "rankingPeriod": "Bewertungszeitraum",
+    "days": "Tage",
+    "minMatches": "Min. Kämpfe",
+    "maxContenders": "Max. Herausforderer",
+    "new": "NEU",
+    "score": "Punktzahl",
+    "winRate": "Sieg %",
+    "streak": "Serie",
+    "matches": "Kämpfe",
+    "topContender": "#1 Herausforderer",
+    "eligible": "Qualifiziert",
+    "notEligible": "Nicht qualifiziert",
+    "currentRank": "Aktueller Rang",
+    "rankingScore": "Ranglistenpunkte",
+    "myStatus": {
+      "title": "Mein Herausforderer-Status",
+      "subtitle": "Meisterschafts-Herausforderer-Status für {{playerName}}",
+      "progressToTop": "Fortschritt zu #1",
+      "pathToTitle": "Weg zum Titel",
+      "matchesNeeded": "Benötigte Kämpfe zur Qualifikation",
+      "eligibleChampionships": "Qualifizierte Meisterschaften",
+      "topContenderPositions": "#1 Herausforderer-Positionen",
+      "topThreePositions": "Top-3-Positionen"
+    },
+    "admin": {
+      "title": "Herausforderer-Konfiguration",
+      "subtitle": "Herausforderer-Ranglisteneinstellungen pro Meisterschaft konfigurieren",
+      "selectChampionship": "Meisterschaft auswählen",
+      "rankingPeriodDays": "Bewertungszeitraum (Tage)",
+      "rankingPeriodHint": "Anzahl der Tage für die Ranglistenberechnung (7-365)",
+      "minimumMatches": "Mindestanzahl Kämpfe",
+      "minimumMatchesHint": "Mindestanzahl an Kämpfen, um in der Rangliste zu erscheinen",
+      "maxContenders": "Maximale Herausforderer",
+      "maxContendersHint": "Maximale Anzahl eingestufter Herausforderer pro Meisterschaft",
+      "includeDraws": "Unentschieden in Rangliste einbeziehen",
+      "includeDrawsHint": "Wenn aktiviert, werden Unentschieden teilweise zur Ranglistenpunktzahl gezählt",
+      "divisionRestricted": "Auf Division beschränkt",
+      "divisionRestrictedHint": "Wenn aktiviert, können nur Spieler derselben Division antreten",
+      "save": "Konfiguration speichern",
+      "recalculate": "Rangliste neu berechnen",
+      "saveSuccess": "Konfiguration für {{championship}} gespeichert",
+      "recalculateSuccess": "Rangliste für {{championship}} neu berechnet"
     }
   }
 }

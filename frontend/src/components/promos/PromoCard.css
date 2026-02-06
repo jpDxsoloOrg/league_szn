@@ -1,0 +1,221 @@
+.promo-card {
+  background: #2d2d2d;
+  border: 1px solid #444;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.promo-card:hover {
+  border-color: #555;
+}
+
+.promo-card.pinned {
+  border-color: #d4af37;
+  background: linear-gradient(135deg, #2d2d2d 0%, rgba(212, 175, 55, 0.05) 100%);
+}
+
+.promo-card.compact {
+  padding: 14px;
+}
+
+.promo-pinned-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #d4af37;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pin-icon {
+  font-size: 0.9rem;
+}
+
+.promo-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.promo-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.promo-author-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.promo-author-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.promo-wrestler-name {
+  font-weight: 700;
+  color: white;
+  font-size: 1rem;
+}
+
+.promo-player-name {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.promo-type-badge {
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.promo-timestamp {
+  color: #666;
+  font-size: 0.8rem;
+  margin-top: 2px;
+  display: block;
+}
+
+.promo-responding-to {
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid #3b82f6;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border-radius: 0 8px 8px 0;
+  font-size: 0.85rem;
+}
+
+.responding-label {
+  color: #888;
+  margin-right: 4px;
+}
+
+.responding-link {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.responding-link:hover {
+  text-decoration: underline;
+}
+
+.promo-target {
+  background: rgba(239, 68, 68, 0.1);
+  border-left: 3px solid #ef4444;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border-radius: 0 8px 8px 0;
+  font-size: 0.85rem;
+}
+
+.target-label {
+  color: #888;
+  margin-right: 6px;
+}
+
+.target-name {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.promo-match-context,
+.promo-championship-context {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #bbb;
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.promo-title {
+  color: white;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.promo-content {
+  color: #ccc;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.promo-content p {
+  margin: 0;
+}
+
+.promo-mention {
+  color: #d4af37;
+  font-weight: 600;
+}
+
+.promo-card-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.promo-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.promo-thread-link {
+  color: #d4af37;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.promo-thread-link:hover {
+  color: #e5c54a;
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .promo-card {
+    padding: 14px;
+  }
+
+  .promo-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+
+  .promo-author-line {
+    gap: 6px;
+  }
+
+  .promo-wrestler-name {
+    font-size: 0.9rem;
+  }
+}
