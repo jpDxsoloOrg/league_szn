@@ -4,7 +4,7 @@ import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { created, badRequest, notFound, serverError } from '../../lib/response';
 
 interface ScheduleMatchBody {
-  date: string;
+  date?: string;
   matchType: string;
   stipulation?: string;
   participants: string[];
@@ -24,8 +24,23 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const body: ScheduleMatchBody = JSON.parse(event.body);
 
-    if (!body.date || !body.matchType || !body.participants || body.participants.length < 2) {
-      return badRequest('Date, matchType, and at least 2 participants are required');
+    if (!body.matchType || !body.participants || body.participants.length < 2) {
+      return badRequest('matchType and at least 2 participants are required');
+    }
+
+    // Resolve date: use provided date, or event date if eventId given, or today
+    let resolvedDate = body.date;
+    if (!resolvedDate && body.eventId) {
+      const eventForDate = await dynamoDb.get({
+        TableName: TableNames.EVENTS,
+        Key: { eventId: body.eventId },
+      });
+      if (eventForDate.Item) {
+        resolvedDate = (eventForDate.Item as Record<string, any>).date;
+      }
+    }
+    if (!resolvedDate) {
+      resolvedDate = new Date().toISOString();
     }
 
     if (body.isChampionship && !body.championshipId) {
@@ -102,7 +117,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const match = {
       matchId: uuidv4(),
-      date: body.date,
+      date: resolvedDate,
       matchType: body.matchType,
       stipulation: body.stipulation || '',
       participants: body.participants,

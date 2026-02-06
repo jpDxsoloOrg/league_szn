@@ -22,7 +22,6 @@ export default function ScheduleMatch() {
   const [teams, setTeams] = useState<string[][]>([[], []]);
 
   const [formData, setFormData] = useState({
-    date: '',
     matchType: 'singles',
     stipulation: '',
     participants: [] as string[],
@@ -76,6 +75,15 @@ export default function ScheduleMatch() {
     setSuccess(null);
     setSubmitting(true);
 
+    // Resolve date: use event date if an event is selected, otherwise today
+    let matchDate: string;
+    if (formData.eventId) {
+      const selectedEvent = events.find(ev => ev.eventId === formData.eventId);
+      matchDate = selectedEvent?.date || new Date().toISOString();
+    } else {
+      matchDate = new Date().toISOString();
+    }
+
     if (isTagTeamMatch) {
       // For tag team matches, validate teams
       const validTeams = teams.filter(team => team.length >= 2);
@@ -91,7 +99,7 @@ export default function ScheduleMatch() {
         const sanitizedStipulation = sanitizeInput(formData.stipulation, 200);
 
         await matchesApi.schedule({
-          date: new Date(formData.date).toISOString(),
+          date: matchDate,
           matchType: formData.matchType,
           stipulation: sanitizedStipulation,
           participants: allParticipants,
@@ -124,7 +132,7 @@ export default function ScheduleMatch() {
         const sanitizedStipulation = sanitizeInput(formData.stipulation, 200);
 
         await matchesApi.schedule({
-          date: new Date(formData.date).toISOString(),
+          date: matchDate,
           matchType: formData.matchType,
           stipulation: sanitizedStipulation,
           participants: formData.participants,
@@ -150,7 +158,6 @@ export default function ScheduleMatch() {
   const resetForm = () => {
     const activeSeason = seasons.find(s => s.status === 'active');
     setFormData({
-      date: '',
       matchType: 'singles',
       stipulation: '',
       participants: [],
@@ -234,17 +241,6 @@ export default function ScheduleMatch() {
 
       <form onSubmit={handleSubmit} className="match-form">
         <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="date">Date & Time</label>
-            <input
-              type="datetime-local"
-              id="date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              required
-            />
-          </div>
-
           <div className="form-group">
             <label htmlFor="matchType">{t('scheduleMatch.matchType')}</label>
             <select
