@@ -35,7 +35,8 @@
     "tournaments": "Tournaments",
     "fantasy": "Fantasy",
     "help": "Help",
-    "admin": "Admin"
+    "admin": "Admin",
+    "contenders": "Contenders"
   },
   "header": {
     "title": "WWE 2K League"
@@ -308,6 +309,7 @@
         "seasons": "Seasons",
         "fantasyShows": "Fantasy Shows",
         "fantasyConfig": "Fantasy Config",
+        "contenderConfig": "Contender Config",
         "help": "Help",
         "dangerZone": "Danger Zone"
       }
@@ -554,6 +556,59 @@
         "saveSuccess": "Configuration saved successfully",
         "error": "Failed to save configuration"
       }
+    }
+  },
+  "contenders": {
+    "title": "Contender Rankings",
+    "subtitle": "Official rankings determining championship contenders",
+    "noData": "No contender data available",
+    "currentChampion": "Current Champion",
+    "rankings": "Rankings",
+    "noContenders": "No contenders ranked yet",
+    "noContendersHint": "Players need at least {{minMatches}} matches in the ranking period to qualify",
+    "lastCalculated": "Last calculated",
+    "rankingPeriod": "Ranking period",
+    "days": "days",
+    "minMatches": "Min. matches",
+    "maxContenders": "Max contenders",
+    "new": "NEW",
+    "score": "Score",
+    "winRate": "Win %",
+    "streak": "Streak",
+    "matches": "Matches",
+    "topContender": "#1 Contender",
+    "eligible": "Eligible",
+    "notEligible": "Not Eligible",
+    "currentRank": "Current Rank",
+    "rankingScore": "Ranking Score",
+    "myStatus": {
+      "title": "My Contender Status",
+      "subtitle": "Championship contender status for {{playerName}}",
+      "progressToTop": "Progress to #1",
+      "pathToTitle": "Path to Title",
+      "matchesNeeded": "Matches Needed to Qualify",
+      "eligibleChampionships": "Eligible Championships",
+      "topContenderPositions": "#1 Contender Positions",
+      "topThreePositions": "Top 3 Positions"
+    },
+    "admin": {
+      "title": "Contender Configuration",
+      "subtitle": "Configure contender ranking settings per championship",
+      "selectChampionship": "Select Championship",
+      "rankingPeriodDays": "Ranking Period (Days)",
+      "rankingPeriodHint": "Number of days to consider for rankings (7-365)",
+      "minimumMatches": "Minimum Matches",
+      "minimumMatchesHint": "Minimum matches required to appear in rankings",
+      "maxContenders": "Maximum Contenders",
+      "maxContendersHint": "Maximum number of ranked contenders per championship",
+      "includeDraws": "Include Draws in Rankings",
+      "includeDrawsHint": "When enabled, draws will count partially toward ranking score",
+      "divisionRestricted": "Division Restricted",
+      "divisionRestrictedHint": "When enabled, only players in the same division can contend",
+      "save": "Save Configuration",
+      "recalculate": "Recalculate Rankings",
+      "saveSuccess": "Configuration saved for {{championship}}",
+      "recalculateSuccess": "Rankings recalculated for {{championship}}"
     }
   }
 }
