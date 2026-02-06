@@ -10,7 +10,8 @@ import * as fs from 'fs';
 // ---------------------------------------------------------------------------
 
 const DEV_SERVER_PORT = 5199;
-const BASE_URL = `http://localhost:${DEV_SERVER_PORT}`;
+const EXTERNAL_BASE_URL = process.env.SCREENSHOT_BASE_URL;
+const BASE_URL = EXTERNAL_BASE_URL || `http://localhost:${DEV_SERVER_PORT}`;
 const FRONTEND_DIR = path.resolve(__dirname, '..', 'frontend');
 const SCREENSHOTS_DIR = path.resolve(__dirname, '..', 'screenshots');
 const VIEWPORT = { width: 1280, height: 900 };
@@ -157,24 +158,37 @@ async function main(): Promise<void> {
   console.log('========================================');
   console.log('  League Szn - Screenshot Capture');
   console.log('========================================');
+  console.log(`  Target: ${BASE_URL}${EXTERNAL_BASE_URL ? ' (external)' : ' (local dev server)'}`);
 
   // Ensure the root screenshots directory exists.
   ensureDir(SCREENSHOTS_DIR);
 
-  // Start the Vite dev server.
-  const serverProcess = startDevServer();
+  let serverProcess: ChildProcess | null = null;
+  const cleanup = () => { if (serverProcess) stopDevServer(serverProcess); };
 
-  // Make sure the server process is in its own process group so we can kill it
-  // cleanly.  spawn with `detached: true` would give us that, but on Linux the
-  // shell: true option already creates a group.  We register a cleanup handler
-  // so we stop the server even if the script crashes.
-  const cleanup = () => stopDevServer(serverProcess);
-  process.on('exit', cleanup);
-  process.on('SIGINT', () => { cleanup(); process.exit(130); });
-  process.on('SIGTERM', () => { cleanup(); process.exit(143); });
+  if (!EXTERNAL_BASE_URL) {
+    // Start the Vite dev server only when no external URL is provided.
+    serverProcess = startDevServer();
+    process.on('exit', cleanup);
+    process.on('SIGINT', () => { cleanup(); process.exit(130); });
+    process.on('SIGTERM', () => { cleanup(); process.exit(143); });
+  }
 
   try {
-    await waitForServer(SERVER_STARTUP_TIMEOUT_MS);
+    if (!EXTERNAL_BASE_URL) {
+      await waitForServer(SERVER_STARTUP_TIMEOUT_MS);
+    } else {
+      // Verify the external URL is reachable.
+      console.log('  Verifying external URL is reachable...');
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(BASE_URL, { signal: controller.signal });
+      clearTimeout(timer);
+      if (!res.ok && res.status !== 304) {
+        throw new Error(`External URL returned status ${res.status}`);
+      }
+      console.log('  External URL is reachable.\n');
+    }
 
     // Launch the browser.
     const browser: Browser = await chromium.launch({

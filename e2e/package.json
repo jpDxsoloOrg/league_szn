@@ -18,7 +18,8 @@
     "verify-site:prod": "TEST_ENV=prod npx ts-node run-verification.ts",
     "report": "npx playwright show-report ./reports/html",
     "install-browsers": "npx playwright install",
-    "screenshots": "npx ts-node take-screenshots.ts"
+    "screenshots": "npx ts-node take-screenshots.ts",
+    "screenshots:dev": "SCREENSHOT_BASE_URL=https://dev.leagueszn.jpdxsolo.com npx ts-node take-screenshots.ts"
   },
   "dependencies": {
     "@playwright/test": "^1.56.0",
