@@ -1,0 +1,379 @@
+.tale-of-tape {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.tot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.tot-header h2 {
+  margin-bottom: 0;
+}
+
+.tot-nav-links {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.tot-nav-links a {
+  color: #d4af37;
+  text-decoration: none;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.tot-nav-links a:hover {
+  background-color: #333;
+}
+
+/* Player Selectors */
+.tot-selectors {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.tot-corner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 200px;
+}
+
+.tot-corner select {
+  width: 100%;
+  padding: 0.6rem;
+  background-color: #2d2d2d;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.tot-corner-name {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.tot-corner-left .tot-corner-name {
+  color: #4ade80;
+}
+
+.tot-corner-right .tot-corner-name {
+  color: #60a5fa;
+}
+
+.tot-corner-wrestler {
+  font-size: 0.9rem;
+  color: #bbb;
+}
+
+.tot-vs-badge {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #d4af37;
+  background-color: #222;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid #d4af37;
+  flex-shrink: 0;
+}
+
+.tot-same-player {
+  text-align: center;
+  color: #bbb;
+  padding: 3rem;
+  font-size: 1.1rem;
+}
+
+.tot-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tot-card h3 {
+  color: #d4af37;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+/* Tape Card (Boxing Style) */
+.tot-tape-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.tot-tape-p1 {
+  font-weight: bold;
+  color: #4ade80;
+  font-size: 1.1rem;
+}
+
+.tot-tape-title {
+  color: #d4af37;
+  font-weight: bold;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.tot-tape-p2 {
+  font-weight: bold;
+  color: #60a5fa;
+  font-size: 1.1rem;
+}
+
+.tot-tape-divider {
+  height: 2px;
+  background: linear-gradient(90deg, #4ade80, #d4af37, #60a5fa);
+  margin-bottom: 1.25rem;
+  border-radius: 1px;
+}
+
+/* Tape Rows */
+.tot-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  padding: 0.3rem 0;
+}
+
+.tot-row:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.tot-row-p1 {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tot-row-p2 {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tot-row-label {
+  width: 140px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #bbb;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.tot-val {
+  min-width: 55px;
+  font-weight: bold;
+  font-size: 0.95rem;
+  color: #888;
+}
+
+.tot-row-p1 .tot-val {
+  text-align: right;
+}
+
+.tot-row-p2 .tot-val {
+  text-align: left;
+}
+
+.tot-val-better {
+  color: #d4af37;
+}
+
+.tot-bar-track {
+  flex: 1;
+  height: 16px;
+  background-color: #222;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.tot-bar-left {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tot-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+  opacity: 0.4;
+}
+
+.tot-bar-fill-p1 {
+  background-color: #4ade80;
+}
+
+.tot-bar-fill-p2 {
+  background-color: #60a5fa;
+}
+
+.tot-bar-winner {
+  opacity: 0.9;
+}
+
+/* H2H Summary */
+.tot-h2h-summary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+}
+
+.tot-h2h-player {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tot-h2h-name {
+  font-weight: bold;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.tot-h2h-wins {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+.tot-h2h-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tot-h2h-draws {
+  font-size: 0.9rem;
+  color: #fbbf24;
+}
+
+.tot-h2h-total {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+/* Advantages */
+.tot-advantages-card h3 {
+  text-align: center;
+}
+
+.tot-adv-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.tot-adv-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: #222;
+  border-radius: 8px;
+  min-width: 120px;
+  border: 2px solid transparent;
+}
+
+.tot-adv-leader {
+  border-color: #d4af37;
+}
+
+.tot-adv-count {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+.tot-adv-name {
+  font-size: 0.9rem;
+  color: #bbb;
+  font-weight: bold;
+}
+
+.tot-adv-middle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tot-adv-tied {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.tot-adv-verdict {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #d4af37;
+  padding: 0.75rem;
+  background-color: #222;
+  border-radius: 6px;
+}
+
+@media (max-width: 768px) {
+  .tot-selectors {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .tot-corner {
+    min-width: 100%;
+  }
+
+  .tot-row-label {
+    width: 80px;
+    font-size: 0.7rem;
+  }
+
+  .tot-val {
+    min-width: 40px;
+    font-size: 0.8rem;
+  }
+
+  .tot-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tot-adv-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .tot-h2h-summary {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}

@@ -1,0 +1,403 @@
+.h2h-comparison {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.h2h-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.h2h-header h2 {
+  margin-bottom: 0;
+}
+
+.h2h-nav-links {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.h2h-nav-links a {
+  color: #d4af37;
+  text-decoration: none;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.h2h-nav-links a:hover {
+  background-color: #333;
+}
+
+.h2h-selectors {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+
+.h2h-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.h2h-selector label {
+  color: #bbb;
+  font-size: 0.85rem;
+}
+
+.h2h-selector select {
+  min-width: 220px;
+  padding: 0.6rem;
+  background-color: #2d2d2d;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.h2h-vs {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #d4af37;
+  margin-top: 1.2rem;
+}
+
+.h2h-same-player {
+  text-align: center;
+  color: #bbb;
+  padding: 3rem;
+  font-size: 1.1rem;
+}
+
+.h2h-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.h2h-card h3 {
+  color: #d4af37;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+/* Stat Bars */
+.h2h-player-names {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  font-weight: bold;
+}
+
+.h2h-p1-name {
+  color: #4ade80;
+}
+
+.h2h-p2-name {
+  color: #60a5fa;
+}
+
+.h2h-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.h2h-stat-p1 {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.h2h-stat-p2 {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.h2h-stat-label {
+  width: 120px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #bbb;
+  flex-shrink: 0;
+}
+
+.h2h-stat-val {
+  min-width: 50px;
+  font-weight: bold;
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+.h2h-stat-p1 .h2h-stat-val {
+  text-align: right;
+}
+
+.h2h-stat-p2 .h2h-stat-val {
+  text-align: left;
+}
+
+.h2h-better {
+  color: #d4af37;
+}
+
+.h2h-bar-track {
+  flex: 1;
+  height: 20px;
+  background-color: #222;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.h2h-bar-left {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.h2h-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.h2h-bar-fill-left {
+  background-color: #4ade80;
+  opacity: 0.5;
+}
+
+.h2h-bar-fill-right {
+  background-color: #60a5fa;
+  opacity: 0.5;
+}
+
+.h2h-bar-winner {
+  opacity: 1;
+}
+
+/* H2H Record */
+.h2h-record-summary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.h2h-record-player {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.h2h-record-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.h2h-record-wins {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+.h2h-record-draws {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.h2h-record-draws-num {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #fbbf24;
+}
+
+.h2h-record-draws-label {
+  font-size: 0.7rem;
+  color: #bbb;
+  text-transform: uppercase;
+}
+
+.h2h-record-meta {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.h2h-no-data {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+}
+
+/* Recent Results */
+.h2h-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.h2h-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background-color: #222;
+  border-radius: 6px;
+  border-left: 3px solid #555;
+}
+
+.h2h-recent-p1-win {
+  border-left-color: #4ade80;
+}
+
+.h2h-recent-p2-win {
+  border-left-color: #60a5fa;
+}
+
+.h2h-recent-date {
+  font-size: 0.8rem;
+  color: #888;
+  min-width: 100px;
+}
+
+.h2h-recent-winner {
+  flex: 1;
+  font-weight: bold;
+  color: #fff;
+}
+
+.h2h-recent-badge {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 10px;
+  background-color: #333;
+  color: #bbb;
+}
+
+/* Edge Summary */
+.h2h-edge-summary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.h2h-edge-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background-color: #222;
+  border-radius: 8px;
+  min-width: 150px;
+}
+
+.h2h-edge-leader {
+  border: 2px solid #d4af37;
+}
+
+.h2h-edge-name {
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.h2h-edge-count {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+.h2h-edge-label {
+  font-size: 0.75rem;
+  color: #bbb;
+  text-transform: uppercase;
+}
+
+.h2h-edge-vs {
+  font-size: 1.2rem;
+  color: #555;
+  font-weight: bold;
+}
+
+.h2h-edge-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.h2h-edge-cat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  background-color: #222;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #bbb;
+}
+
+.h2h-edge-winner {
+  color: #d4af37;
+  font-weight: bold;
+}
+
+.h2h-edge-arrow {
+  color: #d4af37;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .h2h-selectors {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .h2h-selector select {
+    min-width: 100%;
+  }
+
+  .h2h-stat-label {
+    width: 80px;
+    font-size: 0.7rem;
+  }
+
+  .h2h-record-summary {
+    gap: 1rem;
+  }
+
+  .h2h-record-wins {
+    font-size: 1.8rem;
+  }
+
+  .h2h-edge-summary {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .h2h-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

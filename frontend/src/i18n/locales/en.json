@@ -36,6 +36,7 @@
     "fantasy": "Fantasy",
     "challenges": "Challenges",
     "promos": "Promos",
+    "statistics": "Stats",
     "help": "Help",
     "admin": "Admin"
   },
@@ -408,6 +409,121 @@
       "scheduled": "Scheduled",
       "expired": "Expired",
       "cancelled": "Cancelled"
+    }
+  },
+  "statistics": {
+    "nav": {
+      "playerStats": "Player Stats",
+      "headToHead": "Head-to-Head",
+      "leaderboards": "Leaderboards",
+      "records": "Record Book",
+      "taleOfTape": "Tale of the Tape",
+      "achievements": "Achievements"
+    },
+    "labels": {
+      "wins": "Wins",
+      "losses": "Losses",
+      "draws": "Draws",
+      "winPercentage": "Win %",
+      "matchesPlayed": "Matches Played",
+      "currentStreak": "Current Streak",
+      "longestWinStreak": "Best Win Streak",
+      "longestLossStreak": "Worst Loss Streak",
+      "titleWins": "Title Wins",
+      "titleLosses": "Title Losses",
+      "matchType": "Match Type",
+      "bestStreak": "Best Streak",
+      "reigns": "Reigns",
+      "daysHeld": "Days Held",
+      "defenses": "Defenses",
+      "longestReign": "Longest Reign",
+      "currentChampion": "CURRENT",
+      "active": "Active",
+      "present": "Present",
+      "totalMatches": "Total Matches",
+      "championshipMatches": "Championship Matches"
+    },
+    "matchTypes": {
+      "singles": "Singles",
+      "tag": "Tag Team",
+      "ladder": "Ladder",
+      "cage": "Cage"
+    },
+    "championshipNames": {
+      "world": "World Championship",
+      "intercontinental": "Intercontinental Championship",
+      "tag": "Tag Team Championship"
+    },
+    "playerStats": {
+      "title": "Player Statistics",
+      "selectPlayer": "Select Player",
+      "noData": "No statistics data available for this player.",
+      "streaks": "Streaks & Records",
+      "matchTypeBreakdown": "Match Type Breakdown",
+      "championshipHistory": "Championship History",
+      "recentAchievements": "Recent Achievements",
+      "viewAllAchievements": "View All Achievements"
+    },
+    "headToHead": {
+      "title": "Head-to-Head Comparison",
+      "player1": "Player 1",
+      "player2": "Player 2",
+      "selectDifferent": "Please select two different players to compare.",
+      "statComparison": "Statistical Comparison",
+      "headToHeadRecord": "Head-to-Head Record",
+      "noHistory": "No head-to-head history between these players.",
+      "recentResults": "Recent Results",
+      "player1Win": "P1 Win",
+      "player2Win": "P2 Win",
+      "statisticalEdge": "Statistical Edge",
+      "advantages": "Advantages"
+    },
+    "leaderboards": {
+      "title": "Leaderboards",
+      "allTime": "All-Time",
+      "season": "Season",
+      "categories": {
+        "mostWins": "Most Wins",
+        "winPercentage": "Win %",
+        "streaks": "Streaks",
+        "championships": "Championships",
+        "longestReign": "Longest Reign"
+      }
+    },
+    "recordBook": {
+      "title": "Record Book",
+      "categories": {
+        "overall": "Overall",
+        "championships": "Championships",
+        "streaks": "Streaks",
+        "matchTypes": "Match Types"
+      },
+      "setOn": "Set on",
+      "activeThreats": "Active Threats",
+      "activeThreatsDesc": "These records are currently being challenged. Keep an eye on these players!",
+      "currentHolder": "Current Holder",
+      "challenger": "Challenger"
+    },
+    "taleOfTape": {
+      "title": "Tale of the Tape",
+      "comparison": "TALE OF THE TAPE",
+      "advantagesSummary": "Advantages Summary",
+      "tied": "Tied",
+      "hasTheEdge": "has the statistical edge",
+      "evenlyMatched": "These competitors are evenly matched!"
+    },
+    "achievements": {
+      "title": "Achievements",
+      "earned": "Earned",
+      "earnedOn": "Earned on",
+      "locked": "Locked",
+      "noAchievements": "No achievements found for this category.",
+      "filters": {
+        "all": "All",
+        "milestones": "Milestones",
+        "records": "Records",
+        "special": "Special"
+      }
     }
   },
   "fantasy": {

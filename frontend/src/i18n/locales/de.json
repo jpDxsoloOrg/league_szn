@@ -36,6 +36,7 @@
     "fantasy": "Fantasy",
     "challenges": "Herausforderungen",
     "promos": "Promos",
+    "statistics": "Statistiken",
     "help": "Hilfe",
     "admin": "Admin"
   },
@@ -408,6 +409,121 @@
       "scheduled": "Geplant",
       "expired": "Abgelaufen",
       "cancelled": "Abgebrochen"
+    }
+  },
+  "statistics": {
+    "nav": {
+      "playerStats": "Spieler-Statistiken",
+      "headToHead": "Direktvergleich",
+      "leaderboards": "Ranglisten",
+      "records": "Rekordbuch",
+      "taleOfTape": "Tale of the Tape",
+      "achievements": "Erfolge"
+    },
+    "labels": {
+      "wins": "Siege",
+      "losses": "Niederlagen",
+      "draws": "Unentschieden",
+      "winPercentage": "Sieg %",
+      "matchesPlayed": "Gespielte Kämpfe",
+      "currentStreak": "Aktuelle Serie",
+      "longestWinStreak": "Beste Siegesserie",
+      "longestLossStreak": "Schlechteste Niederlagenserie",
+      "titleWins": "Titelgewinne",
+      "titleLosses": "Titelverluste",
+      "matchType": "Kampftyp",
+      "bestStreak": "Beste Serie",
+      "reigns": "Regentschaften",
+      "daysHeld": "Tage gehalten",
+      "defenses": "Titelverteidigungen",
+      "longestReign": "Längste Regentschaft",
+      "currentChampion": "AKTUELL",
+      "active": "Aktiv",
+      "present": "Gegenwart",
+      "totalMatches": "Kämpfe gesamt",
+      "championshipMatches": "Titelkämpfe"
+    },
+    "matchTypes": {
+      "singles": "Einzel",
+      "tag": "Tag Team",
+      "ladder": "Leiter",
+      "cage": "Käfig"
+    },
+    "championshipNames": {
+      "world": "Weltmeisterschaft",
+      "intercontinental": "Intercontinental-Meisterschaft",
+      "tag": "Tag-Team-Meisterschaft"
+    },
+    "playerStats": {
+      "title": "Spieler-Statistiken",
+      "selectPlayer": "Spieler auswählen",
+      "noData": "Keine Statistikdaten für diesen Spieler verfügbar.",
+      "streaks": "Serien & Rekorde",
+      "matchTypeBreakdown": "Aufschlüsselung nach Kampftyp",
+      "championshipHistory": "Meisterschafts-Historie",
+      "recentAchievements": "Letzte Erfolge",
+      "viewAllAchievements": "Alle Erfolge anzeigen"
+    },
+    "headToHead": {
+      "title": "Direktvergleich",
+      "player1": "Spieler 1",
+      "player2": "Spieler 2",
+      "selectDifferent": "Bitte wählen Sie zwei verschiedene Spieler zum Vergleich.",
+      "statComparison": "Statistischer Vergleich",
+      "headToHeadRecord": "Direktvergleich-Bilanz",
+      "noHistory": "Keine Direktvergleich-Historie zwischen diesen Spielern.",
+      "recentResults": "Letzte Ergebnisse",
+      "player1Win": "S1 Sieg",
+      "player2Win": "S2 Sieg",
+      "statisticalEdge": "Statistischer Vorteil",
+      "advantages": "Vorteile"
+    },
+    "leaderboards": {
+      "title": "Ranglisten",
+      "allTime": "Gesamt",
+      "season": "Saison",
+      "categories": {
+        "mostWins": "Meiste Siege",
+        "winPercentage": "Sieg %",
+        "streaks": "Serien",
+        "championships": "Meisterschaften",
+        "longestReign": "Längste Regentschaft"
+      }
+    },
+    "recordBook": {
+      "title": "Rekordbuch",
+      "categories": {
+        "overall": "Gesamt",
+        "championships": "Meisterschaften",
+        "streaks": "Serien",
+        "matchTypes": "Kampftypen"
+      },
+      "setOn": "Aufgestellt am",
+      "activeThreats": "Aktive Bedrohungen",
+      "activeThreatsDesc": "Diese Rekorde werden derzeit herausgefordert. Behalten Sie diese Spieler im Auge!",
+      "currentHolder": "Aktueller Halter",
+      "challenger": "Herausforderer"
+    },
+    "taleOfTape": {
+      "title": "Tale of the Tape",
+      "comparison": "TALE OF THE TAPE",
+      "advantagesSummary": "Vorteile-Zusammenfassung",
+      "tied": "Gleichstand",
+      "hasTheEdge": "hat den statistischen Vorteil",
+      "evenlyMatched": "Diese Kontrahenten sind gleichwertig!"
+    },
+    "achievements": {
+      "title": "Erfolge",
+      "earned": "Erreicht",
+      "earnedOn": "Erreicht am",
+      "locked": "Gesperrt",
+      "noAchievements": "Keine Erfolge in dieser Kategorie gefunden.",
+      "filters": {
+        "all": "Alle",
+        "milestones": "Meilensteine",
+        "records": "Rekorde",
+        "special": "Spezial"
+      }
     }
   },
   "fantasy": {

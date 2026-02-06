@@ -1,0 +1,395 @@
+.player-stats {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.ps-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ps-header h2 {
+  margin-bottom: 0;
+}
+
+.ps-nav-links {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ps-nav-links a {
+  color: #d4af37;
+  text-decoration: none;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.ps-nav-links a:hover {
+  background-color: #333;
+}
+
+.ps-player-selector {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ps-player-selector label {
+  color: #bbb;
+  font-size: 0.95rem;
+}
+
+.ps-player-selector select {
+  min-width: 250px;
+  padding: 0.6rem;
+  background-color: #2d2d2d;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.ps-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.ps-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.ps-card h3 {
+  color: #d4af37;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+/* W-L-D Record */
+.ps-wld {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.ps-wld-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.ps-wld-number {
+  font-size: 2.2rem;
+  font-weight: bold;
+}
+
+.ps-wins .ps-wld-number {
+  color: #4ade80;
+}
+
+.ps-losses .ps-wld-number {
+  color: #f87171;
+}
+
+.ps-draws .ps-wld-number {
+  color: #fbbf24;
+}
+
+.ps-wld-label {
+  font-size: 0.75rem;
+  color: #bbb;
+  text-transform: uppercase;
+}
+
+.ps-wld-divider {
+  font-size: 2rem;
+  color: #555;
+  margin: 0 0.25rem;
+}
+
+.ps-win-pct {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.ps-win-pct-value {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+.ps-win-pct-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #bbb;
+  text-transform: uppercase;
+}
+
+.ps-matches-played {
+  text-align: center;
+  color: #bbb;
+  font-size: 0.85rem;
+}
+
+/* Streak Card */
+.ps-streak-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.ps-streak-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: #222;
+  border-radius: 6px;
+}
+
+.ps-streak-value {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #4ade80;
+}
+
+.ps-streak-value[data-positive="false"] {
+  color: #bbb;
+}
+
+.ps-streak-value.ps-loss-streak {
+  color: #f87171;
+}
+
+.ps-streak-label {
+  font-size: 0.7rem;
+  color: #bbb;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.ps-date-range {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+/* Match Type Breakdown */
+.ps-breakdown-card {
+  margin-bottom: 1.5rem;
+}
+
+.ps-bar-chart {
+  margin-bottom: 1.5rem;
+}
+
+.ps-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.ps-bar-label {
+  width: 70px;
+  font-size: 0.85rem;
+  color: #bbb;
+  text-align: right;
+}
+
+.ps-bar-track {
+  flex: 1;
+  height: 28px;
+  background-color: #222;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ps-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d4af37, #b8941f);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  min-width: 40px;
+  transition: width 0.5s ease;
+}
+
+.ps-bar-value {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #000;
+}
+
+.ps-bar-record {
+  width: 70px;
+  font-size: 0.8rem;
+  color: #bbb;
+}
+
+.ps-breakdown-table {
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.ps-breakdown-table th {
+  font-size: 0.8rem;
+  padding: 0.5rem;
+}
+
+.ps-breakdown-table td {
+  padding: 0.5rem;
+}
+
+.ps-td-wins {
+  color: #4ade80;
+}
+
+.ps-td-losses {
+  color: #f87171;
+}
+
+/* Championship History */
+.ps-champ-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ps-champ-item {
+  background-color: #222;
+  border-radius: 6px;
+  padding: 1rem;
+  border-left: 3px solid #d4af37;
+}
+
+.ps-champ-name {
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ps-champ-current {
+  font-size: 0.7rem;
+  background-color: #d4af37;
+  color: #000;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.ps-champ-details {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+  color: #bbb;
+  flex-wrap: wrap;
+}
+
+/* Recent Achievements */
+.ps-achievement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ps-achievement-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background-color: #222;
+  border-radius: 6px;
+}
+
+.ps-achievement-icon {
+  font-size: 1.5rem;
+}
+
+.ps-achievement-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ps-achievement-name {
+  font-weight: bold;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.ps-achievement-desc {
+  font-size: 0.8rem;
+  color: #bbb;
+}
+
+.ps-achievement-date {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.ps-view-all-link {
+  display: inline-block;
+  margin-top: 1rem;
+  color: #d4af37;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.ps-view-all-link:hover {
+  text-decoration: underline;
+}
+
+.ps-championship-card {
+  margin-bottom: 1.5rem;
+}
+
+.ps-achievements-card {
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .ps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ps-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ps-player-selector {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ps-player-selector select {
+    min-width: 100%;
+  }
+
+  .ps-champ-details {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}

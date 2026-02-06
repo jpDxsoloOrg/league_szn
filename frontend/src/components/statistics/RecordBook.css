@@ -1,0 +1,241 @@
+.record-book {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.rb-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.rb-header h2 {
+  margin-bottom: 0;
+}
+
+.rb-nav-links {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.rb-nav-links a {
+  color: #d4af37;
+  text-decoration: none;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.rb-nav-links a:hover {
+  background-color: #333;
+}
+
+/* Category Tabs */
+.rb-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.rb-tab {
+  padding: 0.5rem 1rem;
+  background-color: #222;
+  color: #bbb;
+  border: 1px solid #333;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.3s;
+}
+
+.rb-tab:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+.rb-tab-active {
+  background-color: #d4af37;
+  color: #000;
+  border-color: #d4af37;
+  font-weight: bold;
+}
+
+/* Record Cards */
+.rb-records {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.rb-record-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.25rem;
+  border-top: 3px solid #d4af37;
+}
+
+.rb-record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.rb-record-name {
+  color: #fff;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.rb-record-value {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #d4af37;
+  white-space: nowrap;
+}
+
+.rb-record-holder {
+  margin-bottom: 0.5rem;
+}
+
+.rb-holder-name {
+  font-weight: bold;
+  color: #4ade80;
+  margin-right: 0.5rem;
+}
+
+.rb-holder-wrestler {
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+.rb-record-desc {
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.rb-record-date {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+/* Active Threats */
+.rb-threats-section {
+  margin-top: 2rem;
+}
+
+.rb-threats-section h3 {
+  color: #f87171;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.rb-threats-desc {
+  color: #bbb;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.rb-threats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rb-threat-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+  border-left: 3px solid #f87171;
+}
+
+.rb-threat-record {
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.rb-threat-details {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.rb-threat-current,
+.rb-threat-challenger {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.rb-threat-label {
+  font-size: 0.7rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.rb-threat-holder {
+  font-weight: bold;
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+.rb-threat-current .rb-threat-holder {
+  color: #d4af37;
+}
+
+.rb-threat-challenger .rb-threat-holder {
+  color: #f87171;
+}
+
+.rb-threat-value {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.rb-threat-arrow {
+  color: #555;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.rb-threat-gap {
+  font-size: 0.8rem;
+  color: #f87171;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .rb-records {
+    grid-template-columns: 1fr;
+  }
+
+  .rb-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rb-threat-details {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .rb-threat-arrow {
+    transform: rotate(90deg);
+  }
+}

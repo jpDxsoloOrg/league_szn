@@ -18,6 +18,13 @@ import MyChallenges from './components/challenges/MyChallenges';
 import PromoFeed from './components/promos/PromoFeed';
 import PromoThread from './components/promos/PromoThread';
 import PromoEditor from './components/promos/PromoEditor';
+// Statistics components
+import PlayerStats from './components/statistics/PlayerStats';
+import HeadToHeadComparison from './components/statistics/HeadToHeadComparison';
+import Leaderboards from './components/statistics/Leaderboards';
+import RecordBook from './components/statistics/RecordBook';
+import TaleOfTheTape from './components/statistics/TaleOfTheTape';
+import Achievements from './components/statistics/Achievements';
 // Fantasy components
 import FantasyLanding from './components/fantasy/FantasyLanding';
 import FantasyLogin from './components/fantasy/FantasyLogin';
@@ -45,6 +52,7 @@ function App() {
             <Link to="/tournaments">{t('nav.tournaments')}</Link>
             <Link to="/challenges">{t('nav.challenges')}</Link>
             <Link to="/promos">{t('nav.promos')}</Link>
+            <Link to="/stats/leaderboards">{t('nav.statistics')}</Link>
             <Link to="/fantasy">{t('nav.fantasy')}</Link>
             <Link to="/guide">{t('nav.help')}</Link>
             <Link to="/admin">{t('nav.admin')}</Link>
@@ -68,6 +76,14 @@ function App() {
             <Route path="/promos" element={<PromoFeed />} />
             <Route path="/promos/new" element={<PromoEditor />} />
             <Route path="/promos/:promoId" element={<PromoThread />} />
+            {/* Statistics Routes */}
+            <Route path="/stats" element={<PlayerStats />} />
+            <Route path="/stats/player/:playerId" element={<PlayerStats />} />
+            <Route path="/stats/head-to-head" element={<HeadToHeadComparison />} />
+            <Route path="/stats/leaderboards" element={<Leaderboards />} />
+            <Route path="/stats/records" element={<RecordBook />} />
+            <Route path="/stats/tale-of-tape" element={<TaleOfTheTape />} />
+            <Route path="/stats/achievements" element={<Achievements />} />
             {/* Fantasy Routes */}
             <Route path="/fantasy" element={<FantasyLanding />} />
             <Route path="/fantasy/login" element={<FantasyLogin />} />
