@@ -92,9 +92,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <span className="nav-disabled">
               {t('nav.promos')} <span className="coming-soon">Coming Soon</span>
             </span>
-            <Link to="/stats/leaderboards" className={location.pathname.startsWith('/stats') ? 'active' : ''}>
-              {t('nav.statistics')}
-            </Link>
+            <span className="nav-disabled">
+              {t('nav.statistics')} <span className="coming-soon">Coming Soon</span>
+            </span>
             <span className="nav-disabled">
               {t('nav.fantasy')} <span className="coming-soon">Coming Soon</span>
             </span>
