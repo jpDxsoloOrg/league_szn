@@ -34,6 +34,7 @@
     "matches": "Matches",
     "tournaments": "Tournaments",
     "fantasy": "Fantasy",
+    "promos": "Promos",
     "help": "Help",
     "admin": "Admin"
   },
@@ -308,6 +309,7 @@
         "seasons": "Seasons",
         "fantasyShows": "Fantasy Shows",
         "fantasyConfig": "Fantasy Config",
+        "promos": "Promos",
         "help": "Help",
         "dangerZone": "Danger Zone"
       }
@@ -554,6 +556,111 @@
         "saveSuccess": "Configuration saved successfully",
         "error": "Failed to save configuration"
       }
+    }
+  },
+  "promos": {
+    "feed": {
+      "title": "Wrestler Promos",
+      "filterAll": "All",
+      "filterCallOuts": "Call-Outs",
+      "filterResponses": "Responses",
+      "filterChampionship": "Championship",
+      "filterMatch": "Pre/Post Match",
+      "pinnedPromos": "Pinned",
+      "cutPromo": "Cut a Promo",
+      "noPromos": "No promos found. Be the first to cut a promo!"
+    },
+    "card": {
+      "by": "by",
+      "targeting": "Targeting",
+      "callingOut": "Calling out",
+      "respondingTo": "Responding to",
+      "aPromo": "a promo",
+      "viewThread": "View Thread",
+      "response": "response",
+      "responses": "responses",
+      "ago": "ago",
+      "pinned": "Pinned"
+    },
+    "thread": {
+      "title": "Promo Thread",
+      "originalPromo": "Original Promo",
+      "responses": "Responses",
+      "writeResponse": "Write a Response",
+      "backToFeed": "Back to Promos",
+      "notFound": "Promo not found."
+    },
+    "editor": {
+      "title": "Cut a Promo",
+      "subtitle": "Grab the mic and let the WWE Universe hear your voice.",
+      "promoType": "Promo Type",
+      "selectType": "Select a promo type",
+      "typeDesc": {
+        "open-mic": "Speak your mind on any topic. No target required.",
+        "call-out": "Challenge another wrestler directly.",
+        "response": "Respond to another wrestler's promo.",
+        "pre-match": "Hype up an upcoming match.",
+        "post-match": "React to a completed match.",
+        "championship": "Address a championship situation.",
+        "return": "Announce your return to the league."
+      },
+      "promoTitle": "Title",
+      "titlePlaceholder": "Give your promo a catchy title...",
+      "optional": "optional",
+      "content": "Content",
+      "contentPlaceholder": "Drop your promo here... Use @WrestlerName to mention others.",
+      "minChars": "Minimum {{min}} characters",
+      "maxChars": "Maximum {{max}} characters",
+      "targetPlayer": "Target Wrestler",
+      "selectPlayer": "-- Select a wrestler --",
+      "targetPromo": "Responding to Promo",
+      "selectPromo": "-- Select a promo --",
+      "match": "Match",
+      "selectMatch": "-- Select a match --",
+      "championship": "Championship",
+      "selectChampionship": "-- Select a championship --",
+      "preview": "Preview",
+      "showPreview": "Show Preview",
+      "hidePreview": "Hide Preview",
+      "previewPlaceholder": "Your promo content will appear here...",
+      "submit": "Drop the Mic",
+      "successTitle": "Promo Submitted!",
+      "successMessage": "Your promo has been published to the feed.",
+      "viewFeed": "View Promo Feed",
+      "cutAnother": "Cut Another Promo"
+    },
+    "reactions": {
+      "fire": "Fire",
+      "mic": "Mic",
+      "trash": "Trash",
+      "mind-blown": "Mind-Blown",
+      "clap": "Clap"
+    },
+    "types": {
+      "open-mic": "Open Mic",
+      "call-out": "Call-Out",
+      "response": "Response",
+      "pre-match": "Pre-Match",
+      "post-match": "Post-Match",
+      "championship": "Championship",
+      "return": "Return"
+    },
+    "admin": {
+      "title": "Manage Promos",
+      "player": "Player",
+      "type": "Type",
+      "content": "Content",
+      "reactions": "Reactions",
+      "date": "Date",
+      "actions": "Actions",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "hide": "Hide",
+      "unhide": "Unhide",
+      "delete": "Delete",
+      "confirmDelete": "Are you sure you want to delete this promo?",
+      "filterByType": "Filter by Type",
+      "all": "All"
     }
   }
 }

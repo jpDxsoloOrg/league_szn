@@ -34,6 +34,7 @@
     "matches": "Kämpfe",
     "tournaments": "Turniere",
     "fantasy": "Fantasy",
+    "promos": "Promos",
     "help": "Hilfe",
     "admin": "Admin"
   },
@@ -308,6 +309,7 @@
         "seasons": "Saisons",
         "fantasyShows": "Fantasy Shows",
         "fantasyConfig": "Fantasy Konfig",
+        "promos": "Promos",
         "help": "Hilfe",
         "dangerZone": "Gefahrenzone"
       }
@@ -554,6 +556,111 @@
         "saveSuccess": "Konfiguration erfolgreich gespeichert",
         "error": "Konfiguration konnte nicht gespeichert werden"
       }
+    }
+  },
+  "promos": {
+    "feed": {
+      "title": "Wrestler Promos",
+      "filterAll": "Alle",
+      "filterCallOuts": "Ansagen",
+      "filterResponses": "Antworten",
+      "filterChampionship": "Meisterschaft",
+      "filterMatch": "Vor-/Nachkampf",
+      "pinnedPromos": "Angepinnt",
+      "cutPromo": "Promo schneiden",
+      "noPromos": "Keine Promos gefunden. Sei der Erste, der eine Promo schneidet!"
+    },
+    "card": {
+      "by": "von",
+      "targeting": "Ziel",
+      "callingOut": "Fordert heraus",
+      "respondingTo": "Antwort auf",
+      "aPromo": "eine Promo",
+      "viewThread": "Thread anzeigen",
+      "response": "Antwort",
+      "responses": "Antworten",
+      "ago": "her",
+      "pinned": "Angepinnt"
+    },
+    "thread": {
+      "title": "Promo-Thread",
+      "originalPromo": "Original-Promo",
+      "responses": "Antworten",
+      "writeResponse": "Antwort schreiben",
+      "backToFeed": "Zurueck zu Promos",
+      "notFound": "Promo nicht gefunden."
+    },
+    "editor": {
+      "title": "Promo schneiden",
+      "subtitle": "Schnapp dir das Mikro und lass das WWE-Universum deine Stimme hoeren.",
+      "promoType": "Promo-Typ",
+      "selectType": "Waehle einen Promo-Typ",
+      "typeDesc": {
+        "open-mic": "Sprich frei ueber jedes Thema. Kein Ziel erforderlich.",
+        "call-out": "Fordere einen anderen Wrestler direkt heraus.",
+        "response": "Antworte auf die Promo eines anderen Wrestlers.",
+        "pre-match": "Heize einen bevorstehenden Kampf an.",
+        "post-match": "Reagiere auf einen abgeschlossenen Kampf.",
+        "championship": "Sprich eine Meisterschaftssituation an.",
+        "return": "Kuendige deine Rueckkehr in die Liga an."
+      },
+      "promoTitle": "Titel",
+      "titlePlaceholder": "Gib deiner Promo einen einpragsamen Titel...",
+      "optional": "optional",
+      "content": "Inhalt",
+      "contentPlaceholder": "Schreib deine Promo hier... Verwende @WrestlerName um andere zu erwaehnen.",
+      "minChars": "Mindestens {{min}} Zeichen",
+      "maxChars": "Maximal {{max}} Zeichen",
+      "targetPlayer": "Ziel-Wrestler",
+      "selectPlayer": "-- Wrestler auswaehlen --",
+      "targetPromo": "Antwort auf Promo",
+      "selectPromo": "-- Promo auswaehlen --",
+      "match": "Kampf",
+      "selectMatch": "-- Kampf auswaehlen --",
+      "championship": "Meisterschaft",
+      "selectChampionship": "-- Meisterschaft auswaehlen --",
+      "preview": "Vorschau",
+      "showPreview": "Vorschau anzeigen",
+      "hidePreview": "Vorschau ausblenden",
+      "previewPlaceholder": "Dein Promo-Inhalt wird hier angezeigt...",
+      "submit": "Mikro fallen lassen",
+      "successTitle": "Promo eingereicht!",
+      "successMessage": "Deine Promo wurde im Feed veroeffentlicht.",
+      "viewFeed": "Promo-Feed anzeigen",
+      "cutAnother": "Weitere Promo schneiden"
+    },
+    "reactions": {
+      "fire": "Feuer",
+      "mic": "Mikro",
+      "trash": "Muell",
+      "mind-blown": "Wahnsinn",
+      "clap": "Applaus"
+    },
+    "types": {
+      "open-mic": "Offenes Mikro",
+      "call-out": "Ansage",
+      "response": "Antwort",
+      "pre-match": "Vor dem Kampf",
+      "post-match": "Nach dem Kampf",
+      "championship": "Meisterschaft",
+      "return": "Rueckkehr"
+    },
+    "admin": {
+      "title": "Promos verwalten",
+      "player": "Spieler",
+      "type": "Typ",
+      "content": "Inhalt",
+      "reactions": "Reaktionen",
+      "date": "Datum",
+      "actions": "Aktionen",
+      "pin": "Anpinnen",
+      "unpin": "Lospinnen",
+      "hide": "Verbergen",
+      "unhide": "Anzeigen",
+      "delete": "Loeschen",
+      "confirmDelete": "Bist du sicher, dass du diese Promo loeschen moechtest?",
+      "filterByType": "Nach Typ filtern",
+      "all": "Alle"
     }
   }
 }
