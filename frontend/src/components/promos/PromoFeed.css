@@ -1,0 +1,138 @@
+.promo-feed {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.promo-feed-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.promo-feed-header h2 {
+  color: white;
+  font-size: 1.6rem;
+  margin: 0;
+}
+
+.cut-promo-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 24px;
+  background: #d4af37;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cut-promo-btn:hover {
+  background: #e5c54a;
+}
+
+.cut-promo-btn.secondary {
+  background: transparent;
+  color: #d4af37;
+  border: 2px solid #d4af37;
+}
+
+.cut-promo-btn.secondary:hover {
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.promo-feed-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.filter-tab {
+  padding: 8px 18px;
+  border: 1px solid #444;
+  border-radius: 20px;
+  background: transparent;
+  color: #bbb;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.filter-tab:hover {
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+.filter-tab.active {
+  background: #d4af37;
+  color: #1a1a1a;
+  border-color: #d4af37;
+  font-weight: 700;
+}
+
+.promo-pinned-section {
+  margin-bottom: 24px;
+}
+
+.promo-section-title {
+  color: #d4af37;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 12px 0;
+}
+
+.promo-list {
+  /* container for promo cards */
+}
+
+.promo-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #888;
+}
+
+.promo-empty-state p {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 600px) {
+  .promo-feed {
+    padding: 12px;
+  }
+
+  .promo-feed-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .promo-feed-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .cut-promo-btn {
+    text-align: center;
+    justify-content: center;
+  }
+
+  .promo-feed-filters {
+    gap: 6px;
+  }
+
+  .filter-tab {
+    padding: 6px 14px;
+    font-size: 0.8rem;
+  }
+}

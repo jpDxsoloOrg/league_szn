@@ -14,6 +14,10 @@ import ChallengeBoard from './components/challenges/ChallengeBoard';
 import ChallengeDetail from './components/challenges/ChallengeDetail';
 import IssueChallenge from './components/challenges/IssueChallenge';
 import MyChallenges from './components/challenges/MyChallenges';
+// Promo components
+import PromoFeed from './components/promos/PromoFeed';
+import PromoThread from './components/promos/PromoThread';
+import PromoEditor from './components/promos/PromoEditor';
 // Fantasy components
 import FantasyLanding from './components/fantasy/FantasyLanding';
 import FantasyLogin from './components/fantasy/FantasyLogin';
@@ -40,6 +44,7 @@ function App() {
             <Link to="/matches">{t('nav.matches')}</Link>
             <Link to="/tournaments">{t('nav.tournaments')}</Link>
             <Link to="/challenges">{t('nav.challenges')}</Link>
+            <Link to="/promos">{t('nav.promos')}</Link>
             <Link to="/fantasy">{t('nav.fantasy')}</Link>
             <Link to="/guide">{t('nav.help')}</Link>
             <Link to="/admin">{t('nav.admin')}</Link>
@@ -59,6 +64,10 @@ function App() {
             <Route path="/challenges/issue" element={<IssueChallenge />} />
             <Route path="/challenges/my" element={<MyChallenges />} />
             <Route path="/challenges/:challengeId" element={<ChallengeDetail />} />
+            {/* Promo Routes */}
+            <Route path="/promos" element={<PromoFeed />} />
+            <Route path="/promos/new" element={<PromoEditor />} />
+            <Route path="/promos/:promoId" element={<PromoThread />} />
             {/* Fantasy Routes */}
             <Route path="/fantasy" element={<FantasyLanding />} />
             <Route path="/fantasy/login" element={<FantasyLogin />} />
