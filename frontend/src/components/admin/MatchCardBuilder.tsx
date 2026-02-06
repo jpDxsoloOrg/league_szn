@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { MatchDesignation, MatchCardEntry } from '../../types/event';
-import { mockAvailableMatches } from '../../mocks/eventMockData';
+import type { Player } from '../../types';
+import { matchesApi, playersApi } from '../../services/api';
 import './MatchCardBuilder.css';
 
 const designationOptions: { value: MatchDesignation; labelKey: string }[] = [
@@ -20,6 +21,12 @@ const designationColors: Record<MatchDesignation, string> = {
   'main-event': '#d4af37',
 };
 
+interface AvailableMatch {
+  matchId: string;
+  label: string;
+  isChampionship: boolean;
+}
+
 interface CardMatch extends MatchCardEntry {
   label: string;
   isChampionship: boolean;
@@ -28,41 +35,46 @@ interface CardMatch extends MatchCardEntry {
 export default function MatchCardBuilder() {
   const { t } = useTranslation();
 
-  const [cardMatches, setCardMatches] = useState<CardMatch[]>([
-    {
-      position: 1,
-      matchId: 'avail-match-001',
-      designation: 'opener',
-      label: 'Stone Cold vs The Rock (Singles)',
-      isChampionship: false,
-    },
-    {
-      position: 2,
-      matchId: 'avail-match-003',
-      designation: 'midcard',
-      label: 'Undertaker vs John Cena (Singles)',
-      isChampionship: false,
-    },
-    {
-      position: 3,
-      matchId: 'avail-match-002',
-      designation: 'co-main',
-      label: 'Triple H vs CM Punk (Singles - IC Title)',
-      isChampionship: true,
-    },
-    {
-      position: 4,
-      matchId: 'avail-match-005',
-      designation: 'main-event',
-      label: 'CM Punk vs John Cena vs Triple H (Triple Threat - WWE Title)',
-      isChampionship: true,
-    },
-  ]);
+  const [cardMatches, setCardMatches] = useState<CardMatch[]>([]);
+  const [availableMatches, setAvailableMatches] = useState<AvailableMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [matches, players] = await Promise.all([
+          matchesApi.getAll({ status: 'scheduled' }),
+          playersApi.getAll(),
+        ]);
+        const playerMap = new Map<string, Player>(
+          players.map((p) => [p.playerId, p])
+        );
+
+        const available: AvailableMatch[] = matches.map((match) => {
+          const participantNames = match.participants
+            .map((id) => playerMap.get(id)?.name ?? 'Unknown')
+            .join(' vs ');
+          const label = `${participantNames} (${match.matchType})`;
+          return {
+            matchId: match.matchId,
+            label,
+            isChampionship: match.isChampionship,
+          };
+        });
+        setAvailableMatches(available);
+      } catch {
+        // Will show empty list on error
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   const [selectedMatchToAdd, setSelectedMatchToAdd] = useState('');
 
   const usedMatchIds = new Set(cardMatches.map((m) => m.matchId));
-  const availableToAdd = mockAvailableMatches.filter(
+  const availableToAdd = availableMatches.filter(
     (m) => !usedMatchIds.has(m.matchId)
   );
 
@@ -98,7 +110,7 @@ export default function MatchCardBuilder() {
 
   const handleAddMatch = () => {
     if (!selectedMatchToAdd) return;
-    const match = mockAvailableMatches.find((m) => m.matchId === selectedMatchToAdd);
+    const match = availableMatches.find((m) => m.matchId === selectedMatchToAdd);
     if (!match) return;
 
     setCardMatches((prev) => [
@@ -118,7 +130,9 @@ export default function MatchCardBuilder() {
     <div className="match-card-builder">
       <h3 className="builder-title">{t('events.admin.matchCardBuilder')}</h3>
 
-      {cardMatches.length === 0 ? (
+      {loading && <p className="builder-empty">{t('common.loading', 'Loading...')}</p>}
+
+      {!loading && cardMatches.length === 0 ? (
         <p className="builder-empty">{t('events.admin.noMatchesOnCard')}</p>
       ) : (
         <div className="builder-list">
