@@ -81,6 +81,23 @@ export const handler: APIGatewayProxyHandler = async () => {
     // Delete all divisions
     deletedCounts.divisions = await deleteAllFromTable(TableNames.DIVISIONS, 'divisionId');
 
+    // Delete all events
+    deletedCounts.events = await deleteAllFromTable(TableNames.EVENTS, 'eventId');
+
+    // Delete all contender rankings
+    deletedCounts.contenderRankings = await deleteAllFromTable(
+      TableNames.CONTENDER_RANKINGS,
+      'championshipId',
+      'playerId'
+    );
+
+    // Delete all ranking history
+    deletedCounts.rankingHistory = await deleteAllFromTable(
+      TableNames.RANKING_HISTORY,
+      'playerId',
+      'weekKey'
+    );
+
     return success({
       message: 'All data cleared successfully',
       deletedCounts,

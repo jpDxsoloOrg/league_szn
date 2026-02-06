@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { calculateRankingsForChampionship } from '../../lib/rankingCalculator';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 
 interface RecordResultBody {
@@ -22,6 +23,81 @@ interface TransactWriteItem {
     Item: Record<string, unknown>;
     ConditionExpression?: string;
   };
+}
+
+async function triggerRankingRecalculation(): Promise<void> {
+  // Fetch all active championships
+  const champResult = await dynamoDb.scan({
+    TableName: TableNames.CHAMPIONSHIPS,
+    FilterExpression: 'isActive = :active',
+    ExpressionAttributeValues: { ':active': true },
+  });
+
+  const championships = champResult.Items || [];
+  const timestamp = new Date().toISOString();
+
+  for (const champ of championships) {
+    const results = await calculateRankingsForChampionship({
+      championshipId: champ.championshipId as string,
+      championshipType: champ.type as 'singles' | 'tag',
+      currentChampion: champ.currentChampion as string | string[] | undefined,
+      periodDays: 30,
+      minimumMatches: 3,
+      maxContenders: 10,
+    });
+
+    // Get existing rankings for previousRank data
+    const existingResult = await dynamoDb.query({
+      TableName: TableNames.CONTENDER_RANKINGS,
+      KeyConditionExpression: 'championshipId = :cid',
+      ExpressionAttributeValues: { ':cid': champ.championshipId },
+    });
+    const existingMap = new Map<string, Record<string, unknown>>();
+    for (const item of existingResult.Items || []) {
+      existingMap.set(item.playerId as string, item);
+    }
+
+    // Delete old rankings
+    for (const item of existingResult.Items || []) {
+      await dynamoDb.delete({
+        TableName: TableNames.CONTENDER_RANKINGS,
+        Key: { championshipId: item.championshipId, playerId: item.playerId },
+      });
+    }
+
+    // Write new rankings
+    for (const result of results) {
+      const existing = existingMap.get(result.playerId);
+      const previousRank = existing?.rank as number | undefined;
+      const peakRank = existing?.peakRank
+        ? Math.min(existing.peakRank as number, result.rank)
+        : result.rank;
+      const weeksAtTop = result.rank === 1
+        ? ((existing?.weeksAtTop as number) || 0) + (previousRank === 1 ? 0 : 1)
+        : (existing?.weeksAtTop as number) || 0;
+
+      await dynamoDb.put({
+        TableName: TableNames.CONTENDER_RANKINGS,
+        Item: {
+          championshipId: champ.championshipId,
+          playerId: result.playerId,
+          rank: result.rank,
+          rankingScore: result.rankingScore,
+          winPercentage: result.winPercentage,
+          currentStreak: result.currentStreak,
+          qualityScore: result.qualityScore,
+          recencyScore: result.recencyScore,
+          matchesInPeriod: result.matchesInPeriod,
+          winsInPeriod: result.winsInPeriod,
+          previousRank: previousRank,
+          peakRank: peakRank,
+          weeksAtTop: weeksAtTop,
+          calculatedAt: timestamp,
+          updatedAt: timestamp,
+        },
+      });
+    }
+  }
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -421,6 +497,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }
       }
     }
+
+    // Trigger contender ranking recalculation (fire-and-forget, non-blocking)
+    triggerRankingRecalculation().catch(err => {
+      console.warn('Non-blocking ranking recalculation failed:', err);
+    });
 
     return success({
       message: 'Match result recorded successfully',
