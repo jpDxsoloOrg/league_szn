@@ -1,0 +1,166 @@
+.admin-contender-config {
+  max-width: 700px;
+}
+
+.admin-contender-config h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.config-subtitle {
+  margin: 0 0 2rem 0;
+  font-size: 0.9rem;
+  color: #888;
+}
+
+/* Section */
+.config-section {
+  margin-bottom: 2rem;
+}
+
+/* Select */
+.config-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+}
+
+.config-select:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+.config-select option {
+  background-color: #1a1a1a;
+  color: #fff;
+}
+
+/* Config Fields */
+.config-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.config-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #bbb;
+  margin-bottom: 0.25rem;
+}
+
+.config-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.config-input:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+.config-input::-webkit-inner-spin-button,
+.config-input::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+.config-hint {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+/* Checkbox Fields */
+.checkbox-field {
+  padding: 1rem;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+
+.config-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #bbb;
+}
+
+.config-checkbox-label input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: #d4af37;
+  cursor: pointer;
+}
+
+/* Action Buttons */
+.config-actions {
+  display: flex;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #333;
+}
+
+.btn-save {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  background-color: #d4af37;
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-save:hover {
+  background-color: #e5c349;
+}
+
+.btn-recalculate {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  color: #d4af37;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-recalculate:hover {
+  background-color: rgba(212, 175, 55, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .config-actions {
+    flex-direction: column;
+  }
+}

@@ -19,7 +19,9 @@ import AdminGuide from './AdminGuide';
 import ClearAllData from './ClearAllData';
 import './AdminPanel.css';
 
-type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'seasons' | 'events' | 'fantasyShows' | 'fantasyConfig' | 'guide' | 'danger';
+import AdminContenderConfig from './AdminContenderConfig';
+
+type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'seasons' | 'events' | 'fantasyShows' | 'fantasyConfig' | 'contenderConfig' | 'guide' | 'danger';
 
 
 export default function AdminPanel() {
@@ -112,6 +114,12 @@ export default function AdminPanel() {
           {t('admin.panel.tabs.fantasyConfig')}
         </button>
         <button
+          className={`tab ${activeTab === 'contenderConfig' ? 'active' : ''}`}
+          onClick={() => setActiveTab('contenderConfig')}
+        >
+          {t('admin.panel.tabs.contenderConfig')}
+        </button>
+        <button
           className={`tab ${activeTab === 'guide' ? 'active' : ''}`}
           onClick={() => setActiveTab('guide')}
         >
@@ -142,6 +150,7 @@ export default function AdminPanel() {
         )}
         {activeTab === 'fantasyShows' && <ManageFantasyShows />}
         {activeTab === 'fantasyConfig' && <FantasyConfig />}
+        {activeTab === 'contenderConfig' && <AdminContenderConfig />}
         {activeTab === 'danger' && <ClearAllData />}
       </div>
     </div>

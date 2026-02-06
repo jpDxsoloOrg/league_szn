@@ -1,0 +1,237 @@
+.contender-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #222;
+  border: 2px solid #333;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.contender-card:hover {
+  border-color: #444;
+  background-color: #2d2d2d;
+}
+
+.contender-card.top-contender {
+  border-color: #d4af37;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.05), transparent);
+}
+
+/* Rank Section */
+.rank-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  min-width: 60px;
+}
+
+.rank-number {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1a1a1a;
+  border: 2px solid #444;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+.top-contender .rank-number {
+  border-color: #d4af37;
+  background-color: rgba(212, 175, 55, 0.1);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+/* Movement Indicator */
+.movement-indicator {
+  min-height: 20px;
+}
+
+.movement-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+.movement-badge.up {
+  background-color: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  border: 1px solid #4ade80;
+}
+
+.movement-badge.down {
+  background-color: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+  border: 1px solid #f87171;
+}
+
+.movement-badge.new {
+  background-color: rgba(212, 175, 55, 0.2);
+  color: #d4af37;
+  border: 1px solid #d4af37;
+  text-transform: uppercase;
+}
+
+.movement-badge.stable {
+  background-color: rgba(136, 136, 136, 0.2);
+  color: #888;
+  border: 1px solid #888;
+}
+
+/* Image */
+.contender-image {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+}
+
+.contender-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #333;
+}
+
+.placeholder-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #333;
+  border-radius: 8px;
+  border: 2px solid #444;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #666;
+}
+
+/* Info */
+.contender-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.contender-info .wrestler-name {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.125rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fff;
+}
+
+.contender-info .player-name {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  color: #888;
+}
+
+/* Stats */
+.contender-stats {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #bbb;
+}
+
+/* Streak */
+.streak {
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+
+.streak.positive {
+  background-color: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+}
+
+.streak.negative {
+  background-color: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+
+.streak.neutral {
+  color: #666;
+}
+
+/* Top Contender Badge */
+.top-contender-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background-color: #d4af37;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #000;
+  text-transform: uppercase;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .contender-card {
+    flex-wrap: wrap;
+  }
+
+  .rank-section {
+    min-width: 50px;
+  }
+
+  .rank-number {
+    width: 40px;
+    height: 40px;
+    font-size: 1.25rem;
+  }
+
+  .contender-image {
+    width: 50px;
+    height: 50px;
+  }
+
+  .contender-stats {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #333;
+  }
+
+  .top-contender-badge {
+    position: static;
+    width: 100%;
+    text-align: center;
+    margin-top: 0.5rem;
+  }
+}

@@ -36,7 +36,8 @@
     "events": "Veranstaltungen",
     "fantasy": "Fantasy",
     "help": "Hilfe",
-    "admin": "Admin"
+    "admin": "Admin",
+    "contenders": "Herausforderer"
   },
   "header": {
     "title": "WWE 2K Liga"
@@ -310,6 +311,7 @@
         "events": "Veranstaltungen",
         "fantasyShows": "Fantasy Shows",
         "fantasyConfig": "Fantasy Konfig",
+        "contenderConfig": "Herausforderer Konfig",
         "help": "Hilfe",
         "dangerZone": "Gefahrenzone"
       }
@@ -668,6 +670,59 @@
         "saveSuccess": "Konfiguration erfolgreich gespeichert",
         "error": "Konfiguration konnte nicht gespeichert werden"
       }
+    }
+  },
+  "contenders": {
+    "title": "Herausforderer-Rangliste",
+    "subtitle": "Offizielle Rangliste zur Ermittlung der Meisterschafts-Herausforderer",
+    "noData": "Keine Herausforderer-Daten verfügbar",
+    "currentChampion": "Aktueller Champion",
+    "rankings": "Rangliste",
+    "noContenders": "Noch keine Herausforderer eingestuft",
+    "noContendersHint": "Spieler benötigen mindestens {{minMatches}} Kämpfe im Bewertungszeitraum",
+    "lastCalculated": "Zuletzt berechnet",
+    "rankingPeriod": "Bewertungszeitraum",
+    "days": "Tage",
+    "minMatches": "Min. Kämpfe",
+    "maxContenders": "Max. Herausforderer",
+    "new": "NEU",
+    "score": "Punktzahl",
+    "winRate": "Sieg %",
+    "streak": "Serie",
+    "matches": "Kämpfe",
+    "topContender": "#1 Herausforderer",
+    "eligible": "Qualifiziert",
+    "notEligible": "Nicht qualifiziert",
+    "currentRank": "Aktueller Rang",
+    "rankingScore": "Ranglistenpunkte",
+    "myStatus": {
+      "title": "Mein Herausforderer-Status",
+      "subtitle": "Meisterschafts-Herausforderer-Status für {{playerName}}",
+      "progressToTop": "Fortschritt zu #1",
+      "pathToTitle": "Weg zum Titel",
+      "matchesNeeded": "Benötigte Kämpfe zur Qualifikation",
+      "eligibleChampionships": "Qualifizierte Meisterschaften",
+      "topContenderPositions": "#1 Herausforderer-Positionen",
+      "topThreePositions": "Top-3-Positionen"
+    },
+    "admin": {
+      "title": "Herausforderer-Konfiguration",
+      "subtitle": "Herausforderer-Ranglisteneinstellungen pro Meisterschaft konfigurieren",
+      "selectChampionship": "Meisterschaft auswählen",
+      "rankingPeriodDays": "Bewertungszeitraum (Tage)",
+      "rankingPeriodHint": "Anzahl der Tage für die Ranglistenberechnung (7-365)",
+      "minimumMatches": "Mindestanzahl Kämpfe",
+      "minimumMatchesHint": "Mindestanzahl an Kämpfen, um in der Rangliste zu erscheinen",
+      "maxContenders": "Maximale Herausforderer",
+      "maxContendersHint": "Maximale Anzahl eingestufter Herausforderer pro Meisterschaft",
+      "includeDraws": "Unentschieden in Rangliste einbeziehen",
+      "includeDrawsHint": "Wenn aktiviert, werden Unentschieden teilweise zur Ranglistenpunktzahl gezählt",
+      "divisionRestricted": "Auf Division beschränkt",
+      "divisionRestrictedHint": "Wenn aktiviert, können nur Spieler derselben Division antreten",
+      "save": "Konfiguration speichern",
+      "recalculate": "Rangliste neu berechnen",
+      "saveSuccess": "Konfiguration für {{championship}} gespeichert",
+      "recalculateSuccess": "Rangliste für {{championship}} neu berechnet"
     }
   }
 }

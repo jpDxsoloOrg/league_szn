@@ -76,7 +76,7 @@ export default function MatchCardBuilder() {
     if (index === 0) return;
     setCardMatches((prev) => {
       const next = [...prev];
-      [next[index - 1], next[index]] = [next[index], next[index - 1]];
+      [next[index - 1], next[index]] = [next[index]!, next[index - 1]!];
       return next.map((m, i) => ({ ...m, position: i + 1 }));
     });
   };
@@ -85,7 +85,7 @@ export default function MatchCardBuilder() {
     if (index === cardMatches.length - 1) return;
     setCardMatches((prev) => {
       const next = [...prev];
-      [next[index], next[index + 1]] = [next[index + 1], next[index]];
+      [next[index], next[index + 1]] = [next[index + 1]!, next[index]!];
       return next.map((m, i) => ({ ...m, position: i + 1 }));
     });
   };
