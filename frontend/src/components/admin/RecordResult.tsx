@@ -1,13 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { matchesApi, playersApi } from '../../services/api';
+import { matchesApi, playersApi, eventsApi } from '../../services/api';
 import type { Match, Player } from '../../types';
+import type { LeagueEvent } from '../../types/event';
 import './RecordResult.css';
+
+const STANDALONE_FILTER = '__standalone__';
 
 export default function RecordResult() {
   const { t } = useTranslation();
   const [matches, setMatches] = useState<Match[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [events, setEvents] = useState<LeagueEvent[]>([]);
+  const [selectedEventFilter, setSelectedEventFilter] = useState<string>('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [winners, setWinners] = useState<string[]>([]);
   const [winningTeamIndex, setWinningTeamIndex] = useState<number | null>(null);
@@ -23,18 +28,76 @@ export default function RecordResult() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [matchesData, playersData] = await Promise.all([
+      const [matchesData, playersData, eventsData] = await Promise.all([
         matchesApi.getAll({ status: 'scheduled' }),
         playersApi.getAll(),
+        eventsApi.getAll(),
       ]);
       setMatches(matchesData);
       setPlayers(playersData);
+
+      // Only show events that have scheduled matches or are upcoming/in-progress
+      const activeEvents = eventsData
+        .filter(e => e.status === 'upcoming' || e.status === 'in-progress')
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      setEvents(activeEvents);
+
+      // Default to earliest upcoming/in-progress event that has scheduled matches
+      const matchIdSet = new Set(matchesData.map(m => m.matchId));
+      const defaultEvent = activeEvents.find(ev =>
+        (ev.matchCards || []).some(card => matchIdSet.has(card.matchId))
+      );
+      setSelectedEventFilter(prev => prev || (defaultEvent?.eventId || STANDALONE_FILTER));
     } catch (_err) {
       setError('Failed to load data');
     } finally {
       setLoading(false);
     }
   };
+
+  // Build a map of matchId -> eventId for quick lookup
+  const matchEventMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const ev of events) {
+      for (const card of ev.matchCards || []) {
+        map.set(card.matchId, ev.eventId);
+      }
+    }
+    return map;
+  }, [events]);
+
+  // Build a map of matchId -> designation for display
+  const matchDesignationMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const ev of events) {
+      for (const card of ev.matchCards || []) {
+        map.set(card.matchId, card.designation);
+      }
+    }
+    return map;
+  }, [events]);
+
+  // Filter matches based on selected event
+  const filteredMatches = useMemo(() => {
+    if (selectedEventFilter === STANDALONE_FILTER) {
+      return matches.filter(m => !matchEventMap.has(m.matchId));
+    }
+    if (selectedEventFilter) {
+      const selectedEvent = events.find(e => e.eventId === selectedEventFilter);
+      if (selectedEvent) {
+        const eventMatchIds = new Set((selectedEvent.matchCards || []).map(c => c.matchId));
+        // Preserve match card order by sorting by position
+        const positionMap = new Map<string, number>();
+        for (const card of selectedEvent.matchCards || []) {
+          positionMap.set(card.matchId, card.position);
+        }
+        return matches
+          .filter(m => eventMatchIds.has(m.matchId))
+          .sort((a, b) => (positionMap.get(a.matchId) || 0) - (positionMap.get(b.matchId) || 0));
+      }
+    }
+    return matches;
+  }, [matches, selectedEventFilter, events, matchEventMap]);
 
   const getPlayerName = (playerId: string) => {
     const player = players.find(p => p.playerId === playerId);
@@ -146,35 +209,68 @@ export default function RecordResult() {
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
 
-      {matches.length === 0 ? (
+      <div className="event-filter-bar">
+        <label htmlFor="eventFilter">Event</label>
+        <select
+          id="eventFilter"
+          value={selectedEventFilter}
+          onChange={(e) => {
+            setSelectedEventFilter(e.target.value);
+            setSelectedMatch(null);
+            setWinners([]);
+            setWinningTeamIndex(null);
+          }}
+        >
+          {events.map(ev => (
+            <option key={ev.eventId} value={ev.eventId}>
+              {ev.name} ({new Date(ev.date).toLocaleDateString()})
+            </option>
+          ))}
+          <option value={STANDALONE_FILTER}>Standalone Matches (No Event)</option>
+        </select>
+      </div>
+
+      {filteredMatches.length === 0 ? (
         <div className="empty-state">
-          <p>No scheduled matches to record results for.</p>
+          <p>No scheduled matches{selectedEventFilter === STANDALONE_FILTER ? ' outside of events' : ' for this event'}.</p>
         </div>
       ) : (
         <div className="matches-result-grid">
           <div className="matches-list-section">
-            <h3>Scheduled Matches</h3>
+            <h3>Scheduled Matches ({filteredMatches.length})</h3>
             <div className="scheduled-matches-list">
-              {matches.map(match => (
-                <div
-                  key={match.matchId}
-                  className={`match-item ${selectedMatch?.matchId === match.matchId ? 'selected' : ''}`}
-                  onClick={() => handleMatchSelect(match)}
-                >
-                  <div className="match-item-header">
-                    <span className="match-type">{match.matchType}</span>
-                    {match.isChampionship && (
-                      <span className="championship-badge">Championship</span>
+              {filteredMatches.map(match => {
+                const designation = matchDesignationMap.get(match.matchId);
+                return (
+                  <div
+                    key={match.matchId}
+                    className={`match-item ${selectedMatch?.matchId === match.matchId ? 'selected' : ''}`}
+                    onClick={() => handleMatchSelect(match)}
+                  >
+                    <div className="match-item-header">
+                      <span className="match-type">{match.matchType}</span>
+                      <div className="match-badges">
+                        {designation && (
+                          <span className="designation-badge">{designation.replace('-', ' ')}</span>
+                        )}
+                        {match.isChampionship && (
+                          <span className="championship-badge">Championship</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="match-participants-preview">
+                      {match.participants.map((pid, i) => (
+                        <span key={pid}>
+                          {getPlayerNameShort(pid)}{i < match.participants.length - 1 ? ' vs ' : ''}
+                        </span>
+                      ))}
+                    </div>
+                    {match.stipulation && (
+                      <div className="match-stipulation">{match.stipulation}</div>
                     )}
                   </div>
-                  <div className="match-item-date">
-                    {new Date(match.date).toLocaleString()}
-                  </div>
-                  {match.stipulation && (
-                    <div className="match-stipulation">{match.stipulation}</div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
