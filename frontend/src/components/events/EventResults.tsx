@@ -60,7 +60,12 @@ export default function EventResults() {
     );
   }
 
-  if (eventData.status !== 'completed') {
+  const enrichedMatches = eventData.enrichedMatches || [];
+  const completedMatches = enrichedMatches.filter(
+    (m) => m.matchData?.status === 'completed'
+  );
+
+  if (completedMatches.length === 0) {
     return (
       <div className="event-results-page">
         <div className="results-not-ready">
@@ -72,11 +77,6 @@ export default function EventResults() {
       </div>
     );
   }
-
-  const enrichedMatches = eventData.enrichedMatches || [];
-  const completedMatches = enrichedMatches.filter(
-    (m) => m.matchData.status === 'completed'
-  );
 
   const titleChanges = completedMatches.filter(
     (m) => m.matchData.isChampionship && m.matchData.winners && m.matchData.winners.length > 0

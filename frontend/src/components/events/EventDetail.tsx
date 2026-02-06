@@ -175,7 +175,7 @@ export default function EventDetail() {
           <p className="event-detail-description">{eventData.description}</p>
         )}
 
-        {eventData.status === 'completed' && (
+        {enrichedMatches.some(m => m.matchData?.status === 'completed') && (
           <Link
             to={`/events/${eventData.eventId}/results`}
             className="view-results-btn"
@@ -204,7 +204,7 @@ export default function EventDetail() {
                     <MatchEntry
                       key={match.matchId}
                       match={match}
-                      isCompleted={eventData.status === 'completed'}
+                      isCompleted={match.matchData?.status === 'completed'}
                       t={t}
                     />
                   ))}
@@ -225,7 +225,7 @@ export default function EventDetail() {
                     <MatchEntry
                       key={match.matchId}
                       match={match}
-                      isCompleted={eventData.status === 'completed'}
+                      isCompleted={match.matchData?.status === 'completed'}
                       t={t}
                     />
                   ))}

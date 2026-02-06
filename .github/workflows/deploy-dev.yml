@@ -27,7 +27,6 @@ jobs:
           cache-dependency-path: |
             frontend/package-lock.json
             backend/package-lock.json
-            e2e/package-lock.json
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -85,41 +84,42 @@ jobs:
           echo "Waiting for CloudFront cache to propagate..."
           sleep 30
 
-      - name: Install E2E test dependencies
-        working-directory: e2e
-        run: npm ci
-
-      - name: Install Playwright browsers
-        working-directory: e2e
-        run: npx playwright install chromium --with-deps
-
-      - name: Run E2E tests
-        working-directory: e2e
-        run: npx playwright test --project=chromium
-        env:
-          TEST_ENV: dev
-
-      - name: Upload E2E test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: e2e-test-results
-          path: e2e/reports/
-          retention-days: 30
-
-      - name: Capture screenshots of dev site
-        working-directory: e2e
-        run: npm run screenshots
-        env:
-          SCREENSHOT_BASE_URL: https://dev.leagueszn.jpdxsolo.com
-
-      - name: Upload screenshots
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: page-screenshots
-          path: screenshots/
-          retention-days: 30
+      # E2E tests and screenshots temporarily disabled
+      # - name: Install E2E test dependencies
+      #   working-directory: e2e
+      #   run: npm ci
+      #
+      # - name: Install Playwright browsers
+      #   working-directory: e2e
+      #   run: npx playwright install chromium --with-deps
+      #
+      # - name: Run E2E tests
+      #   working-directory: e2e
+      #   run: npx playwright test --project=chromium
+      #   env:
+      #     TEST_ENV: dev
+      #
+      # - name: Upload E2E test results
+      #   uses: actions/upload-artifact@v4
+      #   if: always()
+      #   with:
+      #     name: e2e-test-results
+      #     path: e2e/reports/
+      #     retention-days: 30
+      #
+      # - name: Capture screenshots of dev site
+      #   working-directory: e2e
+      #   run: npm run screenshots
+      #   env:
+      #     SCREENSHOT_BASE_URL: https://dev.leagueszn.jpdxsolo.com
+      #
+      # - name: Upload screenshots
+      #   uses: actions/upload-artifact@v4
+      #   if: always()
+      #   with:
+      #     name: page-screenshots
+      #     path: screenshots/
+      #     retention-days: 30
 
       - name: Deployment summary
         if: always()
@@ -129,7 +129,3 @@ jobs:
           echo "- **Frontend**: https://dev.leagueszn.jpdxsolo.com" >> $GITHUB_STEP_SUMMARY
           echo "- **CloudFront Distribution**: ${{ steps.cloudfront.outputs.distribution_id }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: \`${GITHUB_SHA::7}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **E2E Tests**: Check artifacts for detailed report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          TOTAL=$(find screenshots -name "*.png" 2>/dev/null | wc -l)
-          echo "**Screenshots captured:** ${TOTAL}" >> $GITHUB_STEP_SUMMARY

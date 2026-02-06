@@ -100,6 +100,75 @@ async function triggerRankingRecalculation(): Promise<void> {
   }
 }
 
+async function autoCompleteEvent(matchId: string): Promise<void> {
+  // Scan events that are upcoming or in-progress to find one containing this match
+  const eventsResult = await dynamoDb.scan({
+    TableName: TableNames.EVENTS,
+    FilterExpression: '#status IN (:upcoming, :inProgress)',
+    ExpressionAttributeNames: { '#status': 'status' },
+    ExpressionAttributeValues: {
+      ':upcoming': 'upcoming',
+      ':inProgress': 'in-progress',
+    },
+  });
+
+  for (const eventItem of eventsResult.Items || []) {
+    const matchCards = (eventItem as Record<string, any>).matchCards || [];
+    const matchIds = matchCards.map((c: Record<string, any>) => c.matchId).filter(Boolean);
+
+    if (!matchIds.includes(matchId)) continue;
+
+    // This event contains the match — check if ALL matches are completed
+    if (matchIds.length === 0) continue;
+
+    let allCompleted = true;
+    for (const mId of matchIds) {
+      const matchQuery = await dynamoDb.query({
+        TableName: TableNames.MATCHES,
+        KeyConditionExpression: 'matchId = :matchId',
+        ExpressionAttributeValues: { ':matchId': mId },
+        Limit: 1,
+      });
+      const m = matchQuery.Items?.[0];
+      if (!m || m.status !== 'completed') {
+        allCompleted = false;
+        break;
+      }
+    }
+
+    if (allCompleted) {
+      await dynamoDb.update({
+        TableName: TableNames.EVENTS,
+        Key: { eventId: eventItem.eventId },
+        UpdateExpression: 'SET #status = :completed, updatedAt = :now',
+        ExpressionAttributeNames: { '#status': 'status' },
+        ExpressionAttributeValues: {
+          ':completed': 'completed',
+          ':now': new Date().toISOString(),
+        },
+      });
+      console.log(`Event ${eventItem.eventId} auto-completed: all ${matchIds.length} matches finished`);
+    } else {
+      // If at least one match is done but not all, mark as in-progress
+      if (eventItem.status === 'upcoming') {
+        await dynamoDb.update({
+          TableName: TableNames.EVENTS,
+          Key: { eventId: eventItem.eventId },
+          UpdateExpression: 'SET #status = :inProgress, updatedAt = :now',
+          ExpressionAttributeNames: { '#status': 'status' },
+          ExpressionAttributeValues: {
+            ':inProgress': 'in-progress',
+            ':now': new Date().toISOString(),
+          },
+        });
+        console.log(`Event ${eventItem.eventId} marked as in-progress`);
+      }
+    }
+
+    break; // A match should only belong to one event
+  }
+}
+
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const matchId = event.pathParameters?.matchId;
@@ -497,6 +566,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }
       }
     }
+
+    // Auto-complete event if all its matches are now finished
+    // Scan events to find any that contain this matchId
+    autoCompleteEvent(matchId).catch(err => {
+      console.warn('Non-blocking event auto-complete failed:', err);
+    });
 
     // Trigger contender ranking recalculation (fire-and-forget, non-blocking)
     triggerRankingRecalculation().catch(err => {
