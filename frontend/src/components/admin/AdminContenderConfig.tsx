@@ -10,7 +10,7 @@ import './AdminContenderConfig.css';
 export default function AdminContenderConfig() {
   const { t } = useTranslation();
   const [selectedChampionshipId, setSelectedChampionshipId] = useState(
-    mockContenderConfigs[0].championshipId
+    mockContenderConfigs[0]!.championshipId
   );
 
   const getConfigForChampionship = (championshipId: string): ContenderConfig => {
