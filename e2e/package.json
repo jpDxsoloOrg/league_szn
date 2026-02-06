@@ -17,7 +17,8 @@
     "verify-site:dev": "TEST_ENV=dev npx ts-node run-verification.ts",
     "verify-site:prod": "TEST_ENV=prod npx ts-node run-verification.ts",
     "report": "npx playwright show-report ./reports/html",
-    "install-browsers": "npx playwright install"
+    "install-browsers": "npx playwright install",
+    "screenshots": "npx ts-node take-screenshots.ts"
   },
   "dependencies": {
     "@playwright/test": "^1.40.0",
