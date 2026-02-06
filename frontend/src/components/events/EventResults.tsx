@@ -73,7 +73,8 @@ export default function EventResults() {
     );
   }
 
-  const completedMatches = eventData.enrichedMatches.filter(
+  const enrichedMatches = eventData.enrichedMatches || [];
+  const completedMatches = enrichedMatches.filter(
     (m) => m.matchData.status === 'completed'
   );
 

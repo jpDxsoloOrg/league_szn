@@ -98,10 +98,11 @@ export default function EventDetail() {
   });
 
   // Separate pre-show and main card matches
-  const preShowMatches = eventData.enrichedMatches.filter(
+  const enrichedMatches = eventData.enrichedMatches || [];
+  const preShowMatches = enrichedMatches.filter(
     (m) => m.designation === 'pre-show'
   );
-  const mainCardMatches = eventData.enrichedMatches.filter(
+  const mainCardMatches = enrichedMatches.filter(
     (m) => m.designation !== 'pre-show'
   );
 
@@ -188,7 +189,7 @@ export default function EventDetail() {
       <div className="event-match-card-section">
         <h3 className="match-card-title">{t('events.detail.matchCard')}</h3>
 
-        {eventData.enrichedMatches.length === 0 ? (
+        {enrichedMatches.length === 0 ? (
           <p className="no-matches-message">{t('events.detail.noMatches')}</p>
         ) : (
           <>

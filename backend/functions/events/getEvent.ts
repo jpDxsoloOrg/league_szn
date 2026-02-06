@@ -21,65 +21,92 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const eventItem = eventResult.Item as Record<string, any>;
+    const matchCards: Record<string, any>[] = eventItem.matchCards || [];
 
-    // Enrich match card data
-    if (eventItem.matchCards && eventItem.matchCards.length > 0) {
-      const enrichedMatchCards = await Promise.all(
-        eventItem.matchCards.map(async (card: Record<string, any>) => {
-          if (!card.matchId) {
-            return card;
-          }
-
-          // Fetch the match
-          const matchResult = await dynamoDb.get({
-            TableName: TableNames.MATCHES,
-            Key: { matchId: card.matchId },
-          });
-
-          if (!matchResult.Item) {
-            return card;
-          }
-
-          const match = matchResult.Item as Record<string, any>;
-
-          // Fetch participant player data
-          let participants: Record<string, any>[] = [];
-          if (match.participants && match.participants.length > 0) {
-            const playerPromises = match.participants.map(async (playerId: string) => {
-              const playerResult = await dynamoDb.get({
-                TableName: TableNames.PLAYERS,
-                Key: { playerId },
-              });
-              return playerResult.Item || { playerId, name: 'Unknown Player' };
-            });
-            participants = await Promise.all(playerPromises);
-          }
-
-          // Fetch championship data if applicable
-          let championship: Record<string, any> | null = null;
-          if (match.isChampionship && match.championshipId) {
-            const championshipResult = await dynamoDb.get({
-              TableName: TableNames.CHAMPIONSHIPS,
-              Key: { championshipId: match.championshipId },
-            });
-            championship = (championshipResult.Item as Record<string, any>) || null;
-          }
-
+    // Build enrichedMatches array matching the EventWithMatches frontend type
+    const enrichedMatches = await Promise.all(
+      matchCards.map(async (card: Record<string, any>) => {
+        if (!card.matchId) {
           return {
-            ...card,
-            match: {
-              ...match,
-              participantDetails: participants,
-              championship,
-            },
+            position: card.position,
+            matchId: card.matchId,
+            designation: card.designation,
+            notes: card.notes,
+            matchData: null,
           };
-        })
-      );
+        }
 
-      eventItem.matchCards = enrichedMatchCards;
-    }
+        // Fetch the match
+        const matchResult = await dynamoDb.get({
+          TableName: TableNames.MATCHES,
+          Key: { matchId: card.matchId },
+        });
 
-    return success(eventItem);
+        if (!matchResult.Item) {
+          return {
+            position: card.position,
+            matchId: card.matchId,
+            designation: card.designation,
+            notes: card.notes,
+            matchData: null,
+          };
+        }
+
+        const match = matchResult.Item as Record<string, any>;
+
+        // Fetch participant player data
+        const participants: { playerId: string; playerName: string; wrestlerName: string }[] = [];
+        if (match.participants && match.participants.length > 0) {
+          const playerPromises = match.participants.map(async (playerId: string) => {
+            const playerResult = await dynamoDb.get({
+              TableName: TableNames.PLAYERS,
+              Key: { playerId },
+            });
+            const player = playerResult.Item as Record<string, any> | undefined;
+            return {
+              playerId,
+              playerName: player?.name || 'Unknown Player',
+              wrestlerName: player?.currentWrestler || 'Unknown Wrestler',
+            };
+          });
+          participants.push(...(await Promise.all(playerPromises)));
+        }
+
+        // Fetch championship name if applicable
+        let championshipName: string | undefined;
+        if (match.isChampionship && match.championshipId) {
+          const championshipResult = await dynamoDb.get({
+            TableName: TableNames.CHAMPIONSHIPS,
+            Key: { championshipId: match.championshipId },
+          });
+          const championship = championshipResult.Item as Record<string, any> | undefined;
+          championshipName = championship?.name;
+        }
+
+        return {
+          position: card.position,
+          matchId: card.matchId,
+          designation: card.designation,
+          notes: card.notes,
+          matchData: {
+            matchId: match.matchId,
+            matchType: match.matchType,
+            stipulation: match.stipulation,
+            participants,
+            winners: match.winners,
+            losers: match.losers,
+            isChampionship: match.isChampionship || false,
+            championshipName,
+            status: match.status,
+          },
+        };
+      })
+    );
+
+    return success({
+      ...eventItem,
+      enrichedMatches,
+    });
   } catch (err) {
     console.error('Error fetching event:', err);
     return serverError('Failed to fetch event');
