@@ -1,0 +1,178 @@
+.admin-challenges {
+  width: 100%;
+}
+
+.admin-challenges h3 {
+  color: #d4af37;
+  margin-bottom: 1.25rem;
+}
+
+.admin-challenges-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.admin-challenges-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-challenges-filter label {
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+.admin-challenges-filter select {
+  background-color: #1a1a1a;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.admin-challenges-filter select:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+.admin-challenges-count {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.admin-challenges-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-challenges-table th {
+  background-color: #1a1a1a;
+  color: #d4af37;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 2px solid #333;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.admin-challenges-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #333;
+  font-size: 0.9rem;
+  color: #ccc;
+  vertical-align: middle;
+}
+
+.admin-challenges-table tr:hover {
+  background-color: #1a1a1a;
+}
+
+.admin-challenge-player-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-challenge-wrestler-name {
+  font-weight: 600;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.admin-challenge-player-name {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.admin-challenge-type-cell {
+  white-space: nowrap;
+}
+
+.admin-challenge-stip {
+  font-size: 0.75rem;
+  color: #d4af37;
+  display: block;
+  margin-top: 0.15rem;
+}
+
+.admin-challenge-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.admin-challenge-actions button {
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+  white-space: nowrap;
+}
+
+.admin-btn-schedule {
+  background-color: #3b82f6 !important;
+  color: #fff !important;
+}
+
+.admin-btn-schedule:hover {
+  background-color: #2563eb !important;
+}
+
+.admin-btn-expire {
+  background-color: #6b7280 !important;
+  color: #fff !important;
+}
+
+.admin-btn-expire:hover {
+  background-color: #4b5563 !important;
+}
+
+.admin-btn-view-detail {
+  background-color: transparent !important;
+  color: #d4af37 !important;
+  border: 1px solid #d4af37 !important;
+}
+
+.admin-btn-view-detail:hover {
+  background-color: rgba(212, 175, 55, 0.1) !important;
+}
+
+.admin-challenges-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #888;
+  font-size: 1rem;
+}
+
+.admin-challenge-feedback {
+  background-color: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .admin-challenges-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .admin-challenges-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
