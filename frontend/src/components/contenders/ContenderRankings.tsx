@@ -7,7 +7,7 @@ import './ContenderRankings.css';
 export default function ContenderRankings() {
   const { t } = useTranslation();
   const [selectedChampionship, setSelectedChampionship] = useState(
-    mockChampionshipContenders[0].championshipId
+    mockChampionshipContenders[0]!.championshipId
   );
 
   const currentChampionship = mockChampionshipContenders.find(

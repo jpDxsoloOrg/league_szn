@@ -1,5 +1,4 @@
 import type {
-  ContenderRanking,
   ContenderConfig,
   ContenderWithPlayer,
   ChampionshipContenders,
@@ -416,7 +415,7 @@ export const mockChampionshipContenders: ChampionshipContenders[] = [
     },
     contenders: mockWWEChampionshipContenders,
     calculatedAt: '2026-02-06T00:00:00.000Z',
-    config: mockContenderConfigs[0],
+    config: mockContenderConfigs[0]!,
   },
   {
     championshipId: 'champ-002',
@@ -429,7 +428,7 @@ export const mockChampionshipContenders: ChampionshipContenders[] = [
     },
     contenders: mockICChampionshipContenders,
     calculatedAt: '2026-02-06T00:00:00.000Z',
-    config: mockContenderConfigs[1],
+    config: mockContenderConfigs[1]!,
   },
   {
     championshipId: 'champ-003',
@@ -442,7 +441,7 @@ export const mockChampionshipContenders: ChampionshipContenders[] = [
     },
     contenders: mockTagChampionshipContenders,
     calculatedAt: '2026-02-06T00:00:00.000Z',
-    config: mockContenderConfigs[2],
+    config: mockContenderConfigs[2]!,
   },
 ];
 
