@@ -16,7 +16,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [isAdmin, setIsAdmin] = useState(authApi.isAuthenticated());
-  const [adminExpanded, setAdminExpanded] = useState(location.pathname.startsWith('/admin'));
+  const [adminExpanded, setAdminExpanded] = useState(true);
 
   // Keep admin auth state in sync
   useEffect(() => {

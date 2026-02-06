@@ -46,7 +46,7 @@ import './App.css';
 
 function App() {
   const { t } = useTranslation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <ErrorBoundary>
