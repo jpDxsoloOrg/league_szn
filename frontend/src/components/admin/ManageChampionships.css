@@ -243,3 +243,37 @@ label.file-input-label:hover {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.championship-division {
+  color: #bbb;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+  .championships-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .championship-form-container {
+    padding: 1rem;
+  }
+
+  .championships-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .championship-card {
+    padding: 1rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .image-upload-box {
+    padding: 1.25rem;
+  }
+}

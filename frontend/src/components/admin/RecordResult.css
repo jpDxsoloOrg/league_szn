@@ -268,4 +268,17 @@
   .matches-result-grid {
     grid-template-columns: 1fr;
   }
+
+  .event-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .result-entry-section {
+    padding: 1rem;
+  }
+
+  .result-actions {
+    flex-direction: column;
+  }
 }

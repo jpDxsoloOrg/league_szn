@@ -159,8 +159,16 @@
 }
 
 /* Responsive */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .admin-contender-config {
+    max-width: 100%;
+  }
+
   .config-actions {
     flex-direction: column;
+  }
+
+  .checkbox-field {
+    padding: 0.75rem;
   }
 }

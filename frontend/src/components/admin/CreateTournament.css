@@ -25,3 +25,9 @@
   margin-top: 0.25rem;
   font-family: monospace;
 }
+
+@media (max-width: 768px) {
+  .tournament-form {
+    padding: 1rem;
+  }
+}

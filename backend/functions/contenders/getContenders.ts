@@ -111,16 +111,32 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // ------------------------------------------------------------------
-    // 6. Build enriched contender list
+    // 6. Build enriched contender list, excluding the current champion
+    //    (handles case where #1 contender became champion but rankings
+    //    haven't been recalculated yet)
     // ------------------------------------------------------------------
-    const contenders = rankings.map((ranking) => {
+    const championIds = new Set<string>();
+    if (currentChampion) {
+      if (Array.isArray(currentChampion)) {
+        currentChampion.forEach((id) => championIds.add(id));
+      } else {
+        championIds.add(currentChampion);
+      }
+    }
+
+    const filteredRankings = rankings.filter(
+      (ranking) => !championIds.has(ranking.playerId),
+    );
+
+    const contenders = filteredRankings.map((ranking, index) => {
       const player = playersMap.get(ranking.playerId);
       const previousRank = ranking.previousRank ?? null;
       const isNew = previousRank === null || previousRank === undefined;
-      const movement = isNew ? 0 : (previousRank as number) - ranking.rank;
+      const adjustedRank = index + 1; // Re-rank after filtering out champion
+      const movement = isNew ? 0 : (previousRank as number) - adjustedRank;
 
       return {
-        rank: ranking.rank,
+        rank: adjustedRank,
         playerId: ranking.playerId,
         playerName: player?.name || 'Unknown',
         wrestlerName: player?.currentWrestler || 'Unknown',
@@ -150,6 +166,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return success({
       championshipId,
       championshipName: championship.name || championshipId,
+      divisionId: championship.divisionId || null,
       currentChampion: currentChampionData,
       contenders,
       calculatedAt,

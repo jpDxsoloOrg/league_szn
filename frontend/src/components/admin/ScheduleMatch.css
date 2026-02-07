@@ -235,9 +235,17 @@
   color: #f87171;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .match-form {
+    padding: 1rem;
+  }
+
   .form-row {
     grid-template-columns: 1fr;
+  }
+
+  .participants-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 
   .team-players-grid {

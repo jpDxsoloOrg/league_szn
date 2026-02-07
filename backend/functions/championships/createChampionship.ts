@@ -7,6 +7,7 @@ interface CreateChampionshipBody {
   name: string;
   type: 'singles' | 'tag';
   currentChampion?: string | string[];
+  divisionId?: string;
   imageUrl?: string;
 }
 
@@ -34,6 +35,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       createdAt: new Date().toISOString(),
       isActive: true,
     };
+
+    // Add divisionId if provided
+    if (body.divisionId) {
+      championship.divisionId = body.divisionId;
+    }
 
     // Add imageUrl if provided
     if (body.imageUrl) {

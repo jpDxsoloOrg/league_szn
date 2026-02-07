@@ -53,3 +53,19 @@
   margin-top: 1rem;
   color: #888;
 }
+
+@media (max-width: 768px) {
+  .admin-login-container {
+    min-height: auto;
+    padding: 1rem;
+  }
+
+  .admin-login-card {
+    padding: 1.25rem;
+  }
+
+  .admin-login-card h2 {
+    margin-bottom: 1.25rem;
+    font-size: 1.25rem;
+  }
+}

@@ -96,3 +96,17 @@
   border-radius: 4px;
   font-weight: 600;
 }
+
+@media (max-width: 768px) {
+  .event-card {
+    padding: 12px 14px;
+  }
+
+  .event-card-name {
+    font-size: 0.95rem;
+  }
+
+  .event-card-date {
+    font-size: 0.8rem;
+  }
+}

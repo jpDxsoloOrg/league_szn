@@ -227,3 +227,39 @@
   margin: 5px 0;
   font-size: 13px;
 }
+
+@media (max-width: 768px) {
+  .clear-all-data {
+    padding: 0;
+  }
+
+  .seed-banner,
+  .warning-banner {
+    padding: 14px;
+  }
+
+  .seed-details {
+    padding: 10px;
+  }
+
+  .confirmation-section {
+    padding: 14px;
+  }
+
+  .confirm-input {
+    max-width: 100%;
+  }
+
+  .seed-btn,
+  .clear-all-btn {
+    width: 100%;
+  }
+
+  .warning-banner ul {
+    padding-left: 18px;
+  }
+
+  .seed-details ul {
+    padding-left: 16px;
+  }
+}

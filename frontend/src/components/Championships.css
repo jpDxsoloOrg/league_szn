@@ -166,3 +166,30 @@
   font-weight: bold;
   color: #d4af37;
 }
+
+@media (max-width: 768px) {
+  .championships-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .championship-card {
+    padding: 1rem;
+  }
+
+  .championship-image-container {
+    height: 150px;
+  }
+
+  .championship-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .history-content {
+    padding: 1rem;
+    margin: 0 0.5rem;
+  }
+
+  .history-table {
+    min-width: 400px;
+  }
+}

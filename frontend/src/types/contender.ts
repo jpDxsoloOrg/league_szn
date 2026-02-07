@@ -45,6 +45,7 @@ export interface ContenderWithPlayer extends ContenderRanking {
 export interface ChampionshipContenders {
   championshipId: string;
   championshipName: string;
+  divisionId?: string | null;
   currentChampion: {
     playerId: string;
     playerName: string;
@@ -53,7 +54,7 @@ export interface ChampionshipContenders {
   };
   contenders: ContenderWithPlayer[];
   calculatedAt: string;
-  config: ContenderConfig;
+  config?: ContenderConfig;
 }
 
 export interface PlayerContenderStatus {

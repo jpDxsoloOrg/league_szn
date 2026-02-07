@@ -24,9 +24,26 @@
 /* Championship Tabs */
 .championship-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 2rem;
   border-bottom: 2px solid #333;
+}
+
+.championship-tabs .division-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.championship-tabs .division-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+  padding: 0 0.5rem;
+  white-space: nowrap;
 }
 
 .championship-tabs .tab {
@@ -209,6 +226,16 @@
   .championship-tabs {
     flex-direction: column;
     border-bottom: none;
+  }
+
+  .championship-tabs .division-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .championship-tabs .division-label {
+    padding: 0.25rem 0;
+    width: 100%;
   }
 
   .championship-tabs .tab {

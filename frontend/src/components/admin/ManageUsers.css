@@ -256,3 +256,39 @@
   border-color: var(--accent-color, #e50914);
   box-shadow: 0 0 0 1px var(--accent-color, #e50914);
 }
+
+@media (max-width: 768px) {
+  .manage-users {
+    padding: 0;
+  }
+
+  .users-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .users-table {
+    font-size: 0.78rem;
+  }
+
+  .users-table th,
+  .users-table td {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .filter-tabs button {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  .btn-action {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+  }
+
+  .division-select {
+    min-width: 90px;
+    font-size: 0.75rem;
+  }
+}

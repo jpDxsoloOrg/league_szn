@@ -145,3 +145,27 @@
   margin-bottom: 1rem;
   border: 1px solid #166534;
 }
+
+@media (max-width: 768px) {
+  .divisions-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .division-form-container {
+    padding: 1rem;
+  }
+
+  .divisions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .division-card {
+    padding: 1rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+}

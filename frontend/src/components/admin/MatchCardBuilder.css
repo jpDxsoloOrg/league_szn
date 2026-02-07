@@ -190,3 +190,37 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+@media (max-width: 768px) {
+  .builder-match-item {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .builder-match-label {
+    font-size: 0.8rem;
+  }
+
+  .builder-match-controls {
+    width: 100%;
+  }
+
+  .builder-match-actions {
+    margin-left: auto;
+  }
+
+  .builder-action-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+
+  .builder-add-section {
+    flex-direction: column;
+  }
+
+  .add-match-btn {
+    width: 100%;
+  }
+}

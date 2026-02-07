@@ -288,3 +288,41 @@
   color: #888;
   font-style: italic;
 }
+
+@media (max-width: 768px) {
+  .event-detail-page {
+    padding: 0;
+  }
+
+  .event-detail-header {
+    padding: 16px;
+    border-radius: 4px;
+  }
+
+  .event-detail-name {
+    font-size: 1.3rem;
+  }
+
+  .event-detail-title-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .event-match-card-section {
+    padding: 12px;
+    border-radius: 4px;
+  }
+
+  .match-card-title {
+    font-size: 1.1rem;
+  }
+
+  .match-entry {
+    padding: 12px;
+  }
+
+  .participant {
+    font-size: 0.875rem;
+    padding: 3px 8px;
+  }
+}

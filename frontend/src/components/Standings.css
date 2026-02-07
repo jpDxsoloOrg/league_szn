@@ -206,3 +206,42 @@
   color: #f87171;
   margin-bottom: 1rem;
 }
+
+@media (max-width: 768px) {
+  .standings-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .standings-table {
+    min-width: 500px;
+  }
+
+  .standings-table th,
+  .standings-table td {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8rem;
+  }
+
+  .standings-table .wrestler-thumbnail {
+    width: 36px;
+    height: 36px;
+  }
+
+  .standings-table .no-image-placeholder {
+    width: 36px;
+    height: 36px;
+    font-size: 0.75rem;
+  }
+
+  .standings-table .image-header,
+  .standings-table .wrestler-image-cell {
+    width: 44px;
+    padding: 0.25rem;
+  }
+
+  .division-filter .filter-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+  }
+}
