@@ -7,9 +7,22 @@ import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
 import type { Player } from '../../types';
 import './WrestlerProfile.css';
 
+interface SeasonRecord {
+  seasonId: string;
+  seasonName: string;
+  seasonStatus: string;
+  wins: number;
+  losses: number;
+  draws: number;
+}
+
+interface PlayerProfile extends Player {
+  seasonRecords?: SeasonRecord[];
+}
+
 export default function WrestlerProfile() {
   const { refreshProfile } = useAuth();
-  const [player, setPlayer] = useState<Player | null>(null);
+  const [player, setPlayer] = useState<PlayerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -263,21 +276,51 @@ export default function WrestlerProfile() {
         )}
       </div>
 
-      {/* Stats Section */}
-      <div className="profile-stats">
-        <div className="stat-card">
-          <span className="stat-label">Record</span>
-          <span className="stat-value record">
-            {player.wins}-{player.losses}-{player.draws}
-          </span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-label">Win %</span>
-          <span className={`stat-value percentage ${getWinPercentageClass(player.wins, player.losses, player.draws)}`}>
-            {getWinPercentage(player.wins, player.losses, player.draws)}%
-          </span>
+      {/* All-Time Stats */}
+      <div className="stats-section">
+        <h3 className="stats-section-title">All-Time Record</h3>
+        <div className="profile-stats">
+          <div className="stat-card">
+            <span className="stat-label">Record</span>
+            <span className="stat-value record">
+              {player.wins}-{player.losses}-{player.draws}
+            </span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Win %</span>
+            <span className={`stat-value percentage ${getWinPercentageClass(player.wins, player.losses, player.draws)}`}>
+              {getWinPercentage(player.wins, player.losses, player.draws)}%
+            </span>
+          </div>
         </div>
       </div>
+
+      {/* Season Records */}
+      {player.seasonRecords && player.seasonRecords.length > 0 && (
+        <div className="stats-section">
+          <h3 className="stats-section-title">Season Records</h3>
+          <div className="season-records">
+            {player.seasonRecords.map((season) => (
+              <div key={season.seasonId} className="season-record-card">
+                <div className="season-record-header">
+                  <span className="season-record-name">{season.seasonName}</span>
+                  {season.seasonStatus === 'active' && (
+                    <span className="season-active-badge">Active</span>
+                  )}
+                </div>
+                <div className="season-record-stats">
+                  <span className="season-record-value">
+                    {season.wins}-{season.losses}-{season.draws}
+                  </span>
+                  <span className={`season-record-pct ${getWinPercentageClass(season.wins, season.losses, season.draws)}`}>
+                    {getWinPercentage(season.wins, season.losses, season.draws)}%
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Edit Button (view mode only) */}
       {!editing && (

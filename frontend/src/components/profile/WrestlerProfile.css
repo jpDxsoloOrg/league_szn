@@ -136,6 +136,101 @@
   color: #f87171;
 }
 
+/* Stats Section Title */
+.stats-section {
+  margin-bottom: 2rem;
+}
+
+.stats-section-title {
+  color: #d4af37;
+  font-size: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #333;
+}
+
+/* Season Records */
+.season-records {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.season-record-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.2s;
+}
+
+.season-record-card:hover {
+  border-color: #d4af37;
+}
+
+.season-record-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.season-record-name {
+  font-weight: bold;
+  color: #eee;
+  font-size: 1rem;
+}
+
+.season-active-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: bold;
+  border-radius: 4px;
+  background-color: #065f46;
+  color: #a7f3d0;
+  border: 1px solid #059669;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.season-record-stats {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.season-record-value {
+  font-family: monospace;
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+.season-record-pct {
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #888;
+  min-width: 3.5rem;
+  text-align: right;
+}
+
+.season-record-pct.win-high {
+  color: #4ade80;
+}
+
+.season-record-pct.win-medium {
+  color: #fbbf24;
+}
+
+.season-record-pct.win-low {
+  color: #f87171;
+}
+
 /* Edit Form Section */
 .profile-edit-section {
   background-color: #1a1a1a;
@@ -397,6 +492,17 @@
 
   .stat-value.percentage {
     font-size: 2.5rem;
+  }
+
+  .season-record-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .season-record-stats {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .profile-edit-section {
