@@ -286,6 +286,7 @@ export const usersApi = {
   list: async (signal?: AbortSignal): Promise<{
     users: Array<{
       username: string;
+      sub: string;
       email: string;
       name: string;
       wrestlerName: string;
