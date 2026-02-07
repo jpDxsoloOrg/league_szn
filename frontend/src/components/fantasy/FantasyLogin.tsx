@@ -84,7 +84,7 @@ export default function FantasyLogin() {
         <div className="auth-footer">
           <p>
             {t('fantasy.auth.noAccount')}{' '}
-            <Link to="/fantasy/signup">{t('fantasy.auth.signUpLink')}</Link>
+            <Link to="/signup">{t('fantasy.auth.signUpLink')}</Link>
           </p>
           <Link to="/fantasy" className="back-link">
             {t('fantasy.auth.backToFantasy')}

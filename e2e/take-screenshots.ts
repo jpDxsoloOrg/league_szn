@@ -38,8 +38,8 @@ const ROUTE_GROUPS: Record<string, RouteEntry[]> = {
   ],
   fantasy: [
     { route: '/fantasy', name: 'fantasy-landing' },
-    { route: '/fantasy/login', name: 'fantasy-login' },
-    { route: '/fantasy/signup', name: 'fantasy-signup' },
+    { route: '/login', name: 'login' },
+    { route: '/signup', name: 'signup' },
     { route: '/fantasy/dashboard', name: 'fantasy-dashboard' },
     { route: '/fantasy/leaderboard', name: 'fantasy-leaderboard' },
     { route: '/fantasy/costs', name: 'fantasy-costs' },

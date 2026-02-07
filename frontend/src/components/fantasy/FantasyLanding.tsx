@@ -19,10 +19,10 @@ export default function FantasyLanding() {
         <h1>{t('fantasy.landing.title')}</h1>
         <p className="fantasy-tagline">{t('fantasy.landing.tagline')}</p>
         <div className="hero-actions">
-          <Link to="/fantasy/signup" className="btn btn-primary">
+          <Link to="/signup" className="btn btn-primary">
             {t('fantasy.landing.signUp')}
           </Link>
-          <Link to="/fantasy/login" className="btn btn-secondary">
+          <Link to="/login" className="btn btn-secondary">
             {t('fantasy.landing.login')}
           </Link>
         </div>
@@ -63,7 +63,7 @@ export default function FantasyLanding() {
               {t('fantasy.landing.deadline')}: {new Date(openShow.date).toLocaleDateString()}
             </p>
           </div>
-          <Link to="/fantasy/login" className="btn btn-primary">
+          <Link to="/login" className="btn btn-primary">
             {t('fantasy.landing.makePicksCta')}
           </Link>
         </section>
@@ -132,7 +132,7 @@ export default function FantasyLanding() {
       <section className="cta-section">
         <h2>{t('fantasy.landing.readyToPlay')}</h2>
         <p>{t('fantasy.landing.ctaDescription')}</p>
-        <Link to="/fantasy/signup" className="btn btn-primary btn-large">
+        <Link to="/signup" className="btn btn-primary btn-large">
           {t('fantasy.landing.createAccount')}
         </Link>
       </section>
