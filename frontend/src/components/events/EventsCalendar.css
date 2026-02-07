@@ -206,3 +206,55 @@
   background: #2d2d2d;
   border-radius: 8px;
 }
+
+@media (max-width: 768px) {
+  .events-calendar-page {
+    padding: 0;
+  }
+
+  .events-title {
+    font-size: 1.4rem;
+  }
+
+  .calendar-container {
+    padding: 12px;
+    border-radius: 4px;
+  }
+
+  .calendar-day-cell {
+    min-height: 40px;
+    padding: 3px;
+  }
+
+  .calendar-day-header {
+    font-size: 0.6rem;
+    padding: 4px 2px;
+  }
+
+  .calendar-day-number {
+    font-size: 0.65rem;
+  }
+
+  .calendar-event-dot {
+    width: 7px;
+    height: 7px;
+  }
+
+  .calendar-month-label {
+    font-size: 1rem;
+  }
+
+  .calendar-nav-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+
+  .calendar-legend {
+    gap: 8px;
+  }
+
+  .legend-item {
+    font-size: 0.7rem;
+  }
+}

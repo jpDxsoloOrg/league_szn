@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,6 +10,7 @@ export default function Sidebar() {
   const location = useLocation();
   const { isAuthenticated, isAdmin, isWrestler, isFantasy, signOut } = useAuth();
   const [adminExpanded, setAdminExpanded] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Auto-expand admin section when navigating to admin routes
   useEffect(() => {
@@ -18,6 +19,34 @@ export default function Sidebar() {
     }
   }, [location.pathname]);
 
+  // Close sidebar on navigation (mobile)
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  // Close sidebar on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileOpen(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
+
+  // Prevent body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
+  const toggleMobile = useCallback(() => {
+    setMobileOpen((prev) => !prev);
+  }, []);
+
   const handleLogout = async () => {
     await signOut();
   };
@@ -25,7 +54,26 @@ export default function Sidebar() {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <aside className="sidebar">
+    <>
+    {/* Hamburger button — visible only on mobile */}
+    <button
+      className="hamburger-btn"
+      onClick={toggleMobile}
+      aria-label="Toggle navigation"
+    >
+      <span className={`hamburger-icon ${mobileOpen ? 'open' : ''}`}>
+        <span />
+        <span />
+        <span />
+      </span>
+    </button>
+
+    {/* Overlay backdrop — visible only when mobile sidebar is open */}
+    {mobileOpen && (
+      <div className="sidebar-overlay" onClick={() => setMobileOpen(false)} />
+    )}
+
+    <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="sidebar-header">
         <h2>{t('header.title')}</h2>
         <LanguageSwitcher />
@@ -186,5 +234,6 @@ export default function Sidebar() {
         </div>
       </nav>
     </aside>
+    </>
   );
 }

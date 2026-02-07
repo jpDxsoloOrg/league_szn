@@ -37,6 +37,22 @@
 
 @media (max-width: 768px) {
   .top-bar {
-    left: 280px;
+    left: 0;
+    padding-left: 3.5rem;
+  }
+
+  .top-bar-title {
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .top-bar-parent {
+    font-size: 0.8rem;
+  }
+
+  .top-bar-breadcrumb {
+    overflow: hidden;
   }
 }

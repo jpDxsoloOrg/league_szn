@@ -144,3 +144,26 @@
   border-radius: 4px;
   margin-left: 0.25rem;
 }
+
+@media (max-width: 768px) {
+  .match-card {
+    padding: 1rem;
+  }
+
+  .match-header {
+    flex-direction: column;
+  }
+
+  .match-info h3 {
+    font-size: 1.05rem;
+  }
+
+  .filter-buttons {
+    flex-wrap: wrap;
+  }
+
+  .filter-buttons button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}

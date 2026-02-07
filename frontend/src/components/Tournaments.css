@@ -222,3 +222,26 @@
   font-size: 0.875rem;
   margin: 0.25rem 0;
 }
+
+@media (max-width: 768px) {
+  .tournaments-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tournament-card {
+    padding: 1rem;
+  }
+
+  .tournament-content {
+    padding: 1rem;
+    margin: 0 0.5rem;
+  }
+
+  .participants-list {
+    grid-template-columns: 1fr;
+  }
+
+  .tournament-header h3 {
+    font-size: 1.1rem;
+  }
+}
