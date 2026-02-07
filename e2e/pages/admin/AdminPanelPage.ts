@@ -4,16 +4,16 @@ import { selectors } from '../../config/selectors';
 
 type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'seasons' | 'help' | 'danger';
 
-const tabSelectors: Record<AdminTab, string> = {
-  players: selectors.admin.tabPlayers,
-  divisions: selectors.admin.tabDivisions,
-  schedule: selectors.admin.tabSchedule,
-  results: selectors.admin.tabResults,
-  championships: selectors.admin.tabChampionships,
-  tournaments: selectors.admin.tabTournaments,
-  seasons: selectors.admin.tabSeasons,
-  help: selectors.admin.tabHelp,
-  danger: selectors.admin.tabDangerZone,
+const tabRoutes: Record<AdminTab, string> = {
+  players: '/admin/players',
+  divisions: '/admin/divisions',
+  schedule: '/admin/schedule',
+  results: '/admin/results',
+  championships: '/admin/championships',
+  tournaments: '/admin/tournaments',
+  seasons: '/admin/seasons',
+  help: '/admin/guide',
+  danger: '/admin/danger',
 };
 
 export class AdminPanelPage extends BasePage {
@@ -22,10 +22,10 @@ export class AdminPanelPage extends BasePage {
   }
 
   async selectTab(tab: AdminTab): Promise<void> {
-    const selector = tabSelectors[tab];
-    await this.page.locator(selector).click();
+    const route = tabRoutes[tab];
+    await this.page.goto(route);
     await this.waitForNetworkIdle();
-    await this.page.waitForTimeout(500); // Wait for tab content to load
+    await this.page.waitForTimeout(500);
   }
 
   async isAdminPanelVisible(): Promise<boolean> {

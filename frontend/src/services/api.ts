@@ -8,6 +8,8 @@ import type {
   Season,
   Division
 } from '../types';
+import type { LeagueEvent, EventWithMatches, CreateEventInput, UpdateEventInput } from '../types/event';
+import type { ChampionshipContenders } from '../types/contender';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
@@ -81,7 +83,7 @@ export const matchesApi = {
     return fetchWithAuth(`${API_BASE_URL}/matches?${params}`, {}, signal);
   },
 
-  schedule: async (match: Omit<Match, 'matchId' | 'createdAt'>): Promise<Match> => {
+  schedule: async (match: Omit<Match, 'matchId' | 'createdAt'> & { eventId?: string; designation?: string }): Promise<Match> => {
     return fetchWithAuth(`${API_BASE_URL}/matches`, {
       method: 'POST',
       body: JSON.stringify(match),
@@ -210,6 +212,56 @@ export const divisionsApi = {
   delete: async (divisionId: string): Promise<void> => {
     return fetchWithAuth(`${API_BASE_URL}/divisions/${divisionId}`, {
       method: 'DELETE',
+    });
+  },
+};
+
+// Events API
+export const eventsApi = {
+  getAll: async (filters?: { eventType?: string; status?: string; seasonId?: string }, signal?: AbortSignal): Promise<LeagueEvent[]> => {
+    const params = new URLSearchParams();
+    if (filters?.eventType) params.set('eventType', filters.eventType);
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.seasonId) params.set('seasonId', filters.seasonId);
+    const query = params.toString();
+    return fetchWithAuth(`${API_BASE_URL}/events${query ? `?${query}` : ''}`, {}, signal);
+  },
+
+  getById: async (eventId: string, signal?: AbortSignal): Promise<EventWithMatches> => {
+    return fetchWithAuth(`${API_BASE_URL}/events/${eventId}`, {}, signal);
+  },
+
+  create: async (event: CreateEventInput): Promise<LeagueEvent> => {
+    return fetchWithAuth(`${API_BASE_URL}/events`, {
+      method: 'POST',
+      body: JSON.stringify(event),
+    });
+  },
+
+  update: async (eventId: string, updates: Partial<UpdateEventInput>): Promise<LeagueEvent> => {
+    return fetchWithAuth(`${API_BASE_URL}/events/${eventId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  delete: async (eventId: string): Promise<void> => {
+    return fetchWithAuth(`${API_BASE_URL}/events/${eventId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Contenders API
+export const contendersApi = {
+  getForChampionship: async (championshipId: string, signal?: AbortSignal): Promise<ChampionshipContenders> => {
+    return fetchWithAuth(`${API_BASE_URL}/championships/${championshipId}/contenders`, {}, signal);
+  },
+
+  recalculate: async (championshipId?: string): Promise<{ message: string; summary: Record<string, number> }> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/contenders/recalculate`, {
+      method: 'POST',
+      body: JSON.stringify(championshipId ? { championshipId } : {}),
     });
   },
 };

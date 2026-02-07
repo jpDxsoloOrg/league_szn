@@ -91,6 +91,96 @@ const tables = [
       },
     ],
   },
+  {
+    TableName: 'wwe-2k-league-api-divisions-dev',
+    KeySchema: [{ AttributeName: 'divisionId', KeyType: 'HASH' }],
+    AttributeDefinitions: [{ AttributeName: 'divisionId', AttributeType: 'S' }],
+    BillingMode: 'PAY_PER_REQUEST',
+  },
+  {
+    TableName: 'wwe-2k-league-api-events-dev',
+    KeySchema: [{ AttributeName: 'eventId', KeyType: 'HASH' }],
+    AttributeDefinitions: [
+      { AttributeName: 'eventId', AttributeType: 'S' },
+      { AttributeName: 'eventType', AttributeType: 'S' },
+      { AttributeName: 'date', AttributeType: 'S' },
+      { AttributeName: 'status', AttributeType: 'S' },
+      { AttributeName: 'seasonId', AttributeType: 'S' },
+    ],
+    BillingMode: 'PAY_PER_REQUEST',
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: 'DateIndex',
+        KeySchema: [
+          { AttributeName: 'eventType', KeyType: 'HASH' },
+          { AttributeName: 'date', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+      },
+      {
+        IndexName: 'StatusIndex',
+        KeySchema: [
+          { AttributeName: 'status', KeyType: 'HASH' },
+          { AttributeName: 'date', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+      },
+      {
+        IndexName: 'SeasonIndex',
+        KeySchema: [
+          { AttributeName: 'seasonId', KeyType: 'HASH' },
+          { AttributeName: 'date', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+      },
+    ],
+  },
+  {
+    TableName: 'wwe-2k-league-api-contender-rankings-dev',
+    KeySchema: [
+      { AttributeName: 'championshipId', KeyType: 'HASH' },
+      { AttributeName: 'playerId', KeyType: 'RANGE' },
+    ],
+    AttributeDefinitions: [
+      { AttributeName: 'championshipId', AttributeType: 'S' },
+      { AttributeName: 'playerId', AttributeType: 'S' },
+      { AttributeName: 'rank', AttributeType: 'N' },
+    ],
+    BillingMode: 'PAY_PER_REQUEST',
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: 'RankIndex',
+        KeySchema: [
+          { AttributeName: 'championshipId', KeyType: 'HASH' },
+          { AttributeName: 'rank', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+      },
+    ],
+  },
+  {
+    TableName: 'wwe-2k-league-api-ranking-history-dev',
+    KeySchema: [
+      { AttributeName: 'playerId', KeyType: 'HASH' },
+      { AttributeName: 'weekKey', KeyType: 'RANGE' },
+    ],
+    AttributeDefinitions: [
+      { AttributeName: 'playerId', AttributeType: 'S' },
+      { AttributeName: 'weekKey', AttributeType: 'S' },
+      { AttributeName: 'championshipId', AttributeType: 'S' },
+    ],
+    BillingMode: 'PAY_PER_REQUEST',
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: 'ChampionshipWeekIndex',
+        KeySchema: [
+          { AttributeName: 'championshipId', KeyType: 'HASH' },
+          { AttributeName: 'weekKey', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+      },
+    ],
+  },
 ];
 
 async function createTables() {

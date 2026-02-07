@@ -1,0 +1,186 @@
+import { APIGatewayProxyHandler } from 'aws-lambda';
+import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { success, serverError } from '../../lib/response';
+import { calculateRankingsForChampionship, RankingResult } from '../../lib/rankingCalculator';
+
+interface Championship {
+  championshipId: string;
+  name: string;
+  type: 'singles' | 'tag';
+  currentChampion?: string | string[];
+  isActive: boolean;
+}
+
+interface ExistingRanking {
+  championshipId: string;
+  playerId: string;
+  rank: number;
+  peakRank?: number;
+}
+
+/**
+ * Returns the ISO week key for the current date in the format
+ * `{championshipId}#YYYY-WW`.
+ */
+function buildWeekKey(championshipId: string): string {
+  const now = new Date();
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+  const daysSinceYearStart = Math.floor(
+    (now.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24),
+  );
+  const weekNumber = Math.ceil((daysSinceYearStart + yearStart.getDay() + 1) / 7);
+  const paddedWeek = weekNumber.toString().padStart(2, '0');
+  return `${championshipId}#${now.getFullYear()}-${paddedWeek}`;
+}
+
+export const handler: APIGatewayProxyHandler = async (event) => {
+  try {
+    const body = event.body ? JSON.parse(event.body) : {};
+    const requestedChampionshipId: string | undefined = body.championshipId;
+    const now = new Date().toISOString();
+
+    // ------------------------------------------------------------------
+    // 1. Determine which championships to recalculate
+    // ------------------------------------------------------------------
+    let championships: Championship[] = [];
+
+    if (requestedChampionshipId) {
+      const result = await dynamoDb.get({
+        TableName: TableNames.CHAMPIONSHIPS,
+        Key: { championshipId: requestedChampionshipId },
+      });
+
+      if (result.Item) {
+        championships = [result.Item as unknown as Championship];
+      }
+    } else {
+      const result = await dynamoDb.scanAll({
+        TableName: TableNames.CHAMPIONSHIPS,
+        FilterExpression: 'isActive = :active',
+        ExpressionAttributeValues: { ':active': true },
+      });
+
+      championships = result as unknown as Championship[];
+    }
+
+    if (championships.length === 0) {
+      return success({
+        message: 'No championships found to recalculate',
+        championshipsProcessed: 0,
+        totalRankings: 0,
+      });
+    }
+
+    // ------------------------------------------------------------------
+    // 2. Process each championship
+    // ------------------------------------------------------------------
+    let totalRankings = 0;
+    const processedChampionships: string[] = [];
+
+    for (const championship of championships) {
+      const { championshipId } = championship;
+
+      // 2a. Fetch existing rankings so we can preserve previousRank and peakRank
+      const existingItems = await dynamoDb.queryAll({
+        TableName: TableNames.CONTENDER_RANKINGS,
+        KeyConditionExpression: 'championshipId = :cid',
+        ExpressionAttributeValues: { ':cid': championshipId },
+      });
+
+      const existingMap = new Map<string, ExistingRanking>();
+      for (const item of existingItems) {
+        const existing = item as unknown as ExistingRanking;
+        existingMap.set(existing.playerId, existing);
+      }
+
+      // 2b. Delete all existing rankings for this championship
+      for (const item of existingItems) {
+        await dynamoDb.delete({
+          TableName: TableNames.CONTENDER_RANKINGS,
+          Key: {
+            championshipId: item.championshipId as string,
+            playerId: item.playerId as string,
+          },
+        });
+      }
+
+      // 2c. Calculate new rankings
+      const rankings: RankingResult[] = await calculateRankingsForChampionship({
+        championshipId,
+        championshipType: championship.type,
+        currentChampion: championship.currentChampion,
+        periodDays: 30,
+        minimumMatches: 3,
+        maxContenders: 10,
+      });
+
+      // 2d. Write new rankings to CONTENDER_RANKINGS
+      for (const ranking of rankings) {
+        const oldData = existingMap.get(ranking.playerId);
+        const previousRank = oldData ? oldData.rank : undefined;
+        const oldPeakRank = oldData?.peakRank ?? Infinity;
+        const peakRank = Math.min(oldPeakRank, ranking.rank);
+        const weeksAtTop =
+          ranking.rank === 1
+            ? ((oldData as Record<string, unknown> | undefined)?.weeksAtTop as number ?? 0) + 1
+            : (oldData as Record<string, unknown> | undefined)?.weeksAtTop as number ?? 0;
+
+        await dynamoDb.put({
+          TableName: TableNames.CONTENDER_RANKINGS,
+          Item: {
+            championshipId,
+            playerId: ranking.playerId,
+            rank: ranking.rank,
+            rankingScore: ranking.rankingScore,
+            winPercentage: ranking.winPercentage,
+            currentStreak: ranking.currentStreak,
+            qualityScore: ranking.qualityScore,
+            recencyScore: ranking.recencyScore,
+            matchesInPeriod: ranking.matchesInPeriod,
+            winsInPeriod: ranking.winsInPeriod,
+            previousRank: previousRank ?? null,
+            peakRank,
+            weeksAtTop,
+            calculatedAt: now,
+            updatedAt: now,
+          },
+        });
+      }
+
+      // 2e. Write ranking history entries
+      const weekKey = buildWeekKey(championshipId);
+
+      for (const ranking of rankings) {
+        const oldData = existingMap.get(ranking.playerId);
+        const previousRank = oldData ? oldData.rank : undefined;
+        const movement = previousRank !== undefined ? previousRank - ranking.rank : 0;
+
+        await dynamoDb.put({
+          TableName: TableNames.RANKING_HISTORY,
+          Item: {
+            playerId: ranking.playerId,
+            weekKey,
+            championshipId,
+            rank: ranking.rank,
+            rankingScore: ranking.rankingScore,
+            movement,
+            createdAt: now,
+          },
+        });
+      }
+
+      totalRankings += rankings.length;
+      processedChampionships.push(championship.name || championshipId);
+    }
+
+    return success({
+      message: 'Rankings recalculated successfully',
+      championshipsProcessed: processedChampionships.length,
+      championships: processedChampionships,
+      totalRankings,
+    });
+  } catch (err) {
+    console.error('Error calculating rankings:', err);
+    return serverError('Failed to calculate rankings');
+  }
+};

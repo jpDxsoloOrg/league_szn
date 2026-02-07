@@ -1,8 +1,9 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi } from '../../services/api';
+import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi } from '../../services/api';
 import { sanitizeInput } from '../../utils/sanitize';
 import type { Player, Championship, Tournament, Season } from '../../types';
+import type { LeagueEvent, MatchDesignation } from '../../types/event';
 import './ScheduleMatch.css';
 
 export default function ScheduleMatch() {
@@ -11,6 +12,7 @@ export default function ScheduleMatch() {
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [seasons, setSeasons] = useState<Season[]>([]);
+  const [events, setEvents] = useState<LeagueEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +22,6 @@ export default function ScheduleMatch() {
   const [teams, setTeams] = useState<string[][]>([[], []]);
 
   const [formData, setFormData] = useState({
-    date: '',
     matchType: 'singles',
     stipulation: '',
     participants: [] as string[],
@@ -28,6 +29,8 @@ export default function ScheduleMatch() {
     championshipId: '',
     tournamentId: '',
     seasonId: '',
+    eventId: '',
+    designation: 'midcard' as MatchDesignation,
   });
 
   useEffect(() => {
@@ -37,16 +40,18 @@ export default function ScheduleMatch() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [playersData, championshipsData, tournamentsData, seasonsData] = await Promise.all([
+      const [playersData, championshipsData, tournamentsData, seasonsData, eventsData] = await Promise.all([
         playersApi.getAll(),
         championshipsApi.getAll(),
         tournamentsApi.getAll(),
         seasonsApi.getAll(),
+        eventsApi.getAll(),
       ]);
       setPlayers(playersData);
       setChampionships(championshipsData);
       setTournaments(tournamentsData.filter(t => t.status !== 'completed'));
       setSeasons(seasonsData);
+      setEvents(eventsData.filter(e => e.status === 'upcoming' || e.status === 'in-progress'));
 
       // Set active season as default if one exists
       const activeSeason = seasonsData.find(s => s.status === 'active');
@@ -70,6 +75,15 @@ export default function ScheduleMatch() {
     setSuccess(null);
     setSubmitting(true);
 
+    // Resolve date: use event date if an event is selected, otherwise today
+    let matchDate: string;
+    if (formData.eventId) {
+      const selectedEvent = events.find(ev => ev.eventId === formData.eventId);
+      matchDate = selectedEvent?.date || new Date().toISOString();
+    } else {
+      matchDate = new Date().toISOString();
+    }
+
     if (isTagTeamMatch) {
       // For tag team matches, validate teams
       const validTeams = teams.filter(team => team.length >= 2);
@@ -85,7 +99,7 @@ export default function ScheduleMatch() {
         const sanitizedStipulation = sanitizeInput(formData.stipulation, 200);
 
         await matchesApi.schedule({
-          date: new Date(formData.date).toISOString(),
+          date: matchDate,
           matchType: formData.matchType,
           stipulation: sanitizedStipulation,
           participants: allParticipants,
@@ -94,6 +108,8 @@ export default function ScheduleMatch() {
           championshipId: formData.championshipId || undefined,
           tournamentId: formData.tournamentId || undefined,
           seasonId: formData.seasonId || undefined,
+          eventId: formData.eventId || undefined,
+          designation: formData.eventId ? formData.designation : undefined,
           status: 'scheduled',
         });
 
@@ -116,7 +132,7 @@ export default function ScheduleMatch() {
         const sanitizedStipulation = sanitizeInput(formData.stipulation, 200);
 
         await matchesApi.schedule({
-          date: new Date(formData.date).toISOString(),
+          date: matchDate,
           matchType: formData.matchType,
           stipulation: sanitizedStipulation,
           participants: formData.participants,
@@ -124,6 +140,8 @@ export default function ScheduleMatch() {
           championshipId: formData.championshipId || undefined,
           tournamentId: formData.tournamentId || undefined,
           seasonId: formData.seasonId || undefined,
+          eventId: formData.eventId || undefined,
+          designation: formData.eventId ? formData.designation : undefined,
           status: 'scheduled',
         });
 
@@ -140,7 +158,6 @@ export default function ScheduleMatch() {
   const resetForm = () => {
     const activeSeason = seasons.find(s => s.status === 'active');
     setFormData({
-      date: '',
       matchType: 'singles',
       stipulation: '',
       participants: [],
@@ -148,6 +165,8 @@ export default function ScheduleMatch() {
       championshipId: '',
       tournamentId: '',
       seasonId: activeSeason?.seasonId || '',
+      eventId: '',
+      designation: 'midcard',
     });
     setTeams([[], []]);
   };
@@ -223,17 +242,6 @@ export default function ScheduleMatch() {
       <form onSubmit={handleSubmit} className="match-form">
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="date">Date & Time</label>
-            <input
-              type="datetime-local"
-              id="date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="form-group">
             <label htmlFor="matchType">{t('scheduleMatch.matchType')}</label>
             <select
               id="matchType"
@@ -283,6 +291,42 @@ export default function ScheduleMatch() {
               ))}
             </select>
             <small className="form-hint">Match results count towards the selected season's standings</small>
+          </div>
+        )}
+
+        {events.length > 0 && (
+          <div className="form-group">
+            <label htmlFor="event">{t('scheduleMatch.event', 'Add to Event (Optional)')}</label>
+            <select
+              id="event"
+              value={formData.eventId}
+              onChange={(e) => setFormData({ ...formData, eventId: e.target.value })}
+            >
+              <option value="">{t('scheduleMatch.noEvent', 'No Event (Standalone Match)')}</option>
+              {events.map(ev => (
+                <option key={ev.eventId} value={ev.eventId}>
+                  {ev.name} ({new Date(ev.date).toLocaleDateString()})
+                </option>
+              ))}
+            </select>
+            <small className="form-hint">{t('scheduleMatch.eventHint', 'Match will be automatically added to the event\'s card')}</small>
+          </div>
+        )}
+
+        {formData.eventId && (
+          <div className="form-group">
+            <label htmlFor="designation">{t('scheduleMatch.designation', 'Card Position')}</label>
+            <select
+              id="designation"
+              value={formData.designation}
+              onChange={(e) => setFormData({ ...formData, designation: e.target.value as MatchDesignation })}
+            >
+              <option value="pre-show">{t('events.designations.preShow', 'Pre-Show')}</option>
+              <option value="opener">{t('events.designations.opener', 'Opener')}</option>
+              <option value="midcard">{t('events.designations.midcard', 'Midcard')}</option>
+              <option value="co-main">{t('events.designations.coMain', 'Co-Main Event')}</option>
+              <option value="main-event">{t('events.designations.mainEvent', 'Main Event')}</option>
+            </select>
           </div>
         )}
 

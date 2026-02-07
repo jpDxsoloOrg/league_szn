@@ -16,6 +16,9 @@ provider:
     SEASONS_TABLE: ${self:service}-seasons-${self:provider.stage}
     SEASON_STANDINGS_TABLE: ${self:service}-season-standings-${self:provider.stage}
     DIVISIONS_TABLE: ${self:service}-divisions-${self:provider.stage}
+    EVENTS_TABLE: ${self:service}-events-${self:provider.stage}
+    CONTENDER_RANKINGS_TABLE: ${self:service}-contender-rankings-${self:provider.stage}
+    RANKING_HISTORY_TABLE: ${self:service}-ranking-history-${self:provider.stage}
     IMAGES_BUCKET: ${self:service}-images-${self:provider.stage}
     COGNITO_USER_POOL_ID: !Ref AdminUserPool
     COGNITO_CLIENT_ID: !Ref AdminUserPoolClient
@@ -41,6 +44,12 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SEASON_STANDINGS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SEASON_STANDINGS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DIVISIONS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EVENTS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EVENTS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONTENDER_RANKINGS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONTENDER_RANKINGS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RANKING_HISTORY_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RANKING_HISTORY_TABLE}/index/*
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -303,6 +312,69 @@ functions:
           cors: true
           authorizer: adminAuthorizer
 
+  # Events
+  getEvents:
+    handler: functions/events/getEvents.handler
+    events:
+      - http:
+          path: events
+          method: get
+          cors: true
+
+  getEvent:
+    handler: functions/events/getEvent.handler
+    events:
+      - http:
+          path: events/{eventId}
+          method: get
+          cors: true
+
+  createEvent:
+    handler: functions/events/createEvent.handler
+    events:
+      - http:
+          path: events
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
+
+  updateEvent:
+    handler: functions/events/updateEvent.handler
+    events:
+      - http:
+          path: events/{eventId}
+          method: put
+          cors: true
+          authorizer: adminAuthorizer
+
+  deleteEvent:
+    handler: functions/events/deleteEvent.handler
+    events:
+      - http:
+          path: events/{eventId}
+          method: delete
+          cors: true
+          authorizer: adminAuthorizer
+
+  # Contenders
+  getContenders:
+    handler: functions/contenders/getContenders.handler
+    events:
+      - http:
+          path: championships/{championshipId}/contenders
+          method: get
+          cors: true
+
+  calculateRankings:
+    handler: functions/contenders/calculateRankings.handler
+    timeout: 29
+    events:
+      - http:
+          path: admin/contenders/recalculate
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
+
   # Images
   generateUploadUrl:
     handler: functions/images/generateUploadUrl.handler
@@ -542,6 +614,105 @@ resources:
         KeySchema:
           - AttributeName: divisionId
             KeyType: HASH
+
+    EventsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.EVENTS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: eventId
+            AttributeType: S
+          - AttributeName: eventType
+            AttributeType: S
+          - AttributeName: date
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S
+          - AttributeName: seasonId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: eventId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: DateIndex
+            KeySchema:
+              - AttributeName: eventType
+                KeyType: HASH
+              - AttributeName: date
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: StatusIndex
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+              - AttributeName: date
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: SeasonIndex
+            KeySchema:
+              - AttributeName: seasonId
+                KeyType: HASH
+              - AttributeName: date
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    ContenderRankingsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.CONTENDER_RANKINGS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: championshipId
+            AttributeType: S
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: rank
+            AttributeType: N
+        KeySchema:
+          - AttributeName: championshipId
+            KeyType: HASH
+          - AttributeName: playerId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: RankIndex
+            KeySchema:
+              - AttributeName: championshipId
+                KeyType: HASH
+              - AttributeName: rank
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    RankingHistoryTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.RANKING_HISTORY_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: weekKey
+            AttributeType: S
+          - AttributeName: championshipId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
+          - AttributeName: weekKey
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: ChampionshipWeekIndex
+            KeySchema:
+              - AttributeName: championshipId
+                KeyType: HASH
+              - AttributeName: weekKey
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
 
     ImagesBucket:
       Type: AWS::S3::Bucket

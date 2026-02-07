@@ -337,6 +337,71 @@ export const handler: APIGatewayProxyHandler = async () => {
     }
     createdCounts.tournaments = tournaments.length;
 
+    // Create events
+    console.log('Creating events...');
+    const completedMatches = matches.filter(m => m.status === 'completed');
+    const scheduledMatches = matches.filter(m => m.status === 'scheduled');
+
+    const events = [
+      {
+        eventId: uuidv4(),
+        name: 'WrestleMania 40',
+        eventType: 'ppv',
+        date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days from now
+        venue: 'MetLife Stadium',
+        description: 'The Showcase of the Immortals',
+        themeColor: '#FFD700',
+        status: 'upcoming',
+        seasonId: seasons[0].seasonId,
+        matchCards: scheduledMatches.slice(0, 3).map((m, idx) => ({
+          position: idx + 1,
+          matchId: m.matchId,
+          designation: idx === 0 ? 'opener' : idx === 2 ? 'main-event' : 'midcard',
+          notes: m.isChampionship ? 'Championship Match' : undefined,
+        })),
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        eventId: uuidv4(),
+        name: 'Monday Night Raw #1580',
+        eventType: 'weekly',
+        date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+        description: 'The longest running weekly episodic television show',
+        status: 'completed',
+        seasonId: seasons[0].seasonId,
+        matchCards: completedMatches.slice(0, 3).map((m, idx) => ({
+          position: idx + 1,
+          matchId: m.matchId,
+          designation: idx === 0 ? 'opener' : idx === 2 ? 'main-event' : 'midcard',
+        })),
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        eventId: uuidv4(),
+        name: 'Royal Rumble 2026',
+        eventType: 'ppv',
+        date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+        venue: 'Alamodome',
+        description: 'Every man for himself',
+        themeColor: '#1E90FF',
+        status: 'upcoming',
+        seasonId: seasons[0].seasonId,
+        matchCards: [],
+        createdAt: now,
+        updatedAt: now,
+      },
+    ];
+
+    for (const event of events) {
+      await dynamoDb.put({
+        TableName: TableNames.EVENTS,
+        Item: event,
+      });
+    }
+    createdCounts.events = events.length;
+
     return success({
       message: 'Sample data seeded successfully!',
       createdCounts,

@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getEventWithMatches } from '../../mocks/eventMockData';
-import type { MatchDesignation } from '../../types/event';
+import { eventsApi } from '../../services/api';
+import type { MatchDesignation, EventWithMatches } from '../../types/event';
 import './EventResults.css';
 
 const designationLabels: Record<MatchDesignation, string> = {
@@ -16,24 +16,56 @@ const designationLabels: Record<MatchDesignation, string> = {
 export default function EventResults() {
   const { eventId } = useParams<{ eventId: string }>();
   const { t } = useTranslation();
+  const [eventData, setEventData] = useState<EventWithMatches | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const eventData = useMemo(() => {
-    if (!eventId) return null;
-    return getEventWithMatches(eventId);
+  useEffect(() => {
+    if (!eventId) return;
+    const controller = new AbortController();
+    const loadEvent = async () => {
+      try {
+        setLoading(true);
+        const data = await eventsApi.getById(eventId, controller.signal);
+        setEventData(data);
+        setError(null);
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          setError(err instanceof Error ? err.message : 'Failed to load event');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadEvent();
+    return () => controller.abort();
   }, [eventId]);
 
-  if (!eventData) {
+  if (loading) {
+    return (
+      <div className="event-results-page">
+        <div className="loading-message">{t('common.loading')}</div>
+      </div>
+    );
+  }
+
+  if (error || !eventData) {
     return (
       <div className="event-results-page">
         <div className="results-not-found">
-          <p>{t('events.results.notFound')}</p>
+          <p>{error || t('events.results.notFound')}</p>
           <Link to="/events" className="results-back-link">{t('events.detail.backToEvents')}</Link>
         </div>
       </div>
     );
   }
 
-  if (eventData.status !== 'completed') {
+  const enrichedMatches = eventData.enrichedMatches || [];
+  const completedMatches = enrichedMatches.filter(
+    (m) => m.matchData?.status === 'completed'
+  );
+
+  if (completedMatches.length === 0) {
     return (
       <div className="event-results-page">
         <div className="results-not-ready">
@@ -45,10 +77,6 @@ export default function EventResults() {
       </div>
     );
   }
-
-  const completedMatches = eventData.enrichedMatches.filter(
-    (m) => m.matchData.status === 'completed'
-  );
 
   const titleChanges = completedMatches.filter(
     (m) => m.matchData.isChampionship && m.matchData.winners && m.matchData.winners.length > 0

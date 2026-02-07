@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getEventWithMatches } from '../../mocks/eventMockData';
-import type { MatchDesignation } from '../../types/event';
+import { eventsApi } from '../../services/api';
+import type { MatchDesignation, EventWithMatches } from '../../types/event';
 import './EventDetail.css';
 
 const eventTypeColors: Record<string, string> = {
@@ -38,17 +38,44 @@ const designationColors: Record<MatchDesignation, string> = {
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const { t } = useTranslation();
+  const [eventData, setEventData] = useState<EventWithMatches | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const eventData = useMemo(() => {
-    if (!eventId) return null;
-    return getEventWithMatches(eventId);
+  useEffect(() => {
+    if (!eventId) return;
+    const controller = new AbortController();
+    const loadEvent = async () => {
+      try {
+        setLoading(true);
+        const data = await eventsApi.getById(eventId, controller.signal);
+        setEventData(data);
+        setError(null);
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          setError(err instanceof Error ? err.message : 'Failed to load event');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadEvent();
+    return () => controller.abort();
   }, [eventId]);
 
-  if (!eventData) {
+  if (loading) {
+    return (
+      <div className="event-detail-page">
+        <div className="loading-message">{t('common.loading')}</div>
+      </div>
+    );
+  }
+
+  if (error || !eventData) {
     return (
       <div className="event-detail-page">
         <div className="event-not-found">
-          <p>{t('events.detail.notFound')}</p>
+          <p>{error || t('events.detail.notFound')}</p>
           <Link to="/events" className="back-link">{t('events.detail.backToEvents')}</Link>
         </div>
       </div>
@@ -71,10 +98,11 @@ export default function EventDetail() {
   });
 
   // Separate pre-show and main card matches
-  const preShowMatches = eventData.enrichedMatches.filter(
+  const enrichedMatches = eventData.enrichedMatches || [];
+  const preShowMatches = enrichedMatches.filter(
     (m) => m.designation === 'pre-show'
   );
-  const mainCardMatches = eventData.enrichedMatches.filter(
+  const mainCardMatches = enrichedMatches.filter(
     (m) => m.designation !== 'pre-show'
   );
 
@@ -147,7 +175,7 @@ export default function EventDetail() {
           <p className="event-detail-description">{eventData.description}</p>
         )}
 
-        {eventData.status === 'completed' && (
+        {enrichedMatches.some(m => m.matchData?.status === 'completed') && (
           <Link
             to={`/events/${eventData.eventId}/results`}
             className="view-results-btn"
@@ -161,7 +189,7 @@ export default function EventDetail() {
       <div className="event-match-card-section">
         <h3 className="match-card-title">{t('events.detail.matchCard')}</h3>
 
-        {eventData.enrichedMatches.length === 0 ? (
+        {enrichedMatches.length === 0 ? (
           <p className="no-matches-message">{t('events.detail.noMatches')}</p>
         ) : (
           <>
@@ -176,7 +204,7 @@ export default function EventDetail() {
                     <MatchEntry
                       key={match.matchId}
                       match={match}
-                      isCompleted={eventData.status === 'completed'}
+                      isCompleted={match.matchData?.status === 'completed'}
                       t={t}
                     />
                   ))}
@@ -197,7 +225,7 @@ export default function EventDetail() {
                     <MatchEntry
                       key={match.matchId}
                       match={match}
-                      isCompleted={eventData.status === 'completed'}
+                      isCompleted={match.matchData?.status === 'completed'}
                       t={t}
                     />
                   ))}
