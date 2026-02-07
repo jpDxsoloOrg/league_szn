@@ -44,8 +44,8 @@ jobs:
         run: npm run build -- --mode devtest
         env:
           VITE_API_BASE_URL: ${{ secrets.DEV_API_BASE_URL }}
-          VITE_COGNITO_USER_POOL_ID: us-east-1_o0xMTyzI5
-          VITE_COGNITO_CLIENT_ID: 5loqna6cm7ip5cka75koovla07
+          VITE_COGNITO_USER_POOL_ID: us-east-1_5GZ9UY8V2
+          VITE_COGNITO_CLIENT_ID: 5bn99khg7knh9v0t5dqbjpgh1d
           VITE_AWS_REGION: us-east-1
 
       - name: Install backend dependencies
