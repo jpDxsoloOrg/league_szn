@@ -1,11 +1,13 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { cognitoAuth, type UserRole } from '../services/cognito';
+import { profileApi } from '../services/api';
 
 interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   groups: UserRole[];
   email: string | null;
+  playerId: string | null;
 }
 
 interface AuthContextType extends AuthState {
@@ -13,6 +15,7 @@ interface AuthContextType extends AuthState {
   signUp: (email: string, password: string, options?: { wrestlerName?: string }) => Promise<{ isConfirmed: boolean }>;
   confirmSignUp: (email: string, code: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   isAdmin: boolean;
   isWrestler: boolean;
   isFantasy: boolean;
@@ -27,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
     groups: cognitoAuth.getUserGroups(),
     email: null,
+    playerId: null,
   });
 
   // Initialize auth state on mount
@@ -37,11 +41,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (user) {
           // Refresh tokens to get latest groups
           const session = await cognitoAuth.refreshSession();
+          const groups = session?.groups || cognitoAuth.getUserGroups();
+
+          // Fetch player profile if user is a wrestler
+          let playerId: string | null = null;
+          if (groups.includes('Wrestler') || groups.includes('Admin')) {
+            try {
+              const profile = await profileApi.getMyProfile();
+              playerId = profile.playerId;
+            } catch {
+              // Profile may not exist yet
+            }
+          }
+
           setState({
             isAuthenticated: true,
             isLoading: false,
-            groups: session?.groups || cognitoAuth.getUserGroups(),
+            groups,
             email: user.signInDetails?.loginId || user.username || null,
+            playerId,
           });
         } else {
           setState({
@@ -49,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isLoading: false,
             groups: [],
             email: null,
+            playerId: null,
           });
         }
       } catch {
@@ -57,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isLoading: false,
           groups: [],
           email: null,
+          playerId: null,
         });
       }
     };
@@ -65,11 +85,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const handleSignIn = useCallback(async (email: string, password: string) => {
     const result = await cognitoAuth.signIn(email, password);
+
+    // Fetch player profile if user is a wrestler
+    let playerId: string | null = null;
+    if (result.groups.includes('Wrestler') || result.groups.includes('Admin')) {
+      try {
+        const profile = await profileApi.getMyProfile();
+        playerId = profile.playerId;
+      } catch {
+        // Profile may not exist yet
+      }
+    }
+
     setState({
       isAuthenticated: true,
       isLoading: false,
       groups: result.groups,
       email,
+      playerId,
     });
   }, []);
 
@@ -88,7 +121,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading: false,
       groups: [],
       email: null,
+      playerId: null,
     });
+  }, []);
+
+  const refreshProfile = useCallback(async () => {
+    try {
+      const profile = await profileApi.getMyProfile();
+      setState(prev => ({ ...prev, playerId: profile.playerId }));
+    } catch {
+      // Profile may not exist
+    }
   }, []);
 
   const hasRole = useCallback((role: UserRole): boolean => {
@@ -102,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp: handleSignUp,
     confirmSignUp: handleConfirmSignUp,
     signOut: handleSignOut,
+    refreshProfile,
     isAdmin: state.groups.includes('Admin'),
     isWrestler: hasRole('Wrestler'),
     isFantasy: hasRole('Fantasy'),

@@ -1,5 +1,6 @@
 export interface Player {
   playerId: string;
+  userId?: string;
   name: string;
   currentWrestler: string;
   wins: number;

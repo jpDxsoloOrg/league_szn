@@ -36,6 +36,7 @@ provider:
             - dynamodb:DeleteItem
           Resource:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PLAYERS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PLAYERS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCHES_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCHES_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CHAMPIONSHIPS_TABLE}
@@ -122,6 +123,25 @@ functions:
       - http:
           path: admin/users/role
           method: post
+          cors: true
+          authorizer: adminAuthorizer
+
+  # Player Profile (self-service for wrestlers)
+  getMyProfile:
+    handler: functions/players/getMyProfile.handler
+    events:
+      - http:
+          path: players/me
+          method: get
+          cors: true
+          authorizer: adminAuthorizer
+
+  updateMyProfile:
+    handler: functions/players/updateMyProfile.handler
+    events:
+      - http:
+          path: players/me
+          method: put
           cors: true
           authorizer: adminAuthorizer
 
@@ -564,9 +584,18 @@ resources:
         AttributeDefinitions:
           - AttributeName: playerId
             AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
         KeySchema:
           - AttributeName: playerId
             KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: UserIdIndex
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
 
     MatchesTable:
       Type: AWS::DynamoDB::Table

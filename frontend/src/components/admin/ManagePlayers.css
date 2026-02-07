@@ -201,3 +201,26 @@ label.file-input-label:hover {
   color: #666;
   text-align: center;
 }
+
+/* Linked/Unlinked Badges */
+.linked-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border-radius: 4px;
+  background-color: #065f46;
+  color: #a7f3d0;
+  border: 1px solid #059669;
+}
+
+.unlinked-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border-radius: 4px;
+  background-color: #333;
+  color: #888;
+  border: 1px solid #444;
+}

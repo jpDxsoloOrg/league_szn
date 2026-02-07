@@ -340,6 +340,7 @@ export default function ManagePlayers() {
                 <th>Wrestler</th>
                 <th>Division</th>
                 <th>Record</th>
+                <th>Linked</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -364,6 +365,13 @@ export default function ManagePlayers() {
                     <span className="record">
                       {player.wins}W - {player.losses}L - {player.draws}D
                     </span>
+                  </td>
+                  <td>
+                    {player.userId ? (
+                      <span className="linked-badge">Linked</span>
+                    ) : (
+                      <span className="unlinked-badge">Manual</span>
+                    )}
                   </td>
                   <td>
                     <div className="actions-cell">
