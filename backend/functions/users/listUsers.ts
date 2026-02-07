@@ -47,6 +47,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
         return {
           username: user.Username,
+          sub: attrs['sub'] || '',
           email: attrs['email'] || '',
           name: attrs['name'] || '',
           wrestlerName: attrs['custom:wrestler_name'] || '',

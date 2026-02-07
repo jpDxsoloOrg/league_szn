@@ -19,18 +19,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         TableName: TableNames.PLAYERS,
       });
 
-      const playersMap = new Map(
-        players.map((p) => [p.playerId, p])
+      // Build a map of season standings by playerId
+      const standingsMap = new Map(
+        seasonStandings.map((s) => [s.playerId as string, s])
       );
 
-      // Merge player info with season standings
-      const standings = seasonStandings.map((standing) => {
-        const player = playersMap.get(standing.playerId as string) || {};
+      // Show ALL players - those with standings get season W-L-D, others get 0-0-0
+      const standings = players.map((player) => {
+        const standing = standingsMap.get(player.playerId as string);
         return {
           ...player,
-          wins: (standing.wins as number) || 0,
-          losses: (standing.losses as number) || 0,
-          draws: (standing.draws as number) || 0,
+          wins: standing ? ((standing.wins as number) || 0) : 0,
+          losses: standing ? ((standing.losses as number) || 0) : 0,
+          draws: standing ? ((standing.draws as number) || 0) : 0,
         };
       });
 

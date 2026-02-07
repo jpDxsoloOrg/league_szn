@@ -26,6 +26,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const player = result.Items[0];
     const playerId = player.playerId as string;
 
+    // Fetch all seasons
+    const seasons = await dynamoDb.scanAll({
+      TableName: TableNames.SEASONS,
+    });
+
     // Fetch season standings for this player via PlayerIndex GSI
     const seasonStandings = await dynamoDb.queryAll({
       TableName: TableNames.SEASON_STANDINGS,
@@ -36,28 +41,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       },
     });
 
-    // Fetch season details to get names
-    let seasons: Record<string, unknown>[] = [];
-    if (seasonStandings.length > 0) {
-      seasons = await dynamoDb.scanAll({
-        TableName: TableNames.SEASONS,
-      });
-    }
-
-    const seasonsMap = new Map(
-      seasons.map((s) => [s.seasonId as string, s])
+    // Build a map of standings by seasonId
+    const standingsMap = new Map(
+      seasonStandings.map((s) => [s.seasonId as string, s])
     );
 
-    // Build season records with season name
-    const seasonRecords = seasonStandings.map((standing) => {
-      const season = seasonsMap.get(standing.seasonId as string);
+    // Show ALL seasons - those with standings get W-L-D, others get 0-0-0
+    const seasonRecords = seasons.map((season) => {
+      const standing = standingsMap.get(season.seasonId as string);
       return {
-        seasonId: standing.seasonId,
-        seasonName: (season?.name as string) || 'Unknown Season',
-        seasonStatus: (season?.status as string) || 'unknown',
-        wins: (standing.wins as number) || 0,
-        losses: (standing.losses as number) || 0,
-        draws: (standing.draws as number) || 0,
+        seasonId: season.seasonId,
+        seasonName: (season.name as string) || 'Unknown Season',
+        seasonStatus: (season.status as string) || 'unknown',
+        wins: standing ? ((standing.wins as number) || 0) : 0,
+        losses: standing ? ((standing.losses as number) || 0) : 0,
+        draws: standing ? ((standing.draws as number) || 0) : 0,
       };
     });
 

@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { usersApi } from '../../services/api';
+import { usersApi, playersApi, divisionsApi } from '../../services/api';
+import type { Player, Division } from '../../types';
 import './ManageUsers.css';
 
 interface CognitoUser {
   username: string;
+  sub: string;
   email: string;
   name: string;
   wrestlerName: string;
@@ -17,27 +19,55 @@ type FilterTab = 'all' | 'wrestler-requests' | 'wrestlers' | 'admins';
 
 export default function ManageUsers() {
   const [users, setUsers] = useState<CognitoUser[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [divisions, setDivisions] = useState<Division[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [divisionLoading, setDivisionLoading] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
 
-  const fetchUsers = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const result = await usersApi.list();
-      setUsers(result.users);
+      const [usersResult, playersData, divisionsData] = await Promise.all([
+        usersApi.list(),
+        playersApi.getAll(),
+        divisionsApi.getAll(),
+      ]);
+      setUsers(usersResult.users);
+      setPlayers(playersData);
+      setDivisions(divisionsData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load users');
+      setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    fetchData();
+  }, [fetchData]);
+
+  const getLinkedPlayer = useCallback((user: CognitoUser): Player | undefined => {
+    if (!user.sub) return undefined;
+    return players.find(p => p.userId === user.sub);
+  }, [players]);
+
+  const handleDivisionChange = async (playerId: string, divisionId: string) => {
+    setDivisionLoading(playerId);
+    try {
+      const updated = await playersApi.update(playerId, {
+        divisionId: divisionId || undefined,
+      } as Partial<Player>);
+      setPlayers(prev => prev.map(p => p.playerId === playerId ? updated : p));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update division');
+    } finally {
+      setDivisionLoading(null);
+    }
+  };
 
   const handleRoleAction = async (username: string, role: string, action: 'promote' | 'demote') => {
     setActionLoading(username);
@@ -49,6 +79,11 @@ export default function ManageUsers() {
           u.username === username ? { ...u, groups: result.groups } : u
         )
       );
+      // Re-fetch players since promoting to Wrestler auto-creates a Player record
+      if (action === 'promote' && role === 'Wrestler') {
+        const playersData = await playersApi.getAll();
+        setPlayers(playersData);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update role');
     } finally {
@@ -89,7 +124,7 @@ export default function ManageUsers() {
     <div className="manage-users">
       <div className="users-header">
         <h2>User Management</h2>
-        <button className="btn-refresh" onClick={fetchUsers}>
+        <button className="btn-refresh" onClick={fetchData}>
           Refresh
         </button>
       </div>
@@ -141,6 +176,7 @@ export default function ManageUsers() {
               <th>Email</th>
               <th>Wrestler Name</th>
               <th>Roles</th>
+              <th>Division</th>
               <th>Status</th>
               <th>Joined</th>
               <th>Actions</th>
@@ -161,6 +197,26 @@ export default function ManageUsers() {
                   {user.groups.length > 0 ? getRoleBadges(user.groups) : (
                     <span className="no-value">No roles</span>
                   )}
+                </td>
+                <td>
+                  {(() => {
+                    const linkedPlayer = getLinkedPlayer(user);
+                    if (!linkedPlayer) return <span className="no-value">-</span>;
+                    return divisionLoading === linkedPlayer.playerId ? (
+                      <span className="action-loading">Saving...</span>
+                    ) : (
+                      <select
+                        className="division-select"
+                        value={linkedPlayer.divisionId || ''}
+                        onChange={(e) => handleDivisionChange(linkedPlayer.playerId, e.target.value)}
+                      >
+                        <option value="">No Division</option>
+                        {divisions.map((d) => (
+                          <option key={d.divisionId} value={d.divisionId}>{d.name}</option>
+                        ))}
+                      </select>
+                    );
+                  })()}
                 </td>
                 <td>
                   <span className={`status-badge status-${user.status?.toLowerCase()}`}>
@@ -234,7 +290,7 @@ export default function ManageUsers() {
             ))}
             {filteredUsers.length === 0 && (
               <tr>
-                <td colSpan={6} className="empty-state">
+                <td colSpan={7} className="empty-state">
                   No users found for this filter.
                 </td>
               </tr>
