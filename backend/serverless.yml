@@ -62,6 +62,11 @@ provider:
             - cognito-idp:AdminCreateUser
             - cognito-idp:AdminSetUserPassword
             - cognito-idp:AdminGetUser
+            - cognito-idp:AdminAddUserToGroup
+            - cognito-idp:AdminRemoveUserFromGroup
+            - cognito-idp:AdminListGroupsForUser
+            - cognito-idp:ListUsers
+            - cognito-idp:ListUsersInGroup
           Resource:
             - !GetAtt AdminUserPool.Arn
 
@@ -89,6 +94,14 @@ functions:
   adminAuthorizer:
     handler: functions/auth/authorizer.handler
 
+  postConfirmation:
+    handler: functions/auth/postConfirmation.handler
+    events:
+      - cognitoUserPool:
+          pool: AdminUserPool
+          trigger: PostConfirmation
+          existing: true
+
   createAdminUser:
     handler: functions/auth/createAdminUser.handler
     events:
@@ -96,6 +109,25 @@ functions:
           path: auth/setup
           method: post
           cors: true
+
+  # User Management (Admin only)
+  listUsers:
+    handler: functions/users/listUsers.handler
+    events:
+      - http:
+          path: admin/users
+          method: get
+          cors: true
+          authorizer: adminAuthorizer
+
+  updateUserRole:
+    handler: functions/users/updateUserRole.handler
+    events:
+      - http:
+          path: admin/users/role
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
 
   # Players
   getPlayers:
@@ -453,13 +485,27 @@ resources:
         RestApiId:
           Ref: ApiGatewayRestApi
 
-    # Cognito User Pool for Admin Authentication (username-based)
+    # Cognito User Pool (supports Admin, Wrestler, and Fantasy users)
     AdminUserPool:
       Type: AWS::Cognito::UserPool
       Properties:
         UserPoolName: ${self:service}-admin-pool-v2-${self:provider.stage}
         AdminCreateUserConfig:
-          AllowAdminCreateUserOnly: true
+          AllowAdminCreateUserOnly: false
+        AutoVerifiedAttributes:
+          - email
+        UsernameAttributes:
+          - email
+        Schema:
+          - Name: email
+            Required: true
+            Mutable: true
+          - Name: wrestler_name
+            AttributeDataType: String
+            Mutable: true
+            StringAttributeConstraints:
+              MinLength: '0'
+              MaxLength: '100'
         Policies:
           PasswordPolicy:
             MinimumLength: 8
@@ -467,6 +513,31 @@ resources:
             RequireNumbers: true
             RequireSymbols: false
             RequireUppercase: true
+
+    # Cognito Groups for role-based access
+    AdminGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties:
+        GroupName: Admin
+        UserPoolId: !Ref AdminUserPool
+        Description: Full access to all features including user management
+        Precedence: 0
+
+    WrestlerGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties:
+        GroupName: Wrestler
+        UserPoolId: !Ref AdminUserPool
+        Description: Access to wrestler features (challenges, promos) plus fantasy
+        Precedence: 1
+
+    FantasyGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties:
+        GroupName: Fantasy
+        UserPoolId: !Ref AdminUserPool
+        Description: Access to fantasy features and public data
+        Precedence: 2
 
     AdminUserPoolClient:
       Type: AWS::Cognito::UserPoolClient
