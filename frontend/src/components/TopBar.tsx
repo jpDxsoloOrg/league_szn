@@ -53,7 +53,7 @@ export default function TopBar() {
 
     // Fantasy sub-routes
     if (path.startsWith('/fantasy/')) {
-      const segment = path.split('/')[2];
+      const segment = path.split('/')[2] ?? '';
       const fantasyMap: Record<string, string> = {
         login: t('fantasy.auth.loginTitle'),
         signup: t('fantasy.auth.signupTitle'),
@@ -71,7 +71,7 @@ export default function TopBar() {
 
     // Stats sub-routes
     if (path.startsWith('/stats/')) {
-      const segment = path.split('/')[2];
+      const segment = path.split('/')[2] ?? '';
       const statsMap: Record<string, string> = {
         player: t('statistics.playerStats.title'),
         'head-to-head': t('statistics.headToHead.title'),
