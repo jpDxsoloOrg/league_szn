@@ -8,6 +8,7 @@ export interface RankingCalculationParams {
   championshipId: string;
   championshipType: 'singles' | 'tag';
   currentChampion: string | string[] | undefined;
+  divisionId?: string;
   periodDays: number;
   minimumMatches: number;
   maxContenders: number;
@@ -65,13 +66,29 @@ export async function calculateRankingsForChampionship(
 ): Promise<RankingResult[]> {
   const {
     currentChampion,
+    divisionId,
     periodDays = 30,
     minimumMatches = 3,
     maxContenders = 10,
   } = params;
 
   // ------------------------------------------------------------------
-  // 1. Fetch all completed matches within the ranking period
+  // 1a. If championship is division-locked, fetch eligible player IDs
+  // ------------------------------------------------------------------
+  let divisionPlayerIds: Set<string> | null = null;
+  if (divisionId) {
+    const allPlayers = await dynamoDb.scanAll({
+      TableName: TableNames.PLAYERS,
+      FilterExpression: 'divisionId = :divisionId',
+      ExpressionAttributeValues: { ':divisionId': divisionId },
+    });
+    divisionPlayerIds = new Set(
+      allPlayers.map((p) => p.playerId as string),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // 1b. Fetch all completed matches within the ranking period
   // ------------------------------------------------------------------
   const periodStart = new Date();
   periodStart.setDate(periodStart.getDate() - periodDays);
@@ -148,6 +165,11 @@ export async function calculateRankingsForChampionship(
   for (const [playerId, playerMatches] of playerMatchMap.entries()) {
     // Exclude the current champion
     if (championIds.has(playerId)) {
+      continue;
+    }
+
+    // Exclude players not in the championship's division
+    if (divisionPlayerIds && !divisionPlayerIds.has(playerId)) {
       continue;
     }
 

@@ -8,6 +8,7 @@ interface Championship {
   name: string;
   type: 'singles' | 'tag';
   currentChampion?: string | string[];
+  divisionId?: string;
   isActive: boolean;
 }
 
@@ -104,11 +105,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         });
       }
 
-      // 2c. Calculate new rankings
+      // 2c. Calculate new rankings (division-locked if championship has divisionId)
       const rankings: RankingResult[] = await calculateRankingsForChampionship({
         championshipId,
         championshipType: championship.type,
         currentChampion: championship.currentChampion,
+        divisionId: championship.divisionId,
         periodDays: 30,
         minimumMatches: 3,
         maxContenders: 10,

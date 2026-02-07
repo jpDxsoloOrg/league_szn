@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { championshipsApi, contendersApi } from '../../services/api';
-import type { Championship } from '../../types';
+import { championshipsApi, contendersApi, divisionsApi } from '../../services/api';
+import type { Championship, Division } from '../../types';
 import type { ChampionshipContenders } from '../../types/contender';
 import ContenderCard from './ContenderCard';
 import './ContenderRankings.css';
@@ -9,21 +9,74 @@ import './ContenderRankings.css';
 export default function ContenderRankings() {
   const { t } = useTranslation();
   const [championships, setChampionships] = useState<Championship[]>([]);
+  const [divisions, setDivisions] = useState<Division[]>([]);
   const [selectedChampionshipId, setSelectedChampionshipId] = useState<string | null>(null);
   const [contenderData, setContenderData] = useState<ChampionshipContenders | null>(null);
   const [loading, setLoading] = useState(true);
   const [contendersLoading, setContendersLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load championships on mount
+  // Group championships by division for display
+  const championshipsByDivision = useMemo(() => {
+    const groups: { divisionName: string; divisionId: string | null; championships: Championship[] }[] = [];
+    const divisionMap = new Map<string, string>();
+    for (const d of divisions) {
+      divisionMap.set(d.divisionId, d.name);
+    }
+
+    // Group by divisionId
+    const grouped = new Map<string | null, Championship[]>();
+    for (const champ of championships) {
+      const key = champ.divisionId || null;
+      if (!grouped.has(key)) {
+        grouped.set(key, []);
+      }
+      grouped.get(key)!.push(champ);
+    }
+
+    // Division-locked championships first (sorted by division name)
+    const divisionEntries = Array.from(grouped.entries())
+      .filter(([key]) => key !== null)
+      .sort(([a], [b]) => {
+        const nameA = divisionMap.get(a!) || '';
+        const nameB = divisionMap.get(b!) || '';
+        return nameA.localeCompare(nameB);
+      });
+
+    for (const [divId, champs] of divisionEntries) {
+      groups.push({
+        divisionName: divisionMap.get(divId!) || 'Unknown Division',
+        divisionId: divId,
+        championships: champs,
+      });
+    }
+
+    // Then open championships (no division)
+    const openChamps = grouped.get(null);
+    if (openChamps && openChamps.length > 0) {
+      groups.push({
+        divisionName: 'Open',
+        divisionId: null,
+        championships: openChamps,
+      });
+    }
+
+    return groups;
+  }, [championships, divisions]);
+
+  // Load championships and divisions on mount
   useEffect(() => {
     const controller = new AbortController();
-    const loadChampionships = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
-        const data = await championshipsApi.getAll(controller.signal);
-        const activeChamps = data.filter((c) => c.isActive);
+        const [champsData, divisionsData] = await Promise.all([
+          championshipsApi.getAll(controller.signal),
+          divisionsApi.getAll(controller.signal),
+        ]);
+        const activeChamps = champsData.filter((c) => c.isActive);
         setChampionships(activeChamps);
+        setDivisions(divisionsData);
         if (activeChamps.length > 0 && activeChamps[0]) {
           setSelectedChampionshipId(activeChamps[0].championshipId);
         }
@@ -36,7 +89,7 @@ export default function ContenderRankings() {
         setLoading(false);
       }
     };
-    loadChampionships();
+    loadData();
     return () => controller.abort();
   }, []);
 
@@ -109,18 +162,25 @@ export default function ContenderRankings() {
         <p className="subtitle">{t('contenders.subtitle')}</p>
       </header>
 
-      {/* Championship Selector Tabs */}
+      {/* Championship Selector Tabs — grouped by division */}
       <div className="championship-tabs">
-        {championships.map((championship) => (
-          <button
-            key={championship.championshipId}
-            className={`tab ${
-              selectedChampionshipId === championship.championshipId ? 'active' : ''
-            }`}
-            onClick={() => setSelectedChampionshipId(championship.championshipId)}
-          >
-            {championship.name}
-          </button>
+        {championshipsByDivision.map((group) => (
+          <div key={group.divisionId || 'open'} className="division-group">
+            {championshipsByDivision.length > 1 && (
+              <span className="division-label">{group.divisionName}</span>
+            )}
+            {group.championships.map((championship) => (
+              <button
+                key={championship.championshipId}
+                className={`tab ${
+                  selectedChampionshipId === championship.championshipId ? 'active' : ''
+                }`}
+                onClick={() => setSelectedChampionshipId(championship.championshipId)}
+              >
+                {championship.name}
+              </button>
+            ))}
+          </div>
         ))}
       </div>
 

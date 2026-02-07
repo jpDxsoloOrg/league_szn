@@ -35,6 +35,7 @@ export interface Championship {
   name: string;
   type: 'singles' | 'tag';
   currentChampion?: string | string[]; // playerId or array for tag teams
+  divisionId?: string;
   imageUrl?: string;
   createdAt: string;
   isActive: boolean;

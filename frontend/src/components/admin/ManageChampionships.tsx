@@ -1,9 +1,9 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
-import { championshipsApi, imagesApi } from '../../services/api';
+import { championshipsApi, divisionsApi, imagesApi } from '../../services/api';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
 import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
-import type { Championship } from '../../types';
+import type { Championship, Division } from '../../types';
 import './ManageChampionships.css';
 
 export default function ManageChampionships() {
@@ -17,9 +17,12 @@ export default function ManageChampionships() {
   const [editingChampionship, setEditingChampionship] = useState<Championship | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
+  const [divisions, setDivisions] = useState<Division[]>([]);
+
   const [formData, setFormData] = useState({
     name: '',
     type: 'singles' as 'singles' | 'tag',
+    divisionId: '',
     imageUrl: '',
   });
 
@@ -29,6 +32,7 @@ export default function ManageChampionships() {
 
   useEffect(() => {
     loadChampionships();
+    loadDivisions();
   }, []);
 
   const loadChampionships = async () => {
@@ -41,6 +45,21 @@ export default function ManageChampionships() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadDivisions = async () => {
+    try {
+      const data = await divisionsApi.getAll();
+      setDivisions(data);
+    } catch (_err) {
+      // Non-critical — divisions are optional
+    }
+  };
+
+  const getDivisionName = (divisionId?: string) => {
+    if (!divisionId) return 'None';
+    const division = divisions.find((d) => d.divisionId === divisionId);
+    return division ? division.name : 'Unknown';
   };
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
@@ -142,6 +161,7 @@ export default function ManageChampionships() {
         await championshipsApi.update(editingChampionship.championshipId, {
           name: sanitizedName,
           type: formData.type,
+          divisionId: formData.divisionId || undefined,
           imageUrl: imageUrl || undefined,
         });
         setSuccess('Championship updated successfully!');
@@ -149,13 +169,14 @@ export default function ManageChampionships() {
         await championshipsApi.create({
           name: sanitizedName,
           type: formData.type,
+          divisionId: formData.divisionId || undefined,
           imageUrl: imageUrl || undefined,
           isActive: true,
         });
         setSuccess('Championship created successfully!');
       }
 
-      setFormData({ name: '', type: 'singles', imageUrl: '' });
+      setFormData({ name: '', type: 'singles', divisionId: '', imageUrl: '' });
       setSelectedFile(null);
       setImagePreview(null);
       setShowAddForm(false);
@@ -173,6 +194,7 @@ export default function ManageChampionships() {
     setFormData({
       name: championship.name,
       type: championship.type,
+      divisionId: championship.divisionId || '',
       imageUrl: championship.imageUrl || '',
     });
     setImagePreview(championship.imageUrl || null);
@@ -181,7 +203,7 @@ export default function ManageChampionships() {
   };
 
   const handleCancel = () => {
-    setFormData({ name: '', type: 'singles', imageUrl: '' });
+    setFormData({ name: '', type: 'singles', divisionId: '', imageUrl: '' });
     setSelectedFile(null);
     setImagePreview(null);
     setShowAddForm(false);
@@ -256,6 +278,22 @@ export default function ManageChampionships() {
             </div>
 
             <div className="form-group">
+              <label htmlFor="divisionId">Division (locks contenders to this division)</label>
+              <select
+                id="divisionId"
+                value={formData.divisionId}
+                onChange={(e) => setFormData({ ...formData, divisionId: e.target.value })}
+              >
+                <option value="">No Division (Open to all)</option>
+                {divisions.map((division) => (
+                  <option key={division.divisionId} value={division.divisionId}>
+                    {division.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
               <label htmlFor="championship-image">Championship Belt Image</label>
               <div className="image-upload-container">
                 {imagePreview ? (
@@ -315,6 +353,9 @@ export default function ManageChampionships() {
                 <h4>{championship.name}</h4>
                 <div className="championship-type">
                   {championship.type === 'singles' ? 'Singles' : 'Tag Team'}
+                </div>
+                <div className="championship-division">
+                  Division: {getDivisionName(championship.divisionId)}
                 </div>
                 <div className="championship-status">
                   {championship.isActive ? (

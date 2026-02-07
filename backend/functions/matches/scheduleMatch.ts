@@ -59,7 +59,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         TableName: TableNames.PLAYERS,
         Key: { playerId },
       });
-      return { playerId, exists: !!player.Item };
+      return { playerId, exists: !!player.Item, player: player.Item };
     });
 
     const playerResults = await Promise.all(playerValidationPromises);
@@ -78,6 +78,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
       if (!championship.Item) {
         return notFound(`Championship not found: ${body.championshipId}`);
+      }
+
+      // Enforce division restriction: all participants must belong to the championship's division
+      const champDivisionId = championship.Item.divisionId as string | undefined;
+      if (champDivisionId) {
+        const wrongDivision = playerResults.filter((p) => {
+          const playerDivision = (p.player as Record<string, unknown>)?.divisionId as string | undefined;
+          return playerDivision !== champDivisionId;
+        });
+
+        if (wrongDivision.length > 0) {
+          return badRequest(
+            `Championship is locked to a division. The following participants are not in the correct division: ${wrongDivision.map((p) => p.playerId).join(', ')}`,
+          );
+        }
       }
     }
 

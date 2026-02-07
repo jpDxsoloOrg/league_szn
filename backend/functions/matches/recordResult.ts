@@ -41,6 +41,7 @@ async function triggerRankingRecalculation(): Promise<void> {
       championshipId: champ.championshipId as string,
       championshipType: champ.type as 'singles' | 'tag',
       currentChampion: champ.currentChampion as string | string[] | undefined,
+      divisionId: champ.divisionId as string | undefined,
       periodDays: 30,
       minimumMatches: 3,
       maxContenders: 10,
