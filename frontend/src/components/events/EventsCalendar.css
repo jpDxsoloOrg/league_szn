@@ -227,12 +227,12 @@
   }
 
   .calendar-day-header {
-    font-size: 0.6rem;
+    font-size: 0.7rem;
     padding: 4px 2px;
   }
 
   .calendar-day-number {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
   }
 
   .calendar-event-dot {
@@ -255,6 +255,6 @@
   }
 
   .legend-item {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
 }

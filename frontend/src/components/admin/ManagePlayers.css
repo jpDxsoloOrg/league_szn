@@ -49,8 +49,13 @@
   margin-bottom: 1rem;
 }
 
+.players-table-wrapper {
+  overflow-x: auto;
+}
+
 .players-table {
   width: 100%;
+  min-width: 600px;
 }
 
 .players-table td {

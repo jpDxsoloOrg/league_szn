@@ -332,6 +332,7 @@ export default function ManagePlayers() {
         {players.length === 0 ? (
           <p>No players yet. Add your first player!</p>
         ) : (
+          <div className="players-table-wrapper">
           <table className="players-table">
             <thead>
               <tr>
@@ -394,6 +395,7 @@ export default function ManagePlayers() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
