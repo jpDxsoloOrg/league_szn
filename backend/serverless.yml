@@ -22,6 +22,7 @@ provider:
     IMAGES_BUCKET: ${self:service}-images-${self:provider.stage}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
+    ADMIN_SETUP_KEY: cd59a70bebb3a6ef2d42b921b546754fff1a8ade98c311c09c4f05da4570008b
   iam:
     role:
       statements:
