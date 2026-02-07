@@ -1,0 +1,42 @@
+.top-bar {
+  position: fixed;
+  top: 0;
+  left: 300px;
+  right: 0;
+  height: 56px;
+  background-color: #1a1a1a;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  z-index: 100;
+}
+
+.top-bar-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.top-bar-parent {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #999;
+}
+
+.top-bar-separator {
+  font-size: 0.875rem;
+  color: rgba(212, 175, 55, 0.4);
+}
+
+.top-bar-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .top-bar {
+    left: 280px;
+  }
+}

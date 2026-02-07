@@ -1,8 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import './i18n';
 import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/Sidebar';
+import TopBar from './components/TopBar';
 import Standings from './components/Standings';
 import Championships from './components/Championships';
 import Matches from './components/Matches';
@@ -44,16 +44,12 @@ import EventResults from './components/events/EventResults';
 import './App.css';
 
 function App() {
-  const { t } = useTranslation();
-
   return (
     <ErrorBoundary>
       <Router>
         <div className="App">
         <Sidebar />
-        <header>
-          <h1>{t('header.title')}</h1>
-        </header>
+        <TopBar />
         <main>
           <Routes>
             <Route path="/" element={<Standings />} />
