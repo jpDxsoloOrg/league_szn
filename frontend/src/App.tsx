@@ -1,9 +1,8 @@
-import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import './i18n';
 import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/Sidebar';
+import TopBar from './components/TopBar';
 import Standings from './components/Standings';
 import Championships from './components/Championships';
 import Matches from './components/Matches';
@@ -45,20 +44,12 @@ import EventResults from './components/events/EventResults';
 import './App.css';
 
 function App() {
-  const { t } = useTranslation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-
   return (
     <ErrorBoundary>
       <Router>
         <div className="App">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <header>
-          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
-            &#9776;
-          </button>
-          <h1>{t('header.title')}</h1>
-        </header>
+        <Sidebar />
+        <TopBar />
         <main>
           <Routes>
             <Route path="/" element={<Standings />} />

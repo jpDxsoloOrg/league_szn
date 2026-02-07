@@ -2,28 +2,6 @@
   width: 100%;
 }
 
-.admin-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #d4af37;
-}
-
-.admin-header h2 {
-  margin: 0;
-}
-
-.logout-btn {
-  background-color: #7f1d1d !important;
-  padding: 0.5rem 1.5rem;
-}
-
-.logout-btn:hover {
-  background-color: #991b1b !important;
-}
-
 .admin-content {
   padding: 1rem 0;
 }
