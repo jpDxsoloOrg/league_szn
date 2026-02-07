@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import './i18n';
@@ -46,17 +45,13 @@ import './App.css';
 
 function App() {
   const { t } = useTranslation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <ErrorBoundary>
       <Router>
         <div className="App">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <Sidebar />
         <header>
-          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
-            &#9776;
-          </button>
           <h1>{t('header.title')}</h1>
         </header>
         <main>
