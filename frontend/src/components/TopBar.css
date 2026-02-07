@@ -1,0 +1,26 @@
+.top-bar {
+  position: fixed;
+  top: 0;
+  left: 300px;
+  right: 0;
+  height: 52px;
+  background-color: #1a1a1a;
+  border-bottom: 1px solid #333;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  z-index: 100;
+}
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .top-bar {
+    left: 280px;
+  }
+}

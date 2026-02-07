@@ -1,8 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import './i18n';
 import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/Sidebar';
+import TopBar from './components/TopBar';
 import Standings from './components/Standings';
 import Championships from './components/Championships';
 import Matches from './components/Matches';
@@ -44,61 +44,57 @@ import EventResults from './components/events/EventResults';
 import './App.css';
 
 function App() {
-  const { t } = useTranslation();
-
   return (
     <ErrorBoundary>
       <Router>
         <div className="App">
-        <Sidebar />
-        <header>
-          <h1>{t('header.title')}</h1>
-        </header>
-        <main>
-          <Routes>
-            <Route path="/" element={<Standings />} />
-            <Route path="/championships" element={<Championships />} />
-            <Route path="/matches" element={<Matches />} />
-            <Route path="/tournaments" element={<Tournaments />} />
-            <Route path="/guide" element={<UserGuide />} />
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/admin/:tab" element={<AdminPanel />} />
-            {/* Challenge Routes */}
-            <Route path="/challenges" element={<ChallengeBoard />} />
-            <Route path="/challenges/issue" element={<IssueChallenge />} />
-            <Route path="/challenges/my" element={<MyChallenges />} />
-            <Route path="/challenges/:challengeId" element={<ChallengeDetail />} />
-            {/* Promo Routes */}
-            <Route path="/promos" element={<PromoFeed />} />
-            <Route path="/promos/new" element={<PromoEditor />} />
-            <Route path="/promos/:promoId" element={<PromoThread />} />
-            {/* Statistics Routes */}
-            <Route path="/stats" element={<PlayerStats />} />
-            <Route path="/stats/player/:playerId" element={<PlayerStats />} />
-            <Route path="/stats/head-to-head" element={<HeadToHeadComparison />} />
-            <Route path="/stats/leaderboards" element={<Leaderboards />} />
-            <Route path="/stats/records" element={<RecordBook />} />
-            <Route path="/stats/tale-of-tape" element={<TaleOfTheTape />} />
-            <Route path="/stats/achievements" element={<Achievements />} />
-            {/* Events Routes */}
-            <Route path="/events" element={<EventsCalendar />} />
-            <Route path="/events/:eventId" element={<EventDetail />} />
-            <Route path="/events/:eventId/results" element={<EventResults />} />
-            {/* Contender Routes */}
-            <Route path="/contenders" element={<ContenderRankings />} />
-            <Route path="/contenders/my-status" element={<MyContenderStatus />} />
-            {/* Fantasy Routes */}
-            <Route path="/fantasy" element={<FantasyLanding />} />
-            <Route path="/fantasy/login" element={<FantasyLogin />} />
-            <Route path="/fantasy/signup" element={<FantasySignup />} />
-            <Route path="/fantasy/dashboard" element={<FantasyDashboard />} />
-            <Route path="/fantasy/picks/:showId" element={<MakePicks />} />
-            <Route path="/fantasy/leaderboard" element={<FantasyLeaderboard />} />
-            <Route path="/fantasy/costs" element={<WrestlerCosts />} />
-            <Route path="/fantasy/shows/:showId/results" element={<ShowResults />} />
-          </Routes>
-        </main>
+          <Sidebar />
+          <TopBar />
+          <main>
+            <Routes>
+              <Route path="/" element={<Standings />} />
+              <Route path="/championships" element={<Championships />} />
+              <Route path="/matches" element={<Matches />} />
+              <Route path="/tournaments" element={<Tournaments />} />
+              <Route path="/guide" element={<UserGuide />} />
+              {/* Admin Routes */}
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/admin/:tab" element={<AdminPanel />} />
+              {/* Challenge Routes */}
+              <Route path="/challenges" element={<ChallengeBoard />} />
+              <Route path="/challenges/issue" element={<IssueChallenge />} />
+              <Route path="/challenges/my" element={<MyChallenges />} />
+              <Route path="/challenges/:challengeId" element={<ChallengeDetail />} />
+              {/* Promo Routes */}
+              <Route path="/promos" element={<PromoFeed />} />
+              <Route path="/promos/new" element={<PromoEditor />} />
+              <Route path="/promos/:promoId" element={<PromoThread />} />
+              {/* Statistics Routes */}
+              <Route path="/stats" element={<PlayerStats />} />
+              <Route path="/stats/player/:playerId" element={<PlayerStats />} />
+              <Route path="/stats/head-to-head" element={<HeadToHeadComparison />} />
+              <Route path="/stats/leaderboards" element={<Leaderboards />} />
+              <Route path="/stats/records" element={<RecordBook />} />
+              <Route path="/stats/tale-of-tape" element={<TaleOfTheTape />} />
+              <Route path="/stats/achievements" element={<Achievements />} />
+              {/* Events Routes */}
+              <Route path="/events" element={<EventsCalendar />} />
+              <Route path="/events/:eventId" element={<EventDetail />} />
+              <Route path="/events/:eventId/results" element={<EventResults />} />
+              {/* Contender Routes */}
+              <Route path="/contenders" element={<ContenderRankings />} />
+              <Route path="/contenders/my-status" element={<MyContenderStatus />} />
+              {/* Fantasy Routes */}
+              <Route path="/fantasy" element={<FantasyLanding />} />
+              <Route path="/fantasy/login" element={<FantasyLogin />} />
+              <Route path="/fantasy/signup" element={<FantasySignup />} />
+              <Route path="/fantasy/dashboard" element={<FantasyDashboard />} />
+              <Route path="/fantasy/picks/:showId" element={<MakePicks />} />
+              <Route path="/fantasy/leaderboard" element={<FantasyLeaderboard />} />
+              <Route path="/fantasy/costs" element={<WrestlerCosts />} />
+              <Route path="/fantasy/shows/:showId/results" element={<ShowResults />} />
+            </Routes>
+          </main>
         </div>
       </Router>
     </ErrorBoundary>

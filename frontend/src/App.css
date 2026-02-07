@@ -10,26 +10,12 @@
   color: #fff;
 }
 
-header {
-  background-color: #1a1a1a;
-  padding: 0.75rem 1.5rem;
-  border-bottom: 2px solid #d4af37;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-left: 300px;
-}
-
-header h1 {
-  font-size: 1.5rem;
-  margin: 0;
-  color: #d4af37;
-}
-
 main {
   padding: 2rem;
   max-width: 1200px;
   margin-left: 300px;
+  margin-top: 52px;
+  min-height: calc(100vh - 52px);
 }
 
 h2 {
@@ -90,10 +76,6 @@ tr:hover {
 }
 
 @media (max-width: 768px) {
-  header {
-    margin-left: 280px;
-  }
-
   main {
     margin-left: 280px;
   }
