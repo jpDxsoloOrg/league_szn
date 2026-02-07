@@ -62,12 +62,17 @@ export const handler: APIGatewayTokenAuthorizerHandler = async (event) => {
     const payload = await verifier.verify(token);
     console.log('Token verified for user:', payload.sub);
 
+    // Extract cognito:groups from the access token
+    const groups = (payload['cognito:groups'] as string[] | undefined) || [];
+    const groupsStr = groups.join(',');
+
     // Generate an Allow policy for all resources
     const resource = event.methodArn.split('/').slice(0, 2).join('/') + '/*';
 
     return generatePolicy(payload.sub, 'Allow', resource, {
       username: payload.username || payload.sub,
       email: (payload['email'] as string) || '',
+      groups: groupsStr,
     });
   } catch (error) {
     console.error('Token verification failed:', error);

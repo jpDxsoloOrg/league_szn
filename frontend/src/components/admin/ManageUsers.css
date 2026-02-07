@@ -1,0 +1,237 @@
+.manage-users {
+  padding: 1rem;
+}
+
+.users-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.users-header h2 {
+  margin: 0;
+  color: var(--text-primary, #fff);
+}
+
+.btn-refresh {
+  background: var(--card-bg, #1a1a2e);
+  border: 1px solid var(--border-color, #444);
+  color: var(--text-primary, #fff);
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn-refresh:hover {
+  border-color: var(--accent-color, #e50914);
+}
+
+.wrestler-requests-banner {
+  background: rgba(255, 193, 7, 0.15);
+  border: 1px solid rgba(255, 193, 7, 0.4);
+  color: #ffc107;
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-tabs button {
+  background: var(--card-bg, #1a1a2e);
+  border: 1px solid var(--border-color, #444);
+  color: var(--text-secondary, #aaa);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.filter-tabs button.active,
+.filter-tabs button:hover {
+  border-color: var(--accent-color, #e50914);
+  color: var(--text-primary, #fff);
+}
+
+.filter-tabs button.active {
+  background: rgba(229, 9, 20, 0.15);
+}
+
+.users-table-container {
+  overflow-x: auto;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.users-table th {
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 2px solid var(--border-color, #444);
+  color: var(--text-secondary, #aaa);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.users-table td {
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--border-color, #333);
+  color: var(--text-primary, #fff);
+}
+
+.wrestler-request-row {
+  background: rgba(255, 193, 7, 0.05);
+}
+
+.wrestler-name {
+  color: #ffc107;
+  font-weight: 500;
+}
+
+.no-value {
+  color: var(--text-muted, #666);
+}
+
+.roles-cell {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.role-admin {
+  background: rgba(229, 9, 20, 0.2);
+  color: #ff6b6b;
+  border: 1px solid rgba(229, 9, 20, 0.4);
+}
+
+.role-wrestler {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.4);
+}
+
+.role-fantasy {
+  background: rgba(76, 175, 80, 0.2);
+  color: #81c784;
+  border: 1px solid rgba(76, 175, 80, 0.4);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+}
+
+.status-confirmed {
+  background: rgba(76, 175, 80, 0.15);
+  color: #81c784;
+}
+
+.status-unconfirmed {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+}
+
+.status-force_change_password {
+  background: rgba(255, 152, 0, 0.15);
+  color: #ffb74d;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.btn-action {
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+}
+
+.btn-action:hover {
+  opacity: 0.8;
+}
+
+.btn-approve {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: rgba(76, 175, 80, 0.5);
+  color: #81c784;
+}
+
+.btn-promote {
+  background: rgba(33, 150, 243, 0.2);
+  border-color: rgba(33, 150, 243, 0.5);
+  color: #64b5f6;
+}
+
+.btn-promote-admin {
+  background: rgba(229, 9, 20, 0.15);
+  border-color: rgba(229, 9, 20, 0.4);
+  color: #ff6b6b;
+}
+
+.btn-demote {
+  background: rgba(158, 158, 158, 0.15);
+  border-color: rgba(158, 158, 158, 0.4);
+  color: #bdbdbd;
+}
+
+.action-loading {
+  color: var(--text-muted, #888);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-muted, #666);
+  padding: 2rem !important;
+}
+
+.error-message {
+  background: rgba(229, 9, 20, 0.1);
+  border: 1px solid rgba(229, 9, 20, 0.3);
+  color: #ff6b6b;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dismiss-btn {
+  background: none;
+  border: none;
+  color: #ff6b6b;
+  cursor: pointer;
+  font-size: 0.8rem;
+  text-decoration: underline;
+}

@@ -1,21 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { authApi } from '../services/api';
-import { cognitoAuth } from '../services/cognito';
+import { useAuth } from '../contexts/AuthContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import './Sidebar.css';
 
 export default function Sidebar() {
   const { t } = useTranslation();
   const location = useLocation();
-  const [isAdmin, setIsAdmin] = useState(authApi.isAuthenticated());
+  const { isAuthenticated, isAdmin, isWrestler, isFantasy, signOut } = useAuth();
   const [adminExpanded, setAdminExpanded] = useState(true);
-
-  // Keep admin auth state in sync
-  useEffect(() => {
-    setIsAdmin(authApi.isAuthenticated());
-  }, [location.pathname]);
 
   // Auto-expand admin section when navigating to admin routes
   useEffect(() => {
@@ -25,9 +19,7 @@ export default function Sidebar() {
   }, [location.pathname]);
 
   const handleLogout = async () => {
-    await cognitoAuth.signOut();
-    authApi.clearToken();
-    setIsAdmin(false);
+    await signOut();
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -41,6 +33,7 @@ export default function Sidebar() {
 
       <nav className="sidebar-nav">
         <div className="nav-section">
+          {/* Public routes - everyone can see these */}
           <Link to="/" className={isActive('/') ? 'active' : ''}>
             {t('nav.standings')}
           </Link>
@@ -59,23 +52,50 @@ export default function Sidebar() {
           <Link to="/contenders" className={isActive('/contenders') || isActive('/contenders/my-status') ? 'active' : ''}>
             {t('nav.contenders')}
           </Link>
-          <span className="nav-disabled">
-            {t('nav.challenges')} <span className="coming-soon">Coming Soon</span>
-          </span>
-          <span className="nav-disabled">
-            {t('nav.promos')} <span className="coming-soon">Coming Soon</span>
-          </span>
+
+          {/* Wrestler-only features (also visible to Admin) */}
+          {isWrestler ? (
+            <>
+              <span className="nav-disabled">
+                {t('nav.challenges')} <span className="coming-soon">Coming Soon</span>
+              </span>
+              <span className="nav-disabled">
+                {t('nav.promos')} <span className="coming-soon">Coming Soon</span>
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="nav-disabled">
+                {t('nav.challenges')} <span className="role-locked">Wrestler Only</span>
+              </span>
+              <span className="nav-disabled">
+                {t('nav.promos')} <span className="role-locked">Wrestler Only</span>
+              </span>
+            </>
+          )}
+
+          {/* Statistics - available to all authenticated */}
           <span className="nav-disabled">
             {t('nav.statistics')} <span className="coming-soon">Coming Soon</span>
           </span>
-          <span className="nav-disabled">
-            {t('nav.fantasy')} <span className="coming-soon">Coming Soon</span>
-          </span>
+
+          {/* Fantasy - available to Fantasy role and above */}
+          {isFantasy ? (
+            <Link to="/fantasy" className={location.pathname.startsWith('/fantasy') ? 'active' : ''}>
+              {t('nav.fantasy')}
+            </Link>
+          ) : (
+            <span className="nav-disabled">
+              {t('nav.fantasy')} <span className="coming-soon">Coming Soon</span>
+            </span>
+          )}
+
           <Link to="/guide" className={isActive('/guide') ? 'active' : ''}>
             {t('nav.help')}
           </Link>
         </div>
 
+        {/* Admin section - only for Admin role */}
         {isAdmin && (
           <div className="nav-section admin-section">
             <button
@@ -88,6 +108,9 @@ export default function Sidebar() {
 
             {adminExpanded && (
               <div className="admin-nav-items">
+                <Link to="/admin/users" className={isActive('/admin/users') ? 'active' : ''}>
+                  User Management
+                </Link>
                 <Link to="/admin/schedule" className={isActive('/admin/schedule') ? 'active' : ''}>
                   {t('admin.panel.tabs.scheduleMatch')}
                 </Link>
@@ -133,21 +156,28 @@ export default function Sidebar() {
                 <Link to="/admin/danger" className={`danger-link ${isActive('/admin/danger') ? 'active' : ''}`}>
                   {t('admin.panel.tabs.dangerZone')}
                 </Link>
-                <button className="sidebar-logout" onClick={handleLogout}>
-                  {t('common.logout')}
-                </button>
               </div>
             )}
           </div>
         )}
 
-        {!isAdmin && (
-          <div className="nav-section">
-            <Link to="/admin" className={isActive('/admin') ? 'active' : ''}>
-              {t('nav.admin')}
-            </Link>
-          </div>
-        )}
+        {/* Auth section */}
+        <div className="nav-section auth-section">
+          {isAuthenticated ? (
+            <button className="sidebar-logout" onClick={handleLogout}>
+              {t('common.logout')}
+            </button>
+          ) : (
+            <>
+              <Link to="/login" className={isActive('/login') ? 'active' : ''}>
+                Sign In
+              </Link>
+              <Link to="/signup" className={isActive('/signup') ? 'active' : ''}>
+                Sign Up
+              </Link>
+            </>
+          )}
+        </div>
       </nav>
     </aside>
   );

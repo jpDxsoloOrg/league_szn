@@ -36,19 +36,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-        env:
-          VITE_API_BASE_URL: ${{ secrets.PROD_API_BASE_URL }}
-          VITE_COGNITO_USER_POOL_ID: us-east-1_o0xMTyzI5
-          VITE_COGNITO_CLIENT_ID: 5loqna6cm7ip5cka75koovla07
-          VITE_AWS_REGION: us-east-1
-
       - name: Install backend dependencies
         working-directory: backend
         run: npm ci
@@ -60,6 +47,35 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           PROD_ACM_CERTIFICATE_ARN: ${{ secrets.PROD_ACM_CERTIFICATE_ARN }}
+
+      - name: Extract Cognito IDs from CloudFormation
+        id: cognito
+        run: |
+          USER_POOL_ID=$(aws cloudformation describe-stacks \
+            --stack-name wwe-2k-league-api-dev \
+            --query "Stacks[0].Outputs[?OutputKey=='CognitoUserPoolId'].OutputValue" \
+            --output text)
+          CLIENT_ID=$(aws cloudformation describe-stacks \
+            --stack-name wwe-2k-league-api-dev \
+            --query "Stacks[0].Outputs[?OutputKey=='CognitoUserPoolClientId'].OutputValue" \
+            --output text)
+          echo "user_pool_id=$USER_POOL_ID" >> $GITHUB_OUTPUT
+          echo "client_id=$CLIENT_ID" >> $GITHUB_OUTPUT
+          echo "Cognito User Pool ID: $USER_POOL_ID"
+          echo "Cognito Client ID: $CLIENT_ID"
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.PROD_API_BASE_URL }}
+          VITE_COGNITO_USER_POOL_ID: ${{ steps.cognito.outputs.user_pool_id }}
+          VITE_COGNITO_CLIENT_ID: ${{ steps.cognito.outputs.client_id }}
+          VITE_AWS_REGION: us-east-1
 
       - name: Deploy frontend to S3
         working-directory: frontend

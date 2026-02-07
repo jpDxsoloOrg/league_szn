@@ -71,12 +71,17 @@
   user-select: none;
 }
 
-.nav-disabled .coming-soon {
+.nav-disabled .coming-soon,
+.nav-disabled .role-locked {
   font-size: 0.65rem;
   color: #444;
   margin-left: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.nav-disabled .role-locked {
+  color: #8b4513;
 }
 
 .admin-disabled {
@@ -165,6 +170,12 @@
 
 .sidebar-logout:hover {
   background-color: #991b1b !important;
+}
+
+.auth-section {
+  border-top: 1px solid #333;
+  margin-top: auto;
+  padding-top: 0.5rem;
 }
 
 @media (max-width: 768px) {

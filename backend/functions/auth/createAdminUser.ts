@@ -5,6 +5,7 @@ import {
   AdminCreateUserCommand,
   AdminSetUserPasswordCommand,
   AdminGetUserCommand,
+  AdminAddUserToGroupCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { success, badRequest, serverError, unauthorized } from '../../lib/response';
 
@@ -99,6 +100,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         Username: email,
         Password: password,
         Permanent: true,
+      })
+    );
+
+    // Add user to Admin group (which gives full access)
+    await cognitoClient.send(
+      new AdminAddUserToGroupCommand({
+        UserPoolId: USER_POOL_ID,
+        Username: email,
+        GroupName: 'Admin',
       })
     );
 

@@ -432,9 +432,9 @@ function calculateNewCost(
    - Quick leaderboard preview
    - Login/signup prompts for non-authenticated
 
-2. **Fantasy Signup/Login** (`/fantasy/login`)
-   - Separate from admin login
-   - Email + password signup
+2. **Signup/Login** (`/login`, `/signup`)
+   - Unified auth for all user types (Admin, Wrestler, Fantasy)
+   - Email + password signup with optional wrestler name field
    - Username selection
 
 3. **Fantasy Dashboard** (`/fantasy/dashboard`) - Fantasy Auth

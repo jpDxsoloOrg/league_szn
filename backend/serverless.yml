@@ -20,8 +20,9 @@ provider:
     CONTENDER_RANKINGS_TABLE: ${self:service}-contender-rankings-${self:provider.stage}
     RANKING_HISTORY_TABLE: ${self:service}-ranking-history-${self:provider.stage}
     IMAGES_BUCKET: ${self:service}-images-${self:provider.stage}
-    COGNITO_USER_POOL_ID: !Ref AdminUserPool
-    COGNITO_CLIENT_ID: !Ref AdminUserPoolClient
+    COGNITO_USER_POOL_ID: !Ref LeagueUserPool
+    COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
+    ADMIN_SETUP_KEY: cd59a70bebb3a6ef2d42b921b546754fff1a8ade98c311c09c4f05da4570008b
   iam:
     role:
       statements:
@@ -62,8 +63,13 @@ provider:
             - cognito-idp:AdminCreateUser
             - cognito-idp:AdminSetUserPassword
             - cognito-idp:AdminGetUser
+            - cognito-idp:AdminAddUserToGroup
+            - cognito-idp:AdminRemoveUserFromGroup
+            - cognito-idp:AdminListGroupsForUser
+            - cognito-idp:ListUsers
+            - cognito-idp:ListUsersInGroup
           Resource:
-            - !GetAtt AdminUserPool.Arn
+            - !GetAtt LeagueUserPool.Arn
 
 plugins:
   - serverless-plugin-typescript
@@ -89,6 +95,9 @@ functions:
   adminAuthorizer:
     handler: functions/auth/authorizer.handler
 
+  postConfirmation:
+    handler: functions/auth/postConfirmation.handler
+
   createAdminUser:
     handler: functions/auth/createAdminUser.handler
     events:
@@ -96,6 +105,25 @@ functions:
           path: auth/setup
           method: post
           cors: true
+
+  # User Management (Admin only)
+  listUsers:
+    handler: functions/users/listUsers.handler
+    events:
+      - http:
+          path: admin/users
+          method: get
+          cors: true
+          authorizer: adminAuthorizer
+
+  updateUserRole:
+    handler: functions/users/updateUserRole.handler
+    events:
+      - http:
+          path: admin/users/role
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
 
   # Players
   getPlayers:
@@ -453,13 +481,29 @@ resources:
         RestApiId:
           Ref: ApiGatewayRestApi
 
-    # Cognito User Pool for Admin Authentication (username-based)
-    AdminUserPool:
+    # New Cognito User Pool (v3) with email login and roles
+    # PostConfirmation trigger is attached via setup-cognito.sh after deploy
+    # (can't be in CloudFormation due to circular dep with shared IAM role)
+    LeagueUserPool:
       Type: AWS::Cognito::UserPool
       Properties:
-        UserPoolName: ${self:service}-admin-pool-v2-${self:provider.stage}
+        UserPoolName: ${self:service}-pool-v3-${self:provider.stage}
         AdminCreateUserConfig:
-          AllowAdminCreateUserOnly: true
+          AllowAdminCreateUserOnly: false
+        AutoVerifiedAttributes:
+          - email
+        UsernameAttributes:
+          - email
+        Schema:
+          - Name: email
+            Required: true
+            Mutable: true
+          - Name: wrestler_name
+            AttributeDataType: String
+            Mutable: true
+            StringAttributeConstraints:
+              MinLength: '0'
+              MaxLength: '100'
         Policies:
           PasswordPolicy:
             MinimumLength: 8
@@ -468,11 +512,36 @@ resources:
             RequireSymbols: false
             RequireUppercase: true
 
-    AdminUserPoolClient:
+    # Cognito Groups for role-based access
+    AdminGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties:
+        GroupName: Admin
+        UserPoolId: !Ref LeagueUserPool
+        Description: Full access to all features including user management
+        Precedence: 0
+
+    WrestlerGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties:
+        GroupName: Wrestler
+        UserPoolId: !Ref LeagueUserPool
+        Description: Access to wrestler features (challenges, promos) plus fantasy
+        Precedence: 1
+
+    FantasyGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties:
+        GroupName: Fantasy
+        UserPoolId: !Ref LeagueUserPool
+        Description: Access to fantasy features and public data
+        Precedence: 2
+
+    LeagueUserPoolClient:
       Type: AWS::Cognito::UserPoolClient
       Properties:
-        ClientName: ${self:service}-admin-client-v2-${self:provider.stage}
-        UserPoolId: !Ref AdminUserPool
+        ClientName: ${self:service}-client-v3-${self:provider.stage}
+        UserPoolId: !Ref LeagueUserPool
         GenerateSecret: false
         ExplicitAuthFlows:
           - ALLOW_USER_PASSWORD_AUTH
@@ -814,11 +883,11 @@ resources:
         Name: ${self:service}-${self:provider.stage}-CloudFrontDomainName
     CognitoUserPoolId:
       Description: Cognito User Pool ID
-      Value: !Ref AdminUserPool
+      Value: !Ref LeagueUserPool
       Export:
         Name: ${self:service}-${self:provider.stage}-CognitoUserPoolId
     CognitoUserPoolClientId:
       Description: Cognito User Pool Client ID
-      Value: !Ref AdminUserPoolClient
+      Value: !Ref LeagueUserPoolClient
       Export:
         Name: ${self:service}-${self:provider.stage}-CognitoUserPoolClientId

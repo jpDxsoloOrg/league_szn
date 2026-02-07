@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { authApi } from '../../services/api';
+import { useParams } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
 
-import AdminLogin from './AdminLogin';
 import ManagePlayers from './ManagePlayers';
 import ManageDivisions from './ManageDivisions';
 import ScheduleMatch from './ScheduleMatch';
@@ -19,35 +18,41 @@ import FantasyConfig from './FantasyConfig';
 import AdminChallenges from './AdminChallenges';
 import AdminGuide from './AdminGuide';
 import ClearAllData from './ClearAllData';
+import ManageUsers from './ManageUsers';
 import './AdminPanel.css';
 
 import AdminContenderConfig from './AdminContenderConfig';
 
-type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'guide' | 'danger';
+type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'guide' | 'danger' | 'users';
 
-const VALID_TABS: AdminTab[] = ['players', 'divisions', 'schedule', 'results', 'championships', 'tournaments', 'challenges', 'promos', 'seasons', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'guide', 'danger'];
+const VALID_TABS: AdminTab[] = ['players', 'divisions', 'schedule', 'results', 'championships', 'tournaments', 'challenges', 'promos', 'seasons', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'guide', 'danger', 'users'];
 
 
 export default function AdminPanel() {
   const { tab } = useParams<{ tab: string }>();
-  const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(authApi.isAuthenticated());
+  const { isAuthenticated, isAdmin } = useAuth();
 
   const activeTab: AdminTab = (tab && VALID_TABS.includes(tab as AdminTab)) ? tab as AdminTab : 'players';
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-    // After login, redirect to default admin page
-    navigate('/admin/players');
-  };
-
   if (!isAuthenticated) {
-    return <AdminLogin onLoginSuccess={handleLogin} />;
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="admin-panel">
+        <div className="access-denied">
+          <h2>Admin Access Required</h2>
+          <p>You need admin privileges to access this panel.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="admin-panel">
       <div className="admin-content">
+        {activeTab === 'users' && <ManageUsers />}
         {activeTab === 'players' && <ManagePlayers />}
         {activeTab === 'divisions' && <ManageDivisions />}
         {activeTab === 'schedule' && <ScheduleMatch />}

@@ -1,11 +1,11 @@
 import { useState, FormEvent } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import './FantasyAuth.css';
+import { useAuth } from '../../contexts/AuthContext';
+import './Auth.css';
 
-export default function FantasyLogin() {
-  const { t } = useTranslation();
+export default function Login() {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -17,18 +17,10 @@ export default function FantasyLogin() {
     setLoading(true);
 
     try {
-      // Mock login - simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // For mock: accept any valid-looking credentials
-      if (email && password.length >= 8) {
-        // In real implementation, this would call fantasyAuth.signIn()
-        navigate('/fantasy/dashboard');
-      } else {
-        throw new Error(t('fantasy.auth.invalidCredentials'));
-      }
+      await signIn(email, password);
+      navigate('/');
     } catch (err) {
-      const message = err instanceof Error ? err.message : t('fantasy.auth.loginFailed');
+      const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
       setError(message);
     } finally {
       setLoading(false);
@@ -36,20 +28,20 @@ export default function FantasyLogin() {
   };
 
   return (
-    <div className="fantasy-auth-container">
-      <div className="fantasy-auth-card">
-        <h2>{t('fantasy.auth.loginTitle')}</h2>
-        <p className="auth-subtitle">{t('fantasy.auth.loginSubtitle')}</p>
+    <div className="auth-container">
+      <div className="auth-card">
+        <h2>Sign In</h2>
+        <p className="auth-subtitle">Sign in to access League SZN</p>
 
         <form onSubmit={handleSubmit} aria-describedby={error ? 'login-error' : undefined}>
           <div className="form-group">
-            <label htmlFor="email">{t('fantasy.auth.email')}</label>
+            <label htmlFor="email">Email</label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={t('fantasy.auth.emailPlaceholder')}
+              placeholder="Enter your email"
               required
               autoFocus
               aria-invalid={error ? 'true' : undefined}
@@ -57,13 +49,13 @@ export default function FantasyLogin() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">{t('fantasy.auth.password')}</label>
+            <label htmlFor="password">Password</label>
             <input
               type="password"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={t('fantasy.auth.passwordPlaceholder')}
+              placeholder="Enter your password"
               required
               minLength={8}
               aria-invalid={error ? 'true' : undefined}
@@ -77,18 +69,15 @@ export default function FantasyLogin() {
           )}
 
           <button type="submit" className="btn-submit" disabled={loading} aria-busy={loading}>
-            {loading ? t('fantasy.auth.loggingIn') : t('fantasy.auth.login')}
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
         <div className="auth-footer">
           <p>
-            {t('fantasy.auth.noAccount')}{' '}
-            <Link to="/signup">{t('fantasy.auth.signUpLink')}</Link>
+            Don't have an account?{' '}
+            <Link to="/signup">Sign Up</Link>
           </p>
-          <Link to="/fantasy" className="back-link">
-            {t('fantasy.auth.backToFantasy')}
-          </Link>
         </div>
       </div>
     </div>
