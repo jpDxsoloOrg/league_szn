@@ -491,8 +491,6 @@ resources:
         UserPoolName: ${self:service}-admin-pool-v2-${self:provider.stage}
         AdminCreateUserConfig:
           AllowAdminCreateUserOnly: false
-        LambdaConfig:
-          PostConfirmation: !GetAtt PostConfirmationLambdaFunction.Arn
         Policies:
           PasswordPolicy:
             MinimumLength: 8
@@ -500,14 +498,6 @@ resources:
             RequireNumbers: true
             RequireSymbols: false
             RequireUppercase: true
-
-    PostConfirmationLambdaPermission:
-      Type: AWS::Lambda::Permission
-      Properties:
-        FunctionName: !GetAtt PostConfirmationLambdaFunction.Arn
-        Action: lambda:InvokeFunction
-        Principal: cognito-idp.amazonaws.com
-        SourceArn: !GetAtt AdminUserPool.Arn
 
     # Cognito Groups for role-based access
     AdminGroup:
