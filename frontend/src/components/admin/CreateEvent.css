@@ -133,3 +133,19 @@
   border-radius: 4px;
   border: 1px solid rgba(74, 222, 128, 0.3);
 }
+
+@media (max-width: 768px) {
+  .create-event {
+    max-width: 100%;
+  }
+
+  .save-event-btn {
+    align-self: stretch;
+    width: 100%;
+  }
+
+  .color-preset {
+    width: 28px;
+    height: 28px;
+  }
+}
