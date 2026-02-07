@@ -104,10 +104,11 @@
   color: var(--text-muted, #666);
 }
 
-.roles-cell {
+.roles-cell-content {
   display: flex;
   gap: 0.3rem;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .role-badge {
@@ -158,10 +159,11 @@
   color: #ffb74d;
 }
 
-.actions-cell {
+.actions-cell-content {
   display: flex;
   gap: 0.3rem;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .btn-action {
