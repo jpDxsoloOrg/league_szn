@@ -96,11 +96,6 @@ functions:
 
   postConfirmation:
     handler: functions/auth/postConfirmation.handler
-    environment:
-      # Override global env to break circular dependency with LeagueUserPool.
-      # This Lambda gets userPoolId from the trigger event, not env vars.
-      COGNITO_USER_POOL_ID: 'from-event'
-      COGNITO_CLIENT_ID: 'from-event'
 
   createAdminUser:
     handler: functions/auth/createAdminUser.handler
@@ -485,10 +480,11 @@ resources:
         RestApiId:
           Ref: ApiGatewayRestApi
 
-    # New Cognito User Pool (v3) with email login, roles, and PostConfirmation trigger
+    # New Cognito User Pool (v3) with email login and roles
+    # PostConfirmation trigger is attached via setup-cognito.sh after deploy
+    # (can't be in CloudFormation due to circular dep with shared IAM role)
     LeagueUserPool:
       Type: AWS::Cognito::UserPool
-      DependsOn: PostConfirmationLambdaFunction
       Properties:
         UserPoolName: ${self:service}-pool-v3-${self:provider.stage}
         AdminCreateUserConfig:
@@ -507,8 +503,6 @@ resources:
             StringAttributeConstraints:
               MinLength: '0'
               MaxLength: '100'
-        LambdaConfig:
-          PostConfirmation: !GetAtt PostConfirmationLambdaFunction.Arn
         Policies:
           PasswordPolicy:
             MinimumLength: 8
@@ -516,15 +510,6 @@ resources:
             RequireNumbers: true
             RequireSymbols: false
             RequireUppercase: true
-
-    # Permission for Cognito to invoke the PostConfirmation Lambda
-    PostConfirmationLambdaPermission:
-      Type: AWS::Lambda::Permission
-      Properties:
-        FunctionName: !GetAtt PostConfirmationLambdaFunction.Arn
-        Action: lambda:InvokeFunction
-        Principal: cognito-idp.amazonaws.com
-        SourceArn: !GetAtt LeagueUserPool.Arn
 
     # Cognito Groups for role-based access
     AdminGroup:
