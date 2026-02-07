@@ -486,26 +486,16 @@ resources:
           Ref: ApiGatewayRestApi
 
     # Cognito User Pool (supports Admin, Wrestler, and Fantasy users)
+    # Note: UsernameAttributes and Schema cannot be changed after pool creation.
+    # The custom:wrestler_name attribute must be added via CLI:
+    #   aws cognito-idp add-custom-attributes --user-pool-id <POOL_ID> \
+    #     --custom-attributes Name=wrestler_name,AttributeDataType=String,Mutable=true
     AdminUserPool:
       Type: AWS::Cognito::UserPool
       Properties:
         UserPoolName: ${self:service}-admin-pool-v2-${self:provider.stage}
         AdminCreateUserConfig:
           AllowAdminCreateUserOnly: false
-        AutoVerifiedAttributes:
-          - email
-        UsernameAttributes:
-          - email
-        Schema:
-          - Name: email
-            Required: true
-            Mutable: true
-          - Name: wrestler_name
-            AttributeDataType: String
-            Mutable: true
-            StringAttributeConstraints:
-              MinLength: '0'
-              MaxLength: '100'
         Policies:
           PasswordPolicy:
             MinimumLength: 8
