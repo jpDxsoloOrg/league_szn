@@ -36,6 +36,7 @@ export default function Sidebar() {
     <aside className="sidebar">
       <div className="sidebar-header">
         <h2>{t('header.title')}</h2>
+        <LanguageSwitcher />
       </div>
 
       <nav className="sidebar-nav">
@@ -148,10 +149,6 @@ export default function Sidebar() {
           </div>
         )}
       </nav>
-
-      <div className="sidebar-footer">
-        <LanguageSwitcher />
-      </div>
     </aside>
   );
 }

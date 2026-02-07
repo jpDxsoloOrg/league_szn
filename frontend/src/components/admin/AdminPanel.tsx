@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { authApi } from '../../services/api';
-import { cognitoAuth } from '../../services/cognito';
+
 import AdminLogin from './AdminLogin';
 import ManagePlayers from './ManagePlayers';
 import ManageDivisions from './ManageDivisions';
@@ -30,7 +29,6 @@ const VALID_TABS: AdminTab[] = ['players', 'divisions', 'schedule', 'results', '
 
 
 export default function AdminPanel() {
-  const { t } = useTranslation();
   const { tab } = useParams<{ tab: string }>();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(authApi.isAuthenticated());
@@ -43,25 +41,12 @@ export default function AdminPanel() {
     navigate('/admin/players');
   };
 
-  const handleLogout = async () => {
-    await cognitoAuth.signOut();
-    authApi.clearToken();
-    setIsAuthenticated(false);
-  };
-
   if (!isAuthenticated) {
     return <AdminLogin onLoginSuccess={handleLogin} />;
   }
 
   return (
     <div className="admin-panel">
-      <div className="admin-header">
-        <h2>{t('admin.panel.title')}</h2>
-        <button onClick={handleLogout} className="logout-btn">
-          {t('common.logout')}
-        </button>
-      </div>
-
       <div className="admin-content">
         {activeTab === 'players' && <ManagePlayers />}
         {activeTab === 'divisions' && <ManageDivisions />}
