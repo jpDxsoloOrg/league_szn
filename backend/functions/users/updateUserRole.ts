@@ -78,7 +78,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           const attrs = userResult.UserAttributes || [];
           const sub = attrs.find((a) => a.Name === 'sub')?.Value;
           const wrestlerName = attrs.find((a) => a.Name === 'custom:wrestler_name')?.Value || '';
-          const email = attrs.find((a) => a.Name === 'email')?.Value || '';
 
           if (!sub) {
             console.error('User sub attribute missing for username:', username);
@@ -102,8 +101,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               Item: {
                 playerId: uuidv4(),
                 userId: sub,
-                name: wrestlerName || email,
-                currentWrestler: '',
+                name: '',
+                currentWrestler: wrestlerName || '',
                 wins: 0,
                 losses: 0,
                 draws: 0,
