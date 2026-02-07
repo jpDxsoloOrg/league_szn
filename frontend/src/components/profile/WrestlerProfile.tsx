@@ -266,18 +266,6 @@ export default function WrestlerProfile() {
       {/* Stats Section */}
       <div className="profile-stats">
         <div className="stat-card">
-          <span className="stat-label">Wins</span>
-          <span className="stat-value">{player.wins}</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-label">Losses</span>
-          <span className="stat-value">{player.losses}</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-label">Draws</span>
-          <span className="stat-value">{player.draws}</span>
-        </div>
-        <div className="stat-card">
           <span className="stat-label">Record</span>
           <span className="stat-value record">
             {player.wins}-{player.losses}-{player.draws}
