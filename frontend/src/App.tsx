@@ -43,6 +43,8 @@ import ShowResults from './components/fantasy/ShowResults';
 import EventsCalendar from './components/events/EventsCalendar';
 import EventDetail from './components/events/EventDetail';
 import EventResults from './components/events/EventResults';
+// Profile components
+import WrestlerProfile from './components/profile/WrestlerProfile';
 // Route guard
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
@@ -71,6 +73,13 @@ function App() {
             {/* Admin Routes - Admin only (protected inside AdminPanel) */}
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/:tab" element={<AdminPanel />} />
+
+            {/* Wrestler Profile */}
+            <Route path="/profile" element={
+              <ProtectedRoute requiredRole="Wrestler">
+                <WrestlerProfile />
+              </ProtectedRoute>
+            } />
 
             {/* Challenge Routes - Wrestler only */}
             <Route path="/challenges" element={

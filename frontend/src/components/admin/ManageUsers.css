@@ -235,3 +235,24 @@
   font-size: 0.8rem;
   text-decoration: underline;
 }
+
+.division-select {
+  background: var(--card-bg, #1a1a2e);
+  border: 1px solid var(--border-color, #444);
+  color: var(--text-primary, #fff);
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.division-select:hover {
+  border-color: var(--accent-color, #e50914);
+}
+
+.division-select:focus {
+  outline: none;
+  border-color: var(--accent-color, #e50914);
+  box-shadow: 0 0 0 1px var(--accent-color, #e50914);
+}

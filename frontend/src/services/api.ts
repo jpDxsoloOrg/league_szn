@@ -286,6 +286,7 @@ export const usersApi = {
   list: async (signal?: AbortSignal): Promise<{
     users: Array<{
       username: string;
+      sub: string;
       email: string;
       name: string;
       wrestlerName: string;
@@ -327,6 +328,24 @@ export const authApi = {
 
   getToken: (): string | null => {
     return getAuthToken();
+  },
+};
+
+// Player Profile API (self-service for wrestlers)
+export const profileApi = {
+  getMyProfile: async (signal?: AbortSignal): Promise<Player> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/me`, {}, signal);
+  },
+
+  updateMyProfile: async (updates: {
+    name?: string;
+    currentWrestler?: string;
+    imageUrl?: string;
+  }): Promise<Player> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/me`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
   },
 };
 

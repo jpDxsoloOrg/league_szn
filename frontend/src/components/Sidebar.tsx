@@ -56,6 +56,9 @@ export default function Sidebar() {
           {/* Wrestler-only features (also visible to Admin) */}
           {isWrestler ? (
             <>
+              <Link to="/profile" className={isActive('/profile') ? 'active' : ''}>
+                {t('nav.profile')}
+              </Link>
               <span className="nav-disabled">
                 {t('nav.challenges')} <span className="coming-soon">Coming Soon</span>
               </span>
@@ -65,6 +68,9 @@ export default function Sidebar() {
             </>
           ) : (
             <>
+              <span className="nav-disabled">
+                {t('nav.profile')} <span className="role-locked">Wrestler Only</span>
+              </span>
               <span className="nav-disabled">
                 {t('nav.challenges')} <span className="role-locked">Wrestler Only</span>
               </span>

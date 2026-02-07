@@ -1,0 +1,576 @@
+/* Wrestler Profile Page */
+.wrestler-profile {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Profile Header - Character Select Screen Feel */
+.profile-header {
+  background-color: #1a1a1a;
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.profile-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.profile-image-wrapper {
+  position: relative;
+  width: 300px;
+  height: 300px;
+}
+
+.profile-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  border: 3px solid #d4af37;
+  object-fit: cover;
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.2);
+}
+
+.profile-image-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  border: 3px dashed #444;
+  background-color: #222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: #666;
+  font-size: 1rem;
+}
+
+.profile-image-placeholder svg,
+.profile-image-placeholder .icon-text {
+  margin-bottom: 0.5rem;
+  font-size: 3rem;
+}
+
+.profile-name {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #d4af37;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.profile-wrestler-name {
+  font-size: 1.25rem;
+  color: #bbb;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+/* Stats Section - Card-Based Layout */
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background-color: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.stat-card:hover {
+  border-color: #d4af37;
+  transform: translateY(-2px);
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.875rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #d4af37;
+  font-family: monospace;
+  line-height: 1;
+}
+
+.stat-value.record {
+  font-size: 2rem;
+}
+
+.stat-value.percentage {
+  font-size: 3rem;
+}
+
+/* Win percentage color coding */
+.stat-value.win-high {
+  color: #4ade80;
+}
+
+.stat-value.win-medium {
+  color: #fbbf24;
+}
+
+.stat-value.win-low {
+  color: #f87171;
+}
+
+/* Stats Section Title */
+.stats-section {
+  margin-bottom: 2rem;
+}
+
+.stats-section-title {
+  color: #d4af37;
+  font-size: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #333;
+}
+
+/* Season Records */
+.season-records {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.season-record-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.2s;
+}
+
+.season-record-card:hover {
+  border-color: #d4af37;
+}
+
+.season-record-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.season-record-name {
+  font-weight: bold;
+  color: #eee;
+  font-size: 1rem;
+}
+
+.season-active-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: bold;
+  border-radius: 4px;
+  background-color: #065f46;
+  color: #a7f3d0;
+  border: 1px solid #059669;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.season-record-stats {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.season-record-value {
+  font-family: monospace;
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+.season-record-pct {
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #888;
+  min-width: 3.5rem;
+  text-align: right;
+}
+
+.season-record-pct.win-high {
+  color: #4ade80;
+}
+
+.season-record-pct.win-medium {
+  color: #fbbf24;
+}
+
+.season-record-pct.win-low {
+  color: #f87171;
+}
+
+/* Edit Form Section */
+.profile-edit-section {
+  background-color: #1a1a1a;
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.profile-edit-section h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: #d4af37;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.profile-form {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* Image Upload for Profile Edit */
+.profile-image-upload {
+  margin-top: 0.5rem;
+}
+
+.profile-image-upload-box {
+  border: 2px dashed #444;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  background-color: #222;
+  transition: border-color 0.2s;
+}
+
+.profile-image-upload-box:hover {
+  border-color: #d4af37;
+}
+
+.profile-image-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profile-image-preview img {
+  max-width: 250px;
+  max-height: 250px;
+  border-radius: 8px;
+  border: 2px solid #d4af37;
+  object-fit: cover;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-input-label,
+.profile-image-upload-box .file-input-label {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background-color: #d4af37;
+  color: #000 !important;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+  text-shadow: none;
+}
+
+.file-input-label:hover,
+.profile-image-upload-box .file-input-label:hover {
+  background-color: #b8962e;
+  color: #000 !important;
+}
+
+.upload-hint {
+  margin-top: 0.75rem;
+  color: #888;
+  font-size: 0.875rem;
+}
+
+.remove-image-btn {
+  background-color: #7f1d1d !important;
+  color: #fecaca;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.remove-image-btn:hover {
+  background-color: #991b1b !important;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.form-actions button {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.save-btn {
+  background-color: #d4af37;
+  color: #000;
+}
+
+.save-btn:hover {
+  background-color: #b8962e;
+}
+
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  background-color: #333 !important;
+  color: #fff;
+}
+
+.cancel-btn:hover {
+  background-color: #444 !important;
+}
+
+/* Edit Mode Toggle Button */
+.edit-profile-btn {
+  display: block;
+  margin: 0 auto 2rem;
+  padding: 0.75rem 2rem;
+  background-color: #d4af37;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.edit-profile-btn:hover {
+  background-color: #b8962e;
+  transform: translateY(-2px);
+}
+
+/* Loading State */
+.loading-state {
+  text-align: center;
+  padding: 3rem;
+  color: #888;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  border: 4px solid #333;
+  border-top-color: #d4af37;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  font-size: 1.125rem;
+  color: #d4af37;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Error State */
+.error-message {
+  background-color: #7f1d1d;
+  color: #fecaca;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border: 1px solid #991b1b;
+  font-weight: 500;
+}
+
+.success-message {
+  background-color: #065f46;
+  color: #a7f3d0;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border: 1px solid #059669;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .wrestler-profile {
+    padding: 1rem 0.5rem;
+  }
+
+  .profile-header {
+    padding: 1.5rem;
+  }
+
+  .profile-image-wrapper {
+    width: 200px;
+    height: 200px;
+  }
+
+  .profile-name {
+    font-size: 1.75rem;
+    letter-spacing: 1px;
+  }
+
+  .profile-wrestler-name {
+    font-size: 1rem;
+  }
+
+  .profile-stats {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+  }
+
+  .stat-value.record {
+    font-size: 1.5rem;
+  }
+
+  .stat-value.percentage {
+    font-size: 2.5rem;
+  }
+
+  .season-record-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .season-record-stats {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .profile-edit-section {
+    padding: 1.5rem;
+  }
+
+  .profile-edit-section h3 {
+    font-size: 1.25rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+
+  .profile-image-preview img {
+    max-width: 180px;
+    max-height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-image-wrapper {
+    width: 150px;
+    height: 150px;
+  }
+
+  .profile-name {
+    font-size: 1.5rem;
+  }
+
+  .stat-value.percentage {
+    font-size: 2rem;
+  }
+}
+
+/* Accessibility - Focus States */
+button:focus-visible,
+label:focus-visible {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
+}
+
+.file-input:focus-visible + .file-input-label {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
+}
+
+/* Empty State for New Users */
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  background-color: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.empty-state h3 {
+  color: #d4af37;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.empty-state p {
+  color: #888;
+  margin-bottom: 1.5rem;
+}
