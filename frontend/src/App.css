@@ -17,6 +17,7 @@ header {
   display: flex;
   align-items: center;
   gap: 1rem;
+  margin-left: 300px;
 }
 
 header h1 {
@@ -28,7 +29,7 @@ header h1 {
 main {
   padding: 2rem;
   max-width: 1200px;
-  margin: 0 auto;
+  margin-left: 300px;
 }
 
 h2 {
@@ -86,4 +87,14 @@ th {
 
 tr:hover {
   background-color: #1a1a1a;
+}
+
+@media (max-width: 768px) {
+  header {
+    margin-left: 280px;
+  }
+
+  main {
+    margin-left: 280px;
+  }
 }
