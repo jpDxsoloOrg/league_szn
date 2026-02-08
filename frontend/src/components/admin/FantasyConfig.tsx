@@ -190,6 +190,18 @@ export default function FantasyConfig() {
             </div>
 
             <div className="config-field">
+              <label htmlFor="titleDefenseBonus">{t('fantasy.admin.config.titleDefenseBonus')}</label>
+              <input
+                type="number"
+                id="titleDefenseBonus"
+                value={config.titleDefenseBonus}
+                onChange={(e) => handleChange('titleDefenseBonus', parseInt(e.target.value) || 0)}
+                min="0"
+              />
+              <span className="hint">{t('fantasy.admin.config.titleDefenseBonusHint')}</span>
+            </div>
+
+            <div className="config-field">
               <label htmlFor="perfectPickBonus">
                 {t('fantasy.admin.config.perfectPickBonus')}
               </label>

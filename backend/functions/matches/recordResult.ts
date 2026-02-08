@@ -330,7 +330,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       throw transactError;
     }
 
-    // Handle championship change (separate transaction to avoid hitting item limits)
+    // Handle championship result (separate transaction to avoid hitting item limits)
     if (match.isChampionship && match.championshipId) {
       const championship = await dynamoDb.get({
         TableName: TableNames.CHAMPIONSHIPS,
@@ -341,40 +341,39 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const newChampion = body.winners.length === 1 ? body.winners[0] : body.winners;
         const oldChampion = championship.Item.currentChampion;
 
-        const championshipTransactItems: TransactWriteItem[] = [];
+        // Determine if this is a title defense (champion retained) vs a title change
+        const isTitleDefense = oldChampion != null && (
+          // Singles: both are strings, compare directly
+          (typeof oldChampion === 'string' && typeof newChampion === 'string' && oldChampion === newChampion) ||
+          // Tag: both are arrays, compare sorted
+          (Array.isArray(oldChampion) && Array.isArray(newChampion) &&
+            oldChampion.length === newChampion.length &&
+            JSON.stringify([...oldChampion].sort()) === JSON.stringify([...newChampion].sort()))
+        );
 
-        // Update championship current champion
-        championshipTransactItems.push({
-          Update: {
-            TableName: TableNames.CHAMPIONSHIPS,
-            Key: { championshipId: match.championshipId },
-            UpdateExpression: 'SET currentChampion = :champion, version = if_not_exists(version, :zero) + :one',
-            ExpressionAttributeValues: {
-              ':champion': newChampion,
-              ':zero': 0,
-              ':one': 1,
-            },
-          },
+        // Store isTitleDefense flag on the match record for downstream consumers (e.g. fantasy scoring)
+        await dynamoDb.update({
+          TableName: TableNames.MATCHES,
+          Key: { matchId: match.matchId, date: match.date },
+          UpdateExpression: 'SET isTitleDefense = :itd',
+          ExpressionAttributeValues: { ':itd': isTitleDefense },
         });
 
-        // Close old reign if exists
-        if (oldChampion) {
-          // Query for active reign using the championship history table
+        const championshipTransactItems: TransactWriteItem[] = [];
+
+        if (isTitleDefense) {
+          // Title defense: champion retained — increment defenses on the current reign
           const historyResult = await dynamoDb.query({
             TableName: TableNames.CHAMPIONSHIP_HISTORY,
             KeyConditionExpression: 'championshipId = :championshipId',
             FilterExpression: 'attribute_not_exists(lostDate)',
             ExpressionAttributeValues: { ':championshipId': match.championshipId },
-            ScanIndexForward: false, // Most recent first
+            ScanIndexForward: false,
             Limit: 1,
           });
 
           if (historyResult.Items && historyResult.Items.length > 0) {
             const currentReign = historyResult.Items[0];
-            const wonDate = new Date(currentReign.wonDate);
-            const lostDate = new Date();
-            const daysHeld = Math.floor((lostDate.getTime() - wonDate.getTime()) / (1000 * 60 * 60 * 24));
-
             championshipTransactItems.push({
               Update: {
                 TableName: TableNames.CHAMPIONSHIP_HISTORY,
@@ -382,33 +381,88 @@ export const handler: APIGatewayProxyHandler = async (event) => {
                   championshipId: currentReign.championshipId,
                   wonDate: currentReign.wonDate,
                 },
-                UpdateExpression: 'SET lostDate = :lostDate, daysHeld = :daysHeld',
+                UpdateExpression: 'SET defenses = if_not_exists(defenses, :zero) + :one',
                 ExpressionAttributeValues: {
-                  ':lostDate': lostDate.toISOString(),
-                  ':daysHeld': daysHeld,
+                  ':zero': 0,
+                  ':one': 1,
                 },
               },
             });
           }
+
+          // Championship record stays the same — no need to update currentChampion
+        } else {
+          // Title change: new champion crowned
+
+          // Update championship current champion
+          championshipTransactItems.push({
+            Update: {
+              TableName: TableNames.CHAMPIONSHIPS,
+              Key: { championshipId: match.championshipId },
+              UpdateExpression: 'SET currentChampion = :champion, version = if_not_exists(version, :zero) + :one',
+              ExpressionAttributeValues: {
+                ':champion': newChampion,
+                ':zero': 0,
+                ':one': 1,
+              },
+            },
+          });
+
+          // Close old reign if exists
+          if (oldChampion) {
+            const historyResult = await dynamoDb.query({
+              TableName: TableNames.CHAMPIONSHIP_HISTORY,
+              KeyConditionExpression: 'championshipId = :championshipId',
+              FilterExpression: 'attribute_not_exists(lostDate)',
+              ExpressionAttributeValues: { ':championshipId': match.championshipId },
+              ScanIndexForward: false,
+              Limit: 1,
+            });
+
+            if (historyResult.Items && historyResult.Items.length > 0) {
+              const currentReign = historyResult.Items[0];
+              const wonDate = new Date(currentReign.wonDate);
+              const lostDate = new Date();
+              const daysHeld = Math.floor((lostDate.getTime() - wonDate.getTime()) / (1000 * 60 * 60 * 24));
+
+              championshipTransactItems.push({
+                Update: {
+                  TableName: TableNames.CHAMPIONSHIP_HISTORY,
+                  Key: {
+                    championshipId: currentReign.championshipId,
+                    wonDate: currentReign.wonDate,
+                  },
+                  UpdateExpression: 'SET lostDate = :lostDate, daysHeld = :daysHeld',
+                  ExpressionAttributeValues: {
+                    ':lostDate': lostDate.toISOString(),
+                    ':daysHeld': daysHeld,
+                  },
+                },
+              });
+            }
+          }
+
+          // Create new reign
+          const wonDate = new Date().toISOString();
+          championshipTransactItems.push({
+            Put: {
+              TableName: TableNames.CHAMPIONSHIP_HISTORY,
+              Item: {
+                championshipId: match.championshipId,
+                wonDate,
+                champion: newChampion,
+                matchId: match.matchId,
+                defenses: 0,
+              },
+            },
+          });
         }
 
-        // Create new reign
-        const wonDate = new Date().toISOString();
-        championshipTransactItems.push({
-          Put: {
-            TableName: TableNames.CHAMPIONSHIP_HISTORY,
-            Item: {
-              championshipId: match.championshipId,
-              wonDate,
-              champion: newChampion,
-              matchId: match.matchId,
-            },
-          },
-        });
-
-        await dynamoDb.transactWrite({
-          TransactItems: championshipTransactItems,
-        } as TransactWriteCommandInput);
+        if (championshipTransactItems.length > 0) {
+          await dynamoDb.transactWrite({
+            TransactItems: championshipTransactItems,
+          } as TransactWriteCommandInput);
+        }
       }
     }
 

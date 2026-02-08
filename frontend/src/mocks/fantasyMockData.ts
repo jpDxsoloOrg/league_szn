@@ -690,6 +690,7 @@ export const mockFantasyConfig: FantasyConfig = {
   baseWinPoints: 10,
   championshipBonus: 5,
   titleWinBonus: 10,
+  titleDefenseBonus: 5,
   costFluctuationEnabled: true,
   costChangePerWin: 10,
   costChangePerLoss: 5,

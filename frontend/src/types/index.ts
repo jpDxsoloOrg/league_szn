@@ -23,6 +23,7 @@ export interface Match {
   losers?: string[]; // playerIds
   winningTeam?: number; // Index of winning team (for tag team matches)
   isChampionship: boolean;
+  isTitleDefense?: boolean;
   championshipId?: string;
   tournamentId?: string;
   seasonId?: string;
@@ -48,6 +49,7 @@ export interface ChampionshipReign {
   lostDate?: string;
   matchId: string;
   daysHeld?: number;
+  defenses?: number;
 }
 
 export interface Tournament {

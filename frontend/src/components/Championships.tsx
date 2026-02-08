@@ -202,6 +202,7 @@ export default function Championships() {
                       <th>{t('championships.table.wonDate')}</th>
                       <th>{t('championships.table.lostDate')}</th>
                       <th>{t('championships.table.daysHeld')}</th>
+                      <th>{t('championships.table.defenses')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -221,6 +222,7 @@ export default function Championships() {
                             ? `${reign.daysHeld} ${t('common.days')}`
                             : '-'}
                         </td>
+                        <td>{reign.defenses ?? 0}</td>
                       </tr>
                     ))}
                   </tbody>

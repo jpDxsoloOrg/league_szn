@@ -88,7 +88,8 @@
       "champion": "Champion",
       "wonDate": "Won Date",
       "lostDate": "Lost Date",
-      "daysHeld": "Days Held"
+      "daysHeld": "Days Held",
+      "defenses": "Defenses"
     }
   },
   "matches": {
@@ -930,6 +931,8 @@
         "baseWinPointsHint": "Multiplied by (participants - 1)",
         "championshipBonus": "Championship Bonus",
         "titleWinBonus": "Title Win Bonus",
+        "titleDefenseBonus": "Title Defense Bonus",
+        "titleDefenseBonusHint": "Points for defending (retaining) a championship",
         "perfectPickBonus": "Perfect Pick Bonus",
         "perfectPickBonusHint": "Bonus when all picks win",
         "underdogMultiplier": "Underdog Multiplier",

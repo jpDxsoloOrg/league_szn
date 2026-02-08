@@ -56,6 +56,7 @@ export interface FantasyConfig {
   baseWinPoints: number;
   championshipBonus: number;
   titleWinBonus: number;
+  titleDefenseBonus: number;
   costFluctuationEnabled: boolean;
   costChangePerWin: number;
   costChangePerLoss: number;
@@ -109,6 +110,7 @@ export interface UpdateConfigInput {
   baseWinPoints?: number;
   championshipBonus?: number;
   titleWinBonus?: number;
+  titleDefenseBonus?: number;
   costFluctuationEnabled?: boolean;
   costChangePerWin?: number;
   costChangePerLoss?: number;

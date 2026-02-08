@@ -88,7 +88,8 @@
       "champion": "Champion",
       "wonDate": "Gewonnen am",
       "lostDate": "Verloren am",
-      "daysHeld": "Tage gehalten"
+      "daysHeld": "Tage gehalten",
+      "defenses": "Titelverteidigungen"
     }
   },
   "matches": {
@@ -930,6 +931,8 @@
         "baseWinPointsHint": "Multipliziert mit (Teilnehmer - 1)",
         "championshipBonus": "Meisterschafts-Bonus",
         "titleWinBonus": "Titel-Sieg-Bonus",
+        "titleDefenseBonus": "Titelverteidigungs-Bonus",
+        "titleDefenseBonusHint": "Punkte für die Verteidigung (Behalten) einer Meisterschaft",
         "perfectPickBonus": "Perfekter-Tipp-Bonus",
         "perfectPickBonusHint": "Bonus wenn alle Tipps gewinnen",
         "underdogMultiplier": "Außenseiter-Multiplikator",
