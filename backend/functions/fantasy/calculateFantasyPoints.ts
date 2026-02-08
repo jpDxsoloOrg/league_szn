@@ -79,10 +79,10 @@ export async function calculateFantasyPoints(eventId: string): Promise<void> {
     }
   }
 
-  // 5. Find all fantasy picks for this event
-  const picksResult = await dynamoDb.scan({
+  // 5. Find all fantasy picks for this event (eventId is the partition key)
+  const picksResult = await dynamoDb.query({
     TableName: TableNames.FANTASY_PICKS,
-    FilterExpression: 'eventId = :eid',
+    KeyConditionExpression: 'eventId = :eid',
     ExpressionAttributeValues: { ':eid': eventId },
   });
 

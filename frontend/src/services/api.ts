@@ -333,6 +333,13 @@ export const fantasyApi = {
     return fetchWithAuth(`${API_BASE_URL}/fantasy/leaderboard${params}`, {}, signal);
   },
 
+  // Scoring
+  scoreCompletedEvents: async (): Promise<{ message: string; scoredEventIds: string[] }> => {
+    return fetchWithAuth(`${API_BASE_URL}/fantasy/score`, {
+      method: 'POST',
+    });
+  },
+
   // Picks
   submitPicks: async (eventId: string, picks: Record<string, string[]>): Promise<FantasyPicks> => {
     return fetchWithAuth(`${API_BASE_URL}/fantasy/picks/${eventId}`, {

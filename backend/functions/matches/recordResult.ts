@@ -153,9 +153,12 @@ async function autoCompleteEvent(matchId: string): Promise<void> {
       console.log(`Event ${eventItem.eventId} auto-completed: all ${matchIds.length} matches finished`);
 
       // Calculate fantasy points for all users who made picks for this event
-      calculateFantasyPoints(eventItem.eventId as string).catch(err => {
-        console.warn('Non-blocking fantasy points calculation failed:', err);
-      });
+      // Must await here — if fire-and-forget, Lambda may freeze before scoring completes
+      try {
+        await calculateFantasyPoints(eventItem.eventId as string);
+      } catch (err) {
+        console.warn('Fantasy points calculation failed:', err);
+      }
     } else {
       // If at least one match is done but not all, mark as in-progress
       if (eventItem.status === 'upcoming') {

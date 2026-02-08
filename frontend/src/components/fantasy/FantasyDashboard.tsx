@@ -32,10 +32,30 @@ export default function FantasyDashboard() {
           ]);
 
         setEvents(eventsData as LeagueEvent[]);
-        setMyPicks(picksData);
         setWrestlers(wrestlersData);
         setDivisions(divisionsData);
         setConfig(configData);
+
+        // Check if any completed events have unscored picks — trigger scoring
+        const completed = (eventsData as LeagueEvent[]).filter((e) => e.status === 'completed');
+        const hasUnscoredPicks = completed.some((evt) => {
+          const pick = picksData.find((p) => p.eventId === evt.eventId);
+          return pick && (pick.pointsEarned === undefined || pick.pointsEarned === null);
+        });
+
+        if (hasUnscoredPicks) {
+          try {
+            await fantasyApi.scoreCompletedEvents();
+            // Re-fetch picks with updated scores
+            const updatedPicks = await fantasyApi.getAllMyPicks(controller.signal).catch(() => [] as FantasyPicks[]);
+            setMyPicks(updatedPicks);
+          } catch {
+            // Scoring may fail — still show the dashboard with original picks
+            setMyPicks(picksData);
+          }
+        } else {
+          setMyPicks(picksData);
+        }
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
         console.error('Failed to load dashboard data:', err);
@@ -50,7 +70,9 @@ export default function FantasyDashboard() {
   }, []);
 
   const upcomingEvents = events.filter((e) => e.status === 'upcoming');
-  const completedEvents = events.filter((e) => e.status === 'completed').slice(0, 3);
+  const completedEvents = events
+    .filter((e) => e.status === 'completed' || e.status === 'in-progress')
+    .slice(0, 3);
   const currentEvent = upcomingEvents[0];
 
   const getWrestlerName = (playerId: string): string => {
