@@ -195,10 +195,11 @@
       "rankDesc": "Player's position based on win percentage",
       "playerDesc": "The player's name",
       "wrestlerDesc": "The WWE wrestler they currently play as",
+      "divisionDesc": "The brand/division the player is assigned to",
       "wldDesc": "Total wins, losses, and draws",
       "winPercentDesc": "Win percentage calculated from their record",
       "howRankingsWork": "How Rankings Work",
-      "rankingsExplain": "Players are ranked by their win percentage. Players with more wins and fewer losses will appear higher on the standings.",
+      "rankingsExplain": "Players are ranked by their win percentage. Players with more wins and fewer losses will appear higher on the standings. You can filter standings by division or view all-time vs. per-season records.",
       "formula": "Win % = Wins / (Wins + Losses + Draws) x 100"
     },
     "seasonsSection": {
@@ -289,6 +290,68 @@
       "infoItem3": "Number of participants",
       "infoItem4": "Current bracket or standings"
     },
+    "eventsSection": {
+      "title": "Events & PPV",
+      "description": "View upcoming and past events, including PPVs, weekly shows, and special events.",
+      "browsingEvents": "Browsing Events",
+      "browsingIntro": "Events are organized by type. Use the filter tabs to find specific types:",
+      "typePPV": "PPV",
+      "typePPVDesc": "Major events like WrestleMania, SummerSlam, Royal Rumble",
+      "typeWeekly": "Weekly",
+      "typeWeeklyDesc": "Regular weekly shows like Raw, SmackDown, NXT",
+      "typeSpecial": "Special",
+      "typeSpecialDesc": "One-off special events",
+      "typeHouse": "House Show",
+      "typeHouseDesc": "Non-televised exhibition events",
+      "eventDetails": "Event Details",
+      "eventDetailsIntro": "Click on any event to see its full details:",
+      "detailItem1": "The full match card with all scheduled bouts",
+      "detailItem2": "Championship matches highlighted with a special badge",
+      "detailItem3": "Event date, venue, and description",
+      "detailItem4": "Results for completed events with match outcomes"
+    },
+    "contendersSection": {
+      "title": "Contender Rankings",
+      "description": "The Contenders page shows the official #1 contender rankings for each championship.",
+      "whatAreContenders": "What Are Contender Rankings?",
+      "contendersExplain": "Contender rankings are automatically calculated based on recent match performance. Each championship has its own rankings, showing who has earned the right to challenge for the title. Rankings may be locked to specific divisions, meaning only players in the same division as the championship can contend.",
+      "readingRankings": "Reading the Rankings",
+      "rankLabel": "Rank",
+      "rankLabelDesc": "The player's contender position (#1 is next in line for a title shot)",
+      "scoreLabel": "Score",
+      "scoreLabelDesc": "A calculated ranking score based on recent wins and performance",
+      "winRateLabel": "Win %",
+      "winRateLabelDesc": "The player's win percentage during the ranking period",
+      "streakLabel": "Streak",
+      "streakLabelDesc": "Current winning or losing streak"
+    },
+    "profileSection": {
+      "title": "My Profile",
+      "description": "Your personal wrestler profile page shows your complete league history and statistics.",
+      "whatYouCanSee": "What You Can See",
+      "item1": "Your wrestler name, image, and division assignment",
+      "item2": "All-time win/loss/draw record and win percentage",
+      "item3": "Per-season records for every season you've competed in",
+      "item4": "Your current championship holdings and contender status"
+    },
+    "fantasySection": {
+      "title": "Fantasy Wrestling",
+      "description": "Compete in the fantasy league by picking wrestlers and earning points when they win matches.",
+      "howItWorks": "How It Works",
+      "step1": "When a show opens for picks, browse the available wrestlers and their costs",
+      "step2": "Select wrestlers within your budget for each division",
+      "step3": "Your picks earn points when they win matches - bigger matches earn more points",
+      "step4": "Climb the leaderboard and compete for the top spot among all fantasy players",
+      "featuresTitle": "Fantasy Features",
+      "featurePicks": "Make Picks",
+      "featurePicksDesc": "Choose wrestlers within your salary cap budget for each show",
+      "featureLeaderboard": "Leaderboard",
+      "featureLeaderboardDesc": "See where you rank against other fantasy players",
+      "featureCosts": "Wrestler Costs",
+      "featureCostsDesc": "View wrestler prices that change based on performance trends",
+      "featureResults": "Show Results",
+      "featureResultsDesc": "Review your picks and see points earned after each show"
+    },
     "tipsSection": {
       "title": "Tips for Following the League",
       "tip1Title": "Check Standings Regularly",
@@ -298,7 +361,11 @@
       "tip3Title": "Follow Tournament Progress",
       "tip3Desc": "Tournaments often determine championship opportunities",
       "tip4Title": "Review Match History",
-      "tip4Desc": "Filter by \"Completed\" to catch up on results you missed"
+      "tip4Desc": "Filter by \"Completed\" to catch up on results you missed",
+      "tip5Title": "Track Contender Rankings",
+      "tip5Desc": "See who's next in line for a championship opportunity",
+      "tip6Title": "Browse Events",
+      "tip6Desc": "Check out upcoming PPVs and weekly shows for the full match cards"
     }
   },
   "admin": {

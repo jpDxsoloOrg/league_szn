@@ -1,8 +1,10 @@
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 import './UserGuide.css';
 
 export default function UserGuide() {
   const { t } = useTranslation();
+  const { isAuthenticated, isWrestler, isFantasy } = useAuth();
 
   return (
     <div className="user-guide">
@@ -36,6 +38,10 @@ export default function UserGuide() {
               <tr>
                 <td>{t('standings.table.wrestler')}</td>
                 <td>{t('userGuide.standingsSection.wrestlerDesc')}</td>
+              </tr>
+              <tr>
+                <td>{t('standings.table.division')}</td>
+                <td>{t('userGuide.standingsSection.divisionDesc')}</td>
               </tr>
               <tr>
                 <td>W / L / D</td>
@@ -169,6 +175,33 @@ export default function UserGuide() {
       </section>
 
       <section className="guide-section">
+        <h3>{t('userGuide.eventsSection.title')}</h3>
+        <p>{t('userGuide.eventsSection.description')}</p>
+
+        <div className="guide-subsection">
+          <h4>{t('userGuide.eventsSection.browsingEvents')}</h4>
+          <p>{t('userGuide.eventsSection.browsingIntro')}</p>
+          <ul className="feature-list">
+            <li><strong>{t('userGuide.eventsSection.typePPV')}</strong> - {t('userGuide.eventsSection.typePPVDesc')}</li>
+            <li><strong>{t('userGuide.eventsSection.typeWeekly')}</strong> - {t('userGuide.eventsSection.typeWeeklyDesc')}</li>
+            <li><strong>{t('userGuide.eventsSection.typeSpecial')}</strong> - {t('userGuide.eventsSection.typeSpecialDesc')}</li>
+            <li><strong>{t('userGuide.eventsSection.typeHouse')}</strong> - {t('userGuide.eventsSection.typeHouseDesc')}</li>
+          </ul>
+        </div>
+
+        <div className="guide-subsection">
+          <h4>{t('userGuide.eventsSection.eventDetails')}</h4>
+          <p>{t('userGuide.eventsSection.eventDetailsIntro')}</p>
+          <ul className="feature-list">
+            <li>{t('userGuide.eventsSection.detailItem1')}</li>
+            <li>{t('userGuide.eventsSection.detailItem2')}</li>
+            <li>{t('userGuide.eventsSection.detailItem3')}</li>
+            <li>{t('userGuide.eventsSection.detailItem4')}</li>
+          </ul>
+        </div>
+      </section>
+
+      <section className="guide-section">
         <h3>{t('userGuide.tournamentsSection.title')}</h3>
         <p>{t('userGuide.tournamentsSection.description')}</p>
 
@@ -208,6 +241,70 @@ export default function UserGuide() {
         </div>
       </section>
 
+      <section className="guide-section">
+        <h3>{t('userGuide.contendersSection.title')}</h3>
+        <p>{t('userGuide.contendersSection.description')}</p>
+
+        <div className="guide-subsection">
+          <h4>{t('userGuide.contendersSection.whatAreContenders')}</h4>
+          <p>{t('userGuide.contendersSection.contendersExplain')}</p>
+        </div>
+
+        <div className="guide-subsection">
+          <h4>{t('userGuide.contendersSection.readingRankings')}</h4>
+          <ul className="feature-list">
+            <li><strong>{t('userGuide.contendersSection.rankLabel')}</strong> - {t('userGuide.contendersSection.rankLabelDesc')}</li>
+            <li><strong>{t('userGuide.contendersSection.scoreLabel')}</strong> - {t('userGuide.contendersSection.scoreLabelDesc')}</li>
+            <li><strong>{t('userGuide.contendersSection.winRateLabel')}</strong> - {t('userGuide.contendersSection.winRateLabelDesc')}</li>
+            <li><strong>{t('userGuide.contendersSection.streakLabel')}</strong> - {t('userGuide.contendersSection.streakLabelDesc')}</li>
+          </ul>
+        </div>
+      </section>
+
+      {isAuthenticated && isWrestler && (
+        <section className="guide-section">
+          <h3>{t('userGuide.profileSection.title')}</h3>
+          <p>{t('userGuide.profileSection.description')}</p>
+
+          <div className="guide-subsection">
+            <h4>{t('userGuide.profileSection.whatYouCanSee')}</h4>
+            <ul className="feature-list">
+              <li>{t('userGuide.profileSection.item1')}</li>
+              <li>{t('userGuide.profileSection.item2')}</li>
+              <li>{t('userGuide.profileSection.item3')}</li>
+              <li>{t('userGuide.profileSection.item4')}</li>
+            </ul>
+          </div>
+        </section>
+      )}
+
+      {isAuthenticated && isFantasy && (
+        <section className="guide-section">
+          <h3>{t('userGuide.fantasySection.title')}</h3>
+          <p>{t('userGuide.fantasySection.description')}</p>
+
+          <div className="guide-subsection">
+            <h4>{t('userGuide.fantasySection.howItWorks')}</h4>
+            <ol className="steps-list">
+              <li>{t('userGuide.fantasySection.step1')}</li>
+              <li>{t('userGuide.fantasySection.step2')}</li>
+              <li>{t('userGuide.fantasySection.step3')}</li>
+              <li>{t('userGuide.fantasySection.step4')}</li>
+            </ol>
+          </div>
+
+          <div className="guide-subsection">
+            <h4>{t('userGuide.fantasySection.featuresTitle')}</h4>
+            <ul className="feature-list">
+              <li><strong>{t('userGuide.fantasySection.featurePicks')}</strong> - {t('userGuide.fantasySection.featurePicksDesc')}</li>
+              <li><strong>{t('userGuide.fantasySection.featureLeaderboard')}</strong> - {t('userGuide.fantasySection.featureLeaderboardDesc')}</li>
+              <li><strong>{t('userGuide.fantasySection.featureCosts')}</strong> - {t('userGuide.fantasySection.featureCostsDesc')}</li>
+              <li><strong>{t('userGuide.fantasySection.featureResults')}</strong> - {t('userGuide.fantasySection.featureResultsDesc')}</li>
+            </ul>
+          </div>
+        </section>
+      )}
+
       <section className="guide-section tips-section">
         <h3>{t('userGuide.tipsSection.title')}</h3>
         <div className="tips-grid">
@@ -226,6 +323,14 @@ export default function UserGuide() {
           <div className="tip-card">
             <span className="tip-icon">4</span>
             <p><strong>{t('userGuide.tipsSection.tip4Title')}</strong> - {t('userGuide.tipsSection.tip4Desc')}</p>
+          </div>
+          <div className="tip-card">
+            <span className="tip-icon">5</span>
+            <p><strong>{t('userGuide.tipsSection.tip5Title')}</strong> - {t('userGuide.tipsSection.tip5Desc')}</p>
+          </div>
+          <div className="tip-card">
+            <span className="tip-icon">6</span>
+            <p><strong>{t('userGuide.tipsSection.tip6Title')}</strong> - {t('userGuide.tipsSection.tip6Desc')}</p>
           </div>
         </div>
       </section>
