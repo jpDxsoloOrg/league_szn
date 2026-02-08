@@ -4,6 +4,7 @@ import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, e
 import { sanitizeInput } from '../../utils/sanitize';
 import type { Player, Championship, Tournament, Season } from '../../types';
 import type { LeagueEvent, MatchDesignation } from '../../types/event';
+import SearchableSelect from './SearchableSelect';
 import './ScheduleMatch.css';
 
 export default function ScheduleMatch() {
@@ -297,18 +298,19 @@ export default function ScheduleMatch() {
         {events.length > 0 && (
           <div className="form-group">
             <label htmlFor="event">{t('scheduleMatch.event', 'Add to Event (Optional)')}</label>
-            <select
+            <SearchableSelect
               id="event"
               value={formData.eventId}
-              onChange={(e) => setFormData({ ...formData, eventId: e.target.value })}
-            >
-              <option value="">{t('scheduleMatch.noEvent', 'No Event (Standalone Match)')}</option>
-              {events.map(ev => (
-                <option key={ev.eventId} value={ev.eventId}>
-                  {ev.name} ({new Date(ev.date).toLocaleDateString()})
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setFormData({ ...formData, eventId: value })}
+              placeholder={t('scheduleMatch.noEvent', 'No Event (Standalone Match)')}
+              options={[
+                { value: '', label: t('scheduleMatch.noEvent', 'No Event (Standalone Match)') },
+                ...events.map(ev => ({
+                  value: ev.eventId,
+                  label: `${ev.name} (${new Date(ev.date).toLocaleDateString()})`,
+                })),
+              ]}
+            />
             <small className="form-hint">{t('scheduleMatch.eventHint', 'Match will be automatically added to the event\'s card')}</small>
           </div>
         )}

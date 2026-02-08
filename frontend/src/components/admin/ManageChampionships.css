@@ -267,6 +267,13 @@ label.file-input-label:hover {
   font-size: 0.875rem;
 }
 
+.championship-champion {
+  color: #d4af37;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
 @media (max-width: 768px) {
   .championships-header {
     flex-direction: column;

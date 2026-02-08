@@ -233,17 +233,12 @@ export default function ManagePlayers() {
     <div className="manage-players">
       <div className="players-header">
         <h2>Manage Players</h2>
-        {!showAddForm && (
-          <button onClick={() => setShowAddForm(true)}>
-            Add New Player
-          </button>
-        )}
       </div>
 
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
 
-      {showAddForm && (
+      {showAddForm && editingPlayer && (
         <div className="player-form-container">
           <h3>{editingPlayer ? 'Edit Player' : 'Add New Player'}</h3>
           <form onSubmit={handleSubmit} className="player-form">

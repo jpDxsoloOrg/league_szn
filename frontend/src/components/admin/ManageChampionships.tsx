@@ -1,9 +1,9 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
-import { championshipsApi, divisionsApi, imagesApi } from '../../services/api';
+import { championshipsApi, divisionsApi, playersApi, imagesApi } from '../../services/api';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
 import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
-import type { Championship, Division } from '../../types';
+import type { Championship, Division, Player } from '../../types';
 import './ManageChampionships.css';
 
 export default function ManageChampionships() {
@@ -19,6 +19,7 @@ export default function ManageChampionships() {
   const [vacating, setVacating] = useState<string | null>(null);
 
   const [divisions, setDivisions] = useState<Division[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -34,6 +35,7 @@ export default function ManageChampionships() {
   useEffect(() => {
     loadChampionships();
     loadDivisions();
+    loadPlayers();
   }, []);
 
   const loadChampionships = async () => {
@@ -55,6 +57,25 @@ export default function ManageChampionships() {
     } catch (_err) {
       // Non-critical — divisions are optional
     }
+  };
+
+  const loadPlayers = async () => {
+    try {
+      const data = await playersApi.getAll();
+      setPlayers(data);
+    } catch (_err) {
+      // Non-critical — used for champion display
+    }
+  };
+
+  const getChampionName = (currentChampion?: string | string[]): string => {
+    if (!currentChampion) return 'Vacant';
+    const ids = Array.isArray(currentChampion) ? currentChampion : [currentChampion];
+    const names = ids.map(id => {
+      const player = players.find(p => p.playerId === id);
+      return player ? player.name : 'Unknown';
+    });
+    return names.join(' & ');
   };
 
   const getDivisionName = (divisionId?: string) => {
@@ -377,6 +398,9 @@ export default function ManageChampionships() {
                 </div>
                 <div className="championship-division">
                   Division: {getDivisionName(championship.divisionId)}
+                </div>
+                <div className="championship-champion">
+                  Champion: {getChampionName(championship.currentChampion)}
                 </div>
                 <div className="championship-status">
                   {championship.isActive ? (

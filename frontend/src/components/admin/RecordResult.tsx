@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi, eventsApi } from '../../services/api';
 import type { Match, Player } from '../../types';
 import type { LeagueEvent } from '../../types/event';
+import SearchableSelect from './SearchableSelect';
 import './RecordResult.css';
 
 const STANDALONE_FILTER = '__standalone__';
@@ -211,23 +212,24 @@ export default function RecordResult() {
 
       <div className="event-filter-bar">
         <label htmlFor="eventFilter">Event</label>
-        <select
+        <SearchableSelect
           id="eventFilter"
           value={selectedEventFilter}
-          onChange={(e) => {
-            setSelectedEventFilter(e.target.value);
+          onChange={(value) => {
+            setSelectedEventFilter(value);
             setSelectedMatch(null);
             setWinners([]);
             setWinningTeamIndex(null);
           }}
-        >
-          {events.map(ev => (
-            <option key={ev.eventId} value={ev.eventId}>
-              {ev.name} ({new Date(ev.date).toLocaleDateString()})
-            </option>
-          ))}
-          <option value={STANDALONE_FILTER}>Standalone Matches (No Event)</option>
-        </select>
+          placeholder="Select an event..."
+          options={[
+            ...events.map(ev => ({
+              value: ev.eventId,
+              label: `${ev.name} (${new Date(ev.date).toLocaleDateString()})`,
+            })),
+            { value: STANDALONE_FILTER, label: 'Standalone Matches (No Event)' },
+          ]}
+        />
       </div>
 
       {filteredMatches.length === 0 ? (
