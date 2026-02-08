@@ -113,6 +113,7 @@ async function autoCompleteEvent(matchId: string): Promise<void> {
       ':upcoming': 'upcoming',
       ':inProgress': 'in-progress',
     },
+    ConsistentRead: true,
   });
 
   for (const eventItem of eventsResult.Items || []) {
@@ -130,6 +131,7 @@ async function autoCompleteEvent(matchId: string): Promise<void> {
         TableName: TableNames.MATCHES,
         KeyConditionExpression: 'matchId = :matchId',
         ExpressionAttributeValues: { ':matchId': mId },
+        ConsistentRead: true,
         Limit: 1,
       });
       const m = matchQuery.Items?.[0];
@@ -579,10 +581,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Auto-complete event if all its matches are now finished
-    // Scan events to find any that contain this matchId
-    autoCompleteEvent(matchId).catch(err => {
-      console.warn('Non-blocking event auto-complete failed:', err);
-    });
+    // Must await — if fire-and-forget, Lambda may freeze before completion runs
+    try {
+      await autoCompleteEvent(matchId);
+    } catch (err) {
+      console.warn('Event auto-complete failed:', err);
+    }
 
     // Trigger contender ranking recalculation (fire-and-forget, non-blocking)
     triggerRankingRecalculation().catch(err => {

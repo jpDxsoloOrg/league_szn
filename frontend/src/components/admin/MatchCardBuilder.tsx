@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { MatchDesignation, MatchCardEntry, LeagueEvent } from '../../types/event';
 import type { Player } from '../../types';
 import { matchesApi, playersApi, eventsApi } from '../../services/api';
+import SearchableSelect from './SearchableSelect';
 import './MatchCardBuilder.css';
 
 const designationOptions: { value: MatchDesignation; labelKey: string }[] = [
@@ -206,19 +207,19 @@ export default function MatchCardBuilder() {
         <label className="config-label" htmlFor="event-select">
           {t('events.admin.selectEvent', 'Select Event')}
         </label>
-        <select
+        <SearchableSelect
           id="event-select"
-          className="config-select"
           value={selectedEventId}
-          onChange={(e) => setSelectedEventId(e.target.value)}
-        >
-          <option value="">{t('events.admin.chooseEvent', '-- Choose an event --')}</option>
-          {events.map((ev) => (
-            <option key={ev.eventId} value={ev.eventId}>
-              {ev.name} ({new Date(ev.date).toLocaleDateString()})
-            </option>
-          ))}
-        </select>
+          onChange={(value) => setSelectedEventId(value)}
+          placeholder={t('events.admin.chooseEvent', '-- Choose an event --')}
+          options={[
+            { value: '', label: t('events.admin.chooseEvent', '-- Choose an event --') },
+            ...events.map((ev) => ({
+              value: ev.eventId,
+              label: `${ev.name} (${new Date(ev.date).toLocaleDateString()})`,
+            })),
+          ]}
+        />
       </div>
 
       {!selectedEventId ? (
