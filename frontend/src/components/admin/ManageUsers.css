@@ -198,10 +198,43 @@
   color: #ff6b6b;
 }
 
+.btn-promote-moderator {
+  background: rgba(156, 39, 176, 0.2);
+  border-color: rgba(156, 39, 176, 0.5);
+  color: #ce93d8;
+}
+
+.btn-disable {
+  background: rgba(255, 152, 0, 0.15);
+  border-color: rgba(255, 152, 0, 0.4);
+  color: #ffb74d;
+}
+
+.btn-enable {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: rgba(76, 175, 80, 0.5);
+  color: #81c784;
+}
+
 .btn-demote {
   background: rgba(158, 158, 158, 0.15);
   border-color: rgba(158, 158, 158, 0.4);
   color: #bdbdbd;
+}
+
+.role-moderator {
+  background: rgba(156, 39, 176, 0.2);
+  color: #ce93d8;
+  border: 1px solid rgba(156, 39, 176, 0.4);
+}
+
+.status-disabled {
+  background: rgba(229, 9, 20, 0.15);
+  color: #ff6b6b;
+}
+
+.disabled-user-row {
+  opacity: 0.6;
 }
 
 .action-loading {

@@ -7,14 +7,14 @@ import {
   AdminGetUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { v4 as uuidv4 } from 'uuid';
-import { success, badRequest, serverError } from '../../lib/response';
-import { requireRole } from '../../lib/auth';
+import { success, badRequest, forbidden, serverError } from '../../lib/response';
+import { requireRole, getAuthContext, isSuperAdmin } from '../../lib/auth';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
 
-const VALID_ROLES = ['Admin', 'Wrestler', 'Fantasy'] as const;
+const VALID_ROLES = ['Admin', 'Moderator', 'Wrestler', 'Fantasy'] as const;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Admin');
@@ -41,6 +41,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     if (action !== 'promote' && action !== 'demote') {
       return badRequest('action must be "promote" or "demote"');
+    }
+
+    // Only full Admins can grant/remove Admin or Moderator roles
+    if ((role === 'Admin' || role === 'Moderator') && !isSuperAdmin(getAuthContext(event))) {
+      return forbidden('Only full Admins can manage Admin and Moderator roles');
     }
 
     if (action === 'promote') {

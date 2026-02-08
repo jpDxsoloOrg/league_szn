@@ -391,6 +391,39 @@ export const usersApi = {
       body: JSON.stringify({ username, role, action }),
     });
   },
+
+  toggleEnabled: async (username: string, enabled: boolean): Promise<{
+    message: string;
+    username: string;
+    enabled: boolean;
+  }> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/users/toggle-enabled`, {
+      method: 'POST',
+      body: JSON.stringify({ username, enabled }),
+    });
+  },
+};
+
+// Site Configuration API
+export interface SiteFeatures {
+  fantasy: boolean;
+  challenges: boolean;
+  promos: boolean;
+  contenders: boolean;
+  statistics: boolean;
+}
+
+export const siteConfigApi = {
+  getFeatures: async (signal?: AbortSignal): Promise<{ features: SiteFeatures }> => {
+    return fetchWithAuth(`${API_BASE_URL}/site-config`, {}, signal);
+  },
+
+  updateFeatures: async (features: Partial<SiteFeatures>): Promise<{ features: SiteFeatures }> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/site-config`, {
+      method: 'PUT',
+      body: JSON.stringify({ features }),
+    });
+  },
 };
 
 // Auth API (uses Cognito via cognito.ts service)

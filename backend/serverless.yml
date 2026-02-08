@@ -23,6 +23,7 @@ provider:
     FANTASY_CONFIG_TABLE: ${self:service}-fantasy-config-${self:provider.stage}
     WRESTLER_COSTS_TABLE: ${self:service}-wrestler-costs-${self:provider.stage}
     FANTASY_PICKS_TABLE: ${self:service}-fantasy-picks-${self:provider.stage}
+    SITE_CONFIG_TABLE: ${self:service}-site-config-${self:provider.stage}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
     ADMIN_SETUP_KEY: cd59a70bebb3a6ef2d42b921b546754fff1a8ade98c311c09c4f05da4570008b
@@ -59,6 +60,7 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.WRESTLER_COSTS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FANTASY_PICKS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FANTASY_PICKS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SITE_CONFIG_TABLE}
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -74,6 +76,8 @@ provider:
             - cognito-idp:AdminAddUserToGroup
             - cognito-idp:AdminRemoveUserFromGroup
             - cognito-idp:AdminListGroupsForUser
+            - cognito-idp:AdminDisableUser
+            - cognito-idp:AdminEnableUser
             - cognito-idp:ListUsers
             - cognito-idp:ListUsersInGroup
           Resource:
@@ -130,6 +134,33 @@ functions:
       - http:
           path: admin/users/role
           method: post
+          cors: true
+          authorizer: adminAuthorizer
+
+  toggleUserEnabled:
+    handler: functions/users/toggleUserEnabled.handler
+    events:
+      - http:
+          path: admin/users/toggle-enabled
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
+
+  # Site Configuration (feature toggles)
+  getSiteConfig:
+    handler: functions/admin/getSiteConfig.handler
+    events:
+      - http:
+          path: site-config
+          method: get
+          cors: true
+
+  updateSiteConfig:
+    handler: functions/admin/updateSiteConfig.handler
+    events:
+      - http:
+          path: admin/site-config
+          method: put
           cors: true
           authorizer: adminAuthorizer
 
@@ -670,13 +701,21 @@ resources:
         Description: Full access to all features including user management
         Precedence: 0
 
+    ModeratorGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties:
+        GroupName: Moderator
+        UserPoolId: !Ref LeagueUserPool
+        Description: Admin-level access except cannot manage Admin/Moderator roles or delete all data
+        Precedence: 1
+
     WrestlerGroup:
       Type: AWS::Cognito::UserPoolGroup
       Properties:
         GroupName: Wrestler
         UserPoolId: !Ref LeagueUserPool
         Description: Access to wrestler features (challenges, promos) plus fantasy
-        Precedence: 1
+        Precedence: 2
 
     FantasyGroup:
       Type: AWS::Cognito::UserPoolGroup
@@ -684,7 +723,7 @@ resources:
         GroupName: Fantasy
         UserPoolId: !Ref LeagueUserPool
         Description: Access to fantasy features and public data
-        Precedence: 2
+        Precedence: 3
 
     LeagueUserPoolClient:
       Type: AWS::Cognito::UserPoolClient
@@ -989,6 +1028,18 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
+
+    SiteConfigTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.SITE_CONFIG_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: configKey
+            AttributeType: S
+        KeySchema:
+          - AttributeName: configKey
+            KeyType: HASH
 
     ImagesBucket:
       Type: AWS::S3::Bucket

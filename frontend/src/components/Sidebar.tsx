@@ -2,13 +2,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { useSiteConfig } from '../contexts/SiteConfigContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import './Sidebar.css';
 
 export default function Sidebar() {
   const { t } = useTranslation();
   const location = useLocation();
-  const { isAuthenticated, isAdmin, isWrestler, isFantasy, signOut } = useAuth();
+  const { isAuthenticated, isAdmin, isSuperAdmin, isWrestler, isFantasy, signOut } = useAuth();
+  const { features } = useSiteConfig();
   const [adminExpanded, setAdminExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -97,9 +99,13 @@ export default function Sidebar() {
           <Link to="/tournaments" className={isActive('/tournaments') ? 'active' : ''}>
             {t('nav.tournaments')}
           </Link>
-          <Link to="/contenders" className={isActive('/contenders') || isActive('/contenders/my-status') ? 'active' : ''}>
-            {t('nav.contenders')}
-          </Link>
+
+          {/* Contenders - hidden when feature is disabled */}
+          {features.contenders && (
+            <Link to="/contenders" className={isActive('/contenders') || isActive('/contenders/my-status') ? 'active' : ''}>
+              {t('nav.contenders')}
+            </Link>
+          )}
 
           {/* Wrestler-only features (also visible to Admin) */}
           {isWrestler ? (
@@ -107,41 +113,55 @@ export default function Sidebar() {
               <Link to="/profile" className={isActive('/profile') ? 'active' : ''}>
                 {t('nav.profile')}
               </Link>
-              <span className="nav-disabled">
-                {t('nav.challenges')} <span className="coming-soon">Coming Soon</span>
-              </span>
-              <span className="nav-disabled">
-                {t('nav.promos')} <span className="coming-soon">Coming Soon</span>
-              </span>
+              {features.challenges ? (
+                <span className="nav-disabled">
+                  {t('nav.challenges')} <span className="coming-soon">Coming Soon</span>
+                </span>
+              ) : null}
+              {features.promos ? (
+                <span className="nav-disabled">
+                  {t('nav.promos')} <span className="coming-soon">Coming Soon</span>
+                </span>
+              ) : null}
             </>
           ) : (
             <>
               <span className="nav-disabled">
                 {t('nav.profile')} <span className="role-locked">Wrestler Only</span>
               </span>
-              <span className="nav-disabled">
-                {t('nav.challenges')} <span className="role-locked">Wrestler Only</span>
-              </span>
-              <span className="nav-disabled">
-                {t('nav.promos')} <span className="role-locked">Wrestler Only</span>
-              </span>
+              {features.challenges && (
+                <span className="nav-disabled">
+                  {t('nav.challenges')} <span className="role-locked">Wrestler Only</span>
+                </span>
+              )}
+              {features.promos && (
+                <span className="nav-disabled">
+                  {t('nav.promos')} <span className="role-locked">Wrestler Only</span>
+                </span>
+              )}
             </>
           )}
 
-          {/* Statistics - available to all authenticated */}
-          <span className="nav-disabled">
-            {t('nav.statistics')} <span className="coming-soon">Coming Soon</span>
-          </span>
-
-          {/* Fantasy - available to Fantasy role and above */}
-          {isFantasy ? (
-            <Link to="/fantasy" className={location.pathname.startsWith('/fantasy') ? 'active' : ''}>
-              {t('nav.fantasy')}
-            </Link>
-          ) : (
+          {/* Statistics - hidden when feature is disabled */}
+          {features.statistics && (
             <span className="nav-disabled">
-              {t('nav.fantasy')} <span className="coming-soon">Coming Soon</span>
+              {t('nav.statistics')} <span className="coming-soon">Coming Soon</span>
             </span>
+          )}
+
+          {/* Fantasy - hidden when feature is disabled */}
+          {features.fantasy && (
+            <>
+              {isFantasy ? (
+                <Link to="/fantasy" className={location.pathname.startsWith('/fantasy') ? 'active' : ''}>
+                  {t('nav.fantasy')}
+                </Link>
+              ) : (
+                <span className="nav-disabled">
+                  {t('nav.fantasy')} <span className="coming-soon">Coming Soon</span>
+                </span>
+              )}
+            </>
           )}
 
           <Link to="/guide" className={isActive('/guide') ? 'active' : ''}>
@@ -149,7 +169,7 @@ export default function Sidebar() {
           </Link>
         </div>
 
-        {/* Admin section - only for Admin role */}
+        {/* Admin section - for Admin and Moderator roles */}
         {isAdmin && (
           <div className="nav-section admin-section">
             <button
@@ -164,6 +184,9 @@ export default function Sidebar() {
               <div className="admin-nav-items">
                 <Link to="/admin/users" className={isActive('/admin/users') ? 'active' : ''}>
                   User Management
+                </Link>
+                <Link to="/admin/features" className={isActive('/admin/features') ? 'active' : ''}>
+                  Feature Management
                 </Link>
                 <Link to="/admin/schedule" className={isActive('/admin/schedule') ? 'active' : ''}>
                   {t('admin.panel.tabs.scheduleMatch')}
@@ -207,9 +230,12 @@ export default function Sidebar() {
                 <Link to="/admin/guide" className={isActive('/admin/guide') ? 'active' : ''}>
                   {t('admin.panel.tabs.help')}
                 </Link>
-                <Link to="/admin/danger" className={`danger-link ${isActive('/admin/danger') ? 'active' : ''}`}>
-                  {t('admin.panel.tabs.dangerZone')}
-                </Link>
+                {/* Danger zone only visible to super admins */}
+                {isSuperAdmin && (
+                  <Link to="/admin/danger" className={`danger-link ${isActive('/admin/danger') ? 'active' : ''}`}>
+                    {t('admin.panel.tabs.dangerZone')}
+                  </Link>
+                )}
               </div>
             )}
           </div>

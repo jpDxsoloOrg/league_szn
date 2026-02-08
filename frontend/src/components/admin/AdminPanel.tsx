@@ -19,18 +19,19 @@ import AdminChallenges from './AdminChallenges';
 import AdminGuide from './AdminGuide';
 import ClearAllData from './ClearAllData';
 import ManageUsers from './ManageUsers';
+import ManageFeatures from './ManageFeatures';
 import './AdminPanel.css';
 
 import AdminContenderConfig from './AdminContenderConfig';
 
-type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'guide' | 'danger' | 'users';
+type AdminTab = 'players' | 'divisions' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'guide' | 'danger' | 'users' | 'features';
 
-const VALID_TABS: AdminTab[] = ['players', 'divisions', 'schedule', 'results', 'championships', 'tournaments', 'challenges', 'promos', 'seasons', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'guide', 'danger', 'users'];
+const VALID_TABS: AdminTab[] = ['players', 'divisions', 'schedule', 'results', 'championships', 'tournaments', 'challenges', 'promos', 'seasons', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'guide', 'danger', 'users', 'features'];
 
 
 export default function AdminPanel() {
   const { tab } = useParams<{ tab: string }>();
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, isSuperAdmin } = useAuth();
 
   const activeTab: AdminTab = (tab && VALID_TABS.includes(tab as AdminTab)) ? tab as AdminTab : 'players';
 
@@ -49,10 +50,23 @@ export default function AdminPanel() {
     );
   }
 
+  // Moderators cannot access danger zone
+  if (activeTab === 'danger' && !isSuperAdmin) {
+    return (
+      <div className="admin-panel">
+        <div className="access-denied">
+          <h2>Full Admin Access Required</h2>
+          <p>This action requires full Admin privileges.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-panel">
       <div className="admin-content">
         {activeTab === 'users' && <ManageUsers />}
+        {activeTab === 'features' && <ManageFeatures />}
         {activeTab === 'players' && <ManagePlayers />}
         {activeTab === 'divisions' && <ManageDivisions />}
         {activeTab === 'schedule' && <ScheduleMatch />}
