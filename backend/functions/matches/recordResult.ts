@@ -113,6 +113,7 @@ async function autoCompleteEvent(matchId: string): Promise<void> {
       ':upcoming': 'upcoming',
       ':inProgress': 'in-progress',
     },
+    ConsistentRead: true,
   });
 
   for (const eventItem of eventsResult.Items || []) {
@@ -130,6 +131,7 @@ async function autoCompleteEvent(matchId: string): Promise<void> {
         TableName: TableNames.MATCHES,
         KeyConditionExpression: 'matchId = :matchId',
         ExpressionAttributeValues: { ':matchId': mId },
+        ConsistentRead: true,
         Limit: 1,
       });
       const m = matchQuery.Items?.[0];
