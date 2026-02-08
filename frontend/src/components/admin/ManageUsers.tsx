@@ -193,10 +193,12 @@ export default function ManageUsers() {
                     <span className="no-value">-</span>
                   )}
                 </td>
-                <td className="roles-cell">
-                  {user.groups.length > 0 ? getRoleBadges(user.groups) : (
-                    <span className="no-value">No roles</span>
-                  )}
+                <td>
+                  <div className="roles-cell-content">
+                    {user.groups.length > 0 ? getRoleBadges(user.groups) : (
+                      <span className="no-value">No roles</span>
+                    )}
+                  </div>
                 </td>
                 <td>
                   {(() => {
@@ -224,67 +226,69 @@ export default function ManageUsers() {
                   </span>
                 </td>
                 <td>{user.created ? new Date(user.created).toLocaleDateString() : '-'}</td>
-                <td className="actions-cell">
-                  {actionLoading === user.username ? (
-                    <span className="action-loading">Updating...</span>
-                  ) : (
-                    <>
-                      {/* Approve as Wrestler */}
-                      {user.wrestlerName && !user.groups.includes('Wrestler') && !user.groups.includes('Admin') && (
-                        <button
-                          className="btn-action btn-approve"
-                          onClick={() => handleRoleAction(user.username, 'Wrestler', 'promote')}
-                          title="Approve as Wrestler"
-                        >
-                          Approve Wrestler
-                        </button>
-                      )}
+                <td>
+                  <div className="actions-cell-content">
+                    {actionLoading === user.username ? (
+                      <span className="action-loading">Updating...</span>
+                    ) : (
+                      <>
+                        {/* Approve as Wrestler */}
+                        {user.wrestlerName && !user.groups.includes('Wrestler') && !user.groups.includes('Admin') && (
+                          <button
+                            className="btn-action btn-approve"
+                            onClick={() => handleRoleAction(user.username, 'Wrestler', 'promote')}
+                            title="Approve as Wrestler"
+                          >
+                            Approve Wrestler
+                          </button>
+                        )}
 
-                      {/* Promote to Wrestler (no wrestler name) */}
-                      {!user.groups.includes('Wrestler') && !user.groups.includes('Admin') && !user.wrestlerName && (
-                        <button
-                          className="btn-action btn-promote"
-                          onClick={() => handleRoleAction(user.username, 'Wrestler', 'promote')}
-                          title="Promote to Wrestler"
-                        >
-                          Make Wrestler
-                        </button>
-                      )}
+                        {/* Promote to Wrestler (no wrestler name) */}
+                        {!user.groups.includes('Wrestler') && !user.groups.includes('Admin') && !user.wrestlerName && (
+                          <button
+                            className="btn-action btn-promote"
+                            onClick={() => handleRoleAction(user.username, 'Wrestler', 'promote')}
+                            title="Promote to Wrestler"
+                          >
+                            Make Wrestler
+                          </button>
+                        )}
 
-                      {/* Demote from Wrestler */}
-                      {user.groups.includes('Wrestler') && !user.groups.includes('Admin') && (
-                        <button
-                          className="btn-action btn-demote"
-                          onClick={() => handleRoleAction(user.username, 'Wrestler', 'demote')}
-                          title="Remove Wrestler role"
-                        >
-                          Remove Wrestler
-                        </button>
-                      )}
+                        {/* Demote from Wrestler */}
+                        {user.groups.includes('Wrestler') && !user.groups.includes('Admin') && (
+                          <button
+                            className="btn-action btn-demote"
+                            onClick={() => handleRoleAction(user.username, 'Wrestler', 'demote')}
+                            title="Remove Wrestler role"
+                          >
+                            Remove Wrestler
+                          </button>
+                        )}
 
-                      {/* Promote to Admin */}
-                      {!user.groups.includes('Admin') && (
-                        <button
-                          className="btn-action btn-promote-admin"
-                          onClick={() => handleRoleAction(user.username, 'Admin', 'promote')}
-                          title="Promote to Admin"
-                        >
-                          Make Admin
-                        </button>
-                      )}
+                        {/* Promote to Admin */}
+                        {!user.groups.includes('Admin') && (
+                          <button
+                            className="btn-action btn-promote-admin"
+                            onClick={() => handleRoleAction(user.username, 'Admin', 'promote')}
+                            title="Promote to Admin"
+                          >
+                            Make Admin
+                          </button>
+                        )}
 
-                      {/* Demote from Admin */}
-                      {user.groups.includes('Admin') && (
-                        <button
-                          className="btn-action btn-demote"
-                          onClick={() => handleRoleAction(user.username, 'Admin', 'demote')}
-                          title="Remove Admin role"
-                        >
-                          Remove Admin
-                        </button>
-                      )}
-                    </>
-                  )}
+                        {/* Demote from Admin */}
+                        {user.groups.includes('Admin') && (
+                          <button
+                            className="btn-action btn-demote"
+                            onClick={() => handleRoleAction(user.username, 'Admin', 'demote')}
+                            title="Remove Admin role"
+                          >
+                            Remove Admin
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
