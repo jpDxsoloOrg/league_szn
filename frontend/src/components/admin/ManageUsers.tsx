@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usersApi, playersApi, divisionsApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import type { Player, Division } from '../../types';
 import './ManageUsers.css';
 
@@ -15,9 +16,10 @@ interface CognitoUser {
   groups: string[];
 }
 
-type FilterTab = 'all' | 'wrestler-requests' | 'wrestlers' | 'admins';
+type FilterTab = 'all' | 'wrestler-requests' | 'wrestlers' | 'admins' | 'disabled';
 
 export default function ManageUsers() {
+  const { isSuperAdmin } = useAuth();
   const [users, setUsers] = useState<CognitoUser[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
@@ -91,9 +93,27 @@ export default function ManageUsers() {
     }
   };
 
+  const handleToggleEnabled = async (username: string, currentlyEnabled: boolean) => {
+    setActionLoading(username);
+    try {
+      const result = await usersApi.toggleEnabled(username, !currentlyEnabled);
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.username === username ? { ...u, enabled: result.enabled } : u
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update user status');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const wrestlerRequests = users.filter(
     (u) => u.wrestlerName && !u.groups.includes('Wrestler')
   );
+
+  const disabledUsers = users.filter((u) => !u.enabled);
 
   const filteredUsers = (() => {
     switch (activeFilter) {
@@ -102,7 +122,9 @@ export default function ManageUsers() {
       case 'wrestlers':
         return users.filter((u) => u.groups.includes('Wrestler'));
       case 'admins':
-        return users.filter((u) => u.groups.includes('Admin'));
+        return users.filter((u) => u.groups.includes('Admin') || u.groups.includes('Moderator'));
+      case 'disabled':
+        return disabledUsers;
       default:
         return users;
     }
@@ -167,6 +189,12 @@ export default function ManageUsers() {
         >
           Admins
         </button>
+        <button
+          className={activeFilter === 'disabled' ? 'active' : ''}
+          onClick={() => setActiveFilter('disabled')}
+        >
+          Disabled ({disabledUsers.length})
+        </button>
       </div>
 
       <div className="users-table-container">
@@ -184,7 +212,7 @@ export default function ManageUsers() {
           </thead>
           <tbody>
             {filteredUsers.map((user) => (
-              <tr key={user.username} className={user.wrestlerName && !user.groups.includes('Wrestler') ? 'wrestler-request-row' : ''}>
+              <tr key={user.username} className={`${user.wrestlerName && !user.groups.includes('Wrestler') ? 'wrestler-request-row' : ''} ${!user.enabled ? 'disabled-user-row' : ''}`}>
                 <td>{user.email}</td>
                 <td>
                   {user.wrestlerName ? (
@@ -221,8 +249,8 @@ export default function ManageUsers() {
                   })()}
                 </td>
                 <td>
-                  <span className={`status-badge status-${user.status?.toLowerCase()}`}>
-                    {user.status}
+                  <span className={`status-badge ${!user.enabled ? 'status-disabled' : `status-${user.status?.toLowerCase()}`}`}>
+                    {!user.enabled ? 'Disabled' : user.status}
                   </span>
                 </td>
                 <td>{user.created ? new Date(user.created).toLocaleDateString() : '-'}</td>
@@ -265,27 +293,63 @@ export default function ManageUsers() {
                           </button>
                         )}
 
-                        {/* Promote to Admin */}
-                        {!user.groups.includes('Admin') && (
-                          <button
-                            className="btn-action btn-promote-admin"
-                            onClick={() => handleRoleAction(user.username, 'Admin', 'promote')}
-                            title="Promote to Admin"
-                          >
-                            Make Admin
-                          </button>
+                        {/* Admin/Moderator management - Super Admin only */}
+                        {isSuperAdmin && (
+                          <>
+                            {/* Promote to Moderator */}
+                            {!user.groups.includes('Admin') && !user.groups.includes('Moderator') && (
+                              <button
+                                className="btn-action btn-promote-moderator"
+                                onClick={() => handleRoleAction(user.username, 'Moderator', 'promote')}
+                                title="Promote to Moderator"
+                              >
+                                Make Moderator
+                              </button>
+                            )}
+
+                            {/* Demote from Moderator */}
+                            {user.groups.includes('Moderator') && (
+                              <button
+                                className="btn-action btn-demote"
+                                onClick={() => handleRoleAction(user.username, 'Moderator', 'demote')}
+                                title="Remove Moderator role"
+                              >
+                                Remove Moderator
+                              </button>
+                            )}
+
+                            {/* Promote to Admin */}
+                            {!user.groups.includes('Admin') && (
+                              <button
+                                className="btn-action btn-promote-admin"
+                                onClick={() => handleRoleAction(user.username, 'Admin', 'promote')}
+                                title="Promote to Admin"
+                              >
+                                Make Admin
+                              </button>
+                            )}
+
+                            {/* Demote from Admin */}
+                            {user.groups.includes('Admin') && (
+                              <button
+                                className="btn-action btn-demote"
+                                onClick={() => handleRoleAction(user.username, 'Admin', 'demote')}
+                                title="Remove Admin role"
+                              >
+                                Remove Admin
+                              </button>
+                            )}
+                          </>
                         )}
 
-                        {/* Demote from Admin */}
-                        {user.groups.includes('Admin') && (
-                          <button
-                            className="btn-action btn-demote"
-                            onClick={() => handleRoleAction(user.username, 'Admin', 'demote')}
-                            title="Remove Admin role"
-                          >
-                            Remove Admin
-                          </button>
-                        )}
+                        {/* Enable/Disable user */}
+                        <button
+                          className={`btn-action ${user.enabled ? 'btn-disable' : 'btn-enable'}`}
+                          onClick={() => handleToggleEnabled(user.username, user.enabled)}
+                          title={user.enabled ? 'Disable user account' : 'Enable user account'}
+                        >
+                          {user.enabled ? 'Disable' : 'Enable'}
+                        </button>
                       </>
                     )}
                   </div>

@@ -1,0 +1,94 @@
+.manage-features {
+  padding: 1rem;
+}
+
+.manage-features h2 {
+  margin: 0 0 0.5rem;
+  color: var(--text-primary, #fff);
+}
+
+.features-description {
+  color: var(--text-secondary, #aaa);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.feature-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.2rem;
+  background: var(--card-bg, #1a1a2e);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 8px;
+}
+
+.feature-info h3 {
+  margin: 0 0 0.25rem;
+  color: var(--text-primary, #fff);
+  font-size: 1rem;
+}
+
+.feature-info p {
+  margin: 0;
+  color: var(--text-secondary, #aaa);
+  font-size: 0.85rem;
+}
+
+.toggle-btn {
+  padding: 0.4rem 1.2rem;
+  border-radius: 20px;
+  border: 1px solid;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 100px;
+  transition: all 0.2s;
+}
+
+.toggle-btn.enabled {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: rgba(76, 175, 80, 0.5);
+  color: #81c784;
+}
+
+.toggle-btn.enabled:hover {
+  background: rgba(76, 175, 80, 0.3);
+}
+
+.toggle-btn.disabled {
+  background: rgba(158, 158, 158, 0.15);
+  border-color: rgba(158, 158, 158, 0.4);
+  color: #bdbdbd;
+}
+
+.toggle-btn.disabled:hover {
+  background: rgba(158, 158, 158, 0.25);
+}
+
+.toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .manage-features {
+    padding: 0;
+  }
+
+  .feature-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .feature-toggle {
+    align-self: flex-end;
+  }
+}

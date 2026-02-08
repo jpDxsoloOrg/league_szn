@@ -2,7 +2,7 @@ import { Amplify } from 'aws-amplify';
 import { signIn, signUp, signOut, confirmSignUp, fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
 import { logger } from '../utils/logger';
 
-export type UserRole = 'Admin' | 'Wrestler' | 'Fantasy';
+export type UserRole = 'Admin' | 'Moderator' | 'Wrestler' | 'Fantasy';
 
 // Cognito configuration from environment variables
 const cognitoConfig = {
@@ -55,7 +55,7 @@ function decodeJwtPayload(token: string): Record<string, unknown> {
 export function getGroupsFromToken(accessToken: string): UserRole[] {
   const payload = decodeJwtPayload(accessToken);
   const groups = (payload['cognito:groups'] as string[]) || [];
-  return groups.filter((g): g is UserRole => ['Admin', 'Wrestler', 'Fantasy'].includes(g));
+  return groups.filter((g): g is UserRole => ['Admin', 'Moderator', 'Wrestler', 'Fantasy'].includes(g));
 }
 
 export const cognitoAuth = {
@@ -124,6 +124,10 @@ export const cognitoAuth = {
       if (error instanceof Error) {
         const cognitoError = error as Error & { name?: string };
         if (cognitoError.name === 'NotAuthorizedException') {
+          // Check if user is disabled (Cognito returns this for disabled users)
+          if (error.message?.toLowerCase().includes('disabled')) {
+            throw new Error('Your account is currently disabled. Please contact an administrator.');
+          }
           throw new Error('Invalid email or password');
         } else if (cognitoError.name === 'UserNotFoundException') {
           throw new Error('User not found');
@@ -279,6 +283,7 @@ export const cognitoAuth = {
   hasRole: (role: UserRole): boolean => {
     const groups = cognitoAuth.getUserGroups();
     if (groups.includes('Admin')) return true;
+    if (groups.includes('Moderator')) return true;
     return groups.includes(role);
   },
 

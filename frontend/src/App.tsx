@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
+import { SiteConfigProvider } from './contexts/SiteConfigContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -47,6 +48,7 @@ import EventResults from './components/events/EventResults';
 import WrestlerProfile from './components/profile/WrestlerProfile';
 // Route guard
 import ProtectedRoute from './components/ProtectedRoute';
+import FeatureRoute from './components/FeatureRoute';
 import './App.css';
 
 function App() {
@@ -54,6 +56,7 @@ function App() {
     <ErrorBoundary>
       <Router>
         <AuthProvider>
+        <SiteConfigProvider>
         <div className="App">
         <Sidebar />
         <TopBar />
@@ -81,93 +84,138 @@ function App() {
               </ProtectedRoute>
             } />
 
-            {/* Challenge Routes - Wrestler only */}
+            {/* Challenge Routes - Wrestler only, feature-gated */}
             <Route path="/challenges" element={
-              <ProtectedRoute requiredRole="Wrestler">
-                <ChallengeBoard />
-              </ProtectedRoute>
+              <FeatureRoute feature="challenges">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <ChallengeBoard />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
             <Route path="/challenges/issue" element={
-              <ProtectedRoute requiredRole="Wrestler">
-                <IssueChallenge />
-              </ProtectedRoute>
+              <FeatureRoute feature="challenges">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <IssueChallenge />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
             <Route path="/challenges/my" element={
-              <ProtectedRoute requiredRole="Wrestler">
-                <MyChallenges />
-              </ProtectedRoute>
+              <FeatureRoute feature="challenges">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <MyChallenges />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
             <Route path="/challenges/:challengeId" element={
-              <ProtectedRoute requiredRole="Wrestler">
-                <ChallengeDetail />
-              </ProtectedRoute>
+              <FeatureRoute feature="challenges">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <ChallengeDetail />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
 
-            {/* Promo Routes - Wrestler only */}
+            {/* Promo Routes - Wrestler only, feature-gated */}
             <Route path="/promos" element={
-              <ProtectedRoute requiredRole="Wrestler">
-                <PromoFeed />
-              </ProtectedRoute>
+              <FeatureRoute feature="promos">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <PromoFeed />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
             <Route path="/promos/new" element={
-              <ProtectedRoute requiredRole="Wrestler">
-                <PromoEditor />
-              </ProtectedRoute>
+              <FeatureRoute feature="promos">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <PromoEditor />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
             <Route path="/promos/:promoId" element={
-              <ProtectedRoute requiredRole="Wrestler">
-                <PromoThread />
-              </ProtectedRoute>
+              <FeatureRoute feature="promos">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <PromoThread />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
 
-            {/* Statistics Routes - public */}
-            <Route path="/stats" element={<PlayerStats />} />
-            <Route path="/stats/player/:playerId" element={<PlayerStats />} />
-            <Route path="/stats/head-to-head" element={<HeadToHeadComparison />} />
-            <Route path="/stats/leaderboards" element={<Leaderboards />} />
-            <Route path="/stats/records" element={<RecordBook />} />
-            <Route path="/stats/tale-of-tape" element={<TaleOfTheTape />} />
-            <Route path="/stats/achievements" element={<Achievements />} />
+            {/* Statistics Routes - feature-gated */}
+            <Route path="/stats" element={
+              <FeatureRoute feature="statistics"><PlayerStats /></FeatureRoute>
+            } />
+            <Route path="/stats/player/:playerId" element={
+              <FeatureRoute feature="statistics"><PlayerStats /></FeatureRoute>
+            } />
+            <Route path="/stats/head-to-head" element={
+              <FeatureRoute feature="statistics"><HeadToHeadComparison /></FeatureRoute>
+            } />
+            <Route path="/stats/leaderboards" element={
+              <FeatureRoute feature="statistics"><Leaderboards /></FeatureRoute>
+            } />
+            <Route path="/stats/records" element={
+              <FeatureRoute feature="statistics"><RecordBook /></FeatureRoute>
+            } />
+            <Route path="/stats/tale-of-tape" element={
+              <FeatureRoute feature="statistics"><TaleOfTheTape /></FeatureRoute>
+            } />
+            <Route path="/stats/achievements" element={
+              <FeatureRoute feature="statistics"><Achievements /></FeatureRoute>
+            } />
 
             {/* Events Routes - public */}
             <Route path="/events" element={<EventsCalendar />} />
             <Route path="/events/:eventId" element={<EventDetail />} />
             <Route path="/events/:eventId/results" element={<EventResults />} />
 
-            {/* Contender Routes - public */}
-            <Route path="/contenders" element={<ContenderRankings />} />
-            <Route path="/contenders/my-status" element={<MyContenderStatus />} />
+            {/* Contender Routes - feature-gated */}
+            <Route path="/contenders" element={
+              <FeatureRoute feature="contenders"><ContenderRankings /></FeatureRoute>
+            } />
+            <Route path="/contenders/my-status" element={
+              <FeatureRoute feature="contenders"><MyContenderStatus /></FeatureRoute>
+            } />
 
-            {/* Fantasy Routes - Fantasy role required for interactive features */}
-            <Route path="/fantasy" element={<FantasyLanding />} />
+            {/* Fantasy Routes - feature-gated, Fantasy role required for interactive features */}
+            <Route path="/fantasy" element={
+              <FeatureRoute feature="fantasy"><FantasyLanding /></FeatureRoute>
+            } />
             <Route path="/fantasy/dashboard" element={
-              <ProtectedRoute requiredRole="Fantasy">
-                <FantasyDashboard />
-              </ProtectedRoute>
+              <FeatureRoute feature="fantasy">
+                <ProtectedRoute requiredRole="Fantasy">
+                  <FantasyDashboard />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
             <Route path="/fantasy/picks/:eventId" element={
-              <ProtectedRoute requiredRole="Fantasy">
-                <MakePicks />
-              </ProtectedRoute>
+              <FeatureRoute feature="fantasy">
+                <ProtectedRoute requiredRole="Fantasy">
+                  <MakePicks />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
             <Route path="/fantasy/leaderboard" element={
-              <ProtectedRoute requiredRole="Fantasy">
-                <FantasyLeaderboard />
-              </ProtectedRoute>
+              <FeatureRoute feature="fantasy">
+                <ProtectedRoute requiredRole="Fantasy">
+                  <FantasyLeaderboard />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
             <Route path="/fantasy/costs" element={
-              <ProtectedRoute requiredRole="Fantasy">
-                <WrestlerCosts />
-              </ProtectedRoute>
+              <FeatureRoute feature="fantasy">
+                <ProtectedRoute requiredRole="Fantasy">
+                  <WrestlerCosts />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
             <Route path="/fantasy/events/:eventId/results" element={
-              <ProtectedRoute requiredRole="Fantasy">
-                <ShowResults />
-              </ProtectedRoute>
+              <FeatureRoute feature="fantasy">
+                <ProtectedRoute requiredRole="Fantasy">
+                  <ShowResults />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
           </Routes>
         </main>
         </div>
+        </SiteConfigProvider>
         </AuthProvider>
       </Router>
     </ErrorBoundary>

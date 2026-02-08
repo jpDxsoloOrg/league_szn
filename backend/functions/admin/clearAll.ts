@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, serverError } from '../../lib/response';
+import { requireSuperAdmin } from '../../lib/auth';
 
 const deleteAllFromTable = async (
   tableName: string,
@@ -45,7 +46,10 @@ const deleteAllFromTable = async (
   return items.length;
 };
 
-export const handler: APIGatewayProxyHandler = async () => {
+export const handler: APIGatewayProxyHandler = async (event) => {
+  const denied = requireSuperAdmin(event);
+  if (denied) return denied;
+
   try {
     const deletedCounts: Record<string, number> = {};
 

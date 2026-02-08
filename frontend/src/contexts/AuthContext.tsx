@@ -17,6 +17,8 @@ interface AuthContextType extends AuthState {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
+  isModerator: boolean;
   isWrestler: boolean;
   isFantasy: boolean;
   hasRole: (role: UserRole) => boolean;
@@ -136,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasRole = useCallback((role: UserRole): boolean => {
     if (state.groups.includes('Admin')) return true;
+    if (state.groups.includes('Moderator')) return true;
     return state.groups.includes(role);
   }, [state.groups]);
 
@@ -146,7 +149,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     confirmSignUp: handleConfirmSignUp,
     signOut: handleSignOut,
     refreshProfile,
-    isAdmin: state.groups.includes('Admin'),
+    isAdmin: state.groups.includes('Admin') || state.groups.includes('Moderator'),
+    isSuperAdmin: state.groups.includes('Admin'),
+    isModerator: state.groups.includes('Moderator'),
     isWrestler: state.groups.includes('Wrestler'),
     isFantasy: hasRole('Fantasy'),
     hasRole,
