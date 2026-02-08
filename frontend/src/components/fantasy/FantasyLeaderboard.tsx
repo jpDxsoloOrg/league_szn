@@ -35,8 +35,9 @@ export default function FantasyLeaderboard() {
         }
 
         // Get current user's fantasyUserId from their picks
-        if (myPicks.length > 0) {
-          setCurrentUserId(myPicks[0].fantasyUserId);
+        const firstPick = myPicks[0];
+        if (firstPick) {
+          setCurrentUserId(firstPick.fantasyUserId);
         }
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
