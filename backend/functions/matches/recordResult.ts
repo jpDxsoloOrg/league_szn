@@ -579,10 +579,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Auto-complete event if all its matches are now finished
-    // Scan events to find any that contain this matchId
-    autoCompleteEvent(matchId).catch(err => {
-      console.warn('Non-blocking event auto-complete failed:', err);
-    });
+    // Must await — if fire-and-forget, Lambda may freeze before completion runs
+    try {
+      await autoCompleteEvent(matchId);
+    } catch (err) {
+      console.warn('Event auto-complete failed:', err);
+    }
 
     // Trigger contender ranking recalculation (fire-and-forget, non-blocking)
     triggerRankingRecalculation().catch(err => {
