@@ -92,7 +92,7 @@ export default function ManageUsers() {
   };
 
   const wrestlerRequests = users.filter(
-    (u) => u.wrestlerName && !u.groups.includes('Wrestler') && !u.groups.includes('Admin')
+    (u) => u.wrestlerName && !u.groups.includes('Wrestler')
   );
 
   const filteredUsers = (() => {
@@ -184,7 +184,7 @@ export default function ManageUsers() {
           </thead>
           <tbody>
             {filteredUsers.map((user) => (
-              <tr key={user.username} className={user.wrestlerName && !user.groups.includes('Wrestler') && !user.groups.includes('Admin') ? 'wrestler-request-row' : ''}>
+              <tr key={user.username} className={user.wrestlerName && !user.groups.includes('Wrestler') ? 'wrestler-request-row' : ''}>
                 <td>{user.email}</td>
                 <td>
                   {user.wrestlerName ? (
@@ -233,7 +233,7 @@ export default function ManageUsers() {
                     ) : (
                       <>
                         {/* Approve as Wrestler */}
-                        {user.wrestlerName && !user.groups.includes('Wrestler') && !user.groups.includes('Admin') && (
+                        {user.wrestlerName && !user.groups.includes('Wrestler') && (
                           <button
                             className="btn-action btn-approve"
                             onClick={() => handleRoleAction(user.username, 'Wrestler', 'promote')}
@@ -244,7 +244,7 @@ export default function ManageUsers() {
                         )}
 
                         {/* Promote to Wrestler (no wrestler name) */}
-                        {!user.groups.includes('Wrestler') && !user.groups.includes('Admin') && !user.wrestlerName && (
+                        {!user.groups.includes('Wrestler') && !user.wrestlerName && (
                           <button
                             className="btn-action btn-promote"
                             onClick={() => handleRoleAction(user.username, 'Wrestler', 'promote')}
@@ -255,7 +255,7 @@ export default function ManageUsers() {
                         )}
 
                         {/* Demote from Wrestler */}
-                        {user.groups.includes('Wrestler') && !user.groups.includes('Admin') && (
+                        {user.groups.includes('Wrestler') && (
                           <button
                             className="btn-action btn-demote"
                             onClick={() => handleRoleAction(user.username, 'Wrestler', 'demote')}

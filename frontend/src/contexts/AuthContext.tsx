@@ -43,9 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const session = await cognitoAuth.refreshSession();
           const groups = session?.groups || cognitoAuth.getUserGroups();
 
-          // Fetch player profile if user is a wrestler
+          // Fetch player profile if user is in the Wrestler group
           let playerId: string | null = null;
-          if (groups.includes('Wrestler') || groups.includes('Admin')) {
+          if (groups.includes('Wrestler')) {
             try {
               const profile = await profileApi.getMyProfile();
               playerId = profile.playerId;
@@ -86,9 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleSignIn = useCallback(async (email: string, password: string) => {
     const result = await cognitoAuth.signIn(email, password);
 
-    // Fetch player profile if user is a wrestler
+    // Fetch player profile if user is in the Wrestler group
     let playerId: string | null = null;
-    if (result.groups.includes('Wrestler') || result.groups.includes('Admin')) {
+    if (result.groups.includes('Wrestler')) {
       try {
         const profile = await profileApi.getMyProfile();
         playerId = profile.playerId;
@@ -147,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut: handleSignOut,
     refreshProfile,
     isAdmin: state.groups.includes('Admin'),
-    isWrestler: hasRole('Wrestler'),
+    isWrestler: state.groups.includes('Wrestler'),
     isFantasy: hasRole('Fantasy'),
     hasRole,
   };
