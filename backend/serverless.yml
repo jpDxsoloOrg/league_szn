@@ -525,6 +525,27 @@ functions:
           cors: true
           authorizer: adminAuthorizer
 
+  # Fantasy Leaderboard
+  getFantasyLeaderboard:
+    handler: functions/fantasy/getFantasyLeaderboard.handler
+    events:
+      - http:
+          path: fantasy/leaderboard
+          method: get
+          cors: true
+          authorizer: adminAuthorizer
+
+  # Fantasy Scoring
+  scoreCompletedEvents:
+    handler: functions/fantasy/scoreCompletedEvents.handler
+    timeout: 29
+    events:
+      - http:
+          path: fantasy/score
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
+
   # Fantasy Picks
   submitPicks:
     handler: functions/fantasy/submitPicks.handler

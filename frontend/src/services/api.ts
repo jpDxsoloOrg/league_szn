@@ -10,7 +10,7 @@ import type {
 } from '../types';
 import type { LeagueEvent, EventWithMatches, CreateEventInput, UpdateEventInput } from '../types/event';
 import type { ChampionshipContenders } from '../types/contender';
-import type { FantasyConfig, WrestlerCost, WrestlerWithCost, FantasyPicks } from '../types/fantasy';
+import type { FantasyConfig, WrestlerCost, WrestlerWithCost, FantasyPicks, FantasyLeaderboardEntry } from '../types/fantasy';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
@@ -324,6 +324,19 @@ export const fantasyApi = {
     return fetchWithAuth(`${API_BASE_URL}/admin/fantasy/wrestlers/${playerId}/cost`, {
       method: 'PUT',
       body: JSON.stringify({ currentCost: cost, reason }),
+    });
+  },
+
+  // Leaderboard
+  getLeaderboard: async (seasonId?: string, signal?: AbortSignal): Promise<FantasyLeaderboardEntry[]> => {
+    const params = seasonId ? `?seasonId=${seasonId}` : '';
+    return fetchWithAuth(`${API_BASE_URL}/fantasy/leaderboard${params}`, {}, signal);
+  },
+
+  // Scoring
+  scoreCompletedEvents: async (): Promise<{ message: string; scoredEventIds: string[] }> => {
+    return fetchWithAuth(`${API_BASE_URL}/fantasy/score`, {
+      method: 'POST',
     });
   },
 
