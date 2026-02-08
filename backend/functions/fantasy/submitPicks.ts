@@ -17,7 +17,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Request body is required');
     }
 
-    const { sub: fantasyUserId } = getAuthContext(event);
+    const { sub: fantasyUserId, username } = getAuthContext(event);
     const body = JSON.parse(event.body);
     const picks: Record<string, string[]> = body.picks;
 
@@ -115,6 +115,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const pickRecord = {
       eventId,
       fantasyUserId,
+      username,
       picks,
       totalSpent,
       createdAt: (existingResult.Item?.createdAt as string) || timestamp,

@@ -525,6 +525,16 @@ functions:
           cors: true
           authorizer: adminAuthorizer
 
+  # Fantasy Leaderboard
+  getFantasyLeaderboard:
+    handler: functions/fantasy/getFantasyLeaderboard.handler
+    events:
+      - http:
+          path: fantasy/leaderboard
+          method: get
+          cors: true
+          authorizer: adminAuthorizer
+
   # Fantasy Picks
   submitPicks:
     handler: functions/fantasy/submitPicks.handler

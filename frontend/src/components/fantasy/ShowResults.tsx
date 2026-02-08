@@ -1,32 +1,87 @@
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
-import {
-  mockShows,
-  mockUserPicks,
-  mockShowMatches,
-  mockWrestlersWithCosts,
-  mockDivisions,
-} from '../../mocks/fantasyMockData';
+import { eventsApi, fantasyApi, divisionsApi } from '../../services/api';
+import type { EventWithMatches } from '../../types/event';
+import type { FantasyPicks, WrestlerWithCost } from '../../types/fantasy';
+import type { Division } from '../../types';
 import './ShowResults.css';
 
 export default function ShowResults() {
   const { t } = useTranslation();
   const { eventId } = useParams<{ eventId: string }>();
 
-  const show = mockShows.find((s) => s.eventId === eventId);
-  const userPicks = mockUserPicks.find((p) => p.eventId === eventId);
+  const [event, setEvent] = useState<EventWithMatches | null>(null);
+  const [userPicks, setUserPicks] = useState<FantasyPicks | null>(null);
+  const [wrestlers, setWrestlers] = useState<WrestlerWithCost[]>([]);
+  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!eventId) return;
+
+    const controller = new AbortController();
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [eventData, wrestlersData, divisionsData] = await Promise.all([
+          eventsApi.getById(eventId, controller.signal),
+          fantasyApi.getWrestlerCosts(controller.signal),
+          divisionsApi.getAll(controller.signal),
+        ]);
+
+        setEvent(eventData);
+        setWrestlers(wrestlersData);
+        setDivisions(divisionsData);
+
+        // Fetch user picks separately (may 404 if user didn't pick)
+        try {
+          const picksData = await fantasyApi.getUserPicks(eventId, controller.signal);
+          setUserPicks(picksData);
+        } catch {
+          // User may not have picks for this event
+          setUserPicks(null);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        console.error('Failed to load show results:', err);
+        setError('show-not-found');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    return () => controller.abort();
+  }, [eventId]);
 
   const getWrestlerName = (playerId: string): string => {
-    const wrestler = mockWrestlersWithCosts.find((w) => w.playerId === playerId);
+    const wrestler = wrestlers.find((w) => w.playerId === playerId);
     return wrestler?.currentWrestler || 'Unknown';
   };
 
   const getDivisionName = (divisionId: string): string => {
-    const division = mockDivisions.find((d) => d.divisionId === divisionId);
+    const division = divisions.find((d) => d.divisionId === divisionId);
     return division?.name || 'Unknown';
   };
 
-  if (!show) {
+  if (loading) {
+    return (
+      <div className="show-results">
+        <div className="loading-state">
+          <div className="spinner" />
+          <p>{t('common.loading')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !event) {
     return (
       <div className="error-state">
         <h2>{t('fantasy.results.showNotFound')}</h2>
@@ -35,7 +90,7 @@ export default function ShowResults() {
     );
   }
 
-  if (show.status !== 'completed') {
+  if (event.status !== 'completed') {
     return (
       <div className="error-state">
         <h2>{t('fantasy.results.showNotComplete')}</h2>
@@ -50,6 +105,9 @@ export default function ShowResults() {
     ? Object.values(userPicks.picks).flat()
     : [];
 
+  // Get enriched matches from the event
+  const matches = event.enrichedMatches || [];
+
   return (
     <div className="show-results">
       <header className="results-header">
@@ -57,9 +115,9 @@ export default function ShowResults() {
           <Link to="/fantasy/dashboard" className="back-link">
             {t('fantasy.results.backToDashboard')}
           </Link>
-          <h1>{show.name}</h1>
+          <h1>{event.name}</h1>
           <p className="show-date">
-            {new Date(show.date).toLocaleDateString(undefined, {
+            {new Date(event.date).toLocaleDateString(undefined, {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
@@ -125,9 +183,13 @@ export default function ShowResults() {
       <section className="match-results">
         <h2>{t('fantasy.results.matchResults')}</h2>
         <div className="matches-list">
-          {mockShowMatches.map((match) => {
+          {matches.map((matchEntry) => {
+            const match = matchEntry.matchData;
+            if (!match) return null;
+
             const hasPickedWinner = match.winners?.some((id) => pickedPlayerIds.includes(id));
             const hasPickedLoser = match.losers?.some((id) => pickedPlayerIds.includes(id));
+            const participantCount = match.participants?.length || 0;
 
             return (
               <div
@@ -138,7 +200,7 @@ export default function ShowResults() {
                   <span className="match-type">{match.matchType}</span>
                   {match.isChampionship && (
                     <span className="championship-badge">
-                      {t('fantasy.results.championship')}
+                      {match.championshipName || t('fantasy.results.championship')}
                     </span>
                   )}
                 </div>
@@ -177,7 +239,7 @@ export default function ShowResults() {
                 <div className="match-points">
                   <span className="points-info">
                     {t('fantasy.results.pointsAwarded', {
-                      points: (match.participants?.length - 1) * 10,
+                      points: participantCount > 1 ? (participantCount - 1) * 10 : 0,
                     })}
                     {match.isChampionship && ` (+5 ${t('fantasy.results.titleBonus')})`}
                   </span>

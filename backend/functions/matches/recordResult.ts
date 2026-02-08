@@ -4,6 +4,7 @@ import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { calculateRankingsForChampionship } from '../../lib/rankingCalculator';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { recalculateCosts } from '../fantasy/recalculateWrestlerCosts';
+import { calculateFantasyPoints } from '../fantasy/calculateFantasyPoints';
 
 interface RecordResultBody {
   winners: string[];
@@ -150,6 +151,11 @@ async function autoCompleteEvent(matchId: string): Promise<void> {
         },
       });
       console.log(`Event ${eventItem.eventId} auto-completed: all ${matchIds.length} matches finished`);
+
+      // Calculate fantasy points for all users who made picks for this event
+      calculateFantasyPoints(eventItem.eventId as string).catch(err => {
+        console.warn('Non-blocking fantasy points calculation failed:', err);
+      });
     } else {
       // If at least one match is done but not all, mark as in-progress
       if (eventItem.status === 'upcoming') {
