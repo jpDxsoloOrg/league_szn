@@ -3,6 +3,7 @@ import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { calculateRankingsForChampionship } from '../../lib/rankingCalculator';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { recalculateCosts } from '../fantasy/recalculateWrestlerCosts';
 
 interface RecordResultBody {
   winners: string[];
@@ -577,6 +578,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Trigger contender ranking recalculation (fire-and-forget, non-blocking)
     triggerRankingRecalculation().catch(err => {
       console.warn('Non-blocking ranking recalculation failed:', err);
+    });
+
+    // Trigger fantasy wrestler cost recalculation (fire-and-forget, non-blocking)
+    recalculateCosts().catch(err => {
+      console.warn('Non-blocking fantasy cost recalculation failed:', err);
     });
 
     return success({

@@ -22,6 +22,9 @@ interface UpdateEventBody {
   matchCards?: MatchCardEntry[];
   attendance?: number;
   rating?: number;
+  fantasyEnabled?: boolean;
+  fantasyBudget?: number;
+  fantasyPicksPerDivision?: number;
 }
 
 const VALID_EVENT_TYPES = ['ppv', 'weekly', 'special', 'house'];
@@ -136,6 +139,24 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       updateExpressions.push('#rating = :rating');
       expressionAttributeNames['#rating'] = 'rating';
       expressionAttributeValues[':rating'] = body.rating;
+    }
+
+    if (body.fantasyEnabled !== undefined) {
+      updateExpressions.push('#fantasyEnabled = :fantasyEnabled');
+      expressionAttributeNames['#fantasyEnabled'] = 'fantasyEnabled';
+      expressionAttributeValues[':fantasyEnabled'] = body.fantasyEnabled;
+    }
+
+    if (body.fantasyBudget !== undefined) {
+      updateExpressions.push('#fantasyBudget = :fantasyBudget');
+      expressionAttributeNames['#fantasyBudget'] = 'fantasyBudget';
+      expressionAttributeValues[':fantasyBudget'] = body.fantasyBudget;
+    }
+
+    if (body.fantasyPicksPerDivision !== undefined) {
+      updateExpressions.push('#fantasyPicksPerDivision = :fantasyPicksPerDivision');
+      expressionAttributeNames['#fantasyPicksPerDivision'] = 'fantasyPicksPerDivision';
+      expressionAttributeValues[':fantasyPicksPerDivision'] = body.fantasyPicksPerDivision;
     }
 
     // Always update the updatedAt timestamp

@@ -1,47 +1,98 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { mockFantasyConfig } from '../../mocks/fantasyMockData';
+import { fantasyApi } from '../../services/api';
 import type { FantasyConfig as FantasyConfigType } from '../../types/fantasy';
 import './FantasyConfig.css';
 
 export default function FantasyConfig() {
   const { t } = useTranslation();
-  const [config, setConfig] = useState<FantasyConfigType>(mockFantasyConfig);
-  const [loading, setLoading] = useState(false);
+  const [config, setConfig] = useState<FantasyConfigType | null>(null);
+  const [originalConfig, setOriginalConfig] = useState<FantasyConfigType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchConfig = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fantasyApi.getConfig(controller.signal);
+        setConfig(data);
+        setOriginalConfig(data);
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setError(err instanceof Error ? err.message : 'Failed to load config');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchConfig();
+
+    return () => controller.abort();
+  }, []);
+
   const handleChange = (field: keyof FantasyConfigType, value: number | boolean | string) => {
-    setConfig((prev) => ({ ...prev, [field]: value }));
+    if (!config) return;
+    setConfig((prev) => prev ? ({ ...prev, [field]: value }) : prev);
     setHasChanges(true);
     setError(null);
     setSuccess(null);
   };
 
   const handleSave = async () => {
-    setLoading(true);
+    if (!config) return;
+    setSaving(true);
     setError(null);
     setSuccess(null);
 
     try {
-      // Mock API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const updated = await fantasyApi.updateConfig(config);
+      setConfig(updated);
+      setOriginalConfig(updated);
       setSuccess(t('fantasy.admin.config.saveSuccess'));
       setHasChanges(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('fantasy.admin.config.error'));
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   const handleReset = () => {
-    setConfig(mockFantasyConfig);
+    if (originalConfig) {
+      setConfig({ ...originalConfig });
+    }
     setHasChanges(false);
     setError(null);
     setSuccess(null);
   };
+
+  if (loading) {
+    return (
+      <div className="fantasy-config">
+        <div className="loading-state">
+          <div className="spinner" />
+          <p>{t('common.loading')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!config) {
+    return (
+      <div className="fantasy-config">
+        <div className="error-state">
+          <p>{error || 'Failed to load configuration'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fantasy-config">
@@ -285,16 +336,16 @@ export default function FantasyConfig() {
         <button
           className="btn-reset"
           onClick={handleReset}
-          disabled={loading || !hasChanges}
+          disabled={saving || !hasChanges}
         >
           {t('fantasy.admin.config.reset')}
         </button>
         <button
           className="btn-save"
           onClick={handleSave}
-          disabled={loading || !hasChanges}
+          disabled={saving || !hasChanges}
         >
-          {loading ? t('common.saving') : t('common.save')}
+          {saving ? t('common.saving') : t('common.save')}
         </button>
       </div>
     </div>

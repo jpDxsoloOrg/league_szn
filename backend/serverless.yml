@@ -20,6 +20,9 @@ provider:
     CONTENDER_RANKINGS_TABLE: ${self:service}-contender-rankings-${self:provider.stage}
     RANKING_HISTORY_TABLE: ${self:service}-ranking-history-${self:provider.stage}
     IMAGES_BUCKET: ${self:service}-images-${self:provider.stage}
+    FANTASY_CONFIG_TABLE: ${self:service}-fantasy-config-${self:provider.stage}
+    WRESTLER_COSTS_TABLE: ${self:service}-wrestler-costs-${self:provider.stage}
+    FANTASY_PICKS_TABLE: ${self:service}-fantasy-picks-${self:provider.stage}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
     ADMIN_SETUP_KEY: cd59a70bebb3a6ef2d42b921b546754fff1a8ade98c311c09c4f05da4570008b
@@ -52,6 +55,10 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONTENDER_RANKINGS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RANKING_HISTORY_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RANKING_HISTORY_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FANTASY_CONFIG_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.WRESTLER_COSTS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FANTASY_PICKS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FANTASY_PICKS_TABLE}/index/*
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -463,6 +470,98 @@ functions:
           cors: true
           authorizer: adminAuthorizer
 
+  # Fantasy Config
+  getFantasyConfig:
+    handler: functions/fantasy/getFantasyConfig.handler
+    events:
+      - http:
+          path: fantasy/config
+          method: get
+          cors: true
+
+  updateFantasyConfig:
+    handler: functions/fantasy/updateFantasyConfig.handler
+    events:
+      - http:
+          path: admin/fantasy/config
+          method: put
+          cors: true
+          authorizer: adminAuthorizer
+
+  # Wrestler Costs
+  getWrestlerCosts:
+    handler: functions/fantasy/getWrestlerCosts.handler
+    events:
+      - http:
+          path: fantasy/wrestlers/costs
+          method: get
+          cors: true
+
+  initializeWrestlerCosts:
+    handler: functions/fantasy/initializeWrestlerCosts.handler
+    events:
+      - http:
+          path: admin/fantasy/wrestlers/costs/initialize
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
+
+  recalculateWrestlerCosts:
+    handler: functions/fantasy/recalculateWrestlerCosts.handler
+    timeout: 29
+    events:
+      - http:
+          path: admin/fantasy/wrestlers/costs/recalculate
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
+
+  updateWrestlerCost:
+    handler: functions/fantasy/updateWrestlerCost.handler
+    events:
+      - http:
+          path: admin/fantasy/wrestlers/{playerId}/cost
+          method: put
+          cors: true
+          authorizer: adminAuthorizer
+
+  # Fantasy Picks
+  submitPicks:
+    handler: functions/fantasy/submitPicks.handler
+    events:
+      - http:
+          path: fantasy/picks/{eventId}
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
+
+  getUserPicks:
+    handler: functions/fantasy/getUserPicks.handler
+    events:
+      - http:
+          path: fantasy/picks/{eventId}
+          method: get
+          cors: true
+          authorizer: adminAuthorizer
+
+  getAllMyPicks:
+    handler: functions/fantasy/getAllMyPicks.handler
+    events:
+      - http:
+          path: fantasy/me/picks
+          method: get
+          cors: true
+          authorizer: adminAuthorizer
+
+  clearPicks:
+    handler: functions/fantasy/clearPicks.handler
+    events:
+      - http:
+          path: fantasy/picks/{eventId}
+          method: delete
+          cors: true
+          authorizer: adminAuthorizer
+
 resources:
   Resources:
     # API Gateway Response for CORS with Authorizer
@@ -817,6 +916,55 @@ resources:
               - AttributeName: championshipId
                 KeyType: HASH
               - AttributeName: weekKey
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    FantasyConfigTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.FANTASY_CONFIG_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: configKey
+            AttributeType: S
+        KeySchema:
+          - AttributeName: configKey
+            KeyType: HASH
+
+    WrestlerCostsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.WRESTLER_COSTS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
+
+    FantasyPicksTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.FANTASY_PICKS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: eventId
+            AttributeType: S
+          - AttributeName: fantasyUserId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: eventId
+            KeyType: HASH
+          - AttributeName: fantasyUserId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: UserPicksIndex
+            KeySchema:
+              - AttributeName: fantasyUserId
+                KeyType: HASH
+              - AttributeName: eventId
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL

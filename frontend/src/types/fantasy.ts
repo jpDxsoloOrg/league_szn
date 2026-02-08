@@ -12,23 +12,9 @@ export interface FantasyUser {
   updatedAt: string;
 }
 
-// Show (Fantasy Event)
-export interface Show {
-  showId: string;
-  seasonId: string;
-  name: string;
-  date: string;
-  status: 'draft' | 'open' | 'locked' | 'completed';
-  picksPerDivision: number;
-  budget: number;
-  matchIds: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
 // Fantasy Picks
 export interface FantasyPicks {
-  showId: string;
+  eventId: string;
   fantasyUserId: string;
   picks: Record<string, string[]>; // divisionId -> playerIds
   totalSpent: number;
@@ -105,35 +91,12 @@ export interface WrestlerWithCost {
   recentRecord: string; // e.g., "5-1"
 }
 
-export interface ShowWithDetails extends Show {
-  matchCount: number;
-  picksCount: number;
-  isUserPicked: boolean;
-}
-
 export interface PickSummary {
   divisionId: string;
   divisionName: string;
   selectedCount: number;
   maxPicks: number;
   wrestlers: WrestlerWithCost[];
-}
-
-// Form types for creating/editing
-export interface CreateShowInput {
-  seasonId: string;
-  name: string;
-  date: string;
-  picksPerDivision: number;
-  budget: number;
-}
-
-export interface UpdateShowInput {
-  name?: string;
-  date?: string;
-  picksPerDivision?: number;
-  budget?: number;
-  matchIds?: string[];
 }
 
 export interface SubmitPicksInput {

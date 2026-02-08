@@ -25,6 +25,9 @@ export interface LeagueEvent {
   matchCards: MatchCardEntry[];
   attendance?: number;
   rating?: number;
+  fantasyEnabled?: boolean;
+  fantasyBudget?: number;
+  fantasyPicksPerDivision?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -71,6 +74,9 @@ export interface CreateEventInput {
   imageUrl?: string;
   themeColor?: string;
   seasonId?: string;
+  fantasyEnabled?: boolean;
+  fantasyBudget?: number;
+  fantasyPicksPerDivision?: number;
 }
 
 export interface UpdateEventInput extends Partial<CreateEventInput> {
@@ -79,4 +85,7 @@ export interface UpdateEventInput extends Partial<CreateEventInput> {
   matchCards?: MatchCardEntry[];
   attendance?: number;
   rating?: number;
+  fantasyEnabled?: boolean;
+  fantasyBudget?: number;
+  fantasyPicksPerDivision?: number;
 }
