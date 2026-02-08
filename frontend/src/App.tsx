@@ -145,7 +145,7 @@ function App() {
                 <FantasyDashboard />
               </ProtectedRoute>
             } />
-            <Route path="/fantasy/picks/:showId" element={
+            <Route path="/fantasy/picks/:eventId" element={
               <ProtectedRoute requiredRole="Fantasy">
                 <MakePicks />
               </ProtectedRoute>
@@ -160,7 +160,7 @@ function App() {
                 <WrestlerCosts />
               </ProtectedRoute>
             } />
-            <Route path="/fantasy/shows/:showId/results" element={
+            <Route path="/fantasy/events/:eventId/results" element={
               <ProtectedRoute requiredRole="Fantasy">
                 <ShowResults />
               </ProtectedRoute>

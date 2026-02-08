@@ -10,6 +10,7 @@ import type {
 } from '../types';
 import type { LeagueEvent, EventWithMatches, CreateEventInput, UpdateEventInput } from '../types/event';
 import type { ChampionshipContenders } from '../types/contender';
+import type { FantasyConfig, WrestlerCost, WrestlerWithCost, FantasyPicks } from '../types/fantasy';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
@@ -283,6 +284,68 @@ export const adminApi = {
   seedData: async (): Promise<{ message: string; createdCounts: Record<string, number> }> => {
     return fetchWithAuth(`${API_BASE_URL}/admin/seed-data`, {
       method: 'POST',
+    });
+  },
+};
+
+// Fantasy API
+export const fantasyApi = {
+  // Config
+  getConfig: async (signal?: AbortSignal): Promise<FantasyConfig> => {
+    return fetchWithAuth(`${API_BASE_URL}/fantasy/config`, {}, signal);
+  },
+
+  updateConfig: async (updates: Partial<FantasyConfig>): Promise<FantasyConfig> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/fantasy/config`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Wrestler Costs
+  getWrestlerCosts: async (signal?: AbortSignal): Promise<WrestlerWithCost[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/fantasy/wrestlers/costs`, {}, signal);
+  },
+
+  initializeWrestlerCosts: async (baseCost?: number): Promise<{ message: string; count: number }> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/fantasy/wrestlers/costs/initialize`, {
+      method: 'POST',
+      body: JSON.stringify(baseCost ? { baseCost } : {}),
+    });
+  },
+
+  recalculateWrestlerCosts: async (): Promise<{ message: string; playersUpdated: number }> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/fantasy/wrestlers/costs/recalculate`, {
+      method: 'POST',
+    });
+  },
+
+  updateWrestlerCost: async (playerId: string, cost: number, reason?: string): Promise<WrestlerCost> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/fantasy/wrestlers/${playerId}/cost`, {
+      method: 'PUT',
+      body: JSON.stringify({ currentCost: cost, reason }),
+    });
+  },
+
+  // Picks
+  submitPicks: async (eventId: string, picks: Record<string, string[]>): Promise<FantasyPicks> => {
+    return fetchWithAuth(`${API_BASE_URL}/fantasy/picks/${eventId}`, {
+      method: 'POST',
+      body: JSON.stringify({ picks }),
+    });
+  },
+
+  getUserPicks: async (eventId: string, signal?: AbortSignal): Promise<FantasyPicks> => {
+    return fetchWithAuth(`${API_BASE_URL}/fantasy/picks/${eventId}`, {}, signal);
+  },
+
+  getAllMyPicks: async (signal?: AbortSignal): Promise<FantasyPicks[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/fantasy/me/picks`, {}, signal);
+  },
+
+  clearPicks: async (eventId: string): Promise<void> => {
+    return fetchWithAuth(`${API_BASE_URL}/fantasy/picks/${eventId}`, {
+      method: 'DELETE',
     });
   },
 };

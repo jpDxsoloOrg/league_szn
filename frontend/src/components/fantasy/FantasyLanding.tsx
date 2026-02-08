@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   mockFantasyLeaderboard,
   mockShowsWithDetails,
@@ -9,6 +10,13 @@ import './FantasyLanding.css';
 
 export default function FantasyLanding() {
   const { t } = useTranslation();
+  const { isAuthenticated, hasRole } = useAuth();
+
+  // Logged-in Fantasy users go straight to the dashboard
+  if (isAuthenticated && hasRole('Fantasy')) {
+    return <Navigate to="/fantasy/dashboard" replace />;
+  }
+
   const openShow = getCurrentOpenShow();
   const topPlayers = mockFantasyLeaderboard.slice(0, 5);
   const upcomingShow = mockShowsWithDetails.find((s) => s.status === 'open');

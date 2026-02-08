@@ -1,12 +1,10 @@
 import type {
   FantasyUser,
-  Show,
   FantasyPicks,
   WrestlerCost,
   FantasyConfig,
   FantasyLeaderboardEntry,
   WrestlerWithCost,
-  ShowWithDetails,
 } from '../types/fantasy';
 
 // Current logged-in fantasy user (for authenticated views)
@@ -36,10 +34,10 @@ export const mockDivisions = [
   { divisionId: 'div-nxt', name: 'NXT', createdAt: '2025-01-01T00:00:00.000Z', updatedAt: '2025-01-01T00:00:00.000Z' },
 ];
 
-// Mock shows
-export const mockShows: Show[] = [
+// Mock shows (kept for reference, components now use real Events API)
+export const mockShows = [
   {
-    showId: 'show-001',
+    eventId: 'show-001',
     seasonId: 'season-002',
     name: 'Week 1',
     date: '2026-01-15T19:00:00.000Z',
@@ -51,7 +49,7 @@ export const mockShows: Show[] = [
     updatedAt: '2026-01-16T00:00:00.000Z',
   },
   {
-    showId: 'show-002',
+    eventId: 'show-002',
     seasonId: 'season-002',
     name: 'Week 2',
     date: '2026-01-22T19:00:00.000Z',
@@ -63,7 +61,7 @@ export const mockShows: Show[] = [
     updatedAt: '2026-01-23T00:00:00.000Z',
   },
   {
-    showId: 'show-003',
+    eventId: 'show-003',
     seasonId: 'season-002',
     name: 'Week 3',
     date: '2026-01-29T19:00:00.000Z',
@@ -75,7 +73,7 @@ export const mockShows: Show[] = [
     updatedAt: '2026-01-30T00:00:00.000Z',
   },
   {
-    showId: 'show-004',
+    eventId: 'show-004',
     seasonId: 'season-002',
     name: 'Week 4',
     date: '2026-02-05T19:00:00.000Z',
@@ -87,7 +85,7 @@ export const mockShows: Show[] = [
     updatedAt: '2026-02-01T00:00:00.000Z',
   },
   {
-    showId: 'show-005',
+    eventId: 'show-005',
     seasonId: 'season-002',
     name: 'Royal Rumble Special',
     date: '2026-02-12T19:00:00.000Z',
@@ -101,11 +99,11 @@ export const mockShows: Show[] = [
 ];
 
 // Mock shows with details for dashboard view
-export const mockShowsWithDetails: ShowWithDetails[] = mockShows.map((show) => ({
+export const mockShowsWithDetails = mockShows.map((show) => ({
   ...show,
   matchCount: show.matchIds.length,
   picksCount: show.status === 'completed' ? 12 : show.status === 'open' ? 8 : 0,
-  isUserPicked: show.status === 'completed' || show.showId === 'show-004',
+  isUserPicked: show.status === 'completed' || show.eventId === 'show-004',
 }));
 
 // Mock wrestler costs
@@ -405,7 +403,7 @@ export const mockWrestlersWithCosts: WrestlerWithCost[] = [
 // Mock fantasy picks for the current user
 export const mockUserPicks: FantasyPicks[] = [
   {
-    showId: 'show-001',
+    eventId: 'show-001',
     fantasyUserId: 'fantasy-user-001',
     picks: {
       'div-raw': ['player-001', 'player-002'],
@@ -462,7 +460,7 @@ export const mockUserPicks: FantasyPicks[] = [
     updatedAt: '2026-01-15T20:00:00.000Z',
   },
   {
-    showId: 'show-002',
+    eventId: 'show-002',
     fantasyUserId: 'fantasy-user-001',
     picks: {
       'div-raw': ['player-001', 'player-003'],
@@ -519,7 +517,7 @@ export const mockUserPicks: FantasyPicks[] = [
     updatedAt: '2026-01-22T20:00:00.000Z',
   },
   {
-    showId: 'show-003',
+    eventId: 'show-003',
     fantasyUserId: 'fantasy-user-001',
     picks: {
       'div-raw': ['player-001', 'player-002'],
@@ -577,7 +575,7 @@ export const mockUserPicks: FantasyPicks[] = [
   },
   // Current open show - picks in progress
   {
-    showId: 'show-004',
+    eventId: 'show-004',
     fantasyUserId: 'fantasy-user-001',
     picks: {
       'div-raw': ['player-001'],
@@ -748,22 +746,22 @@ export function getWrestlersByDivision(divisionId: string): WrestlerWithCost[] {
 }
 
 // Helper function to get current open show
-export function getCurrentOpenShow(): Show | undefined {
+export function getCurrentOpenShow() {
   return mockShows.find((s) => s.status === 'open');
 }
 
 // Helper function to get user picks for a show
-export function getUserPicksForShow(showId: string): FantasyPicks | undefined {
-  return mockUserPicks.find((p) => p.showId === showId);
+export function getUserPicksForShow(eventId: string): FantasyPicks | undefined {
+  return mockUserPicks.find((p) => p.eventId === eventId);
 }
 
 // Helper function to get upcoming shows
-export function getUpcomingShows(): Show[] {
+export function getUpcomingShows() {
   return mockShows.filter((s) => s.status === 'open' || s.status === 'draft');
 }
 
 // Helper function to get completed shows
-export function getCompletedShows(): Show[] {
+export function getCompletedShows() {
   return mockShows.filter((s) => s.status === 'completed');
 }
 

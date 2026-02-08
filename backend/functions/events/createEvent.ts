@@ -12,6 +12,9 @@ interface CreateEventBody {
   imageUrl?: string;
   themeColor?: string;
   seasonId?: string;
+  fantasyEnabled?: boolean;
+  fantasyBudget?: number;
+  fantasyPicksPerDivision?: number;
 }
 
 const VALID_EVENT_TYPES = ['ppv', 'weekly', 'special', 'house'];
@@ -46,6 +49,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       matchCards: [],
       attendance: null,
       rating: null,
+      fantasyEnabled: true,
+      fantasyBudget: body.fantasyBudget || null,
+      fantasyPicksPerDivision: body.fantasyPicksPerDivision || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

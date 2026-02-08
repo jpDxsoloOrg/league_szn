@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { mockWrestlersWithCosts, mockDivisions } from '../../mocks/fantasyMockData';
+import { fantasyApi, divisionsApi } from '../../services/api';
 import type { WrestlerWithCost } from '../../types/fantasy';
+import type { Division } from '../../types';
 import './WrestlerCosts.css';
 
 type SortField = 'name' | 'cost' | 'winRate' | 'trend';
@@ -9,10 +10,40 @@ type SortDirection = 'asc' | 'desc';
 
 export default function WrestlerCosts() {
   const { t } = useTranslation();
+  const [wrestlers, setWrestlers] = useState<WrestlerWithCost[]>([]);
+  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedDivision, setSelectedDivision] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('cost');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const [wrestlersData, divisionsData] = await Promise.all([
+          fantasyApi.getWrestlerCosts(controller.signal),
+          divisionsApi.getAll(controller.signal),
+        ]);
+        setWrestlers(wrestlersData);
+        setDivisions(divisionsData);
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setError(err instanceof Error ? err.message : 'Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    return () => controller.abort();
+  }, []);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -24,17 +55,17 @@ export default function WrestlerCosts() {
   };
 
   const filteredAndSortedWrestlers = useMemo(() => {
-    let wrestlers = [...mockWrestlersWithCosts];
+    let filtered = [...wrestlers];
 
     // Filter by division
     if (selectedDivision !== 'all') {
-      wrestlers = wrestlers.filter((w) => w.divisionId === selectedDivision);
+      filtered = filtered.filter((w) => w.divisionId === selectedDivision);
     }
 
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      wrestlers = wrestlers.filter(
+      filtered = filtered.filter(
         (w) =>
           w.currentWrestler.toLowerCase().includes(query) ||
           w.name.toLowerCase().includes(query)
@@ -42,7 +73,7 @@ export default function WrestlerCosts() {
     }
 
     // Sort
-    wrestlers.sort((a, b) => {
+    filtered.sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
         case 'name':
@@ -62,12 +93,12 @@ export default function WrestlerCosts() {
       return sortDirection === 'asc' ? comparison : -comparison;
     });
 
-    return wrestlers;
-  }, [selectedDivision, searchQuery, sortField, sortDirection]);
+    return filtered;
+  }, [wrestlers, selectedDivision, searchQuery, sortField, sortDirection]);
 
   const getDivisionName = (divisionId?: string): string => {
     if (!divisionId) return '-';
-    const division = mockDivisions.find((d) => d.divisionId === divisionId);
+    const division = divisions.find((d) => d.divisionId === divisionId);
     return division?.name || '-';
   };
 
@@ -82,6 +113,27 @@ export default function WrestlerCosts() {
         return <span className="trend stable">— 0</span>;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="wrestler-costs">
+        <div className="loading-state">
+          <div className="spinner" />
+          <p>{t('common.loading')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="wrestler-costs">
+        <div className="error-state">
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="wrestler-costs">
@@ -107,7 +159,7 @@ export default function WrestlerCosts() {
           >
             {t('common.all')}
           </button>
-          {mockDivisions.map((division) => (
+          {divisions.map((division) => (
             <button
               key={division.divisionId}
               className={`filter-btn ${selectedDivision === division.divisionId ? 'active' : ''}`}

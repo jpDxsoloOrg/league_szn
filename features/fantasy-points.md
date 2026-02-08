@@ -31,29 +31,31 @@ Currently, the WWE 2K League is a closed system where only the players (wrestler
 
 ```
 +-------------------+     +-------------------+     +-------------------+
-|   Fantasy User    |     |   Cognito User    |     |   Lambda          |
-|   Signs Up/Login  | --> |   Pool (Fantasy)  | --> |   Authorizer      |
+|   Fantasy User    |     |   Cognito Pool    |     |   Lambda          |
+|   Signs Up/Login  | --> | (Fantasy Group)   | --> |   Authorizer      |
 +-------------------+     +-------------------+     +-------------------+
         |                                                   |
         v                                                   v
 +-------------------+     +-------------------+     +-------------------+
 |   Make Picks      |     |   Picks API       |     |   DynamoDB        |
-|   (Before Lock)   | --> |   Endpoints       | --> |   - FantasyUsers  |
-+-------------------+     +-------------------+     |   - Shows         |
-        |                                           |   - Picks         |
+|   (Before Event)  | --> |   Endpoints       | --> |   - Events (*)    |
++-------------------+     +-------------------+     |   - FantasyPicks  |
         |                                           |   - WrestlerCosts |
-        v                                           +-------------------+
-+-------------------+                                       |
-|   Match Results   |                                       |
-|   Recorded        | -------------------------------------->
-|   (Points Calc)   |                                       |
-+-------------------+                                       |
+        |                                           |   - FantasyConfig |
+        v                                           |   - Players (*)   |
++-------------------+                               |   - Matches (*)   |
+|   Match Results   |                               +-------------------+
+|   Recorded        | -----> Costs recalculated automatically
+|   (Points Calc)   |        (*) = existing shared tables
++-------------------+
 ```
+
+> **Architectural Decision**: Fantasy uses the SAME Cognito pool (Fantasy group), SAME Events table (with `fantasyEnabled` field), SAME Players table, and SAME Matches table. No data duplication - everything is one integrated system.
 
 ### Core Concepts
 
-#### Shows (Events Integration)
-Fantasy "shows" integrate with the **Events/PPV feature** (see [feature_events_ppv.md](feature_events_ppv.md)). An event contains matches, and fantasy users make picks for each event. Events belong to a season and can be locked/unlocked by admins.
+#### Events as Fantasy Shows
+Fantasy uses the **existing Events system** directly (see [feature_events_ppv.md](feature_events_ppv.md)). There is NO separate "Shows" table. Instead, Events have three optional fields: `fantasyEnabled` (boolean), `fantasyBudget` (number), and `fantasyPicksPerDivision` (number). An admin "enables" an event for fantasy by setting `fantasyEnabled: true` when creating/updating it. Events with `status: upcoming` and `fantasyEnabled: true` accept picks. Events naturally progress through `in-progress` and `completed` as matches are played.
 
 #### Wrestler Costs
 Each wrestler has a cost that reflects their expected performance. Costs fluctuate based on recent performance (configurable algorithm). Starting cost is configurable (default: 100).
@@ -114,27 +116,19 @@ Admins control when picks are locked via show status:
 - Sort Key: `currentSeasonPoints` (descending)
 - Purpose: Get leaderboard sorted by points
 
-### Data Model: Shows Table
+### Data Model: Events Table (Extended)
 
-**Table Name**: `wwe-2k-league-api-shows-{stage}`
+**Table Name**: `wwe-2k-league-api-events-{stage}` (EXISTING - no new table)
+
+Events gain three optional fantasy fields:
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `showId` (PK) | String | UUID |
-| `seasonId` | String | Links to season |
-| `name` | String | e.g., "Week 5" or "WrestleMania Night" |
-| `date` | String | ISO date of the show |
-| `status` | String | `draft` / `open` / `locked` / `completed` |
-| `picksPerDivision` | Number | How many wrestlers to pick per division |
-| `budget` | Number | Total budget for picks |
-| `matchIds` | List<String> | Matches included in this show |
-| `createdAt` | String | ISO timestamp |
-| `updatedAt` | String | ISO timestamp |
+| `fantasyEnabled` | Boolean | Whether this event accepts fantasy picks |
+| `fantasyBudget` | Number | Budget override for this event (null = use config default) |
+| `fantasyPicksPerDivision` | Number | Picks per division override (null = use config default) |
 
-**GSI: SeasonShowsIndex**
-- Partition Key: `seasonId`
-- Sort Key: `date`
-- Purpose: Get all shows for a season in order
+All other event fields (eventId, name, date, status, seasonId, matchCards, etc.) are unchanged.
 
 ### Data Model: FantasyPicks Table
 
@@ -142,7 +136,7 @@ Admins control when picks are locked via show status:
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `showId` (PK) | String | The show |
+| `eventId` (PK) | String | The event (replaces showId) |
 | `fantasyUserId` (SK) | String | The user making picks |
 | `picks` | Map | `{ divisionId: [playerId, playerId, ...] }` |
 | `totalSpent` | Number | Total cost of picks |
@@ -153,8 +147,8 @@ Admins control when picks are locked via show status:
 
 **GSI: UserPicksIndex**
 - Partition Key: `fantasyUserId`
-- Sort Key: `showId`
-- Purpose: Get all picks for a user across shows
+- Sort Key: `eventId`
+- Purpose: Get all picks for a user across events
 
 ### Data Model: WrestlerCosts Table
 
@@ -287,44 +281,38 @@ export interface FantasyLeaderboardEntry {
 }
 ```
 
-### API Endpoints
+### API Endpoints (Implemented)
 
 #### Public Endpoints (No Auth)
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/fantasy/leaderboard` | Get fantasy user standings (optional `?seasonId=`) |
-| GET | `/fantasy/shows` | Get shows for current/specified season |
-| GET | `/fantasy/shows/{showId}` | Get show details including matches |
-| GET | `/fantasy/wrestlers/costs` | Get current wrestler costs |
+| Method | Path | Description | Status |
+|--------|------|-------------|--------|
+| GET | `/fantasy/config` | Get fantasy configuration | ✅ |
+| GET | `/fantasy/wrestlers/costs` | Get all wrestler costs (merged with player data) | ✅ |
+| GET | `/events` | Get events (filter `fantasyEnabled` client-side) | ✅ (existing) |
+| GET | `/events/{eventId}` | Get event details | ✅ (existing) |
+| GET | `/players` | Get all players (for pick selection) | ✅ (existing) |
+| GET | `/divisions` | Get all divisions | ✅ (existing) |
 
-#### Fantasy User Endpoints (Fantasy Auth Required)
+#### Fantasy User Endpoints (Fantasy Group Auth Required)
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/fantasy/auth/signup` | Create fantasy user account |
-| POST | `/fantasy/auth/login` | Login as fantasy user |
-| GET | `/fantasy/me` | Get current user profile |
-| PUT | `/fantasy/me` | Update display name |
-| GET | `/fantasy/me/picks` | Get all my picks |
-| GET | `/fantasy/me/picks/{showId}` | Get my picks for a show |
-| POST | `/fantasy/picks/{showId}` | Submit/update picks for open show |
-| DELETE | `/fantasy/picks/{showId}` | Clear picks for open show |
+| Method | Path | Description | Status |
+|--------|------|-------------|--------|
+| GET | `/fantasy/picks/{eventId}` | Get my picks for an event | ✅ |
+| POST | `/fantasy/picks/{eventId}` | Submit/update picks for an event | ✅ |
+| DELETE | `/fantasy/picks/{eventId}` | Clear picks for an event | ✅ |
+| GET | `/fantasy/me/picks` | Get all my picks across events | ✅ |
 
 #### Admin Endpoints (Admin Auth Required)
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/admin/fantasy/shows` | Create a new show |
-| PUT | `/admin/fantasy/shows/{showId}` | Update show (add matches, change settings) |
-| PUT | `/admin/fantasy/shows/{showId}/lock` | Lock show (no more picks) |
-| PUT | `/admin/fantasy/shows/{showId}/unlock` | Unlock show |
-| PUT | `/admin/fantasy/shows/{showId}/complete` | Complete show & calculate points |
-| DELETE | `/admin/fantasy/shows/{showId}` | Delete show |
-| GET | `/admin/fantasy/config` | Get fantasy configuration |
-| PUT | `/admin/fantasy/config` | Update fantasy configuration |
-| POST | `/admin/fantasy/wrestlers/costs/recalculate` | Recalculate all wrestler costs |
-| PUT | `/admin/fantasy/wrestlers/{playerId}/cost` | Manual cost override |
+| Method | Path | Description | Status |
+|--------|------|-------------|--------|
+| PUT | `/admin/fantasy/config` | Update fantasy configuration | ✅ |
+| POST | `/admin/fantasy/wrestlers/costs/initialize` | Initialize costs for all players | ✅ |
+| POST | `/admin/fantasy/wrestlers/costs/recalculate` | Recalculate all wrestler costs | ✅ |
+| PUT | `/admin/fantasy/wrestlers/{playerId}/cost` | Manual cost override | ✅ |
+| POST | `/events` | Create event (now with fantasy fields) | ✅ (extended) |
+| PUT | `/events/{eventId}` | Update event (now with fantasy fields) | ✅ (extended) |
 
 ### Point Calculation Logic
 
@@ -443,7 +431,7 @@ function calculateNewCost(
    - Upcoming shows
    - Recent results
 
-4. **Make Picks Page** (`/fantasy/picks/{showId}`) - Fantasy Auth
+4. **Make Picks Page** (`/fantasy/picks/{eventId}`) - Fantasy Auth
    - Show info and deadline
    - Division-by-division wrestler selection
    - Budget tracker
@@ -460,7 +448,7 @@ function calculateNewCost(
    - Cost trend indicators
    - Recent performance stats
 
-7. **Show Results Page** (`/fantasy/shows/{showId}/results`)
+7. **Show Results Page** (`/fantasy/events/{eventId}/results`)
    - All matches from the show
    - Points awarded per pick
    - Leaderboard changes
@@ -567,7 +555,7 @@ function calculateNewCost(
 
 ## Implementation Phases
 
-### PHASE 0: UI Prototypes with Fake Data
+### PHASE 0: UI Prototypes with Fake Data ✅ COMPLETE
 **Prerequisites**: None
 **Estimated Complexity**: Medium
 
@@ -654,55 +642,13 @@ This phase creates all UI components with hardcoded data so stakeholders can see
 
 ---
 
-### PHASE 1: Fantasy User Authentication
+### PHASE 1: Fantasy User Authentication ✅ COMPLETE (Simplified)
 **Prerequisites**: Phase 0
-**Estimated Complexity**: High
+**Estimated Complexity**: N/A (reuses existing auth)
 
-#### Steps:
+**Decision**: Instead of a separate Cognito pool, fantasy users use the SAME Cognito pool with the `Fantasy` group (already defined in serverless.yml). The existing authorizer validates JWTs and passes groups. The existing `requireRole(event, 'Fantasy')` in `lib/auth.ts` handles authorization. The existing `AuthContext` already supports `isFantasy` and `hasRole('Fantasy')`. The existing `ProtectedRoute` already supports `requiredRole="Fantasy"`.
 
-1. Create separate Cognito User Pool for fantasy users
-   - File: Update `backend/serverless.yml`
-   - Details: New user pool with email signup, separate from admin pool
-   - Validation: User pool created in CloudFormation output
-
-2. Create fantasy user authorizer Lambda
-   - File: `backend/functions/fantasy/auth/fantasyAuthorizer.ts`
-   - Details: Validates fantasy user JWT tokens
-   - Validation: Returns allow/deny policies correctly
-
-3. Create fantasy signup Lambda
-   - File: `backend/functions/fantasy/auth/signup.ts`
-   - Details: Creates Cognito user + DynamoDB record
-   - Validation: User created in both systems
-
-4. Create fantasy login Lambda
-   - File: `backend/functions/fantasy/auth/login.ts`
-   - Details: Authenticates and returns tokens
-   - Validation: Valid credentials return tokens
-
-5. Create FantasyUsers DynamoDB table
-   - File: Update `backend/serverless.yml`
-   - Details: Table with GSI for leaderboard
-   - Validation: Table created, GSI works
-
-6. Create fantasy user profile Lambda (get/update)
-   - Files: `getFantasyProfile.ts`, `updateFantasyProfile.ts`
-   - Details: CRUD for fantasy user data
-   - Validation: Profile retrieval/update works
-
-7. Create frontend fantasy auth service
-   - File: `frontend/src/services/fantasyAuth.ts`
-   - Details: Signup, login, logout, token management
-   - Validation: Auth flow works end-to-end
-
-8. Update FantasyLogin/Signup to use real auth
-   - Details: Connect to actual Cognito
-   - Validation: Can create account and login
-
-9. Create fantasy auth context/hook
-   - File: `frontend/src/contexts/FantasyAuthContext.tsx`
-   - Details: Provides auth state to fantasy components
-   - Validation: Auth state persists, logout works
+No new auth code was needed - Phase 1 was already complete from existing infrastructure.
 
 #### Interfaces:
 ```typescript
@@ -726,55 +672,13 @@ Response: { accessToken: string; idToken: string; refreshToken: string }
 
 ---
 
-### PHASE 2: Shows & Configuration Backend
+### PHASE 2: Shows & Configuration Backend ✅ COMPLETE (Simplified)
 **Prerequisites**: Phase 1
-**Estimated Complexity**: Medium
+**Estimated Complexity**: N/A (reuses existing Events system)
 
-#### Steps:
+**Decision**: Instead of a separate Shows table, fantasy reuses the existing Events system. Three optional fields (`fantasyEnabled`, `fantasyBudget`, `fantasyPicksPerDivision`) were added to `createEvent.ts` and `updateEvent.ts`. The existing events CRUD handles all "show" management. An admin enables fantasy on an event, and the event's natural status progression (upcoming → in-progress → completed) replaces the show-specific draft/open/locked/completed workflow.
 
-1. Create Shows DynamoDB table
-   - File: Update `backend/serverless.yml`
-   - Details: Table with SeasonShowsIndex GSI
-   - Validation: Table created correctly
-
-2. Create FantasyConfig DynamoDB table
-   - File: Update `backend/serverless.yml`
-   - Details: Simple key-value config table
-   - Validation: Table created
-
-3. Create show CRUD Lambdas
-   - Files: `createShow.ts`, `getShows.ts`, `getShow.ts`, `updateShow.ts`, `deleteShow.ts`
-   - Details: Admin endpoints for show management
-   - Validation: All CRUD operations work
-
-4. Create show lock/unlock Lambdas
-   - Files: `lockShow.ts`, `unlockShow.ts`
-   - Details: Changes show status, validates timing
-   - Validation: Status changes correctly
-
-5. Create fantasy config Lambdas
-   - Files: `getConfig.ts`, `updateConfig.ts`
-   - Details: Get/set global and per-season config
-   - Validation: Config persists correctly
-
-6. Create API routes for shows (admin)
-   - File: Update `backend/serverless.yml`
-   - Details: Routes with admin authorizer
-   - Validation: Endpoints accessible to admins only
-
-7. Create API routes for shows (public)
-   - File: Update `backend/serverless.yml`
-   - Details: Public read endpoints for shows
-   - Validation: Anyone can view show list
-
-8. Add shows API to frontend service
-   - File: Update `frontend/src/services/api.ts`
-   - Details: showsApi object with all methods
-   - Validation: Can fetch shows from frontend
-
-9. Connect ManageShows admin component to API
-   - Details: Replace mock data with real API calls
-   - Validation: Admin can manage shows
+No new Shows table or CRUD Lambdas were needed. The FantasyConfig table and endpoints were built as part of Phase 3.
 
 #### Interfaces:
 ```typescript
@@ -796,7 +700,7 @@ Response: { message: string; show: Show }
 
 ---
 
-### PHASE 3: Wrestler Costs System
+### PHASE 3: Wrestler Costs System + Fantasy Config ✅ COMPLETE
 **Prerequisites**: Phase 2
 **Estimated Complexity**: Medium
 
@@ -853,7 +757,7 @@ Response: { message: string; show: Show }
 
 ---
 
-### PHASE 4: Fantasy Picks System
+### PHASE 4: Fantasy Picks System ✅ COMPLETE
 **Prerequisites**: Phase 3
 **Estimated Complexity**: High
 
@@ -1127,57 +1031,22 @@ Response: FantasyPicks
 
 ## Cognito Configuration for Fantasy Users
 
-### Separate User Pool Rationale
+### Single Pool with Fantasy Group (Implemented)
 
-Fantasy users should have their own Cognito User Pool because:
-1. Different registration flow (email signup vs admin-created)
-2. Different security requirements
-3. Separate token validation
-4. Can be disabled independently
-
-### User Pool Configuration
+**Decision**: Fantasy users use the SAME Cognito pool as Admin and Wrestler users, with a `Fantasy` group for role-based access. This simplifies the architecture significantly.
 
 ```yaml
-FantasyUserPool:
-  Type: AWS::Cognito::UserPool
+# Already exists in serverless.yml
+FantasyGroup:
+  Type: AWS::Cognito::UserPoolGroup
   Properties:
-    UserPoolName: ${self:service}-fantasy-users-${self:provider.stage}
-    AutoVerifiedAttributes:
-      - email
-    UsernameAttributes:
-      - email
-    Policies:
-      PasswordPolicy:
-        MinimumLength: 8
-        RequireLowercase: true
-        RequireNumbers: true
-        RequireSymbols: false
-        RequireUppercase: true
-    Schema:
-      - Name: username
-        AttributeDataType: String
-        Mutable: true
-        Required: false
-
-FantasyUserPoolClient:
-  Type: AWS::Cognito::UserPoolClient
-  Properties:
-    ClientName: ${self:service}-fantasy-client-${self:provider.stage}
-    UserPoolId: !Ref FantasyUserPool
-    GenerateSecret: false
-    ExplicitAuthFlows:
-      - ALLOW_USER_PASSWORD_AUTH
-      - ALLOW_REFRESH_TOKEN_AUTH
-      - ALLOW_USER_SRP_AUTH
-    PreventUserExistenceErrors: ENABLED
-    AccessTokenValidity: 24
-    IdTokenValidity: 24
-    RefreshTokenValidity: 30
-    TokenValidityUnits:
-      AccessToken: hours
-      IdToken: hours
-      RefreshToken: days
+    GroupName: Fantasy
+    UserPoolId: !Ref LeagueUserPool
+    Description: Access to fantasy features and public data
+    Precedence: 2
 ```
+
+The existing authorizer validates all JWTs and passes `cognito:groups` in context. Each Lambda uses `requireRole(event, 'Fantasy')` for fantasy-user endpoints or `requireRole(event, 'Admin')` for admin endpoints. Admins automatically pass Fantasy role checks.
 
 ## Technology Recommendations
 
@@ -1243,18 +1112,17 @@ These decisions were finalized during feature planning:
 
 ## Estimated Total Effort
 
-| Phase | Effort |
-|-------|--------|
-| Phase 0 (UI Prototypes) | 8-10 hours |
-| Phase 1 (Fantasy Auth) | 10-12 hours |
-| Phase 2 (Shows & Config) | 6-8 hours |
-| Phase 3 (Wrestler Costs) | 5-6 hours |
-| Phase 4 (Picks System) | 8-10 hours |
-| Phase 5 (Points Calculation) | 10-12 hours |
-| Phase 6 (Leaderboard) | 3-4 hours |
-| Phase 7 (Frontend Polish) | 6-8 hours |
-| Phase 8 (Admin & Monitoring) | 4-5 hours |
-| **Total** | **60-75 hours** |
+| Phase | Effort | Status |
+|-------|--------|--------|
+| Phase 0 (UI Prototypes) | 8-10 hours | ✅ Complete |
+| Phase 1 (Fantasy Auth) | N/A (reused existing) | ✅ Complete |
+| Phase 2 (Shows/Events) | N/A (reused existing) | ✅ Complete |
+| Phase 3 (Config + Costs) | 5-6 hours | ✅ Complete |
+| Phase 4 (Picks System) | 8-10 hours | ✅ Complete |
+| Phase 5 (Points Calculation) | 10-12 hours | Pending |
+| Phase 6 (Leaderboard) | 3-4 hours | Pending |
+| Phase 7 (Frontend Polish) | 6-8 hours | Pending |
+| Phase 8 (Admin & Monitoring) | 4-5 hours | Pending |
 
 ## Success Metrics
 
