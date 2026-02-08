@@ -224,9 +224,9 @@ export default function Sidebar() {
                 <span className="nav-disabled admin-disabled">
                   {t('admin.panel.tabs.fantasyShows')}
                 </span>
-                <span className="nav-disabled admin-disabled">
+                <Link to="/admin/fantasy-config" className={isActive('/admin/fantasy-config') ? 'active' : ''}>
                   {t('admin.panel.tabs.fantasyConfig')}
-                </span>
+                </Link>
                 <Link to="/admin/guide" className={isActive('/admin/guide') ? 'active' : ''}>
                   {t('admin.panel.tabs.help')}
                 </Link>
