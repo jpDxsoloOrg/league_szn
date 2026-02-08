@@ -127,6 +127,12 @@ export const championshipsApi = {
       method: 'DELETE',
     });
   },
+
+  vacate: async (championshipId: string): Promise<Championship> => {
+    return fetchWithAuth(`${API_BASE_URL}/championships/${championshipId}/vacate`, {
+      method: 'POST',
+    });
+  },
 };
 
 // Tournaments API

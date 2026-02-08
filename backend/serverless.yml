@@ -252,6 +252,15 @@ functions:
           cors: true
           authorizer: adminAuthorizer
 
+  vacateChampionship:
+    handler: functions/championships/vacateChampionship.handler
+    events:
+      - http:
+          path: championships/{championshipId}/vacate
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
+
   # Tournaments
   getTournaments:
     handler: functions/tournaments/getTournaments.handler

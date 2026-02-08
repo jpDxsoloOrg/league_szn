@@ -227,6 +227,23 @@ label.file-input-label:hover {
   background-color: #2563eb !important;
 }
 
+.championship-vacate-btn {
+  background-color: #78350f !important;
+  color: #fde68a;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  flex: 1;
+}
+
+.championship-vacate-btn:hover {
+  background-color: #92400e !important;
+}
+
+.championship-vacate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .championship-delete-btn {
   background-color: #7f1d1d !important;
   color: #fecaca;
