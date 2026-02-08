@@ -221,9 +221,9 @@ export default function Sidebar() {
                 <Link to="/admin/contender-config" className={isActive('/admin/contender-config') ? 'active' : ''}>
                   {t('admin.panel.tabs.contenderConfig')}
                 </Link>
-                <span className="nav-disabled admin-disabled">
+                <Link to="/admin/fantasy-shows" className={isActive('/admin/fantasy-shows') ? 'active' : ''}>
                   {t('admin.panel.tabs.fantasyShows')}
-                </span>
+                </Link>
                 <Link to="/admin/fantasy-config" className={isActive('/admin/fantasy-config') ? 'active' : ''}>
                   {t('admin.panel.tabs.fantasyConfig')}
                 </Link>
