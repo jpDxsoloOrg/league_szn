@@ -894,7 +894,8 @@
     },
     "admin": {
       "shows": {
-        "title": "Fantasy Shows verwalten",
+        "title": "Fantasy Shows",
+        "subtitle": "Budget und Tipps pro Division für einzelne Events überschreiben. Diese Einstellungen gelten nur für das ausgewählte Event.",
         "addShow": "Show hinzufügen",
         "name": "Name",
         "namePlaceholder": "z.B. Woche 5 oder Royal Rumble",
@@ -920,7 +921,7 @@
       },
       "config": {
         "title": "Fantasy-Konfiguration",
-        "subtitle": "Punktwerte und Kosteneinstellungen für das Fantasy-System konfigurieren",
+        "subtitle": "Globale Bewertungsregeln, Standardbudget und Kosteneinstellungen, die für alle Events gelten. Um Budget oder Tipps für ein bestimmtes Event zu ändern, verwende Fantasy Shows.",
         "defaultSettings": "Standard-Einstellungen",
         "defaultBudget": "Standard-Budget",
         "defaultBudgetHint": "Startbudget für jede Show",

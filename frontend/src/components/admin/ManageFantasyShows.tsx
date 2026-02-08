@@ -98,9 +98,7 @@ export default function ManageFantasyShows() {
     <div className="manage-fantasy-shows">
       <header className="shows-header">
         <h2>{t('fantasy.admin.shows.title')}</h2>
-        <p className="subtitle">
-          Configure fantasy budget and picks per division for each event.
-        </p>
+        <p className="subtitle">{t('fantasy.admin.shows.subtitle')}</p>
       </header>
 
       {error && (
