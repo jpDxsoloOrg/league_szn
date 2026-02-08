@@ -746,7 +746,7 @@ export function getWrestlersByDivision(divisionId: string): WrestlerWithCost[] {
 }
 
 // Helper function to get current open show
-export function getCurrentOpenShow(): Show | undefined {
+export function getCurrentOpenShow() {
   return mockShows.find((s) => s.status === 'open');
 }
 
@@ -756,12 +756,12 @@ export function getUserPicksForShow(eventId: string): FantasyPicks | undefined {
 }
 
 // Helper function to get upcoming shows
-export function getUpcomingShows(): Show[] {
+export function getUpcomingShows() {
   return mockShows.filter((s) => s.status === 'open' || s.status === 'draft');
 }
 
 // Helper function to get completed shows
-export function getCompletedShows(): Show[] {
+export function getCompletedShows() {
   return mockShows.filter((s) => s.status === 'completed');
 }
 

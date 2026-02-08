@@ -49,7 +49,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       matchCards: [],
       attendance: null,
       rating: null,
-      fantasyEnabled: body.fantasyEnabled || false,
+      fantasyEnabled: true,
       fantasyBudget: body.fantasyBudget || null,
       fantasyPicksPerDivision: body.fantasyPicksPerDivision || null,
       createdAt: new Date().toISOString(),

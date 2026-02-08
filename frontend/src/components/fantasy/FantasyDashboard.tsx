@@ -31,11 +31,7 @@ export default function FantasyDashboard() {
             fantasyApi.getConfig(controller.signal),
           ]);
 
-        // Filter to fantasy-enabled events only
-        const fantasyEvents = (eventsData as LeagueEvent[]).filter(
-          (e) => e.fantasyEnabled
-        );
-        setEvents(fantasyEvents);
+        setEvents(eventsData as LeagueEvent[]);
         setMyPicks(picksData);
         setWrestlers(wrestlersData);
         setDivisions(divisionsData);

@@ -37,10 +37,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const eventItem = eventResult.Item;
 
-    if (!eventItem.fantasyEnabled) {
-      return badRequest('This event is not fantasy-enabled');
-    }
-
     if (eventItem.status === 'completed' || eventItem.status === 'cancelled') {
       return badRequest('This event is no longer accepting picks');
     }

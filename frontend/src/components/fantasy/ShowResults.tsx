@@ -11,10 +11,10 @@ import './ShowResults.css';
 
 export default function ShowResults() {
   const { t } = useTranslation();
-  const { showId } = useParams<{ showId: string }>();
+  const { eventId } = useParams<{ eventId: string }>();
 
-  const show = mockShows.find((s) => s.showId === showId);
-  const userPicks = mockUserPicks.find((p) => p.showId === showId);
+  const show = mockShows.find((s) => s.eventId === eventId);
+  const userPicks = mockUserPicks.find((p) => p.eventId === eventId);
 
   const getWrestlerName = (playerId: string): string => {
     const wrestler = mockWrestlersWithCosts.find((w) => w.playerId === playerId);

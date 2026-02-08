@@ -214,7 +214,7 @@ export default function MakePicks() {
     );
   }
 
-  if (!event.fantasyEnabled || event.status === 'completed' || event.status === 'cancelled') {
+  if (event.status === 'completed' || event.status === 'cancelled') {
     return (
       <div className="error-state">
         <h2>{t('fantasy.picks.showNotOpen')}</h2>
