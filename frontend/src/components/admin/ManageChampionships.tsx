@@ -16,6 +16,7 @@ export default function ManageChampionships() {
   const [submitting, setSubmitting] = useState(false);
   const [editingChampionship, setEditingChampionship] = useState<Championship | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [vacating, setVacating] = useState<string | null>(null);
 
   const [divisions, setDivisions] = useState<Division[]>([]);
 
@@ -230,6 +231,26 @@ export default function ManageChampionships() {
     }
   };
 
+  const handleVacate = async (championshipId: string, championshipName: string) => {
+    if (!confirm(`Are you sure you want to vacate "${championshipName}"? The current champion will be stripped of the title.`)) {
+      return;
+    }
+
+    setVacating(championshipId);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await championshipsApi.vacate(championshipId);
+      setSuccess('Championship vacated successfully!');
+      await loadChampionships();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to vacate championship');
+    } finally {
+      setVacating(null);
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading championships...</div>;
   }
@@ -371,6 +392,15 @@ export default function ManageChampionships() {
                   >
                     Edit
                   </button>
+                  {championship.currentChampion && (
+                    <button
+                      onClick={() => handleVacate(championship.championshipId, championship.name)}
+                      className="championship-vacate-btn"
+                      disabled={vacating === championship.championshipId}
+                    >
+                      {vacating === championship.championshipId ? 'Vacating...' : 'Vacate'}
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDelete(championship.championshipId, championship.name)}
                     className="championship-delete-btn"
