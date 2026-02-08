@@ -62,6 +62,22 @@ export default function ManageFantasyShows() {
     }
   };
 
+  const handleToggleLock = async (event: LeagueEvent) => {
+    setSaving(true);
+    setError(null);
+
+    try {
+      const updated = await eventsApi.update(event.eventId, { fantasyLocked: !event.fantasyLocked });
+      setEvents((prev) =>
+        prev.map((e) => (e.eventId === event.eventId ? (updated as LeagueEvent) : e))
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('fantasy.admin.shows.error'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const getSeasonName = (seasonId?: string): string => {
     if (!seasonId) return '-';
     const season = seasons.find((s) => s.seasonId === seasonId);
@@ -115,6 +131,7 @@ export default function ManageFantasyShows() {
               <th>{t('fantasy.admin.shows.season')}</th>
               <th>{t('fantasy.admin.shows.date')}</th>
               <th>{t('fantasy.admin.shows.status')}</th>
+              <th>{t('fantasy.admin.shows.picks')}</th>
               <th>{t('fantasy.admin.shows.budget')}</th>
               <th>Picks/Div</th>
             </tr>
@@ -131,6 +148,23 @@ export default function ManageFantasyShows() {
                   <span className={`status-badge ${getStatusBadgeClass(event.status)}`}>
                     {event.status}
                   </span>
+                </td>
+                <td className="col-picks-lock">
+                  {event.status !== 'completed' && event.status !== 'cancelled' ? (
+                    <button
+                      className={`btn-action ${event.fantasyLocked ? 'btn-unlock' : 'btn-lock'}`}
+                      onClick={() => handleToggleLock(event)}
+                      disabled={saving}
+                    >
+                      {event.fantasyLocked
+                        ? t('fantasy.admin.shows.unlock')
+                        : t('fantasy.admin.shows.lock')}
+                    </button>
+                  ) : (
+                    <span className="status-badge status-completed">
+                      {t('fantasy.admin.shows.closed')}
+                    </span>
+                  )}
                 </td>
                 <td className="col-budget">
                   <input

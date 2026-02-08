@@ -29,6 +29,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Cannot clear picks for a completed event');
     }
 
+    if (eventResult.Item.fantasyLocked) {
+      return badRequest('Picks are locked for this event');
+    }
+
     await dynamoDb.delete({
       TableName: TableNames.FANTASY_PICKS,
       Key: { eventId, fantasyUserId },

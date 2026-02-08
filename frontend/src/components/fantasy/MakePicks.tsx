@@ -228,6 +228,18 @@ export default function MakePicks() {
     );
   }
 
+  if (event.fantasyLocked) {
+    return (
+      <div className="error-state">
+        <h2>{t('fantasy.picks.picksLocked')}</h2>
+        <p>{t('fantasy.picks.picksLockedDescription')}</p>
+        <button onClick={() => navigate('/fantasy/dashboard')}>
+          {t('fantasy.picks.backToDashboard')}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="make-picks">
       <header className="picks-header">

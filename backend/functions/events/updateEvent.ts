@@ -23,6 +23,7 @@ interface UpdateEventBody {
   attendance?: number;
   rating?: number;
   fantasyEnabled?: boolean;
+  fantasyLocked?: boolean;
   fantasyBudget?: number;
   fantasyPicksPerDivision?: number;
 }
@@ -145,6 +146,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       updateExpressions.push('#fantasyEnabled = :fantasyEnabled');
       expressionAttributeNames['#fantasyEnabled'] = 'fantasyEnabled';
       expressionAttributeValues[':fantasyEnabled'] = body.fantasyEnabled;
+    }
+
+    if (body.fantasyLocked !== undefined) {
+      updateExpressions.push('#fantasyLocked = :fantasyLocked');
+      expressionAttributeNames['#fantasyLocked'] = 'fantasyLocked';
+      expressionAttributeValues[':fantasyLocked'] = body.fantasyLocked;
     }
 
     if (body.fantasyBudget !== undefined) {

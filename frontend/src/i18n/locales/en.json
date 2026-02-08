@@ -835,6 +835,8 @@
       "showNotFound": "Show not found",
       "showNotOpen": "This show is not open for picks",
       "showStatus": "Status",
+      "picksLocked": "Picks Are Locked",
+      "picksLockedDescription": "An admin has locked picks for this event. No changes can be made.",
       "backToDashboard": "Back to Dashboard"
     },
     "leaderboard": {
@@ -916,6 +918,8 @@
         "createSuccess": "Show created successfully",
         "updateSuccess": "Show updated successfully",
         "deleteSuccess": "Show deleted successfully",
+        "picks": "Picks",
+        "closed": "Closed",
         "statusUpdated": "Show status updated",
         "error": "An error occurred. Please try again."
       },

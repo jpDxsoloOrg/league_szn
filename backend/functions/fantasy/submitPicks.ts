@@ -41,6 +41,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('This event is no longer accepting picks');
     }
 
+    if (eventItem.fantasyLocked) {
+      return badRequest('Picks are locked for this event');
+    }
+
     // Get config for defaults
     const configResult = await dynamoDb.get({
       TableName: TableNames.FANTASY_CONFIG,

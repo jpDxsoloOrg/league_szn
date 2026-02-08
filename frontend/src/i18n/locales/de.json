@@ -835,6 +835,8 @@
       "showNotFound": "Show nicht gefunden",
       "showNotOpen": "Diese Show ist nicht für Tipps geöffnet",
       "showStatus": "Status",
+      "picksLocked": "Tipps sind gesperrt",
+      "picksLockedDescription": "Ein Admin hat die Tipps für dieses Event gesperrt. Keine Änderungen möglich.",
       "backToDashboard": "Zurück zum Dashboard"
     },
     "leaderboard": {
@@ -916,6 +918,8 @@
         "createSuccess": "Show erfolgreich erstellt",
         "updateSuccess": "Show erfolgreich aktualisiert",
         "deleteSuccess": "Show erfolgreich gelöscht",
+        "picks": "Tipps",
+        "closed": "Geschlossen",
         "statusUpdated": "Show-Status aktualisiert",
         "error": "Ein Fehler ist aufgetreten. Bitte erneut versuchen."
       },
