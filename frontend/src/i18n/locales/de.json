@@ -198,7 +198,8 @@
       "wldDesc": "Gesamtanzahl Siege, Niederlagen und Unentschieden",
       "winPercentDesc": "Siegquote berechnet aus ihrer Bilanz",
       "howRankingsWork": "Wie die Rangliste funktioniert",
-      "rankingsExplain": "Spieler werden nach ihrer Siegquote eingestuft. Spieler mit mehr Siegen und weniger Niederlagen erscheinen höher in der Tabelle.",
+      "divisionDesc": "Die Marke/Division, der der Spieler zugeordnet ist",
+      "rankingsExplain": "Spieler werden nach ihrer Siegquote eingestuft. Spieler mit mehr Siegen und weniger Niederlagen erscheinen höher in der Tabelle. Sie können nach Division filtern oder Gesamt- vs. Saison-Bilanzen anzeigen.",
       "formula": "Sieg % = Siege / (Siege + Niederlagen + Unentschieden) x 100"
     },
     "seasonsSection": {
@@ -289,6 +290,68 @@
       "infoItem3": "Anzahl der Teilnehmer",
       "infoItem4": "Aktueller Turnierbaum oder Tabelle"
     },
+    "eventsSection": {
+      "title": "Events & PPV",
+      "description": "Kommende und vergangene Events anzeigen, einschließlich PPVs, wöchentlicher Shows und Sonderveranstaltungen.",
+      "browsingEvents": "Events durchsuchen",
+      "browsingIntro": "Events sind nach Typ organisiert. Verwenden Sie die Filter-Tabs, um bestimmte Typen zu finden:",
+      "typePPV": "PPV",
+      "typePPVDesc": "Große Events wie WrestleMania, SummerSlam, Royal Rumble",
+      "typeWeekly": "Wöchentlich",
+      "typeWeeklyDesc": "Reguläre wöchentliche Shows wie Raw, SmackDown, NXT",
+      "typeSpecial": "Spezial",
+      "typeSpecialDesc": "Einmalige Sonderveranstaltungen",
+      "typeHouse": "House Show",
+      "typeHouseDesc": "Nicht-televisionäre Ausstellungsevents",
+      "eventDetails": "Event-Details",
+      "eventDetailsIntro": "Klicken Sie auf ein Event, um alle Details zu sehen:",
+      "detailItem1": "Die vollständige Match Card mit allen geplanten Kämpfen",
+      "detailItem2": "Meisterschaftskämpfe mit speziellem Abzeichen hervorgehoben",
+      "detailItem3": "Event-Datum, Veranstaltungsort und Beschreibung",
+      "detailItem4": "Ergebnisse für abgeschlossene Events mit Kampfresultaten"
+    },
+    "contendersSection": {
+      "title": "Herausforderer-Ranglisten",
+      "description": "Die Herausforderer-Seite zeigt die offiziellen #1-Herausforderer-Ranglisten für jede Meisterschaft.",
+      "whatAreContenders": "Was sind Herausforderer-Ranglisten?",
+      "contendersExplain": "Herausforderer-Ranglisten werden automatisch basierend auf der jüngsten Kampfleistung berechnet. Jede Meisterschaft hat ihre eigenen Ranglisten, die zeigen, wer sich das Recht auf eine Titelherausforderung verdient hat. Ranglisten können auf bestimmte Divisionen beschränkt sein.",
+      "readingRankings": "Die Ranglisten lesen",
+      "rankLabel": "Rang",
+      "rankLabelDesc": "Die Herausforderer-Position des Spielers (#1 ist als nächstes für einen Titelkampf dran)",
+      "scoreLabel": "Punktzahl",
+      "scoreLabelDesc": "Eine berechnete Ranglistenpunktzahl basierend auf jüngsten Siegen und Leistung",
+      "winRateLabel": "Sieg %",
+      "winRateLabelDesc": "Die Siegquote des Spielers während des Ranglistenzeitraums",
+      "streakLabel": "Serie",
+      "streakLabelDesc": "Aktuelle Sieges- oder Niederlagenserie"
+    },
+    "profileSection": {
+      "title": "Mein Profil",
+      "description": "Ihre persönliche Wrestler-Profilseite zeigt Ihre komplette Liga-Historie und Statistiken.",
+      "whatYouCanSee": "Was Sie sehen können",
+      "item1": "Ihr Wrestler-Name, Bild und Divisionszuordnung",
+      "item2": "Gesamt-Bilanz aus Siegen/Niederlagen/Unentschieden und Siegquote",
+      "item3": "Saisonbilanzen für jede Saison, in der Sie angetreten sind",
+      "item4": "Ihre aktuellen Meisterschaftstitel und Herausforderer-Status"
+    },
+    "fantasySection": {
+      "title": "Fantasy Wrestling",
+      "description": "Treten Sie in der Fantasy-Liga an, indem Sie Wrestler auswählen und Punkte sammeln, wenn diese Kämpfe gewinnen.",
+      "howItWorks": "So funktioniert es",
+      "step1": "Wenn eine Show für Tipps geöffnet wird, durchsuchen Sie die verfügbaren Wrestler und deren Kosten",
+      "step2": "Wählen Sie Wrestler innerhalb Ihres Budgets für jede Division",
+      "step3": "Ihre Tipps verdienen Punkte, wenn die Wrestler Kämpfe gewinnen - größere Kämpfe bringen mehr Punkte",
+      "step4": "Klettern Sie in der Rangliste und kämpfen Sie um den Spitzenplatz unter allen Fantasy-Spielern",
+      "featuresTitle": "Fantasy-Funktionen",
+      "featurePicks": "Tipps abgeben",
+      "featurePicksDesc": "Wählen Sie Wrestler innerhalb Ihres Gehaltsbudgets für jede Show",
+      "featureLeaderboard": "Rangliste",
+      "featureLeaderboardDesc": "Sehen Sie, wo Sie im Vergleich zu anderen Fantasy-Spielern stehen",
+      "featureCosts": "Wrestler-Kosten",
+      "featureCostsDesc": "Wrestler-Preise anzeigen, die sich basierend auf Leistungstrends ändern",
+      "featureResults": "Show-Ergebnisse",
+      "featureResultsDesc": "Überprüfen Sie Ihre Tipps und sehen Sie die nach jeder Show verdienten Punkte"
+    },
     "tipsSection": {
       "title": "Tipps zum Verfolgen der Liga",
       "tip1Title": "Tabelle regelmäßig prüfen",
@@ -298,7 +361,11 @@
       "tip3Title": "Turnierfortschritt verfolgen",
       "tip3Desc": "Turniere bestimmen oft Meisterschaftsmöglichkeiten",
       "tip4Title": "Kampf-Historie überprüfen",
-      "tip4Desc": "Filtern Sie nach \"Abgeschlossen\", um verpasste Ergebnisse nachzuholen"
+      "tip4Desc": "Filtern Sie nach \"Abgeschlossen\", um verpasste Ergebnisse nachzuholen",
+      "tip5Title": "Herausforderer-Ranglisten verfolgen",
+      "tip5Desc": "Sehen Sie, wer als nächstes eine Meisterschaftsmöglichkeit bekommt",
+      "tip6Title": "Events durchsuchen",
+      "tip6Desc": "Schauen Sie sich bevorstehende PPVs und wöchentliche Shows für die vollständigen Match Cards an"
     }
   },
   "admin": {
