@@ -33,12 +33,34 @@ const playerNames = [
   'Colby Lopez',
 ];
 
+const stipulations = ['Standard', 'No DQ', 'Steel Cage', 'Ladder Match', 'Hell in a Cell', 'Tables Match'];
+
+function daysAgo(days: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d;
+}
+
+function daysFromNow(days: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function getISOWeekKey(championshipId: string, date: Date): string {
+  const year = date.getFullYear();
+  const jan1 = new Date(year, 0, 1);
+  const days = Math.floor((date.getTime() - jan1.getTime()) / (24 * 60 * 60 * 1000));
+  const week = Math.ceil((days + jan1.getDay() + 1) / 7);
+  return `${championshipId}#${year}-${String(week).padStart(2, '0')}`;
+}
+
 export const handler: APIGatewayProxyHandler = async () => {
   try {
     const createdCounts: Record<string, number> = {};
     const now = new Date().toISOString();
 
-    // Create divisions first
+    // ── Divisions ──────────────────────────────────────────────
     console.log('Creating divisions...');
     const divisions = [
       {
@@ -65,14 +87,11 @@ export const handler: APIGatewayProxyHandler = async () => {
     ];
 
     for (const division of divisions) {
-      await dynamoDb.put({
-        TableName: TableNames.DIVISIONS,
-        Item: division,
-      });
+      await dynamoDb.put({ TableName: TableNames.DIVISIONS, Item: division });
     }
     createdCounts.divisions = divisions.length;
 
-    // Create players with division assignments
+    // ── Players ────────────────────────────────────────────────
     console.log('Creating players...');
     const players = playerNames.map((name, index) => ({
       playerId: uuidv4(),
@@ -87,57 +106,42 @@ export const handler: APIGatewayProxyHandler = async () => {
     }));
 
     for (const player of players) {
-      await dynamoDb.put({
-        TableName: TableNames.PLAYERS,
-        Item: player,
-      });
+      await dynamoDb.put({ TableName: TableNames.PLAYERS, Item: player });
     }
     createdCounts.players = players.length;
 
-    // Create a season
+    // ── Seasons ────────────────────────────────────────────────
     console.log('Creating seasons...');
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const season = {
+      seasonId: uuidv4(),
+      name: 'Season 1',
+      startDate: daysAgo(30).toISOString(),
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    };
 
-    const seasons = [
-      {
-        seasonId: uuidv4(),
-        name: 'Season 1',
-        startDate: thirtyDaysAgo.toISOString(),
-        status: 'active',
-        createdAt: now,
-        updatedAt: now,
-      },
-    ];
+    await dynamoDb.put({ TableName: TableNames.SEASONS, Item: season });
+    createdCounts.seasons = 1;
 
-    for (const season of seasons) {
-      await dynamoDb.put({
-        TableName: TableNames.SEASONS,
-        Item: season,
-      });
-    }
-    createdCounts.seasons = seasons.length;
-
-    // Create season standings for all players
+    // ── Season Standings ───────────────────────────────────────
     console.log('Creating season standings...');
     let standingsCount = 0;
     for (const player of players) {
       const standing = {
-        seasonId: seasons[0].seasonId,
+        seasonId: season.seasonId,
         playerId: player.playerId,
         wins: Math.floor(Math.random() * 8) + 1,
         losses: Math.floor(Math.random() * 6) + 1,
         draws: Math.floor(Math.random() * 2),
+        updatedAt: now,
       };
-      await dynamoDb.put({
-        TableName: TableNames.SEASON_STANDINGS,
-        Item: standing,
-      });
+      await dynamoDb.put({ TableName: TableNames.SEASON_STANDINGS, Item: standing });
       standingsCount++;
     }
     createdCounts.seasonStandings = standingsCount;
 
-    // Create championships
+    // ── Championships ──────────────────────────────────────────
     console.log('Creating championships...');
     const championships = [
       {
@@ -145,8 +149,11 @@ export const handler: APIGatewayProxyHandler = async () => {
         name: 'World Heavyweight Championship',
         type: 'singles',
         currentChampion: players[0].playerId,
+        divisionId: divisions[0].divisionId,
         isActive: true,
         createdAt: now,
+        updatedAt: now,
+        version: 1,
       },
       {
         championshipId: uuidv4(),
@@ -155,6 +162,8 @@ export const handler: APIGatewayProxyHandler = async () => {
         currentChampion: players[1].playerId,
         isActive: true,
         createdAt: now,
+        updatedAt: now,
+        version: 1,
       },
       {
         championshipId: uuidv4(),
@@ -163,118 +172,117 @@ export const handler: APIGatewayProxyHandler = async () => {
         currentChampion: [players[2].playerId, players[3].playerId],
         isActive: true,
         createdAt: now,
+        updatedAt: now,
+        version: 1,
       },
       {
         championshipId: uuidv4(),
         name: 'United States Championship',
         type: 'singles',
         currentChampion: players[4].playerId,
+        divisionId: divisions[1].divisionId,
         isActive: true,
         createdAt: now,
+        updatedAt: now,
+        version: 1,
       },
     ];
 
     for (const championship of championships) {
-      await dynamoDb.put({
-        TableName: TableNames.CHAMPIONSHIPS,
-        Item: championship,
-      });
+      await dynamoDb.put({ TableName: TableNames.CHAMPIONSHIPS, Item: championship });
     }
     createdCounts.championships = championships.length;
 
-    // Create championship history
+    // ── Championship History ───────────────────────────────────
     console.log('Creating championship history...');
     let historyCount = 0;
     for (let i = 0; i < championships.length; i++) {
-      const wonDate = new Date();
-      wonDate.setDate(wonDate.getDate() - (30 - i * 5));
-
+      const wonDate = daysAgo(30 - i * 5);
       await dynamoDb.put({
         TableName: TableNames.CHAMPIONSHIP_HISTORY,
         Item: {
           championshipId: championships[i].championshipId,
           wonDate: wonDate.toISOString(),
-          champion: Array.isArray(championships[i].currentChampion)
-            ? championships[i].currentChampion
-            : championships[i].currentChampion,
+          champion: championships[i].currentChampion,
           matchId: uuidv4(),
+          defenses: Math.floor(Math.random() * 4),
         },
       });
       historyCount++;
     }
     createdCounts.championshipHistory = historyCount;
 
-    // Create matches
+    // ── Matches ────────────────────────────────────────────────
     console.log('Creating matches...');
-    const matchTypes = ['singles', 'tag', 'triple-threat', 'fatal-4-way'];
-    const stipulations = ['Standard', 'No DQ', 'Steel Cage', 'Ladder Match', 'Hell in a Cell', 'Tables Match'];
-    const matches = [];
+    const matches: Record<string, unknown>[] = [];
 
     // Past completed matches
     for (let i = 0; i < 8; i++) {
-      const daysAgo = Math.floor(Math.random() * 25) + 5;
-      const matchDate = new Date();
-      matchDate.setDate(matchDate.getDate() - daysAgo);
+      const ago = Math.floor(Math.random() * 25) + 5;
+      const matchDate = daysAgo(ago);
 
-      const participant1 = players[Math.floor(Math.random() * players.length)];
-      let participant2 = players[Math.floor(Math.random() * players.length)];
-      while (participant2.playerId === participant1.playerId) {
-        participant2 = players[Math.floor(Math.random() * players.length)];
+      const p1 = players[Math.floor(Math.random() * players.length)];
+      let p2 = players[Math.floor(Math.random() * players.length)];
+      while (p2.playerId === p1.playerId) {
+        p2 = players[Math.floor(Math.random() * players.length)];
       }
 
-      const winner = Math.random() > 0.5 ? participant1 : participant2;
-      const loser = winner === participant1 ? participant2 : participant1;
+      const winner = Math.random() > 0.5 ? p1 : p2;
+      const loser = winner === p1 ? p2 : p1;
 
       matches.push({
         matchId: uuidv4(),
         date: matchDate.toISOString(),
         matchType: 'singles',
         stipulation: stipulations[Math.floor(Math.random() * stipulations.length)],
-        participants: [participant1.playerId, participant2.playerId],
+        participants: [p1.playerId, p2.playerId],
         winners: [winner.playerId],
         losers: [loser.playerId],
         isChampionship: false,
-        seasonId: seasons[0].seasonId,
+        seasonId: season.seasonId,
         status: 'completed',
         createdAt: now,
+        version: 1,
       });
     }
 
     // Future scheduled matches
     for (let i = 0; i < 4; i++) {
-      const daysAhead = Math.floor(Math.random() * 14) + 1;
-      const matchDate = new Date();
-      matchDate.setDate(matchDate.getDate() + daysAhead);
+      const ahead = Math.floor(Math.random() * 14) + 1;
+      const matchDate = daysFromNow(ahead);
 
-      const participant1 = players[Math.floor(Math.random() * players.length)];
-      let participant2 = players[Math.floor(Math.random() * players.length)];
-      while (participant2.playerId === participant1.playerId) {
-        participant2 = players[Math.floor(Math.random() * players.length)];
+      const p1 = players[Math.floor(Math.random() * players.length)];
+      let p2 = players[Math.floor(Math.random() * players.length)];
+      while (p2.playerId === p1.playerId) {
+        p2 = players[Math.floor(Math.random() * players.length)];
       }
 
-      matches.push({
+      const match: Record<string, unknown> = {
         matchId: uuidv4(),
         date: matchDate.toISOString(),
-        matchType: matchTypes[Math.floor(Math.random() * 2)],
+        matchType: i % 2 === 0 ? 'singles' : 'tag',
         stipulation: stipulations[Math.floor(Math.random() * stipulations.length)],
-        participants: [participant1.playerId, participant2.playerId],
+        participants: [p1.playerId, p2.playerId],
         isChampionship: i === 0,
-        championshipId: i === 0 ? championships[0].championshipId : undefined,
-        seasonId: seasons[0].seasonId,
+        seasonId: season.seasonId,
         status: 'scheduled',
         createdAt: now,
-      });
+        version: 1,
+      };
+
+      if (i === 0) {
+        match.championshipId = championships[0].championshipId;
+      }
+
+      matches.push(match);
     }
 
     for (const match of matches) {
-      await dynamoDb.put({
-        TableName: TableNames.MATCHES,
-        Item: match,
-      });
+      await dynamoDb.put({ TableName: TableNames.MATCHES, Item: match });
     }
     createdCounts.matches = matches.length;
 
-    // Create tournaments
+    // ── Tournaments ────────────────────────────────────────────
     console.log('Creating tournaments...');
     const tournaments = [
       {
@@ -312,6 +320,7 @@ export const handler: APIGatewayProxyHandler = async () => {
           ],
         },
         createdAt: now,
+        version: 1,
       },
       {
         tournamentId: uuidv4(),
@@ -326,18 +335,16 @@ export const handler: APIGatewayProxyHandler = async () => {
           [players[7].playerId]: { wins: 1, losses: 2, draws: 0, points: 2 },
         },
         createdAt: now,
+        version: 1,
       },
     ];
 
     for (const tournament of tournaments) {
-      await dynamoDb.put({
-        TableName: TableNames.TOURNAMENTS,
-        Item: tournament,
-      });
+      await dynamoDb.put({ TableName: TableNames.TOURNAMENTS, Item: tournament });
     }
     createdCounts.tournaments = tournaments.length;
 
-    // Create events
+    // ── Events ─────────────────────────────────────────────────
     console.log('Creating events...');
     const completedMatches = matches.filter(m => m.status === 'completed');
     const scheduledMatches = matches.filter(m => m.status === 'scheduled');
@@ -347,18 +354,24 @@ export const handler: APIGatewayProxyHandler = async () => {
         eventId: uuidv4(),
         name: 'WrestleMania 40',
         eventType: 'ppv',
-        date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days from now
+        date: daysFromNow(14).toISOString(),
         venue: 'MetLife Stadium',
         description: 'The Showcase of the Immortals',
         themeColor: '#FFD700',
         status: 'upcoming',
-        seasonId: seasons[0].seasonId,
-        matchCards: scheduledMatches.slice(0, 3).map((m, idx) => ({
-          position: idx + 1,
-          matchId: m.matchId,
-          designation: idx === 0 ? 'opener' : idx === 2 ? 'main-event' : 'midcard',
-          notes: m.isChampionship ? 'Championship Match' : undefined,
-        })),
+        seasonId: season.seasonId,
+        fantasyEnabled: true,
+        matchCards: scheduledMatches.slice(0, 3).map((m, idx) => {
+          const card: Record<string, unknown> = {
+            position: idx + 1,
+            matchId: m.matchId,
+            designation: idx === 0 ? 'opener' : idx === 2 ? 'main-event' : 'midcard',
+          };
+          if (m.isChampionship) {
+            card.notes = 'Championship Match';
+          }
+          return card;
+        }),
         createdAt: now,
         updatedAt: now,
       },
@@ -366,10 +379,11 @@ export const handler: APIGatewayProxyHandler = async () => {
         eventId: uuidv4(),
         name: 'Monday Night Raw #1580',
         eventType: 'weekly',
-        date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+        date: daysAgo(7).toISOString(),
         description: 'The longest running weekly episodic television show',
         status: 'completed',
-        seasonId: seasons[0].seasonId,
+        seasonId: season.seasonId,
+        fantasyEnabled: true,
         matchCards: completedMatches.slice(0, 3).map((m, idx) => ({
           position: idx + 1,
           matchId: m.matchId,
@@ -382,12 +396,13 @@ export const handler: APIGatewayProxyHandler = async () => {
         eventId: uuidv4(),
         name: 'Royal Rumble 2026',
         eventType: 'ppv',
-        date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+        date: daysFromNow(30).toISOString(),
         venue: 'Alamodome',
         description: 'Every man for himself',
         themeColor: '#1E90FF',
         status: 'upcoming',
-        seasonId: seasons[0].seasonId,
+        seasonId: season.seasonId,
+        fantasyEnabled: true,
         matchCards: [],
         createdAt: now,
         updatedAt: now,
@@ -395,12 +410,192 @@ export const handler: APIGatewayProxyHandler = async () => {
     ];
 
     for (const event of events) {
-      await dynamoDb.put({
-        TableName: TableNames.EVENTS,
-        Item: event,
-      });
+      await dynamoDb.put({ TableName: TableNames.EVENTS, Item: event });
     }
     createdCounts.events = events.length;
+
+    // Link matches back to their events
+    for (const m of completedMatches.slice(0, 3)) {
+      m.eventId = events[1].eventId;
+    }
+    for (const m of scheduledMatches.slice(0, 3)) {
+      m.eventId = events[0].eventId;
+    }
+    for (const match of [...completedMatches.slice(0, 3), ...scheduledMatches.slice(0, 3)]) {
+      await dynamoDb.put({ TableName: TableNames.MATCHES, Item: match });
+    }
+
+    // ── Contender Rankings ─────────────────────────────────────
+    console.log('Creating contender rankings...');
+    let rankingsCount = 0;
+
+    // WHC rankings (division-locked to Raw)
+    const rawPlayers = players.filter(p => p.divisionId === divisions[0].divisionId);
+    const whcChampionId = championships[0].currentChampion as string;
+    const whcContenders = rawPlayers
+      .filter(p => p.playerId !== whcChampionId)
+      .slice(0, 3);
+
+    for (let i = 0; i < whcContenders.length; i++) {
+      const contender = whcContenders[i];
+      const ranking: Record<string, unknown> = {
+        championshipId: championships[0].championshipId,
+        playerId: contender.playerId,
+        rank: i + 1,
+        rankingScore: 80 - i * 15,
+        winPercentage: 0.6 - i * 0.1,
+        currentStreak: 3 - i,
+        qualityScore: 70 - i * 10,
+        recencyScore: 85 - i * 12,
+        matchesInPeriod: 5 + i,
+        winsInPeriod: 4 - i,
+        peakRank: 1,
+        weeksAtTop: i === 0 ? 2 : 0,
+        calculatedAt: now,
+        updatedAt: now,
+      };
+      if (i <= 1) {
+        ranking.previousRank = i === 0 ? 2 : 1;
+      }
+      await dynamoDb.put({ TableName: TableNames.CONTENDER_RANKINGS, Item: ranking });
+      rankingsCount++;
+    }
+
+    // IC rankings (open, no division lock)
+    const icChampionId = championships[1].currentChampion as string;
+    const icContenders = players
+      .filter(p => p.playerId !== icChampionId)
+      .slice(0, 5);
+
+    for (let i = 0; i < icContenders.length; i++) {
+      const contender = icContenders[i];
+      const ranking: Record<string, unknown> = {
+        championshipId: championships[1].championshipId,
+        playerId: contender.playerId,
+        rank: i + 1,
+        rankingScore: 90 - i * 12,
+        winPercentage: 0.7 - i * 0.08,
+        currentStreak: 4 - i,
+        qualityScore: 75 - i * 8,
+        recencyScore: 88 - i * 10,
+        matchesInPeriod: 6 + i,
+        winsInPeriod: 5 - i,
+        peakRank: Math.max(1, i),
+        weeksAtTop: i === 0 ? 3 : 0,
+        calculatedAt: now,
+        updatedAt: now,
+      };
+      if (i + 1 <= 3) {
+        ranking.previousRank = i + 2;
+      }
+      await dynamoDb.put({ TableName: TableNames.CONTENDER_RANKINGS, Item: ranking });
+      rankingsCount++;
+    }
+    createdCounts.contenderRankings = rankingsCount;
+
+    // ── Ranking History ────────────────────────────────────────
+    console.log('Creating ranking history...');
+    let historyEntries = 0;
+    for (let weekOffset = 0; weekOffset < 3; weekOffset++) {
+      const weekDate = daysAgo(weekOffset * 7);
+      for (let i = 0; i < 3; i++) {
+        const contender = icContenders[i];
+        const weekKey = getISOWeekKey(championships[1].championshipId, weekDate);
+        await dynamoDb.put({
+          TableName: TableNames.RANKING_HISTORY,
+          Item: {
+            playerId: contender.playerId,
+            weekKey,
+            championshipId: championships[1].championshipId,
+            rank: i + 1 + (weekOffset === 2 ? 1 : 0),
+            rankingScore: 90 - i * 12 - weekOffset * 3,
+            movement: weekOffset === 0 ? (i === 0 ? 1 : -1) : 0,
+            createdAt: weekDate.toISOString(),
+          },
+        });
+        historyEntries++;
+      }
+    }
+    createdCounts.rankingHistory = historyEntries;
+
+    // ── Fantasy Config ─────────────────────────────────────────
+    console.log('Creating fantasy config...');
+    await dynamoDb.put({
+      TableName: TableNames.FANTASY_CONFIG,
+      Item: {
+        configKey: 'GLOBAL',
+        defaultBudget: 500,
+        defaultPicksPerDivision: 2,
+        baseWinPoints: 10,
+        championshipBonus: 5,
+        titleWinBonus: 10,
+        titleDefenseBonus: 5,
+        costFluctuationEnabled: true,
+        costChangePerWin: 10,
+        costChangePerLoss: 5,
+        costResetStrategy: 'reset',
+        underdogMultiplier: 1.5,
+        perfectPickBonus: 50,
+        streakBonusThreshold: 5,
+        streakBonusPoints: 25,
+      },
+    });
+    createdCounts.fantasyConfig = 1;
+
+    // ── Wrestler Costs ─────────────────────────────────────────
+    console.log('Creating wrestler costs...');
+    let costsCount = 0;
+    for (const player of players) {
+      const totalMatches = player.wins + player.losses + player.draws;
+      const winRate = totalMatches > 0 ? Math.round((player.wins / totalMatches) * 100) : 0;
+      const baseCost = 100;
+      const costAdjustment = Math.round((winRate - 50) * 1.5);
+      const currentCost = Math.max(50, baseCost + costAdjustment);
+
+      await dynamoDb.put({
+        TableName: TableNames.WRESTLER_COSTS,
+        Item: {
+          playerId: player.playerId,
+          baseCost,
+          currentCost,
+          costHistory: [
+            {
+              date: daysAgo(7).toISOString().split('T')[0],
+              cost: baseCost,
+              reason: 'Initial cost set',
+            },
+            {
+              date: new Date().toISOString().split('T')[0],
+              cost: currentCost,
+              reason: 'Performance adjustment',
+            },
+          ],
+          winRate30Days: winRate,
+          recentRecord: `${player.wins}-${player.losses}-${player.draws}`,
+          updatedAt: now,
+        },
+      });
+      costsCount++;
+    }
+    createdCounts.wrestlerCosts = costsCount;
+
+    // ── Site Config ────────────────────────────────────────────
+    console.log('Creating site config...');
+    await dynamoDb.put({
+      TableName: TableNames.SITE_CONFIG,
+      Item: {
+        configKey: 'features',
+        features: {
+          fantasy: true,
+          challenges: true,
+          promos: true,
+          contenders: true,
+          statistics: true,
+        },
+        updatedAt: now,
+      },
+    });
+    createdCounts.siteConfig = 1;
 
     return success({
       message: 'Sample data seeded successfully!',
