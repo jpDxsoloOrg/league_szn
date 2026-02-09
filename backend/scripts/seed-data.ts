@@ -391,12 +391,17 @@ async function seedData() {
       status: 'upcoming',
       seasonId: season.seasonId,
       fantasyEnabled: true,
-      matchCards: scheduledMatches.slice(0, 3).map((m, idx) => ({
-        position: idx + 1,
-        matchId: m.matchId as string,
-        designation: idx === 0 ? 'opener' : idx === 2 ? 'main-event' : 'midcard',
-        notes: (m.isChampionship as boolean) ? 'Championship Match' : undefined,
-      })),
+      matchCards: scheduledMatches.slice(0, 3).map((m, idx) => {
+        const card: Record<string, unknown> = {
+          position: idx + 1,
+          matchId: m.matchId as string,
+          designation: idx === 0 ? 'opener' : idx === 2 ? 'main-event' : 'midcard',
+        };
+        if (m.isChampionship) {
+          card.notes = 'Championship Match';
+        }
+        return card;
+      }),
       createdAt: now,
       updatedAt: now,
     },
@@ -462,7 +467,7 @@ async function seedData() {
 
   for (let i = 0; i < whcContenders.length; i++) {
     const contender = whcContenders[i];
-    const ranking = {
+    const ranking: Record<string, unknown> = {
       championshipId: championships[0].championshipId,
       playerId: contender.playerId,
       rank: i + 1,
@@ -473,12 +478,14 @@ async function seedData() {
       recencyScore: 85 - i * 12,
       matchesInPeriod: 5 + i,
       winsInPeriod: 4 - i,
-      previousRank: i === 0 ? 2 : i === 1 ? 1 : null,
       peakRank: 1,
       weeksAtTop: i === 0 ? 2 : 0,
       calculatedAt: now,
       updatedAt: now,
     };
+    if (i <= 1) {
+      ranking.previousRank = i === 0 ? 2 : 1;
+    }
     await docClient.send(new PutCommand({ TableName: TABLES.CONTENDER_RANKINGS, Item: ranking }));
     console.log(`  ✓ Ranking: ${contender.name} → #${ranking.rank} for ${championships[0].name}`);
   }
@@ -491,7 +498,7 @@ async function seedData() {
 
   for (let i = 0; i < icContenders.length; i++) {
     const contender = icContenders[i];
-    const ranking = {
+    const ranking: Record<string, unknown> = {
       championshipId: championships[1].championshipId,
       playerId: contender.playerId,
       rank: i + 1,
@@ -502,12 +509,14 @@ async function seedData() {
       recencyScore: 88 - i * 10,
       matchesInPeriod: 6 + i,
       winsInPeriod: 5 - i,
-      previousRank: i + 1 <= 3 ? i + 2 : null,
       peakRank: Math.max(1, i),
       weeksAtTop: i === 0 ? 3 : 0,
       calculatedAt: now,
       updatedAt: now,
     };
+    if (i + 1 <= 3) {
+      ranking.previousRank = i + 2;
+    }
     await docClient.send(new PutCommand({ TableName: TABLES.CONTENDER_RANKINGS, Item: ranking }));
     console.log(`  ✓ Ranking: ${contender.name} → #${ranking.rank} for ${championships[1].name}`);
   }
