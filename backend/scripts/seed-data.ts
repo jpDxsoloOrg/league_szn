@@ -5,15 +5,20 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 
-// Configure DynamoDB client for local use
-const client = new DynamoDBClient({
-  region: 'us-east-1',
-  endpoint: 'http://localhost:8000',
-  credentials: {
-    accessKeyId: 'dummy',
-    secretAccessKey: 'dummy',
-  },
-});
+const isLocal = process.env.IS_OFFLINE === 'true';
+
+const client = new DynamoDBClient(
+  isLocal
+    ? {
+        region: 'us-east-1',
+        endpoint: 'http://localhost:8000',
+        credentials: {
+          accessKeyId: 'dummy',
+          secretAccessKey: 'dummy',
+        },
+      }
+    : { region: 'us-east-1' }
+);
 
 const docClient = DynamoDBDocumentClient.from(client);
 
