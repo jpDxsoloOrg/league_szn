@@ -1,8 +1,23 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReactionType } from '../../types/promo';
-import { REACTION_EMOJI, REACTION_LABELS } from '../../mocks/promoMockData';
 import './PromoReactions.css';
+
+const REACTION_EMOJI: Record<ReactionType, string> = {
+  fire: '\u{1F525}',
+  mic: '\u{1F3A4}',
+  trash: '\u{1F5D1}',
+  'mind-blown': '\u{1F92F}',
+  clap: '\u{1F44F}',
+};
+
+const REACTION_LABELS: Record<ReactionType, string> = {
+  fire: 'Fire',
+  mic: 'Mic Drop',
+  trash: 'Trash',
+  'mind-blown': 'Mind Blown',
+  clap: 'Clap',
+};
 
 interface PromoReactionsProps {
   reactionCounts: Record<ReactionType, number>;

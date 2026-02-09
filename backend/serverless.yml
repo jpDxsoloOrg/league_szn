@@ -24,6 +24,8 @@ provider:
     WRESTLER_COSTS_TABLE: ${self:service}-wrestler-costs-${self:provider.stage}
     FANTASY_PICKS_TABLE: ${self:service}-fantasy-picks-${self:provider.stage}
     SITE_CONFIG_TABLE: ${self:service}-site-config-${self:provider.stage}
+    CHALLENGES_TABLE: ${self:service}-challenges-${self:provider.stage}
+    PROMOS_TABLE: ${self:service}-promos-${self:provider.stage}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
     ADMIN_SETUP_KEY: cd59a70bebb3a6ef2d42b921b546754fff1a8ade98c311c09c4f05da4570008b
@@ -61,6 +63,10 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FANTASY_PICKS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FANTASY_PICKS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SITE_CONFIG_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CHALLENGES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CHALLENGES_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PROMOS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PROMOS_TABLE}/index/*
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -624,6 +630,86 @@ functions:
           cors: true
           authorizer: adminAuthorizer
 
+  # Challenges
+  getChallenges:
+    handler: functions/challenges/getChallenges.handler
+    events:
+      - http:
+          path: challenges
+          method: get
+          cors: true
+
+  createChallenge:
+    handler: functions/challenges/createChallenge.handler
+    events:
+      - http:
+          path: challenges
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
+
+  respondToChallenge:
+    handler: functions/challenges/respondToChallenge.handler
+    events:
+      - http:
+          path: challenges/{challengeId}/respond
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
+
+  cancelChallenge:
+    handler: functions/challenges/cancelChallenge.handler
+    events:
+      - http:
+          path: challenges/{challengeId}/cancel
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
+
+  # Promos
+  getPromos:
+    handler: functions/promos/getPromos.handler
+    events:
+      - http:
+          path: promos
+          method: get
+          cors: true
+
+  getPromo:
+    handler: functions/promos/getPromo.handler
+    events:
+      - http:
+          path: promos/{promoId}
+          method: get
+          cors: true
+
+  createPromo:
+    handler: functions/promos/createPromo.handler
+    events:
+      - http:
+          path: promos
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
+
+  reactToPromo:
+    handler: functions/promos/reactToPromo.handler
+    events:
+      - http:
+          path: promos/{promoId}/react
+          method: post
+          cors: true
+          authorizer: adminAuthorizer
+
+  adminUpdatePromo:
+    handler: functions/promos/adminUpdatePromo.handler
+    events:
+      - http:
+          path: admin/promos/{promoId}
+          method: put
+          cors: true
+          authorizer: adminAuthorizer
+
 resources:
   Resources:
     # API Gateway Response for CORS with Authorizer
@@ -1050,6 +1136,86 @@ resources:
         KeySchema:
           - AttributeName: configKey
             KeyType: HASH
+
+    ChallengesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.CHALLENGES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: challengeId
+            AttributeType: S
+          - AttributeName: challengerId
+            AttributeType: S
+          - AttributeName: challengedId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S
+        KeySchema:
+          - AttributeName: challengeId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ChallengerIndex
+            KeySchema:
+              - AttributeName: challengerId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: ChallengedIndex
+            KeySchema:
+              - AttributeName: challengedId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: StatusIndex
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    PromosTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.PROMOS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: promoId
+            AttributeType: S
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+          - AttributeName: promoType
+            AttributeType: S
+        KeySchema:
+          - AttributeName: promoId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: PlayerIndex
+            KeySchema:
+              - AttributeName: playerId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: TypeIndex
+            KeySchema:
+              - AttributeName: promoType
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
 
     ImagesBucket:
       Type: AWS::S3::Bucket

@@ -1,15 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  mockChallengePlayers,
-  mockCurrentPlayerId,
-  matchTypes,
-  stipulations,
-} from '../../mocks/challengeMockData';
+import { playersApi, challengesApi } from '../../services/api';
+import type { Player } from '../../types';
 import './IssueChallenge.css';
 
 const MAX_MESSAGE_LENGTH = 500;
+
+const MATCH_TYPES = ['Singles', 'Tag Team', 'Triple Threat', 'Fatal 4-Way', 'Six Pack Challenge', 'Battle Royal'];
+const STIPULATIONS = ['None', 'Steel Cage', 'Ladder', 'Hell in a Cell', 'Last Man Standing', 'Iron Man', 'Tables'];
 
 function getInitial(name: string): string {
   return name.charAt(0).toUpperCase();
@@ -24,14 +23,38 @@ export default function IssueChallenge() {
   const [message, setMessage] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
 
-  const currentPlayer = mockChallengePlayers.find(
-    (p) => p.playerId === mockCurrentPlayerId
-  );
-  const opponent = mockChallengePlayers.find((p) => p.playerId === opponentId);
-  const availableOpponents = mockChallengePlayers.filter(
-    (p) => p.playerId !== mockCurrentPlayerId
-  );
+  useEffect(() => {
+    const controller = new AbortController();
+    playersApi.getAll(controller.signal).then((data) => {
+      setPlayers(data);
+
+      // Determine current user's player
+      const idToken = sessionStorage.getItem('idToken');
+      if (idToken) {
+        try {
+          const payload = JSON.parse(atob(idToken.split('.')[1]!));
+          const userSub = payload.sub;
+          const myPlayer = data.find((p: Player) => p.userId === userSub);
+          if (myPlayer) {
+            setCurrentPlayerId(myPlayer.playerId);
+            return;
+          }
+        } catch { /* ignore */ }
+      }
+      if (data.length > 0) setCurrentPlayerId(data[0]!.playerId);
+    }).catch(() => {});
+
+    return () => controller.abort();
+  }, []);
+
+  const currentPlayer = players.find((p) => p.playerId === currentPlayerId);
+  const opponent = players.find((p) => p.playerId === opponentId);
+  const availableOpponents = players.filter((p) => p.playerId !== currentPlayerId);
 
   const isFormValid = opponentId && matchType && message.length <= MAX_MESSAGE_LENGTH;
 
@@ -41,9 +64,24 @@ export default function IssueChallenge() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isFormValid) return;
-    setSubmitted(true);
+    setSubmitting(true);
+    setError(null);
+    try {
+      await challengesApi.create({
+        challengedId: opponentId,
+        matchType,
+        stipulation: stipulation !== 'None' ? stipulation : undefined,
+        championshipId: isChampionship ? 'championship-match' : undefined,
+        message: message || undefined,
+      });
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to issue challenge');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleReset = () => {
@@ -54,6 +92,7 @@ export default function IssueChallenge() {
     setMessage('');
     setShowPreview(false);
     setSubmitted(false);
+    setError(null);
   };
 
   if (submitted) {
@@ -102,6 +141,12 @@ export default function IssueChallenge() {
 
       <h2>{t('challenges.issue.title')}</h2>
 
+      {error && (
+        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem' }}>
+          {error}
+        </div>
+      )}
+
       <div className="issue-challenge-form">
         <div className="issue-form-group">
           <label>{t('challenges.issue.selectOpponent')}</label>
@@ -109,7 +154,7 @@ export default function IssueChallenge() {
             <option value="">{t('challenges.issue.selectOpponentPlaceholder')}</option>
             {availableOpponents.map((p) => (
               <option key={p.playerId} value={p.playerId}>
-                {p.wrestlerName} ({p.playerName})
+                {p.currentWrestler} ({p.name})
               </option>
             ))}
           </select>
@@ -119,7 +164,7 @@ export default function IssueChallenge() {
           <label>{t('challenges.issue.matchType')}</label>
           <select value={matchType} onChange={(e) => setMatchType(e.target.value)}>
             <option value="">{t('challenges.issue.selectMatchType')}</option>
-            {matchTypes.map((mt) => (
+            {MATCH_TYPES.map((mt) => (
               <option key={mt} value={mt}>
                 {mt}
               </option>
@@ -130,7 +175,7 @@ export default function IssueChallenge() {
         <div className="issue-form-group">
           <label>{t('challenges.issue.stipulation')}</label>
           <select value={stipulation} onChange={(e) => setStipulation(e.target.value)}>
-            {stipulations.map((s) => (
+            {STIPULATIONS.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
@@ -190,20 +235,20 @@ export default function IssueChallenge() {
                 <div className="issue-preview-versus">
                   <div className="issue-preview-player">
                     <div className="issue-preview-avatar">
-                      {getInitial(currentPlayer.wrestlerName)}
+                      {getInitial(currentPlayer.currentWrestler)}
                     </div>
                     <div className="issue-preview-wrestler">
-                      {currentPlayer.wrestlerName}
+                      {currentPlayer.currentWrestler}
                     </div>
-                    <div className="issue-preview-name">{currentPlayer.playerName}</div>
+                    <div className="issue-preview-name">{currentPlayer.name}</div>
                   </div>
                   <span className="issue-preview-vs">{t('common.vs').toUpperCase()}</span>
                   <div className="issue-preview-player">
                     <div className="issue-preview-avatar">
-                      {getInitial(opponent.wrestlerName)}
+                      {getInitial(opponent.currentWrestler)}
                     </div>
-                    <div className="issue-preview-wrestler">{opponent.wrestlerName}</div>
-                    <div className="issue-preview-name">{opponent.playerName}</div>
+                    <div className="issue-preview-wrestler">{opponent.currentWrestler}</div>
+                    <div className="issue-preview-name">{opponent.name}</div>
                   </div>
                 </div>
                 <div className="issue-preview-details">
@@ -233,10 +278,10 @@ export default function IssueChallenge() {
           </Link>
           <button
             className="btn-submit"
-            disabled={!isFormValid}
+            disabled={!isFormValid || submitting}
             onClick={handleSubmit}
           >
-            {t('challenges.issue.submit')}
+            {submitting ? 'Submitting...' : t('challenges.issue.submit')}
           </button>
         </div>
       </div>

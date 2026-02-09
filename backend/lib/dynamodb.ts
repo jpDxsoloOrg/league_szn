@@ -128,4 +128,6 @@ export const TableNames = {
   WRESTLER_COSTS: process.env.WRESTLER_COSTS_TABLE!,
   FANTASY_PICKS: process.env.FANTASY_PICKS_TABLE!,
   SITE_CONFIG: process.env.SITE_CONFIG_TABLE!,
+  CHALLENGES: process.env.CHALLENGES_TABLE!,
+  PROMOS: process.env.PROMOS_TABLE!,
 };
