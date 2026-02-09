@@ -501,6 +501,16 @@ functions:
           cors: true
           authorizer: adminAuthorizer
 
+  # Statistics
+  getStatistics:
+    handler: functions/statistics/getStatistics.handler
+    timeout: 29
+    events:
+      - http:
+          path: statistics
+          method: get
+          cors: true
+
   # Fantasy Config
   getFantasyConfig:
     handler: functions/fantasy/getFantasyConfig.handler

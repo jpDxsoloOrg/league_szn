@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { mockLeaderboards } from '../../mocks/statisticsMockData';
+import { statisticsApi } from '../../services/api';
 import type { LeaderboardEntry } from '../../types/statistics';
 import './Leaderboards.css';
 
@@ -11,6 +11,27 @@ function Leaderboards() {
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('mostWins');
   const [timeframe, setTimeframe] = useState<'allTime' | 'season'>('allTime');
+  const [leaderboards, setLeaderboards] = useState<Record<string, LeaderboardEntry[]>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    const fetchLeaderboards = async () => {
+      setLoading(true);
+      try {
+        const result = await statisticsApi.getLeaderboards(abortController.signal);
+        setLeaderboards(result.leaderboards);
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Failed to load leaderboards', err);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLeaderboards();
+    return () => abortController.abort();
+  }, []);
 
   const categories: { key: CategoryKey; label: string }[] = [
     { key: 'mostWins', label: t('statistics.leaderboards.categories.mostWins') },
@@ -20,7 +41,7 @@ function Leaderboards() {
     { key: 'longestReign', label: t('statistics.leaderboards.categories.longestReign') },
   ];
 
-  const entries: LeaderboardEntry[] = mockLeaderboards[activeCategory] || [];
+  const entries: LeaderboardEntry[] = leaderboards[activeCategory] || [];
 
   const valueSuffix: Record<CategoryKey, string> = {
     mostWins: '',
@@ -46,6 +67,15 @@ function Leaderboards() {
       case 3: return '3rd';
       default: return `${rank}th`;
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="leaderboards">
+        <h2>{t('statistics.leaderboards.title')}</h2>
+        <p>{t('common.loading', 'Loading...')}</p>
+      </div>
+    );
   }
 
   return (
@@ -122,6 +152,9 @@ function Leaderboards() {
             </div>
           );
         })}
+        {entries.length === 0 && (
+          <p>{t('statistics.leaderboards.noData', 'No data available yet.')}</p>
+        )}
       </div>
     </div>
   );

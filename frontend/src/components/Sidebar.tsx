@@ -144,9 +144,9 @@ export default function Sidebar() {
 
           {/* Statistics - hidden when feature is disabled */}
           {features.statistics && (
-            <span className="nav-disabled">
-              {t('nav.statistics')} <span className="coming-soon">Coming Soon</span>
-            </span>
+            <Link to="/stats" className={location.pathname.startsWith('/stats') ? 'active' : ''}>
+              {t('nav.statistics')}
+            </Link>
           )}
 
           {/* Fantasy - hidden when feature is disabled */}
