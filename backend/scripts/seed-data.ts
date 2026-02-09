@@ -92,6 +92,17 @@ function getISOWeekKey(championshipId: string, date: Date): string {
   return `${championshipId}#${year}-${String(week).padStart(2, '0')}`;
 }
 
+async function putItem(tableName: string, item: Record<string, unknown>) {
+  try {
+    await docClient.send(new PutCommand({ TableName: tableName, Item: item }));
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`\n✗ Failed to put item in ${tableName}:`, message);
+    console.error('  Item keys:', JSON.stringify(Object.keys(item)));
+    throw err;
+  }
+}
+
 async function seedData() {
   console.log('Starting to seed data...\n');
   const now = new Date().toISOString();
@@ -123,7 +134,7 @@ async function seedData() {
   ];
 
   for (const division of divisions) {
-    await docClient.send(new PutCommand({ TableName: TABLES.DIVISIONS, Item: division }));
+    await putItem(TABLES.DIVISIONS, division);
     console.log(`  ✓ Division: ${division.name}`);
   }
 
@@ -142,7 +153,7 @@ async function seedData() {
   }));
 
   for (const player of players) {
-    await docClient.send(new PutCommand({ TableName: TABLES.PLAYERS, Item: player }));
+    await putItem(TABLES.PLAYERS, player);
     console.log(`  ✓ Player: ${player.name} (${player.currentWrestler}) [${divisions.find(d => d.divisionId === player.divisionId)!.name}]`);
   }
 
@@ -157,7 +168,7 @@ async function seedData() {
     updatedAt: now,
   };
 
-  await docClient.send(new PutCommand({ TableName: TABLES.SEASONS, Item: season }));
+  await putItem(TABLES.SEASONS, season);
   console.log(`  ✓ Season: ${season.name}`);
 
   // ── Season Standings ───────────────────────────────────────
@@ -171,7 +182,7 @@ async function seedData() {
       draws: Math.floor(Math.random() * 2),
       updatedAt: now,
     };
-    await docClient.send(new PutCommand({ TableName: TABLES.SEASON_STANDINGS, Item: standing }));
+    await putItem(TABLES.SEASON_STANDINGS, standing);
     console.log(`  ✓ Standing: ${player.name} (${standing.wins}W-${standing.losses}L-${standing.draws}D)`);
   }
 
@@ -223,7 +234,7 @@ async function seedData() {
   ];
 
   for (const championship of championships) {
-    await docClient.send(new PutCommand({ TableName: TABLES.CHAMPIONSHIPS, Item: championship }));
+    await putItem(TABLES.CHAMPIONSHIPS, championship);
     console.log(`  ✓ Championship: ${championship.name}`);
   }
 
@@ -238,7 +249,7 @@ async function seedData() {
       matchId: uuidv4(),
       defenses: Math.floor(Math.random() * 4),
     };
-    await docClient.send(new PutCommand({ TableName: TABLES.CHAMPIONSHIP_HISTORY, Item: historyItem }));
+    await putItem(TABLES.CHAMPIONSHIP_HISTORY, historyItem);
     console.log(`  ✓ History: ${championships[i].name}`);
   }
 
@@ -308,7 +319,7 @@ async function seedData() {
   }
 
   for (const match of matches) {
-    await docClient.send(new PutCommand({ TableName: TABLES.MATCHES, Item: match }));
+    await putItem(TABLES.MATCHES, match);
     console.log(`  ✓ Match: ${match.matchType} (${match.status})`);
   }
 
@@ -370,7 +381,7 @@ async function seedData() {
   ];
 
   for (const tournament of tournaments) {
-    await docClient.send(new PutCommand({ TableName: TABLES.TOURNAMENTS, Item: tournament }));
+    await putItem(TABLES.TOURNAMENTS, tournament);
     console.log(`  ✓ Tournament: ${tournament.name}`);
   }
 
@@ -440,7 +451,7 @@ async function seedData() {
   ];
 
   for (const event of events) {
-    await docClient.send(new PutCommand({ TableName: TABLES.EVENTS, Item: event }));
+    await putItem(TABLES.EVENTS, event);
     console.log(`  ✓ Event: ${event.name}`);
   }
 
@@ -453,8 +464,9 @@ async function seedData() {
   }
   // Re-save matches that now have eventId
   for (const match of [...completedMatches.slice(0, 3), ...scheduledMatches.slice(0, 3)]) {
-    await docClient.send(new PutCommand({ TableName: TABLES.MATCHES, Item: match }));
+    await putItem(TABLES.MATCHES, match);
   }
+  console.log('  ✓ Linked matches to events');
 
   // ── Contender Rankings ─────────────────────────────────────
   console.log('\nCreating contender rankings...');
@@ -486,7 +498,7 @@ async function seedData() {
     if (i <= 1) {
       ranking.previousRank = i === 0 ? 2 : 1;
     }
-    await docClient.send(new PutCommand({ TableName: TABLES.CONTENDER_RANKINGS, Item: ranking }));
+    await putItem(TABLES.CONTENDER_RANKINGS, ranking);
     console.log(`  ✓ Ranking: ${contender.name} → #${ranking.rank} for ${championships[0].name}`);
   }
 
@@ -517,7 +529,7 @@ async function seedData() {
     if (i + 1 <= 3) {
       ranking.previousRank = i + 2;
     }
-    await docClient.send(new PutCommand({ TableName: TABLES.CONTENDER_RANKINGS, Item: ranking }));
+    await putItem(TABLES.CONTENDER_RANKINGS, ranking);
     console.log(`  ✓ Ranking: ${contender.name} → #${ranking.rank} for ${championships[1].name}`);
   }
 
@@ -538,7 +550,7 @@ async function seedData() {
         movement: weekOffset === 0 ? (i === 0 ? 1 : -1) : 0,
         createdAt: weekDate.toISOString(),
       };
-      await docClient.send(new PutCommand({ TableName: TABLES.RANKING_HISTORY, Item: entry }));
+      await putItem(TABLES.RANKING_HISTORY, entry);
     }
     console.log(`  ✓ Ranking history: week ${weekOffset + 1}`);
   }
@@ -563,7 +575,7 @@ async function seedData() {
     streakBonusPoints: 25,
   };
 
-  await docClient.send(new PutCommand({ TableName: TABLES.FANTASY_CONFIG, Item: fantasyConfig }));
+  await putItem(TABLES.FANTASY_CONFIG, fantasyConfig);
   console.log('  ✓ Fantasy config: GLOBAL');
 
   // ── Wrestler Costs ─────────────────────────────────────────
@@ -595,7 +607,7 @@ async function seedData() {
       recentRecord: `${player.wins}-${player.losses}-${player.draws}`,
       updatedAt: now,
     };
-    await docClient.send(new PutCommand({ TableName: TABLES.WRESTLER_COSTS, Item: wrestlerCost }));
+    await putItem(TABLES.WRESTLER_COSTS, wrestlerCost);
     console.log(`  ✓ Wrestler cost: ${player.name} → $${currentCost}`);
   }
 
@@ -613,7 +625,7 @@ async function seedData() {
     updatedAt: now,
   };
 
-  await docClient.send(new PutCommand({ TableName: TABLES.SITE_CONFIG, Item: siteConfig }));
+  await putItem(TABLES.SITE_CONFIG, siteConfig);
   console.log('  ✓ Site config: features');
 
   // ── Summary ────────────────────────────────────────────────
