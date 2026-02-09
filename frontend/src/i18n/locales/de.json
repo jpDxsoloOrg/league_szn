@@ -88,7 +88,8 @@
       "champion": "Champion",
       "wonDate": "Gewonnen am",
       "lostDate": "Verloren am",
-      "daysHeld": "Tage gehalten"
+      "daysHeld": "Tage gehalten",
+      "defenses": "Titelverteidigungen"
     }
   },
   "matches": {
@@ -834,6 +835,8 @@
       "showNotFound": "Show nicht gefunden",
       "showNotOpen": "Diese Show ist nicht für Tipps geöffnet",
       "showStatus": "Status",
+      "picksLocked": "Tipps sind gesperrt",
+      "picksLockedDescription": "Ein Admin hat die Tipps für dieses Event gesperrt. Keine Änderungen möglich.",
       "backToDashboard": "Zurück zum Dashboard"
     },
     "leaderboard": {
@@ -893,7 +896,8 @@
     },
     "admin": {
       "shows": {
-        "title": "Fantasy Shows verwalten",
+        "title": "Fantasy Shows",
+        "subtitle": "Budget und Tipps pro Division für einzelne Events überschreiben. Diese Einstellungen gelten nur für das ausgewählte Event.",
         "addShow": "Show hinzufügen",
         "name": "Name",
         "namePlaceholder": "z.B. Woche 5 oder Royal Rumble",
@@ -914,12 +918,14 @@
         "createSuccess": "Show erfolgreich erstellt",
         "updateSuccess": "Show erfolgreich aktualisiert",
         "deleteSuccess": "Show erfolgreich gelöscht",
+        "picks": "Tipps",
+        "closed": "Geschlossen",
         "statusUpdated": "Show-Status aktualisiert",
         "error": "Ein Fehler ist aufgetreten. Bitte erneut versuchen."
       },
       "config": {
         "title": "Fantasy-Konfiguration",
-        "subtitle": "Punktwerte und Kosteneinstellungen für das Fantasy-System konfigurieren",
+        "subtitle": "Globale Bewertungsregeln, Standardbudget und Kosteneinstellungen, die für alle Events gelten. Um Budget oder Tipps für ein bestimmtes Event zu ändern, verwende Fantasy Shows.",
         "defaultSettings": "Standard-Einstellungen",
         "defaultBudget": "Standard-Budget",
         "defaultBudgetHint": "Startbudget für jede Show",
@@ -930,6 +936,8 @@
         "baseWinPointsHint": "Multipliziert mit (Teilnehmer - 1)",
         "championshipBonus": "Meisterschafts-Bonus",
         "titleWinBonus": "Titel-Sieg-Bonus",
+        "titleDefenseBonus": "Titelverteidigungs-Bonus",
+        "titleDefenseBonusHint": "Punkte für die Verteidigung (Behalten) einer Meisterschaft",
         "perfectPickBonus": "Perfekter-Tipp-Bonus",
         "perfectPickBonusHint": "Bonus wenn alle Tipps gewinnen",
         "underdogMultiplier": "Außenseiter-Multiplikator",

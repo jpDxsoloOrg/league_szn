@@ -88,7 +88,8 @@
       "champion": "Champion",
       "wonDate": "Won Date",
       "lostDate": "Lost Date",
-      "daysHeld": "Days Held"
+      "daysHeld": "Days Held",
+      "defenses": "Defenses"
     }
   },
   "matches": {
@@ -834,6 +835,8 @@
       "showNotFound": "Show not found",
       "showNotOpen": "This show is not open for picks",
       "showStatus": "Status",
+      "picksLocked": "Picks Are Locked",
+      "picksLockedDescription": "An admin has locked picks for this event. No changes can be made.",
       "backToDashboard": "Back to Dashboard"
     },
     "leaderboard": {
@@ -893,7 +896,8 @@
     },
     "admin": {
       "shows": {
-        "title": "Manage Fantasy Shows",
+        "title": "Fantasy Shows",
+        "subtitle": "Override the default budget and picks-per-division for individual events. These settings only affect the selected event.",
         "addShow": "Add Show",
         "name": "Name",
         "namePlaceholder": "e.g., Week 5 or Royal Rumble",
@@ -914,12 +918,14 @@
         "createSuccess": "Show created successfully",
         "updateSuccess": "Show updated successfully",
         "deleteSuccess": "Show deleted successfully",
+        "picks": "Picks",
+        "closed": "Closed",
         "statusUpdated": "Show status updated",
         "error": "An error occurred. Please try again."
       },
       "config": {
         "title": "Fantasy Configuration",
-        "subtitle": "Configure point values and cost settings for the fantasy system",
+        "subtitle": "Global scoring rules, default budget, and cost settings that apply across all events. To override budget or picks for a specific event, use Fantasy Shows.",
         "defaultSettings": "Default Settings",
         "defaultBudget": "Default Budget",
         "defaultBudgetHint": "Starting budget for each show",
@@ -930,6 +936,8 @@
         "baseWinPointsHint": "Multiplied by (participants - 1)",
         "championshipBonus": "Championship Bonus",
         "titleWinBonus": "Title Win Bonus",
+        "titleDefenseBonus": "Title Defense Bonus",
+        "titleDefenseBonusHint": "Points for defending (retaining) a championship",
         "perfectPickBonus": "Perfect Pick Bonus",
         "perfectPickBonusHint": "Bonus when all picks win",
         "underdogMultiplier": "Underdog Multiplier",

@@ -26,6 +26,7 @@ export interface LeagueEvent {
   attendance?: number;
   rating?: number;
   fantasyEnabled?: boolean;
+  fantasyLocked?: boolean;
   fantasyBudget?: number;
   fantasyPicksPerDivision?: number;
   createdAt: string;
@@ -86,6 +87,7 @@ export interface UpdateEventInput extends Partial<CreateEventInput> {
   attendance?: number;
   rating?: number;
   fantasyEnabled?: boolean;
+  fantasyLocked?: boolean;
   fantasyBudget?: number;
   fantasyPicksPerDivision?: number;
 }

@@ -43,6 +43,7 @@ export async function calculateFantasyPoints(eventId: string): Promise<void> {
   const baseWinPoints = (config.baseWinPoints as number) || 10;
   const championshipBonus = (config.championshipBonus as number) || 5;
   const titleWinBonus = (config.titleWinBonus as number) || 10;
+  const titleDefenseBonus = (config.titleDefenseBonus as number) ?? 5;
 
   // 3. Fetch all matches for this event
   const matches: Record<string, Record<string, unknown>> = {};
@@ -153,8 +154,15 @@ export async function calculateFantasyPoints(eventId: string): Promise<void> {
             // Check if the wrestler actually won the championship match
             const matchWinners = (match.winners as string[]) || [];
             if (matchWinners.includes(playerId)) {
-              playerPoints += titleWinBonus;
-              allMultipliers.push(`Won championship (+${titleWinBonus})`);
+              if (match.isTitleDefense) {
+                // Champion successfully defended — award defense bonus (not title win bonus)
+                playerPoints += titleDefenseBonus;
+                allMultipliers.push(`Defended championship (+${titleDefenseBonus})`);
+              } else {
+                // New champion crowned — award title win bonus
+                playerPoints += titleWinBonus;
+                allMultipliers.push(`Won championship (+${titleWinBonus})`);
+              }
             }
           }
         }
