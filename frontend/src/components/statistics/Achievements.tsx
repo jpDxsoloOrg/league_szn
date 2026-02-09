@@ -1,24 +1,62 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  mockPlayers,
-  allAchievements,
-  getPlayerAchievements,
-} from '../../mocks/statisticsMockData';
+import { statisticsApi } from '../../services/api';
+import type { StatsPlayer } from '../../services/api';
+import type { Achievement } from '../../types/statistics';
 import './Achievements.css';
 
 type FilterType = 'all' | 'milestone' | 'record' | 'special';
 
 function Achievements() {
   const { t } = useTranslation();
-  const [selectedPlayerId, setSelectedPlayerId] = useState('p1');
+  const [players, setPlayers] = useState<StatsPlayer[]>([]);
+  const [selectedPlayerId, setSelectedPlayerId] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [allAchievementDefs, setAllAchievementDefs] = useState<Omit<Achievement, 'playerId' | 'earnedAt'>[]>([]);
+  const [playerAchievements, setPlayerAchievements] = useState<Achievement[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const playerAchievements = useMemo(
-    () => getPlayerAchievements(selectedPlayerId),
-    [selectedPlayerId]
-  );
+  // Load player list and achievement definitions on mount
+  useEffect(() => {
+    const abortController = new AbortController();
+    const fetchInitial = async () => {
+      try {
+        const result = await statisticsApi.getAchievements(undefined, abortController.signal);
+        setPlayers(result.players);
+        setAllAchievementDefs(result.allAchievements);
+        if (result.players.length > 0 && result.players[0]) {
+          setSelectedPlayerId(result.players[0].playerId);
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Failed to load achievements', err);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInitial();
+    return () => abortController.abort();
+  }, []);
+
+  // Load achievements for selected player
+  useEffect(() => {
+    if (!selectedPlayerId) return;
+    const abortController = new AbortController();
+    const fetchPlayerAchievements = async () => {
+      try {
+        const result = await statisticsApi.getAchievements(selectedPlayerId, abortController.signal);
+        setPlayerAchievements(result.achievements || []);
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Failed to load player achievements', err);
+        }
+      }
+    };
+    fetchPlayerAchievements();
+    return () => abortController.abort();
+  }, [selectedPlayerId]);
 
   const earnedIds = useMemo(
     () => new Set(playerAchievements.map((a) => a.achievementId)),
@@ -26,11 +64,10 @@ function Achievements() {
   );
 
   const filteredAchievements = useMemo(() => {
-    const all = allAchievements.filter(
+    return allAchievementDefs.filter(
       (a) => activeFilter === 'all' || a.achievementType === activeFilter
     );
-    return all;
-  }, [activeFilter]);
+  }, [allAchievementDefs, activeFilter]);
 
   const filters: { key: FilterType; label: string }[] = [
     { key: 'all', label: t('statistics.achievements.filters.all') },
@@ -39,10 +76,19 @@ function Achievements() {
     { key: 'special', label: t('statistics.achievements.filters.special') },
   ];
 
-  const player = mockPlayers.find((p) => p.playerId === selectedPlayerId);
+  const player = players.find((p) => p.playerId === selectedPlayerId);
 
   const earnedCount = filteredAchievements.filter((a) => earnedIds.has(a.achievementId)).length;
   const totalCount = filteredAchievements.length;
+
+  if (loading) {
+    return (
+      <div className="achievements-page">
+        <h2>{t('statistics.achievements.title')}</h2>
+        <p>{t('common.loading', 'Loading...')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="achievements-page">
@@ -63,7 +109,7 @@ function Achievements() {
           value={selectedPlayerId}
           onChange={(e) => setSelectedPlayerId(e.target.value)}
         >
-          {mockPlayers.map((p) => (
+          {players.map((p) => (
             <option key={p.playerId} value={p.playerId}>
               {p.name} ({p.wrestlerName})
             </option>

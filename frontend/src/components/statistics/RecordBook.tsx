@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { mockRecords, mockActiveThreats } from '../../mocks/statisticsMockData';
+import { statisticsApi } from '../../services/api';
+import type { RecordEntry } from '../../types/statistics';
 import './RecordBook.css';
 
 type RecordCategory = 'overall' | 'championships' | 'streaks' | 'matchTypes';
@@ -9,6 +10,36 @@ type RecordCategory = 'overall' | 'championships' | 'streaks' | 'matchTypes';
 function RecordBook() {
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<RecordCategory>('overall');
+  const [records, setRecords] = useState<Record<string, RecordEntry[]>>({});
+  const [activeThreats, setActiveThreats] = useState<{
+    recordName: string;
+    currentHolder: string;
+    currentValue: number | string;
+    threatPlayer: string;
+    threatValue: number | string;
+    gapDescription: string;
+  }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    const fetchRecords = async () => {
+      setLoading(true);
+      try {
+        const result = await statisticsApi.getRecords(abortController.signal);
+        setRecords(result.records);
+        setActiveThreats(result.activeThreats);
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Failed to load records', err);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRecords();
+    return () => abortController.abort();
+  }, []);
 
   const categories: { key: RecordCategory; label: string }[] = [
     { key: 'overall', label: t('statistics.recordBook.categories.overall') },
@@ -17,7 +48,16 @@ function RecordBook() {
     { key: 'matchTypes', label: t('statistics.recordBook.categories.matchTypes') },
   ];
 
-  const records = mockRecords[activeCategory] || [];
+  const currentRecords = records[activeCategory] || [];
+
+  if (loading) {
+    return (
+      <div className="record-book">
+        <h2>{t('statistics.recordBook.title')}</h2>
+        <p>{t('common.loading', 'Loading...')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="record-book">
@@ -45,7 +85,7 @@ function RecordBook() {
 
       {/* Record Cards */}
       <div className="rb-records">
-        {records.map((record) => (
+        {currentRecords.map((record) => (
           <div key={record.recordName} className="rb-record-card">
             <div className="rb-record-header">
               <h3 className="rb-record-name">{record.recordName}</h3>
@@ -61,34 +101,39 @@ function RecordBook() {
             </div>
           </div>
         ))}
+        {currentRecords.length === 0 && (
+          <p>{t('statistics.recordBook.noRecords', 'No records available yet.')}</p>
+        )}
       </div>
 
       {/* Active Threats */}
-      <div className="rb-threats-section">
-        <h3>{t('statistics.recordBook.activeThreats')}</h3>
-        <p className="rb-threats-desc">{t('statistics.recordBook.activeThreatsDesc')}</p>
-        <div className="rb-threats-list">
-          {mockActiveThreats.map((threat) => (
-            <div key={threat.recordName} className="rb-threat-card">
-              <div className="rb-threat-record">{threat.recordName}</div>
-              <div className="rb-threat-details">
-                <div className="rb-threat-current">
-                  <span className="rb-threat-label">{t('statistics.recordBook.currentHolder')}</span>
-                  <span className="rb-threat-holder">{threat.currentHolder}</span>
-                  <span className="rb-threat-value">{threat.currentValue}</span>
+      {activeThreats.length > 0 && (
+        <div className="rb-threats-section">
+          <h3>{t('statistics.recordBook.activeThreats')}</h3>
+          <p className="rb-threats-desc">{t('statistics.recordBook.activeThreatsDesc')}</p>
+          <div className="rb-threats-list">
+            {activeThreats.map((threat) => (
+              <div key={threat.recordName} className="rb-threat-card">
+                <div className="rb-threat-record">{threat.recordName}</div>
+                <div className="rb-threat-details">
+                  <div className="rb-threat-current">
+                    <span className="rb-threat-label">{t('statistics.recordBook.currentHolder')}</span>
+                    <span className="rb-threat-holder">{threat.currentHolder}</span>
+                    <span className="rb-threat-value">{threat.currentValue}</span>
+                  </div>
+                  <div className="rb-threat-arrow">vs</div>
+                  <div className="rb-threat-challenger">
+                    <span className="rb-threat-label">{t('statistics.recordBook.challenger')}</span>
+                    <span className="rb-threat-holder">{threat.threatPlayer}</span>
+                    <span className="rb-threat-value">{threat.threatValue}</span>
+                  </div>
                 </div>
-                <div className="rb-threat-arrow">vs</div>
-                <div className="rb-threat-challenger">
-                  <span className="rb-threat-label">{t('statistics.recordBook.challenger')}</span>
-                  <span className="rb-threat-holder">{threat.threatPlayer}</span>
-                  <span className="rb-threat-value">{threat.threatValue}</span>
-                </div>
+                <div className="rb-threat-gap">{threat.gapDescription}</div>
               </div>
-              <div className="rb-threat-gap">{threat.gapDescription}</div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,65 +1,96 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  mockPlayers,
-  mockPlayerStatistics,
-  getPlayerStats,
-  getChampionshipStats,
-  getPlayerAchievements,
-} from '../../mocks/statisticsMockData';
+import { statisticsApi } from '../../services/api';
+import type { StatsPlayer, PlayerStatsResponse } from '../../services/api';
 import type { PlayerStatistics as PlayerStatisticsType } from '../../types/statistics';
 import './PlayerStats.css';
 
 function PlayerStats() {
   const { t } = useTranslation();
   const { playerId: routePlayerId } = useParams<{ playerId: string }>();
-  const [selectedPlayerId, setSelectedPlayerId] = useState(routePlayerId || 'p1');
+  const [selectedPlayerId, setSelectedPlayerId] = useState(routePlayerId || '');
+  const [players, setPlayers] = useState<StatsPlayer[]>([]);
+  const [data, setData] = useState<PlayerStatsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load player list on mount
+  useEffect(() => {
+    const abortController = new AbortController();
+    const fetchPlayers = async () => {
+      try {
+        const result = await statisticsApi.getPlayerStats(undefined, abortController.signal);
+        setPlayers(result.players);
+        if (!selectedPlayerId && result.players.length > 0 && result.players[0]) {
+          setSelectedPlayerId(result.players[0].playerId);
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError('Failed to load players');
+        }
+      }
+    };
+    fetchPlayers();
+    return () => abortController.abort();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load stats for selected player
+  useEffect(() => {
+    if (!selectedPlayerId) return;
+    const abortController = new AbortController();
+    const fetchStats = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await statisticsApi.getPlayerStats(selectedPlayerId, abortController.signal);
+        setData(result);
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError('Failed to load player statistics');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+    return () => abortController.abort();
+  }, [selectedPlayerId]);
 
   const player = useMemo(
-    () => mockPlayers.find((p) => p.playerId === selectedPlayerId),
-    [selectedPlayerId]
+    () => players.find((p) => p.playerId === selectedPlayerId),
+    [players, selectedPlayerId]
   );
 
   const overallStats = useMemo(
-    () => getPlayerStats(selectedPlayerId, 'overall')[0],
-    [selectedPlayerId]
+    () => data?.statistics?.find((s) => s.statType === 'overall'),
+    [data]
   );
 
   const matchTypeStats = useMemo(
-    () =>
-      getPlayerStats(selectedPlayerId).filter((s) => s.statType !== 'overall'),
-    [selectedPlayerId]
+    () => data?.statistics?.filter((s) => s.statType !== 'overall') || [],
+    [data]
   );
 
   const championshipStats = useMemo(
-    () => getChampionshipStats(selectedPlayerId),
-    [selectedPlayerId]
+    () => data?.championshipStats || [],
+    [data]
   );
 
   const achievements = useMemo(
-    () => getPlayerAchievements(selectedPlayerId),
-    [selectedPlayerId]
+    () => data?.achievements || [],
+    [data]
   );
 
   const maxWinsAcrossTypes = useMemo(() => {
-    const allTypeStats = mockPlayerStatistics.filter(
-      (s) => s.statType !== 'overall'
-    );
-    return Math.max(...allTypeStats.map((s) => s.wins), 1);
-  }, []);
+    return Math.max(...matchTypeStats.map((s) => s.wins), 1);
+  }, [matchTypeStats]);
 
   const matchTypeLabels: Record<string, string> = {
     singles: t('statistics.matchTypes.singles'),
     tag: t('statistics.matchTypes.tag'),
     ladder: t('statistics.matchTypes.ladder'),
     cage: t('statistics.matchTypes.cage'),
-  };
-
-  const championshipNames: Record<string, string> = {
-    c1: t('statistics.championshipNames.world'),
-    c2: t('statistics.championshipNames.intercontinental'),
-    c3: t('statistics.championshipNames.tag'),
   };
 
   function renderBarChart(stat: PlayerStatisticsType) {
@@ -80,6 +111,24 @@ function PlayerStats() {
         <span className="ps-bar-record">
           {stat.wins}-{stat.losses}-{stat.draws}
         </span>
+      </div>
+    );
+  }
+
+  if (loading && !data) {
+    return (
+      <div className="player-stats">
+        <h2>{t('statistics.playerStats.title')}</h2>
+        <p>{t('common.loading', 'Loading...')}</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="player-stats">
+        <h2>{t('statistics.playerStats.title')}</h2>
+        <p>{error}</p>
       </div>
     );
   }
@@ -113,7 +162,7 @@ function PlayerStats() {
           value={selectedPlayerId}
           onChange={(e) => setSelectedPlayerId(e.target.value)}
         >
-          {mockPlayers.map((p) => (
+          {players.map((p) => (
             <option key={p.playerId} value={p.playerId}>
               {p.name} ({p.wrestlerName})
             </option>
@@ -221,7 +270,7 @@ function PlayerStats() {
             {championshipStats.map((cs) => (
               <div key={cs.championshipId} className="ps-champ-item">
                 <div className="ps-champ-name">
-                  {championshipNames[cs.championshipId] || cs.championshipId}
+                  {cs.championshipName || cs.championshipId}
                   {cs.currentlyHolding && (
                     <span className="ps-champ-current">{t('statistics.labels.currentChampion')}</span>
                   )}

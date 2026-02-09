@@ -1,37 +1,72 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  mockPlayers,
-  getPlayerStats,
-  getHeadToHead,
-  getPlayerById,
-} from '../../mocks/statisticsMockData';
+import { statisticsApi } from '../../services/api';
+import type { StatsPlayer, HeadToHeadResponse } from '../../services/api';
 import './HeadToHeadComparison.css';
 
 function HeadToHeadComparison() {
   const { t } = useTranslation();
-  const [player1Id, setPlayer1Id] = useState('p1');
-  const [player2Id, setPlayer2Id] = useState('p2');
+  const [players, setPlayers] = useState<StatsPlayer[]>([]);
+  const [player1Id, setPlayer1Id] = useState('');
+  const [player2Id, setPlayer2Id] = useState('');
+  const [data, setData] = useState<HeadToHeadResponse | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const player1 = useMemo(() => getPlayerById(player1Id), [player1Id]);
-  const player2 = useMemo(() => getPlayerById(player2Id), [player2Id]);
+  // Load player list on mount
+  useEffect(() => {
+    const abortController = new AbortController();
+    const fetchPlayers = async () => {
+      try {
+        const result = await statisticsApi.getHeadToHeadPlayers(abortController.signal);
+        setPlayers(result.players);
+        if (result.players.length >= 2 && result.players[0] && result.players[1]) {
+          setPlayer1Id(result.players[0].playerId);
+          setPlayer2Id(result.players[1].playerId);
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Failed to load players', err);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlayers();
+    return () => abortController.abort();
+  }, []);
 
-  const p1Stats = useMemo(
-    () => getPlayerStats(player1Id, 'overall')[0],
-    [player1Id]
-  );
-  const p2Stats = useMemo(
-    () => getPlayerStats(player2Id, 'overall')[0],
-    [player2Id]
-  );
+  // Load H2H data when players change
+  useEffect(() => {
+    if (!player1Id || !player2Id || player1Id === player2Id) {
+      setData(null);
+      return;
+    }
+    const abortController = new AbortController();
+    const fetchH2H = async () => {
+      setLoading(true);
+      try {
+        const result = await statisticsApi.getHeadToHead(player1Id, player2Id, abortController.signal);
+        setData(result);
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Failed to load head-to-head', err);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchH2H();
+    return () => abortController.abort();
+  }, [player1Id, player2Id]);
 
-  const h2h = useMemo(
-    () => getHeadToHead(player1Id, player2Id),
-    [player1Id, player2Id]
-  );
+  const player1 = useMemo(() => players.find((p) => p.playerId === player1Id), [players, player1Id]);
+  const player2 = useMemo(() => players.find((p) => p.playerId === player2Id), [players, player2Id]);
 
-  // Determine if h2h data has player order swapped
+  const p1Stats = data?.player1Stats;
+  const p2Stats = data?.player2Stats;
+  const h2h = data?.headToHead;
+
   const isSwapped = h2h ? h2h.player1Id !== player1Id : false;
   const p1H2HWins = h2h ? (isSwapped ? h2h.player2Wins : h2h.player1Wins) : 0;
   const p2H2HWins = h2h ? (isSwapped ? h2h.player1Wins : h2h.player2Wins) : 0;
@@ -73,7 +108,6 @@ function HeadToHeadComparison() {
     );
   }
 
-  // Calculate statistical edge
   const edgeCategories = p1Stats && p2Stats ? [
     { label: t('statistics.labels.wins'), p1: p1Stats.wins, p2: p2Stats.wins },
     { label: t('statistics.labels.winPercentage'), p1: p1Stats.winPercentage, p2: p2Stats.winPercentage },
@@ -84,6 +118,15 @@ function HeadToHeadComparison() {
 
   const p1Advantages = edgeCategories.filter((c) => c.p1 > c.p2).length;
   const p2Advantages = edgeCategories.filter((c) => c.p2 > c.p1).length;
+
+  if (loading && players.length === 0) {
+    return (
+      <div className="h2h-comparison">
+        <h2>{t('statistics.headToHead.title')}</h2>
+        <p>{t('common.loading', 'Loading...')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h2h-comparison">
@@ -103,7 +146,7 @@ function HeadToHeadComparison() {
             value={player1Id}
             onChange={(e) => setPlayer1Id(e.target.value)}
           >
-            {mockPlayers.map((p) => (
+            {players.map((p) => (
               <option key={p.playerId} value={p.playerId}>
                 {p.name} ({p.wrestlerName})
               </option>
@@ -117,7 +160,7 @@ function HeadToHeadComparison() {
             value={player2Id}
             onChange={(e) => setPlayer2Id(e.target.value)}
           >
-            {mockPlayers.map((p) => (
+            {players.map((p) => (
               <option key={p.playerId} value={p.playerId}>
                 {p.name} ({p.wrestlerName})
               </option>
@@ -128,9 +171,10 @@ function HeadToHeadComparison() {
 
       {player1Id === player2Id ? (
         <div className="h2h-same-player">{t('statistics.headToHead.selectDifferent')}</div>
+      ) : loading ? (
+        <p>{t('common.loading', 'Loading...')}</p>
       ) : (
         <>
-          {/* Stat Bars */}
           {p1Stats && p2Stats && (
             <div className="h2h-card h2h-stats-card">
               <h3>{t('statistics.headToHead.statComparison')}</h3>
@@ -148,7 +192,6 @@ function HeadToHeadComparison() {
             </div>
           )}
 
-          {/* Head-to-Head Record */}
           <div className="h2h-card h2h-record-card">
             <h3>{t('statistics.headToHead.headToHeadRecord')}</h3>
             {h2h ? (
@@ -177,14 +220,13 @@ function HeadToHeadComparison() {
             )}
           </div>
 
-          {/* Recent Results */}
           {h2h && h2h.recentResults.length > 0 && (
             <div className="h2h-card h2h-recent-card">
               <h3>{t('statistics.headToHead.recentResults')}</h3>
               <div className="h2h-recent-list">
                 {h2h.recentResults.map((result) => {
                   const winnerId = result.winnerId;
-                  const winner = getPlayerById(winnerId);
+                  const winner = players.find((p) => p.playerId === winnerId);
                   const isP1Win = winnerId === player1Id;
                   return (
                     <div
@@ -205,7 +247,6 @@ function HeadToHeadComparison() {
             </div>
           )}
 
-          {/* Statistical Edge Summary */}
           {p1Stats && p2Stats && (
             <div className="h2h-card h2h-edge-card">
               <h3>{t('statistics.headToHead.statisticalEdge')}</h3>
