@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { mockChallenges, mockCurrentPlayerId } from '../../mocks/challengeMockData';
+import { challengesApi, playersApi } from '../../services/api';
 import type { ChallengeWithPlayers } from '../../types/challenge';
+import type { Player } from '../../types';
 import './MyChallenges.css';
 
 type MyTab = 'sent' | 'received';
@@ -16,32 +17,83 @@ export default function MyChallenges() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<MyTab>('received');
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+  const [challenges, setChallenges] = useState<ChallengeWithPlayers[]>([]);
+  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    // Load player profile to get current player ID
+    Promise.all([
+      playersApi.getAll(controller.signal),
+      challengesApi.getAll(undefined, controller.signal),
+    ])
+      .then(([players, allChallenges]) => {
+        // Try to find current user's player by matching session
+        // For now, load all challenges - filtering happens in useMemo based on currentPlayerId
+        setChallenges(allChallenges);
+
+        // Get current user's sub from session storage to find their player
+        const idToken = sessionStorage.getItem('idToken');
+        if (idToken) {
+          try {
+            const payload = JSON.parse(atob(idToken.split('.')[1]!));
+            const userSub = payload.sub;
+            const myPlayer = players.find((p: Player) => p.userId === userSub);
+            if (myPlayer) {
+              setCurrentPlayerId(myPlayer.playerId);
+            }
+          } catch { /* ignore parse errors */ }
+        }
+
+        // Fallback: if we couldn't find a player, use the first player
+        if (!currentPlayerId && players.length > 0) {
+          setCurrentPlayerId(players[0]!.playerId);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sentChallenges = useMemo(
-    () => mockChallenges.filter((c) => c.challengerId === mockCurrentPlayerId),
-    []
+    () => challenges.filter((c) => c.challengerId === currentPlayerId),
+    [challenges, currentPlayerId]
   );
 
   const receivedChallenges = useMemo(
-    () => mockChallenges.filter((c) => c.challengedId === mockCurrentPlayerId),
-    []
+    () => challenges.filter((c) => c.challengedId === currentPlayerId),
+    [challenges, currentPlayerId]
   );
 
   const currentList = activeTab === 'sent' ? sentChallenges : receivedChallenges;
 
-  const handleAction = (action: string, challenge: ChallengeWithPlayers) => {
-    const opponent =
-      challenge.challengerId === mockCurrentPlayerId
-        ? challenge.challenged.wrestlerName
-        : challenge.challenger.wrestlerName;
-    setActionFeedback(
-      t('challenges.my.actionFeedback', { action, opponent })
-    );
+  const handleAction = useCallback(async (action: string, challenge: ChallengeWithPlayers) => {
+    try {
+      if (action === 'accept' || action === 'decline') {
+        await challengesApi.respond(challenge.challengeId, action as 'accept' | 'decline');
+      } else if (action === 'cancel') {
+        await challengesApi.cancel(challenge.challengeId);
+      }
+      const opponent =
+        challenge.challengerId === currentPlayerId
+          ? challenge.challenged.wrestlerName
+          : challenge.challenger.wrestlerName;
+      setActionFeedback(
+        t('challenges.my.actionFeedback', { action, opponent })
+      );
+      // Refresh challenges
+      const updated = await challengesApi.getAll();
+      setChallenges(updated);
+    } catch (err) {
+      setActionFeedback(`Error: ${err instanceof Error ? err.message : 'Failed'}`);
+    }
     setTimeout(() => setActionFeedback(null), 3000);
-  };
+  }, [currentPlayerId, t]);
 
   const getOpponent = (challenge: ChallengeWithPlayers) => {
-    if (challenge.challengerId === mockCurrentPlayerId) {
+    if (challenge.challengerId === currentPlayerId) {
       return challenge.challenged;
     }
     return challenge.challenger;
@@ -49,7 +101,7 @@ export default function MyChallenges() {
 
   const renderChallengeItem = (challenge: ChallengeWithPlayers) => {
     const opponent = getOpponent(challenge);
-    const isSent = challenge.challengerId === mockCurrentPlayerId;
+    const isSent = challenge.challengerId === currentPlayerId;
     const date = new Date(challenge.createdAt).toLocaleDateString();
 
     return (
@@ -101,19 +153,19 @@ export default function MyChallenges() {
               <>
                 <button
                   className="btn-sm-accept"
-                  onClick={() => handleAction(t('challenges.detail.accept'), challenge)}
+                  onClick={() => handleAction('accept', challenge)}
                 >
                   {t('challenges.detail.accept')}
                 </button>
                 <button
                   className="btn-sm-decline"
-                  onClick={() => handleAction(t('challenges.detail.decline'), challenge)}
+                  onClick={() => handleAction('decline', challenge)}
                 >
                   {t('challenges.detail.decline')}
                 </button>
                 <button
                   className="btn-sm-counter"
-                  onClick={() => handleAction(t('challenges.detail.counter'), challenge)}
+                  onClick={() => navigate(`/challenges/${challenge.challengeId}`)}
                 >
                   {t('challenges.detail.counter')}
                 </button>
@@ -122,7 +174,7 @@ export default function MyChallenges() {
             {isSent && challenge.status === 'pending' && (
               <button
                 className="btn-sm-cancel"
-                onClick={() => handleAction(t('challenges.detail.cancel'), challenge)}
+                onClick={() => handleAction('cancel', challenge)}
               >
                 {t('common.cancel')}
               </button>
@@ -138,6 +190,14 @@ export default function MyChallenges() {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="my-challenges">
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="my-challenges">

@@ -579,6 +579,222 @@ export const handler: APIGatewayProxyHandler = async () => {
     }
     createdCounts.wrestlerCosts = costsCount;
 
+    // ── Challenges ────────────────────────────────────────────
+    console.log('Creating challenges...');
+    const challengeData = [
+      {
+        challengerId: players[0].playerId, // Stone Cold
+        challengedId: players[1].playerId, // The Rock
+        matchType: 'Singles',
+        stipulation: 'No DQ',
+        message: 'You think you can just waltz in here and take MY spotlight? I challenge you to settle this once and for all!',
+        status: 'pending',
+        daysAgoCreated: 2,
+        expiresInDays: 5,
+      },
+      {
+        challengerId: players[10].playerId, // Roman Reigns
+        challengedId: players[6].playerId, // John Cena
+        matchType: 'Singles',
+        stipulation: 'Steel Cage',
+        championshipId: championships[0].championshipId,
+        message: 'Acknowledge me or face the consequences inside the steel cage. Your time is up!',
+        status: 'accepted',
+        responseMessage: 'You want some? Come get some! I accept your challenge. The champ is HERE!',
+        daysAgoCreated: 5,
+        expiresInDays: 2,
+      },
+      {
+        challengerId: players[9].playerId, // CM Punk
+        challengedId: players[11].playerId, // Seth Rollins
+        matchType: 'Singles',
+        message: 'Best in the world vs the so-called architect. Let\'s see who really builds the future.',
+        status: 'pending',
+        daysAgoCreated: 1,
+        expiresInDays: 6,
+      },
+      {
+        challengerId: players[4].playerId, // Shawn Michaels
+        challengedId: players[5].playerId, // Bret Hart
+        matchType: 'Singles',
+        stipulation: 'Iron Man',
+        message: 'One more time, Bret. 60 minutes. The boyhood dream lives on!',
+        status: 'declined',
+        responseMessage: 'I have nothing left to prove against you, Shawn. Find someone else.',
+        daysAgoCreated: 10,
+        expiresInDays: -3,
+      },
+      {
+        challengerId: players[3].playerId, // Triple H
+        challengedId: players[2].playerId, // Undertaker
+        matchType: 'Singles',
+        stipulation: 'Hell in a Cell',
+        message: 'End of an era? No. This is just the beginning. Meet me in the Cell, Deadman.',
+        status: 'countered',
+        responseMessage: 'I accept your challenge, but on MY terms.',
+        daysAgoCreated: 7,
+        expiresInDays: 0,
+      },
+    ];
+
+    let challengeCount = 0;
+    const challengeIds: string[] = [];
+    for (const cd of challengeData) {
+      const challengeId = uuidv4();
+      challengeIds.push(challengeId);
+      await dynamoDb.put({
+        TableName: TableNames.CHALLENGES,
+        Item: {
+          challengeId,
+          challengerId: cd.challengerId,
+          challengedId: cd.challengedId,
+          matchType: cd.matchType,
+          ...(cd.stipulation && { stipulation: cd.stipulation }),
+          ...(cd.championshipId && { championshipId: cd.championshipId }),
+          ...(cd.message && { message: cd.message }),
+          status: cd.status,
+          ...(cd.responseMessage && { responseMessage: cd.responseMessage }),
+          expiresAt: daysFromNow(cd.expiresInDays).toISOString(),
+          createdAt: daysAgo(cd.daysAgoCreated).toISOString(),
+          updatedAt: daysAgo(cd.status === 'pending' ? cd.daysAgoCreated : cd.daysAgoCreated - 1).toISOString(),
+        },
+      });
+      challengeCount++;
+    }
+
+    // Create the counter challenge for Triple H vs Undertaker
+    const counterChallengeId = uuidv4();
+    await dynamoDb.put({
+      TableName: TableNames.CHALLENGES,
+      Item: {
+        challengeId: counterChallengeId,
+        challengerId: players[2].playerId, // Undertaker counters
+        challengedId: players[3].playerId, // back to Triple H
+        matchType: 'Singles',
+        stipulation: 'Last Man Standing',
+        message: 'Last Man Standing. No escape. Only one of us walks out.',
+        status: 'pending',
+        expiresAt: daysFromNow(5).toISOString(),
+        createdAt: daysAgo(6).toISOString(),
+        updatedAt: daysAgo(6).toISOString(),
+      },
+    });
+    challengeCount++;
+
+    // Update the countered challenge to link to the counter
+    await dynamoDb.update({
+      TableName: TableNames.CHALLENGES,
+      Key: { challengeId: challengeIds[4] },
+      UpdateExpression: 'SET counteredChallengeId = :ccid',
+      ExpressionAttributeValues: { ':ccid': counterChallengeId },
+    });
+
+    createdCounts.challenges = challengeCount;
+
+    // ── Promos ────────────────────────────────────────────────
+    console.log('Creating promos...');
+    const defaultReactionCounts = { fire: 0, mic: 0, trash: 0, 'mind-blown': 0, clap: 0 };
+
+    const promoData = [
+      {
+        playerId: players[0].playerId, // Stone Cold
+        promoType: 'open-mic',
+        title: 'Austin 3:16 Says...',
+        content: 'Let me tell you something about this league. Every single one of you back there thinks you\'re tough, thinks you can hang with the Texas Rattlesnake. I\'ve been busting skulls since day one and I ain\'t about to stop now. If you want a piece of Stone Cold, come and get it. But I promise you, you will regret the day you stepped into my ring. And that\'s the bottom line, because Stone Cold said so!',
+        isPinned: true,
+        reactionCounts: { fire: 8, mic: 5, trash: 1, 'mind-blown': 3, clap: 6 },
+        daysAgo: 3,
+      },
+      {
+        playerId: players[1].playerId, // The Rock
+        promoType: 'call-out',
+        title: 'Finally... The Rock HAS COME BACK',
+        content: 'IT DOESN\'T MATTER what your name is! The Rock has come back to lay the smackdown on every single jabroni in this league. And The Rock says this: @Stone Cold, you think you run things around here? The People\'s Champ has something to say about that. So The Rock says, know your role and shut your mouth, or The Rock will layeth the smacketh down on your candy... you know the rest!',
+        targetPlayerId: players[0].playerId,
+        reactionCounts: { fire: 12, mic: 7, trash: 0, 'mind-blown': 4, clap: 9 },
+        daysAgo: 2,
+      },
+      {
+        playerId: players[0].playerId, // Stone Cold response
+        promoType: 'response',
+        title: 'The Rattlesnake Strikes Back',
+        content: 'Rock, you wanna run your mouth? That\'s fine by me. But let me remind you of something: every time we\'ve gone toe to toe, I\'ve handed you a can of whoop-ass so fresh it still had the expiration date on it. You want to talk about laying smackdowns? The only thing getting laid down is you, flat on your back, staring at the lights while I celebrate with a cold one. DTA - Don\'t Trust Anybody, especially a Hollywood prima donna like yourself.',
+        targetPlayerId: players[1].playerId,
+        reactionCounts: { fire: 10, mic: 6, trash: 2, 'mind-blown': 5, clap: 8 },
+        daysAgo: 1,
+      },
+      {
+        playerId: players[10].playerId, // Roman Reigns
+        promoType: 'championship',
+        title: 'Acknowledge Your Tribal Chief',
+        content: 'Let me make one thing perfectly clear to everyone in that locker room. I am your Tribal Chief. I am the Head of the Table. The title around my waist isn\'t just a championship - it\'s a reminder that I\'m on another level. Nobody in this league can touch me. Not Cena, not Punk, not anyone. When I walk into that arena, you don\'t just watch - you acknowledge. That isn\'t a request. It\'s an order.',
+        championshipId: championships[0].championshipId,
+        reactionCounts: { fire: 6, mic: 4, trash: 5, 'mind-blown': 2, clap: 3 },
+        daysAgo: 4,
+      },
+      {
+        playerId: players[6].playerId, // John Cena
+        promoType: 'pre-match',
+        title: 'The Champ Is Here',
+        content: 'Roman, you call yourself a Tribal Chief? I call you a bully who hides behind his family. But this Sunday, there\'s no family to save you, no special counsel to bail you out. It\'s just you and me inside a steel cage, and I promise you this: hustle, loyalty, and respect aren\'t just words - they\'re a way of life. And my way of life is about to end your little reign of terror. The champ... is... HERE!',
+        targetPlayerId: players[10].playerId,
+        reactionCounts: { fire: 7, mic: 3, trash: 3, 'mind-blown': 1, clap: 7 },
+        daysAgo: 3,
+      },
+      {
+        playerId: players[9].playerId, // CM Punk
+        promoType: 'open-mic',
+        title: 'Pipe Bomb 2.0',
+        content: 'I sat in my house for a long time, and I watched this league coast on mediocrity. The same recycled storylines, the same tired faces in the main event. Well, the Best in the World is back, and I didn\'t come here to play nice. I came here to shake things up, to be the voice of the voiceless, and to prove that this so-called new era is nothing without CM Punk. I\'m not asking for a spot at the table - I\'m kicking the table over and building a new one.',
+        reactionCounts: { fire: 15, mic: 9, trash: 1, 'mind-blown': 8, clap: 11 },
+        daysAgo: 5,
+      },
+      {
+        playerId: players[2].playerId, // Undertaker
+        promoType: 'return',
+        title: 'The Deadman Walks Again',
+        content: 'You thought I was gone. You thought the darkness had finally consumed the Deadman. But Death Valley isn\'t a final resting place - it\'s where legends are reborn. I\'ve heard the whispers backstage, the disrespect from a new generation that doesn\'t understand what true power looks like. Let me remind you all: I am The Undertaker. And when the bell tolls, it tolls for thee. Rest... in... peace.',
+        reactionCounts: { fire: 9, mic: 4, trash: 0, 'mind-blown': 11, clap: 7 },
+        daysAgo: 6,
+      },
+    ];
+
+    let promoCount = 0;
+    const promoIds: string[] = [];
+    for (const pd of promoData) {
+      const promoId = uuidv4();
+      promoIds.push(promoId);
+      await dynamoDb.put({
+        TableName: TableNames.PROMOS,
+        Item: {
+          promoId,
+          playerId: pd.playerId,
+          promoType: pd.promoType,
+          ...(pd.title && { title: pd.title }),
+          content: pd.content,
+          ...(pd.targetPlayerId && { targetPlayerId: pd.targetPlayerId }),
+          ...(pd.championshipId && { championshipId: pd.championshipId }),
+          reactions: {},
+          reactionCounts: pd.reactionCounts || defaultReactionCounts,
+          isPinned: pd.isPinned || false,
+          isHidden: false,
+          createdAt: daysAgo(pd.daysAgo).toISOString(),
+          updatedAt: daysAgo(pd.daysAgo).toISOString(),
+        },
+      });
+      promoCount++;
+    }
+
+    // Link the response promo (index 2) to the call-out promo (index 1)
+    await dynamoDb.update({
+      TableName: TableNames.PROMOS,
+      Key: { promoId: promoIds[2] },
+      UpdateExpression: 'SET targetPromoId = :tpid',
+      ExpressionAttributeValues: { ':tpid': promoIds[1] },
+    });
+
+    createdCounts.promos = promoCount;
+
     // ── Site Config ────────────────────────────────────────────
     console.log('Creating site config...');
     await dynamoDb.put({

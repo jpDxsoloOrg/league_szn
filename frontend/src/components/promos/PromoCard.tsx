@@ -1,13 +1,13 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { PromoWithContext, PromoType } from '../../types/promo';
-import { mockPlayers } from '../../mocks/promoMockData';
 import PromoReactions from './PromoReactions';
 import './PromoCard.css';
 
 interface PromoCardProps {
   promo: PromoWithContext;
   compact?: boolean;
+  onReact?: (promoId: string, reaction: import('../../types/promo').ReactionType) => void;
 }
 
 const PROMO_TYPE_COLORS: Record<PromoType, string> = {
@@ -19,11 +19,6 @@ const PROMO_TYPE_COLORS: Record<PromoType, string> = {
   championship: '#d4af37',
   return: '#ec4899',
 };
-
-function getAvatarColor(playerId: string): string {
-  const player = mockPlayers.find((p) => p.playerId === playerId);
-  return player?.avatarColor || '#666';
-}
 
 function getInitial(name: string): string {
   return name.charAt(0).toUpperCase();
@@ -58,7 +53,7 @@ function highlightMentions(content: string): (string | JSX.Element)[] {
   });
 }
 
-export default function PromoCard({ promo, compact = false }: PromoCardProps) {
+export default function PromoCard({ promo, compact = false, onReact }: PromoCardProps) {
   const { t } = useTranslation();
 
   return (
@@ -73,7 +68,7 @@ export default function PromoCard({ promo, compact = false }: PromoCardProps) {
       <div className="promo-card-header">
         <div
           className="promo-avatar"
-          style={{ backgroundColor: getAvatarColor(promo.playerId) }}
+          style={{ backgroundColor: '#666' }}
         >
           {getInitial(promo.wrestlerName)}
         </div>
@@ -130,7 +125,10 @@ export default function PromoCard({ promo, compact = false }: PromoCardProps) {
       </div>
 
       <div className="promo-card-footer">
-        <PromoReactions reactionCounts={promo.reactionCounts} />
+        <PromoReactions
+          reactionCounts={promo.reactionCounts}
+          onReact={onReact ? (reaction) => onReact(promo.promoId, reaction) : undefined}
+        />
 
         <div className="promo-footer-actions">
           {promo.responseCount > 0 && (

@@ -102,6 +102,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       'weekKey'
     );
 
+    // Delete all challenges
+    deletedCounts.challenges = await deleteAllFromTable(TableNames.CHALLENGES, 'challengeId');
+
+    // Delete all promos
+    deletedCounts.promos = await deleteAllFromTable(TableNames.PROMOS, 'promoId');
+
     return success({
       message: 'All data cleared successfully',
       deletedCounts,

@@ -19,6 +19,8 @@ import type {
 import type { LeagueEvent, EventWithMatches, CreateEventInput, UpdateEventInput } from '../types/event';
 import type { ChampionshipContenders } from '../types/contender';
 import type { FantasyConfig, WrestlerCost, WrestlerWithCost, FantasyPicks, FantasyLeaderboardEntry } from '../types/fantasy';
+import type { ChallengeWithPlayers, CreateChallengeInput } from '../types/challenge';
+import type { PromoWithContext, CreatePromoInput, ReactionType } from '../types/promo';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
@@ -575,5 +577,77 @@ export const imagesApi = {
     if (!response.ok) {
       throw new Error('Failed to upload image');
     }
+  },
+};
+
+// Challenges API
+export const challengesApi = {
+  getAll: async (filters?: { status?: string; playerId?: string }, signal?: AbortSignal): Promise<ChallengeWithPlayers[]> => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.playerId) params.set('playerId', filters.playerId);
+    const query = params.toString();
+    return fetchWithAuth(`${API_BASE_URL}/challenges${query ? `?${query}` : ''}`, {}, signal);
+  },
+
+  create: async (input: CreateChallengeInput): Promise<ChallengeWithPlayers> => {
+    return fetchWithAuth(`${API_BASE_URL}/challenges`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
+  respond: async (challengeId: string, action: 'accept' | 'decline' | 'counter', data?: {
+    responseMessage?: string;
+    counterMatchType?: string;
+    counterStipulation?: string;
+    counterMessage?: string;
+  }): Promise<unknown> => {
+    return fetchWithAuth(`${API_BASE_URL}/challenges/${challengeId}/respond`, {
+      method: 'POST',
+      body: JSON.stringify({ action, ...data }),
+    });
+  },
+
+  cancel: async (challengeId: string): Promise<unknown> => {
+    return fetchWithAuth(`${API_BASE_URL}/challenges/${challengeId}/cancel`, {
+      method: 'POST',
+    });
+  },
+};
+
+// Promos API
+export const promosApi = {
+  getAll: async (filters?: { playerId?: string; promoType?: string }, signal?: AbortSignal): Promise<PromoWithContext[]> => {
+    const params = new URLSearchParams();
+    if (filters?.playerId) params.set('playerId', filters.playerId);
+    if (filters?.promoType) params.set('promoType', filters.promoType);
+    const query = params.toString();
+    return fetchWithAuth(`${API_BASE_URL}/promos${query ? `?${query}` : ''}`, {}, signal);
+  },
+
+  getById: async (promoId: string, signal?: AbortSignal): Promise<{ promo: PromoWithContext; responses: PromoWithContext[] }> => {
+    return fetchWithAuth(`${API_BASE_URL}/promos/${promoId}`, {}, signal);
+  },
+
+  create: async (input: CreatePromoInput): Promise<PromoWithContext> => {
+    return fetchWithAuth(`${API_BASE_URL}/promos`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
+  react: async (promoId: string, reaction: ReactionType): Promise<{ reactions: Record<string, ReactionType>; reactionCounts: Record<ReactionType, number> }> => {
+    return fetchWithAuth(`${API_BASE_URL}/promos/${promoId}/react`, {
+      method: 'POST',
+      body: JSON.stringify({ reaction }),
+    });
+  },
+
+  adminUpdate: async (promoId: string, updates: { isPinned?: boolean; isHidden?: boolean }): Promise<PromoWithContext> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/promos/${promoId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
   },
 };

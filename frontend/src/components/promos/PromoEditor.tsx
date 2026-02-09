@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { PromoType } from '../../types/promo';
-import { mockPlayers, mockPromos, mockMatches, mockChampionships } from '../../mocks/promoMockData';
+import { PromoType, PromoWithContext } from '../../types/promo';
+import { playersApi, promosApi, championshipsApi, matchesApi } from '../../services/api';
+import type { Player, Match, Championship } from '../../types';
 import PromoCard from './PromoCard';
 import './PromoEditor.css';
 
@@ -72,6 +73,47 @@ export default function PromoEditor() {
   const [championshipId, setChampionshipId] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [allPromos, setAllPromos] = useState<PromoWithContext[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [championships, setChampionships] = useState<Championship[]>([]);
+  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    Promise.all([
+      playersApi.getAll(controller.signal),
+      promosApi.getAll(undefined, controller.signal),
+      matchesApi.getAll(undefined, controller.signal),
+      championshipsApi.getAll(controller.signal),
+    ])
+      .then(([pl, pr, ma, ch]) => {
+        setPlayers(pl);
+        setAllPromos(pr);
+        setMatches(ma);
+        setChampionships(ch);
+
+        // Find current user's player
+        const idToken = sessionStorage.getItem('idToken');
+        if (idToken) {
+          try {
+            const payload = JSON.parse(atob(idToken.split('.')[1]!));
+            const myPlayer = pl.find((p: Player) => p.userId === payload.sub);
+            if (myPlayer) {
+              setCurrentPlayer(myPlayer);
+              return;
+            }
+          } catch { /* ignore */ }
+        }
+        if (pl.length > 0) setCurrentPlayer(pl[0] ?? null);
+      })
+      .catch(() => {});
+
+    return () => controller.abort();
+  }, []);
 
   const showTargetPlayer = promoType === 'call-out' || promoType === 'response';
   const showTargetPromo = promoType === 'response';
@@ -80,23 +122,22 @@ export default function PromoEditor() {
 
   const targetPromos = useMemo(() => {
     if (!targetPlayerId) return [];
-    return mockPromos.filter((p) => p.playerId === targetPlayerId && !p.isHidden);
-  }, [targetPlayerId]);
+    return allPromos.filter((p) => p.playerId === targetPlayerId);
+  }, [targetPlayerId, allPromos]);
 
   const contentLength = content.length;
   const isContentValid = contentLength >= MIN_CONTENT && contentLength <= MAX_CONTENT;
-  const canSubmit = isContentValid && promoType;
+  const canSubmit = isContentValid && promoType && !submitting;
 
-  const previewPromo = useMemo(() => {
-    const currentPlayer = mockPlayers[0]!;
-    const targetPlayer = mockPlayers.find((p) => p.playerId === targetPlayerId);
-    const targetPromo = mockPromos.find((p) => p.promoId === targetPromoId);
-    const match = mockMatches.find((m) => m.matchId === matchId);
-    const championship = mockChampionships.find((c) => c.championshipId === championshipId);
+  const previewPromo = useMemo((): PromoWithContext => {
+    const targetPlayer = players.find((p) => p.playerId === targetPlayerId);
+    const targetPromo = allPromos.find((p) => p.promoId === targetPromoId);
+    const match = matches.find((m) => m.matchId === matchId);
+    const championship = championships.find((c) => c.championshipId === championshipId);
 
     return {
       promoId: 'preview',
-      playerId: currentPlayer.playerId,
+      playerId: currentPlayer?.playerId || '',
       promoType,
       title: title || undefined,
       content: content || t('promos.editor.previewPlaceholder', 'Your promo content will appear here...'),
@@ -110,10 +151,10 @@ export default function PromoEditor() {
       isHidden: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      playerName: currentPlayer.playerName,
-      wrestlerName: currentPlayer.wrestlerName,
-      targetPlayerName: targetPlayer?.playerName,
-      targetWrestlerName: targetPlayer?.wrestlerName,
+      playerName: currentPlayer?.name || '',
+      wrestlerName: currentPlayer?.currentWrestler || '',
+      targetPlayerName: targetPlayer?.name,
+      targetWrestlerName: targetPlayer?.currentWrestler,
       targetPromo: targetPromo
         ? {
             promoId: targetPromo.promoId,
@@ -129,16 +170,33 @@ export default function PromoEditor() {
             updatedAt: targetPromo.updatedAt,
           }
         : undefined,
-      matchName: match?.matchName,
-      championshipName: championship?.championshipName,
+      matchName: match ? `${match.participants[0] ?? '?'} vs ${match.participants[1] ?? '?'}` : undefined,
+      championshipName: championship?.name,
       responseCount: 0,
     };
-  }, [promoType, title, content, targetPlayerId, targetPromoId, matchId, championshipId, t]);
+  }, [promoType, title, content, targetPlayerId, targetPromoId, matchId, championshipId, t, players, allPromos, matches, championships, currentPlayer]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
-    setSubmitted(true);
+    setSubmitting(true);
+    setError(null);
+    try {
+      await promosApi.create({
+        promoType,
+        title: title || undefined,
+        content,
+        targetPlayerId: targetPlayerId || undefined,
+        targetPromoId: targetPromoId || undefined,
+        matchId: matchId || undefined,
+        championshipId: championshipId || undefined,
+      });
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create promo');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -162,6 +220,7 @@ export default function PromoEditor() {
                 setTargetPromoId('');
                 setMatchId('');
                 setChampionshipId('');
+                setError(null);
               }}
             >
               {t('promos.editor.cutAnother', 'Cut Another Promo')}
@@ -183,6 +242,12 @@ export default function PromoEditor() {
           {t('promos.editor.subtitle', 'Grab the mic and let the WWE Universe hear your voice.')}
         </p>
       </div>
+
+      {error && (
+        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem' }}>
+          {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="promo-editor-form">
         {/* Promo Type Selector */}
@@ -274,9 +339,9 @@ export default function PromoEditor() {
               <option value="">
                 {t('promos.editor.selectPlayer', '-- Select a wrestler --')}
               </option>
-              {mockPlayers.map((player) => (
+              {players.map((player) => (
                 <option key={player.playerId} value={player.playerId}>
-                  {player.wrestlerName} ({player.playerName})
+                  {player.currentWrestler} ({player.name})
                 </option>
               ))}
             </select>
@@ -322,9 +387,9 @@ export default function PromoEditor() {
               <option value="">
                 {t('promos.editor.selectMatch', '-- Select a match --')}
               </option>
-              {mockMatches.map((match) => (
+              {matches.map((match) => (
                 <option key={match.matchId} value={match.matchId}>
-                  {match.matchName}
+                  {match.matchType} - {match.date}
                 </option>
               ))}
             </select>
@@ -346,9 +411,9 @@ export default function PromoEditor() {
               <option value="">
                 {t('promos.editor.selectChampionship', '-- Select a championship --')}
               </option>
-              {mockChampionships.map((champ) => (
+              {championships.map((champ) => (
                 <option key={champ.championshipId} value={champ.championshipId}>
-                  {champ.championshipName}
+                  {champ.name}
                 </option>
               ))}
             </select>
@@ -381,7 +446,7 @@ export default function PromoEditor() {
             {t('common.cancel', 'Cancel')}
           </Link>
           <button type="submit" className="submit-btn" disabled={!canSubmit}>
-            {t('promos.editor.submit', 'Drop the Mic')}
+            {submitting ? 'Submitting...' : t('promos.editor.submit', 'Drop the Mic')}
           </button>
         </div>
       </form>

@@ -114,14 +114,14 @@ export default function Sidebar() {
                 {t('nav.profile')}
               </Link>
               {features.challenges ? (
-                <span className="nav-disabled">
-                  {t('nav.challenges')} <span className="coming-soon">Coming Soon</span>
-                </span>
+                <Link to="/challenges" className={location.pathname.startsWith('/challenges') ? 'active' : ''}>
+                  {t('nav.challenges')}
+                </Link>
               ) : null}
               {features.promos ? (
-                <span className="nav-disabled">
-                  {t('nav.promos')} <span className="coming-soon">Coming Soon</span>
-                </span>
+                <Link to="/promos" className={location.pathname.startsWith('/promos') ? 'active' : ''}>
+                  {t('nav.promos')}
+                </Link>
               ) : null}
             </>
           ) : (
@@ -130,14 +130,14 @@ export default function Sidebar() {
                 {t('nav.profile')} <span className="role-locked">Wrestler Only</span>
               </span>
               {features.challenges && (
-                <span className="nav-disabled">
-                  {t('nav.challenges')} <span className="role-locked">Wrestler Only</span>
-                </span>
+                <Link to="/challenges" className={location.pathname.startsWith('/challenges') ? 'active' : ''}>
+                  {t('nav.challenges')}
+                </Link>
               )}
               {features.promos && (
-                <span className="nav-disabled">
-                  {t('nav.promos')} <span className="role-locked">Wrestler Only</span>
-                </span>
+                <Link to="/promos" className={location.pathname.startsWith('/promos') ? 'active' : ''}>
+                  {t('nav.promos')}
+                </Link>
               )}
             </>
           )}

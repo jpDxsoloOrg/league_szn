@@ -1,25 +1,59 @@
-import { useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getPromoById, getResponsesForPromo } from '../../mocks/promoMockData';
+import { promosApi } from '../../services/api';
+import type { PromoWithContext } from '../../types/promo';
 import PromoCard from './PromoCard';
 import './PromoThread.css';
 
 export default function PromoThread() {
   const { t } = useTranslation();
   const { promoId } = useParams<{ promoId: string }>();
+  const [originalPromo, setOriginalPromo] = useState<PromoWithContext | null>(null);
+  const [responses, setResponses] = useState<PromoWithContext[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const originalPromo = useMemo(() => {
-    if (!promoId) return null;
-    return getPromoById(promoId);
+  useEffect(() => {
+    if (!promoId) return;
+    const controller = new AbortController();
+    setLoading(true);
+    promosApi
+      .getById(promoId, controller.signal)
+      .then((data) => {
+        setOriginalPromo(data.promo);
+        setResponses(
+          data.responses.sort(
+            (a: PromoWithContext, b: PromoWithContext) =>
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          )
+        );
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [promoId]);
 
-  const responses = useMemo(() => {
-    if (!promoId) return [];
-    return getResponsesForPromo(promoId).sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  const handleReact = useCallback(async (pid: string, reaction: import('../../types/promo').ReactionType) => {
+    try {
+      const result = await promosApi.react(pid, reaction);
+      if (pid === originalPromo?.promoId) {
+        setOriginalPromo((prev) => prev ? { ...prev, reactionCounts: result.reactionCounts } : prev);
+      } else {
+        setResponses((prev) =>
+          prev.map((p) => p.promoId === pid ? { ...p, reactionCounts: result.reactionCounts } : p)
+        );
+      }
+    } catch { /* silent */ }
+  }, [originalPromo?.promoId]);
+
+  if (loading) {
+    return (
+      <div className="promo-thread">
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Loading...</div>
+      </div>
     );
-  }, [promoId]);
+  }
 
   if (!originalPromo) {
     return (
@@ -44,7 +78,7 @@ export default function PromoThread() {
       </div>
 
       <div className="promo-thread-original">
-        <PromoCard promo={originalPromo} />
+        <PromoCard promo={originalPromo} onReact={handleReact} />
       </div>
 
       {responses.length > 0 && (
@@ -58,7 +92,7 @@ export default function PromoThread() {
           {responses.map((response) => (
             <div key={response.promoId} className="promo-thread-response-item">
               <div className="thread-line" />
-              <PromoCard promo={response} compact />
+              <PromoCard promo={response} compact onReact={handleReact} />
             </div>
           ))}
         </div>

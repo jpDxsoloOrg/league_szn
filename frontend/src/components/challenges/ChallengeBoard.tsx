@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { mockChallenges } from '../../mocks/challengeMockData';
+import { challengesApi } from '../../services/api';
 import type { ChallengeWithPlayers } from '../../types/challenge';
 import './ChallengeBoard.css';
 
@@ -21,27 +21,47 @@ function getInitial(name: string): string {
 export default function ChallengeBoard() {
   const { t } = useTranslation();
   const [activeFilter, setActiveFilter] = useState<FilterTab>('active');
+  const [challenges, setChallenges] = useState<ChallengeWithPlayers[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    challengesApi
+      .getAll(undefined, controller.signal)
+      .then((data) => {
+        setChallenges(data);
+        setError(null);
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') setError(err.message);
+      })
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
+  }, []);
 
   const filtered = useMemo(() => {
     switch (activeFilter) {
       case 'active':
-        return mockChallenges.filter((c) =>
+        return challenges.filter((c) =>
           ['pending', 'accepted', 'countered', 'scheduled'].includes(c.status)
         );
       case 'pending':
-        return mockChallenges.filter((c) => c.status === 'pending');
+        return challenges.filter((c) => c.status === 'pending');
       case 'accepted':
-        return mockChallenges.filter((c) =>
+        return challenges.filter((c) =>
           ['accepted', 'scheduled'].includes(c.status)
         );
       case 'recent':
-        return mockChallenges.filter((c) =>
+        return challenges.filter((c) =>
           ['declined', 'expired', 'cancelled'].includes(c.status)
         );
       default:
-        return mockChallenges;
+        return challenges;
     }
-  }, [activeFilter]);
+  }, [activeFilter, challenges]);
 
   const renderCountdown = (challenge: ChallengeWithPlayers) => {
     if (challenge.status !== 'pending') return null;
@@ -58,6 +78,28 @@ export default function ChallengeBoard() {
     const date = new Date(challenge.createdAt);
     return date.toLocaleDateString();
   };
+
+  if (loading) {
+    return (
+      <div className="challenge-board">
+        <div className="challenge-board-header">
+          <h2>{t('challenges.board.title')}</h2>
+        </div>
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Loading challenges...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="challenge-board">
+        <div className="challenge-board-header">
+          <h2>{t('challenges.board.title')}</h2>
+        </div>
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#ef4444' }}>Error: {error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="challenge-board">

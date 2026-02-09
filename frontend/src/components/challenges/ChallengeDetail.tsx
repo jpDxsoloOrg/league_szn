@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { mockChallenges, mockCurrentPlayerId } from '../../mocks/challengeMockData';
+import { challengesApi, playersApi } from '../../services/api';
+import type { ChallengeWithPlayers } from '../../types/challenge';
+import type { Player } from '../../types';
 import './ChallengeDetail.css';
 
 function getInitial(name: string): string {
@@ -12,8 +14,67 @@ export default function ChallengeDetail() {
   const { t } = useTranslation();
   const { challengeId } = useParams<{ challengeId: string }>();
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [challenge, setChallenge] = useState<ChallengeWithPlayers | null>(null);
+  const [allChallenges, setAllChallenges] = useState<ChallengeWithPlayers[]>([]);
+  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const challenge = mockChallenges.find((c) => c.challengeId === challengeId);
+  useEffect(() => {
+    const controller = new AbortController();
+    Promise.all([
+      challengesApi.getAll(undefined, controller.signal),
+      playersApi.getAll(controller.signal),
+    ])
+      .then(([challenges, players]) => {
+        setAllChallenges(challenges);
+        const found = challenges.find((c: ChallengeWithPlayers) => c.challengeId === challengeId);
+        setChallenge(found || null);
+
+        const idToken = sessionStorage.getItem('idToken');
+        if (idToken) {
+          try {
+            const payload = JSON.parse(atob(idToken.split('.')[1]!));
+            const myPlayer = players.find((p: Player) => p.userId === payload.sub);
+            if (myPlayer) {
+              setCurrentPlayerId(myPlayer.playerId);
+              return;
+            }
+          } catch { /* ignore */ }
+        }
+        if (players.length > 0) setCurrentPlayerId(players[0]!.playerId);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
+  }, [challengeId]);
+
+  const handleAction = async (action: string) => {
+    if (!challenge) return;
+    try {
+      if (action === 'accept' || action === 'decline') {
+        await challengesApi.respond(challenge.challengeId, action as 'accept' | 'decline');
+      } else if (action === 'cancel') {
+        await challengesApi.cancel(challenge.challengeId);
+      }
+      setActionMessage(t('challenges.detail.actionConfirmed', { action }));
+      // Refresh
+      const updated = await challengesApi.getAll();
+      setAllChallenges(updated);
+      setChallenge(updated.find((c: ChallengeWithPlayers) => c.challengeId === challengeId) || null);
+    } catch (err) {
+      setActionMessage(`Error: ${err instanceof Error ? err.message : 'Failed'}`);
+    }
+    setTimeout(() => setActionMessage(null), 3000);
+  };
+
+  if (loading) {
+    return (
+      <div className="challenge-detail">
+        <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Loading...</div>
+      </div>
+    );
+  }
 
   if (!challenge) {
     return (
@@ -31,17 +92,12 @@ export default function ChallengeDetail() {
     );
   }
 
-  const isReceived = challenge.challengedId === mockCurrentPlayerId;
-  const isSent = challenge.challengerId === mockCurrentPlayerId;
+  const isReceived = challenge.challengedId === currentPlayerId;
+  const isSent = challenge.challengerId === currentPlayerId;
 
   const counterChallenge = challenge.counteredChallengeId
-    ? mockChallenges.find((c) => c.challengeId === challenge.counteredChallengeId)
+    ? allChallenges.find((c) => c.challengeId === challenge.counteredChallengeId)
     : null;
-
-  const handleAction = (action: string) => {
-    setActionMessage(t('challenges.detail.actionConfirmed', { action }));
-    setTimeout(() => setActionMessage(null), 3000);
-  };
 
   const createdDate = new Date(challenge.createdAt).toLocaleDateString(undefined, {
     year: 'numeric',
