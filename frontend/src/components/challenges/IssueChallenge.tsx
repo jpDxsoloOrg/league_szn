@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { playersApi, challengesApi } from '../../services/api';
+import { playersApi, challengesApi, profileApi } from '../../services/api';
 import type { Player } from '../../types';
 import './IssueChallenge.css';
 
@@ -30,23 +30,12 @@ export default function IssueChallenge() {
 
   useEffect(() => {
     const controller = new AbortController();
-    playersApi.getAll(controller.signal).then((data) => {
+    Promise.all([
+      playersApi.getAll(controller.signal),
+      profileApi.getMyProfile(controller.signal),
+    ]).then(([data, myProfile]) => {
       setPlayers(data);
-
-      // Determine current user's player
-      const idToken = sessionStorage.getItem('idToken');
-      if (idToken) {
-        try {
-          const payload = JSON.parse(atob(idToken.split('.')[1]!));
-          const userSub = payload.sub;
-          const myPlayer = data.find((p: Player) => p.userId === userSub);
-          if (myPlayer) {
-            setCurrentPlayerId(myPlayer.playerId);
-            return;
-          }
-        } catch { /* ignore */ }
-      }
-      if (data.length > 0) setCurrentPlayerId(data[0]!.playerId);
+      setCurrentPlayerId(myProfile.playerId);
     }).catch(() => {});
 
     return () => controller.abort();
@@ -54,7 +43,8 @@ export default function IssueChallenge() {
 
   const currentPlayer = players.find((p) => p.playerId === currentPlayerId);
   const opponent = players.find((p) => p.playerId === opponentId);
-  const availableOpponents = players.filter((p) => p.playerId !== currentPlayerId);
+  // Only show players with linked accounts (userId) who can actually respond to challenges
+  const availableOpponents = players.filter((p) => p.playerId !== currentPlayerId && p.userId);
 
   const isFormValid = opponentId && matchType && message.length <= MAX_MESSAGE_LENGTH;
 

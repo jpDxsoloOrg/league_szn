@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { challengesApi, playersApi } from '../../services/api';
+import { challengesApi, profileApi } from '../../services/api';
 import type { ChallengeWithPlayers } from '../../types/challenge';
-import type { Player } from '../../types';
 import './ChallengeDetail.css';
 
 function getInitial(name: string): string {
@@ -23,25 +22,13 @@ export default function ChallengeDetail() {
     const controller = new AbortController();
     Promise.all([
       challengesApi.getAll(undefined, controller.signal),
-      playersApi.getAll(controller.signal),
+      profileApi.getMyProfile(controller.signal),
     ])
-      .then(([challenges, players]) => {
+      .then(([challenges, myProfile]) => {
         setAllChallenges(challenges);
         const found = challenges.find((c: ChallengeWithPlayers) => c.challengeId === challengeId);
         setChallenge(found || null);
-
-        const idToken = sessionStorage.getItem('idToken');
-        if (idToken) {
-          try {
-            const payload = JSON.parse(atob(idToken.split('.')[1]!));
-            const myPlayer = players.find((p: Player) => p.userId === payload.sub);
-            if (myPlayer) {
-              setCurrentPlayerId(myPlayer.playerId);
-              return;
-            }
-          } catch { /* ignore */ }
-        }
-        if (players.length > 0) setCurrentPlayerId(players[0]!.playerId);
+        setCurrentPlayerId(myProfile.playerId);
       })
       .catch(() => {})
       .finally(() => setLoading(false));

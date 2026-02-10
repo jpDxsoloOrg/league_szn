@@ -1,9 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { challengesApi, playersApi } from '../../services/api';
+import { challengesApi, profileApi } from '../../services/api';
 import type { ChallengeWithPlayers } from '../../types/challenge';
-import type { Player } from '../../types';
 import './MyChallenges.css';
 
 type MyTab = 'sent' | 'received';
@@ -23,40 +22,20 @@ export default function MyChallenges() {
 
   useEffect(() => {
     const controller = new AbortController();
-    // Load player profile to get current player ID
+    // Use profileApi to reliably identify current player via backend auth
     Promise.all([
-      playersApi.getAll(controller.signal),
+      profileApi.getMyProfile(controller.signal),
       challengesApi.getAll(undefined, controller.signal),
     ])
-      .then(([players, allChallenges]) => {
-        // Try to find current user's player by matching session
-        // For now, load all challenges - filtering happens in useMemo based on currentPlayerId
+      .then(([myProfile, allChallenges]) => {
         setChallenges(allChallenges);
-
-        // Get current user's sub from session storage to find their player
-        const idToken = sessionStorage.getItem('idToken');
-        if (idToken) {
-          try {
-            const payload = JSON.parse(atob(idToken.split('.')[1]!));
-            const userSub = payload.sub;
-            const myPlayer = players.find((p: Player) => p.userId === userSub);
-            if (myPlayer) {
-              setCurrentPlayerId(myPlayer.playerId);
-              return;
-            }
-          } catch { /* ignore parse errors */ }
-        }
-
-        // Fallback: if we couldn't find a player, use the first player
-        if (players.length > 0) {
-          setCurrentPlayerId(players[0]!.playerId);
-        }
+        setCurrentPlayerId(myProfile.playerId);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
 
     return () => controller.abort();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const sentChallenges = useMemo(
     () => challenges.filter((c) => c.challengerId === currentPlayerId),
