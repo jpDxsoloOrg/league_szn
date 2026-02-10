@@ -60,32 +60,42 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const now = new Date().toISOString();
 
     if (action === 'accept') {
+      const updateExpression = responseMessage
+        ? 'SET #s = :status, responseMessage = :rm, updatedAt = :now'
+        : 'SET #s = :status, updatedAt = :now';
+      const expressionValues: Record<string, unknown> = {
+        ':status': 'accepted',
+        ':now': now,
+      };
+      if (responseMessage) expressionValues[':rm'] = responseMessage;
+
       await dynamoDb.update({
         TableName: TableNames.CHALLENGES,
         Key: { challengeId },
-        UpdateExpression: 'SET #s = :status, responseMessage = :rm, updatedAt = :now',
+        UpdateExpression: updateExpression,
         ExpressionAttributeNames: { '#s': 'status' },
-        ExpressionAttributeValues: {
-          ':status': 'accepted',
-          ':rm': responseMessage || undefined,
-          ':now': now,
-        },
+        ExpressionAttributeValues: expressionValues,
       });
 
       return success({ ...challenge, status: 'accepted', responseMessage, updatedAt: now });
     }
 
     if (action === 'decline') {
+      const updateExpression = responseMessage
+        ? 'SET #s = :status, responseMessage = :rm, updatedAt = :now'
+        : 'SET #s = :status, updatedAt = :now';
+      const expressionValues: Record<string, unknown> = {
+        ':status': 'declined',
+        ':now': now,
+      };
+      if (responseMessage) expressionValues[':rm'] = responseMessage;
+
       await dynamoDb.update({
         TableName: TableNames.CHALLENGES,
         Key: { challengeId },
-        UpdateExpression: 'SET #s = :status, responseMessage = :rm, updatedAt = :now',
+        UpdateExpression: updateExpression,
         ExpressionAttributeNames: { '#s': 'status' },
-        ExpressionAttributeValues: {
-          ':status': 'declined',
-          ':rm': responseMessage || undefined,
-          ':now': now,
-        },
+        ExpressionAttributeValues: expressionValues,
       });
 
       return success({ ...challenge, status: 'declined', responseMessage, updatedAt: now });
@@ -100,34 +110,39 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    const counterChallenge = {
+    const counterChallenge: Record<string, unknown> = {
       challengeId: counterChallengeId,
       challengerId: challenge.challengedId as string,
       challengedId: challenge.challengerId as string,
       matchType: counterMatchType,
-      stipulation: counterStipulation || undefined,
-      message: counterMessage || undefined,
       status: 'pending',
       expiresAt: expiresAt.toISOString(),
       createdAt: now,
       updatedAt: now,
     };
+    if (counterStipulation) counterChallenge.stipulation = counterStipulation;
+    if (counterMessage) counterChallenge.message = counterMessage;
 
     // Update original + create counter in transaction
+    const counterUpdateExpr = responseMessage
+      ? 'SET #s = :status, responseMessage = :rm, counteredChallengeId = :ccid, updatedAt = :now'
+      : 'SET #s = :status, counteredChallengeId = :ccid, updatedAt = :now';
+    const counterExprValues: Record<string, unknown> = {
+      ':status': 'countered',
+      ':ccid': counterChallengeId,
+      ':now': now,
+    };
+    if (responseMessage) counterExprValues[':rm'] = responseMessage;
+
     await dynamoDb.transactWrite({
       TransactItems: [
         {
           Update: {
             TableName: TableNames.CHALLENGES,
             Key: { challengeId },
-            UpdateExpression: 'SET #s = :status, responseMessage = :rm, counteredChallengeId = :ccid, updatedAt = :now',
+            UpdateExpression: counterUpdateExpr,
             ExpressionAttributeNames: { '#s': 'status' },
-            ExpressionAttributeValues: {
-              ':status': 'countered',
-              ':rm': responseMessage || undefined,
-              ':ccid': counterChallengeId,
-              ':now': now,
-            },
+            ExpressionAttributeValues: counterExprValues,
           },
         },
         {

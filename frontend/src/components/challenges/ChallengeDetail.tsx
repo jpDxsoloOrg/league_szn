@@ -5,6 +5,9 @@ import { challengesApi, profileApi } from '../../services/api';
 import type { ChallengeWithPlayers } from '../../types/challenge';
 import './ChallengeDetail.css';
 
+const MATCH_TYPES = ['Singles', 'Tag Team', 'Triple Threat', 'Fatal 4-Way', 'Six Pack Challenge', 'Battle Royal'];
+const STIPULATIONS = ['None', 'Steel Cage', 'Ladder', 'Hell in a Cell', 'Last Man Standing', 'Iron Man', 'Tables'];
+
 function getInitial(name: string): string {
   return name.charAt(0).toUpperCase();
 }
@@ -17,6 +20,13 @@ export default function ChallengeDetail() {
   const [allChallenges, setAllChallenges] = useState<ChallengeWithPlayers[]>([]);
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Counter form state
+  const [showCounterForm, setShowCounterForm] = useState(false);
+  const [counterMatchType, setCounterMatchType] = useState('');
+  const [counterStipulation, setCounterStipulation] = useState('None');
+  const [counterMessage, setCounterMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -38,11 +48,20 @@ export default function ChallengeDetail() {
 
   const handleAction = async (action: string) => {
     if (!challenge) return;
+    setSubmitting(true);
     try {
       if (action === 'accept' || action === 'decline') {
         await challengesApi.respond(challenge.challengeId, action as 'accept' | 'decline');
       } else if (action === 'cancel') {
         await challengesApi.cancel(challenge.challengeId);
+      } else if (action === 'counter') {
+        if (!counterMatchType) return;
+        await challengesApi.respond(challenge.challengeId, 'counter', {
+          counterMatchType,
+          counterStipulation: counterStipulation !== 'None' ? counterStipulation : undefined,
+          counterMessage: counterMessage || undefined,
+        });
+        setShowCounterForm(false);
       }
       setActionMessage(t('challenges.detail.actionConfirmed', { action }));
       // Refresh
@@ -51,6 +70,8 @@ export default function ChallengeDetail() {
       setChallenge(updated.find((c: ChallengeWithPlayers) => c.challengeId === challengeId) || null);
     } catch (err) {
       setActionMessage(`Error: ${err instanceof Error ? err.message : 'Failed'}`);
+    } finally {
+      setSubmitting(false);
     }
     setTimeout(() => setActionMessage(null), 3000);
   };
@@ -206,8 +227,10 @@ export default function ChallengeDetail() {
       {actionMessage && (
         <div
           style={{
-            backgroundColor: 'rgba(74, 222, 128, 0.15)',
-            color: '#4ade80',
+            backgroundColor: actionMessage.startsWith('Error')
+              ? 'rgba(239, 68, 68, 0.15)'
+              : 'rgba(74, 222, 128, 0.15)',
+            color: actionMessage.startsWith('Error') ? '#ef4444' : '#4ade80',
             padding: '0.75rem 1rem',
             borderRadius: '6px',
             marginBottom: '1rem',
@@ -220,17 +243,141 @@ export default function ChallengeDetail() {
       )}
 
       {isReceived && challenge.status === 'pending' && (
-        <div className="challenge-detail-actions">
-          <button className="btn-accept" onClick={() => handleAction('accept')}>
-            {t('challenges.detail.accept')}
-          </button>
-          <button className="btn-decline" onClick={() => handleAction('decline')}>
-            {t('challenges.detail.decline')}
-          </button>
-          <button className="btn-counter" onClick={() => handleAction('counter')}>
-            {t('challenges.detail.counter')}
-          </button>
-        </div>
+        <>
+          <div className="challenge-detail-actions">
+            <button className="btn-accept" disabled={submitting} onClick={() => handleAction('accept')}>
+              {t('challenges.detail.accept')}
+            </button>
+            <button className="btn-decline" disabled={submitting} onClick={() => handleAction('decline')}>
+              {t('challenges.detail.decline')}
+            </button>
+            <button
+              className="btn-counter"
+              disabled={submitting}
+              onClick={() => setShowCounterForm(!showCounterForm)}
+            >
+              {t('challenges.detail.counter')}
+            </button>
+          </div>
+
+          {showCounterForm && (
+            <div className="challenge-counter-form" style={{
+              backgroundColor: '#2d2d2d',
+              borderRadius: '10px',
+              padding: '1.5rem',
+              border: '1px solid #a855f7',
+              marginBottom: '2rem',
+            }}>
+              <h3 style={{ color: '#a855f7', marginBottom: '1rem', fontSize: '1rem' }}>
+                {t('challenges.detail.counterChallenge')}
+              </h3>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', color: '#bbb', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                  {t('challenges.issue.matchType')} *
+                </label>
+                <select
+                  value={counterMatchType}
+                  onChange={(e) => setCounterMatchType(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.6rem',
+                    backgroundColor: '#1a1a1a',
+                    color: '#fff',
+                    border: '1px solid #444',
+                    borderRadius: '6px',
+                    fontSize: '0.95rem',
+                  }}
+                >
+                  <option value="">{t('challenges.issue.selectMatchType')}</option>
+                  {MATCH_TYPES.map((mt) => (
+                    <option key={mt} value={mt}>{mt}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', color: '#bbb', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                  {t('challenges.issue.stipulation')}
+                </label>
+                <select
+                  value={counterStipulation}
+                  onChange={(e) => setCounterStipulation(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.6rem',
+                    backgroundColor: '#1a1a1a',
+                    color: '#fff',
+                    border: '1px solid #444',
+                    borderRadius: '6px',
+                    fontSize: '0.95rem',
+                  }}
+                >
+                  {STIPULATIONS.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', color: '#bbb', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+                  {t('challenges.issue.message')}
+                </label>
+                <textarea
+                  value={counterMessage}
+                  onChange={(e) => setCounterMessage(e.target.value)}
+                  placeholder={t('challenges.issue.messagePlaceholder')}
+                  rows={3}
+                  maxLength={500}
+                  style={{
+                    width: '100%',
+                    padding: '0.6rem',
+                    backgroundColor: '#1a1a1a',
+                    color: '#fff',
+                    border: '1px solid #444',
+                    borderRadius: '6px',
+                    fontSize: '0.95rem',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  disabled={!counterMatchType || submitting}
+                  onClick={() => handleAction('counter')}
+                  style={{
+                    backgroundColor: !counterMatchType ? '#555' : '#a855f7',
+                    color: '#fff',
+                    padding: '0.6rem 1.2rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontWeight: 600,
+                    cursor: !counterMatchType ? 'not-allowed' : 'pointer',
+                    fontSize: '0.95rem',
+                  }}
+                >
+                  {submitting ? 'Submitting...' : t('challenges.issue.submit')}
+                </button>
+                <button
+                  onClick={() => setShowCounterForm(false)}
+                  style={{
+                    backgroundColor: '#444',
+                    color: '#ccc',
+                    padding: '0.6rem 1.2rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.95rem',
+                  }}
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {isSent && challenge.status === 'pending' && (
