@@ -42,12 +42,13 @@ export default function MyChallenges() {
             const myPlayer = players.find((p: Player) => p.userId === userSub);
             if (myPlayer) {
               setCurrentPlayerId(myPlayer.playerId);
+              return;
             }
           } catch { /* ignore parse errors */ }
         }
 
         // Fallback: if we couldn't find a player, use the first player
-        if (!currentPlayerId && players.length > 0) {
+        if (players.length > 0) {
           setCurrentPlayerId(players[0]!.playerId);
         }
       })
