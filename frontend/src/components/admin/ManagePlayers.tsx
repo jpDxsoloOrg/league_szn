@@ -238,7 +238,7 @@ export default function ManagePlayers() {
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
 
-      {showAddForm && editingPlayer && (
+      {showAddForm && (
         <div className="player-form-container">
           <h3>{editingPlayer ? 'Edit Player' : 'Add New Player'}</h3>
           <form onSubmit={handleSubmit} className="player-form">

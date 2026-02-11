@@ -70,6 +70,9 @@ export const formatTime = (dateString: string): string => {
 export const formatRelativeTime = (dateString: string): string => {
   try {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return dateString; // Return original string for invalid dates
+    }
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 

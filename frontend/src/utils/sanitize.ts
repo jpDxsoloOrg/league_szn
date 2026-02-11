@@ -38,7 +38,7 @@ export const sanitizeName = (name: string, maxLength: number = 100): string => {
   return name
     .trim()
     .slice(0, maxLength)
-    .replace(/[<>]/g, ''); // Remove angle brackets, but allow most characters for names
+    .replace(/[^a-zA-Z0-9\s\-'.]/g, ''); // Only allow alphanumeric, spaces, hyphens, apostrophes, periods
 };
 
 /**

@@ -37,12 +37,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth state on mount
   useEffect(() => {
+    let mounted = true;
+
     const init = async () => {
       try {
         const user = await cognitoAuth.getCurrentUser();
+        if (!mounted) return;
+
         if (user) {
           // Refresh tokens to get latest groups
           const session = await cognitoAuth.refreshSession();
+          if (!mounted) return;
+
           const groups = session?.groups || cognitoAuth.getUserGroups();
 
           // Fetch player profile if user is in the Wrestler group
@@ -50,12 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (groups.includes('Wrestler')) {
             try {
               const profile = await profileApi.getMyProfile();
+              if (!mounted) return;
               playerId = profile.playerId;
             } catch {
               // Profile may not exist yet
             }
           }
 
+          if (!mounted) return;
           setState({
             isAuthenticated: true,
             isLoading: false,
@@ -73,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
         }
       } catch {
+        if (!mounted) return;
         setState({
           isAuthenticated: false,
           isLoading: false,
@@ -83,6 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
     init();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleSignIn = useCallback(async (email: string, password: string) => {
@@ -138,7 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasRole = useCallback((role: UserRole): boolean => {
     if (state.groups.includes('Admin')) return true;
-    if (state.groups.includes('Moderator')) return true;
+    if (state.groups.includes('Moderator') && role !== 'Admin') return true;
     return state.groups.includes(role);
   }, [state.groups]);
 

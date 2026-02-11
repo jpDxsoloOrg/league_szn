@@ -8,8 +8,8 @@ export default defineConfig({
     port: 3000,
   },
   build: {
-    // Enable source maps for production debugging
-    sourcemap: true,
+    // Generate source maps for error tracking but don't expose them in built output
+    sourcemap: 'hidden',
     // Split vendor chunks for better caching
     rollupOptions: {
       output: {
@@ -25,7 +25,8 @@ export default defineConfig({
     },
   },
   esbuild: {
-    // Remove console.log and debugger in production
-    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+    // Remove console.log/debug in production (preserves console.error/warn for logger utility)
+    pure: process.env.NODE_ENV === 'production' ? ['console.log', 'console.debug'] : [],
+    drop: process.env.NODE_ENV === 'production' ? ['debugger'] : [],
   },
 })

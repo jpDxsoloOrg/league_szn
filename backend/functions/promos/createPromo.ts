@@ -13,7 +13,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Only wrestlers can cut promos');
     }
 
-    const body = JSON.parse(event.body || '{}');
+    if (!event.body) {
+      return badRequest('Request body is required');
+    }
+
+    let body;
+    try {
+      body = JSON.parse(event.body);
+    } catch {
+      return badRequest('Invalid JSON in request body');
+    }
+
     const { promoType, title, content, targetPlayerId, targetPromoId, matchId, championshipId } = body;
 
     if (!promoType || !VALID_PROMO_TYPES.includes(promoType)) {

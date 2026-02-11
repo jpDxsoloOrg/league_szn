@@ -28,7 +28,8 @@ provider:
     PROMOS_TABLE: ${self:service}-promos-${self:provider.stage}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
-    ADMIN_SETUP_KEY: cd59a70bebb3a6ef2d42b921b546754fff1a8ade98c311c09c4f05da4570008b
+    ADMIN_SETUP_KEY: ${env:ADMIN_SETUP_KEY, 'default-dev-key-change-in-production'}
+    ALLOWED_ORIGIN: ${self:custom.allowedOrigin.${self:provider.stage}, 'https://leagueszn.jpdxsolo.com'}
   iam:
     role:
       statements:
@@ -98,15 +99,22 @@ custom:
     httpPort: 3001
     environment:
       IS_OFFLINE: 'true'
+  allowedOrigin:
+    dev: https://leagueszn.jpdxsolo.com
+    devtest: https://dev.leagueszn.jpdxsolo.com
+    prod: https://leagueszn.jpdxsolo.com
   frontendBucket:
     dev: leagueszn.jpdxsolo.com
     devtest: dev.leagueszn.jpdxsolo.com
+    prod: leagueszn.jpdxsolo.com
   frontendDomain:
     dev: leagueszn.jpdxsolo.com
     devtest: dev.leagueszn.jpdxsolo.com
+    prod: leagueszn.jpdxsolo.com
   certificateArn:
     dev: ${env:PROD_ACM_CERTIFICATE_ARN, ''}
     devtest: ${env:DEV_ACM_CERTIFICATE_ARN, ''}
+    prod: ${env:PROD_ACM_CERTIFICATE_ARN, ''}
 
 functions:
   # Auth
@@ -717,7 +725,7 @@ resources:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
         ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Origin: "'${self:custom.allowedOrigin.${self:provider.stage}, 'https://leagueszn.jpdxsolo.com'}'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
         ResponseType: DEFAULT_4XX
@@ -728,7 +736,7 @@ resources:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
         ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Origin: "'${self:custom.allowedOrigin.${self:provider.stage}, 'https://leagueszn.jpdxsolo.com'}'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
         ResponseType: DEFAULT_5XX
@@ -739,7 +747,7 @@ resources:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
         ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Origin: "'${self:custom.allowedOrigin.${self:provider.stage}, 'https://leagueszn.jpdxsolo.com'}'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
         ResponseType: UNAUTHORIZED
@@ -750,7 +758,7 @@ resources:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
         ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Origin: "'${self:custom.allowedOrigin.${self:provider.stage}, 'https://leagueszn.jpdxsolo.com'}'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
         ResponseType: ACCESS_DENIED

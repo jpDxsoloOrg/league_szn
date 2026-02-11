@@ -56,6 +56,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         removeExpressions.push('#divisionId');
         expressionAttributeNames['#divisionId'] = 'divisionId';
       } else {
+        // Validate that the division exists
+        const divisionResult = await dynamoDb.get({
+          TableName: TableNames.DIVISIONS,
+          Key: { divisionId: body.divisionId },
+        });
+        if (!divisionResult.Item) {
+          return notFound(`Division ${body.divisionId} not found`);
+        }
         setExpressions.push('#divisionId = :divisionId');
         expressionAttributeNames['#divisionId'] = 'divisionId';
         expressionAttributeValues[':divisionId'] = body.divisionId;

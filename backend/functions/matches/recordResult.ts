@@ -194,10 +194,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Request body is required');
     }
 
-    const body: RecordResultBody = JSON.parse(event.body);
+    let body: RecordResultBody;
+    try {
+      body = JSON.parse(event.body);
+    } catch {
+      return badRequest('Invalid JSON in request body');
+    }
 
     if (!body.winners || !body.losers || body.winners.length === 0) {
       return badRequest('Winners and losers are required');
+    }
+
+    const overlap = body.winners.filter((w: string) => body.losers.includes(w));
+    if (overlap.length > 0) {
+      return badRequest('A player cannot be both a winner and loser in the same match');
     }
 
     // Get the match using query (matchId is the partition key)
@@ -205,6 +215,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       TableName: TableNames.MATCHES,
       KeyConditionExpression: 'matchId = :matchId',
       ExpressionAttributeValues: { ':matchId': matchId },
+      ConsistentRead: true,
     });
 
     const match = matchResult.Items?.[0];
@@ -319,6 +330,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Execute the core transaction (match + player standings + season standings)
     // DynamoDB transactions are limited to 100 items, so we execute the core updates first
+    if (transactItems.length > 100) {
+      return serverError(`Transaction too large: ${transactItems.length} items exceeds DynamoDB limit of 100`);
+    }
+
     try {
       await dynamoDb.transactWrite({
         TransactItems: transactItems,
@@ -337,6 +352,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const championship = await dynamoDb.get({
         TableName: TableNames.CHAMPIONSHIPS,
         Key: { championshipId: match.championshipId },
+        ConsistentRead: true,
       });
 
       if (championship.Item) {
@@ -566,8 +582,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
           for (let roundIndex = 0; roundIndex < brackets.rounds.length; roundIndex++) {
             const round = brackets.rounds[roundIndex];
+            if (!round || !round.matches) continue;
             for (let matchIndex = 0; matchIndex < round.matches.length; matchIndex++) {
               const bracketMatch = round.matches[matchIndex];
+              if (!bracketMatch) continue;
               if (
                 bracketMatch.participant1 &&
                 bracketMatch.participant2 &&
@@ -584,50 +602,62 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           }
 
           if (foundRoundIndex !== -1 && foundMatchIndex !== -1) {
-            brackets.rounds[foundRoundIndex].matches[foundMatchIndex].winner = winner;
-            brackets.rounds[foundRoundIndex].matches[foundMatchIndex].matchId = match.matchId;
-
-            const isLastRound = foundRoundIndex === brackets.rounds.length - 1;
-
-            if (isLastRound) {
-              await dynamoDb.update({
-                TableName: TableNames.TOURNAMENTS,
-                Key: { tournamentId: match.tournamentId },
-                UpdateExpression: 'SET brackets = :brackets, winner = :winner, #status = :status, version = if_not_exists(version, :zero) + :one',
-                ExpressionAttributeNames: { '#status': 'status' },
-                ExpressionAttributeValues: {
-                  ':brackets': brackets,
-                  ':winner': winner,
-                  ':status': 'completed',
-                  ':zero': 0,
-                  ':one': 1,
-                },
-              });
+            const foundRound = brackets.rounds[foundRoundIndex];
+            const foundMatch = foundRound?.matches?.[foundMatchIndex];
+            if (!foundRound || !foundMatch) {
+              console.warn(`Corrupted bracket data: round ${foundRoundIndex} or match ${foundMatchIndex} is null`);
             } else {
-              const nextRoundIndex = foundRoundIndex + 1;
-              const nextMatchIndex = Math.floor(foundMatchIndex / 2);
-              const isFirstOfPair = foundMatchIndex % 2 === 0;
+              foundMatch.winner = winner;
+              foundMatch.matchId = match.matchId;
 
-              if (isFirstOfPair) {
-                brackets.rounds[nextRoundIndex].matches[nextMatchIndex].participant1 = winner;
+              const isLastRound = foundRoundIndex === brackets.rounds.length - 1;
+
+              if (isLastRound) {
+                await dynamoDb.update({
+                  TableName: TableNames.TOURNAMENTS,
+                  Key: { tournamentId: match.tournamentId },
+                  UpdateExpression: 'SET brackets = :brackets, winner = :winner, #status = :status, version = if_not_exists(version, :zero) + :one',
+                  ExpressionAttributeNames: { '#status': 'status' },
+                  ExpressionAttributeValues: {
+                    ':brackets': brackets,
+                    ':winner': winner,
+                    ':status': 'completed',
+                    ':zero': 0,
+                    ':one': 1,
+                  },
+                });
               } else {
-                brackets.rounds[nextRoundIndex].matches[nextMatchIndex].participant2 = winner;
+                const nextRoundIndex = foundRoundIndex + 1;
+                const nextMatchIndex = Math.floor(foundMatchIndex / 2);
+                const isFirstOfPair = foundMatchIndex % 2 === 0;
+
+                const nextRound = brackets.rounds[nextRoundIndex];
+                const nextMatch = nextRound?.matches?.[nextMatchIndex];
+                if (!nextRound || !nextMatch) {
+                  console.warn(`Corrupted bracket data: next round ${nextRoundIndex} or next match ${nextMatchIndex} is null`);
+                } else {
+                  if (isFirstOfPair) {
+                    nextMatch.participant1 = winner;
+                  } else {
+                    nextMatch.participant2 = winner;
+                  }
+
+                  const newStatus = tournament.Item.status === 'upcoming' ? 'in-progress' : tournament.Item.status;
+
+                  await dynamoDb.update({
+                    TableName: TableNames.TOURNAMENTS,
+                    Key: { tournamentId: match.tournamentId },
+                    UpdateExpression: 'SET brackets = :brackets, #status = :status, version = if_not_exists(version, :zero) + :one',
+                    ExpressionAttributeNames: { '#status': 'status' },
+                    ExpressionAttributeValues: {
+                      ':brackets': brackets,
+                      ':status': newStatus,
+                      ':zero': 0,
+                      ':one': 1,
+                    },
+                  });
+                }
               }
-
-              const newStatus = tournament.Item.status === 'upcoming' ? 'in-progress' : tournament.Item.status;
-
-              await dynamoDb.update({
-                TableName: TableNames.TOURNAMENTS,
-                Key: { tournamentId: match.tournamentId },
-                UpdateExpression: 'SET brackets = :brackets, #status = :status, version = if_not_exists(version, :zero) + :one',
-                ExpressionAttributeNames: { '#status': 'status' },
-                ExpressionAttributeValues: {
-                  ':brackets': brackets,
-                  ':status': newStatus,
-                  ':zero': 0,
-                  ':one': 1,
-                },
-              });
             }
           }
         }
@@ -642,14 +672,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       console.warn('Event auto-complete failed:', err);
     }
 
-    // Trigger contender ranking recalculation (fire-and-forget, non-blocking)
-    triggerRankingRecalculation().catch(err => {
-      console.warn('Non-blocking ranking recalculation failed:', err);
-    });
-
-    // Trigger fantasy wrestler cost recalculation (fire-and-forget, non-blocking)
-    recalculateCosts().catch(err => {
-      console.warn('Non-blocking fantasy cost recalculation failed:', err);
+    // Trigger contender ranking recalculation and fantasy cost recalculation
+    await Promise.allSettled([
+      triggerRankingRecalculation(),
+      recalculateCosts()
+    ]).then(results => {
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.warn(`Background operation ${index} failed:`, result.reason);
+        }
+      });
     });
 
     return success({

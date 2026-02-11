@@ -21,20 +21,28 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
   const [features, setFeatures] = useState<SiteFeatures>(DEFAULT_FEATURES);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchConfig = useCallback(async () => {
+  const fetchConfig = useCallback(async (mountedCheck?: () => boolean) => {
     try {
       const result = await siteConfigApi.getFeatures();
+      if (mountedCheck && !mountedCheck()) return;
       setFeatures({ ...DEFAULT_FEATURES, ...result.features });
     } catch {
+      if (mountedCheck && !mountedCheck()) return;
       // On error, default to all features enabled
       setFeatures(DEFAULT_FEATURES);
     } finally {
+      if (mountedCheck && !mountedCheck()) return;
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchConfig();
+    let mounted = true;
+    fetchConfig(() => mounted);
+
+    return () => {
+      mounted = false;
+    };
   }, [fetchConfig]);
 
   const refreshConfig = useCallback(async () => {

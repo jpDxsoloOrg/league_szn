@@ -11,6 +11,9 @@ jobs:
   deploy-prod:
     name: Deploy to Production Environment
     runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://leagueszn.jpdxsolo.com
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -62,6 +65,10 @@ jobs:
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
+
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
 
       - name: Build frontend
         working-directory: frontend

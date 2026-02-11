@@ -90,8 +90,10 @@ export const playersApi = {
 // Matches API
 export const matchesApi = {
   getAll: async (filters?: { status?: string }, signal?: AbortSignal): Promise<Match[]> => {
-    const params = new URLSearchParams(filters as Record<string, string>);
-    return fetchWithAuth(`${API_BASE_URL}/matches?${params}`, {}, signal);
+    const params = new URLSearchParams();
+    if (filters?.status) params.set('status', filters.status);
+    const query = params.toString();
+    return fetchWithAuth(`${API_BASE_URL}/matches${query ? `?${query}` : ''}`, {}, signal);
   },
 
   schedule: async (match: Omit<Match, 'matchId' | 'createdAt'> & { eventId?: string; designation?: string }): Promise<Match> => {
@@ -602,14 +604,14 @@ export const challengesApi = {
     counterMatchType?: string;
     counterStipulation?: string;
     counterMessage?: string;
-  }): Promise<unknown> => {
+  }): Promise<ChallengeWithPlayers> => {
     return fetchWithAuth(`${API_BASE_URL}/challenges/${challengeId}/respond`, {
       method: 'POST',
       body: JSON.stringify({ action, ...data }),
     });
   },
 
-  cancel: async (challengeId: string): Promise<unknown> => {
+  cancel: async (challengeId: string): Promise<ChallengeWithPlayers> => {
     return fetchWithAuth(`${API_BASE_URL}/challenges/${challengeId}/cancel`, {
       method: 'POST',
     });
