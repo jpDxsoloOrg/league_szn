@@ -30,10 +30,9 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
       if (mountedCheck && !mountedCheck()) return;
       // On error, default to all features enabled
       setFeatures(DEFAULT_FEATURES);
-    } finally {
-      if (mountedCheck && !mountedCheck()) return;
-      setIsLoading(false);
     }
+    if (mountedCheck && !mountedCheck()) return;
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -56,6 +55,7 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSiteConfig(): SiteConfigContextType {
   const context = useContext(SiteConfigContext);
   if (context === undefined) {
