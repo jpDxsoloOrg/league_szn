@@ -140,10 +140,12 @@ npx playwright test
 ## Feature: Divisions
 
 ### Backend Unit Tests
-- [ ] P1: `backend/functions/divisions/createDivision.ts` — Creates division with name; returns 400 if name missing; auth requires Admin (~3 tests)
-- [ ] P1: `backend/functions/divisions/getDivisions.ts` — Returns all divisions via scan; returns empty array (~2 tests)
-- [ ] P1: `backend/functions/divisions/updateDivision.ts` — Updates division fields; returns 404 if not found; updates updatedAt; auth requires Admin (~3 tests)
-- [ ] P1: `backend/functions/divisions/deleteDivision.ts` — Deletes division; returns 404 if not found; returns 409 if players assigned (referential integrity); auth requires Admin (~4 tests)
+- [x] P1: `backend/functions/divisions/createDivision.ts` — Creates division with name; returns 400 if name missing; auth requires Admin (7 tests) ✅ `functions/divisions/__tests__/divisions.test.ts`
+- [x] P1: `backend/functions/divisions/getDivisions.ts` — Returns all divisions via scan; returns empty array (3 tests) ✅ `functions/divisions/__tests__/divisions.test.ts`
+- [x] P1: `backend/functions/divisions/updateDivision.ts` — Updates division fields; returns 404 if not found; updates updatedAt; auth requires Admin (7 tests) ✅ `functions/divisions/__tests__/divisionsModify.test.ts`
+- [x] P1: `backend/functions/divisions/deleteDivision.ts` — Deletes division; returns 404 if not found; returns 409 if players assigned (referential integrity); auth requires Admin (7 tests) ✅ `functions/divisions/__tests__/divisionsModify.test.ts`
+
+**Backend tests written: 24/24 ✅**
 
 ### Frontend Component Tests
 - [ ] P2: `frontend/src/components/admin/ManageDivisions.tsx` — Renders division list; create/edit/delete flows; shows error on delete with assigned players (~5 tests)
@@ -198,9 +200,11 @@ npx playwright test
 ## Feature: Tournaments
 
 ### Backend Unit Tests
-- [ ] P1: `backend/functions/tournaments/createTournament.ts` — Creates tournament; validates name + type + 2+ participants; generates single-elimination bracket with byes; initializes round-robin standings; auth requires Admin (~5 tests)
-- [ ] P1: `backend/functions/tournaments/getTournaments.ts` — Returns all tournaments via scan; public endpoint (~2 tests)
-- [ ] P1: `backend/functions/tournaments/updateTournament.ts` — Updates tournament; returns 404 if not found; dynamic update; auth requires Admin (~3 tests)
+- [x] P1: `backend/functions/tournaments/createTournament.ts` — Creates tournament; validates name + type + 2+ participants; generates single-elimination bracket with byes; initializes round-robin standings; auth requires Admin (13 tests) ✅ `functions/tournaments/__tests__/createTournament.test.ts`
+- [x] P1: `backend/functions/tournaments/getTournaments.ts` — Returns all tournaments via scan; public endpoint (3 tests) ✅ `functions/tournaments/__tests__/getTournaments.test.ts`
+- [x] P1: `backend/functions/tournaments/updateTournament.ts` — Updates tournament; returns 404 if not found; dynamic update; auth requires Admin (11 tests) ✅ `functions/tournaments/__tests__/updateTournament.test.ts`
+
+**Backend tests written: 27/27 ✅**
 
 ### Frontend Component Tests
 - [ ] P2: `frontend/src/components/Tournaments.tsx` — Renders tournament list; shows bracket view for single-elimination; shows standings for round-robin (~4 tests)
@@ -213,10 +217,12 @@ npx playwright test
 ## Feature: Seasons
 
 ### Backend Unit Tests
-- [ ] P1: `backend/functions/seasons/createSeason.ts` — Creates season with default status 'active'; validates name; auth requires Admin (~3 tests)
-- [ ] P1: `backend/functions/seasons/getSeasons.ts` — Returns all seasons via scan; public endpoint (~2 tests)
-- [ ] P1: `backend/functions/seasons/updateSeason.ts` — Updates season; returns 404 if not found; auth requires Admin (~3 tests)
-- [ ] P1: `backend/functions/seasons/deleteSeason.ts` — Deletes season + cascades to standings; returns 404 if not found; auth requires Admin (~3 tests)
+- [x] P1: `backend/functions/seasons/createSeason.ts` — Creates season with default status 'active'; validates name + startDate; conflict with existing active season (8 tests) ✅ `functions/seasons/__tests__/getAndCreateSeason.test.ts`
+- [x] P1: `backend/functions/seasons/getSeasons.ts` — Returns all seasons via scan sorted descending; public endpoint (3 tests) ✅ `functions/seasons/__tests__/getAndCreateSeason.test.ts`
+- [x] P1: `backend/functions/seasons/updateSeason.ts` — Updates season; returns 404 if not found; active-season conflict; auto-endDate on complete (13 tests) ✅ `functions/seasons/__tests__/updateSeason.test.ts`
+- [x] P1: `backend/functions/seasons/deleteSeason.ts` — Deletes season + cascades to standings; returns 404 if not found (6 tests) ✅ `functions/seasons/__tests__/deleteSeason.test.ts`
+
+**Backend tests written: 30/30 ✅**
 
 ### Frontend Component Tests
 - [ ] P2: `frontend/src/components/admin/ManageSeasons.tsx` — Create/edit/delete seasons; end active season; shows status (~4 tests)
