@@ -1,16 +1,12 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { challengesApi, playersApi } from '../../services/api';
+import { challengesApi, profileApi } from '../../services/api';
 import type { ChallengeWithPlayers } from '../../types/challenge';
-import type { Player } from '../../types';
+import { getInitial } from './challengeUtils';
 import './MyChallenges.css';
 
 type MyTab = 'sent' | 'received';
-
-function getInitial(name: string): string {
-  return name.charAt(0).toUpperCase();
-}
 
 export default function MyChallenges() {
   const { t } = useTranslation();
@@ -23,39 +19,24 @@ export default function MyChallenges() {
 
   useEffect(() => {
     const controller = new AbortController();
-    // Load player profile to get current player ID
+    // Use profileApi to reliably identify current player via backend auth
     Promise.all([
-      playersApi.getAll(controller.signal),
+      profileApi.getMyProfile(controller.signal),
       challengesApi.getAll(undefined, controller.signal),
     ])
-      .then(([players, allChallenges]) => {
-        // Try to find current user's player by matching session
-        // For now, load all challenges - filtering happens in useMemo based on currentPlayerId
+      .then(([myProfile, allChallenges]) => {
         setChallenges(allChallenges);
-
-        // Get current user's sub from session storage to find their player
-        const idToken = sessionStorage.getItem('idToken');
-        if (idToken) {
-          try {
-            const payload = JSON.parse(atob(idToken.split('.')[1]!));
-            const userSub = payload.sub;
-            const myPlayer = players.find((p: Player) => p.userId === userSub);
-            if (myPlayer) {
-              setCurrentPlayerId(myPlayer.playerId);
-            }
-          } catch { /* ignore parse errors */ }
-        }
-
-        // Fallback: if we couldn't find a player, use the first player
-        if (!currentPlayerId && players.length > 0) {
-          setCurrentPlayerId(players[0]!.playerId);
+        setCurrentPlayerId(myProfile.playerId);
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error('Failed to load challenges:', err);
         }
       })
-      .catch(() => {})
       .finally(() => setLoading(false));
 
     return () => controller.abort();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const sentChallenges = useMemo(
     () => challenges.filter((c) => c.challengerId === currentPlayerId),
@@ -139,7 +120,7 @@ export default function MyChallenges() {
 
         {challenge.responseMessage && (
           <div className="my-challenge-message">
-            <strong style={{ fontStyle: 'normal', color: '#bbb' }}>
+            <strong className="my-challenge-response-label">
               {t('challenges.my.response')}:
             </strong>{' '}
             &ldquo;{challenge.responseMessage}&rdquo;
@@ -194,7 +175,7 @@ export default function MyChallenges() {
   if (loading) {
     return (
       <div className="my-challenges">
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Loading...</div>
+        <div className="my-challenges-loading">{t('common.loading')}</div>
       </div>
     );
   }
@@ -209,15 +190,7 @@ export default function MyChallenges() {
         <h2>{t('challenges.my.title')}</h2>
         <Link
           to="/challenges/issue"
-          style={{
-            backgroundColor: '#d4af37',
-            color: '#000',
-            padding: '0.6rem 1.2rem',
-            borderRadius: '4px',
-            textDecoration: 'none',
-            fontWeight: 'bold',
-            fontSize: '0.95rem',
-          }}
+          className="my-challenges-issue-link"
         >
           + {t('challenges.board.issueChallenge')}
         </Link>
@@ -254,14 +227,7 @@ export default function MyChallenges() {
           {activeTab === 'sent' && (
             <Link
               to="/challenges/issue"
-              style={{
-                backgroundColor: '#d4af37',
-                color: '#000',
-                padding: '0.6rem 1.2rem',
-                borderRadius: '4px',
-                textDecoration: 'none',
-                fontWeight: 'bold',
-              }}
+              className="my-challenges-empty-issue-link"
             >
               {t('challenges.board.issueChallenge')}
             </Link>

@@ -592,6 +592,10 @@ export const challengesApi = {
     return fetchWithAuth(`${API_BASE_URL}/challenges${query ? `?${query}` : ''}`, {}, signal);
   },
 
+  getById: async (challengeId: string, signal?: AbortSignal): Promise<ChallengeWithPlayers> => {
+    return fetchWithAuth(`${API_BASE_URL}/challenges/${challengeId}`, {}, signal);
+  },
+
   create: async (input: CreateChallengeInput): Promise<ChallengeWithPlayers> => {
     return fetchWithAuth(`${API_BASE_URL}/challenges`, {
       method: 'POST',

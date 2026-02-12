@@ -255,6 +255,36 @@
   font-size: 0.9rem;
 }
 
+.my-challenges-loading {
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+}
+
+.my-challenges-issue-link {
+  background-color: #d4af37;
+  color: #000;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.my-challenges-empty-issue-link {
+  background-color: #d4af37;
+  color: #000;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.my-challenge-response-label {
+  font-style: normal;
+  color: #bbb;
+}
+
 @media (max-width: 768px) {
   .my-challenge-item-top {
     flex-direction: column;

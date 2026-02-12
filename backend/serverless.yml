@@ -658,6 +658,14 @@ functions:
           method: get
           cors: *corsConfig
 
+  getChallenge:
+    handler: functions/challenges/getChallenge.handler
+    events:
+      - http:
+          path: challenges/{challengeId}
+          method: get
+          cors: true
+
   createChallenge:
     handler: functions/challenges/createChallenge.handler
     events:

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { challengesApi } from '../../services/api';
 import type { ChallengeWithPlayers } from '../../types/challenge';
+import { getInitial } from './challengeUtils';
 import './ChallengeBoard.css';
 
 type FilterTab = 'active' | 'pending' | 'accepted' | 'recent';
@@ -12,10 +13,6 @@ function getDaysRemaining(expiresAt: string): number {
   const expires = new Date(expiresAt);
   const diff = expires.getTime() - now.getTime();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-}
-
-function getInitial(name: string): string {
-  return name.charAt(0).toUpperCase();
 }
 
 export default function ChallengeBoard() {
