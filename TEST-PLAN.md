@@ -107,26 +107,15 @@ npx playwright test
 ## Feature: Shared Backend Libraries
 
 ### Backend Unit Tests
-- [ ] P0: `backend/lib/response.ts` — success() returns 200 with JSON body and CORS headers (~1 test)
-- [ ] P0: `backend/lib/response.ts` — created() returns 201 with JSON body (~1 test)
-- [ ] P0: `backend/lib/response.ts` — badRequest() returns 400 with error message (~1 test)
-- [ ] P0: `backend/lib/response.ts` — notFound() returns 404 with error message (~1 test)
-- [ ] P0: `backend/lib/response.ts` — forbidden() returns 403 with error message (~1 test)
-- [ ] P0: `backend/lib/response.ts` — serverError() returns 500, logs error, does not leak internals (~2 tests)
-- [ ] P0: `backend/lib/dynamodb.ts` — get(): calls DocumentClient.get with correct params; returns Item; handles not-found (~3 tests)
-- [ ] P0: `backend/lib/dynamodb.ts` — put(): calls DocumentClient.put; returns input item (~2 tests)
-- [ ] P0: `backend/lib/dynamodb.ts` — query(): calls DocumentClient.query; returns Items array; handles empty results (~3 tests)
-- [ ] P0: `backend/lib/dynamodb.ts` — update(): builds update expression correctly; returns Attributes (~2 tests)
-- [ ] P0: `backend/lib/dynamodb.ts` — delete(): calls DocumentClient.delete with correct key (~2 tests)
-- [ ] P0: `backend/lib/dynamodb.ts` — scan(): calls DocumentClient.scan; handles pagination if applicable (~2 tests)
-- [ ] P0: `backend/lib/dynamodb.ts` — transactWrite(): calls DocumentClient.transactWrite; handles TransactionCanceledException (~3 tests)
-- [ ] P0: `backend/lib/parseBody.ts` — Parses valid JSON body; returns null/empty for missing body; handles malformed JSON without throwing; handles base64-encoded body from API Gateway (~4 tests)
-- [ ] P0: `backend/lib/rankingCalculator.ts` — calculatePlayerScore(): win percentage weighted 40%; streak bonus 20%; quality score 25%; recency 15%; returns 0-100 range (~5 tests)
-- [ ] P0: `backend/lib/rankingCalculator.ts` — calculateRankingsForChampionship(): excludes current champion; respects division lock; requires minimum 3 matches; returns top 10 sorted by score (~5 tests)
-- [ ] P0: `backend/lib/rankingCalculator.ts` — calculateCurrentStreak(): counts consecutive wins; counts consecutive losses; resets on opposite result; handles empty match history (~4 tests)
-- [ ] P0: `backend/lib/rankingCalculator.ts` — Edge cases: exponential decay weighting for recency; quality score uses opponent win rate; handles ties in ranking score (~3 tests)
+- [x] P0: `backend/lib/response.ts` — success (200), created (201), badRequest (400), notFound (404), forbidden (403), serverError (500), unauthorized (401), conflict (409), noContent (204), error(); default messages; CORS + security headers (15 tests) ✅ `lib/__tests__/response.test.ts`
+- [x] P0: `backend/lib/dynamodb.ts` — get (returns Item, handles not-found), put, update (returns Attributes), delete, scan (empty table), query (with results, empty), transactWrite (success, TransactionCanceledException), scanAll (single page, multi-page pagination, empty), queryAll (single page, multi-page) (16 tests) ✅ `lib/__tests__/dynamodb.test.ts`
+- [x] P0: `backend/lib/parseBody.ts` — Valid JSON returns data; null body returns 400; malformed JSON returns 400; typed generic parameter (4 tests) ✅ `lib/__tests__/parseBody.test.ts`
+- [x] P0: `backend/lib/rankingCalculator.ts` — calculateCurrentStreak: consecutive wins, consecutive losses, streak broken, empty history, single win, single loss (6 tests) ✅ `lib/__tests__/rankingCalculator.test.ts`
+- [x] P0: `backend/lib/rankingCalculator.ts` — calculatePlayerScore: all components + composite, 40% win% weight, streak cap at 100, quality uses opponent win rates, loss streak → 0 bonus, recency exponential decay (6 tests) ✅ `lib/__tests__/rankingCalculator.test.ts`
+- [x] P0: `backend/lib/rankingCalculator.ts` — calculateRankingsForChampionship: sorted by score, excludes champion (string), excludes champion (array/tag), min match threshold, division lock, maxContenders limit, empty matches (7 tests) ✅ `lib/__tests__/rankingCalculator.test.ts`
 
-**Section total: ~44 tests**
+**All tests written: 54/54 ✅**
+**Section total: ~54 tests**
 
 ---
 
