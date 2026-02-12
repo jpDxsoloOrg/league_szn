@@ -122,19 +122,18 @@ npx playwright test
 ## Feature: Players
 
 ### Backend Unit Tests
-- [ ] P1: `backend/functions/players/createPlayer.ts` — Happy path: creates player with name, initializes wins/losses/draws to 0; returns 201 (~2 tests)
-- [ ] P1: `backend/functions/players/createPlayer.ts` — Validation: returns 400 if name missing (~1 test)
-- [ ] P1: `backend/functions/players/createPlayer.ts` — Auth: returns 403 if not Admin (~1 test)
-- [ ] P1: `backend/functions/players/getPlayers.ts` — Returns all players via scan; returns empty array when none exist (~2 tests)
-- [ ] P1: `backend/functions/players/updatePlayer.ts` — Updates player fields dynamically; returns 404 if player doesn't exist; auth requires Admin (~3 tests)
-- [ ] P1: `backend/functions/players/deletePlayer.ts` — Deletes player; returns 404 if not found; returns 409 if player has matches (referential integrity); auth requires Admin (~4 tests)
-- [ ] P1: `backend/functions/players/getMyProfile.ts` — Returns player profile via UserIdIndex GSI; returns 404 if no linked profile; enriches with division info; auth requires Wrestler (~4 tests)
-- [ ] P1: `backend/functions/players/updateMyProfile.ts` — Updates own profile via userId; cannot update userId field; returns 404 if no profile; auth requires Wrestler (~4 tests)
+- [x] P1: `backend/functions/players/createPlayer.ts` — Creates with required fields + 201; missing name/wrestler → 400; missing body → 400; validates divisionId exists; creates with valid divisionId (6 tests) ✅ `functions/players/__tests__/players.test.ts`
+- [x] P1: `backend/functions/players/getPlayers.ts` — Returns all players; returns empty array (2 tests) ✅ `functions/players/__tests__/players.test.ts`
+- [x] P1: `backend/functions/players/updatePlayer.ts` — Updates fields + returns updated; 404 if not found; 400 if no playerId; 400 if no valid fields; REMOVE divisionId on empty string (5 tests) ✅ `functions/players/__tests__/players.test.ts`
+- [x] P1: `backend/functions/players/deletePlayer.ts` — Deletes + 204; 404 if not found; 409 if current champion; 400 if no playerId; cleans up season standings (5 tests) ✅ `functions/players/__tests__/players.test.ts`
+- [x] P1: `backend/functions/players/getMyProfile.ts` — 403 if not Wrestler; returns profile with season records; 404 if no linked profile; shows 0-0-0 for seasons without standings (4 tests) ✅ `functions/players/__tests__/players.test.ts`
+- [x] P1: `backend/functions/players/updateMyProfile.ts` — 403 if not Wrestler; updates via userId; 404 if no profile; 400 for non-whitelisted fields; rejects non-string values; rejects empty name (6 tests) ✅ `functions/players/__tests__/players.test.ts`
 
 ### Frontend Component Tests
 - [ ] P1: `frontend/src/components/admin/ManagePlayers.tsx` — Renders player list; shows add form on button click; creates player via API; edits existing player; deletes with confirmation; handles image upload (presigned URL + S3); shows loading/error/success states (~8 tests)
 
-**Section total: ~29 tests**
+**Backend tests written: 28/28 ✅** | Frontend tests remaining: ~8
+**Section total: ~36 tests**
 
 ---
 
