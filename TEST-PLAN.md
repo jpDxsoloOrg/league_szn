@@ -234,7 +234,9 @@ npx playwright test
 ## Feature: Standings
 
 ### Backend Unit Tests
-- [ ] P1: `backend/functions/standings/getStandings.ts` — Returns standings for season (via SeasonIndex GSI) or all; calculates win percentage; enriches with player name/wrestler/division; sorts by wins then win%; public endpoint (~5 tests)
+- [x] P1: `backend/functions/standings/getStandings.ts` — Returns all-time standings sorted by wins; season standings merged with players via SeasonIndex GSI; sorts by wins then losses; public endpoint (17 tests) ✅ `functions/standings/__tests__/getStandings-allTime.test.ts`, `functions/standings/__tests__/getStandings-season.test.ts`
+
+**Backend tests written: 17/17 ✅**
 
 ### Frontend Component Tests
 - [ ] P2: `frontend/src/components/Standings.tsx` — Renders standings table; filters by season; shows W-L-D + win%; handles empty state (~4 tests)
@@ -392,10 +394,12 @@ npx playwright test
 ## Feature: Admin Utilities
 
 ### Backend Unit Tests
-- [ ] P1: `backend/functions/admin/getSiteConfig.ts` — Returns site config features; returns defaults if none exists; public endpoint (~2 tests)
-- [ ] P1: `backend/functions/admin/updateSiteConfig.ts` — Updates site features; auth requires Admin (~2 tests)
-- [ ] P1: `backend/functions/admin/seedData.ts` — Seeds sample data; returns created counts; auth requires Super Admin (~2 tests)
-- [ ] P1: `backend/functions/admin/clearAll.ts` — Clears all data from all tables; returns deleted counts; auth requires Super Admin (~2 tests)
+- [x] P1: `backend/functions/admin/getSiteConfig.ts` — Returns site config features; returns defaults if none exists; public endpoint (4 tests) ✅ `functions/admin/__tests__/siteConfig.test.ts`
+- [x] P1: `backend/functions/admin/updateSiteConfig.ts` — Updates site features; validates feature keys/values; merges with existing; auth requires Admin (10 tests) ✅ `functions/admin/__tests__/siteConfig.test.ts`
+- [x] P1: `backend/functions/admin/seedData.ts` — Seeds sample data; returns created counts; auth requires Super Admin (2 tests) ✅ `functions/admin/__tests__/seedAndClear.test.ts`
+- [x] P1: `backend/functions/admin/clearAll.ts` — Clears all data from all tables; returns deleted counts; partial failure handling; auth requires Super Admin (9 tests) ✅ `functions/admin/__tests__/seedAndClear.test.ts`
+
+**Backend tests written: 25/25 ✅**
 
 ### Frontend Component Tests
 - [ ] P2: `frontend/src/components/admin/ManageFeatures.tsx` — Toggles feature flags on/off; saves via API; shows error state (~3 tests)
@@ -410,7 +414,9 @@ npx playwright test
 ## Feature: Images
 
 ### Backend Unit Tests
-- [ ] P1: `backend/functions/images/generateUploadUrl.ts` — Generates S3 presigned URL; validates fileName + fileType required; validates file types (jpeg/png/gif/webp); enforces 5MB size limit; generates unique key with timestamp + UUID; sets 5-min expiration; auth requires Admin (~6 tests)
+- [x] P1: `backend/functions/images/generateUploadUrl.ts` — Generates S3 presigned URL; validates fileName + fileType + folder; validates file types (jpeg/png/gif/webp); S3 command construction; auth requires Wrestler+ (30 tests) ✅ `functions/images/__tests__/images.test.ts`, `functions/images/__tests__/images-s3.test.ts`
+
+**Backend tests written: 30/30 ✅**
 
 **Section total: ~6 tests**
 
