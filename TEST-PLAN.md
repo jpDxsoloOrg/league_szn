@@ -240,11 +240,13 @@ npx playwright test
 ## Feature: Events
 
 ### Backend Unit Tests
-- [ ] P1: `backend/functions/events/createEvent.ts` — Creates event; validates name + eventType + date; validates eventType (ppv/weekly/special/house) and status; auth requires Admin (~4 tests)
-- [ ] P1: `backend/functions/events/getEvents.ts` — Returns events filtered by status (StatusIndex) or seasonId (SeasonIndex) or all via scan; sorts by date descending; public endpoint (~4 tests)
-- [ ] P1: `backend/functions/events/getEvent.ts` — Returns event with enriched matchCards (full match details + player names); returns 404 if not found; public endpoint (~3 tests)
-- [ ] P1: `backend/functions/events/updateEvent.ts` — Updates event; supports 13 optional fields; validates eventType/status if provided; returns 404; auth requires Admin (~4 tests)
-- [ ] P1: `backend/functions/events/deleteEvent.ts` — Deletes event; removes eventId from associated matches; returns 404 if not found; auth requires Admin (~4 tests)
+- [x] P1: `backend/functions/events/createEvent.ts` — Creates event; validates name + eventType + date; validates eventType (ppv/weekly/special/house) and status; auth requires Admin (10 tests) ✅ `functions/events/__tests__/createEvent.test.ts`
+- [x] P1: `backend/functions/events/getEvents.ts` — Returns events filtered by status (StatusIndex) or seasonId (SeasonIndex) or all via scan; sorts by date descending; public endpoint (7 tests) ✅ `functions/events/__tests__/getEvents.test.ts`
+- [x] P1: `backend/functions/events/getEvent.ts` — Returns event with enriched matchCards (full match details + player names); returns 404 if not found; public endpoint (10 tests) ✅ `functions/events/__tests__/getEvent.test.ts`
+- [x] P1: `backend/functions/events/updateEvent.ts` — Updates event; supports 13 optional fields; validates eventType/status if provided; returns 404; auth requires Admin (13 tests) ✅ `functions/events/__tests__/updateEvent.test.ts`
+- [x] P1: `backend/functions/events/deleteEvent.ts` — Deletes event; removes eventId from associated matches; returns 404 if not found; auth requires Admin (10 tests) ✅ `functions/events/__tests__/deleteEvent.test.ts`
+
+**Backend tests written: 50/50 ✅**
 
 ### Frontend Component Tests
 - [ ] P2: `frontend/src/components/events/EventsCalendar.tsx` — Renders calendar grid with event dots; navigates months; filters by event type; shows upcoming events list; handles empty state (~5 tests)
@@ -290,11 +292,13 @@ npx playwright test
 ## Feature: Challenges
 
 ### Backend Unit Tests
-- [ ] P1: `backend/functions/challenges/createChallenge.ts` — Creates challenge; validates required fields (opponentId, matchType); cannot challenge self; only linked players; enforces max pending challenges; auth requires Wrestler (~6 tests)
-- [ ] P1: `backend/functions/challenges/getChallenges.ts` — Returns challenges filtered by status/playerId or all; enriches with player names; sorts by createdAt descending; public endpoint (~4 tests)
-- [ ] P1: `backend/functions/challenges/getChallenge.ts` — Returns single challenge with enriched player info; returns 404 if not found (~2 tests)
-- [ ] P1: `backend/functions/challenges/respondToChallenge.ts` — Accept: updates status to accepted; Decline: updates to declined; Counter: creates new challenge in transaction with counteredChallengeId; only challenged player can respond; challenge must be pending; auth requires Wrestler (~7 tests)
-- [ ] P1: `backend/functions/challenges/cancelChallenge.ts` — Cancels challenge; only issuer can cancel; challenge must be pending; auth requires Wrestler (~4 tests)
+- [x] P1: `backend/functions/challenges/createChallenge.ts` — Creates challenge; validates required fields (opponentId, matchType); cannot challenge self; only linked players; auth requires Wrestler (14 tests) ✅ `functions/challenges/__tests__/createChallenge.test.ts`
+- [x] P1: `backend/functions/challenges/getChallenges.ts` — Returns challenges filtered by status/playerId or all; enriches with player names; deduplicates; sorts by createdAt descending; public endpoint (10 tests) ✅ `functions/challenges/__tests__/getChallenges.test.ts`
+- [x] P1: `backend/functions/challenges/getChallenge.ts` — Returns single challenge with enriched player info; returns 404 if not found (5 tests) ✅ `functions/challenges/__tests__/getChallenges.test.ts`
+- [x] P1: `backend/functions/challenges/respondToChallenge.ts` — Accept/Decline/Counter with transactWrite; only challenged player can respond; challenge must be pending; auth requires Wrestler (16 tests) ✅ `functions/challenges/__tests__/respondToChallenge.test.ts`
+- [x] P1: `backend/functions/challenges/cancelChallenge.ts` — Cancels challenge; only issuer or admin can cancel; challenge must be pending; auth requires Wrestler (9 tests) ✅ `functions/challenges/__tests__/cancelChallenge.test.ts`
+
+**Backend tests written: 54/54 ✅**
 
 ### Frontend Component Tests
 - [ ] P2: `frontend/src/components/challenges/ChallengeBoard.tsx` — Renders challenge list with filters (active/pending/accepted/recent); shows countdown for pending; handles empty state (~4 tests)
@@ -309,11 +313,13 @@ npx playwright test
 ## Feature: Promos
 
 ### Backend Unit Tests
-- [ ] P1: `backend/functions/promos/createPromo.ts` — Creates promo; validates promoType + content; requires wrestler profile; validates targetPlayerId/targetPromoId if provided; auto-populates playerId; initializes empty reactions; auth requires Wrestler (~6 tests)
-- [ ] P1: `backend/functions/promos/getPromos.ts` — Returns promos filtered by playerId/promoType or all; filters out hidden promos; sorts by isPinned then createdAt; enriches with player details; public endpoint (~5 tests)
-- [ ] P1: `backend/functions/promos/getPromo.ts` — Returns promo with enriched player info + target enrichment; skips enrichment if player deleted; returns 404 (~3 tests)
-- [ ] P1: `backend/functions/promos/reactToPromo.ts` — Toggles reaction (add if not present, remove if present); updates nested reactions + reactionCounts; validates reactionType (fire/mic/trash/mind-blown/clap); uses if_not_exists for initialization; auth requires Wrestler (~5 tests)
-- [ ] P1: `backend/functions/promos/adminUpdatePromo.ts` — Updates isPinned/isHidden flags; returns 404 if not found; auth requires Admin (~3 tests)
+- [x] P1: `backend/functions/promos/createPromo.ts` — Creates promo; validates promoType + content; requires wrestler profile; auto-populates playerId; initializes empty reactions; auth requires Wrestler (13 tests) ✅ `functions/promos/__tests__/createPromo.test.ts`
+- [x] P1: `backend/functions/promos/getPromos.ts` — Returns promos filtered by playerId/promoType or all; filters out hidden promos; enriches with player details; public endpoint (9 tests) ✅ `functions/promos/__tests__/getPromos.test.ts`
+- [x] P1: `backend/functions/promos/getPromo.ts` — Returns promo with enriched player info + target enrichment; skips enrichment if player deleted; returns 404 (8 tests) ✅ `functions/promos/__tests__/getPromo.test.ts`
+- [x] P1: `backend/functions/promos/reactToPromo.ts` — Toggles reaction; updates nested reactions + reactionCounts; validates reactionType; auth requires Wrestler (13 tests) ✅ `functions/promos/__tests__/reactToPromo.test.ts`
+- [x] P1: `backend/functions/promos/adminUpdatePromo.ts` — Updates isPinned/isHidden flags; returns 404 if not found; auth requires Admin/Moderator (10 tests) ✅ `functions/promos/__tests__/adminUpdatePromo.test.ts`
+
+**Backend tests written: 53/53 ✅**
 
 ### Frontend Component Tests
 - [ ] P2: `frontend/src/components/promos/PromoFeed.tsx` — Renders promo list with type filters; shows pinned section; handles empty state (~4 tests)
