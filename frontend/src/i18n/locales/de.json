@@ -26,7 +26,8 @@
     "days": "Tage",
     "noImage": "Kein Bild",
     "previous": "Zurück",
-    "next": "Weiter"
+    "next": "Weiter",
+    "submitting": "Wird eingereicht..."
   },
   "nav": {
     "standings": "Tabelle",

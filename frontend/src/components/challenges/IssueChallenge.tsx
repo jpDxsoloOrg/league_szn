@@ -3,16 +3,10 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { playersApi, challengesApi, profileApi } from '../../services/api';
 import type { Player } from '../../types';
+import { MATCH_TYPES, STIPULATIONS, getInitial } from './challengeUtils';
 import './IssueChallenge.css';
 
 const MAX_MESSAGE_LENGTH = 500;
-
-const MATCH_TYPES = ['Singles', 'Tag Team', 'Triple Threat', 'Fatal 4-Way', 'Six Pack Challenge', 'Battle Royal'];
-const STIPULATIONS = ['None', 'Steel Cage', 'Ladder', 'Hell in a Cell', 'Last Man Standing', 'Iron Man', 'Tables'];
-
-function getInitial(name: string): string {
-  return name.charAt(0).toUpperCase();
-}
 
 export default function IssueChallenge() {
   const { t } = useTranslation();
@@ -36,7 +30,11 @@ export default function IssueChallenge() {
     ]).then(([data, myProfile]) => {
       setPlayers(data);
       setCurrentPlayerId(myProfile.playerId);
-    }).catch(() => {});
+    }).catch((err) => {
+      if (err.name !== 'AbortError') {
+        console.error('Failed to load players:', err);
+      }
+    });
 
     return () => controller.abort();
   }, []);
@@ -90,30 +88,16 @@ export default function IssueChallenge() {
       <div className="issue-challenge">
         <div className="issue-success-message">
           <p>{t('challenges.issue.success')}</p>
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+          <div className="issue-success-actions">
             <Link
               to="/challenges"
-              style={{
-                backgroundColor: '#d4af37',
-                color: '#000',
-                padding: '0.6rem 1.2rem',
-                borderRadius: '6px',
-                textDecoration: 'none',
-                fontWeight: 'bold',
-              }}
+              className="issue-success-back-link"
             >
               {t('challenges.detail.backToBoard')}
             </Link>
             <button
               onClick={handleReset}
-              style={{
-                backgroundColor: '#444',
-                color: '#ccc',
-                padding: '0.6rem 1.2rem',
-                borderRadius: '6px',
-                border: 'none',
-                cursor: 'pointer',
-              }}
+              className="issue-success-another-btn"
             >
               {t('challenges.issue.issueAnother')}
             </button>
@@ -132,7 +116,7 @@ export default function IssueChallenge() {
       <h2>{t('challenges.issue.title')}</h2>
 
       {error && (
-        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem' }}>
+        <div className="issue-error-message">
           {error}
         </div>
       )}
@@ -202,17 +186,8 @@ export default function IssueChallenge() {
         {isFormValid && opponent && currentPlayer && (
           <div>
             <button
+              className="issue-preview-toggle"
               onClick={() => setShowPreview(!showPreview)}
-              style={{
-                background: 'none',
-                border: '1px solid #444',
-                color: '#bbb',
-                padding: '0.5rem 1rem',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                width: '100%',
-              }}
             >
               {showPreview
                 ? t('challenges.issue.hidePreview')
@@ -271,7 +246,7 @@ export default function IssueChallenge() {
             disabled={!isFormValid || submitting}
             onClick={handleSubmit}
           >
-            {submitting ? 'Submitting...' : t('challenges.issue.submit')}
+            {submitting ? t('common.submitting') : t('challenges.issue.submit')}
           </button>
         </div>
       </div>

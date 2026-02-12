@@ -3,13 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { challengesApi, profileApi } from '../../services/api';
 import type { ChallengeWithPlayers } from '../../types/challenge';
+import { getInitial } from './challengeUtils';
 import './MyChallenges.css';
 
 type MyTab = 'sent' | 'received';
-
-function getInitial(name: string): string {
-  return name.charAt(0).toUpperCase();
-}
 
 export default function MyChallenges() {
   const { t } = useTranslation();
@@ -31,7 +28,11 @@ export default function MyChallenges() {
         setChallenges(allChallenges);
         setCurrentPlayerId(myProfile.playerId);
       })
-      .catch(() => {})
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error('Failed to load challenges:', err);
+        }
+      })
       .finally(() => setLoading(false));
 
     return () => controller.abort();
@@ -119,7 +120,7 @@ export default function MyChallenges() {
 
         {challenge.responseMessage && (
           <div className="my-challenge-message">
-            <strong style={{ fontStyle: 'normal', color: '#bbb' }}>
+            <strong className="my-challenge-response-label">
               {t('challenges.my.response')}:
             </strong>{' '}
             &ldquo;{challenge.responseMessage}&rdquo;
@@ -174,7 +175,7 @@ export default function MyChallenges() {
   if (loading) {
     return (
       <div className="my-challenges">
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Loading...</div>
+        <div className="my-challenges-loading">{t('common.loading')}</div>
       </div>
     );
   }
@@ -189,15 +190,7 @@ export default function MyChallenges() {
         <h2>{t('challenges.my.title')}</h2>
         <Link
           to="/challenges/issue"
-          style={{
-            backgroundColor: '#d4af37',
-            color: '#000',
-            padding: '0.6rem 1.2rem',
-            borderRadius: '4px',
-            textDecoration: 'none',
-            fontWeight: 'bold',
-            fontSize: '0.95rem',
-          }}
+          className="my-challenges-issue-link"
         >
           + {t('challenges.board.issueChallenge')}
         </Link>
@@ -234,14 +227,7 @@ export default function MyChallenges() {
           {activeTab === 'sent' && (
             <Link
               to="/challenges/issue"
-              style={{
-                backgroundColor: '#d4af37',
-                color: '#000',
-                padding: '0.6rem 1.2rem',
-                borderRadius: '4px',
-                textDecoration: 'none',
-                fontWeight: 'bold',
-              }}
+              className="my-challenges-empty-issue-link"
             >
               {t('challenges.board.issueChallenge')}
             </Link>

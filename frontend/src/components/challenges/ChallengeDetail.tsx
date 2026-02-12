@@ -3,21 +3,15 @@ import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { challengesApi, profileApi } from '../../services/api';
 import type { ChallengeWithPlayers } from '../../types/challenge';
+import { MATCH_TYPES, STIPULATIONS, getInitial } from './challengeUtils';
 import './ChallengeDetail.css';
-
-const MATCH_TYPES = ['Singles', 'Tag Team', 'Triple Threat', 'Fatal 4-Way', 'Six Pack Challenge', 'Battle Royal'];
-const STIPULATIONS = ['None', 'Steel Cage', 'Ladder', 'Hell in a Cell', 'Last Man Standing', 'Iron Man', 'Tables'];
-
-function getInitial(name: string): string {
-  return name.charAt(0).toUpperCase();
-}
 
 export default function ChallengeDetail() {
   const { t } = useTranslation();
   const { challengeId } = useParams<{ challengeId: string }>();
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [challenge, setChallenge] = useState<ChallengeWithPlayers | null>(null);
-  const [allChallenges, setAllChallenges] = useState<ChallengeWithPlayers[]>([]);
+  const [counterChallenge, setCounterChallenge] = useState<ChallengeWithPlayers | null>(null);
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -30,18 +24,28 @@ export default function ChallengeDetail() {
 
   useEffect(() => {
     const controller = new AbortController();
-    Promise.all([
-      challengesApi.getAll(undefined, controller.signal),
-      profileApi.getMyProfile(controller.signal),
-    ])
-      .then(([challenges, myProfile]) => {
-        setAllChallenges(challenges);
-        const found = challenges.find((c: ChallengeWithPlayers) => c.challengeId === challengeId);
-        setChallenge(found || null);
+    setCounterChallenge(null);
+    (async () => {
+      try {
+        const [mainChallenge, myProfile] = await Promise.all([
+          challengesApi.getById(challengeId!, controller.signal),
+          profileApi.getMyProfile(controller.signal),
+        ]);
+        setChallenge(mainChallenge);
         setCurrentPlayerId(myProfile.playerId);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+
+        if (mainChallenge.counteredChallengeId) {
+          const counter = await challengesApi.getById(mainChallenge.counteredChallengeId, controller.signal);
+          setCounterChallenge(counter);
+        }
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.error('Failed to load challenge details:', err);
+        }
+      } finally {
+        setLoading(false);
+      }
+    })();
 
     return () => controller.abort();
   }, [challengeId]);
@@ -65,9 +69,12 @@ export default function ChallengeDetail() {
       }
       setActionMessage(t('challenges.detail.actionConfirmed', { action }));
       // Refresh
-      const updated = await challengesApi.getAll();
-      setAllChallenges(updated);
-      setChallenge(updated.find((c: ChallengeWithPlayers) => c.challengeId === challengeId) || null);
+      const updated = await challengesApi.getById(challengeId!);
+      setChallenge(updated);
+      if (updated.counteredChallengeId) {
+        const counter = await challengesApi.getById(updated.counteredChallengeId);
+        setCounterChallenge(counter);
+      }
     } catch (err) {
       setActionMessage(`Error: ${err instanceof Error ? err.message : 'Failed'}`);
     } finally {
@@ -79,7 +86,7 @@ export default function ChallengeDetail() {
   if (loading) {
     return (
       <div className="challenge-detail">
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Loading...</div>
+        <div className="challenge-detail-loading">{t('common.loading')}</div>
       </div>
     );
   }
@@ -102,10 +109,6 @@ export default function ChallengeDetail() {
 
   const isReceived = challenge.challengedId === currentPlayerId;
   const isSent = challenge.challengerId === currentPlayerId;
-
-  const counterChallenge = challenge.counteredChallengeId
-    ? allChallenges.find((c) => c.challengeId === challenge.counteredChallengeId)
-    : null;
 
   const createdDate = new Date(challenge.createdAt).toLocaleDateString(undefined, {
     year: 'numeric',
@@ -226,17 +229,11 @@ export default function ChallengeDetail() {
 
       {actionMessage && (
         <div
-          style={{
-            backgroundColor: actionMessage.startsWith('Error')
-              ? 'rgba(239, 68, 68, 0.15)'
-              : 'rgba(74, 222, 128, 0.15)',
-            color: actionMessage.startsWith('Error') ? '#ef4444' : '#4ade80',
-            padding: '0.75rem 1rem',
-            borderRadius: '6px',
-            marginBottom: '1rem',
-            textAlign: 'center',
-            fontWeight: 500,
-          }}
+          className={`challenge-action-message ${
+            actionMessage.startsWith('Error')
+              ? 'challenge-action-message-error'
+              : 'challenge-action-message-success'
+          }`}
         >
           {actionMessage}
         </div>
@@ -261,33 +258,19 @@ export default function ChallengeDetail() {
           </div>
 
           {showCounterForm && (
-            <div className="challenge-counter-form" style={{
-              backgroundColor: '#2d2d2d',
-              borderRadius: '10px',
-              padding: '1.5rem',
-              border: '1px solid #a855f7',
-              marginBottom: '2rem',
-            }}>
-              <h3 style={{ color: '#a855f7', marginBottom: '1rem', fontSize: '1rem' }}>
+            <div className="challenge-counter-form">
+              <h3>
                 {t('challenges.detail.counterChallenge')}
               </h3>
 
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', color: '#bbb', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+              <div className="challenge-counter-form-group">
+                <label className="challenge-counter-form-label">
                   {t('challenges.issue.matchType')} *
                 </label>
                 <select
+                  className="challenge-counter-form-select"
                   value={counterMatchType}
                   onChange={(e) => setCounterMatchType(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem',
-                    backgroundColor: '#1a1a1a',
-                    color: '#fff',
-                    border: '1px solid #444',
-                    borderRadius: '6px',
-                    fontSize: '0.95rem',
-                  }}
                 >
                   <option value="">{t('challenges.issue.selectMatchType')}</option>
                   {MATCH_TYPES.map((mt) => (
@@ -296,22 +279,14 @@ export default function ChallengeDetail() {
                 </select>
               </div>
 
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', color: '#bbb', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+              <div className="challenge-counter-form-group">
+                <label className="challenge-counter-form-label">
                   {t('challenges.issue.stipulation')}
                 </label>
                 <select
+                  className="challenge-counter-form-select"
                   value={counterStipulation}
                   onChange={(e) => setCounterStipulation(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem',
-                    backgroundColor: '#1a1a1a',
-                    color: '#fff',
-                    border: '1px solid #444',
-                    borderRadius: '6px',
-                    fontSize: '0.95rem',
-                  }}
                 >
                   {STIPULATIONS.map((s) => (
                     <option key={s} value={s}>{s}</option>
@@ -319,58 +294,31 @@ export default function ChallengeDetail() {
                 </select>
               </div>
 
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', color: '#bbb', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
+              <div className="challenge-counter-form-group">
+                <label className="challenge-counter-form-label">
                   {t('challenges.issue.message')}
                 </label>
                 <textarea
+                  className="challenge-counter-form-textarea"
                   value={counterMessage}
                   onChange={(e) => setCounterMessage(e.target.value)}
                   placeholder={t('challenges.issue.messagePlaceholder')}
                   rows={3}
                   maxLength={500}
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem',
-                    backgroundColor: '#1a1a1a',
-                    color: '#fff',
-                    border: '1px solid #444',
-                    borderRadius: '6px',
-                    fontSize: '0.95rem',
-                    resize: 'vertical',
-                    fontFamily: 'inherit',
-                  }}
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <div className="challenge-counter-form-actions">
                 <button
+                  className="challenge-counter-form-submit"
                   disabled={!counterMatchType || submitting}
                   onClick={() => handleAction('counter')}
-                  style={{
-                    backgroundColor: !counterMatchType ? '#555' : '#a855f7',
-                    color: '#fff',
-                    padding: '0.6rem 1.2rem',
-                    borderRadius: '6px',
-                    border: 'none',
-                    fontWeight: 600,
-                    cursor: !counterMatchType ? 'not-allowed' : 'pointer',
-                    fontSize: '0.95rem',
-                  }}
                 >
-                  {submitting ? 'Submitting...' : t('challenges.issue.submit')}
+                  {submitting ? t('common.submitting') : t('challenges.issue.submit')}
                 </button>
                 <button
+                  className="challenge-counter-form-cancel"
                   onClick={() => setShowCounterForm(false)}
-                  style={{
-                    backgroundColor: '#444',
-                    color: '#ccc',
-                    padding: '0.6rem 1.2rem',
-                    borderRadius: '6px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '0.95rem',
-                  }}
                 >
                   {t('common.cancel')}
                 </button>
@@ -404,7 +352,7 @@ export default function ChallengeDetail() {
                   {counterChallenge.challenger.wrestlerName} {t('common.vs')}{' '}
                   {counterChallenge.challenged.wrestlerName}
                 </div>
-                <div style={{ fontSize: '0.8rem', color: '#888', marginTop: '0.25rem' }}>
+                <div className="challenge-counter-link-subtext">
                   {counterChallenge.matchType}
                   {counterChallenge.stipulation
                     ? ` - ${counterChallenge.stipulation}`

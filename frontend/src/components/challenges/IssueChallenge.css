@@ -238,6 +238,49 @@
   margin-bottom: 1rem;
 }
 
+.issue-success-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.issue-success-back-link {
+  background-color: #d4af37;
+  color: #000;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.issue-success-another-btn {
+  background-color: #444;
+  color: #ccc;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.issue-error-message {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.issue-preview-toggle {
+  background: none;
+  border: 1px solid #444;
+  color: #bbb;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
 @media (max-width: 768px) {
   .issue-form-actions {
     flex-direction: column;

@@ -59,12 +59,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const now = new Date().toISOString();
 
-    if (action === 'accept') {
+    if (action === 'accept' || action === 'decline') {
+      const newStatus = action === 'accept' ? 'accepted' : 'declined';
       const updateExpression = responseMessage
         ? 'SET #s = :status, responseMessage = :rm, updatedAt = :now'
         : 'SET #s = :status, updatedAt = :now';
       const expressionValues: Record<string, unknown> = {
-        ':status': 'accepted',
+        ':status': newStatus,
         ':now': now,
       };
       if (responseMessage) expressionValues[':rm'] = responseMessage;
@@ -77,28 +78,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         ExpressionAttributeValues: expressionValues,
       });
 
-      return success({ ...challenge, status: 'accepted', responseMessage, updatedAt: now });
-    }
-
-    if (action === 'decline') {
-      const updateExpression = responseMessage
-        ? 'SET #s = :status, responseMessage = :rm, updatedAt = :now'
-        : 'SET #s = :status, updatedAt = :now';
-      const expressionValues: Record<string, unknown> = {
-        ':status': 'declined',
-        ':now': now,
-      };
-      if (responseMessage) expressionValues[':rm'] = responseMessage;
-
-      await dynamoDb.update({
-        TableName: TableNames.CHALLENGES,
-        Key: { challengeId },
-        UpdateExpression: updateExpression,
-        ExpressionAttributeNames: { '#s': 'status' },
-        ExpressionAttributeValues: expressionValues,
-      });
-
-      return success({ ...challenge, status: 'declined', responseMessage, updatedAt: now });
+      return success({ ...challenge, status: newStatus, responseMessage, updatedAt: now });
     }
 
     // Counter
