@@ -192,4 +192,87 @@ describe('getPromo', () => {
     expect(result!.statusCode).toBe(500);
     expect(body(result).message).toBe('Failed to fetch promo');
   });
+
+  it('enriches promo with targetPlayerId (shows target player name on main promo)', async () => {
+    const promo = {
+      promoId: 'p1', playerId: 'pl1', targetPlayerId: 'pl2',
+      promoType: 'callout', content: 'I challenge you!', isHidden: false,
+      createdAt: '2024-01-01T00:00:00Z',
+    };
+
+    mockGet.mockImplementation(async (params: any) => {
+      if (params.Key.promoId) return { Item: promo };
+      if (params.Key.playerId === 'pl1') return { Item: { playerId: 'pl1', name: 'John', currentWrestler: 'The Rock', imageUrl: 'img1.jpg' } };
+      if (params.Key.playerId === 'pl2') return { Item: { playerId: 'pl2', name: 'Jane', currentWrestler: 'Bianca', imageUrl: 'img2.jpg' } };
+      return { Item: undefined };
+    });
+    mockScanAll.mockResolvedValue([promo]);
+
+    const result = await getPromo(makeEvent({ pathParameters: { promoId: 'p1' } }), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const data = body(result);
+    expect(data.promo.targetPlayerName).toBe('Jane');
+    expect(data.promo.targetWrestlerName).toBe('Bianca');
+  });
+
+  it('enriches response promos that have their own targetPlayerId', async () => {
+    const promo = {
+      promoId: 'p1', playerId: 'pl1', promoType: 'open-mic',
+      content: 'Main promo', isHidden: false,
+      createdAt: '2024-01-01T00:00:00Z',
+    };
+    const responsePromo = {
+      promoId: 'p2', playerId: 'pl2', targetPromoId: 'p1', targetPlayerId: 'pl3',
+      promoType: 'response', content: 'Response aimed at pl3', isHidden: false,
+      createdAt: '2024-01-02T00:00:00Z',
+    };
+
+    mockGet.mockImplementation(async (params: any) => {
+      if (params.Key.promoId) return { Item: promo };
+      if (params.Key.playerId === 'pl1') return { Item: { playerId: 'pl1', name: 'John', currentWrestler: 'The Rock', imageUrl: 'img1.jpg' } };
+      if (params.Key.playerId === 'pl2') return { Item: { playerId: 'pl2', name: 'Jane', currentWrestler: 'Bianca', imageUrl: 'img2.jpg' } };
+      if (params.Key.playerId === 'pl3') return { Item: { playerId: 'pl3', name: 'Mike', currentWrestler: 'Roman Reigns', imageUrl: 'img3.jpg' } };
+      return { Item: undefined };
+    });
+    mockScanAll.mockResolvedValue([promo, responsePromo]);
+
+    const result = await getPromo(makeEvent({ pathParameters: { promoId: 'p1' } }), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const data = body(result);
+    expect(data.responses).toHaveLength(1);
+    expect(data.responses[0].targetPlayerName).toBe('Mike');
+    expect(data.responses[0].targetWrestlerName).toBe('Roman Reigns');
+  });
+
+  it('handles response promo where target player was deleted (rTarget undefined)', async () => {
+    const promo = {
+      promoId: 'p1', playerId: 'pl1', promoType: 'open-mic',
+      content: 'Main promo', isHidden: false,
+      createdAt: '2024-01-01T00:00:00Z',
+    };
+    const responsePromo = {
+      promoId: 'p2', playerId: 'pl2', targetPromoId: 'p1', targetPlayerId: 'deleted-pl',
+      promoType: 'response', content: 'Response aimed at deleted player', isHidden: false,
+      createdAt: '2024-01-02T00:00:00Z',
+    };
+
+    mockGet.mockImplementation(async (params: any) => {
+      if (params.Key.promoId) return { Item: promo };
+      if (params.Key.playerId === 'pl1') return { Item: { playerId: 'pl1', name: 'John', currentWrestler: 'The Rock', imageUrl: 'img1.jpg' } };
+      if (params.Key.playerId === 'pl2') return { Item: { playerId: 'pl2', name: 'Jane', currentWrestler: 'Bianca', imageUrl: 'img2.jpg' } };
+      if (params.Key.playerId === 'deleted-pl') return { Item: undefined };
+      return { Item: undefined };
+    });
+    mockScanAll.mockResolvedValue([promo, responsePromo]);
+
+    const result = await getPromo(makeEvent({ pathParameters: { promoId: 'p1' } }), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const data = body(result);
+    expect(data.responses).toHaveLength(1);
+    expect(data.responses[0].targetPlayerName).toBeUndefined();
+    expect(data.responses[0].targetWrestlerName).toBeUndefined();
+  });
 });

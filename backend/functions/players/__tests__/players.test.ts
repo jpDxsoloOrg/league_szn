@@ -181,6 +181,15 @@ describe('getPlayers', () => {
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body)).toEqual([]);
   });
+
+  it('returns 500 when scan throws an error', async () => {
+    mockScan.mockRejectedValue(new Error('DynamoDB failure'));
+
+    const result = await getPlayers(makeEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(500);
+    expect(JSON.parse(result!.body).message).toBe('Failed to fetch players');
+  });
 });
 
 // ─── updatePlayer ────────────────────────────────────────────────────
@@ -257,6 +266,89 @@ describe('updatePlayer', () => {
     // Verify update was called with REMOVE expression
     const updateCall = mockUpdate.mock.calls[0][0];
     expect(updateCall.UpdateExpression).toContain('REMOVE');
+  });
+
+  it('updates currentWrestler field', async () => {
+    mockGet.mockResolvedValue({ Item: { playerId: 'p1', currentWrestler: 'Old Wrestler' } });
+    mockUpdate.mockResolvedValue({ Attributes: { playerId: 'p1', currentWrestler: 'New Wrestler' } });
+
+    const event = makeEvent({
+      pathParameters: { playerId: 'p1' },
+      body: JSON.stringify({ currentWrestler: 'New Wrestler' }),
+    });
+
+    const result = await updatePlayer(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body).currentWrestler).toBe('New Wrestler');
+    const updateCall = mockUpdate.mock.calls[0][0];
+    expect(updateCall.UpdateExpression).toContain('#currentWrestler');
+  });
+
+  it('updates imageUrl field', async () => {
+    mockGet.mockResolvedValue({ Item: { playerId: 'p1', name: 'John' } });
+    mockUpdate.mockResolvedValue({ Attributes: { playerId: 'p1', imageUrl: 'https://example.com/new.png' } });
+
+    const event = makeEvent({
+      pathParameters: { playerId: 'p1' },
+      body: JSON.stringify({ imageUrl: 'https://example.com/new.png' }),
+    });
+
+    const result = await updatePlayer(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const updateCall = mockUpdate.mock.calls[0][0];
+    expect(updateCall.UpdateExpression).toContain('#imageUrl');
+  });
+
+  it('updates divisionId with valid division (validates existence)', async () => {
+    mockGet
+      .mockResolvedValueOnce({ Item: { playerId: 'p1', name: 'John' } })
+      .mockResolvedValueOnce({ Item: { divisionId: 'div-1', name: 'Raw' } });
+    mockUpdate.mockResolvedValue({ Attributes: { playerId: 'p1', divisionId: 'div-1' } });
+
+    const event = makeEvent({
+      pathParameters: { playerId: 'p1' },
+      body: JSON.stringify({ divisionId: 'div-1' }),
+    });
+
+    const result = await updatePlayer(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const updateCall = mockUpdate.mock.calls[0][0];
+    expect(updateCall.UpdateExpression).toContain('SET');
+    expect(updateCall.UpdateExpression).toContain('#divisionId');
+    expect(updateCall.UpdateExpression).not.toMatch(/REMOVE\s.*#divisionId/);
+  });
+
+  it('returns 404 when divisionId references non-existent division', async () => {
+    mockGet
+      .mockResolvedValueOnce({ Item: { playerId: 'p1', name: 'John' } })
+      .mockResolvedValueOnce({ Item: undefined });
+
+    const event = makeEvent({
+      pathParameters: { playerId: 'p1' },
+      body: JSON.stringify({ divisionId: 'bad-div' }),
+    });
+
+    const result = await updatePlayer(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(404);
+    expect(JSON.parse(result!.body).message).toContain('Division');
+  });
+
+  it('returns 500 when an unexpected error occurs', async () => {
+    mockGet.mockRejectedValue(new Error('DynamoDB failure'));
+
+    const event = makeEvent({
+      pathParameters: { playerId: 'p1' },
+      body: JSON.stringify({ name: 'X' }),
+    });
+
+    const result = await updatePlayer(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(500);
+    expect(JSON.parse(result!.body).message).toBe('Failed to update player');
   });
 });
 
@@ -394,6 +486,17 @@ describe('getMyProfile', () => {
     const body = JSON.parse(result!.body);
     expect(body.seasonRecords[0]).toMatchObject({ wins: 0, losses: 0, draws: 0 });
   });
+
+  it('returns 500 when an unexpected error occurs', async () => {
+    mockQuery.mockRejectedValue(new Error('DynamoDB failure'));
+
+    const event = withAuth(makeEvent(), 'Wrestler');
+
+    const result = await getMyProfile(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(500);
+    expect(JSON.parse(result!.body).message).toBe('Failed to fetch player profile');
+  });
 });
 
 // ─── updateMyProfile ─────────────────────────────────────────────────
@@ -487,5 +590,51 @@ describe('updateMyProfile', () => {
 
     expect(result!.statusCode).toBe(400);
     expect(JSON.parse(result!.body).message).toBe('Name cannot be empty');
+  });
+
+  it('rejects name exceeding MAX_NAME_LENGTH (100 chars)', async () => {
+    mockQuery.mockResolvedValue({
+      Items: [{ playerId: 'p1', userId: 'user-sub-1' }],
+    });
+
+    const event = withAuth(
+      makeEvent({ body: JSON.stringify({ name: 'A'.repeat(101) }) }),
+      'Wrestler',
+    );
+
+    const result = await updateMyProfile(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toContain('100 characters or less');
+  });
+
+  it('rejects imageUrl exceeding MAX_URL_LENGTH (2048 chars)', async () => {
+    mockQuery.mockResolvedValue({
+      Items: [{ playerId: 'p1', userId: 'user-sub-1' }],
+    });
+
+    const event = withAuth(
+      makeEvent({ body: JSON.stringify({ imageUrl: 'https://x.com/' + 'a'.repeat(2048) }) }),
+      'Wrestler',
+    );
+
+    const result = await updateMyProfile(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toContain('2048 characters');
+  });
+
+  it('returns 500 when an unexpected error occurs', async () => {
+    mockQuery.mockRejectedValue(new Error('DynamoDB failure'));
+
+    const event = withAuth(
+      makeEvent({ body: JSON.stringify({ name: 'X' }) }),
+      'Wrestler',
+    );
+
+    const result = await updateMyProfile(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(500);
+    expect(JSON.parse(result!.body).message).toBe('Failed to update player profile');
   });
 });

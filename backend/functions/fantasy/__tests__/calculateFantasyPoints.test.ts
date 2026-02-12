@@ -296,4 +296,64 @@ describe('calculateFantasyPoints', () => {
     expect(mockUpdate.mock.calls[0][0].ExpressionAttributeValues[':pts']).toBe(10);
     expect(mockUpdate.mock.calls[1][0].ExpressionAttributeValues[':pts']).toBe(0);
   });
+
+  it('handles event with matchCards undefined (falls back to empty array)', async () => {
+    // Event exists but has NO matchCards property at all
+    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1' } });
+
+    await calculateFantasyPoints('e1');
+
+    // The || [] fallback makes matchIds empty, triggering "has no matches" early return
+    expect(mockQuery).not.toHaveBeenCalled();
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it('handles match with missing winners/losers arrays (defaults to empty)', async () => {
+    mockGet.mockResolvedValueOnce({
+      Item: { eventId: 'e1', matchCards: [{ matchId: 'm1' }] },
+    });
+    mockGet.mockResolvedValueOnce({ Item: { baseWinPoints: 10 } });
+    // Completed match WITHOUT winners or losers properties
+    mockQuery.mockResolvedValueOnce({
+      Items: [{ matchId: 'm1', status: 'completed' }],
+    });
+    // One user picked player p1
+    mockQuery.mockResolvedValueOnce({
+      Items: [{ eventId: 'e1', fantasyUserId: 'u1', picks: { d1: ['p1'] } }],
+    });
+    mockUpdate.mockResolvedValueOnce({});
+
+    await calculateFantasyPoints('e1');
+
+    expect(mockUpdate).toHaveBeenCalledOnce();
+    const updateCall = mockUpdate.mock.calls[0][0];
+    // No winners/losers means playerMatchMap is empty, so p1 "Did not compete"
+    expect(updateCall.ExpressionAttributeValues[':pts']).toBe(0);
+    const breakdown = updateCall.ExpressionAttributeValues[':bd'];
+    expect(breakdown.p1.reason).toBe('Did not compete');
+    expect(breakdown.p1.points).toBe(0);
+  });
+
+  it('handles pick record with undefined picks object (defaults to empty)', async () => {
+    mockGet.mockResolvedValueOnce({
+      Item: { eventId: 'e1', matchCards: [{ matchId: 'm1' }] },
+    });
+    mockGet.mockResolvedValueOnce({ Item: { baseWinPoints: 10 } });
+    mockQuery.mockResolvedValueOnce({
+      Items: [{ matchId: 'm1', status: 'completed', winners: ['p1'], losers: ['p2'] }],
+    });
+    // Pick record WITHOUT a picks property
+    mockQuery.mockResolvedValueOnce({
+      Items: [{ eventId: 'e1', fantasyUserId: 'u1' }],
+    });
+    mockUpdate.mockResolvedValueOnce({});
+
+    await calculateFantasyPoints('e1');
+
+    expect(mockUpdate).toHaveBeenCalledOnce();
+    const updateCall = mockUpdate.mock.calls[0][0];
+    // The || {} fallback makes Object.values(picks) return [], so totalPoints = 0
+    expect(updateCall.ExpressionAttributeValues[':pts']).toBe(0);
+    expect(updateCall.ExpressionAttributeValues[':bd']).toEqual({});
+  });
 });

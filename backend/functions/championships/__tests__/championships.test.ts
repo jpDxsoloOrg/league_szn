@@ -117,6 +117,13 @@ describe('getChampionships', () => {
     expect(r!.statusCode).toBe(200);
     expect(body(r)).toEqual([]);
   });
+
+  it('returns 500 when scan throws an error', async () => {
+    mockScan.mockRejectedValue(new Error('DynamoDB failure'));
+    const r = await getChampionships(ev(), ctx, cb);
+    expect(r!.statusCode).toBe(500);
+    expect(body(r).message).toBe('Failed to fetch championships');
+  });
 });
 
 describe('getChampionshipHistory', () => {
@@ -203,6 +210,58 @@ describe('updateChampionship', () => {
     }), ctx, cb);
     expect(r!.statusCode).toBe(400);
     expect(body(r).message).toBe('Championship ID is required');
+  });
+
+  it('updates imageUrl field', async () => {
+    mockGet.mockResolvedValue({ Item: { championshipId: 'c1', name: 'Belt' } });
+    mockUpdate.mockResolvedValue({
+      Attributes: { championshipId: 'c1', name: 'Belt', imageUrl: 'https://example.com/belt.png' },
+    });
+    const r = await updateChampionship(ev({
+      pathParameters: { championshipId: 'c1' },
+      body: JSON.stringify({ imageUrl: 'https://example.com/belt.png' }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(200);
+    const expr = mockUpdate.mock.calls[0][0].UpdateExpression;
+    expect(expr).toContain('#imageUrl');
+  });
+
+  it('updates currentChampion field', async () => {
+    mockGet.mockResolvedValue({ Item: { championshipId: 'c1', name: 'Belt' } });
+    mockUpdate.mockResolvedValue({
+      Attributes: { championshipId: 'c1', name: 'Belt', currentChampion: 'p1' },
+    });
+    const r = await updateChampionship(ev({
+      pathParameters: { championshipId: 'c1' },
+      body: JSON.stringify({ currentChampion: 'p1' }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(200);
+    const expr = mockUpdate.mock.calls[0][0].UpdateExpression;
+    expect(expr).toContain('#currentChampion');
+  });
+
+  it('updates divisionId field', async () => {
+    mockGet.mockResolvedValue({ Item: { championshipId: 'c1', name: 'Belt' } });
+    mockUpdate.mockResolvedValue({
+      Attributes: { championshipId: 'c1', name: 'Belt', divisionId: 'div-1' },
+    });
+    const r = await updateChampionship(ev({
+      pathParameters: { championshipId: 'c1' },
+      body: JSON.stringify({ divisionId: 'div-1' }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(200);
+    const expr = mockUpdate.mock.calls[0][0].UpdateExpression;
+    expect(expr).toContain('#divisionId');
+  });
+
+  it('returns 500 when an unexpected error occurs', async () => {
+    mockGet.mockRejectedValue(new Error('DynamoDB failure'));
+    const r = await updateChampionship(ev({
+      pathParameters: { championshipId: 'c1' },
+      body: JSON.stringify({ name: 'New' }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(500);
+    expect(body(r).message).toBe('Failed to update championship');
   });
 });
 
