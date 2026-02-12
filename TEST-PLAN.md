@@ -12,9 +12,48 @@
 
 ### Setup Notes
 - Add `vitest` + `@testing-library/react` + `@testing-library/jest-dom` + `jsdom` to frontend
-- Add `vitest` to backend
-- Configure `vitest.config.ts` in both `frontend/` and `backend/` roots
-- Mock pattern: create `__mocks__/` directories for DynamoDB, Cognito, S3 clients
+- ~~Add `vitest` to backend~~ ✅ Done — `vitest@3` installed, `vitest.config.mts` configured, `npm test` / `npm run test:watch` scripts added
+- Configure `vitest.config.ts` in frontend root (backend done: `backend/vitest.config.mts`)
+- Mock pattern: `vi.hoisted()` + `vi.mock()` for AWS SDK, Cognito, S3 clients (established in auth tests)
+
+## Running Tests
+
+### Backend
+```bash
+cd backend
+
+# Run all tests
+npm test
+
+# Watch mode (re-runs on file changes)
+npm run test:watch
+
+# Run a specific test file
+npx vitest run lib/__tests__/auth.test.ts
+
+# Run tests matching a pattern
+npx vitest run --reporter=verbose auth
+
+# Run with coverage
+npx vitest run --coverage
+```
+
+### Frontend (not yet configured)
+```bash
+cd frontend
+
+# Once vitest is set up:
+npm test
+npm run test:watch
+```
+
+### E2E (existing Playwright)
+```bash
+cd e2e
+npx playwright test
+```
+
+---
 
 ## Priority Legend
 
@@ -30,12 +69,14 @@
 ## Feature: Auth & Authorization
 
 ### Backend Unit Tests
-- [ ] P0: `backend/lib/auth.ts` — Token verification: valid token extracts claims; expired token throws; malformed token throws; missing token throws (~4 tests)
-- [ ] P0: `backend/lib/auth.ts` — Role extraction: extracts groups from token claims; handles missing groups claim; maps group names to role enum (~3 tests)
-- [ ] P0: `backend/lib/auth.ts` — Authorization checks: admin check passes for Admin group; fails for Wrestler; role hierarchy enforced (Admin > Moderator > Wrestler > Fantasy) (~5 tests)
-- [ ] P0: `backend/functions/auth/authorizer.ts` — Lambda authorizer: valid token returns Allow policy; invalid token returns Deny; extracts principalId and context correctly (~4 tests)
-- [ ] P1: `backend/functions/auth/postConfirmation.ts` — Post-confirmation trigger: adds user to Fantasy group on signup; handles Cognito SDK errors gracefully (~3 tests)
-- [ ] P1: `backend/functions/auth/createAdminUser.ts` — Admin user creation: creates user with Admin group; validates required fields; handles duplicate user (~3 tests)
+- [x] P0: `backend/lib/auth.ts` — getAuthContext extracts username/email/sub/groups; handles missing authorizer; trims whitespace in groups; empty groups string → empty array (4 tests) ✅ `lib/__tests__/auth.test.ts`
+- [x] P0: `backend/lib/auth.ts` — hasRole: exact role match; Admin access to all; Moderator access to non-Admin; Moderator blocked from Admin-only; multiple roles; empty groups (7 tests) ✅ `lib/__tests__/auth.test.ts`
+- [x] P0: `backend/lib/auth.ts` — isSuperAdmin: true for Admin; false for Moderator; false for non-admin roles (3 tests) ✅ `lib/__tests__/auth.test.ts`
+- [x] P0: `backend/lib/auth.ts` — requireRole: returns null when authorized; returns 403 when unauthorized; Moderator passes non-Admin check (3 tests) ✅ `lib/__tests__/auth.test.ts`
+- [x] P0: `backend/lib/auth.ts` — requireSuperAdmin: returns null for Admin; returns 403 for Moderator; returns 403 for Wrestler (3 tests) ✅ `lib/__tests__/auth.test.ts`
+- [x] P0: `backend/functions/auth/authorizer.ts` — Lambda authorizer: valid token → Allow policy with context; no groups; empty token; non-Bearer format; extra parts; expired token; missing username fallback (7 tests) ✅ `functions/auth/__tests__/authorizer.test.ts`
+- [x] P1: `backend/functions/auth/postConfirmation.ts` — Adds user to Fantasy group; non-blocking on SDK error; correct userPoolId/userName (3 tests) ✅ `functions/auth/__tests__/postConfirmation.test.ts`
+- [x] P1: `backend/functions/auth/createAdminUser.ts` — Setup key validation (missing/wrong/unset env); body validation (missing/invalid JSON/missing email/short password); duplicate user; happy path; unexpected Cognito error (10 tests) ✅ `functions/auth/__tests__/createAdminUser.test.ts`
 
 ### Frontend Component Tests
 - [ ] P1: `frontend/src/components/auth/Login.tsx` — Renders form with email/password fields; shows loading on submit; displays error on failed login; calls signIn with correct args; navigates on success (~5 tests)
@@ -58,6 +99,7 @@
 - [ ] P1: `frontend/src/contexts/AuthContext.tsx` — Sign in/out: signIn updates state; signOut clears state; refreshProfile re-fetches player (~3 tests)
 - [ ] P1: `frontend/src/contexts/AuthContext.tsx` — Cleanup: uses mounted flag; doesn't update state after unmount (~2 tests)
 
+**Backend tests written: 40/40 ✅** | Frontend tests remaining: ~32
 **Section total: ~72 tests**
 
 ---
