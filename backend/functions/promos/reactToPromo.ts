@@ -1,19 +1,24 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
-import { getAuthContext } from '../../lib/auth';
+import { parseBody } from '../../lib/parseBody';
+import { getAuthContext, requireRole } from '../../lib/auth';
 
 const VALID_REACTIONS = ['fire', 'mic', 'trash', 'mind-blown', 'clap'];
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
+    const denied = requireRole(event, 'Wrestler');
+    if (denied) return denied;
+
     const auth = getAuthContext(event);
     const promoId = event.pathParameters?.promoId;
     if (!promoId) {
       return badRequest('promoId is required');
     }
 
-    const body = JSON.parse(event.body || '{}');
+    const { data: body, error: parseError } = parseBody(event);
+    if (parseError) return parseError;
     const { reaction } = body;
 
     if (!reaction || !VALID_REACTIONS.includes(reaction)) {

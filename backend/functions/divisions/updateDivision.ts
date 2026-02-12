@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 
 interface UpdateDivisionBody {
   name?: string;
@@ -15,11 +16,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Division ID is required');
     }
 
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    const body: UpdateDivisionBody = JSON.parse(event.body);
+    const { data: body, error: parseError } = parseBody<UpdateDivisionBody>(event);
+    if (parseError) return parseError;
 
     // Check if division exists
     const existingDivision = await dynamoDb.get({

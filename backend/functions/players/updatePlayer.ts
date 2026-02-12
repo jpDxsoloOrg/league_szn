@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -10,11 +11,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Player ID is required');
     }
 
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    const body = JSON.parse(event.body);
+    const { data: body, error: parseError } = parseBody(event);
+    if (parseError) return parseError;
 
     // Check if player exists
     const existing = await dynamoDb.get({
@@ -56,6 +54,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         removeExpressions.push('#divisionId');
         expressionAttributeNames['#divisionId'] = 'divisionId';
       } else {
+        // Validate that the division exists
+        const divisionResult = await dynamoDb.get({
+          TableName: TableNames.DIVISIONS,
+          Key: { divisionId: body.divisionId },
+        });
+        if (!divisionResult.Item) {
+          return notFound(`Division ${body.divisionId} not found`);
+        }
         setExpressions.push('#divisionId = :divisionId');
         expressionAttributeNames['#divisionId'] = 'divisionId';
         expressionAttributeValues[':divisionId'] = body.divisionId;

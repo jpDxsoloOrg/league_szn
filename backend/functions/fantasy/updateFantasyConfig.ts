@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, badRequest, serverError } from '../../lib/response';
+import { success, serverError } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 import { requireRole } from '../../lib/auth';
 
 const DEFAULT_CONFIG = {
@@ -26,11 +27,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const denied = requireRole(event, 'Admin');
     if (denied) return denied;
 
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    const body = JSON.parse(event.body);
+    const { data: body, error: parseError } = parseBody(event);
+    if (parseError) return parseError;
 
     // Read existing config or use defaults
     const existing = await dynamoDb.get({

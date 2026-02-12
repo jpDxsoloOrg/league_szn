@@ -21,20 +21,27 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
   const [features, setFeatures] = useState<SiteFeatures>(DEFAULT_FEATURES);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchConfig = useCallback(async () => {
+  const fetchConfig = useCallback(async (mountedCheck?: () => boolean) => {
     try {
       const result = await siteConfigApi.getFeatures();
+      if (mountedCheck && !mountedCheck()) return;
       setFeatures({ ...DEFAULT_FEATURES, ...result.features });
     } catch {
+      if (mountedCheck && !mountedCheck()) return;
       // On error, default to all features enabled
       setFeatures(DEFAULT_FEATURES);
-    } finally {
-      setIsLoading(false);
     }
+    if (mountedCheck && !mountedCheck()) return;
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchConfig();
+    let mounted = true;
+    fetchConfig(() => mounted);
+
+    return () => {
+      mounted = false;
+    };
   }, [fetchConfig]);
 
   const refreshConfig = useCallback(async () => {
@@ -48,6 +55,7 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSiteConfig(): SiteConfigContextType {
   const context = useContext(SiteConfigContext);
   if (context === undefined) {

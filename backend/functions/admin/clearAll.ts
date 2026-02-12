@@ -7,7 +7,7 @@ const deleteAllFromTable = async (
   tableName: string,
   keyName: string,
   sortKeyName?: string
-): Promise<number> => {
+): Promise<{ deleted: number; errors: number }> => {
   // Use ExpressionAttributeNames to handle reserved words like 'date', 'name', etc.
   const expressionAttributeNames: Record<string, string> = {
     '#pk': keyName,
@@ -27,23 +27,38 @@ const deleteAllFromTable = async (
   });
 
   if (items.length === 0) {
-    return 0;
+    return { deleted: 0, errors: 0 };
   }
 
   // Delete items sequentially to avoid throttling
-  // For very large datasets, consider using BatchWriteItem for better performance
+  // Wrap each delete in try-catch to collect errors rather than failing entirely
+  let deleted = 0;
+  const failedKeys: Record<string, unknown>[] = [];
+
   for (const item of items) {
     const key: Record<string, unknown> = { [keyName]: item[keyName] };
     if (sortKeyName) {
       key[sortKeyName] = item[sortKeyName];
     }
-    await dynamoDb.delete({
-      TableName: tableName,
-      Key: key,
-    });
+    try {
+      await dynamoDb.delete({
+        TableName: tableName,
+        Key: key,
+      });
+      deleted++;
+    } catch (err) {
+      failedKeys.push(key);
+      console.error(`Failed to delete item from ${tableName}:`, key, err);
+    }
   }
 
-  return items.length;
+  if (failedKeys.length > 0) {
+    console.error(
+      `${failedKeys.length} of ${items.length} deletes failed for table ${tableName}`
+    );
+  }
+
+  return { deleted, errors: failedKeys.length };
 };
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -52,66 +67,70 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
   try {
     const deletedCounts: Record<string, number> = {};
+    const errorCounts: Record<string, number> = {};
+    let totalErrors = 0;
+
+    // Helper to run deleteAllFromTable and record results
+    const clearTable = async (label: string, tableName: string, keyName: string, sortKeyName?: string) => {
+      const result = await deleteAllFromTable(tableName, keyName, sortKeyName);
+      deletedCounts[label] = result.deleted;
+      if (result.errors > 0) {
+        errorCounts[label] = result.errors;
+        totalErrors += result.errors;
+      }
+    };
 
     // Delete all players
-    deletedCounts.players = await deleteAllFromTable(TableNames.PLAYERS, 'playerId');
+    await clearTable('players', TableNames.PLAYERS, 'playerId');
 
     // Delete all matches
-    deletedCounts.matches = await deleteAllFromTable(TableNames.MATCHES, 'matchId', 'date');
+    await clearTable('matches', TableNames.MATCHES, 'matchId', 'date');
 
     // Delete all championships
-    deletedCounts.championships = await deleteAllFromTable(TableNames.CHAMPIONSHIPS, 'championshipId');
+    await clearTable('championships', TableNames.CHAMPIONSHIPS, 'championshipId');
 
     // Delete all championship history
-    deletedCounts.championshipHistory = await deleteAllFromTable(
-      TableNames.CHAMPIONSHIP_HISTORY,
-      'championshipId',
-      'wonDate'
-    );
+    await clearTable('championshipHistory', TableNames.CHAMPIONSHIP_HISTORY, 'championshipId', 'wonDate');
 
     // Delete all tournaments
-    deletedCounts.tournaments = await deleteAllFromTable(TableNames.TOURNAMENTS, 'tournamentId');
+    await clearTable('tournaments', TableNames.TOURNAMENTS, 'tournamentId');
 
     // Delete all seasons
-    deletedCounts.seasons = await deleteAllFromTable(TableNames.SEASONS, 'seasonId');
+    await clearTable('seasons', TableNames.SEASONS, 'seasonId');
 
     // Delete all season standings
-    deletedCounts.seasonStandings = await deleteAllFromTable(
-      TableNames.SEASON_STANDINGS,
-      'seasonId',
-      'playerId'
-    );
+    await clearTable('seasonStandings', TableNames.SEASON_STANDINGS, 'seasonId', 'playerId');
 
     // Delete all divisions
-    deletedCounts.divisions = await deleteAllFromTable(TableNames.DIVISIONS, 'divisionId');
+    await clearTable('divisions', TableNames.DIVISIONS, 'divisionId');
 
     // Delete all events
-    deletedCounts.events = await deleteAllFromTable(TableNames.EVENTS, 'eventId');
+    await clearTable('events', TableNames.EVENTS, 'eventId');
 
     // Delete all contender rankings
-    deletedCounts.contenderRankings = await deleteAllFromTable(
-      TableNames.CONTENDER_RANKINGS,
-      'championshipId',
-      'playerId'
-    );
+    await clearTable('contenderRankings', TableNames.CONTENDER_RANKINGS, 'championshipId', 'playerId');
 
     // Delete all ranking history
-    deletedCounts.rankingHistory = await deleteAllFromTable(
-      TableNames.RANKING_HISTORY,
-      'playerId',
-      'weekKey'
-    );
+    await clearTable('rankingHistory', TableNames.RANKING_HISTORY, 'playerId', 'weekKey');
 
     // Delete all challenges
-    deletedCounts.challenges = await deleteAllFromTable(TableNames.CHALLENGES, 'challengeId');
+    await clearTable('challenges', TableNames.CHALLENGES, 'challengeId');
 
     // Delete all promos
-    deletedCounts.promos = await deleteAllFromTable(TableNames.PROMOS, 'promoId');
+    await clearTable('promos', TableNames.PROMOS, 'promoId');
 
-    return success({
-      message: 'All data cleared successfully',
+    const response: Record<string, unknown> = {
+      message: totalErrors > 0
+        ? `Data cleared with ${totalErrors} individual delete error(s)`
+        : 'All data cleared successfully',
       deletedCounts,
-    });
+    };
+
+    if (totalErrors > 0) {
+      response.errorCounts = errorCounts;
+    }
+
+    return success(response);
   } catch (err) {
     console.error('Error clearing all data:', err);
     return serverError('Failed to clear all data');

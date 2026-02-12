@@ -18,7 +18,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('challengeId is required');
     }
 
-    const body = JSON.parse(event.body || '{}');
+    if (!event.body) {
+      return badRequest('Request body is required');
+    }
+
+    let body;
+    try {
+      body = JSON.parse(event.body);
+    } catch {
+      return badRequest('Invalid JSON in request body');
+    }
+
     const { action, responseMessage, counterMatchType, counterStipulation, counterMessage } = body as {
       action: ChallengeAction;
       responseMessage?: string;

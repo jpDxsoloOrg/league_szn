@@ -31,11 +31,11 @@ export function getAuthContext(event: APIGatewayProxyEvent): AuthContext {
 
 /**
  * Check if user has at least one of the required roles.
- * Admin and Moderator have access to all standard admin features.
+ * Admin has access to everything. Moderator has access to all roles except Admin-only operations.
  */
 export function hasRole(context: AuthContext, ...requiredRoles: UserRole[]): boolean {
   if (context.groups.includes('Admin')) return true;
-  if (context.groups.includes('Moderator')) return true;
+  if (context.groups.includes('Moderator') && !requiredRoles.includes('Admin')) return true;
   return requiredRoles.some((role) => context.groups.includes(role));
 }
 

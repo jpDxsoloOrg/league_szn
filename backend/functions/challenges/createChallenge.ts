@@ -11,7 +11,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Only wrestlers can issue challenges');
     }
 
-    const body = JSON.parse(event.body || '{}');
+    if (!event.body) {
+      return badRequest('Request body is required');
+    }
+
+    let body;
+    try {
+      body = JSON.parse(event.body);
+    } catch {
+      return badRequest('Invalid JSON in request body');
+    }
+
     const { challengedId, matchType, stipulation, championshipId, message } = body;
 
     if (!challengedId || !matchType) {

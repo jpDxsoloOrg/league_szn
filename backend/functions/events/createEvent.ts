@@ -25,7 +25,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Request body is required');
     }
 
-    const body: CreateEventBody = JSON.parse(event.body);
+    let body: CreateEventBody;
+    try {
+      body = JSON.parse(event.body);
+    } catch {
+      return badRequest('Invalid JSON in request body');
+    }
 
     if (!body.name || !body.eventType || !body.date) {
       return badRequest('Name, eventType, and date are required');

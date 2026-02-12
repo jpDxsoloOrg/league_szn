@@ -18,7 +18,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const { sub: fantasyUserId, username } = getAuthContext(event);
-    const body = JSON.parse(event.body);
+
+    let body;
+    try {
+      body = JSON.parse(event.body);
+    } catch {
+      return badRequest('Invalid JSON in request body');
+    }
+
     const picks: Record<string, string[]> = body.picks;
 
     if (!picks || typeof picks !== 'object') {
@@ -73,6 +80,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Validate each pick
+    const allPickedPlayers = new Set<string>();
     for (const [divisionId, playerIds] of Object.entries(picks)) {
       if (!Array.isArray(playerIds)) {
         return badRequest(`Picks for division ${divisionId} must be an array`);
@@ -85,6 +93,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
 
       for (const playerId of playerIds) {
+        if (allPickedPlayers.has(playerId)) {
+          return badRequest(`Player ${playerId} is picked in multiple divisions`);
+        }
+        allPickedPlayers.add(playerId);
+
         const player = playerMap.get(playerId);
         if (!player) {
           return badRequest(`Player ${playerId} not found`);

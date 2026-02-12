@@ -85,10 +85,11 @@ export default function WrestlerCosts() {
         case 'winRate':
           comparison = a.winRate30Days - b.winRate30Days;
           break;
-        case 'trend':
+        case 'trend': {
           const trendOrder = { up: 1, stable: 0, down: -1 };
           comparison = trendOrder[a.costTrend] - trendOrder[b.costTrend];
           break;
+        }
       }
       return sortDirection === 'asc' ? comparison : -comparison;
     });

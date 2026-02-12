@@ -1,7 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { created, badRequest, serverError } from '../../lib/response';
+import { created, badRequest, notFound, serverError } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 
 interface CreatePlayerBody {
   name: string;
@@ -12,11 +13,8 @@ interface CreatePlayerBody {
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    const body: CreatePlayerBody = JSON.parse(event.body);
+    const { data: body, error: parseError } = parseBody<CreatePlayerBody>(event);
+    if (parseError) return parseError;
 
     if (!body.name || !body.currentWrestler) {
       return badRequest('Name and currentWrestler are required');
@@ -39,8 +37,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       player.imageUrl = body.imageUrl;
     }
 
-    // Add divisionId if provided
+    // Add divisionId if provided, after validating it exists
     if (body.divisionId) {
+      const divisionResult = await dynamoDb.get({
+        TableName: TableNames.DIVISIONS,
+        Key: { divisionId: body.divisionId },
+      });
+      if (!divisionResult.Item) {
+        return notFound(`Division ${body.divisionId} not found`);
+      }
       player.divisionId = body.divisionId;
     }
 

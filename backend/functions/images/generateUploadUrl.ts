@@ -4,6 +4,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuidv4 } from 'uuid';
 import { success, badRequest, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
+import { parseBody } from '../../lib/parseBody';
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'us-east-1',
@@ -20,11 +21,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   if (denied) return denied;
 
   try {
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    const body: GenerateUploadUrlBody = JSON.parse(event.body);
+    const { data: body, error: parseError } = parseBody<GenerateUploadUrlBody>(event);
+    if (parseError) return parseError;
 
     if (!body.fileName || !body.fileType || !body.folder) {
       return badRequest('fileName, fileType, and folder are required');

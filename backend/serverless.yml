@@ -28,7 +28,8 @@ provider:
     PROMOS_TABLE: ${self:service}-promos-${self:provider.stage}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
-    ADMIN_SETUP_KEY: cd59a70bebb3a6ef2d42b921b546754fff1a8ade98c311c09c4f05da4570008b
+    ADMIN_SETUP_KEY: ${env:ADMIN_SETUP_KEY, 'default-dev-key-change-in-production'}
+    ALLOWED_ORIGIN: ${self:custom.allowedOrigin.${self:provider.stage}, 'https://leagueszn.jpdxsolo.com'}
   iam:
     role:
       statements:
@@ -98,15 +99,32 @@ custom:
     httpPort: 3001
     environment:
       IS_OFFLINE: 'true'
+  allowedOrigin:
+    dev: https://leagueszn.jpdxsolo.com
+    devtest: https://dev.leagueszn.jpdxsolo.com
+    prod: https://leagueszn.jpdxsolo.com
+  corsConfig: &corsConfig
+    origin: ${self:custom.allowedOrigin.${self:provider.stage}, 'https://leagueszn.jpdxsolo.com'}
+    headers:
+      - Content-Type
+      - X-Amz-Date
+      - Authorization
+      - X-Api-Key
+      - X-Amz-Security-Token
+      - X-Amz-User-Agent
+    allowCredentials: true
   frontendBucket:
     dev: leagueszn.jpdxsolo.com
     devtest: dev.leagueszn.jpdxsolo.com
+    prod: leagueszn.jpdxsolo.com
   frontendDomain:
     dev: leagueszn.jpdxsolo.com
     devtest: dev.leagueszn.jpdxsolo.com
+    prod: leagueszn.jpdxsolo.com
   certificateArn:
     dev: ${env:PROD_ACM_CERTIFICATE_ARN, ''}
     devtest: ${env:DEV_ACM_CERTIFICATE_ARN, ''}
+    prod: ${env:PROD_ACM_CERTIFICATE_ARN, ''}
 
 functions:
   # Auth
@@ -122,7 +140,7 @@ functions:
       - http:
           path: auth/setup
           method: post
-          cors: true
+          cors: *corsConfig
 
   # User Management (Admin only)
   listUsers:
@@ -131,7 +149,7 @@ functions:
       - http:
           path: admin/users
           method: get
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   updateUserRole:
@@ -140,7 +158,7 @@ functions:
       - http:
           path: admin/users/role
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   toggleUserEnabled:
@@ -149,7 +167,7 @@ functions:
       - http:
           path: admin/users/toggle-enabled
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Site Configuration (feature toggles)
@@ -159,7 +177,7 @@ functions:
       - http:
           path: site-config
           method: get
-          cors: true
+          cors: *corsConfig
 
   updateSiteConfig:
     handler: functions/admin/updateSiteConfig.handler
@@ -167,7 +185,7 @@ functions:
       - http:
           path: admin/site-config
           method: put
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Player Profile (self-service for wrestlers)
@@ -177,7 +195,7 @@ functions:
       - http:
           path: players/me
           method: get
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   updateMyProfile:
@@ -186,7 +204,7 @@ functions:
       - http:
           path: players/me
           method: put
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Players
@@ -196,7 +214,7 @@ functions:
       - http:
           path: players
           method: get
-          cors: true
+          cors: *corsConfig
 
   createPlayer:
     handler: functions/players/createPlayer.handler
@@ -204,7 +222,7 @@ functions:
       - http:
           path: players
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   updatePlayer:
@@ -213,7 +231,7 @@ functions:
       - http:
           path: players/{playerId}
           method: put
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   deletePlayer:
@@ -222,7 +240,7 @@ functions:
       - http:
           path: players/{playerId}
           method: delete
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Matches
@@ -232,7 +250,7 @@ functions:
       - http:
           path: matches
           method: get
-          cors: true
+          cors: *corsConfig
 
   scheduleMatch:
     handler: functions/matches/scheduleMatch.handler
@@ -240,16 +258,17 @@ functions:
       - http:
           path: matches
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   recordResult:
     handler: functions/matches/recordResult.handler
+    timeout: 29
     events:
       - http:
           path: matches/{matchId}/result
           method: put
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Championships
@@ -259,7 +278,7 @@ functions:
       - http:
           path: championships
           method: get
-          cors: true
+          cors: *corsConfig
 
   createChampionship:
     handler: functions/championships/createChampionship.handler
@@ -267,7 +286,7 @@ functions:
       - http:
           path: championships
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   getChampionshipHistory:
@@ -276,7 +295,7 @@ functions:
       - http:
           path: championships/{championshipId}/history
           method: get
-          cors: true
+          cors: *corsConfig
 
   updateChampionship:
     handler: functions/championships/updateChampionship.handler
@@ -284,7 +303,7 @@ functions:
       - http:
           path: championships/{championshipId}
           method: put
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   deleteChampionship:
@@ -293,7 +312,7 @@ functions:
       - http:
           path: championships/{championshipId}
           method: delete
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   vacateChampionship:
@@ -302,7 +321,7 @@ functions:
       - http:
           path: championships/{championshipId}/vacate
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Tournaments
@@ -312,7 +331,7 @@ functions:
       - http:
           path: tournaments
           method: get
-          cors: true
+          cors: *corsConfig
 
   createTournament:
     handler: functions/tournaments/createTournament.handler
@@ -320,7 +339,7 @@ functions:
       - http:
           path: tournaments
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   updateTournament:
@@ -329,7 +348,7 @@ functions:
       - http:
           path: tournaments/{tournamentId}
           method: put
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Standings
@@ -339,7 +358,7 @@ functions:
       - http:
           path: standings
           method: get
-          cors: true
+          cors: *corsConfig
 
   # Seasons
   getSeasons:
@@ -348,7 +367,7 @@ functions:
       - http:
           path: seasons
           method: get
-          cors: true
+          cors: *corsConfig
 
   createSeason:
     handler: functions/seasons/createSeason.handler
@@ -356,7 +375,7 @@ functions:
       - http:
           path: seasons
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   updateSeason:
@@ -365,7 +384,7 @@ functions:
       - http:
           path: seasons/{seasonId}
           method: put
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   deleteSeason:
@@ -374,7 +393,7 @@ functions:
       - http:
           path: seasons/{seasonId}
           method: delete
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Divisions
@@ -384,7 +403,7 @@ functions:
       - http:
           path: divisions
           method: get
-          cors: true
+          cors: *corsConfig
 
   createDivision:
     handler: functions/divisions/createDivision.handler
@@ -392,7 +411,7 @@ functions:
       - http:
           path: divisions
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   updateDivision:
@@ -401,7 +420,7 @@ functions:
       - http:
           path: divisions/{divisionId}
           method: put
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   deleteDivision:
@@ -410,7 +429,7 @@ functions:
       - http:
           path: divisions/{divisionId}
           method: delete
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Events
@@ -420,7 +439,7 @@ functions:
       - http:
           path: events
           method: get
-          cors: true
+          cors: *corsConfig
 
   getEvent:
     handler: functions/events/getEvent.handler
@@ -428,7 +447,7 @@ functions:
       - http:
           path: events/{eventId}
           method: get
-          cors: true
+          cors: *corsConfig
 
   createEvent:
     handler: functions/events/createEvent.handler
@@ -436,7 +455,7 @@ functions:
       - http:
           path: events
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   updateEvent:
@@ -445,7 +464,7 @@ functions:
       - http:
           path: events/{eventId}
           method: put
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   deleteEvent:
@@ -454,7 +473,7 @@ functions:
       - http:
           path: events/{eventId}
           method: delete
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Contenders
@@ -464,7 +483,7 @@ functions:
       - http:
           path: championships/{championshipId}/contenders
           method: get
-          cors: true
+          cors: *corsConfig
 
   calculateRankings:
     handler: functions/contenders/calculateRankings.handler
@@ -473,7 +492,7 @@ functions:
       - http:
           path: admin/contenders/recalculate
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Images
@@ -483,7 +502,7 @@ functions:
       - http:
           path: images/upload-url
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Admin
@@ -494,7 +513,7 @@ functions:
       - http:
           path: admin/clear-all
           method: delete
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   seedData:
@@ -504,7 +523,7 @@ functions:
       - http:
           path: admin/seed-data
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Statistics
@@ -515,7 +534,7 @@ functions:
       - http:
           path: statistics
           method: get
-          cors: true
+          cors: *corsConfig
 
   # Fantasy Config
   getFantasyConfig:
@@ -524,7 +543,7 @@ functions:
       - http:
           path: fantasy/config
           method: get
-          cors: true
+          cors: *corsConfig
 
   updateFantasyConfig:
     handler: functions/fantasy/updateFantasyConfig.handler
@@ -532,7 +551,7 @@ functions:
       - http:
           path: admin/fantasy/config
           method: put
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Wrestler Costs
@@ -542,7 +561,7 @@ functions:
       - http:
           path: fantasy/wrestlers/costs
           method: get
-          cors: true
+          cors: *corsConfig
 
   initializeWrestlerCosts:
     handler: functions/fantasy/initializeWrestlerCosts.handler
@@ -550,7 +569,7 @@ functions:
       - http:
           path: admin/fantasy/wrestlers/costs/initialize
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   recalculateWrestlerCosts:
@@ -560,7 +579,7 @@ functions:
       - http:
           path: admin/fantasy/wrestlers/costs/recalculate
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   updateWrestlerCost:
@@ -569,7 +588,7 @@ functions:
       - http:
           path: admin/fantasy/wrestlers/{playerId}/cost
           method: put
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Fantasy Leaderboard
@@ -579,7 +598,7 @@ functions:
       - http:
           path: fantasy/leaderboard
           method: get
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Fantasy Scoring
@@ -590,7 +609,7 @@ functions:
       - http:
           path: fantasy/score
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Fantasy Picks
@@ -600,7 +619,7 @@ functions:
       - http:
           path: fantasy/picks/{eventId}
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   getUserPicks:
@@ -609,7 +628,7 @@ functions:
       - http:
           path: fantasy/picks/{eventId}
           method: get
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   getAllMyPicks:
@@ -618,7 +637,7 @@ functions:
       - http:
           path: fantasy/me/picks
           method: get
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   clearPicks:
@@ -627,7 +646,7 @@ functions:
       - http:
           path: fantasy/picks/{eventId}
           method: delete
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Challenges
@@ -637,7 +656,7 @@ functions:
       - http:
           path: challenges
           method: get
-          cors: true
+          cors: *corsConfig
 
   createChallenge:
     handler: functions/challenges/createChallenge.handler
@@ -645,7 +664,7 @@ functions:
       - http:
           path: challenges
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   respondToChallenge:
@@ -654,7 +673,7 @@ functions:
       - http:
           path: challenges/{challengeId}/respond
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   cancelChallenge:
@@ -663,7 +682,7 @@ functions:
       - http:
           path: challenges/{challengeId}/cancel
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   # Promos
@@ -673,7 +692,7 @@ functions:
       - http:
           path: promos
           method: get
-          cors: true
+          cors: *corsConfig
 
   getPromo:
     handler: functions/promos/getPromo.handler
@@ -681,7 +700,7 @@ functions:
       - http:
           path: promos/{promoId}
           method: get
-          cors: true
+          cors: *corsConfig
 
   createPromo:
     handler: functions/promos/createPromo.handler
@@ -689,7 +708,7 @@ functions:
       - http:
           path: promos
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   reactToPromo:
@@ -698,7 +717,7 @@ functions:
       - http:
           path: promos/{promoId}/react
           method: post
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
   adminUpdatePromo:
@@ -707,7 +726,7 @@ functions:
       - http:
           path: admin/promos/{promoId}
           method: put
-          cors: true
+          cors: *corsConfig
           authorizer: adminAuthorizer
 
 resources:
@@ -717,7 +736,7 @@ resources:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
         ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Origin: "'${self:custom.allowedOrigin.${self:provider.stage}, 'https://leagueszn.jpdxsolo.com'}'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
         ResponseType: DEFAULT_4XX
@@ -728,7 +747,7 @@ resources:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
         ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Origin: "'${self:custom.allowedOrigin.${self:provider.stage}, 'https://leagueszn.jpdxsolo.com'}'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
         ResponseType: DEFAULT_5XX
@@ -739,7 +758,7 @@ resources:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
         ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Origin: "'${self:custom.allowedOrigin.${self:provider.stage}, 'https://leagueszn.jpdxsolo.com'}'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
         ResponseType: UNAUTHORIZED
@@ -750,7 +769,7 @@ resources:
       Type: AWS::ApiGateway::GatewayResponse
       Properties:
         ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Origin: "'${self:custom.allowedOrigin.${self:provider.stage}, 'https://leagueszn.jpdxsolo.com'}'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
           gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
         ResponseType: ACCESS_DENIED

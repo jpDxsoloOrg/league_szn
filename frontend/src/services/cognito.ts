@@ -283,7 +283,7 @@ export const cognitoAuth = {
   hasRole: (role: UserRole): boolean => {
     const groups = cognitoAuth.getUserGroups();
     if (groups.includes('Admin')) return true;
-    if (groups.includes('Moderator')) return true;
+    if (groups.includes('Moderator') && role !== 'Admin') return true;
     return groups.includes(role);
   },
 
