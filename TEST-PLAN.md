@@ -155,23 +155,24 @@ npx playwright test
 ## Feature: Matches
 
 ### Backend Unit Tests
-- [ ] P0: `backend/functions/matches/recordResult.ts` — **Core transaction**: updates match status to completed; increments winner wins + loser losses in player stats; increments season standings; handles draw (both sides get draws) (~6 tests)
-- [ ] P0: `backend/functions/matches/recordResult.ts` — **Validation**: returns 400 if winners/losers empty; returns 400 if overlap between winners and losers; returns 404 if match not found; returns 400 if match already completed (~4 tests)
-- [ ] P0: `backend/functions/matches/recordResult.ts` — **Championship transaction**: title defense increments defenses; title change updates currentChampion + closes old reign + creates new reign; sets isTitleDefense flag; handles tag team championships (array vs string) (~5 tests)
-- [ ] P0: `backend/functions/matches/recordResult.ts` — **Tournament progression (round-robin)**: updates standings; detects completion; determines winner by wins (~3 tests)
-- [ ] P0: `backend/functions/matches/recordResult.ts` — **Tournament progression (single-elimination)**: advances winner to next bracket round; handles byes; detects tournament completion (~3 tests)
-- [ ] P0: `backend/functions/matches/recordResult.ts` — **Event auto-complete**: finds events containing match; marks event completed if all matches done; marks in-progress if partial; triggers calculateFantasyPoints on event completion (~4 tests)
-- [ ] P0: `backend/functions/matches/recordResult.ts` — **Background ops**: fires ranking recalculation + cost recalculation via Promise.allSettled; doesn't fail if background ops fail (~2 tests)
-- [ ] P0: `backend/functions/matches/recordResult.ts` — **Concurrency**: uses optimistic locking (version field); returns 400 with retry message on TransactionCancelled (~2 tests)
-- [ ] P1: `backend/functions/matches/scheduleMatch.ts` — Creates match with matchType + participants; validates 2+ participants; no duplicate participants; all participants must exist; championship must exist if isChampionship; division restriction for championship matches; auto-adds to event matchCards (~8 tests)
-- [ ] P1: `backend/functions/matches/getMatches.ts` — Returns all matches via scan; filters by tournamentId via TournamentIndex GSI; sorts by date descending (~3 tests)
+- [x] P0: `backend/functions/matches/recordResult.ts` — **Core transaction**: updates match status to completed; increments winner wins + loser losses in player stats; increments season standings (5 tests) ✅ `functions/matches/__tests__/recordResult.test.ts`
+- [x] P0: `backend/functions/matches/recordResult.ts` — **Validation**: returns 400 if winners/losers empty; returns 400 if overlap between winners and losers; returns 404 if match not found; returns 400 if match already completed (7 tests) ✅ `functions/matches/__tests__/recordResult.test.ts`
+- [x] P0: `backend/functions/matches/recordResult.ts` — **Championship transaction**: title defense increments defenses; title change updates currentChampion + closes old reign + creates new reign; sets isTitleDefense flag; handles tag team championships (6 tests) ✅ `functions/matches/__tests__/recordResultChampionship.test.ts`
+- [x] P0: `backend/functions/matches/recordResult.ts` — **Tournament progression (round-robin)**: updates standings; status transitions; initializes new participants (4 tests) ✅ `functions/matches/__tests__/recordResultTournament.test.ts`
+- [x] P0: `backend/functions/matches/recordResult.ts` — **Tournament progression (single-elimination)**: advances winner to next bracket round; detects tournament completion; status transitions (4 tests) ✅ `functions/matches/__tests__/recordResultTournament.test.ts`
+- [x] P0: `backend/functions/matches/recordResult.ts` — **Event auto-complete**: finds events containing match; marks event completed if all matches done; marks in-progress if partial; succeeds if auto-complete throws (4 tests) ✅ `functions/matches/__tests__/recordResultTournament.test.ts`
+- [x] P0: `backend/functions/matches/recordResult.ts` — **Background ops**: fires ranking recalculation + cost recalculation via Promise.allSettled; doesn't fail if background ops fail (2 tests) ✅ `functions/matches/__tests__/recordResult.test.ts`
+- [x] P0: `backend/functions/matches/recordResult.ts` — **Concurrency**: uses optimistic locking (version field); returns 400 with retry message on TransactionCancelled (2 tests) ✅ `functions/matches/__tests__/recordResult.test.ts`
+- [x] P1: `backend/functions/matches/scheduleMatch.ts` — Creates match with matchType + participants; validates 2+ participants; no duplicate participants; all participants must exist; championship must exist if isChampionship; division restriction for championship matches; auto-adds to event matchCards (18 tests) ✅ `functions/matches/__tests__/scheduleMatch.test.ts`
+- [x] P1: `backend/functions/matches/getMatches.ts` — Returns all matches via scan; filters by status; sorts by date descending; error handling (5 tests) ✅ `functions/matches/__tests__/getMatches.test.ts`
 
 ### Frontend Component Tests
 - [ ] P1: `frontend/src/components/Matches.tsx` — Renders match list; shows scheduled vs completed; displays participant names (~3 tests)
 - [ ] P1: `frontend/src/components/admin/ScheduleMatch.tsx` — Renders form with match type, participants, options; loads players/championships/tournaments/seasons/events; handles tag team mode (multiple teams); submits match; shows validation errors (~6 tests)
 - [ ] P1: `frontend/src/components/admin/RecordResult.tsx` — Lists scheduled matches; filters by event; selects winners (team vs individual); submits result; handles loading/error/success (~5 tests)
 
-**Section total: ~54 tests**
+**Backend tests written: 57/57 ✅** | Frontend tests remaining: ~14
+**Section total: ~71 tests**
 
 ---
 
@@ -325,13 +326,13 @@ npx playwright test
 ## Feature: Statistics
 
 ### Backend Unit Tests
-- [ ] P0: `backend/functions/statistics/getStatistics.ts` — **player-stats section**: computes stats for 5 match types (overall/singles/tag/ladder/cage); calculates championship history per title; computes achievements earned (~6 tests)
-- [ ] P0: `backend/functions/statistics/getStatistics.ts` — **head-to-head section**: computes H2H record between two players; returns recent 5 results; includes overall stats for both (~4 tests)
-- [ ] P0: `backend/functions/statistics/getStatistics.ts` — **leaderboards section**: most wins, best win% (min 5 matches), longest streak, most championships, longest reign (~5 tests)
-- [ ] P0: `backend/functions/statistics/getStatistics.ts` — **records section**: overall records + championship records + streak records + match type records + active threats (~5 tests)
-- [ ] P0: `backend/functions/statistics/getStatistics.ts` — **achievements section**: evaluates 17 achievement definitions; tracks player progress; milestone/record/special types; "Deadman Walking" checks win after 4-loss streak; Grand Slam checks all active championships (~6 tests)
-- [ ] P0: `backend/functions/statistics/getStatistics.ts` — **Helper functions**: categorizeMatch maps stipulation/matchType to stat type; computeStreaks calculates current/longest win/loss; computePlayerStatistics aggregates per type; handles tag championships (array vs string); handles ongoing reigns (~5 tests)
-- [ ] P1: `backend/functions/statistics/getStatistics.ts` — **Validation**: returns 400 if section missing; validates section values; returns 400 if head-to-head without player IDs (~3 tests)
+- [x] P0: `backend/functions/statistics/getStatistics.ts` — **player-stats section**: computes stats for 5 match types; championship history per title; ongoing reigns; achievements (7 tests) ✅ `functions/statistics/__tests__/getStatistics.test.ts`
+- [x] P0: `backend/functions/statistics/getStatistics.ts` — **head-to-head section**: computes H2H record; recent results; overall stats; no matches case (4 tests) ✅ `functions/statistics/__tests__/getStatistics.test.ts`
+- [x] P0: `backend/functions/statistics/getStatistics.ts` — **leaderboards section**: most wins, best win%, longest streak, most championships, longest reign (5 tests) ✅ `functions/statistics/__tests__/getStatistics-leaderboards.test.ts`
+- [x] P0: `backend/functions/statistics/getStatistics.ts` — **records section**: overall + championship + streak + match type records + active threats (5 tests) ✅ `functions/statistics/__tests__/getStatistics-leaderboards.test.ts`
+- [x] P0: `backend/functions/statistics/getStatistics.ts` — **achievements section**: 18 achievement definitions; milestone/record/special types; Deadman Walking; Grand Slam; Cage Master; Peoples Champion (12 tests) ✅ `functions/statistics/__tests__/getStatistics-achievements.test.ts`
+- [x] P0: `backend/functions/statistics/getStatistics.ts` — **Helper functions**: categorizeMatch maps stipulations; computeStreaks; computePlayerStatistics; handles tag championships (5 tests) ✅ `functions/statistics/__tests__/getStatistics-achievements.test.ts`
+- [x] P1: `backend/functions/statistics/getStatistics.ts` — **Validation**: returns 400 if section missing; unknown section; error handling (3 tests) ✅ `functions/statistics/__tests__/getStatistics.test.ts`
 
 ### Frontend Component Tests
 - [ ] P2: `frontend/src/components/statistics/PlayerStats.tsx` — Renders player selector; shows W-L-D card + streak + match type breakdown + championship history + achievements; handles loading/error (~5 tests)
@@ -340,20 +341,22 @@ npx playwright test
 - [ ] P2: `frontend/src/components/statistics/RecordBook.tsx` — Shows all-time records with active threats (~3 tests)
 - [ ] P2: `frontend/src/components/statistics/Achievements.tsx` — Shows achievement badges and progress bars (~3 tests)
 
-**Section total: ~51 tests**
+**Backend tests written: 41/41 ✅** | Frontend tests remaining: ~17
+**Section total: ~58 tests**
 
 ---
 
 ## Feature: Contenders
 
 ### Backend Unit Tests
-- [ ] P0: `backend/functions/contenders/calculateRankings.ts` — Calculates rankings using rankingCalculator lib; preserves previousRank/peakRank/weeksAtTop; deletes old rankings before writing new; writes ranking history with weekKey; optional championshipId filter; auth requires Admin (~6 tests)
-- [ ] P1: `backend/functions/contenders/getContenders.ts` — Returns contenders for championship via RankIndex GSI; filters out current champion; enriches with player names/wrestlers/images; calculates movement (previousRank - currentRank); re-ranks after filtering; public endpoint (~5 tests)
+- [x] P0: `backend/functions/contenders/calculateRankings.ts` — Calculates rankings using rankingCalculator lib; preserves previousRank/peakRank/weeksAtTop; deletes old rankings; writes ranking history with weekKey; optional championshipId filter; error handling (7 tests) ✅ `functions/contenders/__tests__/contenders.test.ts`
+- [x] P1: `backend/functions/contenders/getContenders.ts` — Returns contenders for championship via RankIndex GSI; filters out current champion; enriches with player names; calculates movement; missing championshipId; not-found; error handling (7 tests) ✅ `functions/contenders/__tests__/contenders.test.ts`
 
 ### Frontend Component Tests
 - [ ] P2: `frontend/src/components/contenders/ContenderRankings.tsx` — Renders championship selector (grouped by division); shows current champion card; displays ranked contenders with movement indicators; handles loading/error/empty states (~5 tests)
 
-**Section total: ~16 tests**
+**Backend tests written: 14/14 ✅** | Frontend tests remaining: ~5
+**Section total: ~19 tests**
 
 ---
 
