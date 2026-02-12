@@ -179,18 +179,19 @@ npx playwright test
 ## Feature: Championships
 
 ### Backend Unit Tests
-- [ ] P1: `backend/functions/championships/createChampionship.ts` — Creates championship; validates name + type (singles/tag); auth requires Admin (~3 tests)
-- [ ] P1: `backend/functions/championships/getChampionships.ts` — Returns active championships (isActive !== false); returns empty array (~2 tests)
-- [ ] P1: `backend/functions/championships/getChampionshipHistory.ts` — Returns history sorted by wonDate descending; public endpoint (~2 tests)
-- [ ] P1: `backend/functions/championships/updateChampionship.ts` — Updates championship; returns 404 if not found; dynamic update expression; auth requires Admin (~3 tests)
-- [ ] P1: `backend/functions/championships/deleteChampionship.ts` — Deletes championship + cascades to history; returns 404 if not found; auth requires Admin (~3 tests)
-- [ ] P1: `backend/functions/championships/vacateChampionship.ts` — Vacates championship via transaction; closes current reign with daysHeld; returns 400 if already vacant; auth requires Admin (~4 tests)
+- [x] P1: `backend/functions/championships/createChampionship.ts` — Creates singles/tag championship; validates name, type; optional fields; null body (6 tests) ✅ `functions/championships/__tests__/championships.test.ts`
+- [x] P1: `backend/functions/championships/getChampionships.ts` — Filters isActive !== false; empty array (2 tests) ✅ `functions/championships/__tests__/championships.test.ts`
+- [x] P1: `backend/functions/championships/getChampionshipHistory.ts` — Returns history descending; empty; missing championshipId (3 tests) ✅ `functions/championships/__tests__/championships.test.ts`
+- [x] P1: `backend/functions/championships/updateChampionship.ts` — Updates fields; dynamic expression; 404; no valid fields; missing id (5 tests) ✅ `functions/championships/__tests__/championships.test.ts`
+- [x] P1: `backend/functions/championships/deleteChampionship.ts` — Cascading delete with history; no history; 404; missing id (4 tests) ✅ `functions/championships/__tests__/championships.test.ts`
+- [x] P1: `backend/functions/championships/vacateChampionship.ts` — Full vacate transaction; no open history; already vacant; 404; missing id (5 tests) ✅ `functions/championships/__tests__/championships.test.ts`
 
 ### Frontend Component Tests
 - [ ] P1: `frontend/src/components/Championships.tsx` — Renders championship list with current holders; handles empty state (~3 tests)
 - [ ] P1: `frontend/src/components/admin/ManageChampionships.tsx` — Create/edit/delete championships; image upload; vacate title; shows current champion; division assignment (~7 tests)
 
-**Section total: ~27 tests**
+**Backend tests written: 25/25 ✅** | Frontend tests remaining: ~10
+**Section total: ~35 tests**
 
 ---
 
@@ -257,19 +258,19 @@ npx playwright test
 ## Feature: Fantasy
 
 ### Backend Unit Tests
-- [ ] P0: `backend/functions/fantasy/submitPicks.ts` — Happy path: creates picks for event; validates event not completed/cancelled/locked; validates picks object structure; enforces picksPerDivision limit; rejects duplicate players across divisions; validates all players exist and belong to correct division; enforces budget constraint; preserves createdAt on update (~10 tests)
-- [ ] P0: `backend/functions/fantasy/calculateFantasyPoints.ts` — Scoring: base points = (participants - 1) * baseWinPoints; championship bonus +5; title win +10; title defense +5; only counts completed matches; wrestlers who didn't compete get 0 with reason; stores breakdown per wrestler (~8 tests)
-- [ ] P1: `backend/functions/fantasy/clearPicks.ts` — Deletes user picks; validates event not completed/locked; only deletes own picks via fantasyUserId; auth requires Fantasy (~4 tests)
-- [ ] P1: `backend/functions/fantasy/getAllMyPicks.ts` — Returns user picks via UserPicksIndex GSI; sorts by eventId descending; auth requires Fantasy (~2 tests)
-- [ ] P1: `backend/functions/fantasy/getFantasyConfig.ts` — Returns config; returns DEFAULT_CONFIG with 12 settings if none exists; public endpoint (~2 tests)
-- [ ] P1: `backend/functions/fantasy/getFantasyLeaderboard.ts` — Aggregates points across events; filters by seasonId; calculates perfect picks; calculates current streak (consecutive events with points > 0); skips non-participated events for streak; auth requires Fantasy (~6 tests)
-- [ ] P1: `backend/functions/fantasy/getUserPicks.ts` — Returns picks for event; returns 404 if no picks; auth requires Fantasy (~3 tests)
-- [ ] P1: `backend/functions/fantasy/getWrestlerCosts.ts` — Returns all wrestler costs via scan; public endpoint (~2 tests)
-- [ ] P1: `backend/functions/fantasy/initializeWrestlerCosts.ts` — Creates costs for players without existing costs; skips players that already have costs; auth requires Admin (~3 tests)
-- [ ] P1: `backend/functions/fantasy/recalculateWrestlerCosts.ts` — Analyzes matches from last 30 days; newCost = baseCost + (wins * costPerWin) - (losses * costPerLoss); clamps between 50%-200% of baseCost; keeps last 20 cost history entries; only runs if costFluctuationEnabled (~6 tests)
-- [ ] P1: `backend/functions/fantasy/scoreCompletedEvents.ts` — Finds completed events with unscored picks; calls calculateFantasyPoints for each; returns scored event IDs (~3 tests)
-- [ ] P1: `backend/functions/fantasy/updateFantasyConfig.ts` — Merges with existing config; auth requires Admin (~2 tests)
-- [ ] P1: `backend/functions/fantasy/updateWrestlerCost.ts` — Updates cost; validates playerId + (currentCost or baseCost); adds history entry with admin reason; keeps last 20 history entries; auth requires Admin (~4 tests)
+- [x] P0: `backend/functions/fantasy/submitPicks.ts` — Auth, validation, event status, picks structure, division limits, duplicates, player validation, budget, createdAt preservation (19 tests) ✅ `functions/fantasy/__tests__/submitPicks.test.ts`
+- [x] P0: `backend/functions/fantasy/calculateFantasyPoints.ts` — Base scoring, championship bonuses, title defense, zero scoring, breakdown, completed matches only, config defaults, multi-user (13 tests) ✅ `functions/fantasy/__tests__/calculateFantasyPoints.test.ts`
+- [x] P1: `backend/functions/fantasy/clearPicks.ts` — Auth, validation, event status checks, deletes with composite key (7 tests) ✅ `functions/fantasy/__tests__/fantasyPicks.test.ts`
+- [x] P1: `backend/functions/fantasy/getAllMyPicks.ts` — Auth, GSI query, sort, empty results (5 tests) ✅ `functions/fantasy/__tests__/fantasyPicks.test.ts`
+- [x] P1: `backend/functions/fantasy/getFantasyConfig.ts` — Returns config, DEFAULT_CONFIG with 14 fields, error handling (3 tests) ✅ `functions/fantasy/__tests__/fantasyConfig.test.ts`
+- [x] P1: `backend/functions/fantasy/getFantasyLeaderboard.ts` — Points aggregation, season filter, perfect picks, streak calculation, sort, username fallback (12 tests) ✅ `functions/fantasy/__tests__/fantasyLeaderboard.test.ts`
+- [x] P1: `backend/functions/fantasy/getUserPicks.ts` — Auth, validation, 404, returns picks (6 tests) ✅ `functions/fantasy/__tests__/fantasyPicks.test.ts`
+- [x] P1: `backend/functions/fantasy/getWrestlerCosts.ts` — Merged player+cost data, trend calculation, defaults, empty (6 tests) ✅ `functions/fantasy/__tests__/wrestlerCosts.test.ts`
+- [x] P1: `backend/functions/fantasy/initializeWrestlerCosts.ts` — Auth, creates new costs, skips existing, custom baseCost (6 tests) ✅ `functions/fantasy/__tests__/wrestlerCosts.test.ts`
+- [x] P1: `backend/functions/fantasy/recalculateWrestlerCosts.ts` — Formula, clamping, history, unchanged cost, 20-entry limit, config disabled (12 tests) ✅ `functions/fantasy/__tests__/recalculateWrestlerCosts.test.ts`
+- [x] P1: `backend/functions/fantasy/scoreCompletedEvents.ts` — Auth, scores unscored picks, deduplicates events, error resilience (8 tests) ✅ `functions/fantasy/__tests__/scoreCompletedEvents.test.ts`
+- [x] P1: `backend/functions/fantasy/updateFantasyConfig.ts` — Auth, validation, merges config, enforces GLOBAL key (7 tests) ✅ `functions/fantasy/__tests__/fantasyConfig.test.ts`
+- [x] P1: `backend/functions/fantasy/updateWrestlerCost.ts` — Auth, validation, 404, updates with history, trims to 20 entries (10 tests) ✅ `functions/fantasy/__tests__/wrestlerCosts.test.ts`
 
 ### Frontend Component Tests
 - [ ] P1: `frontend/src/components/fantasy/FantasyDashboard.tsx` — Renders upcoming show card; shows current picks preview; displays stats + recent results; auto-scores unscored picks on mount; handles loading state (~5 tests)
@@ -281,7 +282,8 @@ npx playwright test
 - [ ] P1: `frontend/src/components/admin/FantasyConfig.tsx` — Renders all 14 config fields; tracks unsaved changes; saves config; resets to original; toggles cost fluctuation fields conditionally (~5 tests)
 - [ ] P1: `frontend/src/components/admin/ManageFantasyShows.tsx` — Configures fantasy picks for events; locks/unlocks events (~3 tests)
 
-**Section total: ~80 tests**
+**Backend tests written: 114/114 ✅** | Frontend tests remaining: ~32
+**Section total: ~146 tests**
 
 ---
 
@@ -363,14 +365,15 @@ npx playwright test
 ## Feature: Users (Admin)
 
 ### Backend Unit Tests
-- [ ] P1: `backend/functions/users/listUsers.ts` — Lists Cognito users with groups; formats output with email/username/enabled/groups; auth requires Admin (~3 tests)
-- [ ] P1: `backend/functions/users/toggleUserEnabled.ts` — Enables/disables user; validates username required; auth requires Admin (~3 tests)
-- [ ] P0: `backend/functions/users/updateUserRole.ts` — Promotes/demotes roles; validates username + role + action; only Super Admin can manage Admin/Moderator roles; promoting to Wrestler auto-adds to Fantasy + auto-creates Player record; uses Cognito sub for Player.userId; non-blocking player creation; auth requires Admin (~8 tests)
+- [x] P1: `backend/functions/users/listUsers.ts` — Auth, formatted user list with groups, error handling, group fetch failure per user (4 tests) ✅ `functions/users/__tests__/users.test.ts`
+- [x] P1: `backend/functions/users/toggleUserEnabled.ts` — Auth, validation, enable/disable commands, error handling (6 tests) ✅ `functions/users/__tests__/users.test.ts`
+- [x] P0: `backend/functions/users/updateUserRole.ts` — Auth, validation, role/action checks, Moderator rejection, promote/demote, Wrestler auto-Fantasy + auto-Player, skip existing player, non-blocking errors (10 tests) ✅ `functions/users/__tests__/users.test.ts`
 
 ### Frontend Component Tests
 - [ ] P1: `frontend/src/components/admin/ManageUsers.tsx` — Renders user list with filters (all/wrestler-requests/wrestlers/admins/disabled); approve wrestler requests; promote/demote roles; enable/disable users; assign divisions; SuperAdmin-only actions for Admin/Moderator management (~7 tests)
 
-**Section total: ~21 tests**
+**Backend tests written: 20/20 ✅** | Frontend tests remaining: ~7
+**Section total: ~27 tests**
 
 ---
 
