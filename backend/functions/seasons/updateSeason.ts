@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, badRequest, notFound, serverError, conflict } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 
 interface UpdateSeasonBody {
   name?: string;
@@ -16,11 +17,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Season ID is required');
     }
 
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    const body: UpdateSeasonBody = JSON.parse(event.body);
+    const { data: body, error: parseError } = parseBody<UpdateSeasonBody>(event);
+    if (parseError) return parseError;
 
     // Get existing season
     const existingSeason = await dynamoDb.get({

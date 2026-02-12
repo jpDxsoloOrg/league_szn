@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { created, badRequest, serverError } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 
 interface CreateTournamentBody {
   name: string;
@@ -89,11 +90,8 @@ const initializeRoundRobinStandings = (participants: string[]): Record<string, a
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    const body: CreateTournamentBody = JSON.parse(event.body);
+    const { data: body, error: parseError } = parseBody<CreateTournamentBody>(event);
+    if (parseError) return parseError;
 
     if (!body.name || !body.type || !body.participants || body.participants.length < 2) {
       return badRequest('Name, type, and at least 2 participants are required');

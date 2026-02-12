@@ -45,6 +45,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           PROD_ACM_CERTIFICATE_ARN: ${{ secrets.PROD_ACM_CERTIFICATE_ARN }}
+          ADMIN_SETUP_KEY: ${{ secrets.ADMIN_SETUP_KEY }}
 
       - name: Extract Cognito IDs from CloudFormation
         id: cognito
@@ -81,7 +82,7 @@ jobs:
 
       - name: Deploy frontend to S3
         working-directory: frontend
-        run: aws s3 sync dist s3://leagueszn.jpdxsolo.com --delete
+        run: aws s3 sync dist s3://leagueszn.jpdxsolo.com --delete --exclude "*.map"
 
       - name: Get CloudFront Distribution ID
         id: cloudfront

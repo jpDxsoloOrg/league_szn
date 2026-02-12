@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { created, badRequest, serverError } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 
 interface CreateDivisionBody {
   name: string;
@@ -10,11 +11,8 @@ interface CreateDivisionBody {
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    const body: CreateDivisionBody = JSON.parse(event.body);
+    const { data: body, error: parseError } = parseBody<CreateDivisionBody>(event);
+    if (parseError) return parseError;
 
     if (!body.name) {
       return badRequest('Name is required');

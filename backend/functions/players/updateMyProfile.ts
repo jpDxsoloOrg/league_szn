@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, requireRole } from '../../lib/auth';
 
 const ALLOWED_FIELDS = ['name', 'currentWrestler', 'imageUrl'];
@@ -14,11 +15,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { sub } = getAuthContext(event);
 
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    const body = JSON.parse(event.body);
+    const { data: body, error: parseError } = parseBody(event);
+    if (parseError) return parseError;
 
     // Look up the player by userId via UserIdIndex GSI
     const queryResult = await dynamoDb.query({

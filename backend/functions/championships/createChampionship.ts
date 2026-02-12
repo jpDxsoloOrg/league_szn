@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { created, badRequest, serverError } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 
 interface CreateChampionshipBody {
   name: string;
@@ -13,11 +14,8 @@ interface CreateChampionshipBody {
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    const body: CreateChampionshipBody = JSON.parse(event.body);
+    const { data: body, error: parseError } = parseBody<CreateChampionshipBody>(event);
+    if (parseError) return parseError;
 
     if (!body.name || !body.type) {
       return badRequest('Name and type are required');

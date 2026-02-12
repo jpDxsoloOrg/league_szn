@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 
 interface MatchCardEntry {
   position: number;
@@ -39,11 +40,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Event ID is required');
     }
 
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    const body: UpdateEventBody = JSON.parse(event.body);
+    const { data: body, error: parseError } = parseBody<UpdateEventBody>(event);
+    if (parseError) return parseError;
 
     // Check if event exists
     const existing = await dynamoDb.get({

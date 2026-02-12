@@ -2,8 +2,12 @@ import { APIGatewayProxyResult } from 'aws-lambda';
 
 const headers = {
   'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*',
+  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || 'https://leagueszn.jpdxsolo.com',
   'Access-Control-Allow-Credentials': true,
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Cache-Control': 'no-store',
+  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
 };
 
 export const success = (data: any): APIGatewayProxyResult => {
