@@ -1,0 +1,216 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
+
+// --- Hoisted mocks ---
+const { mockCreateEvent, mockGetAllSeasons } = vi.hoisted(() => ({
+  mockCreateEvent: vi.fn(),
+  mockGetAllSeasons: vi.fn(),
+}));
+
+vi.mock('../../../services/api', () => ({
+  eventsApi: {
+    create: mockCreateEvent,
+  },
+  seasonsApi: {
+    getAll: mockGetAllSeasons,
+  },
+}));
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, fallback?: string) => {
+      const translations: Record<string, string> = {
+        'events.admin.createEvent': 'Create Event',
+        'events.admin.name': 'Event Name',
+        'events.admin.namePlaceholder': 'e.g., WrestleMania',
+        'events.admin.eventType': 'Event Type',
+        'events.types.ppv': 'PPV',
+        'events.types.weekly': 'Weekly',
+        'events.types.special': 'Special',
+        'events.types.house': 'House Show',
+        'events.admin.date': 'Date & Time',
+        'events.admin.venue': 'Venue',
+        'events.admin.venuePlaceholder': 'e.g., Madison Square Garden',
+        'events.admin.description': 'Description',
+        'events.admin.descriptionPlaceholder': 'Event description...',
+        'events.admin.themeColor': 'Theme Color',
+        'events.admin.season': 'Season',
+        'events.admin.noSeason': '-- No Season --',
+        'events.admin.saveEvent': 'Save Event',
+        'events.admin.saveSuccess': 'Event created successfully!',
+        'common.saving': 'Saving...',
+      };
+      return translations[key] || fallback || key;
+    },
+  }),
+}));
+
+vi.mock('../CreateEvent.css', () => ({}));
+
+import CreateEvent from '../CreateEvent';
+
+// --- Test data ---
+const mockSeasons = [
+  {
+    seasonId: 's1',
+    name: 'Season 1',
+    startDate: '2025-01-01T00:00:00.000Z',
+    status: 'active' as const,
+    createdAt: '2025-01-01',
+    updatedAt: '2025-01-01',
+  },
+  {
+    seasonId: 's2',
+    name: 'Season 2',
+    startDate: '2025-06-01T00:00:00.000Z',
+    status: 'completed' as const,
+    createdAt: '2025-06-01',
+    updatedAt: '2025-06-01',
+  },
+];
+
+function renderCreateEvent() {
+  return render(
+    <BrowserRouter>
+      <CreateEvent />
+    </BrowserRouter>
+  );
+}
+
+describe('CreateEvent', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetAllSeasons.mockResolvedValue(mockSeasons);
+  });
+
+  it('renders form with all required fields', async () => {
+    renderCreateEvent();
+
+    // Title
+    expect(screen.getByText('Create Event')).toBeInTheDocument();
+
+    // Form fields
+    expect(screen.getByText('Event Name')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('e.g., WrestleMania')).toBeInTheDocument();
+
+    expect(screen.getByText('Event Type')).toBeInTheDocument();
+    const typeSelect = document.querySelector('select.form-select') as HTMLSelectElement;
+    expect(typeSelect).toBeInTheDocument();
+    expect(typeSelect.value).toBe('weekly'); // default
+
+    expect(screen.getByText('Date & Time')).toBeInTheDocument();
+    expect(screen.getByText('Venue')).toBeInTheDocument();
+    expect(screen.getByText('Description')).toBeInTheDocument();
+    expect(screen.getByText('Theme Color')).toBeInTheDocument();
+    expect(screen.getByText('Season')).toBeInTheDocument();
+
+    // Save button present and disabled (no name or date yet)
+    const saveButton = screen.getByText('Save Event');
+    expect(saveButton).toBeInTheDocument();
+    expect(saveButton).toBeDisabled();
+  });
+
+  it('populates season selection dropdown with fetched seasons', async () => {
+    renderCreateEvent();
+
+    await waitFor(() => {
+      expect(screen.getByText('Season 1')).toBeInTheDocument();
+    });
+
+    // Season dropdown has the default empty option plus both seasons
+    expect(screen.getByText('-- No Season --')).toBeInTheDocument();
+    expect(screen.getByText('Season 1')).toBeInTheDocument();
+    expect(screen.getByText('Season 2')).toBeInTheDocument();
+
+    // The season select options have the correct values
+    const seasonSelect = screen.getAllByRole('combobox')[1]; // second select (first is eventType)
+    expect(seasonSelect).toBeInTheDocument();
+  });
+
+  it('renders theme color preset buttons and custom color input', () => {
+    mockGetAllSeasons.mockResolvedValue([]);
+
+    renderCreateEvent();
+
+    // 8 preset color buttons
+    const colorButtons = document.querySelectorAll('.color-preset');
+    expect(colorButtons.length).toBe(8);
+
+    // First preset should be selected by default (#d4af37)
+    expect(colorButtons[0]).toHaveClass('selected');
+
+    // Custom color input
+    const colorInput = document.querySelector('input[type="color"]') as HTMLInputElement;
+    expect(colorInput).toBeInTheDocument();
+    expect(colorInput.value).toBe('#d4af37');
+
+    // Click a different color preset
+    fireEvent.click(colorButtons[2]); // #1e40af
+    expect(colorButtons[2]).toHaveClass('selected');
+    expect(colorButtons[0]).not.toHaveClass('selected');
+  });
+
+  it('validates required fields and submits event successfully', async () => {
+    mockCreateEvent.mockResolvedValue({
+      eventId: 'e-new',
+      name: 'Royal Rumble',
+      eventType: 'ppv',
+      date: '2025-07-20T20:00:00.000Z',
+      status: 'upcoming',
+      matchCards: [],
+      createdAt: '2025-01-01',
+      updatedAt: '2025-01-01',
+    });
+
+    renderCreateEvent();
+
+    await waitFor(() => {
+      expect(screen.getByText('Season 1')).toBeInTheDocument();
+    });
+
+    const saveButton = screen.getByText('Save Event');
+
+    // Button disabled initially (no name or date)
+    expect(saveButton).toBeDisabled();
+
+    // Fill name only -- still disabled (no date)
+    const nameInput = screen.getByPlaceholderText('e.g., WrestleMania');
+    fireEvent.change(nameInput, { target: { value: 'Royal Rumble' } });
+    expect(saveButton).toBeDisabled();
+
+    // Fill date -- now enabled
+    const dateInput = document.querySelector('input[type="datetime-local"]') as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: '2025-07-20T20:00' } });
+    expect(saveButton).not.toBeDisabled();
+
+    // Select PPV event type
+    const typeSelects = screen.getAllByRole('combobox');
+    fireEvent.change(typeSelects[0], { target: { value: 'ppv' } });
+
+    // Select season
+    fireEvent.change(typeSelects[1], { target: { value: 's1' } });
+
+    // Submit
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(mockCreateEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Royal Rumble',
+          eventType: 'ppv',
+          seasonId: 's1',
+          themeColor: '#d4af37',
+        })
+      );
+    });
+
+    // Success message
+    await waitFor(() => {
+      expect(screen.getByText('Event created successfully!')).toBeInTheDocument();
+    });
+
+    // Form should be reset after save
+    expect((nameInput as HTMLInputElement).value).toBe('');
+  });
+});
