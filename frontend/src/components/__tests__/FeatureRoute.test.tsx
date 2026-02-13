@@ -38,10 +38,10 @@ const ALL_FEATURES_ENABLED = {
   statistics: true,
 };
 
-function renderFeatureRoute(feature: string) {
+function renderFeatureRoute(feature: keyof typeof ALL_FEATURES_ENABLED) {
   return render(
     <MemoryRouter>
-      <FeatureRoute feature={feature as any}>
+      <FeatureRoute feature={feature}>
         <div data-testid="feature-content">Feature Page</div>
       </FeatureRoute>
     </MemoryRouter>

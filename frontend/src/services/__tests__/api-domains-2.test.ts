@@ -72,7 +72,8 @@ describe('eventsApi', () => {
     const input = { name: 'Royal Rumble', eventType: 'ppv', date: '2024-01-28' };
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse({ eventId: 'e2', ...input }));
 
-    await eventsApi.create(input as any);
+    // @ts-expect-error partial input for test
+    await eventsApi.create(input);
 
     const [, opts] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(opts.method).toBe('POST');
@@ -84,7 +85,8 @@ describe('eventsApi', () => {
       .mockResolvedValueOnce(mockResponse({ eventId: 'e1' }))
       .mockResolvedValueOnce(mockResponse(undefined, 204));
 
-    await eventsApi.update('e1', { name: 'Updated' } as any);
+    // @ts-expect-error partial input for test
+    await eventsApi.update('e1', { name: 'Updated' });
     await eventsApi.delete('e1');
 
     expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].method).toBe('PUT');

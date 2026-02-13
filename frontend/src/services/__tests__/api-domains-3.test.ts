@@ -36,7 +36,8 @@ describe('fantasyApi', () => {
 
   it('updateConfig sends PUT to /admin/fantasy/config', async () => {
     fetchMock().mockResolvedValue(mockRes({ budgetPerEvent: 200 }));
-    await fantasyApi.updateConfig({ budgetPerEvent: 200 } as any);
+    // @ts-expect-error partial input for test
+    await fantasyApi.updateConfig({ budgetPerEvent: 200 });
     expect(callUrl()).toBe(`${API_BASE}/admin/fantasy/config`);
     expect(callOpts().method).toBe('PUT');
     expect(callBody()).toEqual({ budgetPerEvent: 200 });
@@ -142,7 +143,8 @@ describe('challengesApi', () => {
   it('create sends POST to /challenges', async () => {
     const input = { opponentId: 'p2', matchType: 'singles' };
     fetchMock().mockResolvedValue(mockRes({ challengeId: 'ch1', ...input }));
-    await challengesApi.create(input as any);
+    // @ts-expect-error partial input for test
+    await challengesApi.create(input);
     expect(callUrl()).toBe(`${API_BASE}/challenges`);
     expect(callOpts().method).toBe('POST');
     expect(callBody()).toEqual(input);
@@ -189,7 +191,8 @@ describe('promosApi', () => {
   it('create sends POST to /promos', async () => {
     const input = { promoType: 'callout', content: 'You want some?' };
     fetchMock().mockResolvedValue(mockRes({ promoId: 'pr1', ...input }));
-    await promosApi.create(input as any);
+    // @ts-expect-error partial input for test
+    await promosApi.create(input);
     expect(callUrl()).toBe(`${API_BASE}/promos`);
     expect(callOpts().method).toBe('POST');
     expect(callBody()).toEqual(input);
@@ -197,7 +200,8 @@ describe('promosApi', () => {
 
   it('react sends POST to /promos/:id/react with reaction type', async () => {
     fetchMock().mockResolvedValue(mockRes({ reactions: {}, reactionCounts: {} }));
-    await promosApi.react('pr1', 'fire' as any);
+    // @ts-expect-error partial input for test
+    await promosApi.react('pr1', 'fire');
     expect(callUrl()).toBe(`${API_BASE}/promos/pr1/react`);
     expect(callOpts().method).toBe('POST');
     expect(callBody()).toEqual({ reaction: 'fire' });

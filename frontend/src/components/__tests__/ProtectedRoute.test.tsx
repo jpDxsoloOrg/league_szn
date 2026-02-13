@@ -28,13 +28,14 @@ vi.mock('react-router-dom', async () => {
 });
 
 import ProtectedRoute from '../ProtectedRoute';
+import type { UserRole } from '../../services/cognito';
 
 function renderProtectedRoute(
-  props: { requiredRole?: string; fallback?: string } = {}
+  props: { requiredRole?: UserRole; fallback?: string } = {}
 ) {
   return render(
     <MemoryRouter>
-      <ProtectedRoute {...(props as any)}>
+      <ProtectedRoute {...props}>
         <div data-testid="protected-content">Secret Content</div>
       </ProtectedRoute>
     </MemoryRouter>
