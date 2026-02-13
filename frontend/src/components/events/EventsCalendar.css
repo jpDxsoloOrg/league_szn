@@ -207,6 +207,26 @@
   border-radius: 8px;
 }
 
+/* ── Recent Results ───────────────────────────────────────────────────────── */
+
+.recent-results-section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #333;
+}
+
+.recent-results-title {
+  color: white;
+  margin: 0 0 16px 0;
+  font-size: 1.3rem;
+}
+
+.recent-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 @media (max-width: 768px) {
   .events-calendar-page {
     padding: 0;
@@ -256,5 +276,14 @@
 
   .legend-item {
     font-size: 0.75rem;
+  }
+
+  .recent-results-section {
+    margin-top: 24px;
+    padding-top: 16px;
+  }
+
+  .recent-results-title {
+    font-size: 1.1rem;
   }
 }

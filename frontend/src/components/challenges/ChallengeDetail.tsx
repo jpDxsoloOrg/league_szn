@@ -366,7 +366,7 @@ export default function ChallengeDetail() {
       )}
 
       {challenge.matchId && (
-        <Link to={`/matches`} className="challenge-match-link">
+        <Link to={`/events`} className="challenge-match-link">
           <div className="challenge-match-link-info">
             <span className="challenge-match-link-text">
               {t('challenges.detail.viewScheduledMatch')}

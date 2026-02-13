@@ -126,6 +126,14 @@ export default function EventsCalendar() {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [filteredEntries]);
 
+  // Recent completed events (most recent first, limited to 10)
+  const recentResults = useMemo(() => {
+    return filteredEntries
+      .filter((e) => e.status === 'completed')
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 10);
+  }, [filteredEntries]);
+
   const goToPreviousMonth = () => {
     if (currentMonth === 0) {
       setCurrentMonth(11);
@@ -276,6 +284,20 @@ export default function EventsCalendar() {
         ) : (
           <div className="upcoming-events-list">
             {upcomingEvents.map((event) => (
+              <EventCard key={event.eventId} event={event} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Recent Results */}
+      <div className="recent-results-section">
+        <h3 className="recent-results-title">{t('events.calendar.recentResults', 'Recent Results')}</h3>
+        {recentResults.length === 0 ? (
+          <p className="no-events-message">{t('events.calendar.noResults', 'No completed events yet.')}</p>
+        ) : (
+          <div className="recent-results-list">
+            {recentResults.map((event) => (
               <EventCard key={event.eventId} event={event} />
             ))}
           </div>

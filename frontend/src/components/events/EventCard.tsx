@@ -42,7 +42,7 @@ export default function EventCard({ event }: EventCardProps) {
   return (
     <Link to={`/events/${event.eventId}`} className="event-card-link">
       <div
-        className="event-card"
+        className={`event-card${event.status === 'completed' ? ' completed' : ''}`}
         style={{ borderLeftColor: typeColor }}
       >
         <div className="event-card-header">
@@ -80,6 +80,13 @@ export default function EventCard({ event }: EventCardProps) {
             )}
           </div>
         </div>
+
+        {event.status === 'completed' && (
+          <div className="event-card-view-results">
+            <span>{t('events.card.viewResults', 'View Results')}</span>
+            <span className="event-card-view-results-arrow">&rarr;</span>
+          </div>
+        )}
       </div>
     </Link>
   );

@@ -97,6 +97,42 @@
   font-weight: 600;
 }
 
+/* Completed event card modifier */
+.event-card.completed {
+  border-left-style: dashed;
+  border-left-color: #6b7280 !important;
+}
+
+.event-card.completed:hover {
+  border-left-color: #9ca3af !important;
+}
+
+/* View Results indicator for completed events */
+.event-card-view-results {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #3a3a3a;
+  font-size: 0.8rem;
+  color: #888;
+  transition: color 0.15s ease;
+}
+
+.event-card-view-results-arrow {
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.event-card:hover .event-card-view-results {
+  color: #d4af37;
+}
+
+.event-card:hover .event-card-view-results-arrow {
+  transform: translateX(3px);
+  color: #d4af37;
+}
+
 @media (max-width: 768px) {
   .event-card {
     padding: 12px 14px;
