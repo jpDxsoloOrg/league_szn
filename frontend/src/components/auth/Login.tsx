@@ -1,7 +1,55 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { playersApi } from '../../services/api';
+import type { Player } from '../../types';
 import './Auth.css';
+
+function DevLogin() {
+  const navigate = useNavigate();
+  const { devSignIn } = useAuth();
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loadingPlayers, setLoadingPlayers] = useState(true);
+
+  useEffect(() => {
+    playersApi.getAll()
+      .then(setPlayers)
+      .catch(() => setPlayers([]))
+      .finally(() => setLoadingPlayers(false));
+  }, []);
+
+  if (!devSignIn) return null;
+
+  const handleDevLogin = (player: Player) => {
+    devSignIn(player);
+    navigate('/profile');
+  };
+
+  return (
+    <div className="auth-card" style={{ marginTop: '1rem', border: '2px dashed #f59e0b' }}>
+      <h3 style={{ color: '#f59e0b' }}>Dev Login</h3>
+      <p className="auth-subtitle">Pick a player to sign in as (dev only)</p>
+      {loadingPlayers ? (
+        <p>Loading players...</p>
+      ) : players.length === 0 ? (
+        <p>No players found. Run seed data first.</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {players.map((p) => (
+            <button
+              key={p.playerId}
+              onClick={() => handleDevLogin(p)}
+              className="btn-submit"
+              style={{ textAlign: 'left' }}
+            >
+              {p.name} — {p.currentWrestler}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -80,6 +128,8 @@ export default function Login() {
           </p>
         </div>
       </div>
+
+      {import.meta.env.DEV && <DevLogin />}
     </div>
   );
 }

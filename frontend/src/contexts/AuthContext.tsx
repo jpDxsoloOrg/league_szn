@@ -16,6 +16,7 @@ interface AuthContextType extends AuthState {
   confirmSignUp: (email: string, code: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  devSignIn?: (player: { playerId: string; name: string }) => void;
   isAdmin: boolean;
   isSuperAdmin: boolean;
   isModerator: boolean;
@@ -40,6 +41,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true;
 
     const init = async () => {
+      // Dev mode: restore dev session from sessionStorage
+      if (import.meta.env.DEV) {
+        const devPlayer = sessionStorage.getItem('devPlayer');
+        if (devPlayer) {
+          try {
+            const player = JSON.parse(devPlayer);
+            if (!mounted) return;
+            setState({
+              isAuthenticated: true,
+              isLoading: false,
+              groups: ['Wrestler'],
+              email: `${(player.name as string).toLowerCase().replace(/\s/g, '.')}@dev.local`,
+              playerId: player.playerId,
+            });
+            return;
+          } catch {
+            sessionStorage.removeItem('devPlayer');
+          }
+        }
+      }
+
       try {
         const user = await cognitoAuth.getCurrentUser();
         if (!mounted) return;
@@ -131,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const handleSignOut = useCallback(async () => {
     await cognitoAuth.signOut();
+    sessionStorage.removeItem('devPlayer');
     setState({
       isAuthenticated: false,
       isLoading: false,
@@ -155,6 +178,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return state.groups.includes(role);
   }, [state.groups]);
 
+  // Dev-only: sign in as a player without Cognito
+  const devSignIn = useCallback((player: { playerId: string; name: string }) => {
+    sessionStorage.setItem('accessToken', `dev-${player.playerId}`);
+    sessionStorage.setItem('userGroups', JSON.stringify(['Wrestler']));
+    sessionStorage.setItem('devPlayer', JSON.stringify(player));
+    setState({
+      isAuthenticated: true,
+      isLoading: false,
+      groups: ['Wrestler'],
+      email: `${player.name.toLowerCase().replace(/\s/g, '.')}@dev.local`,
+      playerId: player.playerId,
+    });
+  }, []);
+
   const value: AuthContextType = {
     ...state,
     signIn: handleSignIn,
@@ -162,6 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     confirmSignUp: handleConfirmSignUp,
     signOut: handleSignOut,
     refreshProfile,
+    ...(import.meta.env.DEV ? { devSignIn } : {}),
     isAdmin: state.groups.includes('Admin') || state.groups.includes('Moderator'),
     isSuperAdmin: state.groups.includes('Admin'),
     isModerator: state.groups.includes('Moderator'),
