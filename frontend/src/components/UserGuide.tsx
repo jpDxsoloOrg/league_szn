@@ -138,43 +138,6 @@ export default function UserGuide() {
       </section>
 
       <section className="guide-section">
-        <h3>{t('userGuide.matchesSection.title')}</h3>
-        <p>{t('userGuide.matchesSection.description')}</p>
-
-        <div className="guide-subsection">
-          <h4>{t('userGuide.matchesSection.filteringMatches')}</h4>
-          <p>{t('userGuide.matchesSection.filterIntro')}</p>
-          <ul className="feature-list">
-            <li><strong>{t('userGuide.matchesSection.filterAll')}</strong> - {t('userGuide.matchesSection.filterAllDesc')}</li>
-            <li><strong>{t('userGuide.matchesSection.filterScheduled')}</strong> - {t('userGuide.matchesSection.filterScheduledDesc')}</li>
-            <li><strong>{t('userGuide.matchesSection.filterCompleted')}</strong> - {t('userGuide.matchesSection.filterCompletedDesc')}</li>
-          </ul>
-        </div>
-
-        <div className="guide-subsection">
-          <h4>{t('userGuide.matchesSection.matchInformation')}</h4>
-          <p>{t('userGuide.matchesSection.matchInfoIntro')}</p>
-          <ul className="feature-list">
-            <li><strong>{t('userGuide.matchesSection.matchDate')}</strong> - {t('userGuide.matchesSection.matchDateDesc')}</li>
-            <li><strong>{t('userGuide.matchesSection.matchType')}</strong> - {t('userGuide.matchesSection.matchTypeDesc')}</li>
-            <li><strong>{t('userGuide.matchesSection.matchStipulation')}</strong> - {t('userGuide.matchesSection.matchStipulationDesc')}</li>
-            <li><strong>{t('userGuide.matchesSection.matchParticipants')}</strong> - {t('userGuide.matchesSection.matchParticipantsDesc')}</li>
-            <li><strong>{t('userGuide.matchesSection.matchChampionship')}</strong> - {t('userGuide.matchesSection.matchChampionshipDesc')}</li>
-          </ul>
-        </div>
-
-        <div className="guide-subsection">
-          <h4>{t('userGuide.matchesSection.matchResults')}</h4>
-          <p>{t('userGuide.matchesSection.matchResultsIntro')}</p>
-          <ul className="feature-list">
-            <li><span className="winner-text">{t('userGuide.matchesSection.winners')}</span> - {t('userGuide.matchesSection.winnersDesc')}</li>
-            <li><span className="loser-text">{t('userGuide.matchesSection.losers')}</span> - {t('userGuide.matchesSection.losersDesc')}</li>
-            <li><span className="draw-text">{t('userGuide.matchesSection.draw')}</span> - {t('userGuide.matchesSection.drawDesc')}</li>
-          </ul>
-        </div>
-      </section>
-
-      <section className="guide-section">
         <h3>{t('userGuide.eventsSection.title')}</h3>
         <p>{t('userGuide.eventsSection.description')}</p>
 

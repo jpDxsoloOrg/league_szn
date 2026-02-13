@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
@@ -7,7 +7,6 @@ import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import Standings from './components/Standings';
 import Championships from './components/Championships';
-import Matches from './components/Matches';
 import Tournaments from './components/Tournaments';
 import UserGuide from './components/UserGuide';
 import AdminPanel from './components/admin/AdminPanel';
@@ -69,7 +68,7 @@ function App() {
             {/* Public Routes */}
             <Route path="/" element={<Standings />} />
             <Route path="/championships" element={<Championships />} />
-            <Route path="/matches" element={<Matches />} />
+            <Route path="/matches" element={<Navigate to="/events" replace />} />
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/guide" element={<UserGuide />} />
 

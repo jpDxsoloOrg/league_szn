@@ -36,7 +36,6 @@ describe('UserGuide', () => {
     expect(screen.getByText('userGuide.seasonsSection.title')).toBeInTheDocument();
     expect(screen.getByText('userGuide.divisionsSection.title')).toBeInTheDocument();
     expect(screen.getByText('userGuide.championshipsSection.title')).toBeInTheDocument();
-    expect(screen.getByText('userGuide.matchesSection.title')).toBeInTheDocument();
     expect(screen.getByText('userGuide.eventsSection.title')).toBeInTheDocument();
     expect(screen.getByText('userGuide.tournamentsSection.title')).toBeInTheDocument();
     expect(screen.getByText('userGuide.contendersSection.title')).toBeInTheDocument();

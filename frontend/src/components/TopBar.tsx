@@ -109,7 +109,6 @@ export default function TopBar() {
     const topLevelMap: Record<string, string> = {
       '/': t('nav.standings'),
       '/championships': t('nav.championships'),
-      '/matches': t('nav.matches'),
       '/tournaments': t('nav.tournaments'),
       '/events': t('nav.events'),
       '/contenders': t('nav.contenders'),

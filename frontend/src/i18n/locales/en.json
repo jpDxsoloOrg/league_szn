@@ -32,7 +32,6 @@
   "nav": {
     "standings": "Standings",
     "championships": "Championships",
-    "matches": "Matches",
     "tournaments": "Tournaments",
     "events": "Events",
     "fantasy": "Fantasy",
@@ -92,25 +91,6 @@
       "daysHeld": "Days Held",
       "defenses": "Defenses"
     }
-  },
-  "matches": {
-    "title": "Matches",
-    "loading": "Loading matches...",
-    "noMatches": "No matches found.",
-    "filters": {
-      "all": "All",
-      "scheduled": "Scheduled",
-      "completed": "Completed"
-    },
-    "participants": "Participants",
-    "championship": "Championship",
-    "winner": "Winner",
-    "winners": "Winners",
-    "loser": "Loser",
-    "losers": "Losers",
-    "winningTeam": "Winning Team",
-    "losingTeam": "Losing Team",
-    "losingTeams": "Losing Teams"
   },
   "scheduleMatch": {
     "title": "Schedule Match",
@@ -238,38 +218,6 @@
       "historyStep1": "Click on any championship card",
       "historyStep2": "A modal window will appear showing the complete history",
       "historyStep3": "The history displays all previous champions, dates won/lost, and total days held"
-    },
-    "matchesSection": {
-      "title": "Matches Page",
-      "description": "View all scheduled and completed matches in the league.",
-      "filteringMatches": "Filtering Matches",
-      "filterIntro": "At the top of the page, you can filter matches by status:",
-      "filterAll": "All",
-      "filterAllDesc": "Shows all matches",
-      "filterScheduled": "Scheduled",
-      "filterScheduledDesc": "Shows only upcoming matches",
-      "filterCompleted": "Completed",
-      "filterCompletedDesc": "Shows only finished matches",
-      "matchInformation": "Match Information",
-      "matchInfoIntro": "Each match card displays:",
-      "matchDate": "Date",
-      "matchDateDesc": "When the match is scheduled or took place",
-      "matchType": "Match Type",
-      "matchTypeDesc": "Singles, Tag Team, Triple Threat, Fatal 4-Way, Six Pack Challenge, or Battle Royal",
-      "matchStipulation": "Stipulation",
-      "matchStipulationDesc": "Special match rules (Ladder, Steel Cage, Hell in a Cell, etc.)",
-      "matchParticipants": "Participants",
-      "matchParticipantsDesc": "Who is competing in the match",
-      "matchChampionship": "Championship Badge",
-      "matchChampionshipDesc": "Indicates if it's a title match",
-      "matchResults": "Match Results",
-      "matchResultsIntro": "For completed matches, you'll also see:",
-      "winners": "Winners",
-      "winnersDesc": "Highlighted in green",
-      "losers": "Losers",
-      "losersDesc": "Shown in the results section",
-      "draw": "Draw",
-      "drawDesc": "If the match ended in a draw"
     },
     "tournamentsSection": {
       "title": "Tournaments Page",

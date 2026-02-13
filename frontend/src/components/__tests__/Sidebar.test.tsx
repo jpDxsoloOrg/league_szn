@@ -78,7 +78,6 @@ describe('Sidebar', () => {
 
     expect(screen.getByText('nav.standings')).toBeInTheDocument();
     expect(screen.getByText('nav.championships')).toBeInTheDocument();
-    expect(screen.getByText('nav.matches')).toBeInTheDocument();
     expect(screen.getByText('nav.events')).toBeInTheDocument();
     expect(screen.getByText('nav.tournaments')).toBeInTheDocument();
     expect(screen.getByText('nav.help')).toBeInTheDocument();

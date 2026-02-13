@@ -32,7 +32,6 @@
   "nav": {
     "standings": "Tabelle",
     "championships": "Meisterschaften",
-    "matches": "Kämpfe",
     "tournaments": "Turniere",
     "events": "Veranstaltungen",
     "fantasy": "Fantasy",
@@ -92,25 +91,6 @@
       "daysHeld": "Tage gehalten",
       "defenses": "Titelverteidigungen"
     }
-  },
-  "matches": {
-    "title": "Kämpfe",
-    "loading": "Kämpfe werden geladen...",
-    "noMatches": "Keine Kämpfe gefunden.",
-    "filters": {
-      "all": "Alle",
-      "scheduled": "Geplant",
-      "completed": "Abgeschlossen"
-    },
-    "participants": "Teilnehmer",
-    "championship": "Meisterschaft",
-    "winner": "Sieger",
-    "winners": "Sieger",
-    "loser": "Verlierer",
-    "losers": "Verlierer",
-    "winningTeam": "Sieger-Team",
-    "losingTeam": "Verlierer-Team",
-    "losingTeams": "Verlierer-Teams"
   },
   "scheduleMatch": {
     "title": "Kampf planen",
@@ -238,38 +218,6 @@
       "historyStep1": "Klicken Sie auf eine beliebige Meisterschafts-Karte",
       "historyStep2": "Ein Modal-Fenster mit der kompletten Historie erscheint",
       "historyStep3": "Die Historie zeigt alle vorherigen Champions, Gewinn-/Verlustdaten und Gesamttage gehalten"
-    },
-    "matchesSection": {
-      "title": "Kämpfe-Seite",
-      "description": "Alle geplanten und abgeschlossenen Kämpfe der Liga anzeigen.",
-      "filteringMatches": "Kämpfe filtern",
-      "filterIntro": "Oben auf der Seite können Sie Kämpfe nach Status filtern:",
-      "filterAll": "Alle",
-      "filterAllDesc": "Zeigt alle Kämpfe",
-      "filterScheduled": "Geplant",
-      "filterScheduledDesc": "Zeigt nur bevorstehende Kämpfe",
-      "filterCompleted": "Abgeschlossen",
-      "filterCompletedDesc": "Zeigt nur beendete Kämpfe",
-      "matchInformation": "Kampf-Informationen",
-      "matchInfoIntro": "Jede Kampf-Karte zeigt:",
-      "matchDate": "Datum",
-      "matchDateDesc": "Wann der Kampf geplant ist oder stattfand",
-      "matchType": "Kampftyp",
-      "matchTypeDesc": "Einzel, Tag Team, Triple Threat, Fatal 4-Way, Six Pack Challenge oder Battle Royal",
-      "matchStipulation": "Stipulation",
-      "matchStipulationDesc": "Spezielle Kampfregeln (Leiter, Stahlkäfig, Hell in a Cell, etc.)",
-      "matchParticipants": "Teilnehmer",
-      "matchParticipantsDesc": "Wer am Kampf teilnimmt",
-      "matchChampionship": "Meisterschafts-Abzeichen",
-      "matchChampionshipDesc": "Zeigt an, ob es ein Titelkampf ist",
-      "matchResults": "Kampf-Ergebnisse",
-      "matchResultsIntro": "Für abgeschlossene Kämpfe sehen Sie außerdem:",
-      "winners": "Sieger",
-      "winnersDesc": "Grün hervorgehoben",
-      "losers": "Verlierer",
-      "losersDesc": "Im Ergebnisbereich angezeigt",
-      "draw": "Unentschieden",
-      "drawDesc": "Wenn der Kampf unentschieden endete"
     },
     "tournamentsSection": {
       "title": "Turniere-Seite",

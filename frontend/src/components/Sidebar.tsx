@@ -90,9 +90,6 @@ export default function Sidebar() {
           <Link to="/championships" className={isActive('/championships') ? 'active' : ''}>
             {t('nav.championships')}
           </Link>
-          <Link to="/matches" className={isActive('/matches') ? 'active' : ''}>
-            {t('nav.matches')}
-          </Link>
           <Link to="/events" className={isActive('/events') || location.pathname.startsWith('/events/') ? 'active' : ''}>
             {t('nav.events')}
           </Link>
