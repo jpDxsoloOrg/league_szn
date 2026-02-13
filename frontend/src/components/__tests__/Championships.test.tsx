@@ -3,10 +3,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockGetAllChampionships, mockGetAllPlayers, mockGetHistory } = vi.hoisted(() => ({
+const { mockGetAllChampionships, mockGetAllPlayers, mockGetHistory, mockGetAllDivisions } = vi.hoisted(() => ({
   mockGetAllChampionships: vi.fn(),
   mockGetAllPlayers: vi.fn(),
   mockGetHistory: vi.fn(),
+  mockGetAllDivisions: vi.fn(),
 }));
 
 vi.mock('../../services/api', () => ({
@@ -16,6 +17,9 @@ vi.mock('../../services/api', () => ({
   },
   playersApi: {
     getAll: mockGetAllPlayers,
+  },
+  divisionsApi: {
+    getAll: mockGetAllDivisions,
   },
 }));
 
@@ -101,6 +105,7 @@ describe('Championships', () => {
     // Never resolve the promises to keep loading state
     mockGetAllChampionships.mockReturnValue(new Promise(() => {}));
     mockGetAllPlayers.mockReturnValue(new Promise(() => {}));
+    mockGetAllDivisions.mockReturnValue(new Promise(() => {}));
 
     renderChampionships();
 
@@ -110,6 +115,7 @@ describe('Championships', () => {
   it('renders championship list with current holders', async () => {
     mockGetAllChampionships.mockResolvedValue(mockChampionships);
     mockGetAllPlayers.mockResolvedValue(mockPlayers);
+    mockGetAllDivisions.mockResolvedValue([]);
 
     renderChampionships();
 
@@ -139,6 +145,7 @@ describe('Championships', () => {
   it('handles empty state when no championships exist', async () => {
     mockGetAllChampionships.mockResolvedValue([]);
     mockGetAllPlayers.mockResolvedValue(mockPlayers);
+    mockGetAllDivisions.mockResolvedValue([]);
 
     renderChampionships();
 

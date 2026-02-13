@@ -1,15 +1,17 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo} from 'react';
 import { useTranslation } from 'react-i18next';
-import { championshipsApi, playersApi } from '../services/api';
+import { championshipsApi, divisionsApi, playersApi } from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
-import type { Championship, ChampionshipReign, Player } from '../types';
+import { type Division, type Championship, type ChampionshipReign, type Player } from '../types';
 import './Championships.css';
 
 export default function Championships() {
   const { t } = useTranslation();
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [selectedDivision, setSelectedDivision] = useState<string>('all');
   const [selectedChampionship, setSelectedChampionship] = useState<string | null>(null);
   const [history, setHistory] = useState<ChampionshipReign[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,12 +24,14 @@ export default function Championships() {
     try {
       setLoading(true);
       setError(null);
-      const [champData, playerData] = await Promise.all([
+      const [champData, playerData, divisionsData] = await Promise.all([
         championshipsApi.getAll(),
         playersApi.getAll(),
+        divisionsApi.getAll(),
       ]);
       setChampionships(champData);
       setPlayers(playerData);
+      setDivisions(divisionsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load championships');
     } finally {
@@ -42,13 +46,15 @@ export default function Championships() {
       try {
         setLoading(true);
         setError(null);
-        const [champData, playerData] = await Promise.all([
+        const [champData, playerData, divisionsData] = await Promise.all([
           championshipsApi.getAll(abortController.signal),
           playersApi.getAll(abortController.signal),
+          divisionsApi.getAll(abortController.signal),
         ]);
         if (!abortController.signal.aborted) {
           setChampionships(champData);
           setPlayers(playerData);
+          setDivisions(divisionsData);
         }
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
@@ -89,6 +95,16 @@ export default function Championships() {
     }
   }, []);
 
+  const filteredChampionships = useMemo((): Championship[] => {
+    if (selectedDivision === 'all') {
+      return championships;
+    }
+    if (selectedDivision === 'none') {
+      return championships.filter(c => !c.divisionId);
+    }
+    return championships.filter(c => c.divisionId === selectedDivision);
+  }, [championships, selectedDivision]);
+
   const getPlayerName = (playerId: string | string[]) => {
     if (Array.isArray(playerId)) {
       return playerId.map(id => {
@@ -125,9 +141,36 @@ export default function Championships() {
   return (
     <div className="championships-container">
       <h2>{t('championships.title')}</h2>
-
+        {divisions.length > 0 && (
+            <div className="division-filter">
+              <span className="filter-label">{t('championships.filterByDivision')}:</span>
+              <div className="filter-buttons">
+                <button
+                  className={`filter-btn ${selectedDivision === 'all' ? 'active' : ''}`}
+                  onClick={() => setSelectedDivision('all')}
+                >
+                  {t('common.all')}
+                </button>
+                {divisions.map((division) => (
+                  <button
+                    key={division.divisionId}
+                    className={`filter-btn ${selectedDivision === division.divisionId ? 'active' : ''}`}
+                    onClick={() => setSelectedDivision(division.divisionId)}
+                  >
+                    {division.name}
+                  </button>
+                ))}
+                <button
+                  className={`filter-btn ${selectedDivision === 'none' ? 'active' : ''}`}
+                  onClick={() => setSelectedDivision('none')}
+                >
+                  {t('standings.noDivision')}
+                </button>
+              </div>
+            </div>
+          )}
       <div className="championships-grid">
-        {championships.map((championship) => (
+        {filteredChampionships.map((championship) => (
           <div key={championship.championshipId} className="championship-card">
             {championship.imageUrl ? (
               <div className="championship-image-container">
