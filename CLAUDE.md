@@ -432,6 +432,7 @@ aws cloudformation describe-stacks --stack-name wwe-2k-league-api-devtest \
 ## Code Style
 
 - Use TypeScript for all new code
+- **No `any` in TypeScript.** Use specific types, generics, or `unknown` instead of `any`. If a type is truly unknowable, use `unknown` and narrow it.
 - Functional components with hooks (no class components)
 - CSS modules or separate CSS files (no inline styles)
 - Async/await over promises (no .then chains)
