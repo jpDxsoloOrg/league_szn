@@ -554,9 +554,10 @@ export interface AchievementsResponse {
 }
 
 export const statisticsApi = {
-  getPlayerStats: async (playerId?: string, signal?: AbortSignal): Promise<PlayerStatsResponse> => {
+  getPlayerStats: async (playerId?: string, seasonId?: string, signal?: AbortSignal): Promise<PlayerStatsResponse> => {
     const params = new URLSearchParams({ section: 'player-stats' });
     if (playerId) params.set('playerId', playerId);
+    if (seasonId) params.set('seasonId', seasonId);
     return fetchWithAuth(`${API_BASE_URL}/statistics?${params}`, {}, signal);
   },
 
