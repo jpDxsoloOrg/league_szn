@@ -4,6 +4,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
 import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
+import { useSiteConfig } from '../../contexts/SiteConfigContext'; 
+import   EmbeddedPlayerStats   from "../statistics/EmbeddedPlayerStats";
 import type { Player } from '../../types';
 import './WrestlerProfile.css';
 
@@ -29,6 +31,7 @@ export default function WrestlerProfile() {
   const [editing, setEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const { features } = useSiteConfig();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -320,6 +323,10 @@ export default function WrestlerProfile() {
             ))}
           </div>
         </div>
+      )}
+
+      {features.statistics && player.playerId && (
+        <EmbeddedPlayerStats playerId={player.playerId} />
       )}
 
       {/* Edit Button (view mode only) */}
