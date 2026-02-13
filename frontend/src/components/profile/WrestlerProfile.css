@@ -6,73 +6,94 @@
   padding: 2rem 1rem;
 }
 
-/* Profile Header - Character Select Screen Feel */
+/* Profile Header - Compact Identity Bar */
 .profile-header {
   background-color: #1a1a1a;
   border: 2px solid #d4af37;
   border-radius: 8px;
-  padding: 2rem;
+  padding: 1rem 1.5rem;
   margin-bottom: 2rem;
-  text-align: center;
-}
-
-.profile-image-container {
   display: flex;
-  justify-content: center;
   align-items: center;
-  margin-bottom: 1.5rem;
+  gap: 1rem;
 }
 
 .profile-image-wrapper {
-  position: relative;
-  width: 300px;
-  height: 300px;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
 }
 
 .profile-image {
   width: 100%;
   height: 100%;
-  border-radius: 8px;
-  border: 3px solid #d4af37;
+  border-radius: 50%;
+  border: 2px solid #d4af37;
   object-fit: cover;
-  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.2);
 }
 
 .profile-image-placeholder {
   width: 100%;
   height: 100%;
-  border-radius: 8px;
-  border: 3px dashed #444;
+  border-radius: 50%;
+  border: 2px dashed #444;
   background-color: #222;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
   color: #666;
-  font-size: 1rem;
 }
 
-.profile-image-placeholder svg,
 .profile-image-placeholder .icon-text {
-  margin-bottom: 0.5rem;
-  font-size: 3rem;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.profile-header-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .profile-name {
-  font-size: 2.5rem;
+  font-size: 1.5rem;
   font-weight: bold;
   color: #d4af37;
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  letter-spacing: 1px;
+  line-height: 1.2;
 }
 
 .profile-wrestler-name {
-  font-size: 1.25rem;
+  font-size: 0.95rem;
   color: #bbb;
-  margin-top: 0.5rem;
+  margin: 0.15rem 0 0;
   font-style: italic;
+}
+
+.edit-icon-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid #555;
+  border-radius: 6px;
+  color: #bbb;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+
+.edit-icon-btn:hover {
+  border-color: #d4af37;
+  color: #d4af37;
+  background-color: rgba(212, 175, 55, 0.1);
 }
 
 /* Stats Section - Card-Based Layout */
@@ -375,27 +396,6 @@
   background-color: #444 !important;
 }
 
-/* Edit Mode Toggle Button */
-.edit-profile-btn {
-  display: block;
-  margin: 0 auto 2rem;
-  padding: 0.75rem 2rem;
-  background-color: #d4af37;
-  color: #000;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  transition: background-color 0.2s, transform 0.2s;
-}
-
-.edit-profile-btn:hover {
-  background-color: #b8962e;
-  transform: translateY(-2px);
-}
 
 /* Loading State */
 .loading-state {
@@ -456,21 +456,20 @@
   }
 
   .profile-header {
-    padding: 1.5rem;
+    padding: 0.75rem 1rem;
   }
 
   .profile-image-wrapper {
-    width: 200px;
-    height: 200px;
+    width: 52px;
+    height: 52px;
   }
 
   .profile-name {
-    font-size: 1.75rem;
-    letter-spacing: 1px;
+    font-size: 1.25rem;
   }
 
   .profile-wrestler-name {
-    font-size: 1rem;
+    font-size: 0.85rem;
   }
 
   .profile-stats {
@@ -529,12 +528,22 @@
 
 @media (max-width: 480px) {
   .profile-image-wrapper {
-    width: 150px;
-    height: 150px;
+    width: 44px;
+    height: 44px;
   }
 
   .profile-name {
-    font-size: 1.5rem;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+  }
+
+  .profile-wrestler-name {
+    font-size: 0.8rem;
+  }
+
+  .edit-icon-btn {
+    width: 32px;
+    height: 32px;
   }
 
   .stat-value.percentage {
