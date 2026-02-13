@@ -102,64 +102,165 @@ wwe-2k-league/
 └── README.md
 ```
 
-## Quick Start (Local Development)
+## Local Development
 
-Get the app running locally with sample data in 5 steps:
+### Prerequisites
 
-### 1. Start DynamoDB Local
+- **Node.js** v20+ (`node --version`)
+- **Docker** (for DynamoDB Local)
+- **npm** (comes with Node.js)
 
-Using Docker (recommended):
+### Quick Start
+
+You'll need **3 terminals** running simultaneously.
+
+#### Terminal 1 — DynamoDB Local
+
 ```bash
 docker run -p 8000:8000 amazon/dynamodb-local
 ```
 
-Keep this terminal running.
+Leave this running.
 
-### 2. Start Backend API
+#### Terminal 2 — Backend API
 
-Open a new terminal:
 ```bash
 cd backend
 npm install
 npm run offline
 ```
 
-The API will start at http://localhost:3001/dev
+This starts the API at `http://localhost:3001/dev`. Leave this running.
 
-Keep this terminal running.
+#### Terminal 3 — Seed Data & Frontend
 
-### 3. Seed Sample Data
-
-Open another terminal:
 ```bash
+# Create the DynamoDB tables locally, then seed sample data
 cd backend
-npm run seed
-```
+npm run create-tables
+IS_OFFLINE=true npm run seed
 
-This creates 12 players, 4 championships, 12 matches, 2 tournaments, 3 divisions, and 1 active season.
-
-### 4. Start Frontend
-
-Open another terminal:
-```bash
-cd frontend
+# Start the frontend
+cd ../frontend
 npm install
 npm run dev
 ```
 
-The frontend will start at http://localhost:3000
+Frontend starts at `http://localhost:3000`.
 
-### 5. View the App
+#### View the App
 
 Open **http://localhost:3000** in your browser to see the fully populated league!
 
 **Admin Panel**: Navigate to `/admin` and login with credentials: `admin` / `FireGreen48!`
 
-**To clear data and start fresh:**
+> **Note:** Cognito auth is not available locally. For full auth testing, use the dev environment.
+
+**To reset data:** `cd backend && IS_OFFLINE=true npm run clear-data && IS_OFFLINE=true npm run seed`
+
+### What the Seed Creates
+
+- 3 divisions (Raw, SmackDown, NXT)
+- 12 players with random records
+- 1 active season
+- 4 championships with history
+- 12 matches (8 completed, 4 scheduled)
+- 2 tournaments, 3 events
+- Contender rankings, fantasy config, site config
+
+### Environment Variables
+
+**Frontend** — needs a `.env` file using a relative path (Vite proxies API requests to the backend, avoiding CORS issues):
+
+```bash
+# frontend/.env
+VITE_API_BASE_URL=/dev
+```
+
+The Vite dev server proxies `/dev/*` requests to `http://localhost:3001` automatically. Restart Vite after changing `.env` files.
+
+**Backend** — no `.env` needed. The `serverless-offline` plugin sets `IS_OFFLINE=true` automatically, which configures the backend to use DynamoDB Local at `localhost:8000`.
+
+### Ports
+
+| Service         | Port | Config Location                                      |
+| --------------- | ---- | ---------------------------------------------------- |
+| Frontend (Vite) | 3000 | `frontend/vite.config.ts`                            |
+| Backend API     | 3001 | `backend/serverless.yml` → `custom.serverless-offline.httpPort` |
+| DynamoDB Local  | 8000 | Docker `-p` flag                                     |
+
+### Local Limitations
+
+| Feature        | Works Locally? | Notes                                    |
+| -------------- | -------------- | ---------------------------------------- |
+| DynamoDB       | Yes            | Via DynamoDB Local (Docker)              |
+| Lambda / API   | Yes            | Via serverless-offline                   |
+| Cognito Auth   | No             | Use dev environment for auth testing     |
+| S3 Uploads     | No             | Image uploads require AWS                |
+| CloudFront CDN | No             | Only applies to deployed environments    |
+
+### Running Tests
+
+**Frontend Unit Tests:**
+```bash
+cd frontend
+npm test               # single run
+npm run test:watch     # watch mode
+npm run test:coverage  # with coverage report
+```
+
+**Backend Unit Tests:**
 ```bash
 cd backend
-npm run clear-data
+npm test               # single run
+npm run test:watch     # watch mode
 ```
+
+**E2E Tests (Playwright):**
+```bash
+cd e2e
+npm install
+npx playwright install    # first time only
+npm run test:local        # run against localhost
+npm run test:ui           # open Playwright UI
+```
+
+### Useful Commands
+
+```bash
+# Backend
+cd backend
+npm run offline                       # start local API server
+npm run create-tables                 # create local DynamoDB tables
+IS_OFFLINE=true npm run seed          # seed sample data
+IS_OFFLINE=true npm run clear-data    # wipe all local data
+npm test                              # run tests
+
+# Frontend
+cd frontend
+npm run dev           # start dev server
+npm run build         # production build
+npm run preview       # preview production build
+npm run lint          # run ESLint
+npm test              # run tests
+```
+
+### Troubleshooting
+
+**"Cannot connect to DynamoDB"**
+- Make sure the Docker container is running: `docker ps`
+- Verify port 8000: `curl http://localhost:8000`
+
+**"Frontend can't reach backend"**
+- Check `frontend/.env` has `VITE_API_BASE_URL=/dev`
+- Restart Vite after `.env` changes
+- Verify backend is up: `curl http://localhost:3001/dev/players`
+
+**"Tables not found"**
+- Run `npm run create-tables` in the backend directory
+
+**"Port already in use"**
+- Kill the process: `lsof -ti:3000 | xargs kill -9` (swap port as needed)
 
 ---
 
@@ -234,262 +335,6 @@ cd frontend && npm run build -- --mode devtest && aws s3 sync dist s3://dev.leag
 ```bash
 curl https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest/players
 ```
-
-## Local Development & Testing
-
-### Prerequisites for Local Testing
-
-1. Install DynamoDB Local (for local testing):
-```bash
-# Option 1: Using Docker (recommended)
-docker pull amazon/dynamodb-local
-
-# Option 2: Download JAR file
-# https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html
-```
-
-2. Make sure you have Node.js installed (v24+):
-```bash
-node --version  # Should be 24 or higher
-```
-
-### Step-by-Step Local Setup
-
-#### 1. Start DynamoDB Local
-
-Using Docker:
-```bash
-docker run -p 8000:8000 amazon/dynamodb-local
-```
-
-Or if you downloaded the JAR:
-```bash
-java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -port 8000
-```
-
-Keep this terminal running.
-
-#### 2. Set Up Backend
-
-Open a new terminal:
-
-```bash
-cd backend
-npm install
-```
-
-Create a `.env` file in the backend directory:
-```bash
-# backend/.env
-IS_OFFLINE=true
-DYNAMODB_ENDPOINT=http://localhost:8000
-```
-
-Update `serverless.yml` to use local DynamoDB (already configured for offline use).
-
-Start the backend:
-```bash
-npm run offline
-```
-
-The API will be available at **http://localhost:3001/dev**.
-
-You should see output like:
-```
-Starting Offline at stage dev (us-east-1)
-
-Offline [http for lambda] listening on http://localhost:3002
-...
-   GET    | http://localhost:3001/dev/players
-   POST   | http://localhost:3001/dev/players
-   ...
-```
-
-Keep this terminal running.
-
-#### 3. Set Up Frontend
-
-Open another new terminal:
-
-```bash
-cd frontend
-npm install
-```
-
-Create a `.env` file in the frontend directory:
-```bash
-# frontend/.env
-VITE_API_BASE_URL=http://localhost:3001/dev
-```
-
-Start the frontend:
-```bash
-npm run dev
-```
-
-The frontend will be available at **http://localhost:3000**.
-
-#### 4. Testing the Application
-
-Now you have everything running locally:
-- DynamoDB Local: http://localhost:8000
-- Backend API: http://localhost:3001/dev
-- Frontend: http://localhost:3000
-
-Open http://localhost:3000 in your browser to test the application.
-
-**Admin Panel**: Navigate to `/admin` and login with credentials: `admin` / `FireGreen48!`
-
-### Testing Workflow
-
-#### Option 1: Use the Seed Script (Recommended)
-
-The easiest way to get started is to use the included seed data script that will populate your local database with sample data:
-
-```bash
-cd backend
-npm run seed
-```
-
-This will create:
-- 3 divisions (Raw, SmackDown, NXT)
-- 12 players with random wrestlers and win/loss records
-- 1 active season (30-day duration)
-- Season standings for all players
-- 4 championships (World Heavyweight, Intercontinental, Tag Team, US)
-- Championship history entries
-- 12 matches (8 completed, 4 scheduled)
-- 2 tournaments (King of the Ring - Single Elimination, G1 Climax - Round Robin)
-
-After running the seed script, refresh your frontend at http://localhost:3000 to see all the data!
-
-**To clear all data and start fresh:**
-
-```bash
-cd backend
-npm run clear-data
-```
-
-This will delete all data from your local DynamoDB tables.
-
-#### Option 2: Add Sample Data Manually via API
-
-If you prefer to add data manually:
-
-1. **Test Creating a Player**:
-   - The app starts with an empty database
-   - You can use the admin panel or API directly to add test data
-   - Use tools like curl, Postman, or the browser's developer console
-
-2. **Add Sample Data via API**:
-
-```bash
-# Create a player
-curl -X POST http://localhost:3001/dev/players \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "John Doe",
-    "currentWrestler": "Stone Cold Steve Austin"
-  }'
-
-# Create another player
-curl -X POST http://localhost:3001/dev/players \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Jane Smith",
-    "currentWrestler": "The Rock"
-  }'
-
-# Get all players to see their IDs
-curl http://localhost:3001/dev/players
-
-# Create a championship
-curl -X POST http://localhost:3001/dev/championships \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "World Heavyweight Championship",
-    "type": "singles"
-  }'
-
-# Schedule a match (use actual player IDs from the GET request above)
-curl -X POST http://localhost:3001/dev/matches \
-  -H "Content-Type: application/json" \
-  -d '{
-    "date": "2024-03-15T20:00:00Z",
-    "matchType": "singles",
-    "stipulation": "No DQ",
-    "participants": ["player-id-1", "player-id-2"],
-    "isChampionship": false
-  }'
-```
-
-3. **View in the Frontend**:
-   - Refresh http://localhost:3000
-   - Check the Standings page
-   - Check the Championships page
-   - Check the Matches page
-
-4. **Test Recording Match Results**:
-
-```bash
-# Record a match result (use actual match ID and player IDs)
-curl -X PUT http://localhost:3001/dev/matches/{matchId}/result \
-  -H "Content-Type: application/json" \
-  -d '{
-    "winners": ["player-id-1"],
-    "losers": ["player-id-2"]
-  }'
-
-# Check standings updated
-curl http://localhost:3001/dev/standings
-```
-
-### Troubleshooting Local Setup
-
-**Backend won't start:**
-- Make sure DynamoDB Local is running on port 8000
-- Check that no other process is using port 3001
-- Run `npm install` in the backend directory
-
-**Frontend can't connect to backend:**
-- Check the `.env` file has the correct `VITE_API_BASE_URL` (should be `http://localhost:3001/dev` for local)
-- Make sure the backend is running on port 3001
-- Frontend runs on port 3000
-- Check for CORS errors in browser console
-
-**DynamoDB errors:**
-- Tables are created automatically by serverless-offline
-- If you see table errors, restart serverless-offline
-- Make sure DynamoDB Local is accessible at http://localhost:8000
-
-**Port conflicts:**
-- Frontend (Vite): Change port in vite.config.ts (default: 3000)
-- Backend: Change port in serverless.yml under `custom.serverless-offline` (default: 3001)
-- DynamoDB Local: Use `-port 8001` flag
-
-### Resetting Local Database
-
-To clear all data and start fresh:
-
-1. Stop DynamoDB Local (Ctrl+C)
-2. If using Docker: `docker rm -f <container-id>`
-3. Restart DynamoDB Local
-4. Restart serverless-offline (it will recreate tables)
-
-### Running Tests Before Deployment
-
-Before deploying to AWS, verify:
-
-1. ✅ Can create players
-2. ✅ Can schedule matches
-3. ✅ Can record match results
-4. ✅ Standings update correctly
-5. ✅ Can create championships
-6. ✅ Championship history tracks properly
-7. ✅ Can create tournaments (both types)
-8. ✅ Tournament standings update correctly
-9. ✅ All pages display data correctly
-10. ✅ No console errors in browser
 
 ## API Endpoints
 
