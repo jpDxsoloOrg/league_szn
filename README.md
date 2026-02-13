@@ -1,26 +1,73 @@
-# WWE 2K League Management System
+# League SZN
 
-A serverless web application for managing a WWE 2K league with player standings, championships, matches, and tournaments.
+A serverless web application for managing a WWE 2K league with standings, championships, matches, tournaments, events, fantasy league, challenges, promos, statistics, and more.
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+  - [Public Features](#public-features-no-login-required)
+  - [Wrestler Features](#wrestler-features-wrestler-auth-required)
+  - [Admin and Moderator Features](#admin-and-moderator-features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Authentication and Authorization](#authentication-and-authorization)
+- [API Endpoints](#api-endpoints)
+- [Database Schema](#database-schema)
+- [Local Development](#local-development)
+- [Testing](#testing)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Live Environments](#live-environments)
+- [Cost Estimation](#cost-estimation)
+- [License](#license)
+
+---
 
 ## Features
 
-- **Public Access** (no login required):
-  - View current standings (all-time or per-season)
-  - Browse championships and their history
-  - See scheduled and completed matches
-  - Follow tournament brackets and standings
+### Public Features (No Login Required)
 
-- **Admin Features** (requires authentication):
-  - Manage players and their wrestlers
-  - Schedule matches with various stipulations
-  - Record match results
-  - Create and manage championships
-  - Create tournaments (single-elimination and round-robin)
-  - **Manage seasons** (create seasons, track per-season standings, end seasons)
-  - **Manage divisions** (create divisions, assign players to divisions)
-  - **Delete functionality** for players, divisions, seasons, and championships
-  - **Data management** (clear all data, generate sample data)
-  - **Built-in Help guide** with comprehensive admin documentation
+| Feature | Description |
+|---------|-------------|
+| **Standings** | View all-time or per-season player rankings with win/loss/draw records |
+| **Championships** | Browse active titles with current champions and full reign history |
+| **Events** | Browse PPV events and weekly shows with scheduled and completed matches |
+| **Tournaments** | Follow single-elimination brackets and round-robin (G1 Climax style) standings |
+| **Statistics** | Head-to-head records, match type stats, win streaks, leaderboards, and achievements |
+| **Promos** | View wrestler promos with emoji reactions |
+| **Contender Rankings** | Automatic #1 contender tracking per championship based on recent performance |
+| **Challenges** | View open and completed match challenges between wrestlers |
+| **User Guide** | Built-in help documentation covering all features |
+| **Internationalization** | Full English and German language support |
+
+### Wrestler Features (Wrestler Auth Required)
+
+| Feature | Description |
+|---------|-------------|
+| **Challenges** | Issue match challenges to other wrestlers, accept/decline/counter incoming challenges |
+| **Promos** | Create character promos with text content |
+| **Wrestler Profile** | View and edit your own profile, upload wrestler images |
+| **Fantasy Picks** | Make fantasy picks for upcoming events and view your scores |
+
+### Admin and Moderator Features
+
+| Feature | Description |
+|---------|-------------|
+| **Player Management** | Create, update, and delete players; upload wrestler images; assign divisions |
+| **Match Management** | Schedule matches with stipulations; record results (auto-updates standings, contender rankings, and championship history) |
+| **Championship Management** | Create singles and tag team titles with image upload; track full history; vacate titles |
+| **Tournament Management** | Single-elimination brackets with auto-advancement; round-robin with point system (G1 Climax style) |
+| **Season Management** | Create seasons, track per-season standings, end seasons |
+| **Division Management** | Create divisions (Raw, SmackDown, NXT, etc.) and assign players |
+| **Event Management** | Create PPV events and weekly shows, organize matches into event cards |
+| **Fantasy League Admin** | Configure point systems, set wrestler costs, score completed events, view leaderboards |
+| **User Management** | Manage user roles (Admin, Moderator, Wrestler, Fantasy); create, enable, and disable users |
+| **Site Configuration** | Feature flag toggles for challenges, promos, fantasy, statistics, and contenders |
+| **Contender Ranking Admin** | Recalculate contender rankings on demand |
+| **Danger Zone** | Clear all data (with safety confirmation); seed sample data for testing |
+
+---
 
 ## Tech Stack
 
@@ -31,8 +78,8 @@ A serverless web application for managing a WWE 2K league with player standings,
 | **React** | 18.2.0 | UI framework for building interactive, component-based user interfaces |
 | **TypeScript** | 5.2.2 | Typed superset of JavaScript providing compile-time type checking and IDE support |
 | **Vite** | 5.0.8 | Modern build tool with hot module replacement for fast development |
-| **React Router DOM** | 6.20.1 | Client-side routing for SPA navigation between pages (Standings, Championships, Matches, etc.) |
-| **i18next** | 25.8.1 | Internationalization framework supporting multiple languages (English and German) |
+| **React Router DOM** | 6.20.1 | Client-side routing for SPA navigation between pages |
+| **i18next** | 25.8.1 | Internationalization framework supporting English and German |
 | **react-i18next** | 16.5.4 | React bindings for i18next with hooks and components |
 | **AWS Amplify** | 6.16.0 | AWS integration library for authentication and cloud services |
 | **amazon-cognito-identity-js** | 6.3.7 | Cognito SDK for client-side user authentication |
@@ -58,49 +105,412 @@ A serverless web application for managing a WWE 2K league with player standings,
 
 | Service | Purpose |
 |---------|---------|
-| **AWS Lambda** | Serverless compute for API handlers (auth, players, matches, championships, tournaments, standings, seasons, divisions, images, admin) |
-| **API Gateway** | REST API with CORS support and custom JWT authorizer for admin endpoints |
-| **DynamoDB** | NoSQL database with on-demand billing for Players, Matches, Championships, Championship History, Tournaments, Seasons, Season Standings, and Divisions tables |
+| **AWS Lambda** | Serverless compute for 55+ API handlers across 17 function domains |
+| **API Gateway** | REST API with CORS support and custom JWT authorizer |
+| **DynamoDB** | NoSQL database with on-demand billing (17 tables) |
 | **Amazon S3** | Object storage for frontend static files and player/championship images with presigned URLs |
 | **CloudFront** | CDN for global content delivery with HTTPS enforcement and SPA routing support |
-| **AWS Cognito** | User pool for admin authentication with username-based sign-in and JWT tokens |
+| **AWS Cognito** | User pool with email-based sign-in, role groups, and JWT tokens |
 | **AWS Certificate Manager** | SSL/TLS certificate management for HTTPS on custom domains |
 
-### CI/CD & DevOps
+### CI/CD and DevOps
 
 | Technology | Description |
 |------------|-------------|
-| **GitHub Actions** | Automated CI/CD pipelines for deployment |
-| **deploy-dev.yml** | Triggered on pull requests to main - deploys to devtest stage |
-| **deploy-prod.yml** | Triggered on merged pull requests - deploys to production |
+| **GitHub Actions** | Automated CI/CD pipelines for dev and production deployments |
+| **deploy-dev.yml** | Triggered on pull requests to main -- deploys to devtest stage |
+| **deploy-prod.yml** | Manually triggered -- deploys to production |
 | **Docker** | Used for running DynamoDB Local in development |
+| **Playwright** | End-to-end testing framework with Page Object Model |
+
+---
 
 ## Project Structure
 
 ```
-wwe-2k-league/
-├── frontend/          # React frontend application
+league_szn/
+├── frontend/                    # React/TypeScript SPA
 │   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── services/      # API client
-│   │   └── types/         # TypeScript types
-│   └── package.json
-├── backend/           # Serverless backend API
-│   ├── functions/         # Lambda functions
-│   │   ├── auth/          # Authentication & JWT authorization
-│   │   ├── players/
-│   │   ├── matches/
-│   │   ├── championships/
-│   │   ├── tournaments/
-│   │   ├── standings/
-│   │   ├── seasons/       # Season management
-│   │   ├── divisions/     # Division management
-│   │   ├── images/        # Image upload URL generation
-│   │   └── admin/         # Admin utilities (clear-all, seed-data)
-│   ├── lib/              # Shared utilities
-│   └── serverless.yml    # Infrastructure config
+│   │   ├── components/          # React components
+│   │   │   ├── admin/           # Admin panel components
+│   │   │   ├── auth/            # Login/Signup
+│   │   │   ├── challenges/      # Challenge system
+│   │   │   ├── contenders/      # Contender rankings
+│   │   │   ├── events/          # PPV events and shows
+│   │   │   ├── fantasy/         # Fantasy league
+│   │   │   ├── promos/          # Wrestler promos
+│   │   │   ├── profile/         # Wrestler profiles
+│   │   │   ├── statistics/      # Advanced stats
+│   │   │   └── __tests__/       # Component tests
+│   │   ├── contexts/            # AuthContext, SiteConfigContext
+│   │   ├── services/            # API client (api.ts), Cognito auth
+│   │   ├── types/               # TypeScript interfaces
+│   │   ├── utils/               # Utilities
+│   │   ├── i18n/                # Internationalization (en, de)
+│   │   ├── constants/           # App constants
+│   │   └── mocks/               # Test mocks
+│   ├── vite.config.ts
+│   └── vitest.config.ts
+├── backend/                     # Serverless Node.js API
+│   ├── functions/               # Lambda function domains
+│   │   ├── admin/               # Clear-all, seed-data, site config
+│   │   ├── auth/                # Login, authorizer, post-confirmation
+│   │   ├── challenges/          # Challenge management
+│   │   ├── championships/       # Championship CRUD + history + vacate
+│   │   ├── contenders/          # Ranking calculations
+│   │   ├── divisions/           # Division management
+│   │   ├── events/              # PPV event management
+│   │   ├── fantasy/             # Fantasy league operations
+│   │   ├── images/              # S3 presigned upload URLs
+│   │   ├── matches/             # Match scheduling and results
+│   │   ├── players/             # Player CRUD + wrestler profiles
+│   │   ├── promos/              # Promo creation and reactions
+│   │   ├── seasons/             # Season management
+│   │   ├── standings/           # Standing calculations
+│   │   ├── statistics/          # Advanced statistics
+│   │   ├── tournaments/         # Tournament management
+│   │   └── users/               # User management and roles
+│   ├── lib/                     # Shared utilities (auth, dynamodb, response)
+│   ├── scripts/                 # create-tables, seed-data, clear-data
+│   └── serverless.yml           # Infrastructure as Code
+├── e2e/                         # Playwright end-to-end tests
+│   ├── tests/                   # Test suites (public, admin, integration)
+│   ├── pages/                   # Page Object Model
+│   └── config/                  # Environment configs and selectors
+├── features/                    # Feature design proposals
+├── .github/workflows/           # CI/CD pipelines
 └── README.md
 ```
+
+---
+
+## Authentication and Authorization
+
+### Overview
+
+League SZN uses AWS Cognito with email-based sign-in and a 4-tier role hierarchy:
+
+```
+Fantasy (lowest) --> Wrestler --> Moderator --> Admin (highest)
+```
+
+### Role Permissions
+
+| Role | Permissions |
+|------|-------------|
+| **Fantasy** | Make fantasy picks, view leaderboards, access public data |
+| **Wrestler** | All Fantasy permissions + issue/respond to challenges, create promos, manage own profile |
+| **Moderator** | All Wrestler permissions + manage players, matches, championships, tournaments, seasons, divisions, events, fantasy config |
+| **Admin** | All Moderator permissions + manage users/roles, clear all data, manage admin-level roles |
+
+### Technical Details
+
+- **Identity Provider**: AWS Cognito User Pool with email-based login
+- **Token Lifecycle**: 24-hour access tokens, 24-hour ID tokens, 30-day refresh tokens
+- **Authorization**: Custom Lambda Authorizer validates JWT tokens on all protected endpoints
+- **Role Groups**: Cognito User Pool Groups (Admin, Moderator, Wrestler, Fantasy) with precedence-based hierarchy
+- **Key Restriction**: Moderators cannot perform Admin-only operations (clear all data, manage Admin/Moderator roles)
+- **Post-Confirmation Trigger**: Lambda function assigns default role group on sign-up
+
+---
+
+## API Endpoints
+
+All endpoints are served under the API Gateway base URL. Admin endpoints require a valid JWT token in the `Authorization: Bearer <token>` header.
+
+<details>
+<summary><strong>Public Endpoints (17)</strong></summary>
+
+#### Players
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/players` | Get all players |
+
+#### Matches
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/matches` | Get all matches (filter by `?status=scheduled\|completed`) |
+
+#### Championships
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/championships` | Get all championships |
+| GET | `/championships/{id}/history` | Get championship reign history |
+| GET | `/championships/{id}/contenders` | Get contender rankings for a championship |
+
+#### Tournaments
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/tournaments` | Get all tournaments |
+
+#### Standings
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/standings` | Get current standings (optional `?seasonId=` for per-season) |
+
+#### Seasons
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/seasons` | Get all seasons |
+
+#### Divisions
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/divisions` | Get all divisions |
+
+#### Events
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/events` | Get all events (filter by `?eventType=`, `?status=`, `?seasonId=`) |
+| GET | `/events/{eventId}` | Get single event with match card |
+
+#### Statistics
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/statistics` | Get statistics (sections: `player-stats`, `head-to-head`, `leaderboards`, `records`, `achievements`) |
+
+#### Site Config
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/site-config` | Get feature flag configuration |
+
+#### Promos
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/promos` | Get all promos (filter by `?playerId=`, `?promoType=`) |
+| GET | `/promos/{promoId}` | Get single promo with responses |
+
+#### Challenges
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/challenges` | Get all challenges (filter by `?status=`, `?playerId=`) |
+| GET | `/challenges/{challengeId}` | Get single challenge |
+
+#### Fantasy (Public)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/fantasy/config` | Get fantasy league configuration |
+| GET | `/fantasy/wrestlers/costs` | Get wrestler costs for fantasy picks |
+
+</details>
+
+<details>
+<summary><strong>Authenticated Endpoints -- Auth and Profile (5)</strong></summary>
+
+#### Auth
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/auth/setup` | Create admin user (one-time setup) |
+
+#### Player Profile (Wrestler+)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/players/me` | Get own wrestler profile |
+| PUT | `/players/me` | Update own profile (name, wrestler, image) |
+
+#### Promos (Wrestler+)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/promos` | Create a new promo |
+| POST | `/promos/{promoId}/react` | Add emoji reaction to a promo |
+
+</details>
+
+<details>
+<summary><strong>Authenticated Endpoints -- Challenges (Wrestler+) (3)</strong></summary>
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/challenges` | Issue a new challenge |
+| POST | `/challenges/{challengeId}/respond` | Accept, decline, or counter a challenge |
+| POST | `/challenges/{challengeId}/cancel` | Cancel own challenge |
+
+</details>
+
+<details>
+<summary><strong>Authenticated Endpoints -- Fantasy Picks (Fantasy+) (4)</strong></summary>
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/fantasy/picks/{eventId}` | Submit fantasy picks for an event |
+| GET | `/fantasy/picks/{eventId}` | Get own picks for an event |
+| GET | `/fantasy/me/picks` | Get all own picks across events |
+| DELETE | `/fantasy/picks/{eventId}` | Clear own picks for an event |
+
+</details>
+
+<details>
+<summary><strong>Admin Endpoints -- Players (3)</strong></summary>
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/players` | Create new player |
+| PUT | `/players/{playerId}` | Update player |
+| DELETE | `/players/{playerId}` | Delete player (fails if player holds a championship) |
+
+</details>
+
+<details>
+<summary><strong>Admin Endpoints -- Matches (2)</strong></summary>
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/matches` | Schedule a match (optional `seasonId`, `eventId`) |
+| PUT | `/matches/{matchId}/result` | Record match result (cascading updates to standings, championships, contenders) |
+
+</details>
+
+<details>
+<summary><strong>Admin Endpoints -- Championships (4)</strong></summary>
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/championships` | Create championship |
+| PUT | `/championships/{championshipId}` | Update championship |
+| DELETE | `/championships/{championshipId}` | Delete championship (cascades to history) |
+| POST | `/championships/{championshipId}/vacate` | Vacate a championship title |
+
+</details>
+
+<details>
+<summary><strong>Admin Endpoints -- Tournaments (2)</strong></summary>
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/tournaments` | Create tournament |
+| PUT | `/tournaments/{tournamentId}` | Update tournament |
+
+</details>
+
+<details>
+<summary><strong>Admin Endpoints -- Seasons (3)</strong></summary>
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/seasons` | Create a new season |
+| PUT | `/seasons/{seasonId}` | Update season (end season, change name) |
+| DELETE | `/seasons/{seasonId}` | Delete season (cascades to season standings) |
+
+</details>
+
+<details>
+<summary><strong>Admin Endpoints -- Divisions (3)</strong></summary>
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/divisions` | Create a new division |
+| PUT | `/divisions/{divisionId}` | Update division |
+| DELETE | `/divisions/{divisionId}` | Delete division (fails if players are assigned) |
+
+</details>
+
+<details>
+<summary><strong>Admin Endpoints -- Events (3)</strong></summary>
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/events` | Create a new event |
+| PUT | `/events/{eventId}` | Update event |
+| DELETE | `/events/{eventId}` | Delete event |
+
+</details>
+
+<details>
+<summary><strong>Admin Endpoints -- Fantasy Admin (6)</strong></summary>
+
+| Method | Path | Description |
+|--------|------|-------------|
+| PUT | `/admin/fantasy/config` | Update fantasy point configuration |
+| POST | `/admin/fantasy/wrestlers/costs/initialize` | Initialize wrestler costs |
+| POST | `/admin/fantasy/wrestlers/costs/recalculate` | Recalculate all wrestler costs based on performance |
+| PUT | `/admin/fantasy/wrestlers/{playerId}/cost` | Manually set a wrestler's cost |
+| GET | `/fantasy/leaderboard` | Get fantasy leaderboard (optional `?seasonId=`) |
+| POST | `/fantasy/score` | Score all completed but unscored events |
+
+</details>
+
+<details>
+<summary><strong>Admin Endpoints -- Users, Promos, Images, Site Config, Contenders, Data Management (8)</strong></summary>
+
+#### User Management (Admin only)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/admin/users` | List all users with roles |
+| POST | `/admin/users/role` | Promote or demote a user's role |
+| POST | `/admin/users/toggle-enabled` | Enable or disable a user account |
+
+#### Promo Administration
+| Method | Path | Description |
+|--------|------|-------------|
+| PUT | `/admin/promos/{promoId}` | Pin or hide a promo |
+
+#### Images
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/images/upload-url` | Generate presigned S3 URL for image uploads |
+
+#### Site Configuration
+| Method | Path | Description |
+|--------|------|-------------|
+| PUT | `/admin/site-config` | Update feature flag toggles |
+
+#### Contender Rankings
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/admin/contenders/recalculate` | Recalculate contender rankings |
+
+#### Data Management (Admin only)
+| Method | Path | Description |
+|--------|------|-------------|
+| DELETE | `/admin/clear-all` | Clear all data from all tables |
+| POST | `/admin/seed-data` | Generate sample data for testing |
+
+</details>
+
+---
+
+## Database Schema
+
+League SZN uses 17 DynamoDB tables with on-demand (PAY_PER_REQUEST) billing.
+
+### Core Tables
+
+| Table | Key | Description |
+|-------|-----|-------------|
+| **Players** | `playerId` (HASH) | Player info, current wrestler, win/loss records. GSI on `userId` for profile lookups. |
+| **Matches** | `matchId` (HASH), `date` (RANGE) | Match details, participants, results, stipulations. GSI on `tournamentId` for tournament matches. |
+| **Championships** | `championshipId` (HASH) | Championship info, type (singles/tag), current champion. |
+| **ChampionshipHistory** | `championshipId` (HASH), `wonDate` (RANGE) | All championship reigns with dates and duration. |
+| **Tournaments** | `tournamentId` (HASH) | Tournament info, brackets (single-elimination), standings (round-robin). |
+| **Seasons** | `seasonId` (HASH) | Season name, start/end dates, active status. Only one season active at a time. |
+| **SeasonStandings** | `seasonId` (HASH), `playerId` (RANGE) | Per-player, per-season win/loss/draw records. GSI on `playerId`. |
+| **Divisions** | `divisionId` (HASH) | Division name and description. Players reference divisions via `divisionId`. |
+| **Events** | `eventId` (HASH) | PPV events and weekly shows. GSIs on `eventType+date`, `status+date`, and `seasonId+date`. |
+
+### Advanced Feature Tables
+
+| Table | Key | Description |
+|-------|-----|-------------|
+| **ContenderRankings** | `championshipId` (HASH), `playerId` (RANGE) | Current contender ranking per player per championship. GSI on `championshipId+rank`. |
+| **RankingHistory** | `playerId` (HASH), `weekKey` (RANGE) | Weekly ranking snapshots. GSI on `championshipId+weekKey`. |
+| **Challenges** | `challengeId` (HASH) | Match challenges between wrestlers. GSIs on `challengerId`, `challengedId`, and `status`. |
+| **Promos** | `promoId` (HASH) | Wrestler promos with reactions. GSIs on `playerId+createdAt` and `promoType+createdAt`. |
+
+### Fantasy League Tables
+
+| Table | Key | Description |
+|-------|-----|-------------|
+| **FantasyConfig** | `configKey` (HASH) | Fantasy league point system configuration. |
+| **WrestlerCosts** | `playerId` (HASH) | Cost assigned to each wrestler for fantasy draft. |
+| **FantasyPicks** | `eventId` (HASH), `fantasyUserId` (RANGE) | User picks per event. GSI on `fantasyUserId+eventId`. |
+
+### Configuration Tables
+
+| Table | Key | Description |
+|-------|-----|-------------|
+| **SiteConfig** | `configKey` (HASH) | Feature flag toggles (challenges, promos, fantasy, statistics, contenders). |
+
+---
 
 ## Local Development
 
@@ -114,7 +524,7 @@ wwe-2k-league/
 
 You'll need **3 terminals** running simultaneously.
 
-#### Terminal 1 — DynamoDB Local
+#### Terminal 1 -- DynamoDB Local
 
 ```bash
 docker run -p 8000:8000 amazon/dynamodb-local
@@ -122,7 +532,7 @@ docker run -p 8000:8000 amazon/dynamodb-local
 
 Leave this running.
 
-#### Terminal 2 — Backend API
+#### Terminal 2 -- Backend API
 
 ```bash
 cd backend
@@ -132,7 +542,7 @@ npm run offline
 
 This starts the API at `http://localhost:3001/dev`. Leave this running.
 
-#### Terminal 3 — Seed Data & Frontend
+#### Terminal 3 -- Seed Data and Frontend
 
 ```bash
 # Create the DynamoDB tables locally, then seed sample data
@@ -150,7 +560,7 @@ Frontend starts at `http://localhost:3000`.
 
 #### View the App
 
-Open **http://localhost:3000** in your browser to see the fully populated league!
+Open **http://localhost:3000** in your browser to see the fully populated league.
 
 **Admin Panel**: Navigate to `/admin` and login with credentials: `admin` / `FireGreen48!`
 
@@ -170,7 +580,7 @@ Open **http://localhost:3000** in your browser to see the fully populated league
 
 ### Environment Variables
 
-**Frontend** — needs a `.env` file using a relative path (Vite proxies API requests to the backend, avoiding CORS issues):
+**Frontend** -- needs a `.env` file using a relative path (Vite proxies API requests to the backend, avoiding CORS issues):
 
 ```bash
 # frontend/.env
@@ -179,14 +589,14 @@ VITE_API_BASE_URL=/dev
 
 The Vite dev server proxies `/dev/*` requests to `http://localhost:3001` automatically. Restart Vite after changing `.env` files.
 
-**Backend** — no `.env` needed. The `serverless-offline` plugin sets `IS_OFFLINE=true` automatically, which configures the backend to use DynamoDB Local at `localhost:8000`.
+**Backend** -- no `.env` needed. The `serverless-offline` plugin sets `IS_OFFLINE=true` automatically, which configures the backend to use DynamoDB Local at `localhost:8000`.
 
 ### Ports
 
 | Service         | Port | Config Location                                      |
 | --------------- | ---- | ---------------------------------------------------- |
 | Frontend (Vite) | 3000 | `frontend/vite.config.ts`                            |
-| Backend API     | 3001 | `backend/serverless.yml` → `custom.serverless-offline.httpPort` |
+| Backend API     | 3001 | `backend/serverless.yml` > `custom.serverless-offline.httpPort` |
 | DynamoDB Local  | 8000 | Docker `-p` flag                                     |
 
 ### Local Limitations
@@ -198,32 +608,6 @@ The Vite dev server proxies `/dev/*` requests to `http://localhost:3001` automat
 | Cognito Auth   | No             | Use dev environment for auth testing     |
 | S3 Uploads     | No             | Image uploads require AWS                |
 | CloudFront CDN | No             | Only applies to deployed environments    |
-
-### Running Tests
-
-**Frontend Unit Tests:**
-```bash
-cd frontend
-npm test               # single run
-npm run test:watch     # watch mode
-npm run test:coverage  # with coverage report
-```
-
-**Backend Unit Tests:**
-```bash
-cd backend
-npm test               # single run
-npm run test:watch     # watch mode
-```
-
-**E2E Tests (Playwright):**
-```bash
-cd e2e
-npm install
-npx playwright install    # first time only
-npm run test:local        # run against localhost
-npm run test:ui           # open Playwright UI
-```
 
 ### Useful Commands
 
@@ -264,224 +648,122 @@ npm test              # run tests
 
 ---
 
+## Testing
+
+### Technology Stack
+
+| Layer | Tool | Rationale |
+|-------|------|-----------|
+| Backend unit tests | **Vitest** | ESM-native, fast, works with Serverless/TypeScript |
+| Frontend component tests | **Vitest + React Testing Library** | Standard for React 18 + Vite projects |
+| Mocking (backend) | **vitest built-in mocks** | Mock DynamoDB DocumentClient, Cognito SDK, S3 client |
+| Mocking (frontend) | **vitest built-in mocks + msw** | Mock fetch/API calls, Cognito Amplify SDK |
+### Setup Notes
+
+- Frontend: `vitest` + `@testing-library/react` + `@testing-library/jest-dom` + `jsdom`
+- Backend: `vitest@3` installed, `vitest.config.mts` configured, `npm test` / `npm run test:watch` scripts added
+- Frontend config: `vitest.config.ts` in frontend root; Backend config: `backend/vitest.config.mts`
+- Mock pattern: `vi.hoisted()` + `vi.mock()` for AWS SDK, Cognito, S3 clients (established in auth tests)
+
+### Running Tests
+
+**Backend:**
+```bash
+cd backend
+
+# Run all tests
+npm test
+
+# Watch mode (re-runs on file changes)
+npm run test:watch
+
+# Run a specific test file
+npx vitest run lib/__tests__/auth.test.ts
+
+# Run tests matching a pattern
+npx vitest run --reporter=verbose auth
+
+# Run with coverage
+npx vitest run --coverage
+```
+
+**Frontend:**
+```bash
+cd frontend
+
+npm test
+npm run test:watch
+
+# Run with coverage
+npx vitest run --coverage
+```
+
+---
+
+## CI/CD Pipeline
+
+### Dev Pipeline (`deploy-dev.yml`)
+
+**Trigger**: Pull requests opened, updated, or reopened against `main`.
+
+```
+Checkout --> Node 24 Setup --> Install Frontend
+    |
+    +--> Lint (ESLint)
+    +--> Typecheck (tsc --noEmit)
+    +--> Unit Tests (Vitest)
+    |
+[Tests pass] --> Deploy Backend (Serverless Framework --> devtest stage)
+    |
+    +--> Extract Cognito IDs from CloudFormation
+    +--> Install & Build Frontend (Vite, --mode devtest)
+    +--> S3 Sync (deploy to dev.leagueszn.jpdxsolo.com)
+    +--> CloudFront Cache Invalidation
+    +--> Deployment Summary
+```
+
+### Prod Pipeline (`deploy-prod.yml`)
+
+**Trigger**: Manual dispatch (`workflow_dispatch`) after merging to `main`.
+
+```
+Checkout --> Node 24 Setup --> Install Frontend
+    |
+    +--> Lint (ESLint)
+    +--> Typecheck (tsc --noEmit)
+    +--> Unit Tests (Vitest)
+    |
+[Tests pass] --> Deploy Backend (Serverless Framework --> dev stage)
+    |
+    +--> Extract Cognito IDs from CloudFormation
+    +--> Install & Build Frontend (Vite, production mode)
+    +--> S3 Sync (deploy to leagueszn.jpdxsolo.com)
+    +--> CloudFront Cache Invalidation
+    +--> Deployment Summary
+```
+
+### Pipeline Details
+
+| Step | Description |
+|------|-------------|
+| **Lint** | ESLint checks across all frontend TypeScript/React files |
+| **Typecheck** | TypeScript compiler (`tsc --noEmit`) validates types without emitting output |
+| **Unit Tests** | Vitest runs all frontend test suites |
+| **Backend Deploy** | Serverless Framework deploys all Lambda functions, API Gateway config, DynamoDB tables, Cognito, S3 buckets, and CloudFront via CloudFormation |
+| **Frontend Build** | Vite builds the React SPA with environment-specific API URLs and Cognito config injected |
+| **S3 Sync** | Deploys built frontend assets to S3 (with `--delete` to remove stale files, `--exclude "*.map"` to omit source maps) |
+| **CloudFront Invalidation** | Invalidates CDN cache (`/*`) to serve fresh content immediately |
+
+---
+
 ## Live Environments
 
 | Environment | Frontend | Backend API |
 |-------------|----------|-------------|
-| **Production** | http://leagueszn.jpdxsolo.com | https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev |
-| **Dev** | http://dev.leagueszn.jpdxsolo.com | https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest |
-
-## Deployment
-
-### Prerequisites
-
-- Node.js 24+
-- AWS CLI configured with the `league-szn` profile
+| **Production** | https://leagueszn.jpdxsolo.com | https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev |
+| **Dev** | https://dev.leagueszn.jpdxsolo.com | https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest |
 
 ---
-
-### Deploy to DEV
-
-From the project root directory, run:
-
-```bash
-cd backend && npm install && cd ../frontend && npm install && npm run build -- --mode devtest && cd ../backend && npx serverless deploy --stage devtest --aws-profile league-szn && aws s3 sync ../frontend/dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete
-```
-
-**Dev URLs after deployment:**
-- Frontend: http://dev.leagueszn.jpdxsolo.com
-- API: https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest
-
----
-
-### Deploy to PROD
-
-From the project root directory, run:
-
-```bash
-cd backend && npm install && cd ../frontend && npm install && npm run build && cd ../backend && npx serverless deploy --aws-profile league-szn && aws s3 sync ../frontend/dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete
-```
-
-**Prod URLs after deployment:**
-- Frontend: http://leagueszn.jpdxsolo.com
-- API: https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev
-
----
-
-### Quick Reference
-
-| Action | Dev | Prod |
-|--------|-----|------|
-| Build frontend | `npm run build -- --mode devtest` | `npm run build` |
-| Deploy backend | `npx serverless deploy --stage devtest --aws-profile league-szn` | `npx serverless deploy --aws-profile league-szn` |
-| Sync frontend | `aws s3 sync ../frontend/dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete` | `aws s3 sync ../frontend/dist s3://leagueszn.jpdxsolo.com --profile league-szn --delete` |
-
----
-
-### Troubleshooting Deployments
-
-**"Failed to load data" after deploying to dev:**
-
-Some branches may be missing the `.env.devtest` file. Create it:
-```bash
-echo "VITE_API_BASE_URL=https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest" > frontend/.env.devtest
-```
-Then rebuild and sync:
-```bash
-cd frontend && npm run build -- --mode devtest && aws s3 sync dist s3://dev.leagueszn.jpdxsolo.com --profile league-szn --delete
-```
-
-**Verify the API is working:**
-```bash
-curl https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest/players
-```
-
-## API Endpoints
-
-### Public Endpoints
-
-- `GET /players` - Get all players
-- `GET /matches` - Get all matches (filter by status)
-- `GET /championships` - Get all championships
-- `GET /championships/{id}/history` - Get championship history
-- `GET /tournaments` - Get all tournaments
-- `GET /standings` - Get current standings (optional `?seasonId=` for season-specific)
-- `GET /seasons` - Get all seasons
-- `GET /divisions` - Get all divisions
-
-### Admin Endpoints (Authentication Required)
-
-All admin endpoints require a valid JWT token from Cognito in the `Authorization` header.
-
-- `POST /auth/setup` - Create admin user (one-time setup)
-- `POST /players` - Create new player
-- `PUT /players/{id}` - Update player
-- `DELETE /players/{id}` - Delete player (fails if player holds a championship)
-- `POST /matches` - Schedule a match (optional `seasonId` to assign to a season)
-- `PUT /matches/{id}/result` - Record match result
-- `POST /championships` - Create championship
-- `PUT /championships/{id}` - Update championship
-- `DELETE /championships/{id}` - Delete championship (cascades to championship history)
-- `POST /tournaments` - Create tournament
-- `PUT /tournaments/{id}` - Update tournament
-- `POST /seasons` - Create a new season
-- `PUT /seasons/{id}` - Update season (end season, change name)
-- `DELETE /seasons/{id}` - Delete season (cascades to season standings)
-- `POST /divisions` - Create a new division
-- `PUT /divisions/{id}` - Update division
-- `DELETE /divisions/{id}` - Delete division (fails if players are assigned)
-- `POST /images/upload-url` - Generate presigned S3 URL for image uploads
-- `DELETE /admin/clear-all` - Clear all data from all tables
-- `POST /admin/seed-data` - Generate sample data for testing
-
-## Admin Panel Features
-
-The Admin Panel is accessible at `/admin` and provides comprehensive management tools organized into tabs.
-
-### Delete Functionality
-
-Each management area includes delete capabilities with appropriate safeguards:
-
-| Entity | Location | Validation | Cascade Behavior |
-|--------|----------|------------|------------------|
-| **Players** | Manage Players tab | Cannot delete if player holds an active championship | Removes player from all season standings |
-| **Divisions** | Divisions tab | Cannot delete if players are assigned to the division | None |
-| **Seasons** | Seasons tab | Confirmation required | Deletes all season standings for that season |
-| **Championships** | Championships tab | Confirmation required | Deletes entire championship history (all reigns) |
-
-All delete operations display a confirmation dialog before execution.
-
-### Clear All Data (Danger Zone)
-
-Located in the **Danger Zone** tab, this feature allows complete data reset:
-
-- **Safety Features**:
-  - Requires typing the exact phrase `DELETE ALL DATA` to enable the button
-  - Shows a final confirmation dialog before proceeding
-  - Displays count of deleted items after completion
-
-- **What Gets Deleted**:
-  - All players
-  - All matches
-  - All championships and championship history
-  - All tournaments
-  - All seasons and season standings
-  - All divisions
-
-### Generate Sample Data (Seed Data)
-
-Also located in the **Danger Zone** tab, this feature creates sample data for testing:
-
-- **What Gets Created**:
-  - 3 divisions (Raw, SmackDown, NXT)
-  - 12 players with random wrestlers and win/loss records
-  - 1 active season (30-day duration)
-  - Season standings for all players
-  - 4 championships (World Heavyweight, Intercontinental, Tag Team, US)
-  - Championship history entries
-  - 12 matches (8 completed, 4 scheduled)
-  - 2 tournaments (King of the Ring - Single Elimination, G1 Climax - Round Robin)
-
-- **Note**: Seed data is additive and does not delete existing data
-
-### Admin Help Guide
-
-The **Help** tab provides comprehensive documentation covering:
-
-1. **Managing Players** - Add, edit, delete players; image upload guidelines
-2. **Scheduling Matches** - Match types, stipulations, championship matches
-3. **Recording Results** - Enter outcomes, update standings
-4. **Managing Championships** - Create titles, track history, assign champions
-5. **Creating Tournaments** - Single elimination and round robin formats
-6. **Managing Seasons** - Create/end seasons, per-season standings
-7. **Managing Divisions** - Create divisions, assign players
-8. **Data Management** - Seed data and clear all with warnings
-9. **Typical Admin Workflow** - Step-by-step guide for common tasks
-
-## Database Schema
-
-### Players Table
-- Stores player information, current wrestler, and win/loss records
-
-### Matches Table
-- Stores match details, participants, results, and stipulations
-- Supports championship and tournament matches
-
-### Championships Table
-- Stores championship information and current champion
-
-### Championship History Table
-- Tracks all championship reigns with dates and duration
-
-### Tournaments Table
-- Stores tournament information
-- Includes brackets for single-elimination
-- Includes standings for round-robin
-
-### Seasons Table
-- Stores season information (name, start/end dates, status)
-- Only one season can be active at a time
-
-### Season Standings Table
-- Tracks per-player standings for each season
-- Composite key: seasonId + playerId
-- Stores wins, losses, draws for the specific season
-
-### Divisions Table
-- Stores division information (name, description)
-- Players can be assigned to a division via the divisionId field
-
-## Tournament Types
-
-### Single Elimination
-- Bracket-style tournament
-- Winners advance, losers are eliminated
-- Automatic bracket generation
-
-### Round Robin (G1 Climax Style)
-- Every participant faces every other participant
-- Point system: 2 points for win, 1 point for draw
-- Highest points wins the tournament
 
 ## Cost Estimation
 
@@ -494,25 +776,7 @@ With AWS Free Tier:
 
 **Expected monthly cost for low traffic: $1-5/month**
 
-## Todo
-
-### High Priority
-- [x] ~~Add Divisions support (group players into divisions)~~ **DONE**
-- [x] ~~Add Seasons support (track standings per season, season resets)~~ **DONE**
-- [x] ~~AWS Cognito integration for admin authentication~~ **DONE**
-- [x] ~~Lambda Authorizer to protect admin endpoints~~ **DONE**
-- [x] ~~Player profile pictures and championship images~~ **DONE**
-
-### Medium Priority
-- [ ] Tag team match handling in frontend
-- [ ] Tournament bracket progression (auto-advance winners)
-- [ ] Match type statistics and analytics
-
-### Low Priority
-- [ ] Advanced filtering and search
-- [ ] Export standings to PDF/CSV
-- [ ] Mobile responsive design improvements
-- [ ] Real-time updates with WebSockets
+---
 
 ## License
 
