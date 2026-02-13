@@ -225,7 +225,7 @@ npx playwright test
 **Backend tests written: 30/30 ✅**
 
 ### Frontend Component Tests
-- [ ] P2: `frontend/src/components/admin/ManageSeasons.tsx` — Create/edit/delete seasons; end active season; shows status (~4 tests)
+- [x] P2: `frontend/src/components/admin/ManageSeasons.tsx` — Create/edit/delete seasons; end active season; shows status (~4 tests) ✅ `components/admin/__tests__/ManageSeasons.test.tsx`
 
 **Section total: ~15 tests**
 
@@ -257,9 +257,9 @@ npx playwright test
 **Backend tests written: 50/50 ✅**
 
 ### Frontend Component Tests
-- [ ] P2: `frontend/src/components/events/EventsCalendar.tsx` — Renders calendar grid with event dots; navigates months; filters by event type; shows upcoming events list; handles empty state (~5 tests)
-- [ ] P1: `frontend/src/components/admin/CreateEvent.tsx` — Creates event with form fields; season selection; theme color picker; validates required fields (~4 tests)
-- [ ] P2: `frontend/src/components/admin/MatchCardBuilder.tsx` — Builds event match cards; reorders matches; links to schedule match (~3 tests)
+- [x] P2: `frontend/src/components/events/EventsCalendar.tsx` — Renders calendar grid with event dots; navigates months; filters by event type; shows upcoming events list; handles empty state (~5 tests) ✅ `components/events/__tests__/EventsCalendar.test.tsx`
+- [x] P1: `frontend/src/components/admin/CreateEvent.tsx` — Creates event with form fields; season selection; theme color picker; validates required fields (~4 tests) ✅ `components/admin/__tests__/CreateEvent.test.tsx`
+- [x] P2: `frontend/src/components/admin/MatchCardBuilder.tsx` — Builds event match cards; reorders matches; links to schedule match (~3 tests) ✅ `components/admin/__tests__/MatchCardBuilder.test.tsx`
 
 **Section total: ~31 tests**
 
@@ -283,14 +283,14 @@ npx playwright test
 - [x] P1: `backend/functions/fantasy/updateWrestlerCost.ts` — Auth, validation, 404, updates with history, trims to 20 entries (10 tests) ✅ `functions/fantasy/__tests__/wrestlerCosts.test.ts`
 
 ### Frontend Component Tests
-- [ ] P1: `frontend/src/components/fantasy/FantasyDashboard.tsx` — Renders upcoming show card; shows current picks preview; displays stats + recent results; auto-scores unscored picks on mount; handles loading state (~5 tests)
-- [ ] P1: `frontend/src/components/fantasy/MakePicks.tsx` — Renders division-based picker; enforces budget constraint; enforces picks-per-division limit; submits picks; clears picks; shows wrestler costs (~6 tests)
+- [x] P1: `frontend/src/components/fantasy/FantasyDashboard.tsx` — Renders upcoming show card; shows current picks preview; displays stats + recent results; auto-scores unscored picks on mount; handles loading state (~5 tests) ✅ `components/fantasy/__tests__/FantasyDashboard.test.tsx`
+- [x] P1: `frontend/src/components/fantasy/MakePicks.tsx` — Renders division-based picker; enforces budget constraint; enforces picks-per-division limit; submits picks; clears picks; shows wrestler costs (~6 tests) ✅ `components/fantasy/__tests__/MakePicks.test.tsx`
 - [ ] P2: `frontend/src/components/fantasy/FantasyLeaderboard.tsx` — Renders leaderboard table with ranks/points; filters by season; shows streak + perfect picks (~4 tests)
 - [ ] P2: `frontend/src/components/fantasy/WrestlerCosts.tsx` — Renders cost table with current/trend; handles empty state (~3 tests)
 - [ ] P2: `frontend/src/components/fantasy/ShowResults.tsx` — Renders event results with points breakdown per wrestler (~3 tests)
 - [ ] P2: `frontend/src/components/fantasy/BudgetTracker.tsx` — Shows remaining budget; updates in real-time as picks change; warns when over budget (~3 tests)
-- [ ] P1: `frontend/src/components/admin/FantasyConfig.tsx` — Renders all 14 config fields; tracks unsaved changes; saves config; resets to original; toggles cost fluctuation fields conditionally (~5 tests)
-- [ ] P1: `frontend/src/components/admin/ManageFantasyShows.tsx` — Configures fantasy picks for events; locks/unlocks events (~3 tests)
+- [x] P1: `frontend/src/components/admin/FantasyConfig.tsx` — Renders all 14 config fields; tracks unsaved changes; saves config; resets to original; toggles cost fluctuation fields conditionally (~5 tests) ✅ `components/admin/__tests__/FantasyConfig.test.tsx`
+- [x] P1: `frontend/src/components/admin/ManageFantasyShows.tsx` — Configures fantasy picks for events; locks/unlocks events (~3 tests) ✅ `components/admin/__tests__/ManageFantasyShows.test.tsx`
 
 **Backend tests written: 114/114 ✅** | Frontend tests remaining: ~32
 **Section total: ~146 tests**
@@ -309,10 +309,10 @@ npx playwright test
 **Backend tests written: 54/54 ✅**
 
 ### Frontend Component Tests
-- [ ] P2: `frontend/src/components/challenges/ChallengeBoard.tsx` — Renders challenge list with filters (active/pending/accepted/recent); shows countdown for pending; handles empty state (~4 tests)
-- [ ] P2: `frontend/src/components/challenges/IssueChallenge.tsx` — Renders form; filters opponents to linked users; match type/stipulation selection; 500 char message limit; preview before submit; shows success with navigation (~5 tests)
-- [ ] P2: `frontend/src/components/challenges/ChallengeDetail.tsx` — Shows challenge details; respond buttons (accept/decline/counter); cancel button for issuer (~4 tests)
-- [ ] P2: `frontend/src/components/challenges/MyChallenges.tsx` — Shows issued + received challenges; action buttons based on status (~3 tests)
+- [x] P2: `frontend/src/components/challenges/ChallengeBoard.tsx` — Renders challenge list with filters (active/pending/accepted/recent); shows countdown for pending; handles empty state (~4 tests) ✅ `components/challenges/__tests__/ChallengeBoard.test.tsx`
+- [x] P2: `frontend/src/components/challenges/IssueChallenge.tsx` — Renders form; filters opponents to linked users; match type/stipulation selection; 500 char message limit; preview before submit; shows success with navigation (~5 tests) ✅ `components/challenges/__tests__/IssueChallenge.test.tsx`
+- [x] P2: `frontend/src/components/challenges/ChallengeDetail.tsx` — Shows challenge details; respond buttons (accept/decline/counter); cancel button for issuer (~4 tests) ✅ `components/challenges/__tests__/ChallengeDetail.test.tsx`
+- [x] P2: `frontend/src/components/challenges/MyChallenges.tsx` — Shows issued + received challenges; action buttons based on status (~3 tests) ✅ `components/challenges/__tests__/MyChallenges.test.tsx`
 
 **Section total: ~39 tests**
 
@@ -330,10 +330,10 @@ npx playwright test
 **Backend tests written: 53/53 ✅**
 
 ### Frontend Component Tests
-- [ ] P2: `frontend/src/components/promos/PromoFeed.tsx` — Renders promo list with type filters; shows pinned section; handles empty state (~4 tests)
-- [ ] P2: `frontend/src/components/promos/PromoEditor.tsx` — Creates promo with type/content/target selection; validates content (~3 tests)
-- [ ] P2: `frontend/src/components/promos/PromoCard.tsx` — Displays promo content + player info; shows reactions; links to thread (~3 tests)
-- [ ] P2: `frontend/src/components/promos/PromoReactions.tsx` — Renders reaction buttons; highlights user's active reactions; calls react API on click (~3 tests)
+- [x] P2: `frontend/src/components/promos/PromoFeed.tsx` — Renders promo list with type filters; shows pinned section; handles empty state (~4 tests) ✅ `components/promos/__tests__/PromoFeed.test.tsx`
+- [x] P2: `frontend/src/components/promos/PromoEditor.tsx` — Creates promo with type/content/target selection; validates content (~3 tests) ✅ `components/promos/__tests__/PromoEditor.test.tsx`
+- [x] P2: `frontend/src/components/promos/PromoCard.tsx` — Displays promo content + player info; shows reactions; links to thread (~3 tests) ✅ `components/promos/__tests__/PromoCard.test.tsx`
+- [x] P2: `frontend/src/components/promos/PromoReactions.tsx` — Renders reaction buttons; highlights user's active reactions; calls react API on click (~3 tests) ✅ `components/promos/__tests__/PromoReactions.test.tsx`
 
 **Section total: ~35 tests**
 
@@ -495,7 +495,7 @@ npx playwright test
 
 ### Frontend Component Tests
 - [ ] P3: `frontend/src/components/admin/SearchableSelect.tsx` — Renders dropdown with search; filters options on input; selects option; handles empty state (~3 tests)
-- [ ] P2: `frontend/src/components/challenges/challengeUtils.ts` — MATCH_TYPES array has expected values; STIPULATIONS array has expected values; getInitial returns first character of name (~3 tests)
+- [x] P2: `frontend/src/components/challenges/challengeUtils.ts` — MATCH_TYPES array has expected values; STIPULATIONS array has expected values; getInitial returns first character of name (~3 tests) ✅ `components/challenges/__tests__/challengeUtils.test.ts`
 
 **Section total: ~6 tests**
 
