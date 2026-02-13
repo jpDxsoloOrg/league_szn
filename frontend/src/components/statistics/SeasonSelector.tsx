@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { Season } from '../../types';
+import './SeasonSelector.css';
 
 interface SeasonSelectorProps {
   seasons: Season[];

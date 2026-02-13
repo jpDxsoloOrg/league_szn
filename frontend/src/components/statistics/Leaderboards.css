@@ -35,39 +35,6 @@
   background-color: #333;
 }
 
-/* Timeframe Toggle */
-.lb-timeframe-toggle {
-  display: flex;
-  gap: 0;
-  margin-bottom: 1.5rem;
-  justify-content: center;
-}
-
-.lb-toggle-btn {
-  padding: 0.6rem 1.5rem;
-  background-color: #2d2d2d;
-  color: #bbb;
-  border: 1px solid #333;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: bold;
-  transition: all 0.3s;
-}
-
-.lb-toggle-btn:first-child {
-  border-radius: 6px 0 0 6px;
-}
-
-.lb-toggle-btn:last-child {
-  border-radius: 0 6px 6px 0;
-}
-
-.lb-toggle-active {
-  background-color: #d4af37;
-  color: #000;
-  border-color: #d4af37;
-}
-
 /* Category Tabs */
 .lb-tabs {
   display: flex;

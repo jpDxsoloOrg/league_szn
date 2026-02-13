@@ -16,10 +16,15 @@
   margin-bottom: 0;
 }
 
+.ps-header .ps-nav-links {
+  margin-bottom: 0;
+}
+
 .ps-nav-links {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+  margin-bottom: 1rem;
 }
 
 .ps-nav-links a {
@@ -42,6 +47,10 @@
   gap: 1.5rem;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
+}
+
+.ps-controls .ps-season-selector {
+  margin-bottom: 0;
 }
 
 .ps-player-selector {
@@ -376,40 +385,6 @@
   margin-bottom: 1.5rem;
 }
 
-/* Season Selector */
-.ps-season-selector {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-
-.ps-season-selector label {
-  color: #bbb;
-  font-size: 0.95rem;
-  white-space: nowrap;
-}
-
-.ps-season-selector select {
-  min-width: 180px;
-  padding: 0.6rem;
-  background-color: #2d2d2d;
-  color: #fff;
-  border: 1px solid #333;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-
-.ps-season-selector--compact {
-  margin-bottom: 1rem;
-}
-
-.ps-season-selector--compact select {
-  min-width: 150px;
-  padding: 0.5rem;
-  font-size: 0.9rem;
-}
-
 @media (max-width: 768px) {
   .ps-grid {
     grid-template-columns: 1fr;
@@ -432,14 +407,6 @@
   }
 
   .ps-player-selector select {
-    min-width: 100%;
-  }
-
-  .ps-season-selector {
-    width: 100%;
-  }
-
-  .ps-season-selector select {
     min-width: 100%;
   }
 

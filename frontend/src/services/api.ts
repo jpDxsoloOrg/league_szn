@@ -561,8 +561,9 @@ export const statisticsApi = {
     return fetchWithAuth(`${API_BASE_URL}/statistics?${params}`, {}, signal);
   },
 
-  getHeadToHead: async (player1Id: string, player2Id: string, signal?: AbortSignal): Promise<HeadToHeadResponse> => {
+  getHeadToHead: async (player1Id: string, player2Id: string, seasonId?: string, signal?: AbortSignal): Promise<HeadToHeadResponse> => {
     const params = new URLSearchParams({ section: 'head-to-head', player1Id, player2Id });
+    if (seasonId) params.set('seasonId', seasonId);
     return fetchWithAuth(`${API_BASE_URL}/statistics?${params}`, {}, signal);
   },
 
@@ -571,8 +572,9 @@ export const statisticsApi = {
     return fetchWithAuth(`${API_BASE_URL}/statistics?${params}`, {}, signal);
   },
 
-  getLeaderboards: async (signal?: AbortSignal): Promise<LeaderboardsResponse> => {
+  getLeaderboards: async (seasonId?: string, signal?: AbortSignal): Promise<LeaderboardsResponse> => {
     const params = new URLSearchParams({ section: 'leaderboards' });
+    if (seasonId) params.set('seasonId', seasonId);
     return fetchWithAuth(`${API_BASE_URL}/statistics?${params}`, {}, signal);
   },
 
