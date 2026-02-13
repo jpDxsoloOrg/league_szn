@@ -130,7 +130,7 @@ npx playwright test
 - [x] P1: `backend/functions/players/updateMyProfile.ts` — 403 if not Wrestler; updates via userId; 404 if no profile; 400 for non-whitelisted fields; rejects non-string values; rejects empty name (6 tests) ✅ `functions/players/__tests__/players.test.ts`
 
 ### Frontend Component Tests
-- [ ] P1: `frontend/src/components/admin/ManagePlayers.tsx` — Renders player list; shows add form on button click; creates player via API; edits existing player; deletes with confirmation; handles image upload (presigned URL + S3); shows loading/error/success states (~8 tests)
+- [x] P1: `frontend/src/components/admin/ManagePlayers.tsx` — Renders player list; shows add form on button click; creates player via API; edits existing player; deletes with confirmation; handles image upload (presigned URL + S3); shows loading/error/success states (~8 tests) ✅ `components/admin/__tests__/ManagePlayers.test.tsx`
 
 **Backend tests written: 28/28 ✅** | Frontend tests remaining: ~8
 **Section total: ~36 tests**
@@ -169,9 +169,9 @@ npx playwright test
 - [x] P1: `backend/functions/matches/getMatches.ts` — Returns all matches via scan; filters by status; sorts by date descending; error handling (5 tests) ✅ `functions/matches/__tests__/getMatches.test.ts`
 
 ### Frontend Component Tests
-- [ ] P1: `frontend/src/components/Matches.tsx` — Renders match list; shows scheduled vs completed; displays participant names (~3 tests)
-- [ ] P1: `frontend/src/components/admin/ScheduleMatch.tsx` — Renders form with match type, participants, options; loads players/championships/tournaments/seasons/events; handles tag team mode (multiple teams); submits match; shows validation errors (~6 tests)
-- [ ] P1: `frontend/src/components/admin/RecordResult.tsx` — Lists scheduled matches; filters by event; selects winners (team vs individual); submits result; handles loading/error/success (~5 tests)
+- [x] P1: `frontend/src/components/Matches.tsx` — Renders match list; shows scheduled vs completed; displays participant names (~3 tests) ✅ `components/__tests__/Matches.test.tsx`
+- [x] P1: `frontend/src/components/admin/ScheduleMatch.tsx` — Renders form with match type, participants, options; loads players/championships/tournaments/seasons/events; handles tag team mode (multiple teams); submits match; shows validation errors (~6 tests) ✅ `components/admin/__tests__/ScheduleMatch.test.tsx`
+- [x] P1: `frontend/src/components/admin/RecordResult.tsx` — Lists scheduled matches; filters by event; selects winners (team vs individual); submits result; handles loading/error/success (~5 tests) ✅ `components/admin/__tests__/RecordResult.test.tsx`
 
 **Backend tests written: 57/57 ✅** | Frontend tests remaining: ~14
 **Section total: ~71 tests**
@@ -189,8 +189,8 @@ npx playwright test
 - [x] P1: `backend/functions/championships/vacateChampionship.ts` — Full vacate transaction; no open history; already vacant; 404; missing id (5 tests) ✅ `functions/championships/__tests__/championships.test.ts`
 
 ### Frontend Component Tests
-- [ ] P1: `frontend/src/components/Championships.tsx` — Renders championship list with current holders; handles empty state (~3 tests)
-- [ ] P1: `frontend/src/components/admin/ManageChampionships.tsx` — Create/edit/delete championships; image upload; vacate title; shows current champion; division assignment (~7 tests)
+- [x] P1: `frontend/src/components/Championships.tsx` — Renders championship list with current holders; handles empty state (~3 tests) ✅ `components/__tests__/Championships.test.tsx`
+- [x] P1: `frontend/src/components/admin/ManageChampionships.tsx` — Create/edit/delete championships; image upload; vacate title; shows current champion; division assignment (~7 tests) ✅ `components/admin/__tests__/ManageChampionships.test.tsx`
 
 **Backend tests written: 25/25 ✅** | Frontend tests remaining: ~10
 **Section total: ~35 tests**
@@ -207,8 +207,8 @@ npx playwright test
 **Backend tests written: 27/27 ✅**
 
 ### Frontend Component Tests
-- [ ] P2: `frontend/src/components/Tournaments.tsx` — Renders tournament list; shows bracket view for single-elimination; shows standings for round-robin (~4 tests)
-- [ ] P2: `frontend/src/components/admin/CreateTournament.tsx` — Creates tournament with type/participants; validates min participants (~3 tests)
+- [x] P2: `frontend/src/components/Tournaments.tsx` — Renders tournament list; shows bracket view for single-elimination; shows standings for round-robin (~4 tests) ✅ `components/__tests__/Tournaments.test.tsx`
+- [x] P2: `frontend/src/components/admin/CreateTournament.tsx` — Creates tournament with type/participants; validates min participants (~3 tests) ✅ `components/admin/__tests__/CreateTournament.test.tsx`
 
 **Section total: ~17 tests**
 
@@ -384,7 +384,7 @@ npx playwright test
 - [x] P0: `backend/functions/users/updateUserRole.ts` — Auth, validation, role/action checks, Moderator rejection, promote/demote, Wrestler auto-Fantasy + auto-Player, skip existing player, non-blocking errors (10 tests) ✅ `functions/users/__tests__/users.test.ts`
 
 ### Frontend Component Tests
-- [ ] P1: `frontend/src/components/admin/ManageUsers.tsx` — Renders user list with filters (all/wrestler-requests/wrestlers/admins/disabled); approve wrestler requests; promote/demote roles; enable/disable users; assign divisions; SuperAdmin-only actions for Admin/Moderator management (~7 tests)
+- [x] P1: `frontend/src/components/admin/ManageUsers.tsx` — Renders user list with filters (all/wrestler-requests/wrestlers/admins/disabled); approve wrestler requests; promote/demote roles; enable/disable users; assign divisions; SuperAdmin-only actions for Admin/Moderator management (~7 tests) ✅ `components/admin/__tests__/ManageUsers.test.tsx`
 
 **Backend tests written: 20/20 ✅** | Frontend tests remaining: ~7
 **Section total: ~27 tests**
