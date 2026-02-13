@@ -4,6 +4,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
 import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
+import { useSiteConfig } from '../../contexts/SiteConfigContext'; 
+import   EmbeddedPlayerStats   from "../statistics/EmbeddedPlayerStats";
 import type { Player } from '../../types';
 import './WrestlerProfile.css';
 
@@ -29,6 +31,7 @@ export default function WrestlerProfile() {
   const [editing, setEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const { features } = useSiteConfig();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -256,79 +259,34 @@ export default function WrestlerProfile() {
 
       {/* Profile Header */}
       <div className="profile-header">
-        <div className="profile-image-container">
-          <div className="profile-image-wrapper">
-            {player.imageUrl ? (
-              <img src={player.imageUrl} alt={player.name} className="profile-image" />
-            ) : (
-              <div className="profile-image-placeholder">
-                <span className="icon-text">?</span>
-                <span>No Image</span>
-              </div>
-            )}
-          </div>
+        <div className="profile-image-wrapper">
+          {player.imageUrl ? (
+            <img src={player.imageUrl} alt={player.name} className="profile-image" />
+          ) : (
+            <div className="profile-image-placeholder">
+              <span className="icon-text">?</span>
+            </div>
+          )}
         </div>
-        <h1 className="profile-name">{player.name}</h1>
-        {player.currentWrestler && (
-          <p className="profile-wrestler-name">
-            Playing as {player.currentWrestler}
-          </p>
+        <div className="profile-header-info">
+          <h1 className="profile-name">{player.name}</h1>
+          {player.currentWrestler && (
+            <p className="profile-wrestler-name">
+              Playing as {player.currentWrestler}
+            </p>
+          )}
+        </div>
+        {!editing && (
+          <button
+            className="edit-icon-btn"
+            onClick={handleEdit}
+            aria-label="Edit profile"
+            title="Edit profile"
+          >
+&#9998;
+          </button>
         )}
       </div>
-
-      {/* All-Time Stats */}
-      <div className="stats-section">
-        <h3 className="stats-section-title">All-Time Record</h3>
-        <div className="profile-stats">
-          <div className="stat-card">
-            <span className="stat-label">Record</span>
-            <span className="stat-value record">
-              {player.wins}-{player.losses}-{player.draws}
-            </span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-label">Win %</span>
-            <span className={`stat-value percentage ${getWinPercentageClass(player.wins, player.losses, player.draws)}`}>
-              {getWinPercentage(player.wins, player.losses, player.draws)}%
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Season Records */}
-      {player.seasonRecords && player.seasonRecords.length > 0 && (
-        <div className="stats-section">
-          <h3 className="stats-section-title">Season Records</h3>
-          <div className="season-records">
-            {player.seasonRecords.map((season) => (
-              <div key={season.seasonId} className="season-record-card">
-                <div className="season-record-header">
-                  <span className="season-record-name">{season.seasonName}</span>
-                  {season.seasonStatus === 'active' && (
-                    <span className="season-active-badge">Active</span>
-                  )}
-                </div>
-                <div className="season-record-stats">
-                  <span className="season-record-value">
-                    {season.wins}-{season.losses}-{season.draws}
-                  </span>
-                  <span className={`season-record-pct ${getWinPercentageClass(season.wins, season.losses, season.draws)}`}>
-                    {getWinPercentage(season.wins, season.losses, season.draws)}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Edit Button (view mode only) */}
-      {!editing && (
-        <button className="edit-profile-btn" onClick={handleEdit}>
-          Edit Profile
-        </button>
-      )}
-
       {/* Edit Form (edit mode only) */}
       {editing && (
         <div className="profile-edit-section">
@@ -405,6 +363,58 @@ export default function WrestlerProfile() {
           </form>
         </div>
       )}
+
+      {/* All-Time Stats */}
+      <div className="stats-section">
+        <h3 className="stats-section-title">All-Time Record</h3>
+        <div className="profile-stats">
+          <div className="stat-card">
+            <span className="stat-label">Record</span>
+            <span className="stat-value record">
+              {player.wins}-{player.losses}-{player.draws}
+            </span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Win %</span>
+            <span className={`stat-value percentage ${getWinPercentageClass(player.wins, player.losses, player.draws)}`}>
+              {getWinPercentage(player.wins, player.losses, player.draws)}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Season Records */}
+      {player.seasonRecords && player.seasonRecords.length > 0 && (
+        <div className="stats-section">
+          <h3 className="stats-section-title">Season Records</h3>
+          <div className="season-records">
+            {player.seasonRecords.map((season) => (
+              <div key={season.seasonId} className="season-record-card">
+                <div className="season-record-header">
+                  <span className="season-record-name">{season.seasonName}</span>
+                  {season.seasonStatus === 'active' && (
+                    <span className="season-active-badge">Active</span>
+                  )}
+                </div>
+                <div className="season-record-stats">
+                  <span className="season-record-value">
+                    {season.wins}-{season.losses}-{season.draws}
+                  </span>
+                  <span className={`season-record-pct ${getWinPercentageClass(season.wins, season.losses, season.draws)}`}>
+                    {getWinPercentage(season.wins, season.losses, season.draws)}%
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {features.statistics && player.playerId && (
+        <EmbeddedPlayerStats playerId={player.playerId} />
+      )}
+
+      
     </div>
   );
 }
