@@ -90,7 +90,8 @@
       "lostDate": "Verloren am",
       "daysHeld": "Tage gehalten",
       "defenses": "Titelverteidigungen"
-    }
+    },
+    "filterByDivision": "Nach Division filtern"
   },
   "scheduleMatch": {
     "title": "Kampf planen",

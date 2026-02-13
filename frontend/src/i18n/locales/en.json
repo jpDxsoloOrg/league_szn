@@ -90,7 +90,8 @@
       "lostDate": "Lost Date",
       "daysHeld": "Days Held",
       "defenses": "Defenses"
-    }
+    },
+    "filterByDivision": "Filter by Division"
   },
   "scheduleMatch": {
     "title": "Schedule Match",
