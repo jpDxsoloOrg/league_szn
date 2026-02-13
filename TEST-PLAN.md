@@ -85,13 +85,13 @@ npx playwright test
 - [ ] P0: `frontend/src/components/FeatureRoute.tsx` — Renders children when feature enabled; redirects to home when disabled; shows loading during config fetch (~3 tests)
 
 ### Frontend Service Tests
-- [ ] P0: `frontend/src/services/cognito.ts` — signIn: calls Amplify signIn, stores tokens in sessionStorage, returns auth result (~3 tests)
-- [ ] P0: `frontend/src/services/cognito.ts` — signUp/confirmSignUp: calls Amplify SDK, returns correct shape (~3 tests)
-- [ ] P0: `frontend/src/services/cognito.ts` — signOut: calls Amplify signOut, clears sessionStorage (~2 tests)
-- [ ] P0: `frontend/src/services/cognito.ts` — Token management: getAccessToken/getIdToken read from sessionStorage; getUserGroups parses groups; isAuthenticated checks session (~4 tests)
-- [ ] P0: `frontend/src/services/cognito.ts` — Role helpers: hasRole respects hierarchy (Admin > Moderator > Wrestler); isAdmin checks group membership; isWrestler checks group (~4 tests)
-- [ ] P1: `frontend/src/services/cognito.ts` — JWT helpers: decodeJwtPayload parses valid JWT; handles malformed token; getGroupsFromToken extracts cognito:groups (~3 tests)
-- [ ] P0: `frontend/src/services/cognito.ts` — refreshSession: calls Amplify fetchAuthSession with forceRefresh; updates sessionStorage; handles refresh failure (~3 tests)
+- [x] P0: `frontend/src/services/cognito.ts` — signIn: calls Amplify signIn, stores tokens in sessionStorage, returns auth result (~3 tests) ✅ `services/__tests__/cognito.test.ts`
+- [x] P0: `frontend/src/services/cognito.ts` — signUp/confirmSignUp: calls Amplify SDK, returns correct shape (~3 tests) ✅ `services/__tests__/cognito.test.ts`
+- [x] P0: `frontend/src/services/cognito.ts` — signOut: calls Amplify signOut, clears sessionStorage (~2 tests) ✅ `services/__tests__/cognito.test.ts`
+- [x] P0: `frontend/src/services/cognito.ts` — Token management: getAccessToken/getIdToken read from sessionStorage; getUserGroups parses groups; isAuthenticated checks session (~4 tests) ✅ `services/__tests__/cognito-roles.test.ts`
+- [x] P0: `frontend/src/services/cognito.ts` — Role helpers: hasRole respects hierarchy (Admin > Moderator > Wrestler); isAdmin checks group membership; isWrestler checks group (~4 tests) ✅ `services/__tests__/cognito-roles.test.ts`
+- [x] P1: `frontend/src/services/cognito.ts` — JWT helpers: decodeJwtPayload parses valid JWT; handles malformed token; getGroupsFromToken extracts cognito:groups (~3 tests) ✅ `services/__tests__/cognito-roles.test.ts`
+- [x] P0: `frontend/src/services/cognito.ts` — refreshSession: calls Amplify fetchAuthSession with forceRefresh; updates sessionStorage; handles refresh failure (~3 tests) ✅ `services/__tests__/cognito.test.ts`
 
 ### Frontend Context Tests
 - [ ] P0: `frontend/src/contexts/AuthContext.tsx` — Initializes: fetches current user on mount; sets isAuthenticated; extracts groups; fetches player profile for Wrestlers (~4 tests)
@@ -425,24 +425,25 @@ npx playwright test
 ## Feature: Frontend API Client
 
 ### Frontend Service Tests
-- [ ] P1: `frontend/src/services/api.ts` — fetchWithAuth: adds Authorization header when token exists; omits header when no token; handles 204 (no content); throws on non-ok responses; passes AbortSignal through (~5 tests)
-- [ ] P1: `frontend/src/services/api.ts` — playersApi: getAll/create/update/delete call correct endpoints with correct methods and params (~4 tests)
-- [ ] P1: `frontend/src/services/api.ts` — matchesApi: getAll with filters, schedule, recordResult (~3 tests)
-- [ ] P1: `frontend/src/services/api.ts` — championshipsApi: getAll/create/getHistory/update/delete/vacate (~6 tests)
-- [ ] P1: `frontend/src/services/api.ts` — tournamentsApi: getAll/getById/create/update (~4 tests)
-- [ ] P1: `frontend/src/services/api.ts` — standingsApi: get with optional seasonId (~2 tests)
-- [ ] P1: `frontend/src/services/api.ts` — seasonsApi + divisionsApi: CRUD operations (~4 tests)
-- [ ] P1: `frontend/src/services/api.ts` — eventsApi: getAll with filters, getById, create/update/delete (~5 tests)
-- [ ] P1: `frontend/src/services/api.ts` — contendersApi: getForChampionship, recalculate (~2 tests)
-- [ ] P1: `frontend/src/services/api.ts` — fantasyApi: all 12 functions (getConfig, updateConfig, getCosts, initializeCosts, recalculateCosts, updateCost, getLeaderboard, scoreEvents, submitPicks, getUserPicks, getAllMyPicks, clearPicks) (~12 tests)
-- [ ] P1: `frontend/src/services/api.ts` — usersApi: list, updateRole, toggleEnabled (~3 tests)
-- [ ] P1: `frontend/src/services/api.ts` — siteConfigApi: getFeatures, updateFeatures (~2 tests)
-- [ ] P1: `frontend/src/services/api.ts` — authApi: setToken/clearToken/isAuthenticated/getToken use sessionStorage correctly (~4 tests)
-- [ ] P1: `frontend/src/services/api.ts` — profileApi: getMyProfile, updateMyProfile (~2 tests)
-- [ ] P1: `frontend/src/services/api.ts` — statisticsApi: getPlayerStats/getHeadToHead/getLeaderboards/getRecords/getAchievements (~5 tests)
-- [ ] P1: `frontend/src/services/api.ts` — challengesApi + promosApi: all functions with correct endpoints (~6 tests)
-- [ ] P1: `frontend/src/services/api.ts` — imagesApi: generateUploadUrl + uploadToS3 (PUT to presigned URL) (~2 tests)
+- [x] P1: `frontend/src/services/api.ts` — fetchWithAuth: adds Authorization header when token exists; omits header when no token; handles 204 (no content); throws on non-ok responses; passes AbortSignal through (~5 tests) ✅ `services/__tests__/api-core.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — playersApi: getAll/create/update/delete call correct endpoints with correct methods and params (~4 tests) ✅ `services/__tests__/api-domains-1.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — matchesApi: getAll with filters, schedule, recordResult (~3 tests) ✅ `services/__tests__/api-domains-1.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — championshipsApi: getAll/create/getHistory/update/delete/vacate (~6 tests) ✅ `services/__tests__/api-domains-1.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — tournamentsApi: getAll/getById/create/update (~4 tests) ✅ `services/__tests__/api-domains-1.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — standingsApi: get with optional seasonId (~2 tests) ✅ `services/__tests__/api-domains-1.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — seasonsApi + divisionsApi: CRUD operations (~4 tests) ✅ `services/__tests__/api-domains-1.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — eventsApi: getAll with filters, getById, create/update/delete (~5 tests) ✅ `services/__tests__/api-domains-2.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — contendersApi: getForChampionship, recalculate (~2 tests) ✅ `services/__tests__/api-domains-2.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — fantasyApi: all 12 functions (getConfig, updateConfig, getCosts, initializeCosts, recalculateCosts, updateCost, getLeaderboard, scoreEvents, submitPicks, getUserPicks, getAllMyPicks, clearPicks) (~12 tests) ✅ `services/__tests__/api-domains-3.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — usersApi: list, updateRole, toggleEnabled (~3 tests) ✅ `services/__tests__/api-domains-2.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — siteConfigApi: getFeatures, updateFeatures (~2 tests) ✅ `services/__tests__/api-domains-2.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — authApi: setToken/clearToken/isAuthenticated/getToken use sessionStorage correctly (~4 tests) ✅ `services/__tests__/api-core.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — profileApi: getMyProfile, updateMyProfile (~2 tests) ✅ `services/__tests__/api-core.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — statisticsApi: getPlayerStats/getHeadToHead/getLeaderboards/getRecords/getAchievements (~5 tests) ✅ `services/__tests__/api-domains-2.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — challengesApi + promosApi: all functions with correct endpoints (~6 tests) ✅ `services/__tests__/api-domains-3.test.ts`
+- [x] P1: `frontend/src/services/api.ts` — imagesApi: generateUploadUrl + uploadToS3 (PUT to presigned URL) (~2 tests) ✅ `services/__tests__/api-domains-3.test.ts`
 
+**Frontend service tests written: 123/69 ✅** (exceeded plan — more thorough coverage)
 **Section total: ~69 tests**
 
 ---
