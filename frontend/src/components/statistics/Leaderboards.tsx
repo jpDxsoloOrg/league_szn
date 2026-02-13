@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { statisticsApi } from '../../services/api';
+import { statisticsApi, seasonsApi } from '../../services/api';
 import type { LeaderboardEntry } from '../../types/statistics';
+import type { Season } from '../../types';
+import SeasonSelector from './SeasonSelector';
 import './Leaderboards.css';
 
 type CategoryKey = 'mostWins' | 'bestWinPercentage' | 'longestStreak' | 'mostChampionships' | 'longestReign';
@@ -10,16 +12,33 @@ type CategoryKey = 'mostWins' | 'bestWinPercentage' | 'longestStreak' | 'mostCha
 function Leaderboards() {
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<CategoryKey>('mostWins');
-  const [timeframe, setTimeframe] = useState<'allTime' | 'season'>('allTime');
   const [leaderboards, setLeaderboards] = useState<Record<string, LeaderboardEntry[]>>({});
   const [loading, setLoading] = useState(true);
+  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [selectedSeasonId, setSelectedSeasonId] = useState('');
 
+  // Load seasons on mount
+  useEffect(() => {
+    const abortController = new AbortController();
+    seasonsApi.getAll(abortController.signal)
+      .then(setSeasons)
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Failed to load seasons', err);
+        }
+      });
+    return () => abortController.abort();
+  }, []);
+
+  // Load leaderboards when season changes
   useEffect(() => {
     const abortController = new AbortController();
     const fetchLeaderboards = async () => {
       setLoading(true);
       try {
-        const result = await statisticsApi.getLeaderboards(abortController.signal);
+        const result = await statisticsApi.getLeaderboards(
+          selectedSeasonId || undefined, abortController.signal
+        );
         setLeaderboards(result.leaderboards);
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== 'AbortError') {
@@ -31,7 +50,7 @@ function Leaderboards() {
     };
     fetchLeaderboards();
     return () => abortController.abort();
-  }, []);
+  }, [selectedSeasonId]);
 
   const categories: { key: CategoryKey; label: string }[] = [
     { key: 'mostWins', label: t('statistics.leaderboards.categories.mostWins') },
@@ -89,21 +108,11 @@ function Leaderboards() {
         </div>
       </div>
 
-      {/* Timeframe Toggle */}
-      <div className="lb-timeframe-toggle">
-        <button
-          className={`lb-toggle-btn ${timeframe === 'allTime' ? 'lb-toggle-active' : ''}`}
-          onClick={() => setTimeframe('allTime')}
-        >
-          {t('statistics.leaderboards.allTime')}
-        </button>
-        <button
-          className={`lb-toggle-btn ${timeframe === 'season' ? 'lb-toggle-active' : ''}`}
-          onClick={() => setTimeframe('season')}
-        >
-          {t('statistics.leaderboards.season')}
-        </button>
-      </div>
+      <SeasonSelector
+        seasons={seasons}
+        selectedSeasonId={selectedSeasonId}
+        onSeasonChange={setSelectedSeasonId}
+      />
 
       {/* Category Tabs */}
       <div className="lb-tabs">

@@ -14,6 +14,9 @@ vi.mock('../../../services/api', () => ({
     getHeadToHeadPlayers: mockGetH2HPlayers,
     getHeadToHead: mockGetH2H,
   },
+  seasonsApi: {
+    getAll: vi.fn().mockResolvedValue([]),
+  },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -54,6 +57,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../HeadToHeadComparison.css', () => ({}));
+vi.mock('../SeasonSelector.css', () => ({}));
 
 import HeadToHeadComparison from '../HeadToHeadComparison';
 

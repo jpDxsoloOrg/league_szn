@@ -10,6 +10,9 @@ const { mockGetLeaderboards } = vi.hoisted(() => ({
 
 vi.mock('../../../services/api', () => ({
   statisticsApi: { getLeaderboards: mockGetLeaderboards },
+  seasonsApi: {
+    getAll: vi.fn().mockResolvedValue([]),
+  },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -37,6 +40,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../Leaderboards.css', () => ({}));
+vi.mock('../SeasonSelector.css', () => ({}));
 
 import Leaderboards from '../Leaderboards';
 

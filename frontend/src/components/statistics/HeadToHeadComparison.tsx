@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { statisticsApi } from '../../services/api';
+import { statisticsApi, seasonsApi } from '../../services/api';
 import type { StatsPlayer, HeadToHeadResponse } from '../../services/api';
+import type { Season } from '../../types';
+import SeasonSelector from './SeasonSelector';
 import './HeadToHeadComparison.css';
 
 function HeadToHeadComparison() {
@@ -12,17 +14,23 @@ function HeadToHeadComparison() {
   const [player2Id, setPlayer2Id] = useState('');
   const [data, setData] = useState<HeadToHeadResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [selectedSeasonId, setSelectedSeasonId] = useState('');
 
-  // Load player list on mount
+  // Load player list and seasons on mount
   useEffect(() => {
     const abortController = new AbortController();
-    const fetchPlayers = async () => {
+    const fetchData = async () => {
       try {
-        const result = await statisticsApi.getHeadToHeadPlayers(abortController.signal);
-        setPlayers(result.players);
-        if (result.players.length >= 2 && result.players[0] && result.players[1]) {
-          setPlayer1Id(result.players[0].playerId);
-          setPlayer2Id(result.players[1].playerId);
+        const [playersResult, seasonsResult] = await Promise.all([
+          statisticsApi.getHeadToHeadPlayers(abortController.signal),
+          seasonsApi.getAll(abortController.signal),
+        ]);
+        setPlayers(playersResult.players);
+        setSeasons(seasonsResult);
+        if (playersResult.players.length >= 2 && playersResult.players[0] && playersResult.players[1]) {
+          setPlayer1Id(playersResult.players[0].playerId);
+          setPlayer2Id(playersResult.players[1].playerId);
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== 'AbortError') {
@@ -32,11 +40,11 @@ function HeadToHeadComparison() {
         setLoading(false);
       }
     };
-    fetchPlayers();
+    fetchData();
     return () => abortController.abort();
   }, []);
 
-  // Load H2H data when players change
+  // Load H2H data when players or season change
   useEffect(() => {
     if (!player1Id || !player2Id || player1Id === player2Id) {
       setData(null);
@@ -46,7 +54,9 @@ function HeadToHeadComparison() {
     const fetchH2H = async () => {
       setLoading(true);
       try {
-        const result = await statisticsApi.getHeadToHead(player1Id, player2Id, abortController.signal);
+        const result = await statisticsApi.getHeadToHead(
+          player1Id, player2Id, selectedSeasonId || undefined, abortController.signal
+        );
         setData(result);
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== 'AbortError') {
@@ -58,7 +68,7 @@ function HeadToHeadComparison() {
     };
     fetchH2H();
     return () => abortController.abort();
-  }, [player1Id, player2Id]);
+  }, [player1Id, player2Id, selectedSeasonId]);
 
   const player1 = useMemo(() => players.find((p) => p.playerId === player1Id), [players, player1Id]);
   const player2 = useMemo(() => players.find((p) => p.playerId === player2Id), [players, player2Id]);
@@ -168,6 +178,12 @@ function HeadToHeadComparison() {
           </select>
         </div>
       </div>
+
+      <SeasonSelector
+        seasons={seasons}
+        selectedSeasonId={selectedSeasonId}
+        onSeasonChange={setSelectedSeasonId}
+      />
 
       {player1Id === player2Id ? (
         <div className="h2h-same-player">{t('statistics.headToHead.selectDifferent')}</div>

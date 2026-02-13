@@ -16,10 +16,15 @@
   margin-bottom: 0;
 }
 
+.ps-header .ps-nav-links {
+  margin-bottom: 0;
+}
+
 .ps-nav-links {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+  margin-bottom: 1rem;
 }
 
 .ps-nav-links a {
@@ -36,8 +41,19 @@
   background-color: #333;
 }
 
-.ps-player-selector {
+.ps-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.5rem;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.ps-controls .ps-season-selector {
+  margin-bottom: 0;
+}
+
+.ps-player-selector {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -379,9 +395,15 @@
     align-items: flex-start;
   }
 
+  .ps-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .ps-player-selector {
     flex-direction: column;
     align-items: flex-start;
+    width: 100%;
   }
 
   .ps-player-selector select {

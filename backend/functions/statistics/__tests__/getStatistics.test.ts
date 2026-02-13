@@ -488,6 +488,205 @@ describe('getStatistics - head-to-head', () => {
   });
 });
 
+// ─── seasonId Filtering ─────────────────────────────────────────────
+
+describe('getStatistics - seasonId filtering', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('filters match stats to only the requested season', async () => {
+    const matches = [
+      makeMatch({ matchId: 'm1', seasonId: 's1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm2', seasonId: 's1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm3', seasonId: 's2', participants: ['p1', 'p2'], winners: ['p2'], losers: ['p1'] }),
+      makeMatch({ matchId: 'm4', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }), // no seasonId
+    ];
+
+    mockScanAll
+      .mockResolvedValueOnce([player1, player2])  // PLAYERS
+      .mockResolvedValueOnce(matches)              // MATCHES
+      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
+      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+
+    const event = makeEvent({
+      queryStringParameters: { section: 'player-stats', playerId: 'p1', seasonId: 's1' },
+    });
+
+    const result = await handler(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    const overall = body.statistics.find((s: Record<string, unknown>) => s.statType === 'overall');
+    // Only s1 matches: m1 (win) + m2 (win) = 2 wins, 0 losses
+    expect(overall.wins).toBe(2);
+    expect(overall.losses).toBe(0);
+    expect(overall.matchesPlayed).toBe(2);
+  });
+
+  it('filters head-to-head stats by seasonId', async () => {
+    const matches = [
+      makeMatch({ matchId: 'm1', date: '2024-01-01', seasonId: 's1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm2', date: '2024-02-01', seasonId: 's1', participants: ['p1', 'p2'], winners: ['p2'], losers: ['p1'] }),
+      makeMatch({ matchId: 'm3', date: '2024-03-01', seasonId: 's2', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+    ];
+
+    mockScanAll
+      .mockResolvedValueOnce([player1, player2])  // PLAYERS
+      .mockResolvedValueOnce(matches);             // MATCHES
+
+    const event = makeEvent({
+      queryStringParameters: { section: 'head-to-head', player1Id: 'p1', player2Id: 'p2', seasonId: 's1' },
+    });
+
+    const result = await handler(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.headToHead.totalMatches).toBe(2);
+    expect(body.headToHead.player1Wins).toBe(1);
+    expect(body.headToHead.player2Wins).toBe(1);
+  });
+
+  it('filters leaderboard stats by seasonId', async () => {
+    const matches = [
+      makeMatch({ matchId: 'm1', seasonId: 's1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm2', seasonId: 's2', participants: ['p1', 'p2'], winners: ['p2'], losers: ['p1'] }),
+      makeMatch({ matchId: 'm3', seasonId: 's2', participants: ['p1', 'p2'], winners: ['p2'], losers: ['p1'] }),
+    ];
+
+    mockScanAll
+      .mockResolvedValueOnce([player1, player2])  // PLAYERS
+      .mockResolvedValueOnce(matches)              // MATCHES
+      .mockResolvedValueOnce([]);                  // CHAMPIONSHIP_HISTORY
+
+    const event = makeEvent({
+      queryStringParameters: { section: 'leaderboards', seasonId: 's1' },
+    });
+
+    const result = await handler(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    // In season s1 only m1 exists: p1 has 1 win, p2 has 0 wins
+    const mostWins = body.leaderboards.mostWins;
+    const p1Entry = mostWins.find((e: Record<string, unknown>) => e.playerId === 'p1');
+    const p2Entry = mostWins.find((e: Record<string, unknown>) => e.playerId === 'p2');
+    expect(p1Entry.value).toBe(1);
+    expect(p2Entry.value).toBe(0);
+  });
+
+  it('keeps championship stats all-time when seasonId is set', async () => {
+    // s1 has 1 match, but championship history spans all time
+    const matches = [
+      makeMatch({ matchId: 'm1', seasonId: 's1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'], isChampionship: true }),
+    ];
+
+    const champHistory = [
+      { championshipId: 'c1', champion: 'p1', wonDate: '2024-01-01', lostDate: '2024-03-01', daysHeld: 60, defenses: 2 },
+      { championshipId: 'c1', champion: 'p1', wonDate: '2024-06-01', lostDate: '2024-08-01', daysHeld: 61, defenses: 1 },
+    ];
+
+    const championships = [
+      { championshipId: 'c1', name: 'World Title', type: 'singles', currentChampion: 'p2' },
+    ];
+
+    mockScanAll
+      .mockResolvedValueOnce([player1, player2])  // PLAYERS
+      .mockResolvedValueOnce(matches)              // MATCHES
+      .mockResolvedValueOnce(champHistory)          // CHAMPIONSHIP_HISTORY
+      .mockResolvedValueOnce(championships);        // CHAMPIONSHIPS
+
+    const event = makeEvent({
+      queryStringParameters: { section: 'player-stats', playerId: 'p1', seasonId: 's1' },
+    });
+
+    const result = await handler(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+
+    // Match stats should be season-filtered: 1 win only
+    const overall = body.statistics.find((s: Record<string, unknown>) => s.statType === 'overall');
+    expect(overall.wins).toBe(1);
+    expect(overall.matchesPlayed).toBe(1);
+
+    // Championship stats should be all-time: both reigns counted
+    expect(body.championshipStats).toHaveLength(1);
+    expect(body.championshipStats[0].totalReigns).toBe(2);
+    expect(body.championshipStats[0].totalDaysHeld).toBe(121);
+  });
+
+  it('keeps achievements all-time when seasonId is set', async () => {
+    // Season s1 has only 1 match for p1, but all-time p1 has 3 wins
+    // The season filter applies to stats computation, but achievements
+    // use the filtered completedMatches. However championship-based
+    // achievements use all-time championship history.
+    const matches = [
+      makeMatch({ matchId: 'm1', seasonId: 's1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'], isChampionship: true }),
+    ];
+
+    const champHistory = [
+      { championshipId: 'c1', champion: 'p1', wonDate: '2024-01-01', lostDate: '2024-07-01', daysHeld: 182, defenses: 5 },
+      { championshipId: 'c2', champion: 'p1', wonDate: '2024-02-01', lostDate: '2024-04-01', daysHeld: 59, defenses: 1 },
+      { championshipId: 'c3', champion: 'p1', wonDate: '2024-05-01', lostDate: '2024-06-01', daysHeld: 31, defenses: 0 },
+    ];
+
+    const championships = [
+      { championshipId: 'c1', name: 'World Title', type: 'singles', currentChampion: 'p2' },
+      { championshipId: 'c2', name: 'IC Title', type: 'singles', currentChampion: 'p2' },
+      { championshipId: 'c3', name: 'US Title', type: 'singles', currentChampion: 'p2' },
+    ];
+
+    mockScanAll
+      .mockResolvedValueOnce([player1, player2])  // PLAYERS
+      .mockResolvedValueOnce(matches)              // MATCHES
+      .mockResolvedValueOnce(champHistory)          // CHAMPIONSHIP_HISTORY
+      .mockResolvedValueOnce(championships);        // CHAMPIONSHIPS
+
+    const event = makeEvent({
+      queryStringParameters: { section: 'player-stats', playerId: 'p1', seasonId: 's1' },
+    });
+
+    const result = await handler(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+
+    // Championship-based achievements should still be earned from all-time history
+    // a7: Dominant Champion (180+ day reign) - c1 has 182 days
+    const dominantChamp = body.achievements.find((a: Record<string, unknown>) => a.achievementId === 'a7');
+    expect(dominantChamp).toBeDefined();
+
+    // a15: Peoples Champion (3 different championships) - held c1, c2, c3
+    const peoplesChamp = body.achievements.find((a: Record<string, unknown>) => a.achievementId === 'a15');
+    expect(peoplesChamp).toBeDefined();
+  });
+
+  it('returns no matches when seasonId has no matches', async () => {
+    const matches = [
+      makeMatch({ matchId: 'm1', seasonId: 's1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+    ];
+
+    mockScanAll
+      .mockResolvedValueOnce([player1, player2])  // PLAYERS
+      .mockResolvedValueOnce(matches)              // MATCHES
+      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
+      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+
+    const event = makeEvent({
+      queryStringParameters: { section: 'player-stats', playerId: 'p1', seasonId: 'nonexistent' },
+    });
+
+    const result = await handler(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    const overall = body.statistics.find((s: Record<string, unknown>) => s.statType === 'overall');
+    expect(overall.wins).toBe(0);
+    expect(overall.losses).toBe(0);
+    expect(overall.matchesPlayed).toBe(0);
+  });
+});
+
 // ─── Error Handling ──────────────────────────────────────────────────
 
 describe('getStatistics - error handling', () => {
