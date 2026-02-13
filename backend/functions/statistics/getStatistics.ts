@@ -14,6 +14,7 @@ interface MatchRecord {
   isChampionship: boolean;
   championshipId?: string;
   status: string;
+  seasonId?: string;
 }
 
 interface PlayerRecord {
@@ -173,6 +174,7 @@ function computePlayerStatistics(
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const section = event.queryStringParameters?.section;
+    const seasonId = event.queryStringParameters?.seasonId;
 
     if (!section) {
       return badRequest('Missing required query parameter: section (player-stats, head-to-head, leaderboards, records, championship-stats, achievements)');
@@ -186,7 +188,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const players = playersResult as unknown as PlayerRecord[];
     const allMatches = matchesResult as unknown as MatchRecord[];
-    const completedMatches = allMatches.filter((m) => m.status === 'completed');
+    const allCompletedMatches = allMatches.filter((m) => m.status === 'completed');
+    const completedMatches = seasonId ? allCompletedMatches.filter((m) => m.seasonId === seasonId) : allCompletedMatches;
 
     switch (section) {
       case 'player-stats': {
