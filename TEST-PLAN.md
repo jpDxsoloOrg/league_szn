@@ -79,10 +79,10 @@ npx playwright test
 - [x] P1: `backend/functions/auth/createAdminUser.ts` — Setup key validation (missing/wrong/unset env); body validation (missing/invalid JSON/missing email/short password); duplicate user; happy path; unexpected Cognito error (10 tests) ✅ `functions/auth/__tests__/createAdminUser.test.ts`
 
 ### Frontend Component Tests
-- [ ] P1: `frontend/src/components/auth/Login.tsx` — Renders form with email/password fields; shows loading on submit; displays error on failed login; calls signIn with correct args; navigates on success (~5 tests)
-- [ ] P1: `frontend/src/components/auth/Signup.tsx` — Renders signup form; validates fields; calls signUp; handles confirmation code flow; shows errors (~5 tests)
-- [ ] P0: `frontend/src/components/ProtectedRoute.tsx` — Renders children when authenticated with correct role; redirects to login when not authenticated; shows access denied for wrong role; shows loading during auth check (~4 tests)
-- [ ] P0: `frontend/src/components/FeatureRoute.tsx` — Renders children when feature enabled; redirects to home when disabled; shows loading during config fetch (~3 tests)
+- [x] P1: `frontend/src/components/auth/Login.tsx` — Renders form with email/password fields; shows loading on submit; displays error on failed login; calls signIn with correct args; navigates on success (~5 tests) ✅ `components/auth/__tests__/Login.test.tsx`
+- [x] P1: `frontend/src/components/auth/Signup.tsx` — Renders signup form; validates fields; calls signUp; handles confirmation code flow; shows errors (~5 tests) ✅ `components/auth/__tests__/Signup.test.tsx`
+- [x] P0: `frontend/src/components/ProtectedRoute.tsx` — Renders children when authenticated with correct role; redirects to login when not authenticated; shows access denied for wrong role; shows loading during auth check (~4 tests) ✅ `components/__tests__/ProtectedRoute.test.tsx`
+- [x] P0: `frontend/src/components/FeatureRoute.tsx` — Renders children when feature enabled; redirects to home when disabled; shows loading during config fetch (~3 tests) ✅ `components/__tests__/FeatureRoute.test.tsx`
 
 ### Frontend Service Tests
 - [x] P0: `frontend/src/services/cognito.ts` — signIn: calls Amplify signIn, stores tokens in sessionStorage, returns auth result (~3 tests) ✅ `services/__tests__/cognito.test.ts`
@@ -94,10 +94,10 @@ npx playwright test
 - [x] P0: `frontend/src/services/cognito.ts` — refreshSession: calls Amplify fetchAuthSession with forceRefresh; updates sessionStorage; handles refresh failure (~3 tests) ✅ `services/__tests__/cognito.test.ts`
 
 ### Frontend Context Tests
-- [ ] P0: `frontend/src/contexts/AuthContext.tsx` — Initializes: fetches current user on mount; sets isAuthenticated; extracts groups; fetches player profile for Wrestlers (~4 tests)
-- [ ] P0: `frontend/src/contexts/AuthContext.tsx` — Role helpers: isAdmin/isSuperAdmin/isModerator/isWrestler/isFantasy return correct values based on groups; hasRole checks hierarchy (~6 tests)
-- [ ] P1: `frontend/src/contexts/AuthContext.tsx` — Sign in/out: signIn updates state; signOut clears state; refreshProfile re-fetches player (~3 tests)
-- [ ] P1: `frontend/src/contexts/AuthContext.tsx` — Cleanup: uses mounted flag; doesn't update state after unmount (~2 tests)
+- [x] P0: `frontend/src/contexts/AuthContext.tsx` — Initializes: fetches current user on mount; sets isAuthenticated; extracts groups; fetches player profile for Wrestlers (~4 tests) ✅ `contexts/__tests__/AuthContext.test.tsx`
+- [x] P0: `frontend/src/contexts/AuthContext.tsx` — Role helpers: isAdmin/isSuperAdmin/isModerator/isWrestler/isFantasy return correct values based on groups; hasRole checks hierarchy (~6 tests) ✅ `contexts/__tests__/AuthContext.test.tsx`
+- [x] P1: `frontend/src/contexts/AuthContext.tsx` — Sign in/out: signIn updates state; signOut clears state; refreshProfile re-fetches player (~3 tests) ✅ `contexts/__tests__/AuthContext.test.tsx`
+- [x] P1: `frontend/src/contexts/AuthContext.tsx` — Cleanup: uses mounted flag; doesn't update state after unmount (~2 tests) ✅ `contexts/__tests__/AuthContext.test.tsx`
 
 **Backend tests written: 40/40 ✅** | Frontend tests remaining: ~32
 **Section total: ~72 tests**
@@ -451,17 +451,18 @@ npx playwright test
 ## Feature: Frontend Utilities
 
 ### Frontend Unit Tests
-- [ ] P2: `frontend/src/utils/dateUtils.ts` — formatDate: valid date string returns "Jan 15, 2024"; invalid date returns fallback (~2 tests)
-- [ ] P2: `frontend/src/utils/dateUtils.ts` — formatDateTime: includes time "Jan 15, 2024, 2:30 PM"; handles invalid input (~2 tests)
-- [ ] P2: `frontend/src/utils/dateUtils.ts` — formatTime: returns "2:30 PM"; handles edge cases (~2 tests)
-- [ ] P2: `frontend/src/utils/dateUtils.ts` — formatRelativeTime: "2 days ago", "in 3 hours", "just now"; handles future and past (~3 tests)
-- [ ] P2: `frontend/src/utils/sanitize.ts` — sanitizeInput: trims, limits length, removes `<>`; handles empty/null (~3 tests)
-- [ ] P2: `frontend/src/utils/sanitize.ts` — sanitizeName: allows Unicode letters/numbers, spaces, hyphens, apostrophes, periods; strips other chars (~3 tests)
-- [ ] P2: `frontend/src/utils/sanitize.ts` — sanitizeDescription: trims, limits length, removes `<>` (~2 tests)
-- [ ] P2: `frontend/src/utils/sanitize.ts` — isValidInput: non-empty after trim returns true; whitespace-only returns false (~2 tests)
-- [ ] P2: `frontend/src/utils/sanitize.ts` — meetsMinLength: "abc" with minLength 3 returns true; "ab" returns false (~2 tests)
-- [ ] P3: `frontend/src/utils/logger.ts` — Dev mode: info/warn/debug log to console; Production: only error logs (sanitized) (~4 tests)
+- [x] P2: `frontend/src/utils/dateUtils.ts` — formatDate: valid date string returns "Jan 15, 2024"; invalid date returns fallback (~2 tests) ✅ `utils/__tests__/dateUtils.test.ts`
+- [x] P2: `frontend/src/utils/dateUtils.ts` — formatDateTime: includes time "Jan 15, 2024, 2:30 PM"; handles invalid input (~2 tests) ✅ `utils/__tests__/dateUtils.test.ts`
+- [x] P2: `frontend/src/utils/dateUtils.ts` — formatTime: returns "2:30 PM"; handles edge cases (~2 tests) ✅ `utils/__tests__/dateUtils.test.ts`
+- [x] P2: `frontend/src/utils/dateUtils.ts` — formatRelativeTime: "2 days ago", "in 3 hours", "just now"; handles future and past (~3 tests) ✅ `utils/__tests__/dateUtils.test.ts`
+- [x] P2: `frontend/src/utils/sanitize.ts` — sanitizeInput: trims, limits length, removes `<>`; handles empty/null (~3 tests) ✅ `utils/__tests__/sanitize.test.ts`
+- [x] P2: `frontend/src/utils/sanitize.ts` — sanitizeName: allows Unicode letters/numbers, spaces, hyphens, apostrophes, periods; strips other chars (~3 tests) ✅ `utils/__tests__/sanitize.test.ts`
+- [x] P2: `frontend/src/utils/sanitize.ts` — sanitizeDescription: trims, limits length, removes `<>` (~2 tests) ✅ `utils/__tests__/sanitize.test.ts`
+- [x] P2: `frontend/src/utils/sanitize.ts` — isValidInput: non-empty after trim returns true; whitespace-only returns false (~2 tests) ✅ `utils/__tests__/sanitize.test.ts`
+- [x] P2: `frontend/src/utils/sanitize.ts` — meetsMinLength: "abc" with minLength 3 returns true; "ab" returns false (~2 tests) ✅ `utils/__tests__/sanitize.test.ts`
+- [x] P3: `frontend/src/utils/logger.ts` — Dev mode: info/warn/debug log to console; Production: only error logs (sanitized) (~4 tests) ✅ `utils/__tests__/logger.test.ts`
 
+**Frontend utility tests written: 28/25 ✅**
 **Section total: ~25 tests**
 
 ---
@@ -469,8 +470,9 @@ npx playwright test
 ## Feature: Frontend Contexts
 
 ### Frontend Context Tests
-- [ ] P1: `frontend/src/contexts/SiteConfigContext.tsx` — Fetches config on mount; provides features via useSiteConfig(); defaults all features enabled on fetch error; refreshConfig re-fetches; uses mounted flag for cleanup (~5 tests)
+- [x] P1: `frontend/src/contexts/SiteConfigContext.tsx` — Fetches config on mount; provides features via useSiteConfig(); defaults all features enabled on fetch error; refreshConfig re-fetches; uses mounted flag for cleanup (~5 tests) ✅ `contexts/__tests__/SiteConfigContext.test.tsx`
 
+**Frontend context tests written: 6/5 ✅**
 **Section total: ~5 tests**
 
 ---
