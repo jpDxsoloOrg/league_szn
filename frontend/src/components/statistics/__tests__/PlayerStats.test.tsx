@@ -4,12 +4,14 @@ import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockGetPlayerStats } = vi.hoisted(() => ({
+const { mockGetPlayerStats, mockGetAllSeasons } = vi.hoisted(() => ({
   mockGetPlayerStats: vi.fn(),
+  mockGetAllSeasons: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
   statisticsApi: { getPlayerStats: mockGetPlayerStats },
+  seasonsApi: { getAll: mockGetAllSeasons },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -160,6 +162,7 @@ function renderComponent() {
 describe('PlayerStats', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetAllSeasons.mockResolvedValue([]);
   });
 
   it('renders player selector and populates dropdown with players', async () => {
@@ -279,7 +282,7 @@ describe('PlayerStats', () => {
 
     // The third call should be for player p2
     await waitFor(() => {
-      expect(mockGetPlayerStats).toHaveBeenCalledWith('p2', expect.any(AbortSignal));
+      expect(mockGetPlayerStats).toHaveBeenCalledWith('p2', undefined, expect.any(AbortSignal));
     });
   });
 });
