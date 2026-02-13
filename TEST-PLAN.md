@@ -148,7 +148,7 @@ npx playwright test
 **Backend tests written: 24/24 ✅**
 
 ### Frontend Component Tests
-- [ ] P2: `frontend/src/components/admin/ManageDivisions.tsx` — Renders division list; create/edit/delete flows; shows error on delete with assigned players (~5 tests)
+- [x] P2: `frontend/src/components/admin/ManageDivisions.tsx` — Renders division list; create/edit/delete flows; shows error on delete with assigned players (~5 tests) ✅ `components/admin/__tests__/ManageDivisions.test.tsx`
 
 **Section total: ~17 tests**
 
@@ -239,7 +239,7 @@ npx playwright test
 **Backend tests written: 17/17 ✅**
 
 ### Frontend Component Tests
-- [ ] P2: `frontend/src/components/Standings.tsx` — Renders standings table; filters by season; shows W-L-D + win%; handles empty state (~4 tests)
+- [x] P2: `frontend/src/components/Standings.tsx` — Renders standings table; filters by season; shows W-L-D + win%; handles empty state (~4 tests) ✅ `components/__tests__/Standings.test.tsx`
 
 **Section total: ~9 tests**
 
@@ -285,10 +285,10 @@ npx playwright test
 ### Frontend Component Tests
 - [x] P1: `frontend/src/components/fantasy/FantasyDashboard.tsx` — Renders upcoming show card; shows current picks preview; displays stats + recent results; auto-scores unscored picks on mount; handles loading state (~5 tests) ✅ `components/fantasy/__tests__/FantasyDashboard.test.tsx`
 - [x] P1: `frontend/src/components/fantasy/MakePicks.tsx` — Renders division-based picker; enforces budget constraint; enforces picks-per-division limit; submits picks; clears picks; shows wrestler costs (~6 tests) ✅ `components/fantasy/__tests__/MakePicks.test.tsx`
-- [ ] P2: `frontend/src/components/fantasy/FantasyLeaderboard.tsx` — Renders leaderboard table with ranks/points; filters by season; shows streak + perfect picks (~4 tests)
-- [ ] P2: `frontend/src/components/fantasy/WrestlerCosts.tsx` — Renders cost table with current/trend; handles empty state (~3 tests)
-- [ ] P2: `frontend/src/components/fantasy/ShowResults.tsx` — Renders event results with points breakdown per wrestler (~3 tests)
-- [ ] P2: `frontend/src/components/fantasy/BudgetTracker.tsx` — Shows remaining budget; updates in real-time as picks change; warns when over budget (~3 tests)
+- [x] P2: `frontend/src/components/fantasy/FantasyLeaderboard.tsx` — Renders leaderboard table with ranks/points; filters by season; shows streak + perfect picks (~4 tests) ✅ `components/fantasy/__tests__/FantasyLeaderboard.test.tsx`
+- [x] P2: `frontend/src/components/fantasy/WrestlerCosts.tsx` — Renders cost table with current/trend; handles empty state (~3 tests) ✅ `components/fantasy/__tests__/WrestlerCosts.test.tsx`
+- [x] P2: `frontend/src/components/fantasy/ShowResults.tsx` — Renders event results with points breakdown per wrestler (~3 tests) ✅ `components/fantasy/__tests__/ShowResults.test.tsx`
+- [x] P2: `frontend/src/components/fantasy/BudgetTracker.tsx` — Shows remaining budget; updates in real-time as picks change; warns when over budget (~3 tests) ✅ `components/fantasy/__tests__/BudgetTracker.test.tsx`
 - [x] P1: `frontend/src/components/admin/FantasyConfig.tsx` — Renders all 14 config fields; tracks unsaved changes; saves config; resets to original; toggles cost fluctuation fields conditionally (~5 tests) ✅ `components/admin/__tests__/FantasyConfig.test.tsx`
 - [x] P1: `frontend/src/components/admin/ManageFantasyShows.tsx` — Configures fantasy picks for events; locks/unlocks events (~3 tests) ✅ `components/admin/__tests__/ManageFantasyShows.test.tsx`
 
@@ -351,13 +351,13 @@ npx playwright test
 - [x] P1: `backend/functions/statistics/getStatistics.ts` — **Validation**: returns 400 if section missing; unknown section; error handling (3 tests) ✅ `functions/statistics/__tests__/getStatistics.test.ts`
 
 ### Frontend Component Tests
-- [ ] P2: `frontend/src/components/statistics/PlayerStats.tsx` — Renders player selector; shows W-L-D card + streak + match type breakdown + championship history + achievements; handles loading/error (~5 tests)
-- [ ] P2: `frontend/src/components/statistics/HeadToHeadComparison.tsx` — Selects two players; shows H2H record + recent results (~3 tests)
-- [ ] P2: `frontend/src/components/statistics/Leaderboards.tsx` — Renders category leaderboards with tabs (~3 tests)
-- [ ] P2: `frontend/src/components/statistics/RecordBook.tsx` — Shows all-time records with active threats (~3 tests)
-- [ ] P2: `frontend/src/components/statistics/Achievements.tsx` — Shows achievement badges and progress bars (~3 tests)
+- [x] P2: `frontend/src/components/statistics/PlayerStats.tsx` — Renders player selector; shows W-L-D card + streak + match type breakdown + championship history + achievements; handles loading/error (~5 tests) ✅ `components/statistics/__tests__/PlayerStats.test.tsx`
+- [x] P2: `frontend/src/components/statistics/HeadToHeadComparison.tsx` — Selects two players; shows H2H record + recent results (~3 tests) ✅ `components/statistics/__tests__/HeadToHeadComparison.test.tsx`
+- [x] P2: `frontend/src/components/statistics/Leaderboards.tsx` — Renders category leaderboards with tabs (~3 tests) ✅ `components/statistics/__tests__/Leaderboards.test.tsx`
+- [x] P2: `frontend/src/components/statistics/RecordBook.tsx` — Shows all-time records with active threats (~3 tests) ✅ `components/statistics/__tests__/RecordBook.test.tsx`
+- [x] P2: `frontend/src/components/statistics/Achievements.tsx` — Shows achievement badges and progress bars (~3 tests) ✅ `components/statistics/__tests__/Achievements.test.tsx`
 
-**Backend tests written: 41/41 ✅** | Frontend tests remaining: ~17
+**Backend tests written: 41/41 ✅** | **Frontend tests written: 17/17 ✅**
 **Section total: ~58 tests**
 
 ---
@@ -369,9 +369,9 @@ npx playwright test
 - [x] P1: `backend/functions/contenders/getContenders.ts` — Returns contenders for championship via RankIndex GSI; filters out current champion; enriches with player names; calculates movement; missing championshipId; not-found; error handling (7 tests) ✅ `functions/contenders/__tests__/contenders.test.ts`
 
 ### Frontend Component Tests
-- [ ] P2: `frontend/src/components/contenders/ContenderRankings.tsx` — Renders championship selector (grouped by division); shows current champion card; displays ranked contenders with movement indicators; handles loading/error/empty states (~5 tests)
+- [x] P2: `frontend/src/components/contenders/ContenderRankings.tsx` — Renders championship selector (grouped by division); shows current champion card; displays ranked contenders with movement indicators; handles loading/error/empty states (~5 tests) ✅ `components/contenders/__tests__/ContenderRankings.test.tsx`
 
-**Backend tests written: 14/14 ✅** | Frontend tests remaining: ~5
+**Backend tests written: 14/14 ✅** | **Frontend tests written: 5/5 ✅**
 **Section total: ~19 tests**
 
 ---
@@ -402,10 +402,10 @@ npx playwright test
 **Backend tests written: 25/25 ✅**
 
 ### Frontend Component Tests
-- [ ] P2: `frontend/src/components/admin/ManageFeatures.tsx` — Toggles feature flags on/off; saves via API; shows error state (~3 tests)
-- [ ] P2: `frontend/src/components/admin/AdminPanel.tsx` — Renders correct tab based on URL; shows all 17 admin tabs; admin/SuperAdmin access checks (~3 tests)
-- [ ] P3: `frontend/src/components/admin/ClearAllData.tsx` — Shows danger zone; requires confirmation; calls clearAll API; SuperAdmin only (~3 tests)
-- [ ] P3: `frontend/src/components/admin/AdminGuide.tsx` — Renders admin documentation (~1 test)
+- [x] P2: `frontend/src/components/admin/ManageFeatures.tsx` — Toggles feature flags on/off; saves via API; shows error state (~3 tests) ✅ `components/admin/__tests__/ManageFeatures.test.tsx`
+- [x] P2: `frontend/src/components/admin/AdminPanel.tsx` — Renders correct tab based on URL; shows all 17 admin tabs; admin/SuperAdmin access checks (~3 tests) ✅ `components/admin/__tests__/AdminPanel.test.tsx`
+- [x] P3: `frontend/src/components/admin/ClearAllData.tsx` — Shows danger zone; requires confirmation; calls clearAll API; SuperAdmin only (~3 tests) ✅ `components/admin/__tests__/ClearAllData.test.tsx`
+- [x] P3: `frontend/src/components/admin/AdminGuide.tsx` — Renders admin documentation (~1 test) ✅ `components/admin/__tests__/AdminGuide.test.tsx`
 
 **Section total: ~18 tests**
 
@@ -480,12 +480,12 @@ npx playwright test
 ## Feature: Core Navigation & Layout
 
 ### Frontend Component Tests
-- [ ] P2: `frontend/src/components/Sidebar.tsx` — Renders nav links; shows admin section when admin; hides features behind feature flags (challenges, promos, contenders, statistics, fantasy); expand/collapse admin section; mobile toggle; logout button; role-based sections (Wrestler, Admin, SuperAdmin) (~7 tests)
-- [ ] P2: `frontend/src/components/TopBar.tsx` — Renders dynamic page title with breadcrumbs based on route (~2 tests)
-- [ ] P2: `frontend/src/components/ErrorBoundary.tsx` — Renders children normally; catches errors and shows fallback; reload button resets state (~3 tests)
-- [ ] P3: `frontend/src/components/UserGuide.tsx` — Renders guide content (~1 test)
-- [ ] P3: `frontend/src/components/LanguageSwitcher.tsx` — Toggles language; updates i18n (~2 tests)
-- [ ] P2: `frontend/src/App.tsx` — Renders with providers (Auth, SiteConfig, Router); public routes accessible; protected routes redirect when not authenticated; feature-gated routes redirect when disabled (~4 tests)
+- [x] P2: `frontend/src/components/Sidebar.tsx` — Renders nav links; shows admin section when admin; hides features behind feature flags (challenges, promos, contenders, statistics, fantasy); expand/collapse admin section; mobile toggle; logout button; role-based sections (Wrestler, Admin, SuperAdmin) (~7 tests) ✅ `components/__tests__/Sidebar.test.tsx`
+- [x] P2: `frontend/src/components/TopBar.tsx` — Renders dynamic page title with breadcrumbs based on route (~2 tests) ✅ `components/__tests__/TopBar.test.tsx`
+- [x] P2: `frontend/src/components/ErrorBoundary.tsx` — Renders children normally; catches errors and shows fallback; reload button resets state (~3 tests) ✅ `components/__tests__/ErrorBoundary.test.tsx`
+- [x] P3: `frontend/src/components/UserGuide.tsx` — Renders guide content (~1 test) ✅ `components/__tests__/UserGuide.test.tsx`
+- [x] P3: `frontend/src/components/LanguageSwitcher.tsx` — Toggles language; updates i18n (~2 tests) ✅ `components/__tests__/LanguageSwitcher.test.tsx`
+- [x] P2: `frontend/src/App.tsx` — Renders with providers (Auth, SiteConfig, Router); public routes accessible; protected routes redirect when not authenticated; feature-gated routes redirect when disabled (~4 tests) ✅ `components/__tests__/App.test.tsx`
 
 **Section total: ~19 tests**
 
@@ -494,7 +494,7 @@ npx playwright test
 ## Feature: Reusable Admin Components
 
 ### Frontend Component Tests
-- [ ] P3: `frontend/src/components/admin/SearchableSelect.tsx` — Renders dropdown with search; filters options on input; selects option; handles empty state (~3 tests)
+- [x] P3: `frontend/src/components/admin/SearchableSelect.tsx` — Renders dropdown with search; filters options on input; selects option; handles empty state (~3 tests) ✅ `components/admin/__tests__/SearchableSelect.test.tsx`
 - [x] P2: `frontend/src/components/challenges/challengeUtils.ts` — MATCH_TYPES array has expected values; STIPULATIONS array has expected values; getInitial returns first character of name (~3 tests) ✅ `components/challenges/__tests__/challengeUtils.test.ts`
 
 **Section total: ~6 tests**
