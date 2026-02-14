@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { challengesApi, profileApi } from '../../services/api';
+import { challengesApi, profileApi, stipulationsApi } from '../../services/api';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import type { Stipulation } from '../../types';
 import type { ChallengeWithPlayers } from '../../types/challenge';
-import { MATCH_TYPES, STIPULATIONS, getInitial } from './challengeUtils';
+import { MATCH_TYPES, getInitial } from './challengeUtils';
 import './ChallengeDetail.css';
 
 export default function ChallengeDetail() {
@@ -21,21 +22,24 @@ export default function ChallengeDetail() {
   // Counter form state
   const [showCounterForm, setShowCounterForm] = useState(false);
   const [counterMatchType, setCounterMatchType] = useState('');
-  const [counterStipulation, setCounterStipulation] = useState('None');
+  const [counterStipulation, setCounterStipulation] = useState('');
   const [counterMessage, setCounterMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [stipulations, setStipulations] = useState<Stipulation[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
     setCounterChallenge(null);
     (async () => {
       try {
-        const [mainChallenge, myProfile] = await Promise.all([
+        const [mainChallenge, myProfile, stips] = await Promise.all([
           challengesApi.getById(challengeId!, controller.signal),
           profileApi.getMyProfile(controller.signal),
+          stipulationsApi.getAll(controller.signal),
         ]);
         setChallenge(mainChallenge);
         setCurrentPlayerId(myProfile.playerId);
+        setStipulations(stips);
 
         if (mainChallenge.counteredChallengeId) {
           const counter = await challengesApi.getById(mainChallenge.counteredChallengeId, controller.signal);
@@ -65,7 +69,7 @@ export default function ChallengeDetail() {
         if (!counterMatchType) return;
         await challengesApi.respond(challenge.challengeId, 'counter', {
           counterMatchType,
-          counterStipulation: counterStipulation !== 'None' ? counterStipulation : undefined,
+          counterStipulation: counterStipulation || undefined,
           counterMessage: counterMessage || undefined,
         });
         setShowCounterForm(false);
@@ -297,8 +301,9 @@ export default function ChallengeDetail() {
                   value={counterStipulation}
                   onChange={(e) => setCounterStipulation(e.target.value)}
                 >
-                  {STIPULATIONS.map((s) => (
-                    <option key={s} value={s}>{s}</option>
+                  <option value="">{t('common.none', 'None')}</option>
+                  {stipulations.map((s) => (
+                    <option key={s.stipulationId} value={s.name}>{s.name}</option>
                   ))}
                 </select>
               </div>

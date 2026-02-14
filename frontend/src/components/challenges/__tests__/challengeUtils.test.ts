@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MATCH_TYPES, STIPULATIONS, getInitial } from '../challengeUtils';
+import { MATCH_TYPES, getInitial } from '../challengeUtils';
 
 describe('challengeUtils', () => {
   describe('MATCH_TYPES', () => {
@@ -16,20 +16,6 @@ describe('challengeUtils', () => {
 
     it('has 6 match types', () => {
       expect(MATCH_TYPES).toHaveLength(6);
-    });
-  });
-
-  describe('STIPULATIONS', () => {
-    it('contains all expected stipulations including None', () => {
-      expect(STIPULATIONS).toEqual([
-        'None',
-        'Steel Cage',
-        'Ladder',
-        'Hell in a Cell',
-        'Last Man Standing',
-        'Iron Man',
-        'Tables',
-      ]);
     });
   });
 

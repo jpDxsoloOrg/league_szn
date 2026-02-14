@@ -5,16 +5,18 @@ import { BrowserRouter } from 'react-router-dom';
 import type { Player } from '../../../types';
 
 // --- Hoisted mocks ---
-const { mockGetAllPlayers, mockGetMyProfile, mockCreateChallenge } = vi.hoisted(() => ({
+const { mockGetAllPlayers, mockGetMyProfile, mockCreateChallenge, mockGetAllStipulations } = vi.hoisted(() => ({
   mockGetAllPlayers: vi.fn(),
   mockGetMyProfile: vi.fn(),
   mockCreateChallenge: vi.fn(),
+  mockGetAllStipulations: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
   playersApi: { getAll: mockGetAllPlayers },
   profileApi: { getMyProfile: mockGetMyProfile },
   challengesApi: { create: mockCreateChallenge },
+  stipulationsApi: { getAll: mockGetAllStipulations },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -38,6 +40,7 @@ vi.mock('react-i18next', () => ({
         'challenges.issue.issueAnother': 'Issue Another',
         'challenges.detail.backToBoard': 'Back to Challenges',
         'challenges.board.titleMatch': 'Title Match',
+        'common.none': 'None',
         'common.cancel': 'Cancel',
         'common.submitting': 'Submitting...',
         'common.vs': 'vs',
@@ -80,6 +83,11 @@ describe('IssueChallenge', () => {
     vi.clearAllMocks();
     mockGetAllPlayers.mockResolvedValue(players);
     mockGetMyProfile.mockResolvedValue({ playerId: 'p-1' });
+    mockGetAllStipulations.mockResolvedValue([
+      { stipulationId: 'stip-1', name: 'Steel Cage', createdAt: '', updatedAt: '' },
+      { stipulationId: 'stip-2', name: 'Ladder', createdAt: '', updatedAt: '' },
+      { stipulationId: 'stip-3', name: 'Hell in a Cell', createdAt: '', updatedAt: '' },
+    ]);
   });
 
   it('renders the form with opponent, match type, stipulation, and message fields', async () => {
@@ -116,7 +124,7 @@ describe('IssueChallenge', () => {
     expect(optionTexts).not.toContain('Unlinked Guy (NoLink)');
   });
 
-  it('populates match type and stipulation dropdowns from utils', async () => {
+  it('populates match type dropdown from utils and stipulations from API', async () => {
     renderIssue();
 
     await waitFor(() => {

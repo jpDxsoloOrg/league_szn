@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { playersApi, challengesApi, profileApi } from '../../services/api';
-import type { Player } from '../../types';
-import { MATCH_TYPES, STIPULATIONS, getInitial } from './challengeUtils';
+import { playersApi, challengesApi, profileApi, stipulationsApi } from '../../services/api';
+import type { Player, Stipulation } from '../../types';
+import { MATCH_TYPES, getInitial } from './challengeUtils';
 import './IssueChallenge.css';
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -12,7 +12,7 @@ export default function IssueChallenge() {
   const { t } = useTranslation();
   const [opponentId, setOpponentId] = useState('');
   const [matchType, setMatchType] = useState('');
-  const [stipulation, setStipulation] = useState('None');
+  const [stipulation, setStipulation] = useState('');
   const [isChampionship, setIsChampionship] = useState(false);
   const [message, setMessage] = useState('');
   const [showPreview, setShowPreview] = useState(false);
@@ -21,15 +21,18 @@ export default function IssueChallenge() {
   const [error, setError] = useState<string | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
+  const [stipulations, setStipulations] = useState<Stipulation[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
     Promise.all([
       playersApi.getAll(controller.signal),
       profileApi.getMyProfile(controller.signal),
-    ]).then(([data, myProfile]) => {
+      stipulationsApi.getAll(controller.signal),
+    ]).then(([data, myProfile, stips]) => {
       setPlayers(data);
       setCurrentPlayerId(myProfile.playerId);
+      setStipulations(stips);
     }).catch((err) => {
       if (err.name !== 'AbortError') {
         console.error('Failed to load players:', err);
@@ -60,7 +63,7 @@ export default function IssueChallenge() {
       await challengesApi.create({
         challengedId: opponentId,
         matchType,
-        stipulation: stipulation !== 'None' ? stipulation : undefined,
+        stipulation: stipulation || undefined,
         championshipId: isChampionship ? 'championship-match' : undefined,
         message: message || undefined,
       });
@@ -75,7 +78,7 @@ export default function IssueChallenge() {
   const handleReset = () => {
     setOpponentId('');
     setMatchType('');
-    setStipulation('None');
+    setStipulation('');
     setIsChampionship(false);
     setMessage('');
     setShowPreview(false);
@@ -149,9 +152,10 @@ export default function IssueChallenge() {
         <div className="issue-form-group">
           <label>{t('challenges.issue.stipulation')}</label>
           <select value={stipulation} onChange={(e) => setStipulation(e.target.value)}>
-            {STIPULATIONS.map((s) => (
-              <option key={s} value={s}>
-                {s}
+            <option value="">{t('common.none', 'None')}</option>
+            {stipulations.map((s) => (
+              <option key={s.stipulationId} value={s.name}>
+                {s.name}
               </option>
             ))}
           </select>
@@ -218,7 +222,7 @@ export default function IssueChallenge() {
                 </div>
                 <div className="issue-preview-details">
                   <span className="issue-preview-detail-tag">{matchType}</span>
-                  {stipulation !== 'None' && (
+                  {stipulation && (
                     <span className="issue-preview-detail-tag">{stipulation}</span>
                   )}
                   {isChampionship && (

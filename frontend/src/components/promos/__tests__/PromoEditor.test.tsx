@@ -4,13 +4,14 @@ import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampionships, mockCreatePromo } =
+const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampionships, mockCreatePromo, mockGetAllStipulations } =
   vi.hoisted(() => ({
     mockGetAllPlayers: vi.fn(),
     mockGetAllPromos: vi.fn(),
     mockGetAllMatches: vi.fn(),
     mockGetAllChampionships: vi.fn(),
     mockCreatePromo: vi.fn(),
+    mockGetAllStipulations: vi.fn(),
   }));
 
 vi.mock('../../../services/api', () => ({
@@ -18,6 +19,7 @@ vi.mock('../../../services/api', () => ({
   promosApi: { getAll: mockGetAllPromos, create: mockCreatePromo },
   matchesApi: { getAll: mockGetAllMatches },
   championshipsApi: { getAll: mockGetAllChampionships },
+  stipulationsApi: { getAll: mockGetAllStipulations },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -111,6 +113,10 @@ describe('PromoEditor', () => {
     mockGetAllPromos.mockResolvedValue([]);
     mockGetAllMatches.mockResolvedValue([]);
     mockGetAllChampionships.mockResolvedValue([]);
+    mockGetAllStipulations.mockResolvedValue([
+      { stipulationId: 'stip-1', name: 'Steel Cage', createdAt: '', updatedAt: '' },
+      { stipulationId: 'stip-2', name: 'Ladder', createdAt: '', updatedAt: '' },
+    ]);
     // Mock sessionStorage for current player detection
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
   });

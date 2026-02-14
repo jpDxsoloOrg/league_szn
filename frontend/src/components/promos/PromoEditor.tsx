@@ -2,9 +2,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { PromoType, PromoWithContext } from '../../types/promo';
-import { playersApi, promosApi, championshipsApi, matchesApi, challengesApi } from '../../services/api';
-import type { Player, Match, Championship } from '../../types';
-import { MATCH_TYPES, STIPULATIONS } from '../challenges/challengeUtils';
+import { playersApi, promosApi, championshipsApi, matchesApi, challengesApi, stipulationsApi } from '../../services/api';
+import type { Player, Match, Championship, Stipulation } from '../../types';
+import { MATCH_TYPES } from '../challenges/challengeUtils';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import PromoCard from './PromoCard';
 import './PromoEditor.css';
@@ -117,7 +117,7 @@ export default function PromoEditor() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [challengeMatchType, setChallengeMatchType] = useState('Singles');
-  const [challengeStipulation, setChallengeStipulation] = useState('None');
+  const [challengeStipulation, setChallengeStipulation] = useState('');
   const [challengeCreated, setChallengeCreated] = useState(false);
   const [challengeWarning, setChallengeWarning] = useState<string | null>(null);
 
@@ -125,6 +125,7 @@ export default function PromoEditor() {
   const [allPromos, setAllPromos] = useState<PromoWithContext[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [championships, setChampionships] = useState<Championship[]>([]);
+  const [stipulations, setStipulations] = useState<Stipulation[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
@@ -134,12 +135,14 @@ export default function PromoEditor() {
       promosApi.getAll(undefined, controller.signal),
       matchesApi.getAll(undefined, controller.signal),
       championshipsApi.getAll(controller.signal),
+      stipulationsApi.getAll(controller.signal),
     ])
-      .then(([pl, pr, ma, ch]) => {
+      .then(([pl, pr, ma, ch, stips]) => {
         setPlayers(pl);
         setAllPromos(pr);
         setMatches(ma);
         setChampionships(ch);
+        setStipulations(stips);
 
         // Find current user's player
         const idToken = sessionStorage.getItem('idToken');
@@ -245,7 +248,7 @@ export default function PromoEditor() {
           await challengesApi.create({
             challengedId: targetPlayerId,
             matchType: challengeMatchType,
-            stipulation: challengeStipulation !== 'None' ? challengeStipulation : undefined,
+            stipulation: challengeStipulation || undefined,
             message: (title || content.slice(0, 500)) || undefined,
           });
           setChallengeCreated(true);
@@ -292,7 +295,7 @@ export default function PromoEditor() {
                 setMatchId('');
                 setChampionshipId('');
                 setChallengeMatchType('Singles');
-                setChallengeStipulation('None');
+                setChallengeStipulation('');
                 setChallengeCreated(false);
                 setChallengeWarning(null);
                 setError(null);
@@ -525,9 +528,10 @@ export default function PromoEditor() {
                 value={challengeStipulation}
                 onChange={(e) => setChallengeStipulation(e.target.value)}
               >
-                {STIPULATIONS.map((stip) => (
-                  <option key={stip} value={stip}>
-                    {stip}
+                <option value="">{t('common.none', 'None')}</option>
+                {stipulations.map((s) => (
+                  <option key={s.stipulationId} value={s.name}>
+                    {s.name}
                   </option>
                 ))}
               </select>
