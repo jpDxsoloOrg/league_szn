@@ -35,7 +35,7 @@ export interface LeagueEvent {
 
 export interface EnrichedMatchData {
   matchId: string;
-  matchType: string;
+  matchFormat: string;
   stipulation?: string;
   participants: {
     playerId: string;

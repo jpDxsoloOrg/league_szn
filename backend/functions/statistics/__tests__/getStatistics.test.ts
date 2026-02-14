@@ -68,7 +68,7 @@ function makeMatch(overrides: Record<string, unknown> = {}) {
   return {
     matchId: `m-${Math.random().toString(36).slice(2, 8)}`,
     date: '2024-06-15',
-    matchType: 'Singles',
+    matchFormat: 'Singles',
     participants: ['p1', 'p2'],
     winners: ['p1'],
     losers: ['p2'],
@@ -159,11 +159,11 @@ describe('getStatistics - player-stats', () => {
 
   it('computes stats for all 5 match types (overall, singles, tag, ladder, cage)', async () => {
     const matches = [
-      makeMatch({ matchId: 'm1', matchType: 'Singles', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'm2', matchType: 'Tag Team', participants: ['p1', 'p2', 'p3'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'm3', matchType: 'Singles', stipulation: 'Ladder Match', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'm4', matchType: 'Singles', stipulation: 'Hell in a Cell', participants: ['p1', 'p2'], winners: ['p2'], losers: ['p1'] }),
-      makeMatch({ matchId: 'm5', matchType: 'Singles', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm1', matchFormat: 'Singles', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm2', matchFormat: 'Tag Team', participants: ['p1', 'p2', 'p3'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm3', matchFormat: 'Singles', stipulation: 'Ladder Match', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm4', matchFormat: 'Singles', stipulation: 'Hell in a Cell', participants: ['p1', 'p2'], winners: ['p2'], losers: ['p1'] }),
+      makeMatch({ matchId: 'm5', matchFormat: 'Singles', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
     mockScanAll
@@ -268,7 +268,7 @@ describe('getStatistics - player-stats', () => {
 
   it('handles tag championship where champion is an array', async () => {
     const matches = [
-      makeMatch({ matchType: 'Tag Team', participants: ['p1', 'p2', 'p3'], winners: ['p1', 'p2'], losers: ['p3'] }),
+      makeMatch({ matchFormat: 'Tag Team', participants: ['p1', 'p2', 'p3'], winners: ['p1', 'p2'], losers: ['p3'] }),
     ];
 
     const champHistory = [

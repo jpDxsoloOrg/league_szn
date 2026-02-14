@@ -250,7 +250,7 @@ export default function RecordResult() {
                     onClick={() => handleMatchSelect(match)}
                   >
                     <div className="match-item-header">
-                      <span className="match-type">{match.matchType}</span>
+                      <span className="match-type">{match.matchFormat}</span>
                       <div className="match-badges">
                         {designation && (
                           <span className="designation-badge">{designation.replace('-', ' ')}</span>
@@ -267,8 +267,8 @@ export default function RecordResult() {
                         </span>
                       ))}
                     </div>
-                    {match.stipulation && (
-                      <div className="match-stipulation">{match.stipulation}</div>
+                    {match.stipulationId && (
+                      <div className="match-stipulation">Stipulation match</div>
                     )}
                   </div>
                 );
@@ -282,11 +282,11 @@ export default function RecordResult() {
                 <h3>Record Result</h3>
                 <div className="match-details">
                   <div className="detail-row">
-                    <strong>Match Type:</strong> {selectedMatch.matchType}
+                    <strong>Match Type:</strong> {selectedMatch.matchFormat}
                   </div>
-                  {selectedMatch.stipulation && (
+                  {selectedMatch.stipulationId && (
                     <div className="detail-row">
-                      <strong>Stipulation:</strong> {selectedMatch.stipulation}
+                      <strong>Stipulation:</strong> {selectedMatch.stipulationId}
                     </div>
                   )}
                   <div className="detail-row">

@@ -464,7 +464,7 @@ export default function PromoEditor() {
               </option>
               {matches.map((match) => (
                 <option key={match.matchId} value={match.matchId}>
-                  {match.matchType} - {match.date}
+                  {match.matchFormat} - {match.date}
                 </option>
               ))}
             </select>

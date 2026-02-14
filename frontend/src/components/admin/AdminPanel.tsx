@@ -4,7 +4,7 @@ import { Navigate } from 'react-router-dom';
 
 import ManagePlayers from './ManagePlayers';
 import ManageDivisions from './ManageDivisions';
-import ManageMatchTypes from './ManageMatchTypes';
+import ManageStipulations from './ManageStipulations';
 import ScheduleMatch from './ScheduleMatch';
 import RecordResult from './RecordResult';
 import ManageChampionships from './ManageChampionships';
@@ -25,9 +25,9 @@ import './AdminPanel.css';
 
 import AdminContenderConfig from './AdminContenderConfig';
 
-type AdminTab = 'players' | 'divisions' | 'match-types' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'guide' | 'danger' | 'users' | 'features';
+type AdminTab = 'players' | 'divisions' | 'stipulations' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'guide' | 'danger' | 'users' | 'features';
 
-const VALID_TABS: AdminTab[] = ['players', 'divisions', 'match-types', 'schedule', 'results', 'championships', 'tournaments', 'challenges', 'promos', 'seasons', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'guide', 'danger', 'users', 'features'];
+const VALID_TABS: AdminTab[] = ['players', 'divisions', 'stipulations', 'schedule', 'results', 'championships', 'tournaments', 'challenges', 'promos', 'seasons', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'guide', 'danger', 'users', 'features'];
 
 
 export default function AdminPanel() {
@@ -70,7 +70,7 @@ export default function AdminPanel() {
         {activeTab === 'features' && <ManageFeatures />}
         {activeTab === 'players' && <ManagePlayers />}
         {activeTab === 'divisions' && <ManageDivisions />}
-        {activeTab === 'match-types' && <ManageMatchTypes />}
+        {activeTab === 'stipulations' && <ManageStipulations />}
         {activeTab === 'schedule' && <ScheduleMatch />}
         {activeTab === 'results' && <RecordResult />}
         {activeTab === 'championships' && <ManageChampionships />}

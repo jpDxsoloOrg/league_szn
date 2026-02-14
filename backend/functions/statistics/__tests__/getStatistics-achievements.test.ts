@@ -68,7 +68,7 @@ function makeMatch(overrides: Record<string, unknown> = {}) {
   return {
     matchId: `m-${Math.random().toString(36).slice(2, 8)}`,
     date: '2024-06-15',
-    matchType: 'Singles',
+    matchFormat: 'Singles',
     participants: ['p1', 'p2'],
     winners: ['p1'],
     losers: ['p2'],
@@ -355,7 +355,7 @@ describe('getStatistics - achievements', () => {
     const matches = Array.from({ length: 5 }, (_, i) =>
       makeMatch({
         matchId: `cage${i}`,
-        matchType: 'Singles',
+        matchFormat: 'Singles',
         stipulation: 'Steel Cage',
         participants: ['p1', 'p2'],
         winners: ['p1'],
@@ -483,7 +483,7 @@ describe('getStatistics - helper functions', () => {
 
   it('categorizeMatch maps ladder stipulation correctly', async () => {
     const matches = [
-      makeMatch({ matchId: 'm1', matchType: 'Singles', stipulation: 'Ladder Match', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm1', matchFormat: 'Singles', stipulation: 'Ladder Match', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
     mockScanAll
@@ -510,9 +510,9 @@ describe('getStatistics - helper functions', () => {
 
   it('categorizeMatch maps cage and hell-in-a-cell stipulations to cage', async () => {
     const matches = [
-      makeMatch({ matchId: 'm1', matchType: 'Singles', stipulation: 'Steel Cage', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'm2', matchType: 'Singles', stipulation: 'Hell in a Cell', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'm3', matchType: 'Singles', stipulation: 'hell-in-a-cell', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm1', matchFormat: 'Singles', stipulation: 'Steel Cage', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm2', matchFormat: 'Singles', stipulation: 'Hell in a Cell', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm3', matchFormat: 'Singles', stipulation: 'hell-in-a-cell', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
     mockScanAll
@@ -536,8 +536,8 @@ describe('getStatistics - helper functions', () => {
 
   it('categorizeMatch maps tag match type correctly', async () => {
     const matches = [
-      makeMatch({ matchId: 'm1', matchType: 'Tag Team', participants: ['p1', 'p2', 'p3'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'm2', matchType: '6-Man Tag', participants: ['p1', 'p2', 'p3'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm1', matchFormat: 'Tag Team', participants: ['p1', 'p2', 'p3'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm2', matchFormat: '6-Man Tag', participants: ['p1', 'p2', 'p3'], winners: ['p1'], losers: ['p2'] }),
     ];
 
     mockScanAll

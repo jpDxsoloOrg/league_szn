@@ -68,7 +68,7 @@ function makeMatch(overrides: Record<string, unknown> = {}) {
   return {
     matchId: `m-${Math.random().toString(36).slice(2, 8)}`,
     date: '2024-06-15',
-    matchType: 'Singles',
+    matchFormat: 'Singles',
     participants: ['p1', 'p2'],
     winners: ['p1'],
     losers: ['p2'],
@@ -396,19 +396,19 @@ describe('getStatistics - records', () => {
   it('computes match type records (singles, tag, cage, ladder)', async () => {
     const matches = [
       // Singles wins: p1 has 2, p2 has 1
-      makeMatch({ matchId: 's1', matchType: 'Singles', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 's2', matchType: 'Singles', participants: ['p1', 'p3'], winners: ['p1'], losers: ['p3'] }),
-      makeMatch({ matchId: 's3', matchType: 'Singles', participants: ['p2', 'p3'], winners: ['p2'], losers: ['p3'] }),
+      makeMatch({ matchId: 's1', matchFormat: 'Singles', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 's2', matchFormat: 'Singles', participants: ['p1', 'p3'], winners: ['p1'], losers: ['p3'] }),
+      makeMatch({ matchId: 's3', matchFormat: 'Singles', participants: ['p2', 'p3'], winners: ['p2'], losers: ['p3'] }),
       // Tag wins: p2 has 2
-      makeMatch({ matchId: 't1', matchType: 'Tag Team', participants: ['p1', 'p2', 'p3'], winners: ['p2'], losers: ['p1'] }),
-      makeMatch({ matchId: 't2', matchType: 'Tag Team', participants: ['p2', 'p3'], winners: ['p2'], losers: ['p3'] }),
+      makeMatch({ matchId: 't1', matchFormat: 'Tag Team', participants: ['p1', 'p2', 'p3'], winners: ['p2'], losers: ['p1'] }),
+      makeMatch({ matchId: 't2', matchFormat: 'Tag Team', participants: ['p2', 'p3'], winners: ['p2'], losers: ['p3'] }),
       // Cage matches: p1 has 3 wins / 3 matches = 100%, p2 has 1 win / 3 matches = 33.3%
-      makeMatch({ matchId: 'c1', matchType: 'Singles', stipulation: 'Steel Cage', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'c2', matchType: 'Singles', stipulation: 'Cage Match', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'c3', matchType: 'Singles', stipulation: 'Steel Cage', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'c1', matchFormat: 'Singles', stipulation: 'Steel Cage', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'c2', matchFormat: 'Singles', stipulation: 'Cage Match', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'c3', matchFormat: 'Singles', stipulation: 'Steel Cage', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
       // Ladder wins: p3 has 2
-      makeMatch({ matchId: 'l1', matchType: 'Singles', stipulation: 'Ladder Match', participants: ['p1', 'p3'], winners: ['p3'], losers: ['p1'] }),
-      makeMatch({ matchId: 'l2', matchType: 'Singles', stipulation: 'Ladder Match', participants: ['p2', 'p3'], winners: ['p3'], losers: ['p2'] }),
+      makeMatch({ matchId: 'l1', matchFormat: 'Singles', stipulation: 'Ladder Match', participants: ['p1', 'p3'], winners: ['p3'], losers: ['p1'] }),
+      makeMatch({ matchId: 'l2', matchFormat: 'Singles', stipulation: 'Ladder Match', participants: ['p2', 'p3'], winners: ['p3'], losers: ['p2'] }),
     ];
 
     mockScanAll

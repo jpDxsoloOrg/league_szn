@@ -61,7 +61,7 @@ const mockCompletedEvent: EventWithMatches = {
     {
       position: 1, matchId: 'm1', designation: 'main-event',
       matchData: {
-        matchId: 'm1', matchType: 'Singles', participants: [
+        matchId: 'm1', matchFormat: 'Singles', participants: [
           { playerId: 'p1', playerName: 'John', wrestlerName: 'The Rock' },
           { playerId: 'p2', playerName: 'Steve', wrestlerName: 'Stone Cold' },
         ],

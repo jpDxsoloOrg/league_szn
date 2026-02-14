@@ -5,7 +5,7 @@ import { success, badRequest, serverError } from '../../lib/response';
 interface MatchRecord {
   matchId: string;
   date: string;
-  matchType: string;
+  matchFormat: string;
   stipulation?: string;
   participants: string[];
   teams?: string[][];
@@ -53,7 +53,7 @@ function categorizeMatch(match: MatchRecord): string {
     if (stip.includes('cage') || stip.includes('hell in a cell') || stip.includes('hell-in-a-cell')) return 'cage';
   }
   // Map match types
-  const mt = match.matchType.toLowerCase();
+  const mt = match.matchFormat.toLowerCase();
   if (mt.includes('tag')) return 'tag';
   return 'singles';
 }

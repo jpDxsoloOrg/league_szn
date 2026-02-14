@@ -16,10 +16,7 @@ export interface Match {
   matchId: string;
   date: string;
   matchFormat: string; // "singles", "tag", "triple-threat", etc.
-  stipulationId?: string; // References MatchTypes table
-  // Legacy fields for backwards compatibility
-  matchType: string; // Same as matchFormat (for legacy consumers)
-  stipulation?: string; // Denormalized name from MatchType (for legacy consumers)
+  stipulationId?: string; // References Stipulations table
   participants: string[]; // playerIds
   teams?: string[][]; // Array of teams, each team is an array of playerIds (for tag team matches)
   winners?: string[]; // playerIds
@@ -131,8 +128,8 @@ export interface Division {
   updatedAt: string;
 }
 
-export interface MatchType {
-  matchTypeId: string;
+export interface Stipulation {
+  stipulationId: string;
   name: string;
   description?: string;
   createdAt: string;

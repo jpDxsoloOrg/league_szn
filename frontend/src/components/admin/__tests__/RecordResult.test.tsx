@@ -60,7 +60,7 @@ const mockPlayers = [
 const singlesMatch = {
   matchId: 'm1',
   date: '2024-06-15T20:00:00Z',
-  matchType: 'singles',
+  matchFormat: 'singles',
   participants: ['p1', 'p2'],
   isChampionship: false,
   status: 'scheduled' as const,
@@ -70,7 +70,7 @@ const singlesMatch = {
 const tagMatch = {
   matchId: 'm2',
   date: '2024-06-16T20:00:00Z',
-  matchType: 'tag',
+  matchFormat: 'tag',
   participants: ['p1', 'p2', 'p3', 'p4'],
   teams: [['p1', 'p2'], ['p3', 'p4']],
   isChampionship: false,
@@ -81,7 +81,7 @@ const tagMatch = {
 const matchForEvent = {
   matchId: 'm3',
   date: '2024-07-01T20:00:00Z',
-  matchType: 'singles',
+  matchFormat: 'singles',
   stipulation: 'Steel Cage',
   participants: ['p3', 'p4'],
   isChampionship: true,

@@ -705,7 +705,7 @@ export const mockFantasyConfig: FantasyConfig = {
 export const mockShowMatches = [
   {
     matchId: 'match-009',
-    matchType: 'Triple Threat',
+    matchFormat: 'Triple Threat',
     participants: ['player-001', 'player-003', 'player-004'],
     winners: ['player-001'],
     losers: ['player-003', 'player-004'],
@@ -714,7 +714,7 @@ export const mockShowMatches = [
   },
   {
     matchId: 'match-010',
-    matchType: 'Fatal 4-Way',
+    matchFormat: 'Fatal 4-Way',
     participants: ['player-002', 'player-003', 'player-004', 'player-001'],
     winners: ['player-002'],
     losers: ['player-003', 'player-004', 'player-001'],
@@ -723,7 +723,7 @@ export const mockShowMatches = [
   },
   {
     matchId: 'match-011',
-    matchType: 'Triple Threat Tag',
+    matchFormat: 'Triple Threat Tag',
     participants: ['player-005', 'player-006', 'player-007', 'player-008'],
     winners: ['player-005', 'player-006'],
     losers: ['player-007', 'player-008'],
@@ -732,7 +732,7 @@ export const mockShowMatches = [
   },
   {
     matchId: 'match-012',
-    matchType: 'Fatal 4-Way',
+    matchFormat: 'Fatal 4-Way',
     participants: ['player-009', 'player-010', 'player-011', 'player-012'],
     winners: ['player-009', 'player-010'],
     losers: ['player-011', 'player-012'],

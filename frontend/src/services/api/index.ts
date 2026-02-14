@@ -9,7 +9,7 @@ export { tournamentsApi } from './tournaments.api';
 export { standingsApi } from './standings.api';
 export { seasonsApi } from './seasons.api';
 export { divisionsApi } from './divisions.api';
-export { matchTypesApi } from './matchTypes.api';
+export { stipulationsApi } from './stipulations.api';
 export { eventsApi } from './events.api';
 export { contendersApi } from './contenders.api';
 export { adminApi } from './admin.api';

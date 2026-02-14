@@ -63,7 +63,7 @@ export default function MatchCardBuilder() {
           const participantNames = match.participants
             .map((id) => playerMap.get(id)?.name ?? 'Unknown')
             .join(' vs ');
-          const label = `${participantNames} (${match.matchType})`;
+          const label = `${participantNames} (${match.matchFormat})`;
           return {
             matchId: match.matchId,
             label,

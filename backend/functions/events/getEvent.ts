@@ -92,7 +92,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           notes: card.notes,
           matchData: {
             matchId: match.matchId,
-            matchType: match.matchType,
+            matchFormat: match.matchFormat,
             stipulation: match.stipulation,
             participants,
             winners: match.winners,

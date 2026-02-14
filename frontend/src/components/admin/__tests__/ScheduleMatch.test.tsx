@@ -10,7 +10,7 @@ const {
   mockGetAllTournaments,
   mockGetAllSeasons,
   mockGetAllEvents,
-  mockGetAllMatchTypes,
+  mockGetAllStipulations,
   mockScheduleMatch,
 } = vi.hoisted(() => ({
   mockGetAllPlayers: vi.fn(),
@@ -18,7 +18,7 @@ const {
   mockGetAllTournaments: vi.fn(),
   mockGetAllSeasons: vi.fn(),
   mockGetAllEvents: vi.fn(),
-  mockGetAllMatchTypes: vi.fn(),
+  mockGetAllStipulations: vi.fn(),
   mockScheduleMatch: vi.fn(),
 }));
 
@@ -29,7 +29,7 @@ vi.mock('../../../services/api', () => ({
   tournamentsApi: { getAll: mockGetAllTournaments },
   seasonsApi: { getAll: mockGetAllSeasons },
   eventsApi: { getAll: mockGetAllEvents },
-  matchTypesApi: { getAll: mockGetAllMatchTypes },
+  stipulationsApi: { getAll: mockGetAllStipulations },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -103,9 +103,9 @@ const mockEvents = [
   { eventId: 'e1', name: 'WrestleMania', eventType: 'ppv', date: '2024-07-01T00:00:00Z', status: 'upcoming', matchCards: [], createdAt: '2024-01-01', updatedAt: '2024-01-01' },
 ];
 
-const mockMatchTypes = [
-  { matchTypeId: 'mt1', name: 'Ladder Match', description: 'Climb the ladder to retrieve the prize', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
-  { matchTypeId: 'mt2', name: 'Steel Cage', description: 'Escape or pin to win', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+const mockStipulations = [
+  { stipulationId: 'mt1', name: 'Ladder Match', description: 'Climb the ladder to retrieve the prize', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+  { stipulationId: 'mt2', name: 'Steel Cage', description: 'Escape or pin to win', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
 ];
 
 function setupDefaultMocks() {
@@ -114,7 +114,7 @@ function setupDefaultMocks() {
   mockGetAllTournaments.mockResolvedValue(mockTournaments);
   mockGetAllSeasons.mockResolvedValue(mockSeasons);
   mockGetAllEvents.mockResolvedValue(mockEvents);
-  mockGetAllMatchTypes.mockResolvedValue(mockMatchTypes);
+  mockGetAllStipulations.mockResolvedValue(mockStipulations);
 }
 
 function renderScheduleMatch() {
@@ -136,7 +136,7 @@ describe('ScheduleMatch', () => {
     mockGetAllTournaments.mockReturnValue(new Promise(() => {}));
     mockGetAllSeasons.mockReturnValue(new Promise(() => {}));
     mockGetAllEvents.mockReturnValue(new Promise(() => {}));
-    mockGetAllMatchTypes.mockReturnValue(new Promise(() => {}));
+    mockGetAllStipulations.mockReturnValue(new Promise(() => {}));
 
     renderScheduleMatch();
 
@@ -158,7 +158,7 @@ describe('ScheduleMatch', () => {
     expect(matchFormatSelect).toBeInTheDocument();
     expect(screen.getByText('Singles')).toBeInTheDocument();
 
-    // Stipulation dropdown is present with match types from API
+    // Stipulation dropdown is present with stipulations from API
     const stipulationSelect = screen.getByLabelText('Stipulation (Optional)');
     expect(stipulationSelect).toBeInTheDocument();
     expect(screen.getByText('Standard Match (No Stipulation)')).toBeInTheDocument();
@@ -183,7 +183,7 @@ describe('ScheduleMatch', () => {
     expect(seasonSelect).toHaveValue('s1');
   });
 
-  it('loads players, championships, tournaments, seasons, events, and match types on mount', async () => {
+  it('loads players, championships, tournaments, seasons, events, and stipulations on mount', async () => {
     setupDefaultMocks();
 
     renderScheduleMatch();
@@ -197,7 +197,7 @@ describe('ScheduleMatch', () => {
     expect(mockGetAllTournaments).toHaveBeenCalledTimes(1);
     expect(mockGetAllSeasons).toHaveBeenCalledTimes(1);
     expect(mockGetAllEvents).toHaveBeenCalledTimes(1);
-    expect(mockGetAllMatchTypes).toHaveBeenCalledTimes(1);
+    expect(mockGetAllStipulations).toHaveBeenCalledTimes(1);
   });
 
   it('switches to tag team mode when match format changes to tag', async () => {

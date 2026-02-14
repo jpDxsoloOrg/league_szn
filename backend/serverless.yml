@@ -28,7 +28,7 @@ provider:
     SITE_CONFIG_TABLE: ${self:service}-site-config-${self:provider.stage}
     CHALLENGES_TABLE: ${self:service}-challenges-${self:provider.stage}
     PROMOS_TABLE: ${self:service}-promos-${self:provider.stage}
-    MATCH_TYPES_TABLE: ${self:service}-match-types-${self:provider.stage}
+    STIPULATIONS_TABLE: ${self:service}-stipulations-${self:provider.stage}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
     ADMIN_SETUP_KEY: ${env:ADMIN_SETUP_KEY, 'default-dev-key-change-in-production'}
@@ -71,7 +71,7 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CHALLENGES_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PROMOS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PROMOS_TABLE}/index/*
-            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_TYPES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STIPULATIONS_TABLE}
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -446,38 +446,38 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Match Types (Stipulations)
-  getMatchTypes:
-    handler: functions/matchTypes/getMatchTypes.handler
+  # Stipulations
+  getStipulations:
+    handler: functions/stipulations/getStipulations.handler
     events:
       - http:
-          path: match-types
+          path: stipulations
           method: get
           cors: *corsConfig
 
-  createMatchType:
-    handler: functions/matchTypes/createMatchType.handler
+  createStipulation:
+    handler: functions/stipulations/createStipulation.handler
     events:
       - http:
-          path: match-types
+          path: stipulations
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  updateMatchType:
-    handler: functions/matchTypes/updateMatchType.handler
+  updateStipulation:
+    handler: functions/stipulations/updateStipulation.handler
     events:
       - http:
-          path: match-types/{matchTypeId}
+          path: stipulations/{stipulationId}
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  deleteMatchType:
-    handler: functions/matchTypes/deleteMatchType.handler
+  deleteStipulation:
+    handler: functions/stipulations/deleteStipulation.handler
     events:
       - http:
-          path: match-types/{matchTypeId}
+          path: stipulations/{stipulationId}
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
@@ -1294,16 +1294,16 @@ resources:
             Projection:
               ProjectionType: ALL
 
-    MatchTypesTable:
+    StipulationsTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:provider.environment.MATCH_TYPES_TABLE}
+        TableName: ${self:provider.environment.STIPULATIONS_TABLE}
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
-          - AttributeName: matchTypeId
+          - AttributeName: stipulationId
             AttributeType: S
         KeySchema:
-          - AttributeName: matchTypeId
+          - AttributeName: stipulationId
             KeyType: HASH
 
     ImagesBucket:

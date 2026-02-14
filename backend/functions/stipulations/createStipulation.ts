@@ -4,14 +4,14 @@ import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { created, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
-interface CreateMatchTypeBody {
+interface CreateStipulationBody {
   name: string;
   description?: string;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const { data: body, error: parseError } = parseBody<CreateMatchTypeBody>(event);
+    const { data: body, error: parseError } = parseBody<CreateStipulationBody>(event);
     if (parseError) return parseError;
 
     if (!body.name) {
@@ -19,25 +19,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const timestamp = new Date().toISOString();
-    const matchType: Record<string, string> = {
-      matchTypeId: uuidv4(),
+    const stipulation: Record<string, string> = {
+      stipulationId: uuidv4(),
       name: body.name,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
 
     if (body.description) {
-      matchType.description = body.description;
+      stipulation.description = body.description;
     }
 
     await dynamoDb.put({
-      TableName: TableNames.MATCH_TYPES,
-      Item: matchType,
+      TableName: TableNames.STIPULATIONS,
+      Item: stipulation,
     });
 
-    return created(matchType);
+    return created(stipulation);
   } catch (err) {
-    console.error('Error creating match type:', err);
-    return serverError('Failed to create match type');
+    console.error('Error creating stipulation:', err);
+    return serverError('Failed to create stipulation');
   }
 };

@@ -7,10 +7,7 @@ import { parseBody } from '../../lib/parseBody';
 interface ScheduleMatchBody {
   date?: string;
   matchFormat: string; // "singles", "tag", "triple-threat", etc.
-  stipulationId?: string; // References MatchTypes table
-  // Legacy fields (still accepted for backwards compatibility)
-  matchType?: string;
-  stipulation?: string;
+  stipulationId?: string; // References Stipulations table
   participants: string[];
   isChampionship: boolean;
   championshipId?: string;
@@ -25,10 +22,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<ScheduleMatchBody>(event);
     if (parseError) return parseError;
 
-    // Support both new matchFormat and legacy matchType
-    const matchFormat = body.matchFormat || body.matchType;
-    if (!matchFormat || !body.participants || body.participants.length < 2) {
-      return badRequest('matchFormat (or matchType) and at least 2 participants are required');
+    if (!body.matchFormat || !body.participants || body.participants.length < 2) {
+      return badRequest('matchFormat and at least 2 participants are required');
     }
 
     // Resolve date: use provided date, or event date if eventId given, or today
@@ -133,31 +128,23 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    // Validate stipulationId exists if provided and resolve stipulation name
-    let stipulationName = body.stipulation || '';
+    // Validate stipulationId exists if provided
     if (body.stipulationId) {
-      const matchType = await dynamoDb.get({
-        TableName: TableNames.MATCH_TYPES,
-        Key: { matchTypeId: body.stipulationId },
+      const stipulation = await dynamoDb.get({
+        TableName: TableNames.STIPULATIONS,
+        Key: { stipulationId: body.stipulationId },
       });
 
-      if (!matchType.Item) {
-        return notFound(`Match type (stipulation) not found: ${body.stipulationId}`);
+      if (!stipulation.Item) {
+        return notFound(`Stipulation not found: ${body.stipulationId}`);
       }
-
-      // Use the match type name as the stipulation text
-      stipulationName = (matchType.Item as Record<string, unknown>).name as string;
     }
 
     const match = {
       matchId: uuidv4(),
       date: resolvedDate,
-      // New fields
-      matchFormat,
+      matchFormat: body.matchFormat,
       stipulationId: body.stipulationId,
-      // Legacy fields (for backwards compatibility)
-      matchType: matchFormat,
-      stipulation: stipulationName,
       participants: body.participants,
       isChampionship: body.isChampionship,
       championshipId: body.championshipId,

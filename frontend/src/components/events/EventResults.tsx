@@ -159,7 +159,7 @@ export default function EventResults() {
                     {t(designationLabels[designation])}
                   </span>
                   <span className="results-match-type">
-                    {matchData.matchType}
+                    {matchData.matchFormat}
                     {matchData.stipulation && ` - ${matchData.stipulation}`}
                   </span>
                   {matchData.isChampionship && (
