@@ -101,10 +101,11 @@ export default function ScheduleMatch() {
           setLinkChallengeId(ch.challengeId);
         } else if (state.fromPromo && state.fromPromo.targetPlayerId) {
           const promo = state.fromPromo;
+          const targetId = promo.targetPlayerId;
           const defaultFormat = matchTypesData.find((mt) => mt.name === 'Singles')?.name ?? matchTypesData[0]?.name ?? 'Singles';
           setFormData((prev) => ({
             ...prev,
-            participants: [promo.playerId, promo.targetPlayerId],
+            participants: targetId ? [promo.playerId, targetId] : prev.participants,
             matchFormat: defaultFormat,
           }));
           setLinkPromoId(promo.promoId);
