@@ -203,6 +203,9 @@ export default function Sidebar() {
                 <Link to="/admin/divisions" className={isActive('/admin/divisions') ? 'active' : ''}>
                   {t('admin.panel.tabs.divisions')}
                 </Link>
+                <Link to="/admin/match-types" className={isActive('/admin/match-types') ? 'active' : ''}>
+                  {t('admin.panel.tabs.matchTypes')}
+                </Link>
                 <Link to="/admin/championships" className={isActive('/admin/championships') ? 'active' : ''}>
                   {t('admin.panel.tabs.championships')}
                 </Link>

@@ -1,12 +1,14 @@
 import type {
   Player,
   Match,
+  ScheduleMatchInput,
   Championship,
   ChampionshipReign,
   Tournament,
   Standings,
   Season,
-  Division
+  Division,
+  MatchType
 } from '../types';
 import type {
   PlayerStatistics,
@@ -96,7 +98,7 @@ export const matchesApi = {
     return fetchWithAuth(`${API_BASE_URL}/matches${query ? `?${query}` : ''}`, {}, signal);
   },
 
-  schedule: async (match: Omit<Match, 'matchId' | 'createdAt'> & { eventId?: string; designation?: string }): Promise<Match> => {
+  schedule: async (match: ScheduleMatchInput): Promise<Match> => {
     return fetchWithAuth(`${API_BASE_URL}/matches`, {
       method: 'POST',
       body: JSON.stringify(match),
@@ -230,6 +232,33 @@ export const divisionsApi = {
 
   delete: async (divisionId: string): Promise<void> => {
     return fetchWithAuth(`${API_BASE_URL}/divisions/${divisionId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Match Types API
+export const matchTypesApi = {
+  getAll: async (signal?: AbortSignal): Promise<MatchType[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/match-types`, {}, signal);
+  },
+
+  create: async (matchType: { name: string; description?: string }): Promise<MatchType> => {
+    return fetchWithAuth(`${API_BASE_URL}/match-types`, {
+      method: 'POST',
+      body: JSON.stringify(matchType),
+    });
+  },
+
+  update: async (matchTypeId: string, updates: Partial<MatchType>): Promise<MatchType> => {
+    return fetchWithAuth(`${API_BASE_URL}/match-types/${matchTypeId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  delete: async (matchTypeId: string): Promise<void> => {
+    return fetchWithAuth(`${API_BASE_URL}/match-types/${matchTypeId}`, {
       method: 'DELETE',
     });
   },

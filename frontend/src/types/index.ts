@@ -15,8 +15,11 @@ export interface Player {
 export interface Match {
   matchId: string;
   date: string;
-  matchType: string; // "singles", "tag", "triple-threat", etc.
-  stipulation?: string; // "ladder", "cage", "hell-in-a-cell", etc.
+  matchFormat: string; // "singles", "tag", "triple-threat", etc.
+  stipulationId?: string; // References MatchTypes table
+  // Legacy fields for backwards compatibility
+  matchType: string; // Same as matchFormat (for legacy consumers)
+  stipulation?: string; // Denormalized name from MatchType (for legacy consumers)
   participants: string[]; // playerIds
   teams?: string[][]; // Array of teams, each team is an array of playerIds (for tag team matches)
   winners?: string[]; // playerIds
@@ -29,6 +32,22 @@ export interface Match {
   seasonId?: string;
   status: 'scheduled' | 'completed';
   createdAt: string;
+}
+
+// Input type for scheduling a new match (uses new field names, backend handles legacy fields)
+export interface ScheduleMatchInput {
+  date?: string;
+  matchFormat: string;
+  stipulationId?: string;
+  participants: string[];
+  teams?: string[][];
+  isChampionship: boolean;
+  championshipId?: string;
+  tournamentId?: string;
+  seasonId?: string;
+  eventId?: string;
+  designation?: string;
+  status: 'scheduled';
 }
 
 export interface Championship {
@@ -106,6 +125,14 @@ export interface Season {
 
 export interface Division {
   divisionId: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MatchType {
+  matchTypeId: string;
   name: string;
   description?: string;
   createdAt: string;

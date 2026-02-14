@@ -130,4 +130,5 @@ export const TableNames = {
   SITE_CONFIG: process.env.SITE_CONFIG_TABLE!,
   CHALLENGES: process.env.CHALLENGES_TABLE!,
   PROMOS: process.env.PROMOS_TABLE!,
+  MATCH_TYPES: process.env.MATCH_TYPES_TABLE!,
 };

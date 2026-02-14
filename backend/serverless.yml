@@ -4,7 +4,7 @@ frameworkVersion: '3'
 
 provider:
   name: aws
-  runtime: ${env:SLS_RUNTIME, 'nodejs24.x'}
+  runtime: ${env:SLS_RUNTIME, 'nodejs20.x'}
   region: us-east-1
   stage: ${opt:stage, 'dev'}
   environment:
@@ -26,6 +26,7 @@ provider:
     SITE_CONFIG_TABLE: ${self:service}-site-config-${self:provider.stage}
     CHALLENGES_TABLE: ${self:service}-challenges-${self:provider.stage}
     PROMOS_TABLE: ${self:service}-promos-${self:provider.stage}
+    MATCH_TYPES_TABLE: ${self:service}-match-types-${self:provider.stage}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
     ADMIN_SETUP_KEY: ${env:ADMIN_SETUP_KEY, 'default-dev-key-change-in-production'}
@@ -68,6 +69,7 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CHALLENGES_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PROMOS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PROMOS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_TYPES_TABLE}
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -92,9 +94,14 @@ provider:
 
 plugins:
   - serverless-plugin-typescript
+  - serverless-plugin-split-stacks
   - serverless-offline
 
 custom:
+  splitStacks:
+    perFunction: false
+    perType: true
+    perGroupFunction: false
   serverless-offline:
     httpPort: 3001
     environment:
@@ -428,6 +435,42 @@ functions:
     events:
       - http:
           path: divisions/{divisionId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  # Match Types (Stipulations)
+  getMatchTypes:
+    handler: functions/matchTypes/getMatchTypes.handler
+    events:
+      - http:
+          path: match-types
+          method: get
+          cors: *corsConfig
+
+  createMatchType:
+    handler: functions/matchTypes/createMatchType.handler
+    events:
+      - http:
+          path: match-types
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  updateMatchType:
+    handler: functions/matchTypes/updateMatchType.handler
+    events:
+      - http:
+          path: match-types/{matchTypeId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  deleteMatchType:
+    handler: functions/matchTypes/deleteMatchType.handler
+    events:
+      - http:
+          path: match-types/{matchTypeId}
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
@@ -1243,6 +1286,18 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
+
+    MatchTypesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.MATCH_TYPES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: matchTypeId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: matchTypeId
+            KeyType: HASH
 
     ImagesBucket:
       Type: AWS::S3::Bucket
