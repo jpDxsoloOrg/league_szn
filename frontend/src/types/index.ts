@@ -135,3 +135,11 @@ export interface Stipulation {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface MatchType {
+  matchTypeId: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}

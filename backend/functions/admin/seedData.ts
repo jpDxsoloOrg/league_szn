@@ -233,7 +233,7 @@ export const handler: APIGatewayProxyHandler = async () => {
       matches.push({
         matchId: uuidv4(),
         date: matchDate.toISOString(),
-        matchType: 'singles',
+        matchFormat: 'singles',
         stipulation: stipulations[Math.floor(Math.random() * stipulations.length)],
         participants: [p1.playerId, p2.playerId],
         winners: [winner.playerId],
@@ -260,7 +260,7 @@ export const handler: APIGatewayProxyHandler = async () => {
       const match: Record<string, unknown> = {
         matchId: uuidv4(),
         date: matchDate.toISOString(),
-        matchType: i % 2 === 0 ? 'singles' : 'tag',
+        matchFormat: i % 2 === 0 ? 'singles' : 'tag',
         stipulation: stipulations[Math.floor(Math.random() * stipulations.length)],
         participants: [p1.playerId, p2.playerId],
         isChampionship: i === 0,
@@ -812,6 +812,22 @@ export const handler: APIGatewayProxyHandler = async () => {
       },
     });
     createdCounts.siteConfig = 1;
+
+    // ── Match Types ─────────────────────────────────────────────
+    console.log('Creating match types...');
+    const defaultMatchTypes = ['Singles', 'Tag Team', 'Triple Threat', 'Fatal 4-Way', '6-Pack Challenge', 'Battle Royal'];
+    for (const name of defaultMatchTypes) {
+      await dynamoDb.put({
+        TableName: TableNames.MATCH_TYPES,
+        Item: {
+          matchTypeId: uuidv4(),
+          name,
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+    }
+    createdCounts.matchTypes = defaultMatchTypes.length;
 
     return success({
       message: 'Sample data seeded successfully!',

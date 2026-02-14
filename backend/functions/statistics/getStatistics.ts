@@ -6,7 +6,7 @@ interface MatchRecord {
   matchId: string;
   date: string;
   matchFormat: string;
-  stipulation?: string;
+  stipulationId?: string;
   participants: string[];
   teams?: string[][];
   winners?: string[];
@@ -46,13 +46,7 @@ interface ChampionshipRecord {
 }
 
 function categorizeMatch(match: MatchRecord): string {
-  // Map stipulations to stat types
-  if (match.stipulation) {
-    const stip = match.stipulation.toLowerCase();
-    if (stip.includes('ladder')) return 'ladder';
-    if (stip.includes('cage') || stip.includes('hell in a cell') || stip.includes('hell-in-a-cell')) return 'cage';
-  }
-  // Map match types
+  // Map match formats to stat types
   const mt = match.matchFormat.toLowerCase();
   if (mt.includes('tag')) return 'tag';
   return 'singles';

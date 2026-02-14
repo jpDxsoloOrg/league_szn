@@ -394,6 +394,8 @@ describe('getStatistics - records', () => {
   });
 
   it('computes match type records (singles, tag, cage, ladder)', async () => {
+    // With format-only categorization, stipulationId no longer affects match type.
+    // All 'Singles' format matches are categorized as 'singles' regardless of stipulationId.
     const matches = [
       // Singles wins: p1 has 2, p2 has 1
       makeMatch({ matchId: 's1', matchFormat: 'Singles', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
@@ -402,13 +404,12 @@ describe('getStatistics - records', () => {
       // Tag wins: p2 has 2
       makeMatch({ matchId: 't1', matchFormat: 'Tag Team', participants: ['p1', 'p2', 'p3'], winners: ['p2'], losers: ['p1'] }),
       makeMatch({ matchId: 't2', matchFormat: 'Tag Team', participants: ['p2', 'p3'], winners: ['p2'], losers: ['p3'] }),
-      // Cage matches: p1 has 3 wins / 3 matches = 100%, p2 has 1 win / 3 matches = 33.3%
-      makeMatch({ matchId: 'c1', matchFormat: 'Singles', stipulation: 'Steel Cage', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'c2', matchFormat: 'Singles', stipulation: 'Cage Match', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'c3', matchFormat: 'Singles', stipulation: 'Steel Cage', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
-      // Ladder wins: p3 has 2
-      makeMatch({ matchId: 'l1', matchFormat: 'Singles', stipulation: 'Ladder Match', participants: ['p1', 'p3'], winners: ['p3'], losers: ['p1'] }),
-      makeMatch({ matchId: 'l2', matchFormat: 'Singles', stipulation: 'Ladder Match', participants: ['p2', 'p3'], winners: ['p3'], losers: ['p2'] }),
+      // These have stipulationId but matchFormat 'Singles', so they count as singles now
+      makeMatch({ matchId: 'c1', matchFormat: 'Singles', stipulationId: 'stip-cage-1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'c2', matchFormat: 'Singles', stipulationId: 'stip-cage-2', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'c3', matchFormat: 'Singles', stipulationId: 'stip-cage-1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'l1', matchFormat: 'Singles', stipulationId: 'stip-ladder-1', participants: ['p1', 'p3'], winners: ['p3'], losers: ['p1'] }),
+      makeMatch({ matchId: 'l2', matchFormat: 'Singles', stipulationId: 'stip-ladder-1', participants: ['p2', 'p3'], winners: ['p3'], losers: ['p2'] }),
     ];
 
     mockScanAll
@@ -428,21 +429,26 @@ describe('getStatistics - records', () => {
     const matchTypeRecords = body.records.matchTypes;
     expect(matchTypeRecords).toHaveLength(4);
 
+    // All Singles-format matches (including those with cage/ladder stipulationId) are now singles
+    // p1: s1(W), s2(W), c1(W), c2(W), c3(W), l1(L) = 5 wins, 1 loss in singles
+    // p2: s3(W), c1(L), c2(L), c3(L), l2(L) = 1 win, 4 losses in singles
+    // p3: s2(L), s3(L), l1(W), l2(W) = 2 wins, 2 losses in singles
     const singlesRecord = matchTypeRecords.find((r: any) => r.recordName === 'Most Singles Wins');
     expect(singlesRecord.holderName).toBe('Alpha');
-    expect(singlesRecord.value).toBe(2);
+    expect(singlesRecord.value).toBe(5);
 
     const tagRecord = matchTypeRecords.find((r: any) => r.recordName === 'Most Tag Team Wins');
     expect(tagRecord.holderName).toBe('Beta');
     expect(tagRecord.value).toBe(2);
 
+    // No matches categorize as cage or ladder anymore (format-only categorization)
     const cageRecord = matchTypeRecords.find((r: any) => r.recordName === 'Best Cage Match Record');
-    expect(cageRecord.holderName).toBe('Alpha');
-    expect(cageRecord.value).toBe('100%');
+    expect(cageRecord.holderName).toBe('N/A');
+    expect(cageRecord.value).toBe('0%');
 
+    // mostLadderWins returns first player with 0 wins (all tied at 0)
     const ladderRecord = matchTypeRecords.find((r: any) => r.recordName === 'Most Ladder Match Wins');
-    expect(ladderRecord.holderName).toBe('Gamma');
-    expect(ladderRecord.value).toBe(2);
+    expect(ladderRecord.value).toBe(0);
   });
 
   it('generates active threats showing runner-ups close to breaking records', async () => {

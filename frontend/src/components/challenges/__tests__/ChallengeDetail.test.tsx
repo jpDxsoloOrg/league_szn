@@ -5,12 +5,13 @@ import { BrowserRouter } from 'react-router-dom';
 import type { ChallengeWithPlayers } from '../../../types/challenge';
 
 // --- Hoisted mocks ---
-const { mockGetById, mockRespond, mockCancel, mockGetMyProfile, mockGetAllStipulations } = vi.hoisted(() => ({
+const { mockGetById, mockRespond, mockCancel, mockGetMyProfile, mockGetAllStipulations, mockGetAllMatchTypes } = vi.hoisted(() => ({
   mockGetById: vi.fn(),
   mockRespond: vi.fn(),
   mockCancel: vi.fn(),
   mockGetMyProfile: vi.fn(),
   mockGetAllStipulations: vi.fn(),
+  mockGetAllMatchTypes: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -21,6 +22,7 @@ vi.mock('../../../services/api', () => ({
   },
   profileApi: { getMyProfile: mockGetMyProfile },
   stipulationsApi: { getAll: mockGetAllStipulations },
+  matchTypesApi: { getAll: mockGetAllMatchTypes },
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -114,6 +116,10 @@ describe('ChallengeDetail', () => {
     mockGetAllStipulations.mockResolvedValue([
       { stipulationId: 'stip-1', name: 'Steel Cage', createdAt: '', updatedAt: '' },
       { stipulationId: 'stip-2', name: 'Ladder', createdAt: '', updatedAt: '' },
+    ]);
+    mockGetAllMatchTypes.mockResolvedValue([
+      { matchTypeId: 'mt-1', name: 'Singles', createdAt: '', updatedAt: '' },
+      { matchTypeId: 'mt-2', name: 'Tag Team', createdAt: '', updatedAt: '' },
     ]);
   });
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi, stipulationsApi } from '../../services/api';
-import type { Player, Championship, Tournament, Season, Stipulation } from '../../types';
+import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi, stipulationsApi, matchTypesApi } from '../../services/api';
+import type { Player, Championship, Tournament, Season, Stipulation, MatchType } from '../../types';
 import type { LeagueEvent, MatchDesignation } from '../../types/event';
 import SearchableSelect from './SearchableSelect';
 import './ScheduleMatch.css';
@@ -14,6 +14,7 @@ export default function ScheduleMatch() {
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [events, setEvents] = useState<LeagueEvent[]>([]);
   const [stipulations, setStipulations] = useState<Stipulation[]>([]);
+  const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +24,7 @@ export default function ScheduleMatch() {
   const [teams, setTeams] = useState<string[][]>([[], []]);
 
   const [formData, setFormData] = useState({
-    matchFormat: 'singles',
+    matchFormat: '',
     stipulationId: '',
     participants: [] as string[],
     isChampionship: false,
@@ -41,13 +42,14 @@ export default function ScheduleMatch() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [playersData, championshipsData, tournamentsData, seasonsData, eventsData, stipulationsData] = await Promise.all([
+      const [playersData, championshipsData, tournamentsData, seasonsData, eventsData, stipulationsData, matchTypesData] = await Promise.all([
         playersApi.getAll(),
         championshipsApi.getAll(),
         tournamentsApi.getAll(),
         seasonsApi.getAll(),
         eventsApi.getAll(),
         stipulationsApi.getAll(),
+        matchTypesApi.getAll(),
       ]);
       setPlayers(playersData);
       setChampionships(championshipsData);
@@ -55,6 +57,7 @@ export default function ScheduleMatch() {
       setSeasons(seasonsData);
       setEvents(eventsData.filter(e => e.status === 'upcoming' || e.status === 'in-progress'));
       setStipulations(stipulationsData);
+      setMatchTypes(matchTypesData);
 
       // Set active season as default if one exists
       const activeSeason = seasonsData.find(s => s.status === 'active');
@@ -68,7 +71,7 @@ export default function ScheduleMatch() {
     }
   };
 
-  const isTagTeamMatch = formData.matchFormat === 'tag';
+  const isTagTeamMatch = formData.matchFormat.toLowerCase().includes('tag');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -155,7 +158,7 @@ export default function ScheduleMatch() {
   const resetForm = () => {
     const activeSeason = seasons.find(s => s.status === 'active');
     setFormData({
-      matchFormat: 'singles',
+      matchFormat: '',
       stipulationId: '',
       participants: [],
       isChampionship: false,
@@ -246,12 +249,12 @@ export default function ScheduleMatch() {
               onChange={(e) => handleMatchFormatChange(e.target.value)}
               required
             >
-              <option value="singles">{t('scheduleMatch.matchFormats.singles', 'Singles')}</option>
-              <option value="tag">{t('scheduleMatch.matchFormats.tag', 'Tag Team')}</option>
-              <option value="triple-threat">{t('scheduleMatch.matchFormats.tripleThread', 'Triple Threat')}</option>
-              <option value="fatal-4-way">{t('scheduleMatch.matchFormats.fatal4Way', 'Fatal 4-Way')}</option>
-              <option value="six-pack">{t('scheduleMatch.matchFormats.sixPack', '6-Pack Challenge')}</option>
-              <option value="battle-royal">{t('scheduleMatch.matchFormats.battleRoyal', 'Battle Royal')}</option>
+              <option value="">{t('scheduleMatch.selectMatchFormat', 'Select Match Format')}</option>
+              {matchTypes.map(mt => (
+                <option key={mt.matchTypeId} value={mt.name}>
+                  {mt.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -456,7 +459,7 @@ export default function ScheduleMatch() {
         ) : (
           /* Standard Participant Selection UI */
           <div className="form-group">
-            <label>{t('scheduleMatch.participants')} ({formData.matchFormat === 'singles' ? '2' : '2+'})</label>
+            <label>{t('scheduleMatch.participants')} ({formData.matchFormat.toLowerCase() === 'singles' ? '2' : '2+'})</label>
             <div className="participants-grid">
               {players.map(player => (
                 <div

@@ -160,7 +160,7 @@ export default function EventResults() {
                   </span>
                   <span className="results-match-type">
                     {matchData.matchFormat}
-                    {matchData.stipulation && ` - ${matchData.stipulation}`}
+                    {matchData.stipulationName && ` - ${matchData.stipulationName}`}
                   </span>
                   {matchData.isChampionship && (
                     <span className="results-championship-tag">

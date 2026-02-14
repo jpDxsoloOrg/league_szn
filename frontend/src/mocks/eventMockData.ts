@@ -205,7 +205,7 @@ const wrestleManiaMatches: Record<string, EnrichedMatchData> = {
   'match-wm-003': {
     matchId: 'match-wm-003',
     matchFormat: 'triple-threat',
-    stipulation: 'Ladder Match',
+    stipulationName: 'Ladder Match',
     participants: [
       { playerId: 'p-chris', playerName: 'Chris', wrestlerName: 'Triple H' },
       { playerId: 'p-alex', playerName: 'Alex', wrestlerName: 'CM Punk' },
@@ -232,7 +232,7 @@ const wrestleManiaMatches: Record<string, EnrichedMatchData> = {
   'match-wm-005': {
     matchId: 'match-wm-005',
     matchFormat: 'singles',
-    stipulation: 'Hell in a Cell',
+    stipulationName: 'Hell in a Cell',
     participants: [
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },
       { playerId: 'p-chris', playerName: 'Chris', wrestlerName: 'Triple H' },
@@ -301,7 +301,7 @@ const royalRumbleMatches: Record<string, EnrichedMatchData> = {
   'match-rr-004': {
     matchId: 'match-rr-004',
     matchFormat: 'singles',
-    stipulation: 'Steel Cage',
+    stipulationName: 'Steel Cage',
     participants: [
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },
       { playerId: 'p-dave', playerName: 'Dave', wrestlerName: 'Undertaker' },
@@ -314,7 +314,7 @@ const royalRumbleMatches: Record<string, EnrichedMatchData> = {
   'match-rr-005': {
     matchId: 'match-rr-005',
     matchFormat: 'battle-royal',
-    stipulation: 'Royal Rumble Match',
+    stipulationName: 'Royal Rumble Match',
     participants: [
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },
@@ -358,7 +358,7 @@ const rawEp1Matches: Record<string, EnrichedMatchData> = {
   'match-raw1-003': {
     matchId: 'match-raw1-003',
     matchFormat: 'singles',
-    stipulation: 'No Disqualification',
+    stipulationName: 'No Disqualification',
     participants: [
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },
@@ -439,7 +439,7 @@ const rawEp3Matches: Record<string, EnrichedMatchData> = {
   'match-raw3-003': {
     matchId: 'match-raw3-003',
     matchFormat: 'singles',
-    stipulation: 'Last Man Standing',
+    stipulationName: 'Last Man Standing',
     participants: [
       { playerId: 'p-chris', playerName: 'Chris', wrestlerName: 'Triple H' },
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
@@ -487,7 +487,7 @@ const nxtMatches: Record<string, EnrichedMatchData> = {
   'match-nxt-004': {
     matchId: 'match-nxt-004',
     matchFormat: 'singles',
-    stipulation: 'Iron Man Match (30 min)',
+    stipulationName: 'Iron Man Match (30 min)',
     participants: [
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },

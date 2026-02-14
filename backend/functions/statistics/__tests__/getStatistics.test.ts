@@ -161,8 +161,8 @@ describe('getStatistics - player-stats', () => {
     const matches = [
       makeMatch({ matchId: 'm1', matchFormat: 'Singles', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
       makeMatch({ matchId: 'm2', matchFormat: 'Tag Team', participants: ['p1', 'p2', 'p3'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'm3', matchFormat: 'Singles', stipulation: 'Ladder Match', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'm4', matchFormat: 'Singles', stipulation: 'Hell in a Cell', participants: ['p1', 'p2'], winners: ['p2'], losers: ['p1'] }),
+      makeMatch({ matchId: 'm3', matchFormat: 'Singles', stipulationId: 'stip-1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm4', matchFormat: 'Singles', stipulationId: 'stip-2', participants: ['p1', 'p2'], winners: ['p2'], losers: ['p1'] }),
       makeMatch({ matchId: 'm5', matchFormat: 'Singles', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
@@ -191,23 +191,24 @@ describe('getStatistics - player-stats', () => {
     expect(overall.losses).toBe(1);
     expect(overall.matchesPlayed).toBe(5);
 
-    // singles: m1, m5 = 2 wins
+    // singles: m1, m3, m4, m5 (all Singles format, stipulationId no longer affects categorization)
     const singles = body.statistics.find((s: any) => s.statType === 'singles');
-    expect(singles.wins).toBe(2);
-    expect(singles.losses).toBe(0);
+    expect(singles.wins).toBe(3);
+    expect(singles.losses).toBe(1);
 
     // tag: m2 = 1 win
     const tag = body.statistics.find((s: any) => s.statType === 'tag');
     expect(tag.wins).toBe(1);
     expect(tag.matchesPlayed).toBe(1);
 
-    // ladder: m3 = 1 win
+    // ladder: categorization is now format-only, so no matches map to ladder
     const ladder = body.statistics.find((s: any) => s.statType === 'ladder');
-    expect(ladder.wins).toBe(1);
+    expect(ladder.wins).toBe(0);
+    expect(ladder.matchesPlayed).toBe(0);
 
-    // cage: m4 = 1 loss (hell in a cell)
+    // cage: categorization is now format-only, so no matches map to cage
     const cage = body.statistics.find((s: any) => s.statType === 'cage');
-    expect(cage.losses).toBe(1);
+    expect(cage.losses).toBe(0);
     expect(cage.wins).toBe(0);
   });
 

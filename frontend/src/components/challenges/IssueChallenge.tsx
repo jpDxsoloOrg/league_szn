@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { playersApi, challengesApi, profileApi, stipulationsApi } from '../../services/api';
-import type { Player, Stipulation } from '../../types';
-import { MATCH_TYPES, getInitial } from './challengeUtils';
+import { playersApi, challengesApi, profileApi, stipulationsApi, matchTypesApi } from '../../services/api';
+import type { Player, Stipulation, MatchType } from '../../types';
+import { getInitial } from './challengeUtils';
 import './IssueChallenge.css';
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -22,6 +22,7 @@ export default function IssueChallenge() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [stipulations, setStipulations] = useState<Stipulation[]>([]);
+  const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -29,10 +30,12 @@ export default function IssueChallenge() {
       playersApi.getAll(controller.signal),
       profileApi.getMyProfile(controller.signal),
       stipulationsApi.getAll(controller.signal),
-    ]).then(([data, myProfile, stips]) => {
+      matchTypesApi.getAll(controller.signal),
+    ]).then(([data, myProfile, stips, mTypes]) => {
       setPlayers(data);
       setCurrentPlayerId(myProfile.playerId);
       setStipulations(stips);
+      setMatchTypes(mTypes);
     }).catch((err) => {
       if (err.name !== 'AbortError') {
         console.error('Failed to load players:', err);
@@ -141,9 +144,9 @@ export default function IssueChallenge() {
           <label>{t('challenges.issue.matchType')}</label>
           <select value={matchType} onChange={(e) => setMatchType(e.target.value)}>
             <option value="">{t('challenges.issue.selectMatchType')}</option>
-            {MATCH_TYPES.map((mt) => (
-              <option key={mt} value={mt}>
-                {mt}
+            {matchTypes.map((mt) => (
+              <option key={mt.matchTypeId} value={mt.name}>
+                {mt.name}
               </option>
             ))}
           </select>

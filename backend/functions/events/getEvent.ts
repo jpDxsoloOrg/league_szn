@@ -85,6 +85,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           championshipName = championship?.name;
         }
 
+        // Fetch stipulation name if applicable
+        let stipulationName: string | undefined;
+        if (match.stipulationId) {
+          const stipulationResult = await dynamoDb.get({
+            TableName: TableNames.STIPULATIONS,
+            Key: { stipulationId: match.stipulationId },
+          });
+          const stipulation = stipulationResult.Item as Record<string, any> | undefined;
+          stipulationName = stipulation?.name;
+        }
+
         return {
           position: card.position,
           matchId: card.matchId,
@@ -93,7 +104,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           matchData: {
             matchId: match.matchId,
             matchFormat: match.matchFormat,
-            stipulation: match.stipulation,
+            stipulationId: match.stipulationId,
+            stipulationName,
             participants,
             winners: match.winners,
             losers: match.losers,

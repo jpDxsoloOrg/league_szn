@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { matchesApi, playersApi, eventsApi } from '../../services/api';
-import type { Match, Player } from '../../types';
+import { matchesApi, playersApi, eventsApi, stipulationsApi } from '../../services/api';
+import type { Match, Player, Stipulation } from '../../types';
 import type { LeagueEvent } from '../../types/event';
 import SearchableSelect from './SearchableSelect';
 import './RecordResult.css';
@@ -13,6 +13,7 @@ export default function RecordResult() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [events, setEvents] = useState<LeagueEvent[]>([]);
+  const [stipulations, setStipulations] = useState<Stipulation[]>([]);
   const [selectedEventFilter, setSelectedEventFilter] = useState<string>('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [winners, setWinners] = useState<string[]>([]);
@@ -29,13 +30,15 @@ export default function RecordResult() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [matchesData, playersData, eventsData] = await Promise.all([
+      const [matchesData, playersData, eventsData, stipulationsData] = await Promise.all([
         matchesApi.getAll({ status: 'scheduled' }),
         playersApi.getAll(),
         eventsApi.getAll(),
+        stipulationsApi.getAll(),
       ]);
       setMatches(matchesData);
       setPlayers(playersData);
+      setStipulations(stipulationsData);
 
       // Only show events that have scheduled matches or are upcoming/in-progress
       const activeEvents = eventsData
@@ -78,6 +81,15 @@ export default function RecordResult() {
     return map;
   }, [events]);
 
+  // Build a map of stipulationId -> name for display
+  const stipulationMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of stipulations) {
+      map.set(s.stipulationId, s.name);
+    }
+    return map;
+  }, [stipulations]);
+
   // Filter matches based on selected event
   const filteredMatches = useMemo(() => {
     if (selectedEventFilter === STANDALONE_FILTER) {
@@ -103,6 +115,10 @@ export default function RecordResult() {
   const getPlayerName = (playerId: string) => {
     const player = players.find(p => p.playerId === playerId);
     return player ? `${player.name} (${player.currentWrestler})` : 'Unknown';
+  };
+
+  const getStipulationName = (stipulationId: string): string => {
+    return stipulationMap.get(stipulationId) || stipulationId;
   };
 
   const handleMatchSelect = (match: Match) => {
@@ -268,7 +284,7 @@ export default function RecordResult() {
                       ))}
                     </div>
                     {match.stipulationId && (
-                      <div className="match-stipulation">Stipulation match</div>
+                      <div className="match-stipulation">{getStipulationName(match.stipulationId)}</div>
                     )}
                   </div>
                 );
@@ -286,7 +302,7 @@ export default function RecordResult() {
                   </div>
                   {selectedMatch.stipulationId && (
                     <div className="detail-row">
-                      <strong>Stipulation:</strong> {selectedMatch.stipulationId}
+                      <strong>Stipulation:</strong> {getStipulationName(selectedMatch.stipulationId)}
                     </div>
                   )}
                   <div className="detail-row">

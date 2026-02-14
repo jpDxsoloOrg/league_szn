@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { challengesApi, profileApi, stipulationsApi } from '../../services/api';
+import { challengesApi, profileApi, stipulationsApi, matchTypesApi } from '../../services/api';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
-import type { Stipulation } from '../../types';
+import type { Stipulation, MatchType } from '../../types';
 import type { ChallengeWithPlayers } from '../../types/challenge';
-import { MATCH_TYPES, getInitial } from './challengeUtils';
+import { getInitial } from './challengeUtils';
 import './ChallengeDetail.css';
 
 export default function ChallengeDetail() {
@@ -26,20 +26,23 @@ export default function ChallengeDetail() {
   const [counterMessage, setCounterMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [stipulations, setStipulations] = useState<Stipulation[]>([]);
+  const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
     setCounterChallenge(null);
     (async () => {
       try {
-        const [mainChallenge, myProfile, stips] = await Promise.all([
+        const [mainChallenge, myProfile, stips, mTypes] = await Promise.all([
           challengesApi.getById(challengeId!, controller.signal),
           profileApi.getMyProfile(controller.signal),
           stipulationsApi.getAll(controller.signal),
+          matchTypesApi.getAll(controller.signal),
         ]);
         setChallenge(mainChallenge);
         setCurrentPlayerId(myProfile.playerId);
         setStipulations(stips);
+        setMatchTypes(mTypes);
 
         if (mainChallenge.counteredChallengeId) {
           const counter = await challengesApi.getById(mainChallenge.counteredChallengeId, controller.signal);
@@ -286,8 +289,8 @@ export default function ChallengeDetail() {
                   onChange={(e) => setCounterMatchType(e.target.value)}
                 >
                   <option value="">{t('challenges.issue.selectMatchType')}</option>
-                  {MATCH_TYPES.map((mt) => (
-                    <option key={mt} value={mt}>{mt}</option>
+                  {matchTypes.map((mt) => (
+                    <option key={mt.matchTypeId} value={mt.name}>{mt.name}</option>
                   ))}
                 </select>
               </div>
