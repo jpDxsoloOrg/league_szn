@@ -4,7 +4,7 @@ frameworkVersion: '3'
 
 provider:
   name: aws
-  runtime: ${env:SLS_RUNTIME, 'nodejs24.x'}
+  runtime: ${env:SLS_RUNTIME, 'nodejs20.x'}
   region: us-east-1
   stage: ${opt:stage, 'dev'}
   environment:
@@ -94,9 +94,14 @@ provider:
 
 plugins:
   - serverless-plugin-typescript
+  - serverless-plugin-split-stacks
   - serverless-offline
 
 custom:
+  splitStacks:
+    perFunction: false
+    perType: true
+    perGroupFunction: false
   serverless-offline:
     httpPort: 3001
     environment:
