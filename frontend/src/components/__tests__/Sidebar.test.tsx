@@ -176,12 +176,17 @@ describe('Sidebar', () => {
     expect(mockSignOut).toHaveBeenCalledTimes(1);
   });
 
-  it('shows wrestler-specific links (profile, challenges, promos) for wrestler role', () => {
+  it('shows wrestler-specific links (profile, challenges, promos) for wrestler role', async () => {
+    const user = userEvent.setup();
     mockUseAuth.mockReturnValue(baseAuth({
       isAuthenticated: true,
       isWrestler: true,
     }));
     renderSidebar();
+
+    // Wrestler group starts collapsed — expand it
+    const wrestlerToggle = screen.getByText('nav.groups.wrestler').closest('button')!;
+    await user.click(wrestlerToggle);
 
     // Wrestler gets direct profile link (not disabled)
     const profileLink = screen.getByText('nav.profile');
