@@ -27,7 +27,8 @@
     "noImage": "Kein Bild",
     "previous": "Zurück",
     "next": "Weiter",
-    "submitting": "Wird eingereicht..."
+    "submitting": "Wird eingereicht...",
+    "loading": "Wird geladen..."
   },
   "nav": {
     "standings": "Tabelle",
@@ -436,7 +437,11 @@
       "schedule": "Kampf planen",
       "expire": "Ablaufen lassen",
       "filterByStatus": "Nach Status filtern",
-      "all": "Alle"
+      "all": "Alle",
+      "delete": "Löschen",
+      "deleted": "Gelöscht",
+      "clearResolved": "Erledigte löschen",
+      "clearResolvedConfirm": "Möchtest du wirklich alle abgebrochenen, abgelaufenen und geplanten Herausforderungen löschen?"
     },
     "status": {
       "pending": "Ausstehend",
@@ -1032,6 +1037,10 @@
       "hide": "Verbergen",
       "unhide": "Anzeigen",
       "delete": "Löschen",
+      "deleted": "Gelöscht",
+      "scheduleMatch": "Kampf planen",
+      "clearHidden": "Versteckte Promos löschen",
+      "clearHiddenConfirm": "Möchtest du wirklich alle versteckten Promos dauerhaft löschen?",
       "confirmDelete": "Bist du sicher, dass du diese Promo löschen möchtest?",
       "filterByType": "Nach Typ filtern",
       "all": "Alle"

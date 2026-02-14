@@ -35,4 +35,17 @@ export const promosApi = {
       body: JSON.stringify(updates),
     });
   },
+
+  delete: async (promoId: string): Promise<void> => {
+    await fetchWithAuth(`${API_BASE_URL}/admin/promos/${promoId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  bulkDelete: async (body: { isHidden: boolean }): Promise<{ deleted: number; message: string }> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/promos/bulk-delete`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
 };

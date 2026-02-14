@@ -789,6 +789,24 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
+  deleteChallenge:
+    handler: functions/challenges/deleteChallenge.handler
+    events:
+      - http:
+          path: challenges/{challengeId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  bulkDeleteChallenges:
+    handler: functions/challenges/bulkDeleteChallenges.handler
+    events:
+      - http:
+          path: challenges/bulk-delete
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
   # Promos
   getPromos:
     handler: functions/promos/getPromos.handler
@@ -830,6 +848,24 @@ functions:
       - http:
           path: admin/promos/{promoId}
           method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  deletePromo:
+    handler: functions/promos/deletePromo.handler
+    events:
+      - http:
+          path: admin/promos/{promoId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  bulkDeletePromos:
+    handler: functions/promos/bulkDeletePromos.handler
+    events:
+      - http:
+          path: admin/promos/bulk-delete
+          method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
 

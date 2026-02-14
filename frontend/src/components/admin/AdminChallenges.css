@@ -147,6 +147,83 @@
   background-color: rgba(212, 175, 55, 0.1) !important;
 }
 
+.admin-btn-delete {
+  background-color: rgba(127, 29, 29, 0.3) !important;
+  color: #ef4444 !important;
+  border: 1px solid #7f1d1d !important;
+}
+
+.admin-btn-delete:hover {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  border-color: #ef4444 !important;
+}
+
+.admin-btn-clear-resolved {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #6b7280;
+  background-color: #374151;
+  color: #e5e7eb;
+}
+
+.admin-btn-clear-resolved:hover {
+  background-color: #4b5563;
+}
+
+.admin-challenges-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.admin-challenges-modal {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  max-width: 420px;
+}
+
+.admin-challenges-modal p {
+  margin: 0 0 1.25rem;
+  color: #ccc;
+  font-size: 0.95rem;
+}
+
+.admin-challenges-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.admin-btn-modal-cancel {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background: #2d2d2d;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.admin-btn-modal-confirm {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: none;
+  background: #dc2626;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .admin-challenges-empty {
   text-align: center;
   padding: 3rem 1rem;

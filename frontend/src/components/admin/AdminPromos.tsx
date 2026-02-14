@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PromoType } from '../../types/promo';
 import { promosApi } from '../../services/api/promos.api';
@@ -31,12 +32,15 @@ function formatDate(dateStr: string): string {
 
 export default function AdminPromos() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [promos, setPromos] = useState<PromoWithContext[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<'' | PromoType>('');
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [showBulkClearModal, setShowBulkClearModal] = useState(false);
+  const [bulkClearing, setBulkClearing] = useState(false);
 
   const loadPromos = useCallback(async () => {
     try {
@@ -100,6 +104,36 @@ export default function AdminPromos() {
     }
   };
 
+  const handleDelete = async (promo: PromoWithContext) => {
+    setSubmitting(promo.promoId);
+    try {
+      await promosApi.delete(promo.promoId);
+      showFeedback(t('promos.admin.deleted', 'Deleted') + `: ${promo.wrestlerName}'s promo`, 'success');
+      await loadPromos();
+    } catch (err) {
+      showFeedback(err instanceof Error ? err.message : 'Failed to delete promo', 'error');
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
+  const handleBulkClearHidden = async () => {
+    setBulkClearing(true);
+    try {
+      const result = await promosApi.bulkDelete({ isHidden: true });
+      showFeedback(result.message, 'success');
+      setShowBulkClearModal(false);
+      await loadPromos();
+    } catch (err) {
+      showFeedback(
+        err instanceof Error ? err.message : 'Failed to clear hidden promos',
+        'error'
+      );
+    } finally {
+      setBulkClearing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="admin-promos">
@@ -143,7 +177,40 @@ export default function AdminPromos() {
             ))}
           </select>
         </div>
+        <button
+          type="button"
+          className="admin-promos-btn-clear-hidden"
+          onClick={() => setShowBulkClearModal(true)}
+        >
+          {t('promos.admin.clearHidden', 'Clear hidden promos')}
+        </button>
       </div>
+
+      {showBulkClearModal && (
+        <div className="admin-promos-modal-overlay" role="dialog" aria-modal="true">
+          <div className="admin-promos-modal">
+            <p>{t('promos.admin.clearHiddenConfirm', 'Are you sure you want to permanently delete all hidden promos?')}</p>
+            <div className="admin-promos-modal-actions">
+              <button
+                type="button"
+                className="admin-promos-btn-modal-cancel"
+                onClick={() => setShowBulkClearModal(false)}
+                disabled={bulkClearing}
+              >
+                {t('common.cancel', 'Cancel')}
+              </button>
+              <button
+                type="button"
+                className="admin-promos-btn-modal-confirm"
+                onClick={handleBulkClearHidden}
+                disabled={bulkClearing}
+              >
+                {bulkClearing ? t('common.loading', 'Clearing...') : t('promos.admin.clearHidden', 'Clear hidden promos')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {feedback && (
         <div className={`admin-promos-feedback ${feedback.type}`}>
@@ -181,6 +248,20 @@ export default function AdminPromos() {
                 <td className="reactions-cell">{getTotalReactions(promo)}</td>
                 <td className="date-cell">{formatDate(promo.createdAt)}</td>
                 <td className="actions-cell">
+                  {promo.promoType === 'call-out' && promo.targetPlayerId && (
+                    <button
+                      type="button"
+                      className="action-btn schedule-btn"
+                      onClick={() =>
+                        navigate('/admin/schedule', {
+                          state: { fromPromo: promo },
+                        })
+                      }
+                      title={t('promos.admin.scheduleMatch', 'Schedule Match')}
+                    >
+                      {t('promos.admin.scheduleMatch', 'Schedule Match')}
+                    </button>
+                  )}
                   <button
                     className={`action-btn pin-btn ${promo.isPinned ? 'active' : ''}`}
                     onClick={() => handleTogglePin(promo)}
@@ -204,6 +285,15 @@ export default function AdminPromos() {
                     {promo.isHidden
                       ? t('promos.admin.unhide', 'Unhide')
                       : t('promos.admin.hide', 'Hide')}
+                  </button>
+                  <button
+                    type="button"
+                    className="action-btn delete-btn"
+                    onClick={() => handleDelete(promo)}
+                    disabled={submitting === promo.promoId}
+                    title={t('promos.admin.delete', 'Delete')}
+                  >
+                    {submitting === promo.promoId ? '...' : t('promos.admin.delete', 'Delete')}
                   </button>
                 </td>
               </tr>

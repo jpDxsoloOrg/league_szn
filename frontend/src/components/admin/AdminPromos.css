@@ -50,6 +50,84 @@
   color: white;
 }
 
+.admin-promos-btn-clear-hidden {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: #2d2d2d;
+  color: #bbb;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-promos-btn-clear-hidden:hover {
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+.action-btn.schedule-btn {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.action-btn.schedule-btn:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: #3b82f6;
+  color: #60a5fa;
+}
+
+.admin-promos-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.admin-promos-modal {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+  max-width: 420px;
+}
+
+.admin-promos-modal p {
+  margin: 0 0 1.25rem;
+  color: #ccc;
+  font-size: 0.95rem;
+}
+
+.admin-promos-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.admin-promos-btn-modal-cancel {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: #2d2d2d;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.admin-promos-btn-modal-confirm {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  background: #dc2626;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 /* Table */
 .admin-promos-table-wrapper {
   overflow-x: auto;
