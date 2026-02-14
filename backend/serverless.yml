@@ -601,6 +601,29 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
+  # API Documentation (Swagger UI + OpenAPI spec)
+  serveSwaggerUi:
+    handler: functions/docs/serveDocs.handler
+    package:
+      include:
+        - docs/**
+    events:
+      - http:
+          path: api-docs
+          method: get
+          cors: *corsConfig
+
+  serveOpenApiSpec:
+    handler: functions/docs/serveDocs.handler
+    package:
+      include:
+        - docs/**
+    events:
+      - http:
+          path: api-docs/spec
+          method: get
+          cors: *corsConfig
+
   # Admin
   clearAll:
     handler: functions/admin/clearAll.handler
