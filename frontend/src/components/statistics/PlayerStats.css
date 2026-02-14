@@ -255,10 +255,17 @@
   color: #000;
 }
 
-.ps-bar-record {
-  width: 70px;
-  font-size: 0.8rem;
-  color: #bbb;
+.ps-bar-matches {
+  width: 80px;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.ps-bar-subheading {
+  font-size: 0.85rem;
+  color: #888;
+  font-weight: normal;
+  margin-bottom: 0.75rem;
 }
 
 .ps-breakdown-table {

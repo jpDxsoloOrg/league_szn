@@ -15,7 +15,7 @@ function EmbeddedPlayerStats({ playerId }: EmbeddedPlayerStatsProps) {
 
   const {
     data, loading, error, seasons, selectedSeasonId, setSelectedSeasonId,
-    overallStats, matchTypeStats, maxWinsAcrossTypes, championshipStats, achievements,
+    overallStats, matchTypeStats, championshipStats, achievements,
   } = usePlayerStats({ playerId });
 
   const player = useMemo(
@@ -68,7 +68,6 @@ function EmbeddedPlayerStats({ playerId }: EmbeddedPlayerStatsProps) {
         player={player}
         overallStats={overallStats}
         matchTypeStats={matchTypeStats}
-        maxWinsAcrossTypes={maxWinsAcrossTypes}
         championshipStats={championshipStats}
         achievements={achievements}
       />
