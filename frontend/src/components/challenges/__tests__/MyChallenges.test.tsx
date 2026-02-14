@@ -58,6 +58,14 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.mock('../../../contexts/SiteConfigContext', () => ({
+  useSiteConfig: () => ({
+    features: { challenges: true, promos: true },
+    isLoading: false,
+    refreshConfig: vi.fn(),
+  }),
+}));
+
 vi.mock('../MyChallenges.css', () => ({}));
 
 import MyChallenges from '../MyChallenges';

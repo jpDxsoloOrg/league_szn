@@ -87,9 +87,7 @@ export default function TopBar() {
     }
 
     // Challenge sub-routes
-    if (path === '/challenges/issue') {
-      return { title: t('challenges.issue.title'), parent: t('nav.challenges') };
-    }
+    // /challenges/issue now redirects to /promos/new — breadcrumb unreachable but kept for safety
     if (path === '/challenges/my') {
       return { title: t('challenges.my.title'), parent: t('nav.challenges') };
     }

@@ -983,7 +983,12 @@
       "successTitle": "Promo eingereicht!",
       "successMessage": "Deine Promo wurde im Feed veröffentlicht.",
       "viewFeed": "Promo-Feed anzeigen",
-      "cutAnother": "Weitere Promo schneiden"
+      "cutAnother": "Weitere Promo schneiden",
+      "challengeCreated": "Deine Call-Out-Promo wurde veröffentlicht und eine Herausforderung wurde ausgesprochen!",
+      "challengeFailed": "Promo veröffentlicht, aber die Herausforderung konnte nicht erstellt werden. Du kannst sie separat aussprechen.",
+      "matchType": "Match-Typ",
+      "stipulation": "Auflagen",
+      "cutCallOut": "Call-Out-Promo schneiden"
     },
     "reactions": {
       "fire": "Feuer",

@@ -20,6 +20,7 @@ vi.mock('react-i18next', () => ({
         'challenges.board.title': 'Challenge Board',
         'challenges.board.myChallenges': 'My Challenges',
         'challenges.board.issueChallenge': 'Issue Challenge',
+        'promos.editor.cutCallOut': 'Cut a Call-Out Promo',
         'challenges.board.filterActive': 'Active',
         'challenges.board.filterPending': 'Pending',
         'challenges.board.filterAccepted': 'Accepted',
@@ -158,8 +159,8 @@ describe('ChallengeBoard', () => {
       expect(screen.getByText('No challenges found')).toBeInTheDocument();
     });
 
-    // "Issue Challenge" link should be available in the empty state
-    const issueLinks = screen.getAllByText('Issue Challenge');
-    expect(issueLinks.length).toBeGreaterThanOrEqual(1);
+    // "Cut a Call-Out Promo" link should be available in the empty state
+    const callOutLinks = screen.getAllByText('Cut a Call-Out Promo');
+    expect(callOutLinks.length).toBeGreaterThanOrEqual(1);
   });
 });
