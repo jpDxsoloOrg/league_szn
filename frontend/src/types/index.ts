@@ -34,6 +34,22 @@ export interface Match {
   createdAt: string;
 }
 
+// Input type for scheduling a new match (uses new field names, backend handles legacy fields)
+export interface ScheduleMatchInput {
+  date?: string;
+  matchFormat: string;
+  stipulationId?: string;
+  participants: string[];
+  teams?: string[][];
+  isChampionship: boolean;
+  championshipId?: string;
+  tournamentId?: string;
+  seasonId?: string;
+  eventId?: string;
+  designation?: string;
+  status: 'scheduled';
+}
+
 export interface Championship {
   championshipId: string;
   name: string;

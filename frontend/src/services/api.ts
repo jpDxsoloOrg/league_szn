@@ -1,6 +1,7 @@
 import type {
   Player,
   Match,
+  ScheduleMatchInput,
   Championship,
   ChampionshipReign,
   Tournament,
@@ -97,7 +98,7 @@ export const matchesApi = {
     return fetchWithAuth(`${API_BASE_URL}/matches${query ? `?${query}` : ''}`, {}, signal);
   },
 
-  schedule: async (match: Omit<Match, 'matchId' | 'createdAt'> & { eventId?: string; designation?: string }): Promise<Match> => {
+  schedule: async (match: ScheduleMatchInput): Promise<Match> => {
     return fetchWithAuth(`${API_BASE_URL}/matches`, {
       method: 'POST',
       body: JSON.stringify(match),
