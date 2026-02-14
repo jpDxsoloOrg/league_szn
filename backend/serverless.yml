@@ -8,6 +8,8 @@ provider:
   region: us-east-1
   stage: ${opt:stage, 'dev'}
   environment:
+    SERVICE_NAME: ${self:service}
+    STAGE: ${self:provider.stage}
     PLAYERS_TABLE: ${self:service}-players-${self:provider.stage}
     MATCHES_TABLE: ${self:service}-matches-${self:provider.stage}
     CHAMPIONSHIPS_TABLE: ${self:service}-championships-${self:provider.stage}
@@ -91,6 +93,12 @@ provider:
             - cognito-idp:ListUsersInGroup
           Resource:
             - !GetAtt LeagueUserPool.Arn
+        - Effect: Allow
+          Action:
+            - lambda:InvokeFunction
+          Resource:
+            - arn:aws:lambda:${self:provider.region}:*:function:${self:service}-${self:provider.stage}-calculateRankings
+            - arn:aws:lambda:${self:provider.region}:*:function:${self:service}-${self:provider.stage}-recalculateWrestlerCosts
 
 plugins:
   - serverless-plugin-typescript
@@ -270,7 +278,6 @@ functions:
 
   recordResult:
     handler: functions/matches/recordResult.handler
-    timeout: 29
     events:
       - http:
           path: matches/{matchId}/result
