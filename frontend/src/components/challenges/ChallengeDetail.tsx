@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { challengesApi, profileApi } from '../../services/api';
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import type { ChallengeWithPlayers } from '../../types/challenge';
 import { MATCH_TYPES, STIPULATIONS, getInitial } from './challengeUtils';
 import './ChallengeDetail.css';
@@ -9,6 +10,8 @@ import './ChallengeDetail.css';
 export default function ChallengeDetail() {
   const { t } = useTranslation();
   const { challengeId } = useParams<{ challengeId: string }>();
+  const navigate = useNavigate();
+  const { features } = useSiteConfig();
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [challenge, setChallenge] = useState<ChallengeWithPlayers | null>(null);
   const [counterChallenge, setCounterChallenge] = useState<ChallengeWithPlayers | null>(null);
@@ -74,6 +77,12 @@ export default function ChallengeDetail() {
       if (updated.counteredChallengeId) {
         const counter = await challengesApi.getById(updated.counteredChallengeId);
         setCounterChallenge(counter);
+      }
+      // After accepting, navigate to promo editor for a response promo
+      if (action === 'accept' && features.promos && updated) {
+        navigate('/promos/new', {
+          state: { promoType: 'response', targetPlayerId: updated.challengerId },
+        });
       }
     } catch (err) {
       setActionMessage(`Error: ${err instanceof Error ? err.message : 'Failed'}`);

@@ -33,7 +33,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, opts?: Record<string, string>) => {
       const t: Record<string, string> = {
-        'challenges.detail.backToBoard': 'Back to Board',
+        'challenges.detail.backToBoard': 'Back to Challenges',
         'challenges.detail.notFound': 'Challenge not found',
         'challenges.detail.challenger': 'Challenger',
         'challenges.detail.challenged': 'Challenged',
@@ -67,6 +67,14 @@ vi.mock('react-i18next', () => ({
       }
       return t[key] || key;
     },
+  }),
+}));
+
+vi.mock('../../../contexts/SiteConfigContext', () => ({
+  useSiteConfig: () => ({
+    features: { challenges: true, promos: true },
+    isLoading: false,
+    refreshConfig: vi.fn(),
   }),
 }));
 

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { challengesApi, profileApi } from '../../services/api';
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import type { ChallengeWithPlayers } from '../../types/challenge';
 import { getInitial } from './challengeUtils';
 import './MyChallenges.css';
@@ -11,6 +12,7 @@ type MyTab = 'sent' | 'received';
 export default function MyChallenges() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { features } = useSiteConfig();
   const [activeTab, setActiveTab] = useState<MyTab>('received');
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [challenges, setChallenges] = useState<ChallengeWithPlayers[]>([]);
@@ -67,11 +69,18 @@ export default function MyChallenges() {
       // Refresh challenges
       const updated = await challengesApi.getAll();
       setChallenges(updated);
+
+      // After accepting, navigate to promo editor for a response promo
+      if (action === 'accept' && features.promos) {
+        navigate('/promos/new', {
+          state: { promoType: 'response', targetPlayerId: challenge.challengerId },
+        });
+      }
     } catch (err) {
       setActionFeedback(`Error: ${err instanceof Error ? err.message : 'Failed'}`);
     }
     setTimeout(() => setActionFeedback(null), 3000);
-  }, [currentPlayerId, t]);
+  }, [currentPlayerId, t, features, navigate]);
 
   const getOpponent = (challenge: ChallengeWithPlayers) => {
     if (challenge.challengerId === currentPlayerId) {
@@ -182,17 +191,13 @@ export default function MyChallenges() {
 
   return (
     <div className="my-challenges">
-      <Link to="/challenges" className="my-challenges-back">
-        &larr; {t('challenges.detail.backToBoard')}
-      </Link>
-
       <div className="my-challenges-header">
         <h2>{t('challenges.my.title')}</h2>
         <Link
-          to="/challenges/issue"
+          to="/promos/new?promoType=call-out"
           className="my-challenges-issue-link"
         >
-          + {t('challenges.board.issueChallenge')}
+          + {t('promos.editor.cutCallOut', 'Cut a Call-Out Promo')}
         </Link>
       </div>
 
@@ -226,10 +231,10 @@ export default function MyChallenges() {
           </p>
           {activeTab === 'sent' && (
             <Link
-              to="/challenges/issue"
+              to="/promos/new?promoType=call-out"
               className="my-challenges-empty-issue-link"
             >
-              {t('challenges.board.issueChallenge')}
+              {t('promos.editor.cutCallOut', 'Cut a Call-Out Promo')}
             </Link>
           )}
         </div>

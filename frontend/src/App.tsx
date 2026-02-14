@@ -14,9 +14,8 @@ import AdminPanel from './components/admin/AdminPanel';
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
 // Challenge components
-import ChallengeBoard from './components/challenges/ChallengeBoard';
 import ChallengeDetail from './components/challenges/ChallengeDetail';
-import IssueChallenge from './components/challenges/IssueChallenge';
+// IssueChallenge kept as a component but route redirects to PromoEditor in call-out mode
 import MyChallenges from './components/challenges/MyChallenges';
 // Promo components
 import PromoFeed from './components/promos/PromoFeed';
@@ -87,24 +86,14 @@ function App() {
             <Route path="/challenges" element={
               <FeatureRoute feature="challenges">
                 <ProtectedRoute requiredRole="Wrestler">
-                  <ChallengeBoard />
-                </ProtectedRoute>
-              </FeatureRoute>
-            } />
-            <Route path="/challenges/issue" element={
-              <FeatureRoute feature="challenges">
-                <ProtectedRoute requiredRole="Wrestler">
-                  <IssueChallenge />
-                </ProtectedRoute>
-              </FeatureRoute>
-            } />
-            <Route path="/challenges/my" element={
-              <FeatureRoute feature="challenges">
-                <ProtectedRoute requiredRole="Wrestler">
                   <MyChallenges />
                 </ProtectedRoute>
               </FeatureRoute>
             } />
+            <Route path="/challenges/issue" element={
+              <Navigate to="/promos/new?promoType=call-out" replace />
+            } />
+            <Route path="/challenges/my" element={<Navigate to="/challenges" replace />} />
             <Route path="/challenges/:challengeId" element={
               <FeatureRoute feature="challenges">
                 <ProtectedRoute requiredRole="Wrestler">

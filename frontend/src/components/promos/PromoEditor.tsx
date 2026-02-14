@@ -1,9 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { PromoType, PromoWithContext } from '../../types/promo';
-import { playersApi, promosApi, championshipsApi, matchesApi } from '../../services/api';
+import { playersApi, promosApi, championshipsApi, matchesApi, challengesApi } from '../../services/api';
 import type { Player, Match, Championship } from '../../types';
+import { MATCH_TYPES, STIPULATIONS } from '../challenges/challengeUtils';
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import PromoCard from './PromoCard';
 import './PromoEditor.css';
 
@@ -59,22 +61,65 @@ const PROMO_TYPES: { value: PromoType; labelKey: string; fallback: string; descK
   },
 ];
 
+const VALID_PROMO_TYPES = new Set<string>(PROMO_TYPES.map((pt) => pt.value));
+
+function isPromoType(value: unknown): value is PromoType {
+  return typeof value === 'string' && VALID_PROMO_TYPES.has(value);
+}
+
+/** Shape of location state passed via navigate() for pre-filling the editor. */
+interface PromoEditorLocationState {
+  promoType?: unknown;
+  targetPlayerId?: unknown;
+  challengeId?: unknown;
+}
+
 const MAX_CONTENT = 2000;
 const MIN_CONTENT = 50;
 
 export default function PromoEditor() {
   const { t } = useTranslation();
-  const [promoType, setPromoType] = useState<PromoType>('open-mic');
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { features } = useSiteConfig();
+
+  // Read pre-fill values from location state (preferred) or search params (fallback).
+  // Using useState initializer callbacks so values are read exactly once on mount.
+  const locationState = (location.state ?? {}) as PromoEditorLocationState;
+
+  const [promoType, setPromoType] = useState<PromoType>(() => {
+    const fromState = locationState.promoType;
+    const fromParams = searchParams.get('promoType');
+    const candidate = fromState ?? fromParams;
+    return isPromoType(candidate) ? candidate : 'open-mic';
+  });
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [targetPlayerId, setTargetPlayerId] = useState('');
+  const [targetPlayerId, setTargetPlayerId] = useState<string>(() => {
+    const fromState = locationState.targetPlayerId;
+    const fromParams = searchParams.get('targetPlayerId');
+    const candidate = fromState ?? fromParams;
+    return typeof candidate === 'string' ? candidate : '';
+  });
   const [targetPromoId, setTargetPromoId] = useState('');
+  // challengeId is stored so downstream submission logic can link the promo to a challenge.
+  // Prefixed with underscore until CreatePromoInput is extended to include challengeId.
+  const [_challengeId] = useState<string>(() => {
+    const fromState = locationState.challengeId;
+    const fromParams = searchParams.get('challengeId');
+    const candidate = fromState ?? fromParams;
+    return typeof candidate === 'string' ? candidate : '';
+  });
   const [matchId, setMatchId] = useState('');
   const [championshipId, setChampionshipId] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [challengeMatchType, setChallengeMatchType] = useState('Singles');
+  const [challengeStipulation, setChallengeStipulation] = useState('None');
+  const [challengeCreated, setChallengeCreated] = useState(false);
+  const [challengeWarning, setChallengeWarning] = useState<string | null>(null);
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [allPromos, setAllPromos] = useState<PromoWithContext[]>([]);
@@ -181,6 +226,8 @@ export default function PromoEditor() {
     if (!canSubmit) return;
     setSubmitting(true);
     setError(null);
+    setChallengeCreated(false);
+    setChallengeWarning(null);
     try {
       await promosApi.create({
         promoType,
@@ -191,6 +238,24 @@ export default function PromoEditor() {
         matchId: matchId || undefined,
         championshipId: championshipId || undefined,
       });
+
+      // Auto-create challenge when submitting a call-out promo
+      if (promoType === 'call-out' && targetPlayerId && features.challenges) {
+        try {
+          await challengesApi.create({
+            challengedId: targetPlayerId,
+            matchType: challengeMatchType,
+            stipulation: challengeStipulation !== 'None' ? challengeStipulation : undefined,
+            message: (title || content.slice(0, 500)) || undefined,
+          });
+          setChallengeCreated(true);
+        } catch {
+          setChallengeWarning(
+            t('promos.editor.challengeFailed', 'Promo published, but the challenge could not be created. You can issue it separately.')
+          );
+        }
+      }
+
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create promo');
@@ -205,7 +270,13 @@ export default function PromoEditor() {
         <div className="promo-editor-success">
           <div className="success-icon">{'\u{1F3A4}'}</div>
           <h2>{t('promos.editor.successTitle', 'Promo Submitted!')}</h2>
-          <p>{t('promos.editor.successMessage', 'Your promo has been published to the feed.')}</p>
+          {challengeCreated ? (
+            <p>{t('promos.editor.challengeCreated', 'Your call-out promo has been published and a challenge has been issued!')}</p>
+          ) : challengeWarning ? (
+            <p className="challenge-warning">{challengeWarning}</p>
+          ) : (
+            <p>{t('promos.editor.successMessage', 'Your promo has been published to the feed.')}</p>
+          )}
           <div className="success-actions">
             <Link to="/promos" className="success-link">
               {t('promos.editor.viewFeed', 'View Promo Feed')}
@@ -220,6 +291,10 @@ export default function PromoEditor() {
                 setTargetPromoId('');
                 setMatchId('');
                 setChampionshipId('');
+                setChallengeMatchType('Singles');
+                setChallengeStipulation('None');
+                setChallengeCreated(false);
+                setChallengeWarning(null);
                 setError(null);
               }}
             >
@@ -418,6 +493,46 @@ export default function PromoEditor() {
               ))}
             </select>
           </div>
+        )}
+
+        {/* Challenge Match Type & Stipulation (call-out only) */}
+        {promoType === 'call-out' && (
+          <>
+            <div className="form-group">
+              <label className="form-label" htmlFor="challenge-match-type">
+                {t('promos.editor.matchType', 'Match Type')}
+              </label>
+              <select
+                id="challenge-match-type"
+                className="form-select"
+                value={challengeMatchType}
+                onChange={(e) => setChallengeMatchType(e.target.value)}
+              >
+                {MATCH_TYPES.map((mt) => (
+                  <option key={mt} value={mt}>
+                    {mt}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="challenge-stipulation">
+                {t('promos.editor.stipulation', 'Stipulation')}
+              </label>
+              <select
+                id="challenge-stipulation"
+                className="form-select"
+                value={challengeStipulation}
+                onChange={(e) => setChallengeStipulation(e.target.value)}
+              >
+                {STIPULATIONS.map((stip) => (
+                  <option key={stip} value={stip}>
+                    {stip}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
         )}
 
         {/* Preview Toggle */}

@@ -372,7 +372,7 @@
       "decline": "Decline",
       "counter": "Counter",
       "cancel": "Cancel Challenge",
-      "backToBoard": "Back to Board",
+      "backToBoard": "Back to Challenges",
       "expires": "Expires",
       "scheduledMatch": "Scheduled Match",
       "notFound": "Challenge not found.",
@@ -983,7 +983,12 @@
       "successTitle": "Promo Submitted!",
       "successMessage": "Your promo has been published to the feed.",
       "viewFeed": "View Promo Feed",
-      "cutAnother": "Cut Another Promo"
+      "cutAnother": "Cut Another Promo",
+      "challengeCreated": "Your call-out promo has been published and a challenge has been issued!",
+      "challengeFailed": "Promo published, but the challenge could not be created. You can issue it separately.",
+      "matchType": "Match Type",
+      "stipulation": "Stipulation",
+      "cutCallOut": "Cut a Call-Out Promo"
     },
     "reactions": {
       "fire": "Fire",

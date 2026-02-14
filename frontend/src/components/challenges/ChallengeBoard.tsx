@@ -106,8 +106,8 @@ export default function ChallengeBoard() {
           <Link to="/challenges/my" className="btn-my">
             {t('challenges.board.myChallenges')}
           </Link>
-          <Link to="/challenges/issue" className="btn-issue">
-            + {t('challenges.board.issueChallenge')}
+          <Link to="/promos/new?promoType=call-out" className="btn-issue">
+            + {t('promos.editor.cutCallOut', 'Cut a Call-Out Promo')}
           </Link>
         </div>
       </div>
@@ -142,8 +142,8 @@ export default function ChallengeBoard() {
       {filtered.length === 0 ? (
         <div className="challenge-board-empty">
           <p>{t('challenges.board.noChallenges')}</p>
-          <Link to="/challenges/issue" className="btn-issue">
-            {t('challenges.board.issueChallenge')}
+          <Link to="/promos/new?promoType=call-out" className="btn-issue">
+            {t('promos.editor.cutCallOut', 'Cut a Call-Out Promo')}
           </Link>
         </div>
       ) : (
