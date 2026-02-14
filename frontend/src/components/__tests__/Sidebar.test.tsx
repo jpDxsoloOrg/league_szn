@@ -87,7 +87,7 @@ describe('Sidebar', () => {
     expect(screen.getByText('Sign Up')).toBeInTheDocument();
   });
 
-  it('shows admin section with all admin links when user is admin', () => {
+  it('shows admin section with sub-group headers when user is admin', () => {
     mockUseAuth.mockReturnValue(baseAuth({
       isAuthenticated: true,
       isAdminOrModerator: true,
@@ -96,24 +96,35 @@ describe('Sidebar', () => {
     renderSidebar('/admin/players');
 
     expect(screen.getByText('nav.admin')).toBeInTheDocument();
-    expect(screen.getByText('User Management')).toBeInTheDocument();
-    expect(screen.getByText('Feature Management')).toBeInTheDocument();
-    expect(screen.getByText('admin.panel.tabs.scheduleMatch')).toBeInTheDocument();
-    expect(screen.getByText('admin.panel.tabs.recordResults')).toBeInTheDocument();
+
+    // Sub-group headers are always visible when admin is expanded
+    expect(screen.getByText('admin.panel.groups.matchOps')).toBeInTheDocument();
+    expect(screen.getByText('admin.panel.groups.leagueSetup')).toBeInTheDocument();
+    expect(screen.getByText('admin.panel.groups.contentSocial')).toBeInTheDocument();
+    expect(screen.getByText('admin.panel.groups.fantasy')).toBeInTheDocument();
+    expect(screen.getByText('admin.panel.groups.system')).toBeInTheDocument();
+
+    // League Setup auto-expands because route is /admin/players
+    expect(screen.getByText('admin.panel.tabs.managePlayers')).toBeInTheDocument();
     expect(screen.getByText('admin.panel.tabs.divisions')).toBeInTheDocument();
 
-    // Danger zone only for SuperAdmin
+    // Items in other collapsed sub-groups should not be visible
+    expect(screen.queryByText('User Management')).not.toBeInTheDocument();
+    expect(screen.queryByText('admin.panel.tabs.scheduleMatch')).not.toBeInTheDocument();
+
+    // Danger zone only for SuperAdmin (and System group is collapsed)
     expect(screen.queryByText('admin.panel.tabs.dangerZone')).not.toBeInTheDocument();
   });
 
-  it('shows danger zone link only for SuperAdmin', () => {
+  it('shows danger zone link only for SuperAdmin when System group is expanded', () => {
     mockUseAuth.mockReturnValue(baseAuth({
       isAuthenticated: true,
       isAdminOrModerator: true,
       isSuperAdmin: true,
     }));
-    renderSidebar('/admin');
+    renderSidebar('/admin/danger');
 
+    // System group auto-expands for /admin/danger route
     expect(screen.getByText('admin.panel.tabs.dangerZone')).toBeInTheDocument();
   });
 
@@ -137,17 +148,17 @@ describe('Sidebar', () => {
     }));
     renderSidebar('/admin');
 
-    // Admin section starts expanded (adminExpanded default true)
-    expect(screen.getByText('User Management')).toBeInTheDocument();
+    // Admin section starts expanded — sub-group headers visible
+    expect(screen.getByText('admin.panel.groups.matchOps')).toBeInTheDocument();
 
-    // Collapse
+    // Collapse admin section
     const toggleBtn = screen.getByText('nav.admin').closest('button')!;
     await user.click(toggleBtn);
-    expect(screen.queryByText('User Management')).not.toBeInTheDocument();
+    expect(screen.queryByText('admin.panel.groups.matchOps')).not.toBeInTheDocument();
 
     // Expand again
     await user.click(toggleBtn);
-    expect(screen.getByText('User Management')).toBeInTheDocument();
+    expect(screen.getByText('admin.panel.groups.matchOps')).toBeInTheDocument();
   });
 
   it('shows logout button when authenticated and calls signOut', async () => {

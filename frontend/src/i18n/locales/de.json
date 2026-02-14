@@ -41,7 +41,11 @@
     "help": "Hilfe",
     "admin": "Admin",
     "contenders": "Herausforderer",
-    "profile": "Mein Profil"
+    "profile": "Mein Profil",
+    "groups": {
+      "wrestler": "Wrestler",
+      "extras": "Mehr"
+    }
   },
   "header": {
     "title": "WWE 2K Liga"
@@ -340,6 +344,13 @@
         "contenderConfig": "Herausforderer Konfig",
         "help": "Hilfe",
         "dangerZone": "Gefahrenzone"
+      },
+      "groups": {
+        "matchOps": "Match-Operationen",
+        "leagueSetup": "Liga-Einrichtung",
+        "contentSocial": "Inhalte & Soziales",
+        "fantasy": "Fantasy",
+        "system": "System"
       }
     }
   },

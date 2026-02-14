@@ -41,7 +41,11 @@
     "help": "Help",
     "admin": "Admin",
     "contenders": "Contenders",
-    "profile": "My Profile"
+    "profile": "My Profile",
+    "groups": {
+      "wrestler": "Wrestler",
+      "extras": "More"
+    }
   },
   "header": {
     "title": "WWE 2K League"
@@ -340,6 +344,13 @@
         "contenderConfig": "Contender Config",
         "help": "Help",
         "dangerZone": "Danger Zone"
+      },
+      "groups": {
+        "matchOps": "Match Operations",
+        "leagueSetup": "League Setup",
+        "contentSocial": "Content & Social",
+        "fantasy": "Fantasy",
+        "system": "System"
       }
     }
   },
