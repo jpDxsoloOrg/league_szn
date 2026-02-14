@@ -5,7 +5,8 @@ import { success, badRequest, serverError } from '../../lib/response';
 interface MatchRecord {
   matchId: string;
   date: string;
-  matchFormat: string;
+  matchFormat?: string;
+  matchType?: string; // legacy field name in existing DB records
   stipulationId?: string;
   participants: string[];
   teams?: string[][];
@@ -46,8 +47,8 @@ interface ChampionshipRecord {
 }
 
 function categorizeMatch(match: MatchRecord): string {
-  // Map match formats to stat types
-  const mt = match.matchFormat.toLowerCase();
+  // Map match formats to stat types — handle legacy matchType field
+  const mt = (match.matchFormat || match.matchType || 'singles').toLowerCase();
   if (mt.includes('tag')) return 'tag';
   return 'singles';
 }
