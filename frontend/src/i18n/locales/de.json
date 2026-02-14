@@ -43,6 +43,7 @@
     "contenders": "Herausforderer",
     "profile": "Mein Profil",
     "groups": {
+      "core": "Liga",
       "wrestler": "Wrestler",
       "extras": "Mehr"
     }

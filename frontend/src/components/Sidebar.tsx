@@ -6,6 +6,16 @@ import { useSiteConfig } from '../contexts/SiteConfigContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import './Sidebar.css';
 
+/** Maps a user (public) path to its sub-group key */
+function getUserGroupForPath(pathname: string): string | null {
+  const core = ['/', '/championships', '/events', '/tournaments', '/contenders', '/stats'];
+  const wrestler = ['/profile', '/challenges', '/promos'];
+
+  if (core.some(p => pathname === p) || pathname.startsWith('/events/') || pathname.startsWith('/stats/') || pathname.startsWith('/contenders/')) return 'core';
+  if (wrestler.some(p => pathname === p || pathname.startsWith(p + '/'))) return 'wrestler';
+  return null;
+}
+
 /** Maps an admin path to its sub-group key */
 function getAdminGroupForPath(pathname: string): string | null {
   const matchOps = ['/admin/schedule', '/admin/results', '/admin/events', '/admin/match-config'];
@@ -28,18 +38,23 @@ export default function Sidebar() {
   const { isAuthenticated, isAdminOrModerator, isSuperAdmin, isWrestler, isFantasy, signOut } = useAuth();
   const { features } = useSiteConfig();
   const [adminExpanded, setAdminExpanded] = useState(true);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ core: true });
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const toggleGroup = useCallback((groupKey: string) => {
     setExpandedGroups(prev => ({ ...prev, [groupKey]: !prev[groupKey] }));
   }, []);
 
-  // Auto-expand admin section and the relevant sub-group when navigating to admin routes
+  // Auto-expand the relevant sub-group when navigating
   useEffect(() => {
     if (location.pathname.startsWith('/admin')) {
       setAdminExpanded(true);
       const group = getAdminGroupForPath(location.pathname);
+      if (group) {
+        setExpandedGroups(prev => ({ ...prev, [group]: true }));
+      }
+    } else {
+      const group = getUserGroupForPath(location.pathname);
       if (group) {
         setExpandedGroups(prev => ({ ...prev, [group]: true }));
       }
@@ -82,7 +97,6 @@ export default function Sidebar() {
 
   // Determine visibility of public nav groups
   const showWrestlerGroup = isWrestler || features.challenges || features.promos;
-  const showExtrasGroup = features.contenders || features.statistics || features.fantasy;
 
   // Admin sub-groups: Content & Social and Fantasy always have visible items
   // (Challenges/Promos shown as disabled, contender-config always present; fantasy-shows/config always present)
@@ -117,76 +131,96 @@ export default function Sidebar() {
 
       <nav className="sidebar-nav">
         <div className="nav-section">
-          {/* Core group - always visible, no header */}
-          <div className="nav-subgroup">
-            <Link to="/" className={isActive('/') ? 'active' : ''}>
-              {t('nav.standings')}
-            </Link>
-            <Link to="/championships" className={isActive('/championships') ? 'active' : ''}>
-              {t('nav.championships')}
-            </Link>
-            <Link to="/events" className={isActive('/events') || location.pathname.startsWith('/events/') ? 'active' : ''}>
-              {t('nav.events')}
-            </Link>
-            <Link to="/tournaments" className={isActive('/tournaments') ? 'active' : ''}>
-              {t('nav.tournaments')}
-            </Link>
+          {/* Core group - League */}
+          <div className="nav-subgroup user-nav-subgroup">
+            <button
+              type="button"
+              className="nav-subgroup-toggle user-nav-toggle"
+              onClick={() => toggleGroup('core')}
+              aria-expanded={!!expandedGroups['core']}
+            >
+              <span>{t('nav.groups.core')}</span>
+              <span className="toggle-arrow">{expandedGroups['core'] ? '\u25BE' : '\u25B8'}</span>
+            </button>
+            {expandedGroups['core'] && (
+              <div className="nav-subgroup-items user-nav-items">
+                <Link to="/" className={isActive('/') ? 'active' : ''}>
+                  {t('nav.standings')}
+                </Link>
+                <Link to="/championships" className={isActive('/championships') ? 'active' : ''}>
+                  {t('nav.championships')}
+                </Link>
+                <Link to="/events" className={isActive('/events') || location.pathname.startsWith('/events/') ? 'active' : ''}>
+                  {t('nav.events')}
+                </Link>
+                <Link to="/tournaments" className={isActive('/tournaments') ? 'active' : ''}>
+                  {t('nav.tournaments')}
+                </Link>
+                {features.contenders && (
+                  <Link to="/contenders" className={isActive('/contenders') || isActive('/contenders/my-status') ? 'active' : ''}>
+                    {t('nav.contenders')}
+                  </Link>
+                )}
+                {features.statistics && (
+                  <Link to="/stats" className={location.pathname.startsWith('/stats') ? 'active' : ''}>
+                    {t('nav.statistics')}
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Wrestler group - label + profile/challenges/promos */}
+          {/* Wrestler group - profile/challenges/promos */}
           {showWrestlerGroup && (
-            <div className="nav-subgroup">
-              <span className="nav-subgroup-label">{t('nav.groups.wrestler')}</span>
-              {isWrestler ? (
-                <Link to="/profile" className={isActive('/profile') ? 'active' : ''}>
-                  {t('nav.profile')}
-                </Link>
-              ) : (
-                <span className="nav-disabled">
-                  {t('nav.profile')} <span className="role-locked">Wrestler Only</span>
-                </span>
-              )}
-              {features.challenges && (
-                <Link to="/challenges" className={location.pathname.startsWith('/challenges') ? 'active' : ''}>
-                  {t('nav.challenges')}
-                </Link>
-              )}
-              {features.promos && (
-                <Link to="/promos" className={location.pathname.startsWith('/promos') ? 'active' : ''}>
-                  {t('nav.promos')}
-                </Link>
+            <div className="nav-subgroup user-nav-subgroup">
+              <button
+                type="button"
+                className="nav-subgroup-toggle user-nav-toggle"
+                onClick={() => toggleGroup('wrestler')}
+                aria-expanded={!!expandedGroups['wrestler']}
+              >
+                <span>{t('nav.groups.wrestler')}</span>
+                <span className="toggle-arrow">{expandedGroups['wrestler'] ? '\u25BE' : '\u25B8'}</span>
+              </button>
+              {expandedGroups['wrestler'] && (
+                <div className="nav-subgroup-items user-nav-items">
+                  {isWrestler ? (
+                    <Link to="/profile" className={isActive('/profile') ? 'active' : ''}>
+                      {t('nav.profile')}
+                    </Link>
+                  ) : (
+                    <span className="nav-disabled">
+                      {t('nav.profile')} <span className="role-locked">Wrestler Only</span>
+                    </span>
+                  )}
+                  {features.challenges && (
+                    <Link to="/challenges" className={location.pathname.startsWith('/challenges') ? 'active' : ''}>
+                      {t('nav.challenges')}
+                    </Link>
+                  )}
+                  {features.promos && (
+                    <Link to="/promos" className={location.pathname.startsWith('/promos') ? 'active' : ''}>
+                      {t('nav.promos')}
+                    </Link>
+                  )}
+                </div>
               )}
             </div>
           )}
 
-          {/* Extras group - contenders/statistics/fantasy */}
-          {showExtrasGroup && (
-            <div className="nav-subgroup">
-              <span className="nav-subgroup-label">{t('nav.groups.extras')}</span>
-              {features.contenders && (
-                <Link to="/contenders" className={isActive('/contenders') || isActive('/contenders/my-status') ? 'active' : ''}>
-                  {t('nav.contenders')}
+          {/* Fantasy - standalone */}
+          {features.fantasy && (
+            <>
+              {isFantasy ? (
+                <Link to="/fantasy" className={location.pathname.startsWith('/fantasy') ? 'active' : ''}>
+                  {t('nav.fantasy')}
                 </Link>
+              ) : (
+                <span className="nav-disabled">
+                  {t('nav.fantasy')} <span className="coming-soon">Coming Soon</span>
+                </span>
               )}
-              {features.statistics && (
-                <Link to="/stats" className={location.pathname.startsWith('/stats') ? 'active' : ''}>
-                  {t('nav.statistics')}
-                </Link>
-              )}
-              {features.fantasy && (
-                <>
-                  {isFantasy ? (
-                    <Link to="/fantasy" className={location.pathname.startsWith('/fantasy') ? 'active' : ''}>
-                      {t('nav.fantasy')}
-                    </Link>
-                  ) : (
-                    <span className="nav-disabled">
-                      {t('nav.fantasy')} <span className="coming-soon">Coming Soon</span>
-                    </span>
-                  )}
-                </>
-              )}
-            </div>
+            </>
           )}
 
           {/* Help - standalone at bottom */}
@@ -283,12 +317,12 @@ export default function Sidebar() {
                     </button>
                     {expandedGroups['contentSocial'] && (
                       <div className="nav-subgroup-items">
-                        <span className="nav-disabled admin-disabled">
+                        <Link to="/admin/challenges" className={isActive('/admin/challenges') ? 'active' : ''}>
                           {t('admin.panel.tabs.challenges')}
-                        </span>
-                        <span className="nav-disabled admin-disabled">
+                        </Link>
+                        <Link to="/admin/promos" className={isActive('/admin/promos') ? 'active' : ''}>
                           {t('admin.panel.tabs.promos')}
-                        </span>
+                        </Link>
                         <Link to="/admin/contender-config" className={isActive('/admin/contender-config') ? 'active' : ''}>
                           {t('admin.panel.tabs.contenderConfig')}
                         </Link>
