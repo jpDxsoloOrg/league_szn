@@ -22,7 +22,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return notFound('Challenge not found');
     }
 
-    if (challenge.status !== 'pending') {
+    const adminCancellableStatuses = ['pending', 'countered', 'accepted'];
+    if (isAdmin && !adminCancellableStatuses.includes(challenge.status as string)) {
+      return badRequest('Only pending, countered, or accepted challenges can be cancelled by admin');
+    }
+    if (!isAdmin && challenge.status !== 'pending') {
       return badRequest('Only pending challenges can be cancelled');
     }
 

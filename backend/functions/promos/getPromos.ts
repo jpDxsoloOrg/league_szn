@@ -4,7 +4,7 @@ import { success, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const { playerId, promoType } = event.queryStringParameters || {};
+    const { playerId, promoType, includeHidden } = event.queryStringParameters || {};
 
     let promos: Record<string, unknown>[];
 
@@ -63,7 +63,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Enrich with player context
     const enriched = promos
-      .filter((p) => !(p.isHidden as boolean))
+      .filter((p) => includeHidden === 'true' || !(p.isHidden as boolean))
       .map((p) => {
         const author = playerMap[p.playerId as string];
         const target = p.targetPlayerId ? playerMap[p.targetPlayerId as string] : undefined;

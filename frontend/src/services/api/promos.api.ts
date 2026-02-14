@@ -2,10 +2,11 @@ import type { PromoWithContext, CreatePromoInput, ReactionType } from '../../typ
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
 export const promosApi = {
-  getAll: async (filters?: { playerId?: string; promoType?: string }, signal?: AbortSignal): Promise<PromoWithContext[]> => {
+  getAll: async (filters?: { playerId?: string; promoType?: string; includeHidden?: boolean }, signal?: AbortSignal): Promise<PromoWithContext[]> => {
     const params = new URLSearchParams();
     if (filters?.playerId) params.set('playerId', filters.playerId);
     if (filters?.promoType) params.set('promoType', filters.promoType);
+    if (filters?.includeHidden) params.set('includeHidden', 'true');
     const query = params.toString();
     return fetchWithAuth(`${API_BASE_URL}/promos${query ? `?${query}` : ''}`, {}, signal);
   },
