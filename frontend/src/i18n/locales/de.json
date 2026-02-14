@@ -325,6 +325,7 @@
       "tabs": {
         "managePlayers": "Spieler verwalten",
         "divisions": "Divisionen",
+        "matchTypes": "Kampfarten",
         "scheduleMatch": "Kampf planen",
         "recordResults": "Ergebnisse eintragen",
         "championships": "Meisterschaften",
