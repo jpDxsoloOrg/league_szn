@@ -16,7 +16,7 @@ function PlayerStats() {
 
   const {
     loading, error, seasons, selectedSeasonId, setSelectedSeasonId,
-    overallStats, matchTypeStats, maxWinsAcrossTypes, championshipStats, achievements,
+    overallStats, matchTypeStats, championshipStats, achievements,
   } = usePlayerStats({ playerId: selectedPlayerId });
 
   // Load player list on mount (unique to full page)
@@ -110,7 +110,6 @@ function PlayerStats() {
         player={player}
         overallStats={overallStats}
         matchTypeStats={matchTypeStats}
-        maxWinsAcrossTypes={maxWinsAcrossTypes}
         championshipStats={championshipStats}
         achievements={achievements}
       />

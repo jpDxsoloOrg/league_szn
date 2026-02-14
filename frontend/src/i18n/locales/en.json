@@ -484,6 +484,8 @@
       "noData": "No statistics data available for this player.",
       "streaks": "Streaks & Records",
       "matchTypeBreakdown": "Match Type Breakdown",
+      "winRateByMatchType": "Win Rate by Match Type",
+      "matchCount": "{{count}} matches",
       "championshipHistory": "Championship History",
       "recentAchievements": "Recent Achievements",
       "viewAllAchievements": "View All Achievements"

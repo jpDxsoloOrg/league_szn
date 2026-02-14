@@ -484,6 +484,8 @@
       "noData": "Keine Statistikdaten für diesen Spieler verfügbar.",
       "streaks": "Serien & Rekorde",
       "matchTypeBreakdown": "Aufschlüsselung nach Kampftyp",
+      "winRateByMatchType": "Siegquote nach Kampftyp",
+      "matchCount": "{{count}} Kämpfe",
       "championshipHistory": "Meisterschafts-Historie",
       "recentAchievements": "Letzte Erfolge",
       "viewAllAchievements": "Alle Erfolge anzeigen"

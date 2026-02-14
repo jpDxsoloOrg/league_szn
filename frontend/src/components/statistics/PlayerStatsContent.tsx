@@ -8,7 +8,6 @@ interface PlayerStatsContentProps {
   player: StatsPlayer;
   overallStats: PlayerStatisticsType;
   matchTypeStats: PlayerStatisticsType[];
-  maxWinsAcrossTypes: number;
   championshipStats: (ChampionshipStats & { championshipName?: string })[];
   achievements: Achievement[];
 }
@@ -17,7 +16,6 @@ function PlayerStatsContent({
   player,
   overallStats,
   matchTypeStats,
-  maxWinsAcrossTypes,
   championshipStats,
   achievements,
 }: PlayerStatsContentProps) {
@@ -31,7 +29,6 @@ function PlayerStatsContent({
   };
 
   function renderBarChart(stat: PlayerStatisticsType) {
-    const barWidth = (stat.wins / maxWinsAcrossTypes) * 100;
     return (
       <div className="ps-bar-row" key={stat.statType}>
         <span className="ps-bar-label">
@@ -40,13 +37,13 @@ function PlayerStatsContent({
         <div className="ps-bar-track">
           <div
             className="ps-bar-fill"
-            style={{ width: `${barWidth}%` }}
+            style={{ width: `${stat.winPercentage}%` }}
           >
-            <span className="ps-bar-value">{stat.wins}W</span>
+            <span className="ps-bar-value">{stat.winPercentage.toFixed(0)}%</span>
           </div>
         </div>
-        <span className="ps-bar-record">
-          {stat.wins}-{stat.losses}-{stat.draws}
+        <span className="ps-bar-matches">
+          {t('statistics.playerStats.matchCount', { count: stat.matchesPlayed })}
         </span>
       </div>
     );
@@ -117,6 +114,7 @@ function PlayerStatsContent({
       {/* Match Type Breakdown */}
       <div className="ps-card ps-breakdown-card">
         <h3>{t('statistics.playerStats.matchTypeBreakdown')}</h3>
+        <h4 className="ps-bar-subheading">{t('statistics.playerStats.winRateByMatchType')}</h4>
         <div className="ps-bar-chart">
           {matchTypeStats.map((stat) => renderBarChart(stat))}
         </div>

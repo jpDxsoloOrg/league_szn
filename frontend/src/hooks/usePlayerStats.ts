@@ -74,10 +74,6 @@ export function usePlayerStats({ playerId }: UsePlayerStatsParams) {
     [data]
   );
 
-  const maxWinsAcrossTypes = useMemo(() => {
-    return Math.max(...matchTypeStats.map((s) => s.wins), 1);
-  }, [matchTypeStats]);
-
   return {
     data,
     loading,
@@ -89,6 +85,5 @@ export function usePlayerStats({ playerId }: UsePlayerStatsParams) {
     matchTypeStats,
     championshipStats,
     achievements,
-    maxWinsAcrossTypes,
   };
 }
