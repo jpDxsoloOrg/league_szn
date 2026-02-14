@@ -17,7 +17,7 @@ interface AuthContextType extends AuthState {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   devSignIn?: (player: { playerId: string; name: string }) => void;
-  isAdmin: boolean;
+  isAdminOrModerator: boolean;
   isSuperAdmin: boolean;
   isModerator: boolean;
   isWrestler: boolean;
@@ -200,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut: handleSignOut,
     refreshProfile,
     ...(import.meta.env.DEV ? { devSignIn } : {}),
-    isAdmin: state.groups.includes('Admin') || state.groups.includes('Moderator'),
+    isAdminOrModerator: state.groups.includes('Admin') || state.groups.includes('Moderator'),
     isSuperAdmin: state.groups.includes('Admin'),
     isModerator: state.groups.includes('Moderator'),
     isWrestler: state.groups.includes('Wrestler'),

@@ -95,7 +95,7 @@ function authenticatedAuth(overrides = {}) {
   return {
     isAuthenticated: true,
     isLoading: false,
-    isAdmin: true,
+    isAdminOrModerator: true,
     isSuperAdmin: false,
     isModerator: false,
     isWrestler: true,
@@ -116,7 +116,7 @@ function authenticatedAuth(overrides = {}) {
 function unauthenticatedAuth() {
   return authenticatedAuth({
     isAuthenticated: false,
-    isAdmin: false,
+    isAdminOrModerator: false,
     isSuperAdmin: false,
     isWrestler: false,
     isFantasy: false,

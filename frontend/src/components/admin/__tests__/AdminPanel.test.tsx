@@ -65,7 +65,7 @@ describe('AdminPanel', () => {
   it('renders the correct tab component based on URL parameter', () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: true,
-      isAdmin: true,
+      isAdminOrModerator: true,
       isSuperAdmin: false,
     });
 
@@ -77,7 +77,7 @@ describe('AdminPanel', () => {
   it('defaults to players tab when no tab parameter', () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: true,
-      isAdmin: true,
+      isAdminOrModerator: true,
       isSuperAdmin: false,
     });
 
@@ -88,7 +88,7 @@ describe('AdminPanel', () => {
   it('redirects to login when not authenticated', () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: false,
-      isAdmin: false,
+      isAdminOrModerator: false,
       isSuperAdmin: false,
     });
 
@@ -99,7 +99,7 @@ describe('AdminPanel', () => {
   it('shows access denied for non-admin authenticated users', () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: true,
-      isAdmin: false,
+      isAdminOrModerator: false,
       isSuperAdmin: false,
     });
 
@@ -111,7 +111,7 @@ describe('AdminPanel', () => {
   it('blocks non-SuperAdmin from danger zone tab', () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: true,
-      isAdmin: true,
+      isAdminOrModerator: true,
       isSuperAdmin: false,
     });
 
