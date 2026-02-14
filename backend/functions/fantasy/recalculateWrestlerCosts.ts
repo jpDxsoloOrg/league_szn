@@ -1,4 +1,4 @@
-import { APIGatewayProxyHandler } from 'aws-lambda';
+import { Handler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
@@ -105,16 +105,31 @@ export async function recalculateCosts(): Promise<void> {
   console.log(`Recalculated costs for ${updatedCount} wrestlers`);
 }
 
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: Handler = async (event) => {
   try {
-    const denied = requireRole(event, 'Admin');
-    if (denied) return denied;
+    // Async invocation (from recordResult via invokeAsync) — no requestContext
+    const isAsyncInvocation = !event.requestContext;
+
+    if (!isAsyncInvocation) {
+      const denied = requireRole(event, 'Admin');
+      if (denied) return denied;
+    }
 
     await recalculateCosts();
+
+    if (isAsyncInvocation) {
+      console.log('Async wrestler cost recalculation complete');
+      return { message: 'Wrestler costs recalculated' };
+    }
 
     return success({ message: 'Wrestler costs recalculated' });
   } catch (err) {
     console.error('Error recalculating wrestler costs:', err);
+
+    if (!event.requestContext) {
+      throw err;
+    }
+
     return serverError('Failed to recalculate wrestler costs');
   }
 };
