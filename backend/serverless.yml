@@ -28,6 +28,7 @@ provider:
     SITE_CONFIG_TABLE: ${self:service}-site-config-${self:provider.stage}
     CHALLENGES_TABLE: ${self:service}-challenges-${self:provider.stage}
     PROMOS_TABLE: ${self:service}-promos-${self:provider.stage}
+    STIPULATIONS_TABLE: ${self:service}-stipulations-${self:provider.stage}
     MATCH_TYPES_TABLE: ${self:service}-match-types-${self:provider.stage}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
@@ -71,6 +72,7 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CHALLENGES_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PROMOS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PROMOS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STIPULATIONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_TYPES_TABLE}
         - Effect: Allow
           Action:
@@ -446,7 +448,43 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Match Types (Stipulations)
+  # Stipulations
+  getStipulations:
+    handler: functions/stipulations/getStipulations.handler
+    events:
+      - http:
+          path: stipulations
+          method: get
+          cors: *corsConfig
+
+  createStipulation:
+    handler: functions/stipulations/createStipulation.handler
+    events:
+      - http:
+          path: stipulations
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  updateStipulation:
+    handler: functions/stipulations/updateStipulation.handler
+    events:
+      - http:
+          path: stipulations/{stipulationId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  deleteStipulation:
+    handler: functions/stipulations/deleteStipulation.handler
+    events:
+      - http:
+          path: stipulations/{stipulationId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  # Match Types
   getMatchTypes:
     handler: functions/matchTypes/getMatchTypes.handler
     events:
@@ -1293,6 +1331,18 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
+
+    StipulationsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.STIPULATIONS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: stipulationId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: stipulationId
+            KeyType: HASH
 
     MatchTypesTable:
       Type: AWS::DynamoDB::Table

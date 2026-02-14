@@ -68,7 +68,7 @@ function makeMatch(overrides: Record<string, unknown> = {}) {
   return {
     matchId: `m-${Math.random().toString(36).slice(2, 8)}`,
     date: '2024-06-15',
-    matchType: 'Singles',
+    matchFormat: 'Singles',
     participants: ['p1', 'p2'],
     winners: ['p1'],
     losers: ['p2'],
@@ -351,12 +351,14 @@ describe('getStatistics - achievements', () => {
     expect(ids).not.toContain('a9');
   });
 
-  it('awards Cage Master (a12) for 5+ cage match wins', async () => {
+  it('does not award Cage Master (a12) because categorization is now format-only', async () => {
+    // With format-only categorization, stipulationId no longer maps matches to the 'cage' category.
+    // All Singles-format matches are categorized as 'singles', so cage wins are always 0.
     const matches = Array.from({ length: 5 }, (_, i) =>
       makeMatch({
         matchId: `cage${i}`,
-        matchType: 'Singles',
-        stipulation: 'Steel Cage',
+        matchFormat: 'Singles',
+        stipulationId: 'stip-cage-1',
         participants: ['p1', 'p2'],
         winners: ['p1'],
         losers: ['p2'],
@@ -379,7 +381,8 @@ describe('getStatistics - achievements', () => {
     const body = JSON.parse(result!.body);
     const ids = body.achievements.map((a: any) => a.achievementId);
 
-    expect(ids).toContain('a12'); // Cage Master
+    // Cage Master cannot be earned since no matches categorize as 'cage' anymore
+    expect(ids).not.toContain('a12');
   });
 
   it('awards Deadman Walking (a13) when player wins after a 4+ loss streak', async () => {
@@ -481,9 +484,11 @@ describe('getStatistics - achievements', () => {
 describe('getStatistics - helper functions', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('categorizeMatch maps ladder stipulation correctly', async () => {
+  it('categorizeMatch maps Singles matches with stipulationId to singles (not ladder)', async () => {
+    // With format-only categorization, stipulationId does not affect the category.
+    // A Singles-format match with a ladder stipulationId is categorized as 'singles'.
     const matches = [
-      makeMatch({ matchId: 'm1', matchType: 'Singles', stipulation: 'Ladder Match', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm1', matchFormat: 'Singles', stipulationId: 'stip-ladder-1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
     mockScanAll
@@ -500,19 +505,22 @@ describe('getStatistics - helper functions', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const ladderStats = body.statistics.find((s: any) => s.statType === 'ladder');
-    expect(ladderStats.wins).toBe(1);
-    expect(ladderStats.matchesPlayed).toBe(1);
-    // Should NOT count in singles
+    // Should count in singles, not ladder
     const singlesStats = body.statistics.find((s: any) => s.statType === 'singles');
-    expect(singlesStats.matchesPlayed).toBe(0);
+    expect(singlesStats.wins).toBe(1);
+    expect(singlesStats.matchesPlayed).toBe(1);
+    const ladderStats = body.statistics.find((s: any) => s.statType === 'ladder');
+    expect(ladderStats.wins).toBe(0);
+    expect(ladderStats.matchesPlayed).toBe(0);
   });
 
-  it('categorizeMatch maps cage and hell-in-a-cell stipulations to cage', async () => {
+  it('categorizeMatch maps Singles matches with cage stipulationId to singles (not cage)', async () => {
+    // With format-only categorization, stipulationId does not affect the category.
+    // Singles-format matches with cage-related stipulationIds are categorized as 'singles'.
     const matches = [
-      makeMatch({ matchId: 'm1', matchType: 'Singles', stipulation: 'Steel Cage', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'm2', matchType: 'Singles', stipulation: 'Hell in a Cell', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'm3', matchType: 'Singles', stipulation: 'hell-in-a-cell', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm1', matchFormat: 'Singles', stipulationId: 'stip-cage-1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm2', matchFormat: 'Singles', stipulationId: 'stip-hiac-1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm3', matchFormat: 'Singles', stipulationId: 'stip-hiac-2', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
     mockScanAll
@@ -529,15 +537,19 @@ describe('getStatistics - helper functions', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
+    // Should count in singles, not cage
+    const singlesStats = body.statistics.find((s: any) => s.statType === 'singles');
+    expect(singlesStats.wins).toBe(3);
+    expect(singlesStats.matchesPlayed).toBe(3);
     const cageStats = body.statistics.find((s: any) => s.statType === 'cage');
-    expect(cageStats.wins).toBe(3);
-    expect(cageStats.matchesPlayed).toBe(3);
+    expect(cageStats.wins).toBe(0);
+    expect(cageStats.matchesPlayed).toBe(0);
   });
 
   it('categorizeMatch maps tag match type correctly', async () => {
     const matches = [
-      makeMatch({ matchId: 'm1', matchType: 'Tag Team', participants: ['p1', 'p2', 'p3'], winners: ['p1'], losers: ['p2'] }),
-      makeMatch({ matchId: 'm2', matchType: '6-Man Tag', participants: ['p1', 'p2', 'p3'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm1', matchFormat: 'Tag Team', participants: ['p1', 'p2', 'p3'], winners: ['p1'], losers: ['p2'] }),
+      makeMatch({ matchId: 'm2', matchFormat: '6-Man Tag', participants: ['p1', 'p2', 'p3'], winners: ['p1'], losers: ['p2'] }),
     ];
 
     mockScanAll

@@ -5,11 +5,13 @@ import { BrowserRouter } from 'react-router-dom';
 import type { ChallengeWithPlayers } from '../../../types/challenge';
 
 // --- Hoisted mocks ---
-const { mockGetById, mockRespond, mockCancel, mockGetMyProfile } = vi.hoisted(() => ({
+const { mockGetById, mockRespond, mockCancel, mockGetMyProfile, mockGetAllStipulations, mockGetAllMatchTypes } = vi.hoisted(() => ({
   mockGetById: vi.fn(),
   mockRespond: vi.fn(),
   mockCancel: vi.fn(),
   mockGetMyProfile: vi.fn(),
+  mockGetAllStipulations: vi.fn(),
+  mockGetAllMatchTypes: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -19,6 +21,8 @@ vi.mock('../../../services/api', () => ({
     cancel: mockCancel,
   },
   profileApi: { getMyProfile: mockGetMyProfile },
+  stipulationsApi: { getAll: mockGetAllStipulations },
+  matchTypesApi: { getAll: mockGetAllMatchTypes },
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -57,6 +61,7 @@ vi.mock('react-i18next', () => ({
         'challenges.issue.message': 'Message',
         'challenges.issue.messagePlaceholder': 'Say something...',
         'challenges.issue.submit': 'Submit',
+        'common.none': 'None',
         'common.loading': 'Loading...',
         'common.cancel': 'Cancel',
         'common.submitting': 'Submitting...',
@@ -108,6 +113,14 @@ function renderDetail() {
 describe('ChallengeDetail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetAllStipulations.mockResolvedValue([
+      { stipulationId: 'stip-1', name: 'Steel Cage', createdAt: '', updatedAt: '' },
+      { stipulationId: 'stip-2', name: 'Ladder', createdAt: '', updatedAt: '' },
+    ]);
+    mockGetAllMatchTypes.mockResolvedValue([
+      { matchTypeId: 'mt-1', name: 'Singles', createdAt: '', updatedAt: '' },
+      { matchTypeId: 'mt-2', name: 'Tag Team', createdAt: '', updatedAt: '' },
+    ]);
   });
 
   it('renders challenge details: match type, stipulation, players, message', async () => {

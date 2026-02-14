@@ -197,7 +197,7 @@ export default function ShowResults() {
                 className={`match-card ${hasPickedWinner ? 'picked-winner' : ''} ${hasPickedLoser ? 'picked-loser' : ''}`}
               >
                 <div className="match-header">
-                  <span className="match-type">{match.matchType}</span>
+                  <span className="match-type">{match.matchFormat}</span>
                   {match.isChampionship && (
                     <span className="championship-badge">
                       {match.championshipName || t('fantasy.results.championship')}

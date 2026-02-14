@@ -10,6 +10,7 @@ const {
   mockGetAllTournaments,
   mockGetAllSeasons,
   mockGetAllEvents,
+  mockGetAllStipulations,
   mockGetAllMatchTypes,
   mockScheduleMatch,
 } = vi.hoisted(() => ({
@@ -18,6 +19,7 @@ const {
   mockGetAllTournaments: vi.fn(),
   mockGetAllSeasons: vi.fn(),
   mockGetAllEvents: vi.fn(),
+  mockGetAllStipulations: vi.fn(),
   mockGetAllMatchTypes: vi.fn(),
   mockScheduleMatch: vi.fn(),
 }));
@@ -29,6 +31,7 @@ vi.mock('../../../services/api', () => ({
   tournamentsApi: { getAll: mockGetAllTournaments },
   seasonsApi: { getAll: mockGetAllSeasons },
   eventsApi: { getAll: mockGetAllEvents },
+  stipulationsApi: { getAll: mockGetAllStipulations },
   matchTypesApi: { getAll: mockGetAllMatchTypes },
 }));
 
@@ -37,12 +40,7 @@ vi.mock('react-i18next', () => ({
     t: (key: string, fallback?: string) => {
       const translations: Record<string, string> = {
         'scheduleMatch.matchFormat': 'Match Format',
-        'scheduleMatch.matchFormats.singles': 'Singles',
-        'scheduleMatch.matchFormats.tag': 'Tag Team',
-        'scheduleMatch.matchFormats.tripleThread': 'Triple Threat',
-        'scheduleMatch.matchFormats.fatal4Way': 'Fatal 4-Way',
-        'scheduleMatch.matchFormats.sixPack': 'Six Pack Challenge',
-        'scheduleMatch.matchFormats.battleRoyal': 'Battle Royal',
+        'scheduleMatch.selectMatchFormat': 'Select Match Format',
         'scheduleMatch.stipulation': 'Stipulation (Optional)',
         'scheduleMatch.noStipulation': 'Standard Match (No Stipulation)',
         'scheduleMatch.participants': 'Participants',
@@ -103,9 +101,16 @@ const mockEvents = [
   { eventId: 'e1', name: 'WrestleMania', eventType: 'ppv', date: '2024-07-01T00:00:00Z', status: 'upcoming', matchCards: [], createdAt: '2024-01-01', updatedAt: '2024-01-01' },
 ];
 
+const mockStipulations = [
+  { stipulationId: 'mt1', name: 'Ladder Match', description: 'Climb the ladder to retrieve the prize', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+  { stipulationId: 'mt2', name: 'Steel Cage', description: 'Escape or pin to win', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+];
+
 const mockMatchTypes = [
-  { matchTypeId: 'mt1', name: 'Ladder Match', description: 'Climb the ladder to retrieve the prize', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
-  { matchTypeId: 'mt2', name: 'Steel Cage', description: 'Escape or pin to win', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+  { matchTypeId: 'mf1', name: 'Singles', description: 'One-on-one match', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+  { matchTypeId: 'mf2', name: 'Tag Team', description: 'Team-based match', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+  { matchTypeId: 'mf3', name: 'Triple Threat', description: 'Three competitors', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+  { matchTypeId: 'mf4', name: 'Fatal 4-Way', description: 'Four competitors', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
 ];
 
 function setupDefaultMocks() {
@@ -114,6 +119,7 @@ function setupDefaultMocks() {
   mockGetAllTournaments.mockResolvedValue(mockTournaments);
   mockGetAllSeasons.mockResolvedValue(mockSeasons);
   mockGetAllEvents.mockResolvedValue(mockEvents);
+  mockGetAllStipulations.mockResolvedValue(mockStipulations);
   mockGetAllMatchTypes.mockResolvedValue(mockMatchTypes);
 }
 
@@ -136,6 +142,7 @@ describe('ScheduleMatch', () => {
     mockGetAllTournaments.mockReturnValue(new Promise(() => {}));
     mockGetAllSeasons.mockReturnValue(new Promise(() => {}));
     mockGetAllEvents.mockReturnValue(new Promise(() => {}));
+    mockGetAllStipulations.mockReturnValue(new Promise(() => {}));
     mockGetAllMatchTypes.mockReturnValue(new Promise(() => {}));
 
     renderScheduleMatch();
@@ -158,7 +165,7 @@ describe('ScheduleMatch', () => {
     expect(matchFormatSelect).toBeInTheDocument();
     expect(screen.getByText('Singles')).toBeInTheDocument();
 
-    // Stipulation dropdown is present with match types from API
+    // Stipulation dropdown is present with stipulations from API
     const stipulationSelect = screen.getByLabelText('Stipulation (Optional)');
     expect(stipulationSelect).toBeInTheDocument();
     expect(screen.getByText('Standard Match (No Stipulation)')).toBeInTheDocument();
@@ -183,7 +190,7 @@ describe('ScheduleMatch', () => {
     expect(seasonSelect).toHaveValue('s1');
   });
 
-  it('loads players, championships, tournaments, seasons, events, and match types on mount', async () => {
+  it('loads players, championships, tournaments, seasons, events, stipulations, and match types on mount', async () => {
     setupDefaultMocks();
 
     renderScheduleMatch();
@@ -197,6 +204,7 @@ describe('ScheduleMatch', () => {
     expect(mockGetAllTournaments).toHaveBeenCalledTimes(1);
     expect(mockGetAllSeasons).toHaveBeenCalledTimes(1);
     expect(mockGetAllEvents).toHaveBeenCalledTimes(1);
+    expect(mockGetAllStipulations).toHaveBeenCalledTimes(1);
     expect(mockGetAllMatchTypes).toHaveBeenCalledTimes(1);
   });
 
@@ -210,8 +218,8 @@ describe('ScheduleMatch', () => {
       expect(screen.getByLabelText('Match Format')).toBeInTheDocument();
     });
 
-    // Change to tag team
-    await user.selectOptions(screen.getByLabelText('Match Format'), 'tag');
+    // Change to tag team (value is now the match type name from DB)
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Tag Team');
 
     // Tag team UI elements appear
     expect(screen.getByText('Select Teams')).toBeInTheDocument();
@@ -234,6 +242,9 @@ describe('ScheduleMatch', () => {
       expect(screen.getByText('John Cena')).toBeInTheDocument();
     });
 
+    // Select match format (no longer defaults to singles)
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+
     // Click participant cards to select two players
     await user.click(screen.getByText('John Cena').closest('.participant-card')!);
     await user.click(screen.getByText('Dwayne Johnson').closest('.participant-card')!);
@@ -248,8 +259,8 @@ describe('ScheduleMatch', () => {
       expect(mockScheduleMatch).toHaveBeenCalledTimes(1);
     });
 
-    const callArg = mockScheduleMatch.mock.calls[0][0];
-    expect(callArg.matchFormat).toBe('singles');
+    const callArg = mockScheduleMatch.mock.calls[0]![0];
+    expect(callArg.matchFormat).toBe('Singles');
     expect(callArg.participants).toEqual(['p1', 'p2']);
     expect(callArg.status).toBe('scheduled');
     expect(callArg.seasonId).toBe('s1');
@@ -264,6 +275,9 @@ describe('ScheduleMatch', () => {
     await waitFor(() => {
       expect(screen.getByText('John Cena')).toBeInTheDocument();
     });
+
+    // Select match format first (no longer defaults to singles)
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
 
     // Select only one participant
     await user.click(screen.getByText('John Cena').closest('.participant-card')!);

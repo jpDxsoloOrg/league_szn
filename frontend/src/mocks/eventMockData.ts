@@ -178,7 +178,7 @@ export const mockEvents: LeagueEvent[] = [
 const wrestleManiaMatches: Record<string, EnrichedMatchData> = {
   'match-wm-001': {
     matchId: 'match-wm-001',
-    matchType: 'singles',
+    matchFormat: 'singles',
     participants: [
       { playerId: 'p-alex', playerName: 'Alex', wrestlerName: 'CM Punk' },
       { playerId: 'p-ryan', playerName: 'Ryan', wrestlerName: 'John Cena' },
@@ -190,7 +190,7 @@ const wrestleManiaMatches: Record<string, EnrichedMatchData> = {
   },
   'match-wm-002': {
     matchId: 'match-wm-002',
-    matchType: 'tag',
+    matchFormat: 'tag',
     participants: [
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
       { playerId: 'p-dave', playerName: 'Dave', wrestlerName: 'Undertaker' },
@@ -204,8 +204,8 @@ const wrestleManiaMatches: Record<string, EnrichedMatchData> = {
   },
   'match-wm-003': {
     matchId: 'match-wm-003',
-    matchType: 'triple-threat',
-    stipulation: 'Ladder Match',
+    matchFormat: 'triple-threat',
+    stipulationName: 'Ladder Match',
     participants: [
       { playerId: 'p-chris', playerName: 'Chris', wrestlerName: 'Triple H' },
       { playerId: 'p-alex', playerName: 'Alex', wrestlerName: 'CM Punk' },
@@ -218,7 +218,7 @@ const wrestleManiaMatches: Record<string, EnrichedMatchData> = {
   },
   'match-wm-004': {
     matchId: 'match-wm-004',
-    matchType: 'singles',
+    matchFormat: 'singles',
     participants: [
       { playerId: 'p-dave', playerName: 'Dave', wrestlerName: 'Undertaker' },
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },
@@ -231,8 +231,8 @@ const wrestleManiaMatches: Record<string, EnrichedMatchData> = {
   },
   'match-wm-005': {
     matchId: 'match-wm-005',
-    matchType: 'singles',
-    stipulation: 'Hell in a Cell',
+    matchFormat: 'singles',
+    stipulationName: 'Hell in a Cell',
     participants: [
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },
       { playerId: 'p-chris', playerName: 'Chris', wrestlerName: 'Triple H' },
@@ -245,7 +245,7 @@ const wrestleManiaMatches: Record<string, EnrichedMatchData> = {
   },
   'match-wm-006': {
     matchId: 'match-wm-006',
-    matchType: 'singles',
+    matchFormat: 'singles',
     participants: [
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },
@@ -261,7 +261,7 @@ const wrestleManiaMatches: Record<string, EnrichedMatchData> = {
 const royalRumbleMatches: Record<string, EnrichedMatchData> = {
   'match-rr-001': {
     matchId: 'match-rr-001',
-    matchType: 'singles',
+    matchFormat: 'singles',
     participants: [
       { playerId: 'p-alex', playerName: 'Alex', wrestlerName: 'CM Punk' },
       { playerId: 'p-dave', playerName: 'Dave', wrestlerName: 'Undertaker' },
@@ -273,7 +273,7 @@ const royalRumbleMatches: Record<string, EnrichedMatchData> = {
   },
   'match-rr-002': {
     matchId: 'match-rr-002',
-    matchType: 'singles',
+    matchFormat: 'singles',
     participants: [
       { playerId: 'p-chris', playerName: 'Chris', wrestlerName: 'Triple H' },
       { playerId: 'p-ryan', playerName: 'Ryan', wrestlerName: 'John Cena' },
@@ -286,7 +286,7 @@ const royalRumbleMatches: Record<string, EnrichedMatchData> = {
   },
   'match-rr-003': {
     matchId: 'match-rr-003',
-    matchType: 'tag',
+    matchFormat: 'tag',
     participants: [
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },
@@ -300,8 +300,8 @@ const royalRumbleMatches: Record<string, EnrichedMatchData> = {
   },
   'match-rr-004': {
     matchId: 'match-rr-004',
-    matchType: 'singles',
-    stipulation: 'Steel Cage',
+    matchFormat: 'singles',
+    stipulationName: 'Steel Cage',
     participants: [
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },
       { playerId: 'p-dave', playerName: 'Dave', wrestlerName: 'Undertaker' },
@@ -313,8 +313,8 @@ const royalRumbleMatches: Record<string, EnrichedMatchData> = {
   },
   'match-rr-005': {
     matchId: 'match-rr-005',
-    matchType: 'battle-royal',
-    stipulation: 'Royal Rumble Match',
+    matchFormat: 'battle-royal',
+    stipulationName: 'Royal Rumble Match',
     participants: [
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },
@@ -333,7 +333,7 @@ const royalRumbleMatches: Record<string, EnrichedMatchData> = {
 const rawEp1Matches: Record<string, EnrichedMatchData> = {
   'match-raw1-001': {
     matchId: 'match-raw1-001',
-    matchType: 'singles',
+    matchFormat: 'singles',
     participants: [
       { playerId: 'p-alex', playerName: 'Alex', wrestlerName: 'CM Punk' },
       { playerId: 'p-chris', playerName: 'Chris', wrestlerName: 'Triple H' },
@@ -345,7 +345,7 @@ const rawEp1Matches: Record<string, EnrichedMatchData> = {
   },
   'match-raw1-002': {
     matchId: 'match-raw1-002',
-    matchType: 'singles',
+    matchFormat: 'singles',
     participants: [
       { playerId: 'p-dave', playerName: 'Dave', wrestlerName: 'Undertaker' },
       { playerId: 'p-ryan', playerName: 'Ryan', wrestlerName: 'John Cena' },
@@ -357,8 +357,8 @@ const rawEp1Matches: Record<string, EnrichedMatchData> = {
   },
   'match-raw1-003': {
     matchId: 'match-raw1-003',
-    matchType: 'singles',
-    stipulation: 'No Disqualification',
+    matchFormat: 'singles',
+    stipulationName: 'No Disqualification',
     participants: [
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },
@@ -374,7 +374,7 @@ const rawEp1Matches: Record<string, EnrichedMatchData> = {
 const rawEp2Matches: Record<string, EnrichedMatchData> = {
   'match-raw2-001': {
     matchId: 'match-raw2-001',
-    matchType: 'tag',
+    matchFormat: 'tag',
     participants: [
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
       { playerId: 'p-alex', playerName: 'Alex', wrestlerName: 'CM Punk' },
@@ -388,7 +388,7 @@ const rawEp2Matches: Record<string, EnrichedMatchData> = {
   },
   'match-raw2-002': {
     matchId: 'match-raw2-002',
-    matchType: 'singles',
+    matchFormat: 'singles',
     participants: [
       { playerId: 'p-ryan', playerName: 'Ryan', wrestlerName: 'John Cena' },
       { playerId: 'p-dave', playerName: 'Dave', wrestlerName: 'Undertaker' },
@@ -400,7 +400,7 @@ const rawEp2Matches: Record<string, EnrichedMatchData> = {
   },
   'match-raw2-003': {
     matchId: 'match-raw2-003',
-    matchType: 'singles',
+    matchFormat: 'singles',
     participants: [
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
       { playerId: 'p-chris', playerName: 'Chris', wrestlerName: 'Triple H' },
@@ -417,7 +417,7 @@ const rawEp2Matches: Record<string, EnrichedMatchData> = {
 const rawEp3Matches: Record<string, EnrichedMatchData> = {
   'match-raw3-001': {
     matchId: 'match-raw3-001',
-    matchType: 'singles',
+    matchFormat: 'singles',
     participants: [
       { playerId: 'p-alex', playerName: 'Alex', wrestlerName: 'CM Punk' },
       { playerId: 'p-ryan', playerName: 'Ryan', wrestlerName: 'John Cena' },
@@ -427,7 +427,7 @@ const rawEp3Matches: Record<string, EnrichedMatchData> = {
   },
   'match-raw3-002': {
     matchId: 'match-raw3-002',
-    matchType: 'triple-threat',
+    matchFormat: 'triple-threat',
     participants: [
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },
       { playerId: 'p-dave', playerName: 'Dave', wrestlerName: 'Undertaker' },
@@ -438,8 +438,8 @@ const rawEp3Matches: Record<string, EnrichedMatchData> = {
   },
   'match-raw3-003': {
     matchId: 'match-raw3-003',
-    matchType: 'singles',
-    stipulation: 'Last Man Standing',
+    matchFormat: 'singles',
+    stipulationName: 'Last Man Standing',
     participants: [
       { playerId: 'p-chris', playerName: 'Chris', wrestlerName: 'Triple H' },
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
@@ -453,7 +453,7 @@ const rawEp3Matches: Record<string, EnrichedMatchData> = {
 const nxtMatches: Record<string, EnrichedMatchData> = {
   'match-nxt-001': {
     matchId: 'match-nxt-001',
-    matchType: 'singles',
+    matchFormat: 'singles',
     participants: [
       { playerId: 'p-alex', playerName: 'Alex', wrestlerName: 'CM Punk' },
       { playerId: 'p-ryan', playerName: 'Ryan', wrestlerName: 'John Cena' },
@@ -463,7 +463,7 @@ const nxtMatches: Record<string, EnrichedMatchData> = {
   },
   'match-nxt-002': {
     matchId: 'match-nxt-002',
-    matchType: 'tag',
+    matchFormat: 'tag',
     participants: [
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
       { playerId: 'p-dave', playerName: 'Dave', wrestlerName: 'Undertaker' },
@@ -475,7 +475,7 @@ const nxtMatches: Record<string, EnrichedMatchData> = {
   },
   'match-nxt-003': {
     matchId: 'match-nxt-003',
-    matchType: 'singles',
+    matchFormat: 'singles',
     participants: [
       { playerId: 'p-dave', playerName: 'Dave', wrestlerName: 'Undertaker' },
       { playerId: 'p-chris', playerName: 'Chris', wrestlerName: 'Triple H' },
@@ -486,8 +486,8 @@ const nxtMatches: Record<string, EnrichedMatchData> = {
   },
   'match-nxt-004': {
     matchId: 'match-nxt-004',
-    matchType: 'singles',
-    stipulation: 'Iron Man Match (30 min)',
+    matchFormat: 'singles',
+    stipulationName: 'Iron Man Match (30 min)',
     participants: [
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },
@@ -501,7 +501,7 @@ const nxtMatches: Record<string, EnrichedMatchData> = {
 const houseShowMatches: Record<string, EnrichedMatchData> = {
   'match-house-001': {
     matchId: 'match-house-001',
-    matchType: 'singles',
+    matchFormat: 'singles',
     participants: [
       { playerId: 'p-alex', playerName: 'Alex', wrestlerName: 'CM Punk' },
       { playerId: 'p-dave', playerName: 'Dave', wrestlerName: 'Undertaker' },
@@ -511,7 +511,7 @@ const houseShowMatches: Record<string, EnrichedMatchData> = {
   },
   'match-house-002': {
     matchId: 'match-house-002',
-    matchType: 'tag',
+    matchFormat: 'tag',
     participants: [
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
       { playerId: 'p-ryan', playerName: 'Ryan', wrestlerName: 'John Cena' },
@@ -523,7 +523,7 @@ const houseShowMatches: Record<string, EnrichedMatchData> = {
   },
   'match-house-003': {
     matchId: 'match-house-003',
-    matchType: 'singles',
+    matchFormat: 'singles',
     participants: [
       { playerId: 'p-john', playerName: 'John', wrestlerName: 'Stone Cold' },
       { playerId: 'p-mike', playerName: 'Mike', wrestlerName: 'The Rock' },
@@ -588,37 +588,37 @@ export const mockAvailableMatches = [
   {
     matchId: 'avail-match-001',
     label: 'Stone Cold vs The Rock (Singles)',
-    matchType: 'singles',
+    matchFormat: 'singles',
     isChampionship: false,
   },
   {
     matchId: 'avail-match-002',
     label: 'Triple H vs CM Punk (Singles - IC Title)',
-    matchType: 'singles',
+    matchFormat: 'singles',
     isChampionship: true,
   },
   {
     matchId: 'avail-match-003',
     label: 'Undertaker vs John Cena (Singles)',
-    matchType: 'singles',
+    matchFormat: 'singles',
     isChampionship: false,
   },
   {
     matchId: 'avail-match-004',
     label: 'Stone Cold & Undertaker vs Rock & Triple H (Tag)',
-    matchType: 'tag',
+    matchFormat: 'tag',
     isChampionship: false,
   },
   {
     matchId: 'avail-match-005',
     label: 'CM Punk vs John Cena vs Triple H (Triple Threat - WWE Title)',
-    matchType: 'triple-threat',
+    matchFormat: 'triple-threat',
     isChampionship: true,
   },
   {
     matchId: 'avail-match-006',
     label: 'Undertaker vs The Rock (Singles - World Title)',
-    matchType: 'singles',
+    matchFormat: 'singles',
     isChampionship: true,
   },
 ];

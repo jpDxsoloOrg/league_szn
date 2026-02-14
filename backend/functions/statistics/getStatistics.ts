@@ -5,8 +5,9 @@ import { success, badRequest, serverError } from '../../lib/response';
 interface MatchRecord {
   matchId: string;
   date: string;
-  matchType: string;
-  stipulation?: string;
+  matchFormat?: string;
+  matchType?: string; // legacy field name in existing DB records
+  stipulationId?: string;
   participants: string[];
   teams?: string[][];
   winners?: string[];
@@ -46,14 +47,8 @@ interface ChampionshipRecord {
 }
 
 function categorizeMatch(match: MatchRecord): string {
-  // Map stipulations to stat types
-  if (match.stipulation) {
-    const stip = match.stipulation.toLowerCase();
-    if (stip.includes('ladder')) return 'ladder';
-    if (stip.includes('cage') || stip.includes('hell in a cell') || stip.includes('hell-in-a-cell')) return 'cage';
-  }
-  // Map match types
-  const mt = match.matchType.toLowerCase();
+  // Map match formats to stat types — handle legacy matchType field
+  const mt = (match.matchFormat || match.matchType || 'singles').toLowerCase();
   if (mt.includes('tag')) return 'tag';
   return 'singles';
 }

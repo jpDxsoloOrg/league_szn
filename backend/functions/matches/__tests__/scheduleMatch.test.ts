@@ -28,6 +28,7 @@ vi.mock('../../../lib/dynamodb', () => ({
     TOURNAMENTS: 'Tournaments',
     SEASONS: 'Seasons',
     EVENTS: 'Events',
+    STIPULATIONS: 'Stipulations',
   },
 }));
 
@@ -54,7 +55,7 @@ function ev(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent
 
 function validBody(overrides: Record<string, unknown> = {}) {
   return JSON.stringify({
-    matchType: 'Singles', participants: ['p1', 'p2'],
+    matchFormat: 'Singles', participants: ['p1', 'p2'],
     isChampionship: false, date: '2024-06-01T00:00:00Z', ...overrides,
   });
 }
@@ -71,18 +72,18 @@ describe('scheduleMatch', () => {
     expect(r!.statusCode).toBe(201);
     const b = JSON.parse(r!.body);
     expect(b.matchId).toBe('test-uuid-match');
-    expect(b.matchType).toBe('Singles');
+    expect(b.matchFormat).toBe('Singles');
     expect(b.participants).toEqual(['p1', 'p2']);
     expect(b.status).toBe('scheduled');
     expect(mockPut).toHaveBeenCalledOnce();
   });
 
-  it('sets stipulation to empty string when not provided', async () => {
+  it('sets stipulationId to undefined when not provided', async () => {
     mockGet.mockResolvedValue({ Item: { playerId: 'p1' } });
     mockPut.mockResolvedValue({});
-    const r = await scheduleMatch(ev({ body: validBody({ stipulation: undefined }) }), ctx, cb);
+    const r = await scheduleMatch(ev({ body: validBody({ stipulationId: undefined }) }), ctx, cb);
     expect(r!.statusCode).toBe(201);
-    expect(JSON.parse(r!.body).stipulation).toBe('');
+    expect(JSON.parse(r!.body).stipulationId).toBeUndefined();
   });
 
   it('returns 400 when body is null', async () => {
@@ -97,17 +98,17 @@ describe('scheduleMatch', () => {
     expect(JSON.parse(r!.body).message).toBe('Invalid JSON in request body');
   });
 
-  it('returns 400 when matchType is missing', async () => {
+  it('returns 400 when matchFormat is missing', async () => {
     const r = await scheduleMatch(ev({
       body: JSON.stringify({ participants: ['p1', 'p2'], isChampionship: false }),
     }), ctx, cb);
     expect(r!.statusCode).toBe(400);
-    expect(JSON.parse(r!.body).message).toContain('matchType');
+    expect(JSON.parse(r!.body).message).toContain('matchFormat');
   });
 
   it('returns 400 when fewer than 2 participants', async () => {
     const r = await scheduleMatch(ev({
-      body: JSON.stringify({ matchType: 'Singles', participants: ['p1'], isChampionship: false }),
+      body: JSON.stringify({ matchFormat: 'Singles', participants: ['p1'], isChampionship: false }),
     }), ctx, cb);
     expect(r!.statusCode).toBe(400);
     expect(JSON.parse(r!.body).message).toContain('at least 2 participants');
@@ -210,7 +211,7 @@ describe('scheduleMatch', () => {
     mockPut.mockResolvedValue({});
     mockUpdate.mockResolvedValue({});
     const r = await scheduleMatch(ev({
-      body: JSON.stringify({ matchType: 'Singles', participants: ['p1', 'p2'], isChampionship: false, eventId: 'e1' }),
+      body: JSON.stringify({ matchFormat: 'Singles', participants: ['p1', 'p2'], isChampionship: false, eventId: 'e1' }),
     }), ctx, cb);
     expect(r!.statusCode).toBe(201);
     expect(JSON.parse(r!.body).date).toBe('2024-07-04T00:00:00Z');

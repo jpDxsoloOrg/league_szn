@@ -325,7 +325,8 @@
       "tabs": {
         "managePlayers": "Manage Players",
         "divisions": "Divisions",
-        "matchTypes": "Match Types",
+        "stipulations": "Stipulations",
+        "matchConfig": "Match Config",
         "scheduleMatch": "Schedule Match",
         "recordResults": "Record Results",
         "championships": "Championships",

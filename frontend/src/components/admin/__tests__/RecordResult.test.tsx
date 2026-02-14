@@ -4,11 +4,12 @@ import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockGetAllMatches, mockGetAllPlayers, mockGetAllEvents, mockRecordResult } = vi.hoisted(() => ({
+const { mockGetAllMatches, mockGetAllPlayers, mockGetAllEvents, mockRecordResult, mockGetAllStipulations } = vi.hoisted(() => ({
   mockGetAllMatches: vi.fn(),
   mockGetAllPlayers: vi.fn(),
   mockGetAllEvents: vi.fn(),
   mockRecordResult: vi.fn(),
+  mockGetAllStipulations: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -18,6 +19,7 @@ vi.mock('../../../services/api', () => ({
   },
   playersApi: { getAll: mockGetAllPlayers },
   eventsApi: { getAll: mockGetAllEvents },
+  stipulationsApi: { getAll: mockGetAllStipulations },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -60,7 +62,7 @@ const mockPlayers = [
 const singlesMatch = {
   matchId: 'm1',
   date: '2024-06-15T20:00:00Z',
-  matchType: 'singles',
+  matchFormat: 'singles',
   participants: ['p1', 'p2'],
   isChampionship: false,
   status: 'scheduled' as const,
@@ -70,7 +72,7 @@ const singlesMatch = {
 const tagMatch = {
   matchId: 'm2',
   date: '2024-06-16T20:00:00Z',
-  matchType: 'tag',
+  matchFormat: 'tag',
   participants: ['p1', 'p2', 'p3', 'p4'],
   teams: [['p1', 'p2'], ['p3', 'p4']],
   isChampionship: false,
@@ -81,8 +83,8 @@ const tagMatch = {
 const matchForEvent = {
   matchId: 'm3',
   date: '2024-07-01T20:00:00Z',
-  matchType: 'singles',
-  stipulation: 'Steel Cage',
+  matchFormat: 'singles',
+  stipulationId: 'stip-1',
   participants: ['p3', 'p4'],
   isChampionship: true,
   status: 'scheduled' as const,
@@ -106,6 +108,10 @@ function setupDefaultMocks() {
   mockGetAllMatches.mockResolvedValue([singlesMatch, tagMatch, matchForEvent]);
   mockGetAllPlayers.mockResolvedValue(mockPlayers);
   mockGetAllEvents.mockResolvedValue(mockEvents);
+  mockGetAllStipulations.mockResolvedValue([
+    { stipulationId: 'stip-1', name: 'Steel Cage', createdAt: '', updatedAt: '' },
+    { stipulationId: 'stip-2', name: 'Ladder', createdAt: '', updatedAt: '' },
+  ]);
 }
 
 function renderRecordResult() {
@@ -125,6 +131,7 @@ describe('RecordResult', () => {
     mockGetAllMatches.mockReturnValue(new Promise(() => {}));
     mockGetAllPlayers.mockReturnValue(new Promise(() => {}));
     mockGetAllEvents.mockReturnValue(new Promise(() => {}));
+    mockGetAllStipulations.mockReturnValue(new Promise(() => {}));
 
     renderRecordResult();
 
@@ -153,6 +160,7 @@ describe('RecordResult', () => {
     mockGetAllMatches.mockResolvedValue([singlesMatch]);
     mockGetAllPlayers.mockResolvedValue(mockPlayers);
     mockGetAllEvents.mockResolvedValue([]);
+    mockGetAllStipulations.mockResolvedValue([]);
 
     renderRecordResult();
 
@@ -184,6 +192,7 @@ describe('RecordResult', () => {
     mockGetAllMatches.mockResolvedValue([singlesMatch]);
     mockGetAllPlayers.mockResolvedValue(mockPlayers);
     mockGetAllEvents.mockResolvedValue([]);
+    mockGetAllStipulations.mockResolvedValue([]);
     mockRecordResult.mockResolvedValue({ ...singlesMatch, status: 'completed', winners: ['p1'], losers: ['p2'] });
     // After recording, reload returns empty (match no longer scheduled)
     mockGetAllMatches.mockResolvedValueOnce([singlesMatch]).mockResolvedValueOnce([]);
@@ -231,6 +240,7 @@ describe('RecordResult', () => {
     mockGetAllMatches.mockResolvedValue([singlesMatch]);
     mockGetAllPlayers.mockResolvedValue(mockPlayers);
     mockGetAllEvents.mockResolvedValue([]);
+    mockGetAllStipulations.mockResolvedValue([]);
     mockRecordResult.mockRejectedValue(new Error('Server error'));
 
     renderRecordResult();

@@ -1,4 +1,5 @@
 import type { ChallengeWithPlayers } from '../types/challenge';
+import type { Stipulation } from '../types';
 
 // Mock players for opponent selector and challenge data
 export const mockChallengePlayers = [
@@ -278,12 +279,11 @@ export const matchTypes = [
   'Battle Royal',
 ];
 
-export const stipulations = [
-  'None',
-  'Steel Cage',
-  'Ladder',
-  'Hell in a Cell',
-  'Last Man Standing',
-  'Iron Man',
-  'Tables',
+export const stipulations: Stipulation[] = [
+  { stipulationId: 'stip-001', name: 'Steel Cage', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
+  { stipulationId: 'stip-002', name: 'Ladder', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
+  { stipulationId: 'stip-003', name: 'Hell in a Cell', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
+  { stipulationId: 'stip-004', name: 'Last Man Standing', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
+  { stipulationId: 'stip-005', name: 'Iron Man', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
+  { stipulationId: 'stip-006', name: 'Tables', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
 ];

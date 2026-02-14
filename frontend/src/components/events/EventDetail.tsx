@@ -247,8 +247,9 @@ interface MatchEntryProps {
     notes?: string;
     matchData: {
       matchId: string;
-      matchType: string;
-      stipulation?: string;
+      matchFormat: string;
+      stipulationId?: string;
+      stipulationName?: string;
       participants: {
         playerId: string;
         playerName: string;
@@ -280,8 +281,8 @@ function MatchEntry({ match, isCompleted, t }: MatchEntryProps) {
           {t(designationLabels[designation])}
         </span>
         <span className="match-type-label">
-          {matchData.matchType}
-          {matchData.stipulation && ` - ${matchData.stipulation}`}
+          {matchData.matchFormat}
+          {matchData.stipulationName && ` - ${matchData.stipulationName}`}
         </span>
         {matchData.isChampionship && (
           <span className="match-championship-badge">

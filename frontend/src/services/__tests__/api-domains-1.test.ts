@@ -121,7 +121,7 @@ describe('matchesApi', () => {
 
   it('schedule calls POST /matches with body', async () => {
     const match = {
-      matchType: 'singles',
+      matchFormat: 'singles',
       participants: ['p1', 'p2'],
       status: 'scheduled',
     };

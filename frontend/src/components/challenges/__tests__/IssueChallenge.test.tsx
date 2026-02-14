@@ -5,16 +5,20 @@ import { BrowserRouter } from 'react-router-dom';
 import type { Player } from '../../../types';
 
 // --- Hoisted mocks ---
-const { mockGetAllPlayers, mockGetMyProfile, mockCreateChallenge } = vi.hoisted(() => ({
+const { mockGetAllPlayers, mockGetMyProfile, mockCreateChallenge, mockGetAllStipulations, mockGetAllMatchTypes } = vi.hoisted(() => ({
   mockGetAllPlayers: vi.fn(),
   mockGetMyProfile: vi.fn(),
   mockCreateChallenge: vi.fn(),
+  mockGetAllStipulations: vi.fn(),
+  mockGetAllMatchTypes: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
   playersApi: { getAll: mockGetAllPlayers },
   profileApi: { getMyProfile: mockGetMyProfile },
   challengesApi: { create: mockCreateChallenge },
+  stipulationsApi: { getAll: mockGetAllStipulations },
+  matchTypesApi: { getAll: mockGetAllMatchTypes },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -38,6 +42,7 @@ vi.mock('react-i18next', () => ({
         'challenges.issue.issueAnother': 'Issue Another',
         'challenges.detail.backToBoard': 'Back to Challenges',
         'challenges.board.titleMatch': 'Title Match',
+        'common.none': 'None',
         'common.cancel': 'Cancel',
         'common.submitting': 'Submitting...',
         'common.vs': 'vs',
@@ -80,6 +85,19 @@ describe('IssueChallenge', () => {
     vi.clearAllMocks();
     mockGetAllPlayers.mockResolvedValue(players);
     mockGetMyProfile.mockResolvedValue({ playerId: 'p-1' });
+    mockGetAllStipulations.mockResolvedValue([
+      { stipulationId: 'stip-1', name: 'Steel Cage', createdAt: '', updatedAt: '' },
+      { stipulationId: 'stip-2', name: 'Ladder', createdAt: '', updatedAt: '' },
+      { stipulationId: 'stip-3', name: 'Hell in a Cell', createdAt: '', updatedAt: '' },
+    ]);
+    mockGetAllMatchTypes.mockResolvedValue([
+      { matchTypeId: 'mt-1', name: 'Singles', createdAt: '', updatedAt: '' },
+      { matchTypeId: 'mt-2', name: 'Tag Team', createdAt: '', updatedAt: '' },
+      { matchTypeId: 'mt-3', name: 'Triple Threat', createdAt: '', updatedAt: '' },
+      { matchTypeId: 'mt-4', name: 'Fatal 4-Way', createdAt: '', updatedAt: '' },
+      { matchTypeId: 'mt-5', name: 'Six Pack Challenge', createdAt: '', updatedAt: '' },
+      { matchTypeId: 'mt-6', name: 'Battle Royal', createdAt: '', updatedAt: '' },
+    ]);
   });
 
   it('renders the form with opponent, match type, stipulation, and message fields', async () => {
@@ -116,22 +134,25 @@ describe('IssueChallenge', () => {
     expect(optionTexts).not.toContain('Unlinked Guy (NoLink)');
   });
 
-  it('populates match type and stipulation dropdowns from utils', async () => {
+  it('populates match type and stipulation dropdowns from API', async () => {
     renderIssue();
 
     await waitFor(() => {
       expect(screen.getByText('Issue a Challenge')).toBeInTheDocument();
     });
 
+    // Wait for API-driven dropdowns to populate
+    await waitFor(() => {
+      const selects = screen.getAllByRole('combobox');
+      const matchTypeSelect = selects[1]!;
+      const matchOptions = Array.from(matchTypeSelect.querySelectorAll('option')).map((o) => o.textContent);
+      expect(matchOptions).toContain('Singles');
+      expect(matchOptions).toContain('Tag Team');
+      expect(matchOptions).toContain('Battle Royal');
+    });
+
     const selects = screen.getAllByRole('combobox');
-    const matchTypeSelect = selects[1]!;
     const stipSelect = selects[2]!;
-
-    const matchOptions = Array.from(matchTypeSelect.querySelectorAll('option')).map((o) => o.textContent);
-    expect(matchOptions).toContain('Singles');
-    expect(matchOptions).toContain('Tag Team');
-    expect(matchOptions).toContain('Battle Royal');
-
     const stipOptions = Array.from(stipSelect.querySelectorAll('option')).map((o) => o.textContent);
     expect(stipOptions).toContain('None');
     expect(stipOptions).toContain('Steel Cage');

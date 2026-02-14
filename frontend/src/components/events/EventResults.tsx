@@ -159,8 +159,8 @@ export default function EventResults() {
                     {t(designationLabels[designation])}
                   </span>
                   <span className="results-match-type">
-                    {matchData.matchType}
-                    {matchData.stipulation && ` - ${matchData.stipulation}`}
+                    {matchData.matchFormat}
+                    {matchData.stipulationName && ` - ${matchData.stipulationName}`}
                   </span>
                   {matchData.isChampionship && (
                     <span className="results-championship-tag">

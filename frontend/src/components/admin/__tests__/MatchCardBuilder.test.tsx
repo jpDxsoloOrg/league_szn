@@ -75,9 +75,9 @@ const mockPlayers = [
 
 const matchBase = { status: 'scheduled' as const, date: '2025-06-10', createdAt: '2024-01-01' };
 const mockScheduledMatches = [
-  { matchId: 'm1', matchType: 'singles', participants: ['p1', 'p2'], isChampionship: true, ...matchBase },
-  { matchId: 'm2', matchType: 'singles', participants: ['p3', 'p4'], isChampionship: false, ...matchBase },
-  { matchId: 'm3', matchType: 'tag', participants: ['p1', 'p3'], isChampionship: false, ...matchBase, date: '2025-06-15' },
+  { matchId: 'm1', matchFormat: 'singles', participants: ['p1', 'p2'], isChampionship: true, ...matchBase },
+  { matchId: 'm2', matchFormat: 'singles', participants: ['p3', 'p4'], isChampionship: false, ...matchBase },
+  { matchId: 'm3', matchFormat: 'tag', participants: ['p1', 'p3'], isChampionship: false, ...matchBase, date: '2025-06-15' },
 ];
 
 const mockEventsData = [

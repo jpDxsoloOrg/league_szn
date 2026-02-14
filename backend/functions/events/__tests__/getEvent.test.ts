@@ -88,7 +88,7 @@ describe('getEvent', () => {
       });
     mockQuery.mockResolvedValueOnce({
       Items: [{
-        matchId: 'm1', matchType: 'singles', stipulation: 'No DQ',
+        matchId: 'm1', matchFormat: 'singles', stipulation: 'No DQ',
         participants: ['p1'], winners: ['p1'], losers: [],
         isChampionship: true, championshipId: 'c1', status: 'completed',
       }],
@@ -104,7 +104,7 @@ describe('getEvent', () => {
     expect(match.position).toBe(1);
     expect(match.designation).toBe('Main Event');
     expect(match.notes).toBe('Title match');
-    expect(match.matchData.matchType).toBe('singles');
+    expect(match.matchData.matchFormat).toBe('singles');
     expect(match.matchData.participants).toHaveLength(1);
     expect(match.matchData.participants[0].playerName).toBe('John Cena');
     expect(match.matchData.participants[0].wrestlerName).toBe('John Cena');
@@ -156,7 +156,7 @@ describe('getEvent', () => {
       .mockResolvedValueOnce({ Item: undefined });
     mockQuery.mockResolvedValueOnce({
       Items: [{
-        matchId: 'm1', matchType: 'singles',
+        matchId: 'm1', matchFormat: 'singles',
         participants: ['p-missing'], isChampionship: false, status: 'scheduled',
       }],
     });
@@ -179,7 +179,7 @@ describe('getEvent', () => {
     });
     mockQuery.mockResolvedValueOnce({
       Items: [{
-        matchId: 'm1', matchType: 'tag',
+        matchId: 'm1', matchFormat: 'tag',
         participants: [], isChampionship: false, status: 'scheduled',
       }],
     });

@@ -2,9 +2,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { PromoType, PromoWithContext } from '../../types/promo';
-import { playersApi, promosApi, championshipsApi, matchesApi, challengesApi } from '../../services/api';
-import type { Player, Match, Championship } from '../../types';
-import { MATCH_TYPES, STIPULATIONS } from '../challenges/challengeUtils';
+import { playersApi, promosApi, championshipsApi, matchesApi, challengesApi, stipulationsApi, matchTypesApi } from '../../services/api';
+import type { Player, Match, Championship, Stipulation, MatchType } from '../../types';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import PromoCard from './PromoCard';
 import './PromoEditor.css';
@@ -116,8 +115,8 @@ export default function PromoEditor() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [challengeMatchType, setChallengeMatchType] = useState('Singles');
-  const [challengeStipulation, setChallengeStipulation] = useState('None');
+  const [challengeMatchType, setChallengeMatchType] = useState('');
+  const [challengeStipulation, setChallengeStipulation] = useState('');
   const [challengeCreated, setChallengeCreated] = useState(false);
   const [challengeWarning, setChallengeWarning] = useState<string | null>(null);
 
@@ -125,6 +124,8 @@ export default function PromoEditor() {
   const [allPromos, setAllPromos] = useState<PromoWithContext[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [championships, setChampionships] = useState<Championship[]>([]);
+  const [stipulations, setStipulations] = useState<Stipulation[]>([]);
+  const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
@@ -134,12 +135,16 @@ export default function PromoEditor() {
       promosApi.getAll(undefined, controller.signal),
       matchesApi.getAll(undefined, controller.signal),
       championshipsApi.getAll(controller.signal),
+      stipulationsApi.getAll(controller.signal),
+      matchTypesApi.getAll(controller.signal),
     ])
-      .then(([pl, pr, ma, ch]) => {
+      .then(([pl, pr, ma, ch, stips, mTypes]) => {
         setPlayers(pl);
         setAllPromos(pr);
         setMatches(ma);
         setChampionships(ch);
+        setStipulations(stips);
+        setMatchTypes(mTypes);
 
         // Find current user's player
         const idToken = sessionStorage.getItem('idToken');
@@ -245,7 +250,7 @@ export default function PromoEditor() {
           await challengesApi.create({
             challengedId: targetPlayerId,
             matchType: challengeMatchType,
-            stipulation: challengeStipulation !== 'None' ? challengeStipulation : undefined,
+            stipulation: challengeStipulation || undefined,
             message: (title || content.slice(0, 500)) || undefined,
           });
           setChallengeCreated(true);
@@ -291,8 +296,8 @@ export default function PromoEditor() {
                 setTargetPromoId('');
                 setMatchId('');
                 setChampionshipId('');
-                setChallengeMatchType('Singles');
-                setChallengeStipulation('None');
+                setChallengeMatchType('');
+                setChallengeStipulation('');
                 setChallengeCreated(false);
                 setChallengeWarning(null);
                 setError(null);
@@ -464,7 +469,7 @@ export default function PromoEditor() {
               </option>
               {matches.map((match) => (
                 <option key={match.matchId} value={match.matchId}>
-                  {match.matchType} - {match.date}
+                  {match.matchFormat} - {match.date}
                 </option>
               ))}
             </select>
@@ -508,9 +513,10 @@ export default function PromoEditor() {
                 value={challengeMatchType}
                 onChange={(e) => setChallengeMatchType(e.target.value)}
               >
-                {MATCH_TYPES.map((mt) => (
-                  <option key={mt} value={mt}>
-                    {mt}
+                <option value="">{t('challenges.issue.selectMatchType', '-- Select match type --')}</option>
+                {matchTypes.map((mt) => (
+                  <option key={mt.matchTypeId} value={mt.name}>
+                    {mt.name}
                   </option>
                 ))}
               </select>
@@ -525,9 +531,10 @@ export default function PromoEditor() {
                 value={challengeStipulation}
                 onChange={(e) => setChallengeStipulation(e.target.value)}
               >
-                {STIPULATIONS.map((stip) => (
-                  <option key={stip} value={stip}>
-                    {stip}
+                <option value="">{t('common.none', 'None')}</option>
+                {stipulations.map((s) => (
+                  <option key={s.stipulationId} value={s.name}>
+                    {s.name}
                   </option>
                 ))}
               </select>

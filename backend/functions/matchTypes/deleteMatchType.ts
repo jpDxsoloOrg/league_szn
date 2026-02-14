@@ -5,12 +5,10 @@ import { noContent, badRequest, notFound, serverError } from '../../lib/response
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const matchTypeId = event.pathParameters?.matchTypeId;
-
     if (!matchTypeId) {
       return badRequest('Match type ID is required');
     }
 
-    // Check if match type exists
     const existingMatchType = await dynamoDb.get({
       TableName: TableNames.MATCH_TYPES,
       Key: { matchTypeId },
