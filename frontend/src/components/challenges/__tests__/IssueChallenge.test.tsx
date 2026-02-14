@@ -36,7 +36,7 @@ vi.mock('react-i18next', () => ({
         'challenges.issue.submit': 'Submit Challenge',
         'challenges.issue.success': 'Challenge issued successfully!',
         'challenges.issue.issueAnother': 'Issue Another',
-        'challenges.detail.backToBoard': 'Back to Board',
+        'challenges.detail.backToBoard': 'Back to Challenges',
         'challenges.board.titleMatch': 'Title Match',
         'common.cancel': 'Cancel',
         'common.submitting': 'Submitting...',

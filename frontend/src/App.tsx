@@ -14,7 +14,6 @@ import AdminPanel from './components/admin/AdminPanel';
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
 // Challenge components
-import ChallengeBoard from './components/challenges/ChallengeBoard';
 import ChallengeDetail from './components/challenges/ChallengeDetail';
 import IssueChallenge from './components/challenges/IssueChallenge';
 import MyChallenges from './components/challenges/MyChallenges';
@@ -87,7 +86,7 @@ function App() {
             <Route path="/challenges" element={
               <FeatureRoute feature="challenges">
                 <ProtectedRoute requiredRole="Wrestler">
-                  <ChallengeBoard />
+                  <MyChallenges />
                 </ProtectedRoute>
               </FeatureRoute>
             } />
@@ -98,13 +97,7 @@ function App() {
                 </ProtectedRoute>
               </FeatureRoute>
             } />
-            <Route path="/challenges/my" element={
-              <FeatureRoute feature="challenges">
-                <ProtectedRoute requiredRole="Wrestler">
-                  <MyChallenges />
-                </ProtectedRoute>
-              </FeatureRoute>
-            } />
+            <Route path="/challenges/my" element={<Navigate to="/challenges" replace />} />
             <Route path="/challenges/:challengeId" element={
               <FeatureRoute feature="challenges">
                 <ProtectedRoute requiredRole="Wrestler">

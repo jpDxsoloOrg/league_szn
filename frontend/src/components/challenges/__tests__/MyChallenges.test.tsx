@@ -44,7 +44,6 @@ vi.mock('react-i18next', () => ({
         'challenges.detail.accept': 'Accept',
         'challenges.detail.decline': 'Decline',
         'challenges.detail.counter': 'Counter',
-        'challenges.detail.backToBoard': 'Back to Board',
         'challenges.board.issueChallenge': 'Issue Challenge',
         'challenges.status.pending': 'Pending',
         'challenges.status.accepted': 'Accepted',

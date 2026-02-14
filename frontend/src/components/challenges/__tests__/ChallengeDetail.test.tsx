@@ -33,7 +33,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, opts?: Record<string, string>) => {
       const t: Record<string, string> = {
-        'challenges.detail.backToBoard': 'Back to Board',
+        'challenges.detail.backToBoard': 'Back to Challenges',
         'challenges.detail.notFound': 'Challenge not found',
         'challenges.detail.challenger': 'Challenger',
         'challenges.detail.challenged': 'Challenged',

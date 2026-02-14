@@ -182,10 +182,6 @@ export default function MyChallenges() {
 
   return (
     <div className="my-challenges">
-      <Link to="/challenges" className="my-challenges-back">
-        &larr; {t('challenges.detail.backToBoard')}
-      </Link>
-
       <div className="my-challenges-header">
         <h2>{t('challenges.my.title')}</h2>
         <Link
