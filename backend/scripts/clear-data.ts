@@ -5,6 +5,8 @@ import {
   DeleteCommand,
 } from '@aws-sdk/lib-dynamodb';
 
+const STAGE = process.env.STAGE || 'offline';
+
 // Configure DynamoDB client for local use
 const client = new DynamoDBClient({
   region: 'us-east-1',
@@ -18,11 +20,11 @@ const client = new DynamoDBClient({
 const docClient = DynamoDBDocumentClient.from(client);
 
 const TABLES = {
-  PLAYERS: 'wwe-2k-league-api-players-dev',
-  MATCHES: 'wwe-2k-league-api-matches-dev',
-  CHAMPIONSHIPS: 'wwe-2k-league-api-championships-dev',
-  CHAMPIONSHIP_HISTORY: 'wwe-2k-league-api-championship-history-dev',
-  TOURNAMENTS: 'wwe-2k-league-api-tournaments-dev',
+  PLAYERS: `wwe-2k-league-api-players-${STAGE}`,
+  MATCHES: `wwe-2k-league-api-matches-${STAGE}`,
+  CHAMPIONSHIPS: `wwe-2k-league-api-championships-${STAGE}`,
+  CHAMPIONSHIP_HISTORY: `wwe-2k-league-api-championship-history-${STAGE}`,
+  TOURNAMENTS: `wwe-2k-league-api-tournaments-${STAGE}`,
 };
 
 async function clearTable(tableName: string, keyNames: string[]) {

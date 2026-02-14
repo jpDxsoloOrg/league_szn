@@ -7,7 +7,7 @@
     "deploy": "serverless deploy",
     "remove": "serverless remove",
     "logs": "serverless logs",
-    "offline": "SLS_RUNTIME=nodejs20.x serverless offline start",
+    "offline": "SLS_RUNTIME=nodejs20.x serverless offline start --stage offline --noPrependStageInUrl --prefix dev",
     "create-tables": "ts-node scripts/create-tables.ts",
     "seed": "ts-node scripts/seed-data.ts",
     "clear-data": "ts-node scripts/clear-data.ts",

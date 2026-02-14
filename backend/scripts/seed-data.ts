@@ -5,6 +5,7 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 
+const STAGE = process.env.STAGE || 'offline';
 const isLocal = process.env.IS_OFFLINE === 'true';
 
 const client = new DynamoDBClient(
@@ -23,21 +24,21 @@ const client = new DynamoDBClient(
 const docClient = DynamoDBDocumentClient.from(client);
 
 const TABLES = {
-  PLAYERS: 'wwe-2k-league-api-players-dev',
-  MATCHES: 'wwe-2k-league-api-matches-dev',
-  CHAMPIONSHIPS: 'wwe-2k-league-api-championships-dev',
-  CHAMPIONSHIP_HISTORY: 'wwe-2k-league-api-championship-history-dev',
-  TOURNAMENTS: 'wwe-2k-league-api-tournaments-dev',
-  SEASONS: 'wwe-2k-league-api-seasons-dev',
-  SEASON_STANDINGS: 'wwe-2k-league-api-season-standings-dev',
-  DIVISIONS: 'wwe-2k-league-api-divisions-dev',
-  EVENTS: 'wwe-2k-league-api-events-dev',
-  CONTENDER_RANKINGS: 'wwe-2k-league-api-contender-rankings-dev',
-  RANKING_HISTORY: 'wwe-2k-league-api-ranking-history-dev',
-  FANTASY_CONFIG: 'wwe-2k-league-api-fantasy-config-dev',
-  WRESTLER_COSTS: 'wwe-2k-league-api-wrestler-costs-dev',
-  FANTASY_PICKS: 'wwe-2k-league-api-fantasy-picks-dev',
-  SITE_CONFIG: 'wwe-2k-league-api-site-config-dev',
+  PLAYERS: `wwe-2k-league-api-players-${STAGE}`,
+  MATCHES: `wwe-2k-league-api-matches-${STAGE}`,
+  CHAMPIONSHIPS: `wwe-2k-league-api-championships-${STAGE}`,
+  CHAMPIONSHIP_HISTORY: `wwe-2k-league-api-championship-history-${STAGE}`,
+  TOURNAMENTS: `wwe-2k-league-api-tournaments-${STAGE}`,
+  SEASONS: `wwe-2k-league-api-seasons-${STAGE}`,
+  SEASON_STANDINGS: `wwe-2k-league-api-season-standings-${STAGE}`,
+  DIVISIONS: `wwe-2k-league-api-divisions-${STAGE}`,
+  EVENTS: `wwe-2k-league-api-events-${STAGE}`,
+  CONTENDER_RANKINGS: `wwe-2k-league-api-contender-rankings-${STAGE}`,
+  RANKING_HISTORY: `wwe-2k-league-api-ranking-history-${STAGE}`,
+  FANTASY_CONFIG: `wwe-2k-league-api-fantasy-config-${STAGE}`,
+  WRESTLER_COSTS: `wwe-2k-league-api-wrestler-costs-${STAGE}`,
+  FANTASY_PICKS: `wwe-2k-league-api-fantasy-picks-${STAGE}`,
+  SITE_CONFIG: `wwe-2k-league-api-site-config-${STAGE}`,
 };
 
 const wrestlers = [

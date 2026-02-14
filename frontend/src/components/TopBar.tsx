@@ -18,6 +18,7 @@ export default function TopBar() {
         schedule: t('admin.panel.tabs.scheduleMatch'),
         results: t('admin.panel.tabs.recordResults'),
         events: t('admin.panel.tabs.events'),
+        'match-config': t('admin.panel.tabs.matchConfig'),
         seasons: t('admin.panel.tabs.seasons'),
         players: t('admin.panel.tabs.managePlayers'),
         divisions: t('admin.panel.tabs.divisions'),
@@ -28,13 +29,37 @@ export default function TopBar() {
         'contender-config': t('admin.panel.tabs.contenderConfig'),
         'fantasy-shows': t('admin.panel.tabs.fantasyShows'),
         'fantasy-config': t('admin.panel.tabs.fantasyConfig'),
+        users: t('admin.panel.tabs.users'),
+        features: t('admin.panel.tabs.features'),
         guide: t('admin.panel.tabs.help'),
         danger: t('admin.panel.tabs.dangerZone'),
       };
 
+      const tabToGroup: Record<string, string> = {
+        schedule: t('admin.panel.groups.matchOps'),
+        results: t('admin.panel.groups.matchOps'),
+        events: t('admin.panel.groups.matchOps'),
+        'match-config': t('admin.panel.groups.matchOps'),
+        players: t('admin.panel.groups.leagueSetup'),
+        divisions: t('admin.panel.groups.leagueSetup'),
+        seasons: t('admin.panel.groups.leagueSetup'),
+        championships: t('admin.panel.groups.leagueSetup'),
+        tournaments: t('admin.panel.groups.leagueSetup'),
+        challenges: t('admin.panel.groups.contentSocial'),
+        promos: t('admin.panel.groups.contentSocial'),
+        'contender-config': t('admin.panel.groups.contentSocial'),
+        'fantasy-shows': t('admin.panel.groups.fantasy'),
+        'fantasy-config': t('admin.panel.groups.fantasy'),
+        users: t('admin.panel.groups.system'),
+        features: t('admin.panel.groups.system'),
+        guide: t('admin.panel.groups.system'),
+        danger: t('admin.panel.groups.system'),
+      };
+
+      const groupName = tabToGroup[tab];
       return {
         title: adminTabMap[tab] || t('admin.panel.title'),
-        parent: t('nav.admin'),
+        parent: groupName ? `${t('nav.admin')} / ${groupName}` : t('nav.admin'),
       };
     }
 

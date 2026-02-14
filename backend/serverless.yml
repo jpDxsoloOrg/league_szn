@@ -108,9 +108,13 @@ plugins:
   - serverless-offline
 
 custom:
+  splitStacksEnabled:
+    dev: true
+    devtest: true
+    offline: false
   splitStacks:
     perFunction: false
-    perType: true
+    perType: ${self:custom.splitStacksEnabled.${self:provider.stage}, true}
     perGroupFunction: false
   serverless-offline:
     httpPort: 3001
@@ -120,6 +124,7 @@ custom:
     dev: https://leagueszn.jpdxsolo.com
     devtest: https://dev.leagueszn.jpdxsolo.com
     prod: https://leagueszn.jpdxsolo.com
+    offline: '*'
   corsConfig: &corsConfig
     origin: ${self:custom.allowedOrigin.${self:provider.stage}, 'https://leagueszn.jpdxsolo.com'}
     headers:
@@ -134,14 +139,17 @@ custom:
     dev: leagueszn.jpdxsolo.com
     devtest: dev.leagueszn.jpdxsolo.com
     prod: leagueszn.jpdxsolo.com
+    offline: 'localhost'
   frontendDomain:
     dev: leagueszn.jpdxsolo.com
     devtest: dev.leagueszn.jpdxsolo.com
     prod: leagueszn.jpdxsolo.com
+    offline: 'localhost'
   certificateArn:
     dev: ${env:PROD_ACM_CERTIFICATE_ARN, ''}
     devtest: ${env:DEV_ACM_CERTIFICATE_ARN, ''}
     prod: ${env:PROD_ACM_CERTIFICATE_ARN, ''}
+    offline: ''
 
 functions:
   # Auth

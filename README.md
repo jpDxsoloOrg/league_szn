@@ -542,6 +542,8 @@ npm run offline
 
 This starts the API at `http://localhost:3001/dev`. Leave this running.
 
+> **Note:** The `offline` script uses `--stage offline` to disable CloudFormation stack splitting (`serverless-plugin-split-stacks`) which is incompatible with local development. The `--noPrependStageInUrl --prefix dev` flags ensure routes remain at `/dev/*` for frontend compatibility.
+
 #### Terminal 3 -- Seed Data and Frontend
 
 ```bash
@@ -589,7 +591,7 @@ VITE_API_BASE_URL=/dev
 
 The Vite dev server proxies `/dev/*` requests to `http://localhost:3001` automatically. Restart Vite after changing `.env` files.
 
-**Backend** -- no `.env` needed. The `serverless-offline` plugin sets `IS_OFFLINE=true` automatically, which configures the backend to use DynamoDB Local at `localhost:8000`.
+**Backend** -- no `.env` needed. The `serverless-offline` plugin sets `IS_OFFLINE=true` automatically, which configures the backend to use DynamoDB Local at `localhost:8000`. DynamoDB table names use the `-offline` suffix locally (e.g., `wwe-2k-league-api-players-offline`). The `create-tables`, `seed`, and `clear-data` scripts default to this suffix.
 
 ### Ports
 

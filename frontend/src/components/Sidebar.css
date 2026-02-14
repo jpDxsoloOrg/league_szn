@@ -154,6 +154,114 @@
   background-color: #1a1111;
 }
 
+/* Sub-group styles */
+.nav-subgroup {
+  margin-bottom: 0.25rem;
+}
+
+.nav-subgroup-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0.5rem 2rem;
+  padding-left: 2rem;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.nav-subgroup-toggle:hover {
+  color: #bbb;
+  background-color: #1a1a1a;
+}
+
+.nav-subgroup-toggle .toggle-arrow {
+  font-size: 0.6rem;
+  color: #666;
+}
+
+.nav-subgroup-items {
+  padding-bottom: 0.25rem;
+}
+
+.nav-subgroup-items a {
+  padding-left: 2.75rem;
+  font-size: 0.875rem;
+  color: #aaa;
+}
+
+.nav-subgroup-items a:hover {
+  color: #d4af37;
+  background-color: #1a1a1a;
+}
+
+.nav-subgroup-items a.active {
+  color: #d4af37;
+  background-color: #1a1a1a;
+  border-left: 3px solid #d4af37;
+  padding-left: calc(2.75rem - 3px);
+}
+
+.nav-subgroup-items .danger-link {
+  color: #dc3545;
+}
+
+.nav-subgroup-items .danger-link:hover {
+  color: #ff6b6b;
+  background-color: #1a1111;
+}
+
+.nav-subgroup-items .danger-link.active {
+  border-left-color: #dc3545;
+  background-color: #1a1111;
+}
+
+.nav-subgroup-items .nav-disabled {
+  padding-left: 2.75rem;
+  font-size: 0.875rem;
+}
+
+.nav-subgroup-label {
+  display: block;
+  padding: 0.5rem 1.25rem 0.2rem;
+  font-size: 0.7rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.nav-subgroup-label:first-child {
+  margin-top: 0;
+}
+
+/* User nav sub-group overrides (top-level, less indentation than admin) */
+.user-nav-toggle {
+  padding: 0.5rem 1.25rem;
+  padding-left: 1.25rem;
+}
+
+.user-nav-items a {
+  padding-left: 1.5rem;
+}
+
+.user-nav-items a.active {
+  padding-left: calc(1.5rem - 3px);
+}
+
+.user-nav-items .nav-disabled {
+  padding-left: 1.5rem;
+}
+
 .sidebar-logout {
   display: block;
   width: calc(100% - 2rem);

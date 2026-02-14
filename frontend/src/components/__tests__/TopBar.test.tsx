@@ -30,11 +30,13 @@ describe('TopBar', () => {
     expect(screen.queryByText('/')).not.toBeInTheDocument();
   });
 
-  it('renders breadcrumb with parent and title for admin sub-routes', () => {
+  it('renders breadcrumb with parent (including group) and title for admin sub-routes', () => {
     renderTopBar('/admin/divisions');
 
-    expect(screen.getByText('nav.admin')).toBeInTheDocument();
-    expect(screen.getByText('nav.admin')).toHaveClass('top-bar-parent');
+    // Parent now includes the group name: "nav.admin / admin.panel.groups.leagueSetup"
+    const parent = screen.getByText('nav.admin / admin.panel.groups.leagueSetup');
+    expect(parent).toBeInTheDocument();
+    expect(parent).toHaveClass('top-bar-parent');
     expect(screen.getByText('admin.panel.tabs.divisions')).toBeInTheDocument();
     expect(screen.getByText('admin.panel.tabs.divisions')).toHaveClass('top-bar-title');
     expect(screen.getByText('/')).toHaveClass('top-bar-separator');
