@@ -125,7 +125,6 @@ function PlayerStatsContent({
               <th>{t('statistics.labels.wins')}</th>
               <th>{t('statistics.labels.losses')}</th>
               <th>{t('statistics.labels.draws')}</th>
-              <th>{t('statistics.labels.winPercentage')}</th>
               <th>{t('statistics.labels.bestStreak')}</th>
             </tr>
           </thead>
@@ -136,7 +135,6 @@ function PlayerStatsContent({
                 <td className="ps-td-wins">{stat.wins}</td>
                 <td className="ps-td-losses">{stat.losses}</td>
                 <td>{stat.draws}</td>
-                <td>{stat.winPercentage.toFixed(1)}%</td>
                 <td>{stat.longestWinStreak}</td>
               </tr>
             ))}
