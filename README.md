@@ -231,7 +231,7 @@ The OpenAPI 3.0 spec is at `backend/docs/openapi.yaml`. To validate it (syntax a
 npm run validate-api-docs
 ```
 
-When you add or change HTTP endpoints in `serverless.yml` or handler request/response shapes, update `backend/docs/openapi.yaml` so the docs stay in sync.
+When you add or change HTTP endpoints in `serverless.yml` or handler request/response shapes, update `backend/docs/openapi.yaml` so the docs stay in sync. After editing the spec or `backend/docs/swagger.html`, run `npm run embed-docs` in `backend/` and commit the updated `functions/docs/docsEmbed.generated.ts` so the deployed API serves the new content.
 
 <details>
 <summary><strong>Public Endpoints (17)</strong></summary>

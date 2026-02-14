@@ -7,10 +7,6 @@ provider:
   runtime: ${env:SLS_RUNTIME, 'nodejs20.x'}
   region: us-east-1
   stage: ${opt:stage, 'dev'}
-  package:
-    include:
-      - docs/openapi.yaml
-      - docs/swagger.html
   environment:
     SERVICE_NAME: ${self:service}
     STAGE: ${self:provider.stage}
