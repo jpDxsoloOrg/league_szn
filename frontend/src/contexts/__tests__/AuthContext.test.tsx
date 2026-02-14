@@ -167,21 +167,21 @@ describe('AuthContext', () => {
   // P0: Role helpers
   // ===========================================================================
   describe('role helpers', () => {
-    it('isAdmin is true for Admin group', async () => {
+    it('isAdminOrModerator is true for Admin group', async () => {
       mockAuthenticatedUser(['Admin']);
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-      expect(result.current.isAdmin).toBe(true);
+      expect(result.current.isAdminOrModerator).toBe(true);
       expect(result.current.isSuperAdmin).toBe(true);
     });
 
-    it('isAdmin is true for Moderator, but isSuperAdmin is false', async () => {
+    it('isAdminOrModerator is true for Moderator, but isSuperAdmin is false', async () => {
       mockAuthenticatedUser(['Moderator']);
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-      expect(result.current.isAdmin).toBe(true);
+      expect(result.current.isAdminOrModerator).toBe(true);
       expect(result.current.isSuperAdmin).toBe(false);
       expect(result.current.isModerator).toBe(true);
     });
@@ -193,7 +193,7 @@ describe('AuthContext', () => {
 
       expect(result.current.isWrestler).toBe(true);
       expect(result.current.isFantasy).toBe(false);
-      expect(result.current.isAdmin).toBe(false);
+      expect(result.current.isAdminOrModerator).toBe(false);
       expect(result.current.isModerator).toBe(false);
     });
 

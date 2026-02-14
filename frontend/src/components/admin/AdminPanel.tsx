@@ -32,7 +32,7 @@ const VALID_TABS: AdminTab[] = ['players', 'divisions', 'match-types', 'schedule
 
 export default function AdminPanel() {
   const { tab } = useParams<{ tab: string }>();
-  const { isAuthenticated, isAdmin, isSuperAdmin } = useAuth();
+  const { isAuthenticated, isAdminOrModerator, isSuperAdmin } = useAuth();
 
   const activeTab: AdminTab = (tab && VALID_TABS.includes(tab as AdminTab)) ? tab as AdminTab : 'players';
 
@@ -40,7 +40,7 @@ export default function AdminPanel() {
     return <Navigate to="/login" replace />;
   }
 
-  if (!isAdmin) {
+  if (!isAdminOrModerator) {
     return (
       <div className="admin-panel">
         <div className="access-denied">

@@ -9,7 +9,7 @@ import './Sidebar.css';
 export default function Sidebar() {
   const { t } = useTranslation();
   const location = useLocation();
-  const { isAuthenticated, isAdmin, isSuperAdmin, isWrestler, isFantasy, signOut } = useAuth();
+  const { isAuthenticated, isAdminOrModerator, isSuperAdmin, isWrestler, isFantasy, signOut } = useAuth();
   const { features } = useSiteConfig();
   const [adminExpanded, setAdminExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -167,7 +167,7 @@ export default function Sidebar() {
         </div>
 
         {/* Admin section - for Admin and Moderator roles */}
-        {isAdmin && (
+        {isAdminOrModerator && (
           <div className="nav-section admin-section">
             <button
               className={`nav-section-toggle ${adminExpanded ? 'expanded' : ''}`}

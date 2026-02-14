@@ -49,7 +49,7 @@ const NO_FEATURES = {
 function baseAuth(overrides = {}) {
   return {
     isAuthenticated: false,
-    isAdmin: false,
+    isAdminOrModerator: false,
     isSuperAdmin: false,
     isWrestler: false,
     isFantasy: false,
@@ -90,7 +90,7 @@ describe('Sidebar', () => {
   it('shows admin section with all admin links when user is admin', () => {
     mockUseAuth.mockReturnValue(baseAuth({
       isAuthenticated: true,
-      isAdmin: true,
+      isAdminOrModerator: true,
       isSuperAdmin: false,
     }));
     renderSidebar('/admin/players');
@@ -109,7 +109,7 @@ describe('Sidebar', () => {
   it('shows danger zone link only for SuperAdmin', () => {
     mockUseAuth.mockReturnValue(baseAuth({
       isAuthenticated: true,
-      isAdmin: true,
+      isAdminOrModerator: true,
       isSuperAdmin: true,
     }));
     renderSidebar('/admin');
@@ -133,7 +133,7 @@ describe('Sidebar', () => {
     const user = userEvent.setup();
     mockUseAuth.mockReturnValue(baseAuth({
       isAuthenticated: true,
-      isAdmin: true,
+      isAdminOrModerator: true,
     }));
     renderSidebar('/admin');
 
