@@ -29,6 +29,8 @@ vi.mock('../../../lib/dynamodb', () => ({
     SEASONS: 'Seasons',
     EVENTS: 'Events',
     STIPULATIONS: 'Stipulations',
+    CHALLENGES: 'Challenges',
+    PROMOS: 'Promos',
   },
 }));
 
@@ -237,5 +239,62 @@ describe('scheduleMatch', () => {
     const r = await scheduleMatch(ev({ body: validBody() }), ctx, cb);
     expect(r!.statusCode).toBe(500);
     expect(JSON.parse(r!.body).message).toBe('Failed to schedule match');
+  });
+
+  it('includes challengeId and promoId on match when provided', async () => {
+    mockGet
+      .mockResolvedValueOnce({ Item: { playerId: 'p1' } })
+      .mockResolvedValueOnce({ Item: { playerId: 'p2' } })
+      .mockResolvedValueOnce({ Item: { challengeId: 'ch1', status: 'accepted' } })
+      .mockResolvedValueOnce({ Item: { promoId: 'pr1' } });
+    mockPut.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({});
+    const r = await scheduleMatch(ev({
+      body: validBody({ challengeId: 'ch1', promoId: 'pr1' }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(201);
+    const b = JSON.parse(r!.body);
+    expect(b.challengeId).toBe('ch1');
+    expect(b.promoId).toBe('pr1');
+  });
+
+  it('updates challenge to scheduled when challengeId provided', async () => {
+    mockGet
+      .mockResolvedValueOnce({ Item: { playerId: 'p1' } })
+      .mockResolvedValueOnce({ Item: { playerId: 'p2' } })
+      .mockResolvedValueOnce({ Item: { challengeId: 'ch1', status: 'accepted' } });
+    mockPut.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({});
+    const r = await scheduleMatch(ev({ body: validBody({ challengeId: 'ch1' }) }), ctx, cb);
+    expect(r!.statusCode).toBe(201);
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        TableName: 'Challenges',
+        Key: { challengeId: 'ch1' },
+      })
+    );
+    const values = mockUpdate.mock.calls[0][0].ExpressionAttributeValues;
+    expect(values[':status']).toBe('scheduled');
+    expect(values[':matchId']).toBe('test-uuid-match');
+  });
+
+  it('updates promo to hidden when promoId provided', async () => {
+    mockGet
+      .mockResolvedValueOnce({ Item: { playerId: 'p1' } })
+      .mockResolvedValueOnce({ Item: { playerId: 'p2' } })
+      .mockResolvedValueOnce({ Item: { promoId: 'pr1' } });
+    mockPut.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({});
+    const r = await scheduleMatch(ev({ body: validBody({ promoId: 'pr1' }) }), ctx, cb);
+    expect(r!.statusCode).toBe(201);
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        TableName: 'Promos',
+        Key: { promoId: 'pr1' },
+      })
+    );
+    const values = mockUpdate.mock.calls[0][0].ExpressionAttributeValues;
+    expect(values[':hidden']).toBe(true);
+    expect(values[':matchId']).toBe('test-uuid-match');
   });
 });

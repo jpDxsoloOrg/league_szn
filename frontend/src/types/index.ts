@@ -29,6 +29,8 @@ export interface Match {
   seasonId?: string;
   status: 'scheduled' | 'completed';
   createdAt: string;
+  challengeId?: string;
+  promoId?: string;
 }
 
 // Input type for scheduling a new match (uses new field names, backend handles legacy fields)
@@ -45,6 +47,8 @@ export interface ScheduleMatchInput {
   eventId?: string;
   designation?: string;
   status: 'scheduled';
+  challengeId?: string;
+  promoId?: string;
 }
 
 export interface Championship {

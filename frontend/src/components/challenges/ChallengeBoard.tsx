@@ -28,7 +28,11 @@ export default function ChallengeBoard() {
     challengesApi
       .getAll(undefined, controller.signal)
       .then((data) => {
-        setChallenges(data);
+        // Public board: only show pending, countered, accepted (hide scheduled, expired, cancelled)
+        const visible = data.filter((c) =>
+          ['pending', 'countered', 'accepted'].includes(c.status)
+        );
+        setChallenges(visible);
         setError(null);
       })
       .catch((err) => {
@@ -43,18 +47,14 @@ export default function ChallengeBoard() {
     switch (activeFilter) {
       case 'active':
         return challenges.filter((c) =>
-          ['pending', 'accepted', 'countered', 'scheduled'].includes(c.status)
+          ['pending', 'accepted', 'countered'].includes(c.status)
         );
       case 'pending':
         return challenges.filter((c) => c.status === 'pending');
       case 'accepted':
-        return challenges.filter((c) =>
-          ['accepted', 'scheduled'].includes(c.status)
-        );
+        return challenges.filter((c) => c.status === 'accepted');
       case 'recent':
-        return challenges.filter((c) =>
-          ['declined', 'expired', 'cancelled'].includes(c.status)
-        );
+        return challenges.filter((c) => c.status === 'declined');
       default:
         return challenges;
     }

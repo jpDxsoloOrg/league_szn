@@ -124,13 +124,12 @@ describe('ChallengeBoard', () => {
       expect(screen.getByText('Stone Cold')).toBeInTheDocument();
     });
 
-    // Declined challenge should not appear in Active (default)
+    // Public board only shows pending, countered, accepted (declined/scheduled/expired/cancelled are hidden)
     expect(screen.queryByText('Undertaker')).not.toBeInTheDocument();
 
-    // Click "Recent" to see declined
+    // Click "Recent" — public board has no declined in state, so Recent tab is empty
     await user.click(screen.getByText('Recent'));
-    expect(screen.getByText('Undertaker')).toBeInTheDocument();
-    // Pending challenge should not appear in Recent
+    expect(screen.queryByText('Undertaker')).not.toBeInTheDocument();
     expect(screen.queryByText('Stone Cold')).not.toBeInTheDocument();
   });
 

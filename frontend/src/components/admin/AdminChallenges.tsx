@@ -24,6 +24,8 @@ export default function AdminChallenges() {
   const [statusFilter, setStatusFilter] = useState<ChallengeStatus | 'all'>('all');
   const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const [showBulkClearModal, setShowBulkClearModal] = useState(false);
+  const [bulkClearing, setBulkClearing] = useState(false);
 
   const loadChallenges = useCallback(async () => {
     try {
@@ -67,6 +69,44 @@ export default function AdminChallenges() {
       );
     } finally {
       setSubmitting(null);
+    }
+  };
+
+  const handleDelete = async (challenge: ChallengeWithPlayers) => {
+    setSubmitting(challenge.challengeId);
+    try {
+      await challengesApi.delete(challenge.challengeId);
+      showFeedback(
+        t('challenges.admin.deleted', 'Deleted') + `: ${challenge.challenger.wrestlerName} vs ${challenge.challenged.wrestlerName}`,
+        'success'
+      );
+      await loadChallenges();
+    } catch (err) {
+      showFeedback(
+        err instanceof Error ? err.message : 'Failed to delete challenge',
+        'error'
+      );
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
+  const handleBulkClearResolved = async () => {
+    setBulkClearing(true);
+    try {
+      const result = await challengesApi.bulkDelete({
+        statuses: ['cancelled', 'expired', 'scheduled'],
+      });
+      showFeedback(result.message, 'success');
+      setShowBulkClearModal(false);
+      await loadChallenges();
+    } catch (err) {
+      showFeedback(
+        err instanceof Error ? err.message : 'Failed to clear resolved challenges',
+        'error'
+      );
+    } finally {
+      setBulkClearing(false);
     }
   };
 
@@ -117,7 +157,40 @@ export default function AdminChallenges() {
         <span className="admin-challenges-count">
           {filtered.length} {filtered.length === 1 ? 'challenge' : 'challenges'}
         </span>
+        <button
+          type="button"
+          className="admin-btn-clear-resolved"
+          onClick={() => setShowBulkClearModal(true)}
+        >
+          {t('challenges.admin.clearResolved', 'Clear Resolved')}
+        </button>
       </div>
+
+      {showBulkClearModal && (
+        <div className="admin-challenges-modal-overlay" role="dialog" aria-modal="true">
+          <div className="admin-challenges-modal">
+            <p>{t('challenges.admin.clearResolvedConfirm', 'Are you sure you want to delete all cancelled, expired, and scheduled challenges?')}</p>
+            <div className="admin-challenges-modal-actions">
+              <button
+                type="button"
+                className="admin-btn-modal-cancel"
+                onClick={() => setShowBulkClearModal(false)}
+                disabled={bulkClearing}
+              >
+                {t('common.cancel', 'Cancel')}
+              </button>
+              <button
+                type="button"
+                className="admin-btn-modal-confirm"
+                onClick={handleBulkClearResolved}
+                disabled={bulkClearing}
+              >
+                {bulkClearing ? t('common.loading', 'Clearing...') : t('challenges.admin.clearResolved', 'Clear Resolved')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {feedback && (
         <div className={`admin-challenge-feedback ${feedback.type}`}>
@@ -185,9 +258,24 @@ export default function AdminChallenges() {
                     {challenge.status === 'accepted' && (
                       <button
                         className="admin-btn-schedule"
-                        onClick={() => navigate('/admin/schedule')}
+                        onClick={() =>
+                          navigate('/admin/schedule', {
+                            state: {
+                              fromChallenge: {
+                                challengeId: challenge.challengeId,
+                                challengerId: challenge.challengerId,
+                                challengedId: challenge.challengedId,
+                                matchType: challenge.matchType,
+                                stipulation: challenge.stipulation,
+                                championshipId: challenge.championshipId,
+                                challenger: challenge.challenger,
+                                challenged: challenge.challenged,
+                              },
+                            },
+                          })
+                        }
                       >
-                        {t('challenges.admin.schedule')}
+                        {t('challenges.admin.schedule', 'Schedule')}
                       </button>
                     )}
                     {(challenge.status === 'pending' ||
@@ -210,6 +298,15 @@ export default function AdminChallenges() {
                       }
                     >
                       {t('challenges.my.viewDetails')}
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-btn-delete"
+                      onClick={() => handleDelete(challenge)}
+                      disabled={submitting === challenge.challengeId}
+                      title={t('challenges.admin.delete', 'Delete')}
+                    >
+                      {submitting === challenge.challengeId ? '...' : t('challenges.admin.delete', 'Delete')}
                     </button>
                   </div>
                 </td>

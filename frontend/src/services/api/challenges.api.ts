@@ -38,4 +38,17 @@ export const challengesApi = {
       method: 'POST',
     });
   },
+
+  delete: async (challengeId: string): Promise<void> => {
+    await fetchWithAuth(`${API_BASE_URL}/challenges/${challengeId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  bulkDelete: async (body: { statuses: string[] }): Promise<{ deleted: number; message: string }> => {
+    return fetchWithAuth(`${API_BASE_URL}/challenges/bulk-delete`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
 };

@@ -27,7 +27,8 @@
     "noImage": "No Image",
     "previous": "Previous",
     "next": "Next",
-    "submitting": "Submitting..."
+    "submitting": "Submitting...",
+    "loading": "Loading..."
   },
   "nav": {
     "standings": "Standings",
@@ -433,10 +434,14 @@
       "status": "Status",
       "date": "Date",
       "actions": "Actions",
-      "schedule": "Schedule Match",
+      "schedule": "Schedule",
       "expire": "Expire",
       "filterByStatus": "Filter by Status",
-      "all": "All"
+      "all": "All",
+      "delete": "Delete",
+      "deleted": "Deleted",
+      "clearResolved": "Clear Resolved",
+      "clearResolvedConfirm": "Are you sure you want to delete all cancelled, expired, and scheduled challenges?"
     },
     "status": {
       "pending": "Pending",
@@ -1032,6 +1037,10 @@
       "hide": "Hide",
       "unhide": "Unhide",
       "delete": "Delete",
+      "deleted": "Deleted",
+      "scheduleMatch": "Schedule Match",
+      "clearHidden": "Clear hidden promos",
+      "clearHiddenConfirm": "Are you sure you want to permanently delete all hidden promos?",
       "confirmDelete": "Are you sure you want to delete this promo?",
       "filterByType": "Filter by Type",
       "all": "All"
