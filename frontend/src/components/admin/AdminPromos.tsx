@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PromoType } from '../../types/promo';
-import { mockPromos } from '../../mocks/promoMockData';
+import { promosApi } from '../../services/api/promos.api';
 import type { PromoWithContext } from '../../types/promo';
 import './AdminPromos.css';
 
@@ -31,35 +31,97 @@ function formatDate(dateStr: string): string {
 
 export default function AdminPromos() {
   const { t } = useTranslation();
-  const [promos, setPromos] = useState<PromoWithContext[]>([...mockPromos]);
+  const [promos, setPromos] = useState<PromoWithContext[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<'' | PromoType>('');
+  const [submitting, setSubmitting] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const loadPromos = useCallback(async () => {
+    try {
+      setError(null);
+      const data = await promosApi.getAll({ includeHidden: true });
+      setPromos(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load promos');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPromos();
+  }, [loadPromos]);
 
   const filteredPromos = useMemo(() => {
     if (!filterType) return promos;
     return promos.filter((p) => p.promoType === filterType);
   }, [promos, filterType]);
 
-  const handleTogglePin = (promoId: string) => {
-    setPromos((prev) =>
-      prev.map((p) =>
-        p.promoId === promoId ? { ...p, isPinned: !p.isPinned } : p
-      )
-    );
+  const showFeedback = (message: string, type: 'success' | 'error') => {
+    setFeedback({ message, type });
+    setTimeout(() => setFeedback(null), 3000);
   };
 
-  const handleToggleHide = (promoId: string) => {
-    setPromos((prev) =>
-      prev.map((p) =>
-        p.promoId === promoId ? { ...p, isHidden: !p.isHidden } : p
-      )
-    );
-  };
-
-  const handleDelete = (promoId: string) => {
-    if (window.confirm(t('promos.admin.confirmDelete', 'Are you sure you want to delete this promo?'))) {
-      setPromos((prev) => prev.filter((p) => p.promoId !== promoId));
+  const handleTogglePin = async (promo: PromoWithContext) => {
+    setSubmitting(promo.promoId);
+    try {
+      const updated = await promosApi.adminUpdate(promo.promoId, { isPinned: !promo.isPinned });
+      setPromos((prev) =>
+        prev.map((p) => (p.promoId === promo.promoId ? { ...p, isPinned: updated.isPinned } : p))
+      );
+      showFeedback(
+        `${updated.isPinned ? 'Pinned' : 'Unpinned'}: ${promo.wrestlerName}'s promo`,
+        'success'
+      );
+    } catch (err) {
+      showFeedback(err instanceof Error ? err.message : 'Failed to update promo', 'error');
+    } finally {
+      setSubmitting(null);
     }
   };
+
+  const handleToggleHide = async (promo: PromoWithContext) => {
+    setSubmitting(promo.promoId);
+    try {
+      const updated = await promosApi.adminUpdate(promo.promoId, { isHidden: !promo.isHidden });
+      setPromos((prev) =>
+        prev.map((p) => (p.promoId === promo.promoId ? { ...p, isHidden: updated.isHidden } : p))
+      );
+      showFeedback(
+        `${updated.isHidden ? 'Hidden' : 'Unhidden'}: ${promo.wrestlerName}'s promo`,
+        'success'
+      );
+    } catch (err) {
+      showFeedback(err instanceof Error ? err.message : 'Failed to update promo', 'error');
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="admin-promos">
+        <div className="admin-promos-header">
+          <h3>{t('promos.admin.title', 'Manage Promos')}</h3>
+        </div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="admin-promos">
+        <div className="admin-promos-header">
+          <h3>{t('promos.admin.title', 'Manage Promos')}</h3>
+        </div>
+        <div className="admin-promos-error">{error}</div>
+        <button onClick={loadPromos}>Retry</button>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-promos">
@@ -82,6 +144,12 @@ export default function AdminPromos() {
           </select>
         </div>
       </div>
+
+      {feedback && (
+        <div className={`admin-promos-feedback ${feedback.type}`}>
+          {feedback.message}
+        </div>
+      )}
 
       <div className="admin-promos-table-wrapper">
         <table className="admin-promos-table">
@@ -115,7 +183,8 @@ export default function AdminPromos() {
                 <td className="actions-cell">
                   <button
                     className={`action-btn pin-btn ${promo.isPinned ? 'active' : ''}`}
-                    onClick={() => handleTogglePin(promo.promoId)}
+                    onClick={() => handleTogglePin(promo)}
+                    disabled={submitting === promo.promoId}
                     title={promo.isPinned
                       ? t('promos.admin.unpin', 'Unpin')
                       : t('promos.admin.pin', 'Pin')}
@@ -126,7 +195,8 @@ export default function AdminPromos() {
                   </button>
                   <button
                     className={`action-btn hide-btn ${promo.isHidden ? 'active' : ''}`}
-                    onClick={() => handleToggleHide(promo.promoId)}
+                    onClick={() => handleToggleHide(promo)}
+                    disabled={submitting === promo.promoId}
                     title={promo.isHidden
                       ? t('promos.admin.unhide', 'Unhide')
                       : t('promos.admin.hide', 'Hide')}
@@ -134,13 +204,6 @@ export default function AdminPromos() {
                     {promo.isHidden
                       ? t('promos.admin.unhide', 'Unhide')
                       : t('promos.admin.hide', 'Hide')}
-                  </button>
-                  <button
-                    className="action-btn delete-btn"
-                    onClick={() => handleDelete(promo.promoId)}
-                    title={t('promos.admin.delete', 'Delete')}
-                  >
-                    {t('promos.admin.delete', 'Delete')}
                   </button>
                 </td>
               </tr>

@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { mockChallenges } from '../../mocks/challengeMockData';
+import { challengesApi } from '../../services/api/challenges.api';
 import type { ChallengeStatus, ChallengeWithPlayers } from '../../types/challenge';
 import './AdminChallenges.css';
 
@@ -18,31 +18,80 @@ const ALL_STATUSES: ChallengeStatus[] = [
 export default function AdminChallenges() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [challenges, setChallenges] = useState<ChallengeWithPlayers[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ChallengeStatus | 'all'>('all');
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [submitting, setSubmitting] = useState<string | null>(null);
+
+  const loadChallenges = useCallback(async () => {
+    try {
+      setError(null);
+      const data = await challengesApi.getAll();
+      setChallenges(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load challenges');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadChallenges();
+  }, [loadChallenges]);
 
   const filtered = useMemo(() => {
-    if (statusFilter === 'all') return mockChallenges;
-    return mockChallenges.filter((c) => c.status === statusFilter);
-  }, [statusFilter]);
+    if (statusFilter === 'all') return challenges;
+    return challenges.filter((c) => c.status === statusFilter);
+  }, [challenges, statusFilter]);
 
-  const handleSchedule = (challenge: ChallengeWithPlayers) => {
-    setFeedback(
-      `${t('challenges.admin.schedule')}: ${challenge.challenger.wrestlerName} vs ${challenge.challenged.wrestlerName}`
-    );
+  const showFeedback = (message: string, type: 'success' | 'error') => {
+    setFeedback({ message, type });
     setTimeout(() => setFeedback(null), 3000);
   };
 
-  const handleExpire = (challenge: ChallengeWithPlayers) => {
-    setFeedback(
-      `${t('challenges.admin.expire')}: ${challenge.challenger.wrestlerName} vs ${challenge.challenged.wrestlerName}`
-    );
-    setTimeout(() => setFeedback(null), 3000);
+  const handleCancel = async (challenge: ChallengeWithPlayers) => {
+    setSubmitting(challenge.challengeId);
+    try {
+      await challengesApi.cancel(challenge.challengeId);
+      showFeedback(
+        `Cancelled: ${challenge.challenger.wrestlerName} vs ${challenge.challenged.wrestlerName}`,
+        'success'
+      );
+      await loadChallenges();
+    } catch (err) {
+      showFeedback(
+        err instanceof Error ? err.message : 'Failed to cancel challenge',
+        'error'
+      );
+    } finally {
+      setSubmitting(null);
+    }
   };
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString();
   };
+
+  if (loading) {
+    return (
+      <div className="admin-challenges">
+        <h3>{t('challenges.admin.title')}</h3>
+        <div className="admin-challenges-empty"><p>Loading...</p></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="admin-challenges">
+        <h3>{t('challenges.admin.title')}</h3>
+        <div className="admin-challenge-feedback error">{error}</div>
+        <button onClick={loadChallenges}>Retry</button>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-challenges">
@@ -70,7 +119,11 @@ export default function AdminChallenges() {
         </span>
       </div>
 
-      {feedback && <div className="admin-challenge-feedback">{feedback}</div>}
+      {feedback && (
+        <div className={`admin-challenge-feedback ${feedback.type}`}>
+          {feedback.message}
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <div className="admin-challenges-empty">
@@ -132,18 +185,22 @@ export default function AdminChallenges() {
                     {challenge.status === 'accepted' && (
                       <button
                         className="admin-btn-schedule"
-                        onClick={() => handleSchedule(challenge)}
+                        onClick={() => navigate('/admin/schedule')}
                       >
                         {t('challenges.admin.schedule')}
                       </button>
                     )}
                     {(challenge.status === 'pending' ||
-                      challenge.status === 'countered') && (
+                      challenge.status === 'countered' ||
+                      challenge.status === 'accepted') && (
                       <button
                         className="admin-btn-expire"
-                        onClick={() => handleExpire(challenge)}
+                        onClick={() => handleCancel(challenge)}
+                        disabled={submitting === challenge.challengeId}
                       >
-                        {t('challenges.admin.expire')}
+                        {submitting === challenge.challengeId
+                          ? 'Cancelling...'
+                          : t('challenges.admin.expire')}
                       </button>
                     )}
                     <button

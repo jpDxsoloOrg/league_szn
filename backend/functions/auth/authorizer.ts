@@ -57,6 +57,17 @@ export const handler: APIGatewayTokenAuthorizerHandler = async (event) => {
 
   const token = tokenParts[1];
 
+  // Offline mode: skip JWT verification, allow all requests as Admin
+  if (process.env.IS_OFFLINE === 'true') {
+    console.log('Offline mode: bypassing JWT verification');
+    const resource = event.methodArn.split('/').slice(0, 2).join('/') + '/*';
+    return generatePolicy('offline-admin', 'Allow', resource, {
+      username: 'offline-admin',
+      email: 'admin@dev.local',
+      groups: 'Admin',
+    });
+  }
+
   try {
     // Verify the Cognito JWT token
     const payload = await verifier.verify(token);

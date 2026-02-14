@@ -16,7 +16,7 @@ interface AuthContextType extends AuthState {
   confirmSignUp: (email: string, code: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
-  devSignIn?: (player: { playerId: string; name: string }) => void;
+  devSignIn?: (player: { playerId: string; name: string }, roles?: UserRole[]) => void;
   isAdminOrModerator: boolean;
   isSuperAdmin: boolean;
   isModerator: boolean;
@@ -48,10 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const player = JSON.parse(devPlayer);
             if (!mounted) return;
+            const groups = (player.groups as UserRole[]) || ['Wrestler'];
             setState({
               isAuthenticated: true,
               isLoading: false,
-              groups: ['Wrestler'],
+              groups,
               email: `${(player.name as string).toLowerCase().replace(/\s/g, '.')}@dev.local`,
               playerId: player.playerId,
             });
@@ -179,14 +180,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [state.groups]);
 
   // Dev-only: sign in as a player without Cognito
-  const devSignIn = useCallback((player: { playerId: string; name: string }) => {
+  const devSignIn = useCallback((player: { playerId: string; name: string }, roles?: UserRole[]) => {
+    const groups = roles || ['Wrestler'];
     sessionStorage.setItem('accessToken', `dev-${player.playerId}`);
-    sessionStorage.setItem('userGroups', JSON.stringify(['Wrestler']));
-    sessionStorage.setItem('devPlayer', JSON.stringify(player));
+    sessionStorage.setItem('userGroups', JSON.stringify(groups));
+    sessionStorage.setItem('devPlayer', JSON.stringify({ ...player, groups }));
     setState({
       isAuthenticated: true,
       isLoading: false,
-      groups: ['Wrestler'],
+      groups,
       email: `${player.name.toLowerCase().replace(/\s/g, '.')}@dev.local`,
       playerId: player.playerId,
     });

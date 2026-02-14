@@ -25,10 +25,24 @@ function DevLogin() {
     navigate('/profile');
   };
 
+  const handleDevAdminLogin = () => {
+    devSignIn({ playerId: 'dev-admin', name: 'Dev Admin' }, ['Admin']);
+    navigate('/');
+  };
+
   return (
     <div className="auth-card" style={{ marginTop: '1rem', border: '2px dashed #f59e0b' }}>
       <h3 style={{ color: '#f59e0b' }}>Dev Login</h3>
-      <p className="auth-subtitle">Pick a player to sign in as (dev only)</p>
+      <p className="auth-subtitle">Pick a role to sign in as (dev only)</p>
+
+      <button
+        onClick={handleDevAdminLogin}
+        className="btn-submit"
+        style={{ textAlign: 'left', marginBottom: '1rem', backgroundColor: '#dc2626' }}
+      >
+        Sign in as Admin
+      </button>
+
       {loadingPlayers ? (
         <p>Loading players...</p>
       ) : players.length === 0 ? (
