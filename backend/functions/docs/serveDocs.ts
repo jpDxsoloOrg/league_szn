@@ -9,8 +9,13 @@ const CORS_HEADERS = {
   'Cache-Control': 'no-store',
 };
 
+/** Resolve docs directory: Lambda package root is process.cwd(); fallback for local/build paths. */
 function getDocsDir(): string {
-  return path.join(__dirname, '..', '..', 'docs');
+  const cwdDocs = path.join(process.cwd(), 'docs');
+  if (fs.existsSync(cwdDocs)) return cwdDocs;
+  const dirnameDocs = path.join(__dirname, '..', '..', 'docs');
+  if (fs.existsSync(dirnameDocs)) return dirnameDocs;
+  return cwdDocs;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {

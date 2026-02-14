@@ -605,8 +605,10 @@ functions:
   serveSwaggerUi:
     handler: functions/docs/serveDocs.handler
     package:
+      individually: true
       include:
-        - docs/**
+        - docs/openapi.yaml
+        - docs/swagger.html
     events:
       - http:
           path: api-docs
@@ -616,8 +618,10 @@ functions:
   serveOpenApiSpec:
     handler: functions/docs/serveDocs.handler
     package:
+      individually: true
       include:
-        - docs/**
+        - docs/openapi.yaml
+        - docs/swagger.html
     events:
       - http:
           path: api-docs/spec
