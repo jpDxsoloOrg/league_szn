@@ -15,8 +15,11 @@ export interface Player {
 export interface Match {
   matchId: string;
   date: string;
-  matchType: string; // "singles", "tag", "triple-threat", etc.
-  stipulation?: string; // "ladder", "cage", "hell-in-a-cell", etc.
+  matchFormat: string; // "singles", "tag", "triple-threat", etc.
+  stipulationId?: string; // References MatchTypes table
+  // Legacy fields for backwards compatibility
+  matchType: string; // Same as matchFormat (for legacy consumers)
+  stipulation?: string; // Denormalized name from MatchType (for legacy consumers)
   participants: string[]; // playerIds
   teams?: string[][]; // Array of teams, each team is an array of playerIds (for tag team matches)
   winners?: string[]; // playerIds
