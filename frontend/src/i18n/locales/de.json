@@ -66,6 +66,8 @@
     "editThisPage": "Seite bearbeiten",
     "articlesLabel": "Artikel",
     "onThisPage": "Auf dieser Seite",
+    "searchPlaceholder": "Wiki durchsuchen",
+    "noResults": "Keine Ergebnisse",
     "breadcrumbNav": "Wiki-Breadcrumb-Navigation",
     "breadcrumb": {
       "help": "Hilfe",
