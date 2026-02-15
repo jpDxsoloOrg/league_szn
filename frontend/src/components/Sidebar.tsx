@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
-import { useNavLayout } from '../contexts/NavLayoutContext';
+import { useNavLayout } from '../contexts/navLayoutContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import {
   USER_NAV_GROUPS,

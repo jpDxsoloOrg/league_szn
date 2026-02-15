@@ -2,7 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
-import { NavLayoutProvider, useNavLayout } from './contexts/NavLayoutContext';
+import { NavLayoutProvider } from './contexts/NavLayoutContext';
+import { useNavLayout } from './contexts/navLayoutContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';

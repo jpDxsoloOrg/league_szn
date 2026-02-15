@@ -1,33 +1,13 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-
-export type NavLayoutMode = 'sidebar' | 'topnav';
-
-const STORAGE_KEY = 'league_szn_nav_layout';
-
-interface NavLayoutContextType {
-  mode: NavLayoutMode;
-  setMode: (mode: NavLayoutMode) => void;
-  toggleMode: () => void;
-}
-
-const NavLayoutContext = createContext<NavLayoutContextType | undefined>(undefined);
-
-function readStoredMode(): NavLayoutMode {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'sidebar' || stored === 'topnav') return stored;
-  } catch {
-    // ignore
-  }
-  return 'sidebar';
-}
+import { useState, useEffect, useCallback, ReactNode } from 'react';
+import { NAV_LAYOUT_STORAGE_KEY, type NavLayoutMode } from './navLayoutTypes';
+import { NavLayoutContext, readStoredMode } from './navLayoutContext';
 
 export function NavLayoutProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<NavLayoutMode>(() => readStoredMode());
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, mode);
+      localStorage.setItem(NAV_LAYOUT_STORAGE_KEY, mode);
     } catch {
       // ignore
     }
@@ -46,12 +26,4 @@ export function NavLayoutProvider({ children }: { children: ReactNode }) {
       {children}
     </NavLayoutContext.Provider>
   );
-}
-
-export function useNavLayout(): NavLayoutContextType {
-  const ctx = useContext(NavLayoutContext);
-  if (ctx === undefined) {
-    throw new Error('useNavLayout must be used within NavLayoutProvider');
-  }
-  return ctx;
 }

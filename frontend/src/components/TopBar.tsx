@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useNavLayout } from '../contexts/NavLayoutContext';
+import { useNavLayout } from '../contexts/navLayoutContext';
 import './TopBar.css';
 
 export default function TopBar() {
