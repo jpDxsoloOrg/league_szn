@@ -1,0 +1,17 @@
+---
+description: When user invokes newIssue, create a GitHub issue and a plan.md using skills and parallel agents
+alwaysApply: true
+---
+
+# newIssue command
+
+When the user says **newIssue** (or "new issue") and provides a request or task description, run the **newIssue** workflow:
+
+1. **Create a GitHub issue** in **jpDxsolo/league_szn** with a clear title and body (summary, acceptance criteria, context).
+2. **Create docs/plans/plan.md** with:
+   - Link to the new issue
+   - **Skills to use**: Which available skills apply (api-documenter, code-reviewer, dependency-auditor, git-commit-helper, readme-updater, secret-scanner, security-auditor, test-generator) and when to use them
+   - **Agents and parallel work**: Suggested order (e.g. `Steps 1+2 -> Step 3`) and agent types so execute-plan can run steps in parallel where appropriate
+   - Implementation steps, files to modify, dependencies, testing, risks
+
+Follow the full instructions in **.claude/commands/newIssue.md** (read that file and execute each step). The plan format must be compatible with the **execute-plan** command so the user can run it next.
