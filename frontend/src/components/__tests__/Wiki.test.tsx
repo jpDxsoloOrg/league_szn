@@ -75,7 +75,7 @@ describe('Wiki', () => {
   });
 
   it('back-to-guide link navigates to /guide and redirects to wiki index', async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       json: async () => [],
     });
