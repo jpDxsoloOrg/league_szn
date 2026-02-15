@@ -5,9 +5,16 @@ import { render, screen } from '@testing-library/react';
 const { mockUseAuth } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
 }));
+const { mockUseSiteConfig } = vi.hoisted(() => ({
+  mockUseSiteConfig: vi.fn(),
+}));
 
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: mockUseAuth,
+}));
+
+vi.mock('../../contexts/SiteConfigContext', () => ({
+  useSiteConfig: () => mockUseSiteConfig(),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -17,6 +24,18 @@ vi.mock('react-i18next', () => ({
 import UserGuide from '../UserGuide';
 
 describe('UserGuide', () => {
+  beforeEach(() => {
+    mockUseSiteConfig.mockReturnValue({
+      features: {
+        challenges: true,
+        promos: true,
+        fantasy: true,
+        contenders: true,
+        statistics: true,
+      },
+    });
+  });
+
   it('renders guide content with all public sections and translation keys', () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: false,
@@ -31,6 +50,12 @@ describe('UserGuide', () => {
     // Intro
     expect(screen.getByText('userGuide.intro')).toBeInTheDocument();
 
+    // TOC
+    expect(screen.getByText('userGuide.toc.title')).toBeInTheDocument();
+    const nav = screen.getByRole('navigation', { name: 'userGuide.toc.ariaLabel' });
+    expect(nav).toBeInTheDocument();
+    expect(nav.querySelectorAll('a[href^="#"]').length).toBeGreaterThan(0);
+
     // Public sections
     expect(screen.getByText('userGuide.standingsSection.title')).toBeInTheDocument();
     expect(screen.getByText('userGuide.seasonsSection.title')).toBeInTheDocument();
@@ -44,6 +69,10 @@ describe('UserGuide', () => {
     // Wrestler/Fantasy sections should NOT be visible when not authenticated
     expect(screen.queryByText('userGuide.profileSection.title')).not.toBeInTheDocument();
     expect(screen.queryByText('userGuide.fantasySection.title')).not.toBeInTheDocument();
+
+    // Challenges and Promos visible when features are enabled (even when not wrestler)
+    expect(screen.getByText('userGuide.challengesSection.title')).toBeInTheDocument();
+    expect(screen.getByText('userGuide.promosSection.title')).toBeInTheDocument();
   });
 
   it('shows wrestler profile section when authenticated as wrestler', () => {
@@ -56,6 +85,8 @@ describe('UserGuide', () => {
     render(<UserGuide />);
 
     expect(screen.getByText('userGuide.profileSection.title')).toBeInTheDocument();
+    expect(screen.getByText('userGuide.challengesSection.title')).toBeInTheDocument();
+    expect(screen.getByText('userGuide.promosSection.title')).toBeInTheDocument();
     expect(screen.queryByText('userGuide.fantasySection.title')).not.toBeInTheDocument();
   });
 
@@ -70,5 +101,27 @@ describe('UserGuide', () => {
 
     expect(screen.getByText('userGuide.fantasySection.title')).toBeInTheDocument();
     expect(screen.queryByText('userGuide.profileSection.title')).not.toBeInTheDocument();
+  });
+
+  it('hides Challenges and Promos sections when features are disabled', () => {
+    mockUseSiteConfig.mockReturnValue({
+      features: {
+        challenges: false,
+        promos: false,
+        fantasy: true,
+        contenders: true,
+        statistics: true,
+      },
+    });
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: false,
+      isWrestler: false,
+      isFantasy: false,
+    });
+
+    render(<UserGuide />);
+
+    expect(screen.queryByText('userGuide.challengesSection.title')).not.toBeInTheDocument();
+    expect(screen.queryByText('userGuide.promosSection.title')).not.toBeInTheDocument();
   });
 });
