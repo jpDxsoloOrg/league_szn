@@ -13,6 +13,7 @@
   {"slug":"promos","titleKey":"wiki.articles.promos","file":"promos.md"},
   {"slug":"fantasy","titleKey":"wiki.articles.fantasy","file":"fantasy.md"},
   {"slug":"tips","titleKey":"wiki.articles.tips","file":"tips.md"},
+  {"slug":"admin","titleKey":"wiki.articles.adminGuide","file":"admin.md","adminOnly":true},
   {"slug":"admin-quickstart","titleKey":"wiki.articles.adminQuickstart","file":"admin-quickstart.md","adminOnly":true},
   {"slug":"admin-user-management","titleKey":"wiki.articles.adminUserManagement","file":"admin-user-management.md","adminOnly":true},
   {"slug":"admin-divisions","titleKey":"wiki.articles.adminDivisions","file":"admin-divisions.md","adminOnly":true},

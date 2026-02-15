@@ -27,9 +27,16 @@ export default function WikiSidebar() {
 
   const visibleArticles = useMemo(
     () =>
-      articles.filter((a) => !a.adminOnly || isAdminOrModerator),
+      articles.filter(
+        (a) =>
+          !a.adminOnly ||
+          (isAdminOrModerator && a.slug === 'admin')
+      ),
     [articles, isAdminOrModerator]
   );
+
+  const isAdminCurrent =
+    currentSlug === 'admin' || (currentSlug?.startsWith('admin-') ?? false);
 
   return (
     <>
@@ -52,8 +59,18 @@ export default function WikiSidebar() {
               <li key={entry.slug}>
                 <Link
                   to={`/guide/wiki/${entry.slug}`}
-                  className={currentSlug === entry.slug ? 'wiki-sidebar-current' : ''}
-                  aria-current={currentSlug === entry.slug ? 'page' : undefined}
+                  className={
+                    currentSlug === entry.slug ||
+                    (entry.slug === 'admin' && isAdminCurrent)
+                      ? 'wiki-sidebar-current'
+                      : ''
+                  }
+                  aria-current={
+                    currentSlug === entry.slug ||
+                    (entry.slug === 'admin' && isAdminCurrent)
+                      ? 'page'
+                      : undefined
+                  }
                   onClick={() => setOpen(false)}
                 >
                   {t(entry.titleKey)}

@@ -43,7 +43,11 @@ export default function WikiIndex() {
 
   const visibleArticles = useMemo(
     () =>
-      articles.filter((a) => !a.adminOnly || isAdminOrModerator),
+      articles.filter(
+        (a) =>
+          !a.adminOnly ||
+          (isAdminOrModerator && a.slug === 'admin')
+      ),
     [articles, isAdminOrModerator]
   );
 
