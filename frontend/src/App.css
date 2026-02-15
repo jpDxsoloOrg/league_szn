@@ -93,3 +93,28 @@ tr:hover {
     padding: 0.5rem 0.375rem;
   }
 }
+
+/* Print: hide app chrome so wiki and other content print cleanly */
+@media print {
+  .sidebar,
+  .hamburger-btn,
+  .sidebar-overlay,
+  .top-bar,
+  .topnav,
+  .topnav-bar,
+  .topnav-overlay {
+    display: none !important;
+  }
+
+  .App {
+    background: #fff;
+  }
+
+  main {
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0.5in;
+    padding-top: 0.5in;
+    max-width: none;
+  }
+}

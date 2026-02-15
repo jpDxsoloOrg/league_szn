@@ -28,7 +28,8 @@
     "previous": "Previous",
     "next": "Next",
     "submitting": "Submitting...",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "print": "Print"
   },
   "nav": {
     "standings": "Standings",

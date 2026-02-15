@@ -8,9 +8,19 @@ export function WikiLayout() {
   return (
     <div className="wiki-layout">
       <WikiBreadcrumbs />
-      <Link to="/guide" className="wiki-back-link">
-        {t('wiki.backToGuide')}
-      </Link>
+      <div className="wiki-layout-header">
+        <Link to="/guide" className="wiki-back-link">
+          {t('wiki.backToGuide')}
+        </Link>
+        <button
+          type="button"
+          className="wiki-print-btn"
+          onClick={() => window.print()}
+          aria-label={t('common.print')}
+        >
+          {t('common.print')}
+        </button>
+      </div>
       <Outlet />
     </div>
   );
