@@ -67,6 +67,33 @@
   outline-offset: 2px;
 }
 
+.wiki-layout-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.wiki-layout-header .wiki-back-link {
+  margin-bottom: 0;
+}
+
+.wiki-print-btn {
+  margin-left: auto;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  background: #333;
+  color: #d4af37;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.wiki-print-btn:hover {
+  background: #444;
+}
+
 .wiki-index-title {
   color: #d4af37;
   font-size: 1.5rem;
@@ -204,4 +231,75 @@
 
 .wiki-error {
   color: #f87171;
+}
+
+/* Print-friendly wiki: minimal chrome, readable article content */
+@media print {
+  .wiki-breadcrumbs,
+  .wiki-layout-header,
+  .wiki-back-link,
+  .wiki-print-btn {
+    display: none !important;
+  }
+
+  .wiki-layout {
+    max-width: none;
+    margin: 0;
+  }
+
+  .wiki-index-title {
+    color: #000;
+    border-bottom-color: #333;
+  }
+
+  .wiki-index-list a {
+    color: #000;
+  }
+
+  .wiki-article {
+    background: #fff;
+    border: 1px solid #ccc;
+    box-shadow: none;
+  }
+
+  .wiki-article .wiki-content,
+  .wiki-article .wiki-content p,
+  .wiki-article .wiki-content li {
+    color: #000;
+  }
+
+  .wiki-article .wiki-content h1,
+  .wiki-article .wiki-content h2,
+  .wiki-article .wiki-content h3 {
+    color: #000;
+    border-bottom-color: #333;
+  }
+
+  .wiki-article .wiki-content a {
+    color: #00f;
+  }
+
+  .wiki-article .wiki-content strong {
+    color: #000;
+  }
+
+  .wiki-article .wiki-content pre,
+  .wiki-article .wiki-content code {
+    background: #f5f5f5;
+    color: #000;
+    border: 1px solid #ddd;
+  }
+
+  .wiki-article-nav {
+    border-top-color: #333;
+  }
+
+  .wiki-article-nav-prev,
+  .wiki-article-nav-next {
+    color: #00f;
+  }
+
+  .wiki-article .wiki-content pre {
+    break-inside: avoid;
+  }
 }

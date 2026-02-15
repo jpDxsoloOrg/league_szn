@@ -28,7 +28,8 @@
     "previous": "Zurück",
     "next": "Weiter",
     "submitting": "Wird eingereicht...",
-    "loading": "Wird geladen..."
+    "loading": "Wird geladen...",
+    "print": "Drucken"
   },
   "nav": {
     "standings": "Tabelle",
