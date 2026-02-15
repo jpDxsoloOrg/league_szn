@@ -64,6 +64,7 @@
     "nextArticle": "Weiter: {{title}}",
     "articleNavLabel": "Vorheriger und nächster Artikel",
     "editThisPage": "Seite bearbeiten",
+    "articlesLabel": "Artikel",
     "breadcrumbNav": "Wiki-Breadcrumb-Navigation",
     "breadcrumb": {
       "help": "Hilfe",

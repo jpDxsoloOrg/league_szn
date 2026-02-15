@@ -94,6 +94,125 @@
   background: #444;
 }
 
+/* Sidebar on article view */
+.wiki-layout-with-sidebar {
+  max-width: none;
+}
+
+.wiki-layout-body {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.wiki-layout-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.wiki-sidebar-toggle {
+  display: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  background: #333;
+  color: #d4af37;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.wiki-sidebar-toggle:hover {
+  background: #444;
+}
+
+.wiki-sidebar {
+  flex-shrink: 0;
+  width: 200px;
+  position: sticky;
+  top: 1rem;
+}
+
+.wiki-sidebar nav {
+  padding: 1rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+
+.wiki-sidebar-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.wiki-sidebar-list li {
+  margin-bottom: 0.5rem;
+}
+
+.wiki-sidebar-list a {
+  color: #93c5fd;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.wiki-sidebar-list a:hover {
+  text-decoration: underline;
+}
+
+.wiki-sidebar-list a.wiki-sidebar-current {
+  font-weight: 600;
+  color: #d4af37;
+}
+
+.wiki-sidebar-list a:focus {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
+}
+
+.wiki-sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .wiki-sidebar-toggle {
+    display: inline-block;
+  }
+
+  .wiki-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    max-width: 85vw;
+    height: 100vh;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease-out;
+    background: #1a1a1a;
+    border: none;
+    border-radius: 0;
+  }
+
+  .wiki-sidebar.wiki-sidebar-open {
+    transform: translateX(0);
+  }
+
+  .wiki-sidebar nav {
+    border: none;
+    border-radius: 0;
+    padding-top: 2rem;
+  }
+
+  .wiki-sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+  }
+}
+
 .wiki-index-title {
   color: #d4af37;
   font-size: 1.5rem;
@@ -256,7 +375,9 @@
   .wiki-layout-header,
   .wiki-back-link,
   .wiki-print-btn,
-  .wiki-edit-link {
+  .wiki-edit-link,
+  .wiki-sidebar-toggle,
+  .wiki-sidebar {
     display: none !important;
   }
 
