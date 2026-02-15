@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { Components } from 'react-markdown';
@@ -192,7 +193,7 @@ export default function WikiArticle() {
         </nav>
       ) : null}
       <div className="wiki-content">
-        <ReactMarkdown components={wikiMarkdownComponents}>{content}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={wikiMarkdownComponents}>{content}</ReactMarkdown>
       </div>
       {(prevEntry || nextEntry) ? (
         <nav className="wiki-article-nav" aria-label={t('wiki.articleNavLabel')}>
