@@ -1,0 +1,123 @@
+.wiki-layout {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.wiki-back-link {
+  display: inline-block;
+  color: #93c5fd;
+  text-decoration: none;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.wiki-back-link:hover {
+  text-decoration: underline;
+}
+
+.wiki-back-link:focus {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
+}
+
+.wiki-index-title {
+  color: #d4af37;
+  font-size: 1.5rem;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #333;
+}
+
+.wiki-index-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.wiki-index-list li {
+  margin-bottom: 0.5rem;
+}
+
+.wiki-index-list a {
+  color: #93c5fd;
+  text-decoration: none;
+  font-size: 1.05rem;
+}
+
+.wiki-index-list a:hover {
+  text-decoration: underline;
+}
+
+.wiki-index-list a:focus {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
+}
+
+.wiki-article {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.wiki-article .wiki-content {
+  color: #ccc;
+  line-height: 1.6;
+}
+
+.wiki-article .wiki-content h1 {
+  color: #d4af37;
+  font-size: 1.75rem;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #333;
+}
+
+.wiki-article .wiki-content h2 {
+  color: #d4af37;
+  font-size: 1.35rem;
+  margin: 1.25rem 0 0.5rem 0;
+}
+
+.wiki-article .wiki-content h3 {
+  color: #e5c158;
+  font-size: 1.15rem;
+  margin: 1rem 0 0.5rem 0;
+}
+
+.wiki-article .wiki-content p {
+  margin: 0 0 0.75rem 0;
+}
+
+.wiki-article .wiki-content ul,
+.wiki-article .wiki-content ol {
+  margin: 0 0 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.wiki-article .wiki-content li {
+  margin-bottom: 0.25rem;
+}
+
+.wiki-article .wiki-content strong {
+  color: #e5e5e5;
+}
+
+.wiki-article .wiki-content a {
+  color: #93c5fd;
+  text-decoration: none;
+}
+
+.wiki-article .wiki-content a:hover {
+  text-decoration: underline;
+}
+
+.wiki-loading,
+.wiki-error {
+  color: #ccc;
+  padding: 1rem 0;
+}
+
+.wiki-error {
+  color: #f87171;
+}

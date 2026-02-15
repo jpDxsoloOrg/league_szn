@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import './UserGuide.css';
@@ -32,6 +33,12 @@ export default function UserGuide() {
       <p className="guide-intro">
         {t('userGuide.intro')}
       </p>
+
+      <section className="user-guide-wiki-entry" aria-label={t('wiki.title')}>
+        <Link to="/guide/wiki" className="user-guide-wiki-link">
+          {t('userGuide.wikiLink')}
+        </Link>
+      </section>
 
       <nav className="user-guide-toc" aria-label={t('userGuide.toc.ariaLabel')}>
         <h3 className="user-guide-toc-title">{t('userGuide.toc.title')}</h3>

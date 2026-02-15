@@ -10,6 +10,26 @@
   line-height: 1.6;
 }
 
+.user-guide-wiki-entry {
+  margin-bottom: 1.5rem;
+}
+
+.user-guide-wiki-link {
+  display: inline-block;
+  color: #93c5fd;
+  text-decoration: none;
+  font-size: 1.05rem;
+}
+
+.user-guide-wiki-link:hover {
+  text-decoration: underline;
+}
+
+.user-guide-wiki-link:focus {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
+}
+
 .user-guide-toc {
   background-color: #1a1a1a;
   border: 1px solid #333;

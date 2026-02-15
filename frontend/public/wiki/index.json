@@ -1,0 +1,12 @@
+[
+  {
+    "slug": "getting-started",
+    "titleKey": "wiki.articles.gettingStarted",
+    "file": "getting-started.md"
+  },
+  {
+    "slug": "faqs",
+    "titleKey": "wiki.articles.faqs",
+    "file": "faqs.md"
+  }
+]

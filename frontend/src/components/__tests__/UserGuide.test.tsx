@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
 const { mockUseAuth } = vi.hoisted(() => ({
@@ -43,12 +44,21 @@ describe('UserGuide', () => {
       isFantasy: false,
     });
 
-    render(<UserGuide />);
+    render(
+      <MemoryRouter>
+        <UserGuide />
+      </MemoryRouter>
+    );
 
     // Title
     expect(screen.getByText('userGuide.title')).toBeInTheDocument();
     // Intro
     expect(screen.getByText('userGuide.intro')).toBeInTheDocument();
+
+    // Wiki entry point
+    const wikiLink = screen.getByRole('link', { name: 'userGuide.wikiLink' });
+    expect(wikiLink).toBeInTheDocument();
+    expect(wikiLink).toHaveAttribute('href', '/guide/wiki');
 
     // TOC
     expect(screen.getByText('userGuide.toc.title')).toBeInTheDocument();
@@ -82,7 +92,11 @@ describe('UserGuide', () => {
       isFantasy: false,
     });
 
-    render(<UserGuide />);
+    render(
+      <MemoryRouter>
+        <UserGuide />
+      </MemoryRouter>
+    );
 
     expect(screen.getByText('userGuide.profileSection.title')).toBeInTheDocument();
     expect(screen.getByText('userGuide.challengesSection.title')).toBeInTheDocument();
@@ -97,7 +111,11 @@ describe('UserGuide', () => {
       isFantasy: true,
     });
 
-    render(<UserGuide />);
+    render(
+      <MemoryRouter>
+        <UserGuide />
+      </MemoryRouter>
+    );
 
     expect(screen.getByText('userGuide.fantasySection.title')).toBeInTheDocument();
     expect(screen.queryByText('userGuide.profileSection.title')).not.toBeInTheDocument();
@@ -119,7 +137,11 @@ describe('UserGuide', () => {
       isFantasy: false,
     });
 
-    render(<UserGuide />);
+    render(
+      <MemoryRouter>
+        <UserGuide />
+      </MemoryRouter>
+    );
 
     expect(screen.queryByText('userGuide.challengesSection.title')).not.toBeInTheDocument();
     expect(screen.queryByText('userGuide.promosSection.title')).not.toBeInTheDocument();

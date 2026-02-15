@@ -437,6 +437,7 @@ aws cloudformation describe-stacks --stack-name wwe-2k-league-api-devtest \
 - CSS modules or separate CSS files (no inline styles)
 - Async/await over promises (no .then chains)
 - Descriptive variable names (no single letters except loops)
+- When making a plan always give the file a unique name that is not already in use.
 
 ## Git Workflow
 

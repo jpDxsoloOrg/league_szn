@@ -40,6 +40,7 @@
     "promos": "Promos",
     "statistics": "Stats",
     "help": "Help",
+    "wiki": "Wiki",
     "admin": "Admin",
     "contenders": "Contenders",
     "profile": "My Profile",
@@ -53,6 +54,15 @@
   },
   "header": {
     "title": "WWE 2K League"
+  },
+  "wiki": {
+    "title": "Wiki",
+    "indexTitle": "Wiki Articles",
+    "backToGuide": "Back to guide",
+    "articles": {
+      "gettingStarted": "Getting started",
+      "faqs": "FAQs"
+    }
   },
   "languageSwitcher": {
     "label": "Language",
@@ -177,6 +187,7 @@
   "userGuide": {
     "title": "How to Use This Site",
     "intro": "Welcome to the WWE 2K League Management System! This guide will help you navigate the site and understand all the features available to you.",
+    "wikiLink": "Browse the Wiki",
     "toc": {
       "ariaLabel": "Table of contents",
       "title": "In this guide",

@@ -12,6 +12,9 @@ import Standings from './components/Standings';
 import Championships from './components/Championships';
 import Tournaments from './components/Tournaments';
 import UserGuide from './components/UserGuide';
+import { WikiLayout } from './components/Wiki';
+import WikiIndex from './components/WikiIndex';
+import WikiArticle from './components/WikiArticle';
 import AdminPanel from './components/admin/AdminPanel';
 // Auth components
 import Login from './components/auth/Login';
@@ -92,6 +95,10 @@ function AppLayout() {
             <Route path="/matches" element={<Navigate to="/events" replace />} />
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/guide" element={<UserGuide />} />
+            <Route path="/guide/wiki" element={<WikiLayout />}>
+              <Route index element={<WikiIndex />} />
+              <Route path=":slug" element={<WikiArticle />} />
+            </Route>
 
             {/* Admin Routes - Admin only (protected inside AdminPanel) */}
             <Route path="/admin" element={<AdminPanel />} />
