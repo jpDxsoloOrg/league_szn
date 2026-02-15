@@ -177,6 +177,26 @@
   "userGuide": {
     "title": "How to Use This Site",
     "intro": "Welcome to the WWE 2K League Management System! This guide will help you navigate the site and understand all the features available to you.",
+    "toc": {
+      "ariaLabel": "Table of contents",
+      "title": "In this guide",
+      "standings": "Standings",
+      "seasons": "Seasons",
+      "divisions": "Divisions",
+      "championships": "Championships",
+      "events": "Events & PPV",
+      "tournaments": "Tournaments",
+      "contenders": "Contender Rankings",
+      "profile": "My Profile",
+      "challenges": "Challenges",
+      "promos": "Promos",
+      "fantasy": "Fantasy Wrestling",
+      "tips": "Tips"
+    },
+    "sections": {
+      "publicContent": "League content",
+      "authenticated": "Your account"
+    },
     "standingsSection": {
       "title": "Standings Page",
       "description": "The Standings page is the home page and shows the current league rankings.",
@@ -292,6 +312,30 @@
       "item2": "All-time win/loss/draw record and win percentage",
       "item3": "Per-season records for every season you've competed in",
       "item4": "Your current championship holdings and contender status"
+    },
+    "challengesSection": {
+      "title": "Challenges",
+      "description": "As a wrestler you can issue, accept, decline, or counter challenges to set up matches with other players.",
+      "boardTitle": "Challenge Board",
+      "boardExplain": "Open Challenges from the navigation menu to see the Challenge Board. It lists active challenges you've sent or received. Use the filters (Active, Pending, Accepted, Recent) to find specific challenges.",
+      "issueTitle": "Issuing a challenge",
+      "issueFlow": "Click \"Issue Challenge\" to open the Promo Editor in call-out mode. Write a short call-out promo and submit it; a challenge is created and linked to your promo. You can also go to Promos and create a call-out promo from there.",
+      "respondTitle": "Responding to a challenge",
+      "respondFlow": "Open a challenge from the board or from My Profile to view details. You can Accept (to schedule a match), Decline, or Counter (issue a challenge back with your own stipulation).",
+      "statusesExplain": "Challenges can be Pending (awaiting response), Accepted (match to be scheduled), Declined, Countered, Scheduled (match booked), Expired, or Cancelled.",
+      "myChallengesLink": "From My Profile you can quickly see your sent and received challenges and open the full Challenge Board."
+    },
+    "promosSection": {
+      "title": "Promos",
+      "description": "Cut promos to build storylines, call out opponents, or respond to other wrestlers. Promos appear in the feed and can be linked to challenges.",
+      "feedTitle": "Promo feed",
+      "feedExplain": "Open Promos from the navigation menu to see the promo feed. Pinned promos appear at the top. Scroll to read open-mic promos, call-outs, and responses.",
+      "creatingTitle": "Creating a promo",
+      "creatingPromos": "Click \"Cut a Promo\" to open the editor. Give your promo a title and write the body. Use @WrestlerName to mention other wrestlers.",
+      "typesExplain": "Choose a type: Open Mic (general promo), Call-Out (challenge another wrestler; this can create a challenge), or Response (reply to another wrestler's promo).",
+      "reactionsTitle": "Reacting to promos",
+      "reactionsExplain": "On any promo you can leave a reaction. Reactions are visible to everyone and add to the storyline.",
+      "callOutsAndChallenges": "A call-out promo can create a challenge automatically. The challenged wrestler can accept, decline, or counter from the challenge. Once a match is scheduled from a challenge, it may appear on the event card and in your match history."
     },
     "fantasySection": {
       "title": "Fantasy Wrestling",

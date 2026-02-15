@@ -177,6 +177,26 @@
   "userGuide": {
     "title": "So nutzen Sie diese Seite",
     "intro": "Willkommen beim WWE 2K Liga-Verwaltungssystem! Diese Anleitung hilft Ihnen bei der Navigation und erklärt alle verfügbaren Funktionen.",
+    "toc": {
+      "ariaLabel": "Inhaltsverzeichnis",
+      "title": "In dieser Anleitung",
+      "standings": "Tabelle",
+      "seasons": "Saisons",
+      "divisions": "Divisionen",
+      "championships": "Meisterschaften",
+      "events": "Events & PPV",
+      "tournaments": "Turniere",
+      "contenders": "Herausforderer-Ranglisten",
+      "profile": "Mein Profil",
+      "challenges": "Herausforderungen",
+      "promos": "Promos",
+      "fantasy": "Fantasy Wrestling",
+      "tips": "Tipps"
+    },
+    "sections": {
+      "publicContent": "Liga-Inhalte",
+      "authenticated": "Ihr Konto"
+    },
     "standingsSection": {
       "title": "Tabellen-Seite",
       "description": "Die Tabellen-Seite ist die Startseite und zeigt die aktuelle Liga-Rangliste.",
@@ -292,6 +312,30 @@
       "item2": "Gesamt-Bilanz aus Siegen/Niederlagen/Unentschieden und Siegquote",
       "item3": "Saisonbilanzen für jede Saison, in der Sie angetreten sind",
       "item4": "Ihre aktuellen Meisterschaftstitel und Herausforderer-Status"
+    },
+    "challengesSection": {
+      "title": "Herausforderungen",
+      "description": "Als Wrestler können Sie Herausforderungen aussprechen, annehmen, ablehnen oder kontern, um Kämpfe mit anderen Spielern zu vereinbaren.",
+      "boardTitle": "Herausforderungs-Board",
+      "boardExplain": "Öffnen Sie Herausforderungen im Menü, um das Board zu sehen. Es listet aktive Herausforderungen, die Sie gesendet oder erhalten haben. Nutzen Sie die Filter (Aktiv, Ausstehend, Angenommen, Zuletzt), um bestimmte Herausforderungen zu finden.",
+      "issueTitle": "Herausforderung aussprechen",
+      "issueFlow": "Klicken Sie auf \"Herausforderung aussprechen\", um den Promo-Editor im Call-Out-Modus zu öffnen. Schreiben Sie eine kurze Call-Out-Promo und senden Sie sie ab; eine Herausforderung wird erstellt und mit Ihrer Promo verknüpft. Sie können auch unter Promos eine Call-Out-Promo erstellen.",
+      "respondTitle": "Auf eine Herausforderung reagieren",
+      "respondFlow": "Öffnen Sie eine Herausforderung vom Board oder von Mein Profil, um Details zu sehen. Sie können Annehmen (um einen Kampf zu planen), Ablehnen oder Kontern (eine Gegenherausforderung mit eigener Stipulation aussprechen).",
+      "statusesExplain": "Herausforderungen können Ausstehend (warten auf Antwort), Angenommen (Kampf soll geplant werden), Abgelehnt, Konter, Geplant (Kampf gebucht), Abgelaufen oder Storniert sein.",
+      "myChallengesLink": "Über Mein Profil sehen Sie schnell Ihre gesendeten und erhaltenen Herausforderungen und können das vollständige Board öffnen."
+    },
+    "promosSection": {
+      "title": "Promos",
+      "description": "Schneiden Sie Promos, um Storylines aufzubauen, Gegner herauszufordern oder anderen Wrestlern zu antworten. Promos erscheinen im Feed und können mit Herausforderungen verknüpft werden.",
+      "feedTitle": "Promo-Feed",
+      "feedExplain": "Öffnen Sie Promos im Menü, um den Feed zu sehen. Angepinnte Promos stehen oben. Scrollen Sie, um Open-Mic-Promos, Call-Outs und Antworten zu lesen.",
+      "creatingTitle": "Promo erstellen",
+      "creatingPromos": "Klicken Sie auf \"Promo schneiden\", um den Editor zu öffnen. Geben Sie Ihrer Promo einen Titel und schreiben Sie den Text. Nutzen Sie @WrestlerName, um andere Wrestler zu erwähnen.",
+      "typesExplain": "Wählen Sie einen Typ: Open Mic (allgemeine Promo), Call-Out (Wrestler herausfordern; kann eine Herausforderung erstellen) oder Response (auf die Promo eines anderen Wrestlers antworten).",
+      "reactionsTitle": "Auf Promos reagieren",
+      "reactionsExplain": "Bei jeder Promo können Sie eine Reaktion hinterlassen. Reaktionen sind für alle sichtbar und bereichern die Storyline.",
+      "callOutsAndChallenges": "Eine Call-Out-Promo kann automatisch eine Herausforderung erstellen. Der herausgeforderte Wrestler kann die Herausforderung annehmen, ablehnen oder kontern. Sobald ein Kampf aus einer Herausforderung geplant ist, erscheint er ggf. auf der Event-Card und in Ihrer Kampf-Historie."
     },
     "fantasySection": {
       "title": "Fantasy Wrestling",

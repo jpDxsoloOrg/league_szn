@@ -6,8 +6,59 @@
 .guide-intro {
   font-size: 1.1rem;
   color: #ccc;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   line-height: 1.6;
+}
+
+.user-guide-toc {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.user-guide-toc-title {
+  color: #d4af37;
+  font-size: 1.25rem;
+  margin: 0 0 0.75rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #333;
+}
+
+.user-guide-toc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.35rem 1.5rem;
+}
+
+.user-guide-toc-list a {
+  color: #93c5fd;
+  text-decoration: none;
+}
+
+.user-guide-toc-list a:hover {
+  text-decoration: underline;
+}
+
+.user-guide-toc-list a:focus {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
+}
+
+.guide-group-heading {
+  color: #d4af37;
+  font-size: 1.35rem;
+  margin: 2rem 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #333;
+}
+
+.guide-group-heading:first-of-type {
+  margin-top: 0;
 }
 
 .guide-section {

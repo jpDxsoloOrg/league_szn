@@ -1,10 +1,30 @@
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { useSiteConfig } from '../contexts/SiteConfigContext';
 import './UserGuide.css';
 
 export default function UserGuide() {
   const { t } = useTranslation();
   const { isAuthenticated, isWrestler, isFantasy } = useAuth();
+  const { features } = useSiteConfig();
+
+  const showChallenges = (isAuthenticated && isWrestler) || features.challenges;
+  const showPromos = (isAuthenticated && isWrestler) || features.promos;
+
+  const tocSections: { id: string; tocKey: string; show: boolean }[] = [
+    { id: 'standings', tocKey: 'userGuide.toc.standings', show: true },
+    { id: 'seasons', tocKey: 'userGuide.toc.seasons', show: true },
+    { id: 'divisions', tocKey: 'userGuide.toc.divisions', show: true },
+    { id: 'championships', tocKey: 'userGuide.toc.championships', show: true },
+    { id: 'events', tocKey: 'userGuide.toc.events', show: true },
+    { id: 'tournaments', tocKey: 'userGuide.toc.tournaments', show: true },
+    { id: 'contenders', tocKey: 'userGuide.toc.contenders', show: true },
+    { id: 'profile', tocKey: 'userGuide.toc.profile', show: isAuthenticated && isWrestler },
+    { id: 'challenges', tocKey: 'userGuide.toc.challenges', show: showChallenges },
+    { id: 'promos', tocKey: 'userGuide.toc.promos', show: showPromos },
+    { id: 'fantasy', tocKey: 'userGuide.toc.fantasy', show: isAuthenticated && isFantasy },
+    { id: 'tips', tocKey: 'userGuide.toc.tips', show: true },
+  ].filter((s) => s.show);
 
   return (
     <div className="user-guide">
@@ -13,7 +33,23 @@ export default function UserGuide() {
         {t('userGuide.intro')}
       </p>
 
-      <section className="guide-section">
+      <nav className="user-guide-toc" aria-label={t('userGuide.toc.ariaLabel')}>
+        <h3 className="user-guide-toc-title">{t('userGuide.toc.title')}</h3>
+        <ul className="user-guide-toc-list">
+          {tocSections.map(({ id, tocKey }) => (
+            <li key={id}>
+              <a href={`#${id}`}>{t(tocKey)}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      {/* Public content */}
+      <h2 id="public-content" className="guide-group-heading" tabIndex={-1}>
+        {t('userGuide.sections.publicContent')}
+      </h2>
+
+      <section id="standings" className="guide-section" tabIndex={-1}>
         <h3>{t('userGuide.standingsSection.title')}</h3>
         <p>{t('userGuide.standingsSection.description')}</p>
 
@@ -66,7 +102,7 @@ export default function UserGuide() {
         </div>
       </section>
 
-      <section className="guide-section">
+      <section id="seasons" className="guide-section" tabIndex={-1}>
         <h3>{t('userGuide.seasonsSection.title')}</h3>
         <p>{t('userGuide.seasonsSection.description')}</p>
 
@@ -89,7 +125,7 @@ export default function UserGuide() {
         </div>
       </section>
 
-      <section className="guide-section">
+      <section id="divisions" className="guide-section" tabIndex={-1}>
         <h3>{t('userGuide.divisionsSection.title')}</h3>
         <p>{t('userGuide.divisionsSection.description')}</p>
 
@@ -108,7 +144,7 @@ export default function UserGuide() {
         </div>
       </section>
 
-      <section className="guide-section">
+      <section id="championships" className="guide-section" tabIndex={-1}>
         <h3>{t('userGuide.championshipsSection.title')}</h3>
         <p>{t('userGuide.championshipsSection.description')}</p>
 
@@ -137,7 +173,7 @@ export default function UserGuide() {
         </div>
       </section>
 
-      <section className="guide-section">
+      <section id="events" className="guide-section" tabIndex={-1}>
         <h3>{t('userGuide.eventsSection.title')}</h3>
         <p>{t('userGuide.eventsSection.description')}</p>
 
@@ -164,7 +200,7 @@ export default function UserGuide() {
         </div>
       </section>
 
-      <section className="guide-section">
+      <section id="tournaments" className="guide-section" tabIndex={-1}>
         <h3>{t('userGuide.tournamentsSection.title')}</h3>
         <p>{t('userGuide.tournamentsSection.description')}</p>
 
@@ -204,7 +240,7 @@ export default function UserGuide() {
         </div>
       </section>
 
-      <section className="guide-section">
+      <section id="contenders" className="guide-section" tabIndex={-1}>
         <h3>{t('userGuide.contendersSection.title')}</h3>
         <p>{t('userGuide.contendersSection.description')}</p>
 
@@ -224,51 +260,115 @@ export default function UserGuide() {
         </div>
       </section>
 
-      {isAuthenticated && isWrestler && (
-        <section className="guide-section">
-          <h3>{t('userGuide.profileSection.title')}</h3>
-          <p>{t('userGuide.profileSection.description')}</p>
+      {/* Authenticated features */}
+      {(isAuthenticated && (isWrestler || isFantasy)) || showChallenges || showPromos ? (
+        <>
+          <h2 id="authenticated" className="guide-group-heading" tabIndex={-1}>
+            {t('userGuide.sections.authenticated')}
+          </h2>
 
-          <div className="guide-subsection">
-            <h4>{t('userGuide.profileSection.whatYouCanSee')}</h4>
-            <ul className="feature-list">
-              <li>{t('userGuide.profileSection.item1')}</li>
-              <li>{t('userGuide.profileSection.item2')}</li>
-              <li>{t('userGuide.profileSection.item3')}</li>
-              <li>{t('userGuide.profileSection.item4')}</li>
-            </ul>
-          </div>
-        </section>
-      )}
+          {isAuthenticated && isWrestler && (
+            <section id="profile" className="guide-section" tabIndex={-1}>
+              <h3>{t('userGuide.profileSection.title')}</h3>
+              <p>{t('userGuide.profileSection.description')}</p>
 
-      {isAuthenticated && isFantasy && (
-        <section className="guide-section">
-          <h3>{t('userGuide.fantasySection.title')}</h3>
-          <p>{t('userGuide.fantasySection.description')}</p>
+              <div className="guide-subsection">
+                <h4>{t('userGuide.profileSection.whatYouCanSee')}</h4>
+                <ul className="feature-list">
+                  <li>{t('userGuide.profileSection.item1')}</li>
+                  <li>{t('userGuide.profileSection.item2')}</li>
+                  <li>{t('userGuide.profileSection.item3')}</li>
+                  <li>{t('userGuide.profileSection.item4')}</li>
+                </ul>
+              </div>
+            </section>
+          )}
 
-          <div className="guide-subsection">
-            <h4>{t('userGuide.fantasySection.howItWorks')}</h4>
-            <ol className="steps-list">
-              <li>{t('userGuide.fantasySection.step1')}</li>
-              <li>{t('userGuide.fantasySection.step2')}</li>
-              <li>{t('userGuide.fantasySection.step3')}</li>
-              <li>{t('userGuide.fantasySection.step4')}</li>
-            </ol>
-          </div>
+          {showChallenges && (
+            <section id="challenges" className="guide-section" tabIndex={-1}>
+              <h3>{t('userGuide.challengesSection.title')}</h3>
+              <p>{t('userGuide.challengesSection.description')}</p>
 
-          <div className="guide-subsection">
-            <h4>{t('userGuide.fantasySection.featuresTitle')}</h4>
-            <ul className="feature-list">
-              <li><strong>{t('userGuide.fantasySection.featurePicks')}</strong> - {t('userGuide.fantasySection.featurePicksDesc')}</li>
-              <li><strong>{t('userGuide.fantasySection.featureLeaderboard')}</strong> - {t('userGuide.fantasySection.featureLeaderboardDesc')}</li>
-              <li><strong>{t('userGuide.fantasySection.featureCosts')}</strong> - {t('userGuide.fantasySection.featureCostsDesc')}</li>
-              <li><strong>{t('userGuide.fantasySection.featureResults')}</strong> - {t('userGuide.fantasySection.featureResultsDesc')}</li>
-            </ul>
-          </div>
-        </section>
-      )}
+              <div className="guide-subsection">
+                <h4>{t('userGuide.challengesSection.boardTitle')}</h4>
+                <p>{t('userGuide.challengesSection.boardExplain')}</p>
+              </div>
 
-      <section className="guide-section tips-section">
+              <div className="guide-subsection">
+                <h4>{t('userGuide.challengesSection.issueTitle')}</h4>
+                <p>{t('userGuide.challengesSection.issueFlow')}</p>
+              </div>
+
+              <div className="guide-subsection">
+                <h4>{t('userGuide.challengesSection.respondTitle')}</h4>
+                <p>{t('userGuide.challengesSection.respondFlow')}</p>
+                <p>{t('userGuide.challengesSection.statusesExplain')}</p>
+              </div>
+
+              <div className="guide-subsection">
+                <p>{t('userGuide.challengesSection.myChallengesLink')}</p>
+              </div>
+            </section>
+          )}
+
+          {showPromos && (
+            <section id="promos" className="guide-section" tabIndex={-1}>
+              <h3>{t('userGuide.promosSection.title')}</h3>
+              <p>{t('userGuide.promosSection.description')}</p>
+
+              <div className="guide-subsection">
+                <h4>{t('userGuide.promosSection.feedTitle')}</h4>
+                <p>{t('userGuide.promosSection.feedExplain')}</p>
+              </div>
+
+              <div className="guide-subsection">
+                <h4>{t('userGuide.promosSection.creatingTitle')}</h4>
+                <p>{t('userGuide.promosSection.creatingPromos')}</p>
+                <p>{t('userGuide.promosSection.typesExplain')}</p>
+              </div>
+
+              <div className="guide-subsection">
+                <h4>{t('userGuide.promosSection.reactionsTitle')}</h4>
+                <p>{t('userGuide.promosSection.reactionsExplain')}</p>
+              </div>
+
+              <div className="guide-subsection">
+                <p>{t('userGuide.promosSection.callOutsAndChallenges')}</p>
+              </div>
+            </section>
+          )}
+
+          {isAuthenticated && isFantasy && (
+            <section id="fantasy" className="guide-section" tabIndex={-1}>
+              <h3>{t('userGuide.fantasySection.title')}</h3>
+              <p>{t('userGuide.fantasySection.description')}</p>
+
+              <div className="guide-subsection">
+                <h4>{t('userGuide.fantasySection.howItWorks')}</h4>
+                <ol className="steps-list">
+                  <li>{t('userGuide.fantasySection.step1')}</li>
+                  <li>{t('userGuide.fantasySection.step2')}</li>
+                  <li>{t('userGuide.fantasySection.step3')}</li>
+                  <li>{t('userGuide.fantasySection.step4')}</li>
+                </ol>
+              </div>
+
+              <div className="guide-subsection">
+                <h4>{t('userGuide.fantasySection.featuresTitle')}</h4>
+                <ul className="feature-list">
+                  <li><strong>{t('userGuide.fantasySection.featurePicks')}</strong> - {t('userGuide.fantasySection.featurePicksDesc')}</li>
+                  <li><strong>{t('userGuide.fantasySection.featureLeaderboard')}</strong> - {t('userGuide.fantasySection.featureLeaderboardDesc')}</li>
+                  <li><strong>{t('userGuide.fantasySection.featureCosts')}</strong> - {t('userGuide.fantasySection.featureCostsDesc')}</li>
+                  <li><strong>{t('userGuide.fantasySection.featureResults')}</strong> - {t('userGuide.fantasySection.featureResultsDesc')}</li>
+                </ul>
+              </div>
+            </section>
+          )}
+        </>
+      ) : null}
+
+      {/* Tips */}
+      <section id="tips" className="guide-section tips-section" tabIndex={-1}>
         <h3>{t('userGuide.tipsSection.title')}</h3>
         <div className="tips-grid">
           <div className="tip-card">
