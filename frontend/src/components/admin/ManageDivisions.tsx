@@ -127,7 +127,7 @@ export default function ManageDivisions() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
-                placeholder="e.g., Raw, SmackDown, NXT"
+                placeholder="e.g., Heavyweight, Cruiserweight, Main Event"
               />
             </div>
 

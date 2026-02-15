@@ -10,8 +10,43 @@
 
 .admin-guide .guide-intro {
   color: #ccc;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   line-height: 1.5;
+}
+
+.admin-guide-toc {
+  background-color: #252525;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid #333;
+}
+
+.admin-guide-toc-title {
+  color: #d4af37;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #444;
+}
+
+.admin-guide-toc-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.25rem 1.5rem;
+}
+
+.admin-guide-toc-list a {
+  color: #93c5fd;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.admin-guide-toc-list a:hover {
+  text-decoration: underline;
 }
 
 .admin-guide-section {
@@ -28,6 +63,16 @@
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #444;
+}
+
+.admin-guide-subsection {
+  font-size: 1.1rem;
+  margin-top: 1rem;
+  border-bottom-color: #555;
+}
+
+.admin-guide-subsection:first-of-type {
+  margin-top: 0;
 }
 
 .admin-guide-section > p {
@@ -200,7 +245,8 @@
   flex: 1;
 }
 
-.step-content strong {
+/* Step title only (direct child strong) - block; strong inside paragraphs stay inline for normal wrapping */
+.step-content > strong {
   color: #fff;
   display: block;
   margin-bottom: 0.25rem;
@@ -210,6 +256,11 @@
   color: #ccc;
   margin: 0;
   font-size: 0.9rem;
+}
+
+.step-content p strong {
+  display: inline;
+  color: #fff;
 }
 
 .quickstart-section {
@@ -257,7 +308,8 @@
   flex: 1;
 }
 
-.quickstart-content strong {
+/* Quickstart step title only (direct child strong) - block; strong inside paragraphs stay inline */
+.quickstart-content > strong {
   color: #fff;
   display: block;
   margin-bottom: 0.25rem;
@@ -268,6 +320,11 @@
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.5;
+}
+
+.quickstart-content p strong {
+  display: inline;
+  color: #fff;
 }
 
 @media (max-width: 768px) {

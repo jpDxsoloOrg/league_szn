@@ -9,7 +9,29 @@ export default function AdminGuide() {
         Use the sidebar to access different management features.
       </p>
 
-      <section className="admin-guide-section quickstart-section">
+      <nav className="admin-guide-toc" aria-label="Table of contents">
+        <h4 className="admin-guide-toc-title">Contents</h4>
+        <ul className="admin-guide-toc-list">
+          <li><a href="#quickstart">Quickstart</a></li>
+          <li><a href="#user-management">User Management</a></li>
+          <li><a href="#divisions">Divisions</a></li>
+          <li><a href="#manage-players">Manage Players</a></li>
+          <li><a href="#seasons">Seasons</a></li>
+          <li><a href="#championships">Championships</a></li>
+          <li><a href="#events">Events</a></li>
+          <li><a href="#schedule-match">Schedule Match</a></li>
+          <li><a href="#record-results">Record Results</a></li>
+          <li><a href="#tournaments">Tournaments</a></li>
+          <li><a href="#content-social">Content &amp; social</a></li>
+          <li><a href="#challenges">Challenges</a></li>
+          <li><a href="#promos">Promos</a></li>
+          <li><a href="#contender-config">Contender Config</a></li>
+          <li><a href="#data-management">Data Management</a></li>
+          <li><a href="#workflow">Typical Weekly Workflow</a></li>
+        </ul>
+      </nav>
+
+      <section id="quickstart" className="admin-guide-section quickstart-section" tabIndex={-1}>
         <h4>Quickstart Guide</h4>
         <p>New admin? Follow these steps to set up your league from scratch.</p>
 
@@ -25,14 +47,14 @@ export default function AdminGuide() {
             <span className="quickstart-number">2</span>
             <div className="quickstart-content">
               <strong>Create Divisions</strong>
-              <p>Go to <strong>Divisions</strong> and create your brand splits (e.g., Raw, SmackDown, NXT). Divisions organize players and lock contender rankings to specific rosters.</p>
+              <p>Go to <strong>Divisions</strong> and create divisions (e.g., Heavyweight, Cruiserweight, or Main Event, Jobbers). Divisions organize players by weight class or tier and can lock contender rankings to that division.</p>
             </div>
           </div>
           <div className="quickstart-step">
             <span className="quickstart-number">3</span>
             <div className="quickstart-content">
-              <strong>Add Players</strong>
-              <p>Go to <strong>Manage Players</strong> and add each league member. Set their player name, wrestler name, upload an image, and assign them to a division.</p>
+              <strong>Manage Players</strong>
+              <p>Go to <strong>Manage Players</strong> to edit wrestler details, upload images, assign divisions, and remove players. This screen is for editing and deleting; admins do not add wrestlers here.</p>
             </div>
           </div>
           <div className="quickstart-step">
@@ -92,7 +114,7 @@ export default function AdminGuide() {
         </div>
       </section>
 
-      <section className="admin-guide-section">
+      <section id="user-management" className="admin-guide-section" tabIndex={-1}>
         <h4>User Management</h4>
         <p>The <strong>User Management</strong> page allows you to manage user accounts and assign roles.</p>
 
@@ -102,11 +124,15 @@ export default function AdminGuide() {
             <tbody>
               <tr>
                 <td><strong>Admin</strong></td>
-                <td>Full access to all management features, public pages, and authenticated features</td>
+                <td>Full access to all management features, including the Danger Zone, public pages, and authenticated features</td>
+              </tr>
+              <tr>
+                <td><strong>Moderator</strong></td>
+                <td>Access to all management features except the Danger Zone (no Generate Sample Data or Clear All Data). Can manage players, matches, championships, challenges, promos, and other day-to-day admin tasks. Assignable only by a Super Admin.</td>
               </tr>
               <tr>
                 <td><strong>Wrestler</strong></td>
-                <td>Access to personal profile page with stats, contender status, challenges (coming soon), and promos (coming soon)</td>
+                <td>Access to personal profile page with stats, contender status, challenges, and promos</td>
               </tr>
               <tr>
                 <td><strong>Fantasy</strong></td>
@@ -128,25 +154,58 @@ export default function AdminGuide() {
         </div>
       </section>
 
-      <section className="admin-guide-section">
-        <h4>Managing Players</h4>
-        <p>The <strong>Manage Players</strong> page allows you to add and edit players in the league.</p>
+      <section id="divisions" className="admin-guide-section" tabIndex={-1}>
+        <h4>Managing Divisions</h4>
+        <p>The <strong>Divisions</strong> page lets you group players by weight class, card position, or role—for example Heavyweight, Cruiserweight, Main Event, or Jobbers. Divisions are not show brands; they define who can contend for which championships when division restrictions are enabled.</p>
 
         <div className="guide-block">
-          <h5>Adding a New Player</h5>
+          <h5>Creating a Division</h5>
           <ol>
-            <li>Navigate to <strong>Manage Players</strong></li>
-            <li>Fill in the player details:
+            <li>Navigate to <strong>Divisions</strong></li>
+            <li>Fill in the division details:
               <ul>
-                <li><strong>Player Name</strong> - The person's real name or gamertag</li>
-                <li><strong>Wrestler Name</strong> - The WWE wrestler they will play as</li>
-                <li><strong>Division</strong> - Assign them to a division (Raw, SmackDown, etc.)</li>
-                <li><strong>Wrestler Image</strong> (optional) - Upload a photo of the wrestler</li>
+                <li><strong>Division Name</strong> - e.g., "Heavyweight", "Cruiserweight", "Main Event", "Jobbers"</li>
+                <li><strong>Description</strong> (optional) - e.g., "Top-tier stars", "Under 205 lbs", or "Enhancement talent"</li>
               </ul>
             </li>
-            <li>Click <strong>Add Player</strong> to save</li>
+            <li>Click <strong>Create Division</strong> to save</li>
           </ol>
         </div>
+
+        <div className="guide-block">
+          <h5>Editing a Division</h5>
+          <ol>
+            <li>Find the division in the divisions grid</li>
+            <li>Click the <strong>Edit</strong> button on the division card</li>
+            <li>Update the name or description</li>
+            <li>Click <strong>Update Division</strong> to confirm changes</li>
+          </ol>
+        </div>
+
+        <div className="guide-block">
+          <h5>Deleting a Division</h5>
+          <ol>
+            <li>Find the division in the divisions grid</li>
+            <li>Click the <strong>Delete</strong> button on the division card</li>
+            <li>Confirm the action in the dialog</li>
+          </ol>
+          <p className="note-text"><strong>Note:</strong> You cannot delete a division that has players assigned to it. Reassign or remove players from the division first.</p>
+        </div>
+
+        <div className="guide-block">
+          <h5>Assigning Players to Divisions</h5>
+          <ol>
+            <li>Navigate to <strong>Manage Players</strong></li>
+            <li>When editing a player, use the <strong>Division</strong> dropdown</li>
+            <li>Select the appropriate division or "No Division"</li>
+            <li>Save the player to apply the assignment</li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="manage-players" className="admin-guide-section" tabIndex={-1}>
+        <h4>Managing Players</h4>
+        <p>The <strong>Manage Players</strong> page allows you to edit and delete players in the league. Admins do not add wrestlers here; use this screen to update details, assign divisions, and remove players.</p>
 
         <div className="guide-block">
           <h5>Editing a Player</h5>
@@ -178,56 +237,7 @@ export default function AdminGuide() {
         </div>
       </section>
 
-      <section className="admin-guide-section">
-        <h4>Managing Divisions</h4>
-        <p>The <strong>Divisions</strong> page allows you to organize players into groups like brand splits.</p>
-
-        <div className="guide-block">
-          <h5>Creating a Division</h5>
-          <ol>
-            <li>Navigate to <strong>Divisions</strong></li>
-            <li>Fill in the division details:
-              <ul>
-                <li><strong>Division Name</strong> - e.g., "Raw", "SmackDown", "NXT"</li>
-                <li><strong>Description</strong> (optional) - A brief description of the division</li>
-              </ul>
-            </li>
-            <li>Click <strong>Create Division</strong> to save</li>
-          </ol>
-        </div>
-
-        <div className="guide-block">
-          <h5>Editing a Division</h5>
-          <ol>
-            <li>Find the division in the divisions grid</li>
-            <li>Click the <strong>Edit</strong> button on the division card</li>
-            <li>Update the name or description</li>
-            <li>Click <strong>Update Division</strong> to confirm changes</li>
-          </ol>
-        </div>
-
-        <div className="guide-block">
-          <h5>Deleting a Division</h5>
-          <ol>
-            <li>Find the division in the divisions grid</li>
-            <li>Click the <strong>Delete</strong> button on the division card</li>
-            <li>Confirm the action in the dialog</li>
-          </ol>
-          <p className="note-text"><strong>Note:</strong> You cannot delete a division that has players assigned to it. Reassign or remove players from the division first.</p>
-        </div>
-
-        <div className="guide-block">
-          <h5>Assigning Players to Divisions</h5>
-          <ol>
-            <li>Navigate to <strong>Manage Players</strong></li>
-            <li>When adding or editing a player, use the <strong>Division</strong> dropdown</li>
-            <li>Select the appropriate division or "No Division"</li>
-            <li>Save the player to apply the assignment</li>
-          </ol>
-        </div>
-      </section>
-
-      <section className="admin-guide-section">
+      <section id="seasons" className="admin-guide-section" tabIndex={-1}>
         <h4>Managing Seasons</h4>
         <p>The <strong>Seasons</strong> page allows you to organize the league into distinct competitive periods.</p>
 
@@ -282,7 +292,7 @@ export default function AdminGuide() {
         </div>
       </section>
 
-      <section className="admin-guide-section">
+      <section id="championships" className="admin-guide-section" tabIndex={-1}>
         <h4>Managing Championships</h4>
         <p>The <strong>Championships</strong> page allows you to create and manage titles.</p>
 
@@ -332,7 +342,7 @@ export default function AdminGuide() {
         </div>
       </section>
 
-      <section className="admin-guide-section">
+      <section id="events" className="admin-guide-section" tabIndex={-1}>
         <h4>Managing Events</h4>
         <p>The <strong>Events</strong> page allows you to create and manage events and PPVs that organize your match cards.</p>
 
@@ -393,7 +403,7 @@ export default function AdminGuide() {
         </div>
       </section>
 
-      <section className="admin-guide-section">
+      <section id="schedule-match" className="admin-guide-section" tabIndex={-1}>
         <h4>Scheduling Matches</h4>
         <p>The <strong>Schedule Match</strong> page allows you to create upcoming matches.</p>
 
@@ -404,8 +414,8 @@ export default function AdminGuide() {
             <li>Fill in the match details:
               <ul>
                 <li><strong>Date & Time</strong> - When the match will take place</li>
-                <li><strong>Match Type</strong> - Singles, Tag Team, Triple Threat, Fatal 4-Way, Six Pack Challenge, or Battle Royal</li>
-                <li><strong>Stipulation</strong> (optional) - Ladder, Steel Cage, Hell in a Cell, etc.</li>
+                <li><strong>Match Type</strong> - Choose from the types you’ve configured (see below). Examples: Singles, Tag Team, Triple Threat, Fatal 4-Way, Battle Royal.</li>
+                <li><strong>Stipulation</strong> (optional) - Choose from the stipulations you’ve configured, or leave as standard. Examples: Ladder, Steel Cage, Hell in a Cell, Last Man Standing.</li>
                 <li><strong>Participants</strong> - Select 2 or more players</li>
               </ul>
             </li>
@@ -416,40 +426,36 @@ export default function AdminGuide() {
           </ol>
         </div>
 
+        <div className="guide-block">
+          <h5>Pre-fill from challenge or promo</h5>
+          <p>You can open Schedule Match from the <strong>Challenges</strong> tab (click <strong>Schedule</strong> on a challenge) or from the <strong>Promos</strong> tab (click <strong>Schedule Match</strong> on a call-out promo). Participants, match type, and optional stipulation are pre-filled from the challenge or promo; you can change them before saving. The scheduled match stores a link to the challenge or promo for reference.</p>
+        </div>
+
         <div className="guide-block highlight-box">
-          <h5>Match Types Explained</h5>
-          <table className="match-type-table">
-            <tbody>
-              <tr>
-                <td><strong>Singles</strong></td>
-                <td>1 vs 1 match</td>
-              </tr>
-              <tr>
-                <td><strong>Tag Team</strong></td>
-                <td>2 vs 2 match</td>
-              </tr>
-              <tr>
-                <td><strong>Triple Threat</strong></td>
-                <td>3 participants, first to pin/submit wins</td>
-              </tr>
-              <tr>
-                <td><strong>Fatal 4-Way</strong></td>
-                <td>4 participants, first to pin/submit wins</td>
-              </tr>
-              <tr>
-                <td><strong>Six Pack Challenge</strong></td>
-                <td>6 participants, first to pin/submit wins</td>
-              </tr>
-              <tr>
-                <td><strong>Battle Royal</strong></td>
-                <td>Multiple participants, last one standing wins</td>
-              </tr>
-            </tbody>
-          </table>
+          <h5>Match types and stipulations</h5>
+          <p>Match types and stipulations are not fixed—you add and edit them in the <strong>Match Config</strong> tab (Admin → Match Config). There you’ll find two sub-tabs: <strong>Match Types</strong> and <strong>Stipulations</strong>.</p>
+
+          <h6>Match types</h6>
+          <p>Match types define the format (how many competitors, how a winner is determined). Add as many as your league uses; each needs a name and optional description. Examples:</p>
+          <ul>
+            <li><strong>Singles</strong> — 1 vs 1</li>
+            <li><strong>Tag Team</strong> — 2 vs 2</li>
+            <li><strong>Triple Threat</strong> — 3 participants, first pin/submit wins</li>
+            <li><strong>Fatal 4-Way</strong> — 4 participants, first pin/submit wins</li>
+            <li><strong>Six Pack Challenge</strong> — 6 participants</li>
+            <li><strong>Battle Royal</strong> — multiple participants, last one standing wins</li>
+          </ul>
+
+          <h6>Stipulations</h6>
+          <p>Stipulations are optional rules or gimmicks for a match. Add any your league uses (name and optional description). When scheduling a match, pick one from the list or leave it as a standard match. Examples:</p>
+          <ul>
+            <li>Ladder, Steel Cage, Hell in a Cell</li>
+            <li>Last Man Standing, Tables, Iron Man</li>
+          </ul>
         </div>
       </section>
 
-      <section className="admin-guide-section">
+      <section id="record-results" className="admin-guide-section" tabIndex={-1}>
         <h4>Recording Results</h4>
         <p>The <strong>Record Results</strong> page allows you to enter match outcomes.</p>
 
@@ -482,7 +488,7 @@ export default function AdminGuide() {
         </div>
       </section>
 
-      <section className="admin-guide-section">
+      <section id="tournaments" className="admin-guide-section" tabIndex={-1}>
         <h4>Creating Tournaments</h4>
         <p>The <strong>Tournaments</strong> page allows you to create and manage tournaments.</p>
 
@@ -538,7 +544,45 @@ export default function AdminGuide() {
         </div>
       </section>
 
-      <section className="admin-guide-section">
+      <section id="content-social" className="admin-guide-section" tabIndex={-1}>
+        <h4>Content &amp; social</h4>
+        <p>Manage challenges and promos from the <strong>Challenges</strong> and <strong>Promos</strong> admin tabs.</p>
+
+        <div className="guide-block">
+          <h4 id="challenges" className="admin-guide-subsection">Challenges</h4>
+          <p>The <strong>Challenges</strong> tab (Admin → Challenges) lets you view and manage match challenges between players.</p>
+          <h5>Viewing and filtering</h5>
+          <ul>
+            <li>Use the status filter to show pending, countered, accepted, scheduled, expired, or cancelled challenges.</li>
+            <li>Only challenges in certain statuses (e.g. pending, accepted) appear on the public challenge board; scheduled and resolved challenges are hidden from the board.</li>
+          </ul>
+          <h5>Scheduling a match from a challenge</h5>
+          <p>Click <strong>Schedule</strong> on a challenge to open Schedule Match with participants, match type, and optional stipulation pre-filled from the challenge. The scheduled match stores a link to the challenge.</p>
+          <h5>Deleting challenges</h5>
+          <p>Use the per-row <strong>Delete</strong> button to remove a challenge.</p>
+          <h5>Clear Resolved</h5>
+          <p>The <strong>Clear Resolved</strong> bulk action removes cancelled, expired, and scheduled challenges. A confirmation dialog appears before clearing.</p>
+        </div>
+
+        <div className="guide-block">
+          <h4 id="promos" className="admin-guide-subsection">Promos</h4>
+          <p>The <strong>Promos</strong> tab (Admin → Promos) lets you manage the promo feed (open-mic, call-outs, responses).</p>
+          <h5>Viewing and filtering</h5>
+          <p>View the promo list and filter by type (open-mic, call-out, response, etc.) as needed.</p>
+          <h5>Pin / Unpin</h5>
+          <p>Pinned promos appear at the top of the public feed.</p>
+          <h5>Hide</h5>
+          <p>Hidden promos are removed from the public feed. Scheduling a match from a call-out promo can hide it from the feed.</p>
+          <h5>Schedule Match (call-out promos)</h5>
+          <p>For call-out promos, click <strong>Schedule Match</strong> to open Schedule Match with participants and details pre-filled from the promo. The match stores a link to the promo.</p>
+          <h5>Deleting promos</h5>
+          <p>Use the per-row delete action to remove a promo.</p>
+          <h5>Clear hidden promos</h5>
+          <p>The <strong>Clear hidden promos</strong> bulk action removes hidden promos from the list after confirmation.</p>
+        </div>
+      </section>
+
+      <section id="contender-config" className="admin-guide-section" tabIndex={-1}>
         <h4>Contender Configuration</h4>
         <p>The <strong>Contender Config</strong> page allows you to configure automatic #1 contender rankings for each championship.</p>
 
@@ -547,7 +591,7 @@ export default function AdminGuide() {
           <ul>
             <li>Rankings are automatically calculated based on recent match performance</li>
             <li>Each championship has its own contender rankings</li>
-            <li>Rankings can be locked to a specific division (e.g., only Raw players contend for the Raw championship)</li>
+            <li>Rankings can be locked to a specific division (e.g., only Heavyweight division players contend for the Heavyweight championship)</li>
             <li>Players must meet a minimum match threshold to qualify</li>
           </ul>
         </div>
@@ -580,7 +624,7 @@ export default function AdminGuide() {
         </div>
       </section>
 
-      <section className="admin-guide-section danger-section">
+      <section id="data-management" className="admin-guide-section danger-section" tabIndex={-1}>
         <h4>Data Management</h4>
         <p>The <strong>Danger Zone</strong> tab provides tools to generate sample data or completely reset the league.</p>
 
@@ -590,7 +634,7 @@ export default function AdminGuide() {
           <h6>What Gets Created:</h6>
           <ul>
             <li><strong>12 Players</strong> - With random win/loss records and assigned wrestlers</li>
-            <li><strong>3 Divisions</strong> - Raw, SmackDown, and NXT</li>
+            <li><strong>3 Divisions</strong> - e.g., Heavyweight, Cruiserweight, Mid-Card</li>
             <li><strong>1 Active Season</strong> - With standings for all players</li>
             <li><strong>4 Championships</strong> - World, Intercontinental, Tag Team, and US titles</li>
             <li><strong>12 Matches</strong> - Mix of completed and scheduled matches</li>
@@ -644,7 +688,7 @@ export default function AdminGuide() {
         </div>
       </section>
 
-      <section className="admin-guide-section workflow-section">
+      <section id="workflow" className="admin-guide-section workflow-section" tabIndex={-1}>
         <h4>Typical Weekly Workflow</h4>
         <div className="workflow-steps">
           <div className="workflow-step">
@@ -687,6 +731,13 @@ export default function AdminGuide() {
             <div className="step-content">
               <strong>Review Standings</strong>
               <p>Check the updated standings and contender rankings on the public pages</p>
+            </div>
+          </div>
+          <div className="workflow-step">
+            <span className="step-number">7</span>
+            <div className="step-content">
+              <strong>Review challenges and promos</strong>
+              <p>In <strong>Challenges</strong> and <strong>Promos</strong> tabs, clear resolved challenges or hidden promos as needed; schedule matches from accepted challenges or call-outs when ready.</p>
             </div>
           </div>
         </div>
