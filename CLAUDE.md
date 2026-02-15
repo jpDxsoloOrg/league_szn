@@ -118,8 +118,8 @@ wwe-2k-league/
 - **Wiki content** lives in the repo as static files; there is no admin UI for editing. All editing is done by changing files and redeploying.
   - **Location**: `frontend/public/wiki/`
   - **Index**: `frontend/public/wiki/index.json` — JSON array of `{ "slug": string, "titleKey": string, "file": string }`. The app fetches this to build the wiki index page.
-  - **Articles**: Markdown files in `frontend/public/wiki/*.md` (e.g. `getting-started.md`, `faqs.md`). Each article is loaded at runtime by slug via `fetch(\`/wiki/${slug}.md\`)`.
-- **To add a wiki article**: (1) Add a new `.md` file under `frontend/public/wiki/`. (2) Append an entry to `frontend/public/wiki/index.json` with `slug` (URL segment), `titleKey` (e.g. `wiki.articles.myTopic`), and `file` (e.g. `my-topic.md`). (3) Add the `titleKey` translation in `frontend/src/i18n/locales/en.json` and `frontend/src/i18n/locales/de.json` under `wiki.articles`.
+  - **Articles**: Markdown files in `frontend/public/wiki/*.md` (e.g. `getting-started.md`, `faqs.md`). Each article is loaded at runtime by slug and current locale: German from `frontend/public/wiki/de/*.md` (when language is de), English from `frontend/public/wiki/*.md`. If a German file is missing, the app falls back to the English file.
+- **To add a wiki article**: (1) Add a new `.md` file under `frontend/public/wiki/` (English). (2) For German, add the same slug under `frontend/public/wiki/de/` (e.g. `wiki/de/my-topic.md`). (3) Append an entry to `frontend/public/wiki/index.json` with `slug`, `titleKey` (e.g. `wiki.articles.myTopic`), and `file` (e.g. `my-topic.md`). (4) Add the `titleKey` translation in `frontend/src/i18n/locales/en.json` and `frontend/src/i18n/locales/de.json` under `wiki.articles`.
 - **"Edit this page" link**: On article view, an "Edit this page" link points to the GitHub edit URL for that article’s markdown file. It is shown only when `VITE_GITHUB_REPO` is set (e.g. `jpDxsoloOrg/league_szn`). Optional `VITE_GITHUB_BRANCH` (default `main`) sets the branch in the edit URL. Add these to `.env` or deployment env so the link works in your environment.
 
 ## Data Model
