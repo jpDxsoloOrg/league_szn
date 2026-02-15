@@ -1,7 +1,44 @@
-import { APIGatewayProxyHandler } from 'aws-lambda';
+import { APIGatewayProxyEvent, APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, serverError } from '../../lib/response';
 import { v4 as uuidv4 } from 'uuid';
+
+/** Valid seed module IDs for pick-and-choose (issue 118). When modular seed exists, only these will be run when requested. */
+export const SEED_MODULE_IDS = [
+  'core',
+  'championships',
+  'matches',
+  'standings',
+  'tournaments',
+  'events',
+  'contenders',
+  'fantasy',
+  'config',
+] as const;
+
+/** Dependency order for seed modules (from plan-modular-seed-data.md). Used to auto-include deps when modular seed is implemented. */
+export const SEED_MODULE_ORDER: readonly string[] = [
+  'core',
+  'championships',
+  'matches',
+  'standings',
+  'tournaments',
+  'events',
+  'contenders',
+  'fantasy',
+  'config',
+];
+
+function parseModulesFromBody(body: string | null): string[] | null {
+  if (body == null || body === '') return null;
+  try {
+    const parsed = JSON.parse(body) as { modules?: unknown };
+    if (!Array.isArray(parsed.modules)) return null;
+    return parsed.modules.filter((m): m is string => typeof m === 'string');
+  } catch {
+    return null;
+  }
+}
 
 const wrestlers = [
   'Stone Cold Steve Austin',
@@ -55,7 +92,19 @@ function getISOWeekKey(championshipId: string, date: Date): string {
   return `${championshipId}#${year}-${String(week).padStart(2, '0')}`;
 }
 
-export const handler: APIGatewayProxyHandler = async () => {
+export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
+  const requestedModules = parseModulesFromBody(event.body ?? null);
+  // When modular seed is implemented: run only requested modules (with deps auto-included) in SEED_MODULE_ORDER.
+  // Until then, we always run the full monolithic seed; requestedModules is accepted but not yet used.
+  if (requestedModules != null && requestedModules.length > 0) {
+    const validSet = new Set(SEED_MODULE_IDS);
+    const valid = requestedModules.filter((m) => validSet.has(m));
+    if (valid.length === 0) {
+      return serverError('Invalid or unknown seed module IDs');
+    }
+    // TODO: when plan-modular-seed-data.md is done, run only valid modules in dependency order
+  }
+
   try {
     const createdCounts: Record<string, number> = {};
     const now = new Date().toISOString();

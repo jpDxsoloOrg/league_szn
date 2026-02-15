@@ -118,6 +118,49 @@ describe('seedData', () => {
     expect(result!.statusCode).toBe(500);
     expect(JSON.parse(result!.body).message).toBe('Failed to seed data');
   });
+
+  it('accepts optional body with modules array and still runs full seed (until modular seed exists)', async () => {
+    mockPut.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({});
+
+    const result = await seedData(
+      makeEvent({ body: '{"modules":["core"]}' }),
+      ctx,
+      cb
+    );
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.createdCounts.divisions).toBe(3);
+    expect(body.createdCounts.players).toBe(12);
+  });
+
+  it('runs full seed when body is empty or modules array is empty', async () => {
+    mockPut.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({});
+
+    const resultEmptyBody = await seedData(makeEvent({ body: '{}' }), ctx, cb);
+    expect(resultEmptyBody!.statusCode).toBe(200);
+    expect(JSON.parse(resultEmptyBody!.body).createdCounts.players).toBe(12);
+
+    const resultEmptyModules = await seedData(
+      makeEvent({ body: '{"modules":[]}' }),
+      ctx,
+      cb
+    );
+    expect(resultEmptyModules!.statusCode).toBe(200);
+    expect(JSON.parse(resultEmptyModules!.body).createdCounts.players).toBe(12);
+  });
+
+  it('returns 500 when body has only invalid module IDs', async () => {
+    const result = await seedData(
+      makeEvent({ body: '{"modules":["unknown-module"]}' }),
+      ctx,
+      cb
+    );
+    expect(result!.statusCode).toBe(500);
+    expect(JSON.parse(result!.body).message).toMatch(/Invalid|unknown/i);
+  });
 });
 
 // ─── clearAll ───────────────────────────────────────────────────────

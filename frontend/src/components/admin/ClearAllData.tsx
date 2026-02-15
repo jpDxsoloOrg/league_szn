@@ -2,6 +2,18 @@ import { useState } from 'react';
 import { adminApi } from '../../services/api';
 import './ClearAllData.css';
 
+const SEED_MODULES: { id: string; label: string }[] = [
+  { id: 'core', label: 'Core (Divisions, Players, Seasons)' },
+  { id: 'championships', label: 'Championships' },
+  { id: 'matches', label: 'Matches' },
+  { id: 'standings', label: 'Standings' },
+  { id: 'tournaments', label: 'Tournaments' },
+  { id: 'events', label: 'Events' },
+  { id: 'contenders', label: 'Contenders' },
+  { id: 'fantasy', label: 'Fantasy' },
+  { id: 'config', label: 'Config (Site, Stipulations, Match Types)' },
+];
+
 export default function ClearAllData() {
   const [clearLoading, setClearLoading] = useState(false);
   const [seedLoading, setSeedLoading] = useState(false);
@@ -10,8 +22,17 @@ export default function ClearAllData() {
   const [resultCounts, setResultCounts] = useState<Record<string, number> | null>(null);
   const [resultType, setResultType] = useState<'deleted' | 'created' | null>(null);
   const [confirmText, setConfirmText] = useState('');
+  const [selectedSeedModules, setSelectedSeedModules] = useState<string[]>([]);
 
   const CONFIRMATION_PHRASE = 'DELETE ALL DATA';
+
+  const toggleSeedModule = (id: string) => {
+    setSelectedSeedModules((prev) =>
+      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
+    );
+  };
+  const selectAllSeedModules = () => setSelectedSeedModules(SEED_MODULES.map((m) => m.id));
+  const selectNoneSeedModules = () => setSelectedSeedModules([]);
 
   const handleClearAll = async () => {
     if (confirmText !== CONFIRMATION_PHRASE) {
@@ -52,7 +73,10 @@ export default function ClearAllData() {
     setResultCounts(null);
 
     try {
-      const result = await adminApi.seedData();
+      const result =
+        selectedSeedModules.length > 0
+          ? await adminApi.seedData({ modules: selectedSeedModules })
+          : await adminApi.seedData();
       setSuccess('Sample data has been generated successfully!');
       setResultCounts(result.createdCounts);
       setResultType('created');
@@ -77,8 +101,38 @@ export default function ClearAllData() {
         <p>
           Quickly populate the league with sample data for testing or demonstration purposes.
         </p>
+        <div className="seed-options">
+          <h4>Seed options (optional)</h4>
+          <p className="seed-options-note">
+            No selection = seed everything. Dependencies are added automatically when needed.
+          </p>
+          <div className="seed-options-actions">
+            <button type="button" onClick={selectAllSeedModules} className="seed-option-link">
+              Select all
+            </button>
+            <span className="seed-options-sep">|</span>
+            <button type="button" onClick={selectNoneSeedModules} className="seed-option-link">
+              Select none
+            </button>
+          </div>
+          <ul className="seed-options-list">
+            {SEED_MODULES.map((mod) => (
+              <li key={mod.id} className="seed-option">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={selectedSeedModules.includes(mod.id)}
+                    onChange={() => toggleSeedModule(mod.id)}
+                    disabled={isLoading}
+                  />
+                  <span>{mod.label}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
         <div className="seed-details">
-          <h4>What gets created:</h4>
+          <h4>What gets created (full seed):</h4>
           <ul>
             <li><strong>12 Players</strong> - With random win/loss records and wrestler assignments</li>
             <li><strong>3 Divisions</strong> - Raw, SmackDown, and NXT</li>
