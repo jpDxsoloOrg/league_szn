@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "deploy": "serverless deploy",
+    "validate-api-docs": "npx @redocly/cli lint docs/openapi.yaml",
+    "embed-docs": "node scripts/embed-docs.js",
     "remove": "serverless remove",
     "logs": "serverless logs",
     "offline": "SLS_RUNTIME=nodejs20.x serverless offline start --stage offline --noPrependStageInUrl --prefix dev",

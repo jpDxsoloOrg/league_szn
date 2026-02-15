@@ -218,6 +218,21 @@ Fantasy (lowest) --> Wrestler --> Moderator --> Admin (highest)
 
 All endpoints are served under the API Gateway base URL. Admin endpoints require a valid JWT token in the `Authorization: Bearer <token>` header.
 
+### API Documentation (OpenAPI / Swagger)
+
+Interactive API docs are available via **Swagger UI**:
+
+- **Local:** When running the backend with `npm run offline` (in `backend/`), open [http://localhost:3001/dev/api-docs](http://localhost:3001/dev/api-docs).
+- **Deployed:** Use the same path on your API base URL (e.g. `https://<api-id>.execute-api.us-east-1.amazonaws.com/<stage>/api-docs`).
+
+The OpenAPI 3.0 spec is at `backend/docs/openapi.yaml`. To validate it (syntax and refs), from the `backend/` directory run:
+
+```bash
+npm run validate-api-docs
+```
+
+When you add or change HTTP endpoints in `serverless.yml` or handler request/response shapes, update `backend/docs/openapi.yaml` so the docs stay in sync. After editing the spec or `backend/docs/swagger.html`, run `npm run embed-docs` in `backend/` and commit the updated `functions/docs/docsEmbed.generated.ts` so the deployed API serves the new content.
+
 <details>
 <summary><strong>Public Endpoints (17)</strong></summary>
 

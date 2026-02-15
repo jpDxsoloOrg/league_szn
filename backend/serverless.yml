@@ -167,6 +167,14 @@ functions:
           method: post
           cors: *corsConfig
 
+  login:
+    handler: functions/auth/login.handler
+    events:
+      - http:
+          path: auth/login
+          method: post
+          cors: *corsConfig
+
   # User Management (Admin only)
   listUsers:
     handler: functions/users/listUsers.handler
@@ -600,6 +608,23 @@ functions:
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
+
+  # API Documentation (Swagger UI + OpenAPI spec)
+  serveSwaggerUi:
+    handler: functions/docs/serveDocs.handler
+    events:
+      - http:
+          path: api-docs
+          method: get
+          cors: *corsConfig
+
+  serveOpenApiSpec:
+    handler: functions/docs/serveDocs.handler
+    events:
+      - http:
+          path: api-docs/spec
+          method: get
+          cors: *corsConfig
 
   # Admin
   clearAll:
