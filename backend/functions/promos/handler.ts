@@ -1,4 +1,9 @@
-import { APIGatewayProxyEvent, APIGatewayProxyHandler, Context } from 'aws-lambda';
+import {
+  APIGatewayProxyEvent,
+  APIGatewayProxyHandler,
+  APIGatewayProxyResult,
+  Context,
+} from 'aws-lambda';
 import { methodNotAllowed } from '../../lib/response';
 import { handler as getPromosHandler } from './getPromos';
 import { handler as getPromoHandler } from './getPromo';
@@ -8,43 +13,43 @@ import { handler as adminUpdatePromoHandler } from './adminUpdatePromo';
 import { handler as deletePromoHandler } from './deletePromo';
 import { handler as bulkDeletePromosHandler } from './bulkDeletePromos';
 
+const noopCallback = () => {};
+
 /**
  * Single Lambda for promos: routes by HTTP method and path.
- * Replaces getPromos, getPromo, createPromo, reactToPromo, adminUpdatePromo, deletePromo, bulkDeletePromos.
+ * Replaces getPromos, getPromo, create, react, adminUpdate, delete, bulkDelete.
  */
 export const handler: APIGatewayProxyHandler = async (
   event: APIGatewayProxyEvent,
-  context: Context
-) => {
-  const method = event.httpMethod?.toUpperCase() ?? event.requestContext?.http?.method?.toUpperCase();
+  context: Context,
+  callback: Parameters<APIGatewayProxyHandler>[2]
+): Promise<APIGatewayProxyResult> => {
+  const method = event.httpMethod?.toUpperCase() ?? 'GET';
   const path = event.path ?? '';
   const pathParams = event.pathParameters ?? {};
-  const promoId = pathParams.promoId;
 
-  const isAdminPromos = path.includes('admin/promos');
-  const isReact = path.includes('/react');
-  const isBulkDelete = path.includes('bulk-delete');
-
-  if (method === 'POST' && isAdminPromos && isBulkDelete) {
-    return bulkDeletePromosHandler(event, context);
+  if (path.includes('admin/promos/bulk-delete') && method === 'POST') {
+    return (await bulkDeletePromosHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
-  if (method === 'GET' && !promoId && !isAdminPromos) {
-    return getPromosHandler(event, context);
+  if (path.includes('admin/promos/') && pathParams.promoId) {
+    if (method === 'PUT') {
+      return (await adminUpdatePromoHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
+    }
+    if (method === 'DELETE') {
+      return (await deletePromoHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
+    }
   }
-  if (method === 'GET' && promoId && !isAdminPromos) {
-    return getPromoHandler(event, context);
+  if (path.includes('/react') && method === 'POST' && pathParams.promoId) {
+    return (await reactToPromoHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
-  if (method === 'POST' && !promoId) {
-    return createPromoHandler(event, context);
+  if (method === 'GET' && !pathParams.promoId) {
+    return (await getPromosHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
-  if (method === 'POST' && promoId && isReact) {
-    return reactToPromoHandler(event, context);
+  if (method === 'GET' && pathParams.promoId) {
+    return (await getPromoHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
-  if (method === 'PUT' && isAdminPromos && promoId) {
-    return adminUpdatePromoHandler(event, context);
-  }
-  if (method === 'DELETE' && isAdminPromos && promoId) {
-    return deletePromoHandler(event, context);
+  if (method === 'POST' && !pathParams.promoId) {
+    return (await createPromoHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
 
   return methodNotAllowed();

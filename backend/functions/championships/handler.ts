@@ -1,4 +1,9 @@
-import { APIGatewayProxyEvent, APIGatewayProxyHandler, Context } from 'aws-lambda';
+import {
+  APIGatewayProxyEvent,
+  APIGatewayProxyHandler,
+  APIGatewayProxyResult,
+  Context,
+} from 'aws-lambda';
 import { methodNotAllowed } from '../../lib/response';
 import { handler as getChampionshipsHandler } from './getChampionships';
 import { handler as createChampionshipHandler } from './createChampionship';
@@ -7,39 +12,38 @@ import { handler as updateChampionshipHandler } from './updateChampionship';
 import { handler as deleteChampionshipHandler } from './deleteChampionship';
 import { handler as vacateChampionshipHandler } from './vacateChampionship';
 
+const noopCallback = () => {};
+
 /**
  * Single Lambda for championships: routes by HTTP method and path.
  * Replaces getChampionships, createChampionship, getChampionshipHistory, updateChampionship, deleteChampionship, vacateChampionship.
  */
 export const handler: APIGatewayProxyHandler = async (
   event: APIGatewayProxyEvent,
-  context: Context
-) => {
-  const method = event.httpMethod?.toUpperCase() ?? event.requestContext?.http?.method?.toUpperCase();
+  context: Context,
+  callback: Parameters<APIGatewayProxyHandler>[2]
+): Promise<APIGatewayProxyResult> => {
+  const method = event.httpMethod?.toUpperCase() ?? 'GET';
   const path = event.path ?? '';
   const pathParams = event.pathParameters ?? {};
-  const championshipId = pathParams.championshipId;
 
-  const isHistory = path.includes('/history');
-  const isVacate = path.includes('/vacate');
-
-  if (method === 'GET' && !championshipId) {
-    return getChampionshipsHandler(event, context);
+  if (path.includes('/vacate') && method === 'POST' && pathParams.championshipId) {
+    return (await vacateChampionshipHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
-  if (method === 'POST' && !championshipId) {
-    return createChampionshipHandler(event, context);
+  if (path.includes('/history') && method === 'GET' && pathParams.championshipId) {
+    return (await getChampionshipHistoryHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
-  if (method === 'GET' && championshipId && isHistory) {
-    return getChampionshipHistoryHandler(event, context);
+  if (method === 'GET' && !pathParams.championshipId) {
+    return (await getChampionshipsHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
-  if (method === 'POST' && championshipId && isVacate) {
-    return vacateChampionshipHandler(event, context);
+  if (method === 'POST' && !pathParams.championshipId) {
+    return (await createChampionshipHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
-  if (method === 'PUT' && championshipId) {
-    return updateChampionshipHandler(event, context);
+  if (method === 'PUT' && pathParams.championshipId) {
+    return (await updateChampionshipHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
-  if (method === 'DELETE' && championshipId) {
-    return deleteChampionshipHandler(event, context);
+  if (method === 'DELETE' && pathParams.championshipId) {
+    return (await deleteChampionshipHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
 
   return methodNotAllowed();
