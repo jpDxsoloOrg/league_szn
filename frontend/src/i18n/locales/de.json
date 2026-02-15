@@ -59,6 +59,9 @@
     "title": "Wiki",
     "indexTitle": "Wiki-Artikel",
     "backToGuide": "Zurück zur Anleitung",
+    "previousArticle": "Zurück: {{title}}",
+    "nextArticle": "Weiter: {{title}}",
+    "articleNavLabel": "Vorheriger und nächster Artikel",
     "breadcrumbNav": "Wiki-Breadcrumb-Navigation",
     "breadcrumb": {
       "help": "Hilfe",
