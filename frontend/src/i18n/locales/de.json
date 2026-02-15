@@ -70,6 +70,7 @@
     "searchPlaceholder": "Wiki durchsuchen",
     "noResults": "Keine Ergebnisse",
     "adminOnlyArticle": "Sie haben keine Berechtigung, diesen Artikel anzuzeigen.",
+    "showingEnglishFallback": "Dieser Artikel ist auf Deutsch noch nicht verfügbar; Anzeige auf Englisch.",
     "breadcrumbNav": "Wiki-Breadcrumb-Navigation",
     "breadcrumb": {
       "help": "Hilfe",

@@ -70,6 +70,7 @@
     "searchPlaceholder": "Search wiki",
     "noResults": "No results",
     "adminOnlyArticle": "You don't have permission to view this article.",
+    "showingEnglishFallback": "This article is not yet available in German; showing English.",
     "breadcrumbNav": "Wiki breadcrumb navigation",
     "breadcrumb": {
       "help": "Help",
