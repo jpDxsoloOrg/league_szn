@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
@@ -10,6 +11,12 @@ const { mockUseTranslation } = vi.hoisted(() => ({
 vi.mock('react-i18next', () => ({
   useTranslation: () => mockUseTranslation(),
 }));
+
+vi.mock('react-syntax-highlighter', () => ({
+  Prism: ({ children }: { children?: React.ReactNode }) =>
+    React.createElement('pre', { 'data-testid': 'syntax-highlighter' }, React.createElement('code', null, children)),
+}));
+vi.mock('react-syntax-highlighter/dist/esm/styles/prism', () => ({ oneDark: {} }));
 
 import { WikiLayout } from '../Wiki';
 import WikiIndex from '../WikiIndex';

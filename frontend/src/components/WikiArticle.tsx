@@ -2,7 +2,34 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import type { Components } from 'react-markdown';
 import './Wiki.css';
+
+const wikiMarkdownComponents: Components = {
+  code({ className, children, ...props }) {
+    const match = /language-(\w+)/.exec(className ?? '');
+    if (match) {
+      return (
+        <SyntaxHighlighter
+          style={oneDark}
+          language={match[1]}
+          PreTag="div"
+          customStyle={{ margin: '0.75rem 0', borderRadius: '6px' }}
+          codeTagProps={{ style: { fontFamily: 'inherit' } }}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      );
+    }
+    return (
+      <code className={className} {...props}>
+        {children}
+      </code>
+    );
+  },
+};
 
 export default function WikiArticle() {
   const { slug } = useParams<{ slug: string }>();
@@ -45,7 +72,7 @@ export default function WikiArticle() {
   return (
     <article className="wiki-article">
       <div className="wiki-content">
-        <ReactMarkdown>{content}</ReactMarkdown>
+        <ReactMarkdown components={wikiMarkdownComponents}>{content}</ReactMarkdown>
       </div>
     </article>
   );
