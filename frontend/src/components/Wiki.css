@@ -270,6 +270,80 @@
   outline-offset: 2px;
 }
 
+.wiki-toc {
+  margin-bottom: 1rem;
+}
+
+.wiki-toc-toggle {
+  display: none;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: left;
+  background: #252525;
+  color: #d4af37;
+  border: 1px solid #333;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.wiki-toc-toggle:hover {
+  background: #2a2a2a;
+}
+
+.wiki-toc-list-wrap {
+  padding: 0.75rem 1rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+}
+
+.wiki-toc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.wiki-toc-list li {
+  margin-bottom: 0.35rem;
+}
+
+.wiki-toc-list li.wiki-toc-level-3 {
+  padding-left: 1rem;
+}
+
+.wiki-toc-list a {
+  color: #93c5fd;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.wiki-toc-list a:hover {
+  text-decoration: underline;
+}
+
+.wiki-toc-list a:focus {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .wiki-toc-toggle {
+    display: block;
+  }
+
+  .wiki-toc-list-wrap {
+    display: none;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+  }
+
+  .wiki-toc-list-wrap.wiki-toc-open {
+    display: block;
+  }
+}
+
 .wiki-article .wiki-content {
   color: #ccc;
   line-height: 1.6;
@@ -377,7 +451,8 @@
   .wiki-print-btn,
   .wiki-edit-link,
   .wiki-sidebar-toggle,
-  .wiki-sidebar {
+  .wiki-sidebar,
+  .wiki-toc {
     display: none !important;
   }
 

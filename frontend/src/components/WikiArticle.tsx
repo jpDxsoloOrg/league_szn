@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,7 +14,45 @@ interface WikiArticleEntry {
   file: string;
 }
 
-const wikiMarkdownComponents: Components = {
+interface TocItem {
+  level: 2 | 3;
+  text: string;
+  id: string;
+}
+
+function slugify(text: string): string {
+  return String(text)
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+}
+
+function parseHeadings(markdown: string): TocItem[] {
+  const items: TocItem[] = [];
+  const idCount: Record<string, number> = {};
+  const lines = markdown.split('\n');
+  for (const line of lines) {
+    const h2 = /^##\s+(.+)$/.exec(line);
+    const h3 = /^###\s+(.+)$/.exec(line);
+    if (h2?.[1]) {
+      const text = h2[1].trim();
+      const baseId = slugify(text) || 'section';
+      idCount[baseId] = (idCount[baseId] ?? 0) + 1;
+      const id = idCount[baseId]! > 1 ? `${baseId}-${idCount[baseId]}` : baseId;
+      items.push({ level: 2, text, id });
+    } else if (h3?.[1]) {
+      const text = h3[1].trim();
+      const baseId = slugify(text) || 'section';
+      idCount[baseId] = (idCount[baseId] ?? 0) + 1;
+      const id = idCount[baseId]! > 1 ? `${baseId}-${idCount[baseId]}` : baseId;
+      items.push({ level: 3, text, id });
+    }
+  }
+  return items;
+}
+
+const baseMarkdownComponents: Components = {
   code({ className, children, ...props }) {
     const match = /language-(\w+)/.exec(className ?? '');
     if (match) {
@@ -46,6 +84,27 @@ export default function WikiArticle() {
   const [articles, setArticles] = useState<WikiArticleEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tocOpen, setTocOpen] = useState(false);
+  const headingIndexRef = useRef(0);
+  const tocItems = useMemo(() => (content ? parseHeadings(content) : []), [content]);
+  const showToc = tocItems.length >= 2;
+  if (content) headingIndexRef.current = 0;
+  const wikiMarkdownComponents = useMemo(
+    (): Components => ({
+      ...baseMarkdownComponents,
+      h2: ({ children }) => {
+        const id = tocItems[headingIndexRef.current]?.id ?? slugify(String(children));
+        headingIndexRef.current += 1;
+        return <h2 id={id}>{children}</h2>;
+      },
+      h3: ({ children }) => {
+        const id = tocItems[headingIndexRef.current]?.id ?? slugify(String(children));
+        headingIndexRef.current += 1;
+        return <h3 id={id}>{children}</h3>;
+      },
+    }),
+    [tocItems]
+  );
 
   useEffect(() => {
     if (!slug) {
@@ -108,6 +167,29 @@ export default function WikiArticle() {
         >
           {t('wiki.editThisPage')}
         </a>
+      ) : null}
+      {showToc ? (
+        <nav className="wiki-toc" aria-label={t('wiki.onThisPage')}>
+          <button
+            type="button"
+            className="wiki-toc-toggle"
+            onClick={() => setTocOpen((prev) => !prev)}
+            aria-expanded={tocOpen}
+          >
+            {t('wiki.onThisPage')}
+          </button>
+          <div className={`wiki-toc-list-wrap ${tocOpen ? 'wiki-toc-open' : ''}`}>
+            <ul className="wiki-toc-list">
+              {tocItems.map((item) => (
+                <li key={item.id} className={`wiki-toc-level-${item.level}`}>
+                  <a href={`#${item.id}`} onClick={() => setTocOpen(false)}>
+                    {item.text}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </nav>
       ) : null}
       <div className="wiki-content">
         <ReactMarkdown components={wikiMarkdownComponents}>{content}</ReactMarkdown>
