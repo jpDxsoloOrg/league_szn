@@ -43,7 +43,12 @@ import { handler as recordResult } from '../recordResult';
 
 const ctx = {} as Context;
 const cb: Callback = () => {};
-const pending = { matchId: 'm1', date: '2024-06-01', status: 'pending', participants: ['p1', 'p2'] };
+const pending: { matchId: string; date: string; status: string; participants: string[]; seasonId?: string } = {
+  matchId: 'm1',
+  date: '2024-06-01',
+  status: 'pending',
+  participants: ['p1', 'p2'],
+};
 
 function ev(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent {
   return {

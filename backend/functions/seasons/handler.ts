@@ -1,9 +1,11 @@
-import { APIGatewayProxyEvent, APIGatewayProxyHandler, Context } from 'aws-lambda';
+import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { methodNotAllowed } from '../../lib/response';
 import { handler as getSeasonsHandler } from './getSeasons';
 import { handler as createSeasonHandler } from './createSeason';
 import { handler as updateSeasonHandler } from './updateSeason';
 import { handler as deleteSeasonHandler } from './deleteSeason';
+
+const noopCallback = () => {};
 
 /**
  * Single Lambda for seasons: routes by HTTP method and path params.
@@ -11,22 +13,23 @@ import { handler as deleteSeasonHandler } from './deleteSeason';
  */
 export const handler: APIGatewayProxyHandler = async (
   event: APIGatewayProxyEvent,
-  context: Context
-) => {
-  const method = event.httpMethod?.toUpperCase() ?? event.requestContext?.http?.method?.toUpperCase();
+  context: Context,
+  callback: Parameters<APIGatewayProxyHandler>[2]
+): Promise<APIGatewayProxyResult> => {
+  const method = event.httpMethod?.toUpperCase() ?? 'GET';
   const pathParams = event.pathParameters ?? {};
 
   if (method === 'GET' && !pathParams.seasonId) {
-    return getSeasonsHandler(event, context);
+    return (await getSeasonsHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
   if (method === 'POST' && !pathParams.seasonId) {
-    return createSeasonHandler(event, context);
+    return (await createSeasonHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
   if (method === 'PUT' && pathParams.seasonId) {
-    return updateSeasonHandler(event, context);
+    return (await updateSeasonHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
   if (method === 'DELETE' && pathParams.seasonId) {
-    return deleteSeasonHandler(event, context);
+    return (await deleteSeasonHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
 
   return methodNotAllowed();
