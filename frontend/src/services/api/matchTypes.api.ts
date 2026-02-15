@@ -6,6 +6,13 @@ export const matchTypesApi = {
     return fetchWithAuth(`${API_BASE_URL}/match-types`, {}, signal);
   },
 
+  bulkCreate: async (names: string[]): Promise<{ created: number; matchTypes: MatchType[] }> => {
+    return fetchWithAuth(`${API_BASE_URL}/match-types/bulk`, {
+      method: 'POST',
+      body: JSON.stringify({ names }),
+    });
+  },
+
   create: async (matchType: { name: string; description?: string }): Promise<MatchType> => {
     return fetchWithAuth(`${API_BASE_URL}/match-types`, {
       method: 'POST',

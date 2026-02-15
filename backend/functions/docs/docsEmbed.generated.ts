@@ -548,6 +548,31 @@ components:
         uploadUrl: { type: string }
         imageUrl: { type: string }
 
+    BulkCreateNamesInput:
+      type: object
+      required: [names]
+      properties:
+        names:
+          type: array
+          items: { type: string }
+          description: List of names to create (max 50, deduplicated, trimmed)
+
+    BulkCreateMatchTypesResponse:
+      type: object
+      properties:
+        created: { type: integer }
+        matchTypes:
+          type: array
+          items: { $ref: '#/components/schemas/MatchType' }
+
+    BulkCreateStipulationsResponse:
+      type: object
+      properties:
+        created: { type: integer }
+        stipulations:
+          type: array
+          items: { $ref: '#/components/schemas/Stipulation' }
+
     BulkDeleteChallengesInput:
       type: object
       properties:
@@ -1111,6 +1136,27 @@ paths:
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /stipulations/bulk:
+    post:
+      tags: [Stipulations]
+      summary: Bulk create stipulations
+      description: Create multiple stipulations at once from a list of names. Deduplicates and trims whitespace. Max 50 per request.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BulkCreateNamesInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BulkCreateStipulationsResponse' }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /stipulations/{stipulationId}:
     put:
       tags: [Stipulations]
@@ -1161,6 +1207,27 @@ paths:
             schema: { $ref: '#/components/schemas/MatchType' }
       responses:
         '201': { description: Created }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /match-types/bulk:
+    post:
+      tags: [Match Types]
+      summary: Bulk create match types
+      description: Create multiple match types at once from a list of names. Deduplicates and trims whitespace. Max 50 per request.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BulkCreateNamesInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BulkCreateMatchTypesResponse' }
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
