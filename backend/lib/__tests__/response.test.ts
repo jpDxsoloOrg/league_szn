@@ -9,6 +9,7 @@ import {
   forbidden,
   conflict,
   noContent,
+  methodNotAllowed,
   error,
 } from '../response';
 
@@ -140,6 +141,23 @@ describe('response helpers', () => {
       expect(result.statusCode).toBe(204);
       expect(result.body).toBe('');
       expect(result.headers).toMatchObject(expectedHeaders);
+    });
+  });
+
+  describe('methodNotAllowed', () => {
+    it('returns 405 with custom message', () => {
+      const result = methodNotAllowed('Use GET or POST');
+
+      expect(result.statusCode).toBe(405);
+      expect(JSON.parse(result.body)).toEqual({ message: 'Use GET or POST' });
+      expect(result.headers).toMatchObject(expectedHeaders);
+    });
+
+    it('returns 405 with default message when none provided', () => {
+      const result = methodNotAllowed();
+
+      expect(result.statusCode).toBe(405);
+      expect(JSON.parse(result.body)).toEqual({ message: 'Method Not Allowed' });
     });
   });
 });
