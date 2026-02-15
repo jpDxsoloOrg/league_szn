@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
-import { useNavLayout } from '../contexts/navLayoutContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import {
   USER_NAV_GROUPS,
@@ -41,7 +40,6 @@ export default function Sidebar() {
   const location = useLocation();
   const { isAuthenticated, isAdminOrModerator, isSuperAdmin, isWrestler, isFantasy, signOut } = useAuth();
   const { features } = useSiteConfig();
-  const { setMode: setNavLayout } = useNavLayout();
   const [adminExpanded, setAdminExpanded] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ core: true });
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -237,17 +235,6 @@ export default function Sidebar() {
             )}
           </div>
         )}
-
-        <div className="nav-section nav-layout-section">
-          <button
-            type="button"
-            className="sidebar-layout-toggle"
-            onClick={() => setNavLayout('topnav')}
-            aria-label="Switch to top menu"
-          >
-            {t('nav.switchToTopMenu')}
-          </button>
-        </div>
 
         <div className="nav-section auth-section">
           {isAuthenticated ? (
