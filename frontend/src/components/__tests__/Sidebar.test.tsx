@@ -17,6 +17,11 @@ vi.mock('../../contexts/SiteConfigContext', () => ({
   useSiteConfig: mockUseSiteConfig,
 }));
 
+vi.mock('../../contexts/NavLayoutContext', () => ({
+  useNavLayout: () => ({ mode: 'sidebar', setMode: vi.fn(), toggleMode: vi.fn() }),
+  NavLayoutProvider: ({ children }: { children: unknown }) => <>{children}</>,
+}));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));

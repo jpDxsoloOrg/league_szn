@@ -47,7 +47,9 @@
       "core": "League",
       "wrestler": "Wrestler",
       "extras": "More"
-    }
+    },
+    "switchToTopMenu": "Top menu",
+    "switchToSidebar": "Sidebar menu"
   },
   "header": {
     "title": "WWE 2K League"

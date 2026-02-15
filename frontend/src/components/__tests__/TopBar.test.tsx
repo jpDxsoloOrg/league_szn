@@ -6,6 +6,10 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
+vi.mock('../../contexts/NavLayoutContext', () => ({
+  useNavLayout: () => ({ mode: 'sidebar', setMode: vi.fn(), toggleMode: vi.fn() }),
+}));
+
 vi.mock('../TopBar.css', () => ({}));
 
 import TopBar from '../TopBar';
