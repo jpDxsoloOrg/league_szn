@@ -21,9 +21,9 @@ Only include skills that actually apply to this request.
 
 - **Suggested order**: Step 1 (wiki content + data shape) → Step 2 (wiki routes + components) → Step 3 (Help section integration + nav) → Step 4 (i18n + tests).
 - **Agent types**:
-  - **Step 1**: `general-purpose` — Define wiki content format and add initial articles (e.g. markdown in repo or JSON index).
+  - **Step 1**: `docs-writer` — Define wiki content format and add initial articles (e.g. markdown in repo or JSON index).
   - **Steps 2–3**: `refactor-expert` — New routes, wiki viewer, and changes to `/guide` (UserGuide) to add wiki entry.
-  - **Step 4**: `general-purpose` (i18n) + `test-engineer` (tests).
+  - **Step 4**: `i18n-specialist` (i18n keys and en/de translations) + `test-engineer` (tests).
 
 ## Files to modify
 
