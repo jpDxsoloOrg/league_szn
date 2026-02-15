@@ -482,6 +482,15 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
+  bulkCreateStipulations:
+    handler: functions/stipulations/bulkCreateStipulations.handler
+    events:
+      - http:
+          path: stipulations/bulk
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
   updateStipulation:
     handler: functions/stipulations/updateStipulation.handler
     events:
@@ -514,6 +523,15 @@ functions:
     events:
       - http:
           path: match-types
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  bulkCreateMatchTypes:
+    handler: functions/matchTypes/bulkCreateMatchTypes.handler
+    events:
+      - http:
+          path: match-types/bulk
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
