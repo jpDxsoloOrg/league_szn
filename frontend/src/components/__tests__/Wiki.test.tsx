@@ -42,12 +42,16 @@ describe('Wiki', () => {
     global.fetch = vi.fn();
   });
 
-  it('WikiLayout shows back-to-guide link', async () => {
+  it('WikiLayout shows breadcrumbs and back-to-guide link', async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
       json: async () => [],
     });
     renderWikiRoutes();
+    const nav = screen.getByRole('navigation', { name: 'wiki.breadcrumbNav' });
+    expect(nav).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'wiki.breadcrumb.help' })).toHaveAttribute('href', '/guide');
+    expect(screen.getByText('wiki.breadcrumb.wiki')).toBeInTheDocument();
     const backLink = await screen.findByRole('link', { name: 'wiki.backToGuide' });
     expect(backLink).toBeInTheDocument();
     expect(backLink).toHaveAttribute('href', '/guide');

@@ -59,6 +59,11 @@
     "title": "Wiki",
     "indexTitle": "Wiki-Artikel",
     "backToGuide": "Zurück zur Anleitung",
+    "breadcrumbNav": "Wiki-Breadcrumb-Navigation",
+    "breadcrumb": {
+      "help": "Hilfe",
+      "wiki": "Wiki"
+    },
     "articles": {
       "gettingStarted": "Erste Schritte",
       "faqs": "Häufige Fragen"

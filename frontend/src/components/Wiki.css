@@ -3,6 +3,53 @@
   margin: 0 auto;
 }
 
+.wiki-breadcrumbs {
+  margin-bottom: 0.75rem;
+}
+
+.wiki-breadcrumbs-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.wiki-breadcrumbs-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.wiki-breadcrumbs-list li:not(:last-child)::after {
+  content: "›";
+  margin-left: 0.25rem;
+  color: #666;
+}
+
+.wiki-breadcrumbs-list a {
+  color: #93c5fd;
+  text-decoration: none;
+}
+
+.wiki-breadcrumbs-list a:hover {
+  text-decoration: underline;
+}
+
+.wiki-breadcrumbs-list a:focus {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
+}
+
+.wiki-breadcrumbs-current {
+  color: #d4af37;
+  font-weight: 500;
+}
+
 .wiki-back-link {
   display: inline-block;
   color: #93c5fd;
