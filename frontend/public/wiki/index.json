@@ -1,12 +1,16 @@
 [
-  {
-    "slug": "getting-started",
-    "titleKey": "wiki.articles.gettingStarted",
-    "file": "getting-started.md"
-  },
-  {
-    "slug": "faqs",
-    "titleKey": "wiki.articles.faqs",
-    "file": "faqs.md"
-  }
+  {"slug":"getting-started","titleKey":"wiki.articles.gettingStarted","file":"getting-started.md"},
+  {"slug":"faqs","titleKey":"wiki.articles.faqs","file":"faqs.md"},
+  {"slug":"standings","titleKey":"wiki.articles.standings","file":"standings.md"},
+  {"slug":"seasons","titleKey":"wiki.articles.seasons","file":"seasons.md"},
+  {"slug":"divisions","titleKey":"wiki.articles.divisions","file":"divisions.md"},
+  {"slug":"championships","titleKey":"wiki.articles.championships","file":"championships.md"},
+  {"slug":"events","titleKey":"wiki.articles.events","file":"events.md"},
+  {"slug":"tournaments","titleKey":"wiki.articles.tournaments","file":"tournaments.md"},
+  {"slug":"contenders","titleKey":"wiki.articles.contenders","file":"contenders.md"},
+  {"slug":"profile","titleKey":"wiki.articles.profile","file":"profile.md"},
+  {"slug":"challenges","titleKey":"wiki.articles.challenges","file":"challenges.md"},
+  {"slug":"promos","titleKey":"wiki.articles.promos","file":"promos.md"},
+  {"slug":"fantasy","titleKey":"wiki.articles.fantasy","file":"fantasy.md"},
+  {"slug":"tips","titleKey":"wiki.articles.tips","file":"tips.md"}
 ]

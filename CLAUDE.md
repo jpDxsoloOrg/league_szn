@@ -113,7 +113,7 @@ wwe-2k-league/
 
 ## Help and Wiki
 
-- **Help** is the User Guide at `/guide` (`UserGuide.tsx`), linked from nav as "Help". It includes a link to the **Wiki**.
+- **Help** is the wiki: nav "Help" goes to `/guide`, which redirects to `/guide/wiki` (wiki index). All help content lives in the wiki.
 - **Wiki** is at `/guide/wiki` (index) and `/guide/wiki/:slug` (article). Components: `Wiki.tsx` (layout), `WikiIndex.tsx`, `WikiArticle.tsx`, `WikiBreadcrumbs.tsx`.
 - **Wiki content** lives in the repo as static files; there is no admin UI for editing. All editing is done by changing files and redeploying.
   - **Location**: `frontend/public/wiki/`

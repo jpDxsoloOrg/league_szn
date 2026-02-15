@@ -11,8 +11,8 @@ Welcome to the WWE 2K League site. This short guide helps you find your way arou
 
 ## Finding help
 
-- Use **Help** in the main menu to open the User Guide.
-- The **Wiki** (linked from Help) has extra articles like FAQs and deeper explanations.
+- Use **Help** in the main menu to browse the Wiki.
+- The Wiki has articles on standings, seasons, championships, events, tournaments, and more, plus FAQs.
 - Switch language with the language control in the header (English / Deutsch).
 
 ## Next steps

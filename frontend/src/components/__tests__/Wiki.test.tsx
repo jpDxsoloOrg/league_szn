@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, Navigate } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 
 const { mockUseTranslation } = vi.hoisted(() => ({
@@ -26,7 +26,7 @@ function renderWikiRoutes(initialRoute = '/guide/wiki') {
   return render(
     <MemoryRouter initialEntries={[initialRoute]}>
       <Routes>
-        <Route path="/guide" element={<div>User Guide</div>} />
+        <Route path="/guide" element={<Navigate to="/guide/wiki" replace />} />
         <Route path="/guide/wiki" element={<WikiLayout />}>
           <Route index element={<WikiIndex />} />
           <Route path=":slug" element={<WikiArticle />} />
@@ -74,7 +74,7 @@ describe('Wiki', () => {
     expect(gettingStartedLink).toHaveAttribute('href', '/guide/wiki/getting-started');
   });
 
-  it('back-to-guide link navigates to /guide', async () => {
+  it('back-to-guide link navigates to /guide and redirects to wiki index', async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
       json: async () => [],
@@ -83,7 +83,7 @@ describe('Wiki', () => {
     const backLink = await screen.findByRole('link', { name: 'wiki.backToGuide' });
     await userEvent.click(backLink);
     await waitFor(() => {
-      expect(screen.getByText('User Guide')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'wiki.breadcrumb.help' })).toBeInTheDocument();
     });
   });
 });

@@ -33,5 +33,5 @@ Everyone faces everyone. Points (e.g. 2 for a win, 1 for a draw) determine the f
 
 ## Getting more help
 
-- The **User Guide** (Help menu) explains every section in detail.
-- Use the **Wiki** index to jump to articles like this one.
+- The **Wiki** (Help menu) explains every section in detail.
+- Use the Wiki index to jump to articles like this one.
