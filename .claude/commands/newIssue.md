@@ -37,7 +37,17 @@ Using the same request and the issue body:
    - **test-generator**: New or changed behavior that needs tests.
 3. **Identify parallel work**: Group tasks that have no dependency on each other (e.g. backend types + frontend types, or unrelated components) so they can be run in parallel by agents.
 
-## Step 3: Write the plan file
+## Step 3: Create branch and write the plan file
+
+### Step 3a: Create a new branch
+
+Before writing any files, create a new branch so the plan is committed on a dedicated branch:
+
+- Branch name: **feat/&lt;issue_number&gt;-&lt;short-slug&gt;** (e.g. `feat/152-wiki-german-raw-html`). Use **fix/** instead of **feat/** if the issue is clearly a bug fix.
+- Use the same **short-slug** you will use for the plan filename (kebab-case from the issue title).
+- Commands: `git checkout -b feat/<issue_number>-<short-slug>` (or `fix/...`).
+
+### Step 3b: Write the plan file
 
 Create a single plan file with a **unique name** that is not already in use (see CLAUDE.md). Use the path **docs/plans/plan-issue-&lt;issue_number&gt;-&lt;short-slug&gt;.md**, where &lt;short-slug&gt; is a kebab-case version of the issue title (e.g. "Add admin guide to help wiki" → `wiki-admin-guide`). Check existing files in `docs/plans/` to avoid duplicates. The plan must have this structure so it works with the **execute-plan** command and with skills/agents:
 
@@ -100,18 +110,42 @@ Use subsections if helpful, e.g. `### Step 1: …`, `### Step 2: …`.
 Backward compatibility, config/env, or edge cases to watch for.
 ```
 
-## Step 4: Report back
+## Step 4: Commit, push, and open a pull request
+
+### Step 4a: Stage and commit using the commit skill
+
+1. Stage the plan file: `git add docs/plans/plan-issue-<issue_number>-<short-slug>.md`.
+2. **Use the git-commit-helper skill**: Read the skill at `~/.claude/skills/git-commit-helper/SKILL.md` (or the path from available skills). Follow its process:
+   - Run `git diff --staged` to analyze the change.
+   - Generate a conventional commit message (e.g. `docs: add plan for #<number> <short description>`). Prefer type `docs` and include the issue number in the body (e.g. `Closes #<number>` or in the subject).
+   - Run `git commit -m "<generated message>"`.
+
+### Step 4b: Push the branch and create a PR
+
+1. Push the branch: `git push -u origin feat/<issue_number>-<short-slug>` (or `fix/...`).
+2. Create a pull request using the GitHub MCP tool **create_pull_request**:
+   - **owner** / **repo**: Same as in Step 1 (e.g. `jpDxsolo`, `league_szn` — or the actual repo owner if different).
+   - **title**: Short summary referencing the issue (e.g. `Add plan for #152 — wiki German raw HTML fix`).
+   - **head**: The branch you just pushed (e.g. `feat/152-wiki-german-raw-html`).
+   - **base**: `main`.
+   - **body**: Brief description and link to the issue (e.g. `Plan and branch for #152. Implements [issue link].`).
+
+## Step 5: Report back
 
 Tell the user:
 
 1. **Issue**: Link to the new issue (e.g. `https://github.com/jpDxsolo/league_szn/issues/<number>`).
 2. **Plan**: Path to the plan file (e.g. `docs/plans/plan-issue-<number>-<slug>.md`).
-3. **Next step**: "Run the **execute-plan** command with this plan to implement it with parallel agents, or edit the plan file first and then run execute-plan."
+3. **Branch**: Name of the branch created (e.g. `feat/152-wiki-german-raw-html`).
+4. **PR**: Link to the new pull request.
+5. **Next step**: "Run the **execute-plan** command with this plan to implement it with parallel agents, or edit the plan file first and then run execute-plan."
 
 ## Important rules
 
-- **Always create both** the GitHub issue and the plan file.
+- **Always create** the GitHub issue, then a **new branch**, then the plan file, then **commit** (using git-commit-helper), **push**, and **create a PR**.
+- **Branch before file**: Create the branch (Step 3a) before writing the plan file (Step 3b).
+- **Commit skill**: Use the git-commit-helper skill to generate the commit message before committing (Step 4a).
 - **Plan filename**: Use a unique name per CLAUDE.md (e.g. `docs/plans/plan-issue-<number>-<slug>.md`). Do not overwrite an existing plan; pick a slug that is not already in use.
-- **Owner/repo**: Use `owner: jpDxsolo`, `repo: league_szn` for all GitHub MCP calls.
+- **Owner/repo**: Use the same owner and repo for all GitHub MCP calls (issue, PR); e.g. `owner: jpDxsolo`, `repo: league_szn` (or the actual repo owner if different).
 - **Plan format**: Keep "Implementation steps", "Files to modify", "Dependencies and order", and "Suggested order" so execute-plan and agents can use it.
 - **Skills and agents**: Only recommend skills and agent types that fit the request; use parallel work (e.g. `Steps 1+2 -> Step 3`) where steps are independent.

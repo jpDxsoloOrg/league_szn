@@ -8,10 +8,13 @@ alwaysApply: true
 When the user says **newIssue** (or "new issue") and provides a request or task description, run the **newIssue** workflow:
 
 1. **Create a GitHub issue** in **jpDxsolo/league_szn** with a clear title and body (summary, acceptance criteria, context).
-2. **Create docs/plans/plan.md** with:
+2. **Create a new branch** (e.g. `feat/<issue_number>-<short-slug>`) before saving any plan file.
+3. **Create docs/plans/plan-issue-&lt;number&gt;-&lt;slug&gt;.md** with:
    - Link to the new issue
    - **Skills to use**: Which available skills apply (api-documenter, code-reviewer, dependency-auditor, git-commit-helper, readme-updater, secret-scanner, security-auditor, test-generator) and when to use them
    - **Agents and parallel work**: Suggested order (e.g. `Steps 1+2 -> Step 3`) and agent types so execute-plan can run steps in parallel where appropriate
    - Implementation steps, files to modify, dependencies, testing, risks
+4. **Commit** using the **git-commit-helper** skill (conventional commit message from staged diff), then **push** the branch.
+5. **Create a pull request** targeting `main` with a title and body that reference the issue.
 
 Follow the full instructions in **.claude/commands/newIssue.md** (read that file and execute each step). The plan format must be compatible with the **execute-plan** command so the user can run it next.
