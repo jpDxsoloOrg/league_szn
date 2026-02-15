@@ -245,7 +245,8 @@
   flex: 1;
 }
 
-.step-content strong {
+/* Step title only (direct child strong) - block; strong inside paragraphs stay inline for normal wrapping */
+.step-content > strong {
   color: #fff;
   display: block;
   margin-bottom: 0.25rem;
@@ -255,6 +256,11 @@
   color: #ccc;
   margin: 0;
   font-size: 0.9rem;
+}
+
+.step-content p strong {
+  display: inline;
+  color: #fff;
 }
 
 .quickstart-section {
@@ -302,7 +308,8 @@
   flex: 1;
 }
 
-.quickstart-content strong {
+/* Quickstart step title only (direct child strong) - block; strong inside paragraphs stay inline */
+.quickstart-content > strong {
   color: #fff;
   display: block;
   margin-bottom: 0.25rem;
@@ -313,6 +320,11 @@
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.5;
+}
+
+.quickstart-content p strong {
+  display: inline;
+  color: #fff;
 }
 
 @media (max-width: 768px) {

@@ -19,7 +19,7 @@ describe('AdminGuide', () => {
     expect(screen.getByText('Quickstart Guide')).toBeInTheDocument();
     expect(screen.getByText('Manage Users')).toBeInTheDocument();
     expect(screen.getByText('Create Divisions')).toBeInTheDocument();
-    expect(screen.getByText('Add Players')).toBeInTheDocument();
+    expect(screen.getAllByText('Manage Players').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Create a Season')).toBeInTheDocument();
     expect(screen.getByText('Create Championships')).toBeInTheDocument();
 

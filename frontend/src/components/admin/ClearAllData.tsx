@@ -135,7 +135,7 @@ export default function ClearAllData() {
           <h4>What gets created (full seed):</h4>
           <ul>
             <li><strong>12 Players</strong> - With random win/loss records and wrestler assignments</li>
-            <li><strong>3 Divisions</strong> - Raw, SmackDown, and NXT</li>
+            <li><strong>3 Divisions</strong> - e.g., Heavyweight, Cruiserweight, Mid-Card</li>
             <li><strong>1 Active Season</strong> - With standings for all players</li>
             <li><strong>4 Championships</strong> - World, Intercontinental, Tag Team, and US titles</li>
             <li><strong>12 Matches</strong> - Mix of completed and scheduled matches</li>

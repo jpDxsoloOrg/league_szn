@@ -47,14 +47,14 @@ export default function AdminGuide() {
             <span className="quickstart-number">2</span>
             <div className="quickstart-content">
               <strong>Create Divisions</strong>
-              <p>Go to <strong>Divisions</strong> and create your brand splits (e.g., Raw, SmackDown, NXT). Divisions organize players and lock contender rankings to specific rosters.</p>
+              <p>Go to <strong>Divisions</strong> and create divisions (e.g., Heavyweight, Cruiserweight, or Main Event, Jobbers). Divisions organize players by weight class or tier and can lock contender rankings to that division.</p>
             </div>
           </div>
           <div className="quickstart-step">
             <span className="quickstart-number">3</span>
             <div className="quickstart-content">
-              <strong>Add Players</strong>
-              <p>Go to <strong>Manage Players</strong> and add each league member. Set their player name, wrestler name, upload an image, and assign them to a division.</p>
+              <strong>Manage Players</strong>
+              <p>Go to <strong>Manage Players</strong> to edit wrestler details, upload images, assign divisions, and remove players. This screen is for editing and deleting; admins do not add wrestlers here.</p>
             </div>
           </div>
           <div className="quickstart-step">
@@ -124,7 +124,11 @@ export default function AdminGuide() {
             <tbody>
               <tr>
                 <td><strong>Admin</strong></td>
-                <td>Full access to all management features, public pages, and authenticated features</td>
+                <td>Full access to all management features, including the Danger Zone, public pages, and authenticated features</td>
+              </tr>
+              <tr>
+                <td><strong>Moderator</strong></td>
+                <td>Access to all management features except the Danger Zone (no Generate Sample Data or Clear All Data). Can manage players, matches, championships, challenges, promos, and other day-to-day admin tasks. Assignable only by a Super Admin.</td>
               </tr>
               <tr>
                 <td><strong>Wrestler</strong></td>
@@ -152,7 +156,7 @@ export default function AdminGuide() {
 
       <section id="divisions" className="admin-guide-section" tabIndex={-1}>
         <h4>Managing Divisions</h4>
-        <p>The <strong>Divisions</strong> page allows you to organize players into groups like brand splits.</p>
+        <p>The <strong>Divisions</strong> page lets you group players by weight class, card position, or role—for example Heavyweight, Cruiserweight, Main Event, or Jobbers. Divisions are not show brands; they define who can contend for which championships when division restrictions are enabled.</p>
 
         <div className="guide-block">
           <h5>Creating a Division</h5>
@@ -160,8 +164,8 @@ export default function AdminGuide() {
             <li>Navigate to <strong>Divisions</strong></li>
             <li>Fill in the division details:
               <ul>
-                <li><strong>Division Name</strong> - e.g., "Raw", "SmackDown", "NXT"</li>
-                <li><strong>Description</strong> (optional) - A brief description of the division</li>
+                <li><strong>Division Name</strong> - e.g., "Heavyweight", "Cruiserweight", "Main Event", "Jobbers"</li>
+                <li><strong>Description</strong> (optional) - e.g., "Top-tier stars", "Under 205 lbs", or "Enhancement talent"</li>
               </ul>
             </li>
             <li>Click <strong>Create Division</strong> to save</li>
@@ -192,7 +196,7 @@ export default function AdminGuide() {
           <h5>Assigning Players to Divisions</h5>
           <ol>
             <li>Navigate to <strong>Manage Players</strong></li>
-            <li>When adding or editing a player, use the <strong>Division</strong> dropdown</li>
+            <li>When editing a player, use the <strong>Division</strong> dropdown</li>
             <li>Select the appropriate division or "No Division"</li>
             <li>Save the player to apply the assignment</li>
           </ol>
@@ -201,23 +205,7 @@ export default function AdminGuide() {
 
       <section id="manage-players" className="admin-guide-section" tabIndex={-1}>
         <h4>Managing Players</h4>
-        <p>The <strong>Manage Players</strong> page allows you to add and edit players in the league.</p>
-
-        <div className="guide-block">
-          <h5>Adding a New Player</h5>
-          <ol>
-            <li>Navigate to <strong>Manage Players</strong></li>
-            <li>Fill in the player details:
-              <ul>
-                <li><strong>Player Name</strong> - The person's real name or gamertag</li>
-                <li><strong>Wrestler Name</strong> - The WWE wrestler they will play as</li>
-                <li><strong>Division</strong> - Assign them to a division (Raw, SmackDown, etc.)</li>
-                <li><strong>Wrestler Image</strong> (optional) - Upload a photo of the wrestler</li>
-              </ul>
-            </li>
-            <li>Click <strong>Add Player</strong> to save</li>
-          </ol>
-        </div>
+        <p>The <strong>Manage Players</strong> page allows you to edit and delete players in the league. Admins do not add wrestlers here; use this screen to update details, assign divisions, and remove players.</p>
 
         <div className="guide-block">
           <h5>Editing a Player</h5>
@@ -426,8 +414,8 @@ export default function AdminGuide() {
             <li>Fill in the match details:
               <ul>
                 <li><strong>Date & Time</strong> - When the match will take place</li>
-                <li><strong>Match Type</strong> - Singles, Tag Team, Triple Threat, Fatal 4-Way, Six Pack Challenge, or Battle Royal</li>
-                <li><strong>Stipulation</strong> (optional) - Ladder, Steel Cage, Hell in a Cell, etc.</li>
+                <li><strong>Match Type</strong> - Choose from the types you’ve configured (see below). Examples: Singles, Tag Team, Triple Threat, Fatal 4-Way, Battle Royal.</li>
+                <li><strong>Stipulation</strong> (optional) - Choose from the stipulations you’ve configured, or leave as standard. Examples: Ladder, Steel Cage, Hell in a Cell, Last Man Standing.</li>
                 <li><strong>Participants</strong> - Select 2 or more players</li>
               </ul>
             </li>
@@ -444,35 +432,10 @@ export default function AdminGuide() {
         </div>
 
         <div className="guide-block highlight-box">
-          <h5>Match Types Explained</h5>
-          <table className="match-type-table">
-            <tbody>
-              <tr>
-                <td><strong>Singles</strong></td>
-                <td>1 vs 1 match</td>
-              </tr>
-              <tr>
-                <td><strong>Tag Team</strong></td>
-                <td>2 vs 2 match</td>
-              </tr>
-              <tr>
-                <td><strong>Triple Threat</strong></td>
-                <td>3 participants, first to pin/submit wins</td>
-              </tr>
-              <tr>
-                <td><strong>Fatal 4-Way</strong></td>
-                <td>4 participants, first to pin/submit wins</td>
-              </tr>
-              <tr>
-                <td><strong>Six Pack Challenge</strong></td>
-                <td>6 participants, first to pin/submit wins</td>
-              </tr>
-              <tr>
-                <td><strong>Battle Royal</strong></td>
-                <td>Multiple participants, last one standing wins</td>
-              </tr>
-            </tbody>
-          </table>
+          <h5>Match types and stipulations</h5>
+          <p>Match types and stipulations are not fixed—you add and edit them in the <strong>Match Config</strong> tab (Admin → Match Config). There you’ll find two sub-tabs: <strong>Match Types</strong> and <strong>Stipulations</strong>.</p>
+          <p><strong>Match types</strong> define the format (e.g. how many competitors, how a winner is determined). Add as many as your league uses. Examples: Singles (1 vs 1), Tag Team (2 vs 2), Triple Threat (3 participants, first pin/submit wins), Fatal 4-Way, Six Pack Challenge, Battle Royal (last one standing). Create a new match type with a name and optional description.</p>
+          <p><strong>Stipulations</strong> are optional rules or gimmicks for a match. Add any stipulations your league uses. Examples: Ladder, Steel Cage, Hell in a Cell, Last Man Standing, Tables, Iron Man. Create a new stipulation with a name and optional description. When scheduling a match, you pick one from the list or leave it as a standard match.</p>
         </div>
       </section>
 
@@ -612,7 +575,7 @@ export default function AdminGuide() {
           <ul>
             <li>Rankings are automatically calculated based on recent match performance</li>
             <li>Each championship has its own contender rankings</li>
-            <li>Rankings can be locked to a specific division (e.g., only Raw players contend for the Raw championship)</li>
+            <li>Rankings can be locked to a specific division (e.g., only Heavyweight division players contend for the Heavyweight championship)</li>
             <li>Players must meet a minimum match threshold to qualify</li>
           </ul>
         </div>
@@ -655,7 +618,7 @@ export default function AdminGuide() {
           <h6>What Gets Created:</h6>
           <ul>
             <li><strong>12 Players</strong> - With random win/loss records and assigned wrestlers</li>
-            <li><strong>3 Divisions</strong> - Raw, SmackDown, and NXT</li>
+            <li><strong>3 Divisions</strong> - e.g., Heavyweight, Cruiserweight, Mid-Card</li>
             <li><strong>1 Active Season</strong> - With standings for all players</li>
             <li><strong>4 Championships</strong> - World, Intercontinental, Tag Team, and US titles</li>
             <li><strong>12 Matches</strong> - Mix of completed and scheduled matches</li>
