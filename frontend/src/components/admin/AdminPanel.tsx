@@ -17,7 +17,6 @@ import MatchCardBuilder from './MatchCardBuilder';
 import ManageFantasyShows from './ManageFantasyShows';
 import FantasyConfig from './FantasyConfig';
 import AdminChallenges from './AdminChallenges';
-import AdminGuide from './AdminGuide';
 import ClearAllData from './ClearAllData';
 import ManageUsers from './ManageUsers';
 import ManageFeatures from './ManageFeatures';
@@ -25,9 +24,9 @@ import './AdminPanel.css';
 
 import AdminContenderConfig from './AdminContenderConfig';
 
-type AdminTab = 'players' | 'divisions' | 'match-config' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'guide' | 'danger' | 'users' | 'features';
+type AdminTab = 'players' | 'divisions' | 'match-config' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'danger' | 'users' | 'features';
 
-const VALID_TABS: AdminTab[] = ['players', 'divisions', 'match-config', 'schedule', 'results', 'championships', 'tournaments', 'challenges', 'promos', 'seasons', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'guide', 'danger', 'users', 'features'];
+const VALID_TABS: AdminTab[] = ['players', 'divisions', 'match-config', 'schedule', 'results', 'championships', 'tournaments', 'challenges', 'promos', 'seasons', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'danger', 'users', 'features'];
 
 
 export default function AdminPanel() {
@@ -77,7 +76,6 @@ export default function AdminPanel() {
         {activeTab === 'tournaments' && <CreateTournament />}
         {activeTab === 'challenges' && <AdminChallenges />}
         {activeTab === 'promos' && <AdminPromos />}
-        {activeTab === 'guide' && <AdminGuide />}
         {activeTab === 'seasons' && <ManageSeasons />}
         {activeTab === 'events' && (
           <>

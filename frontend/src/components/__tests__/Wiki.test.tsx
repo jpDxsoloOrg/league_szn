@@ -7,9 +7,20 @@ import userEvent from '@testing-library/user-event';
 const { mockUseTranslation } = vi.hoisted(() => ({
   mockUseTranslation: vi.fn(() => ({ t: (key: string) => key })),
 }));
+const { mockUseAuth } = vi.hoisted(() => ({
+  mockUseAuth: vi.fn(() => ({
+    isAdminOrModerator: false,
+    isAuthenticated: false,
+    isLoading: false,
+    hasRole: () => false,
+  })),
+}));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => mockUseTranslation(),
+}));
+vi.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => mockUseAuth(),
 }));
 
 vi.mock('react-syntax-highlighter', () => ({

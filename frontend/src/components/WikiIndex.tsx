@@ -2,12 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Fuse from 'fuse.js';
+import { useAuth } from '../contexts/AuthContext';
 import './Wiki.css';
 
 interface WikiArticleEntry {
   slug: string;
   titleKey: string;
   file: string;
+  adminOnly?: boolean;
 }
 
 interface SearchableEntry extends WikiArticleEntry {
@@ -16,6 +18,7 @@ interface SearchableEntry extends WikiArticleEntry {
 
 export default function WikiIndex() {
   const { t } = useTranslation();
+  const { isAdminOrModerator } = useAuth();
   const [articles, setArticles] = useState<WikiArticleEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,9 +41,15 @@ export default function WikiIndex() {
       .finally(() => setLoading(false));
   }, []);
 
+  const visibleArticles = useMemo(
+    () =>
+      articles.filter((a) => !a.adminOnly || isAdminOrModerator),
+    [articles, isAdminOrModerator]
+  );
+
   const searchableList = useMemo<SearchableEntry[]>(
-    () => articles.map((a) => ({ ...a, title: t(a.titleKey) })),
-    [articles, t]
+    () => visibleArticles.map((a) => ({ ...a, title: t(a.titleKey) })),
+    [visibleArticles, t]
   );
 
   const fuse = useMemo(
@@ -54,10 +63,10 @@ export default function WikiIndex() {
 
   const filteredArticles = useMemo(() => {
     const q = query.trim();
-    if (!q) return articles;
+    if (!q) return visibleArticles;
     const results = fuse.search(q);
     return results.map((r) => r.item);
-  }, [query, articles, fuse]);
+  }, [query, visibleArticles, fuse]);
 
   if (loading) {
     return <p className="wiki-loading">{t('common.loading')}</p>;

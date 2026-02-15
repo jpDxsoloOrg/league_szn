@@ -36,7 +36,6 @@ vi.mock('../MatchCardBuilder', () => ({ default: () => <div data-testid="match-c
 vi.mock('../ManageFantasyShows', () => ({ default: () => <div data-testid="fantasy-shows">FantasyShows</div> }));
 vi.mock('../FantasyConfig', () => ({ default: () => <div data-testid="fantasy-config">FantasyConfig</div> }));
 vi.mock('../AdminChallenges', () => ({ default: () => <div data-testid="admin-challenges">AdminChallenges</div> }));
-vi.mock('../AdminGuide', () => ({ default: () => <div data-testid="admin-guide">AdminGuide</div> }));
 vi.mock('../ClearAllData', () => ({ default: () => <div data-testid="clear-all">ClearAllData</div> }));
 vi.mock('../ManageUsers', () => ({ default: () => <div data-testid="manage-users">ManageUsers</div> }));
 vi.mock('../ManageFeatures', () => ({ default: () => <div data-testid="manage-features">ManageFeatures</div> }));

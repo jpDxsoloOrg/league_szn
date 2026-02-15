@@ -12,5 +12,20 @@
   {"slug":"challenges","titleKey":"wiki.articles.challenges","file":"challenges.md"},
   {"slug":"promos","titleKey":"wiki.articles.promos","file":"promos.md"},
   {"slug":"fantasy","titleKey":"wiki.articles.fantasy","file":"fantasy.md"},
-  {"slug":"tips","titleKey":"wiki.articles.tips","file":"tips.md"}
+  {"slug":"tips","titleKey":"wiki.articles.tips","file":"tips.md"},
+  {"slug":"admin-quickstart","titleKey":"wiki.articles.adminQuickstart","file":"admin-quickstart.md","adminOnly":true},
+  {"slug":"admin-user-management","titleKey":"wiki.articles.adminUserManagement","file":"admin-user-management.md","adminOnly":true},
+  {"slug":"admin-divisions","titleKey":"wiki.articles.adminDivisions","file":"admin-divisions.md","adminOnly":true},
+  {"slug":"admin-manage-players","titleKey":"wiki.articles.adminManagePlayers","file":"admin-manage-players.md","adminOnly":true},
+  {"slug":"admin-seasons","titleKey":"wiki.articles.adminSeasons","file":"admin-seasons.md","adminOnly":true},
+  {"slug":"admin-championships","titleKey":"wiki.articles.adminChampionships","file":"admin-championships.md","adminOnly":true},
+  {"slug":"admin-events","titleKey":"wiki.articles.adminEvents","file":"admin-events.md","adminOnly":true},
+  {"slug":"admin-schedule-match","titleKey":"wiki.articles.adminScheduleMatch","file":"admin-schedule-match.md","adminOnly":true},
+  {"slug":"admin-record-results","titleKey":"wiki.articles.adminRecordResults","file":"admin-record-results.md","adminOnly":true},
+  {"slug":"admin-tournaments","titleKey":"wiki.articles.adminTournaments","file":"admin-tournaments.md","adminOnly":true},
+  {"slug":"admin-challenges","titleKey":"wiki.articles.adminChallenges","file":"admin-challenges.md","adminOnly":true},
+  {"slug":"admin-promos","titleKey":"wiki.articles.adminPromos","file":"admin-promos.md","adminOnly":true},
+  {"slug":"admin-contender-config","titleKey":"wiki.articles.adminContenderConfig","file":"admin-contender-config.md","adminOnly":true},
+  {"slug":"admin-data-management","titleKey":"wiki.articles.adminDataManagement","file":"admin-data-management.md","adminOnly":true},
+  {"slug":"admin-workflow","titleKey":"wiki.articles.adminWorkflow","file":"admin-workflow.md","adminOnly":true}
 ]
