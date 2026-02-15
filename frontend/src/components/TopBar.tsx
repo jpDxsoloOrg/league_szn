@@ -1,10 +1,12 @@
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useNavLayout } from '../contexts/navLayoutContext';
 import './TopBar.css';
 
 export default function TopBar() {
   const { t } = useTranslation();
   const location = useLocation();
+  const { mode, setMode } = useNavLayout();
 
   const getPageInfo = (): { title: string; parent?: string } => {
     const path = location.pathname;
@@ -157,6 +159,17 @@ export default function TopBar() {
         </div>
       ) : (
         <span className="top-bar-title">{title}</span>
+      )}
+      {mode === 'sidebar' && (
+        <button
+          type="button"
+          className="top-bar-layout-toggle"
+          onClick={() => setMode('topnav')}
+          aria-label="Switch to top menu"
+          title={t('nav.switchToTopMenu')}
+        >
+          {t('nav.switchToTopMenu')}
+        </button>
       )}
     </div>
   );

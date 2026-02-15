@@ -74,6 +74,14 @@ tr:hover {
   background-color: #1a1a1a;
 }
 
+/* Top nav layout: no sidebar, centered main, use available width */
+.layout-topnav main {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1400px;
+  width: 100%;
+}
+
 @media (max-width: 768px) {
   main {
     margin-left: 0;

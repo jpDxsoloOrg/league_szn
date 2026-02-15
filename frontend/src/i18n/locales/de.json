@@ -47,7 +47,9 @@
       "core": "Liga",
       "wrestler": "Wrestler",
       "extras": "Mehr"
-    }
+    },
+    "switchToTopMenu": "Obere Menüleiste",
+    "switchToSidebar": "Seitenmenü"
   },
   "header": {
     "title": "WWE 2K Liga"
@@ -344,6 +346,8 @@
         "challenges": "Herausforderungen",
         "promos": "Promos",
         "contenderConfig": "Herausforderer Konfig",
+        "users": "Benutzerverwaltung",
+        "features": "Funktionsverwaltung",
         "help": "Hilfe",
         "dangerZone": "Gefahrenzone"
       },

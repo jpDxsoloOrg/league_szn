@@ -2,9 +2,12 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
+import { NavLayoutProvider } from './contexts/NavLayoutContext';
+import { useNavLayout } from './contexts/navLayoutContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
+import TopNav from './components/TopNav';
 import Standings from './components/Standings';
 import Championships from './components/Championships';
 import Tournaments from './components/Tournaments';
@@ -54,11 +57,30 @@ function App() {
     <ErrorBoundary>
       <Router>
         <AuthProvider>
-        <SiteConfigProvider>
-        <div className="App">
-        <Sidebar />
-        <TopBar />
-        <main>
+          <SiteConfigProvider>
+            <NavLayoutProvider>
+              <AppLayout />
+            </NavLayoutProvider>
+          </SiteConfigProvider>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
+  );
+}
+
+function AppLayout() {
+  const { mode } = useNavLayout();
+  return (
+    <div className={`App layout-${mode}`}>
+      {mode === 'sidebar' ? (
+        <>
+          <Sidebar />
+          <TopBar />
+        </>
+      ) : (
+        <TopNav />
+      )}
+      <main>
           <Routes>
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
@@ -200,13 +222,9 @@ function App() {
                 </ProtectedRoute>
               </FeatureRoute>
             } />
-          </Routes>
-        </main>
-        </div>
-        </SiteConfigProvider>
-        </AuthProvider>
-      </Router>
-    </ErrorBoundary>
+        </Routes>
+      </main>
+    </div>
   );
 }
 
