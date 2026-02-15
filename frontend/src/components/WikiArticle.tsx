@@ -87,8 +87,25 @@ export default function WikiArticle() {
   const prevEntry = currentIndex > 0 ? articles[currentIndex - 1] : null;
   const nextEntry = currentIndex >= 0 && currentIndex < articles.length - 1 ? articles[currentIndex + 1] : null;
 
+  const repo = import.meta.env.VITE_GITHUB_REPO as string | undefined;
+  const branch = (import.meta.env.VITE_GITHUB_BRANCH as string | undefined) ?? 'main';
+  const editUrl =
+    repo && slug
+      ? `https://github.com/${repo}/edit/${branch}/frontend/public/wiki/${slug}.md`
+      : null;
+
   return (
     <article className="wiki-article">
+      {editUrl ? (
+        <a
+          href={editUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="wiki-edit-link"
+        >
+          {t('wiki.editThisPage')}
+        </a>
+      ) : null}
       <div className="wiki-content">
         <ReactMarkdown components={wikiMarkdownComponents}>{content}</ReactMarkdown>
       </div>
