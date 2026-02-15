@@ -22,6 +22,10 @@ The site wiki lives at `/guide/wiki` (index) and `/guide/wiki/:slug` (articles).
 | [#138](https://github.com/jpDxsoloOrg/league_szn/issues/138) | **Sidebar with article list** | On article view, show wiki index in a sidebar (collapsible on mobile) for quick jump to another article. | None |
 | [#139](https://github.com/jpDxsoloOrg/league_szn/issues/139) | **Print-friendly styles** | Print CSS (or "Print" button) so wiki pages print cleanly. | None |
 
+## Future: in-app wiki editing
+
+Editing wiki content **without going to GitHub** (in-app editor for admins) is a larger change: it requires a backend to store markdown (e.g. S3 or DynamoDB), API (GET/PUT article), and an edit UI. See **[plan-wiki-in-app-editing.md](./plan-wiki-in-app-editing.md)** for scope, options, and suggested phases. Until then, only admins see the "Edit this page" link (GitHub).
+
 ## Adding new wiki articles
 
 - Add a `.md` file under `frontend/public/wiki/`.

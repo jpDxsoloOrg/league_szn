@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -40,6 +41,7 @@ const wikiMarkdownComponents: Components = {
 export default function WikiArticle() {
   const { slug } = useParams<{ slug: string }>();
   const { t } = useTranslation();
+  const { hasRole } = useAuth();
   const [content, setContent] = useState<string | null>(null);
   const [articles, setArticles] = useState<WikiArticleEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,10 +95,11 @@ export default function WikiArticle() {
     repo && slug
       ? `https://github.com/${repo}/edit/${branch}/frontend/public/wiki/${slug}.md`
       : null;
+  const showEditLink = editUrl && hasRole('Admin');
 
   return (
     <article className="wiki-article">
-      {editUrl ? (
+      {showEditLink ? (
         <a
           href={editUrl}
           target="_blank"
