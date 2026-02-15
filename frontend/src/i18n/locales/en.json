@@ -59,6 +59,9 @@
     "title": "Wiki",
     "indexTitle": "Wiki Articles",
     "backToGuide": "Back to guide",
+    "previousArticle": "Previous: {{title}}",
+    "nextArticle": "Next: {{title}}",
+    "articleNavLabel": "Previous and next article",
     "breadcrumbNav": "Wiki breadcrumb navigation",
     "breadcrumb": {
       "help": "Help",

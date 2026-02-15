@@ -159,6 +159,43 @@
   text-decoration: underline;
 }
 
+.wiki-article-nav {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #333;
+}
+
+.wiki-article-nav-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.wiki-article-nav-prev,
+.wiki-article-nav-next {
+  color: #93c5fd;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.wiki-article-nav-prev:hover,
+.wiki-article-nav-next:hover {
+  text-decoration: underline;
+}
+
+.wiki-article-nav-prev:focus,
+.wiki-article-nav-next:focus {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
+}
+
+.wiki-article-nav-placeholder {
+  flex: 1;
+  min-width: 0;
+}
+
 .wiki-loading,
 .wiki-error {
   color: #ccc;
