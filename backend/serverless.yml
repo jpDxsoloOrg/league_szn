@@ -392,144 +392,96 @@ functions:
           method: get
           cors: *corsConfig
 
-  # Seasons
-  getSeasons:
-    handler: functions/seasons/getSeasons.handler
+  # Seasons (Phase 1 consolidated: getSeasons, createSeason, updateSeason, deleteSeason)
+  seasons:
+    handler: functions/seasons/handler.handler
     events:
       - http:
           path: seasons
           method: get
           cors: *corsConfig
-
-  createSeason:
-    handler: functions/seasons/createSeason.handler
-    events:
       - http:
           path: seasons
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  updateSeason:
-    handler: functions/seasons/updateSeason.handler
-    events:
       - http:
           path: seasons/{seasonId}
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  deleteSeason:
-    handler: functions/seasons/deleteSeason.handler
-    events:
       - http:
           path: seasons/{seasonId}
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Divisions
-  getDivisions:
-    handler: functions/divisions/getDivisions.handler
+  # Divisions (Phase 1 consolidated: getDivisions, createDivision, updateDivision, deleteDivision)
+  divisions:
+    handler: functions/divisions/handler.handler
     events:
       - http:
           path: divisions
           method: get
           cors: *corsConfig
-
-  createDivision:
-    handler: functions/divisions/createDivision.handler
-    events:
       - http:
           path: divisions
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  updateDivision:
-    handler: functions/divisions/updateDivision.handler
-    events:
       - http:
           path: divisions/{divisionId}
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  deleteDivision:
-    handler: functions/divisions/deleteDivision.handler
-    events:
       - http:
           path: divisions/{divisionId}
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Stipulations
-  getStipulations:
-    handler: functions/stipulations/getStipulations.handler
+  # Stipulations (Phase 1 consolidated: getStipulations, createStipulation, updateStipulation, deleteStipulation)
+  stipulations:
+    handler: functions/stipulations/handler.handler
     events:
       - http:
           path: stipulations
           method: get
           cors: *corsConfig
-
-  createStipulation:
-    handler: functions/stipulations/createStipulation.handler
-    events:
       - http:
           path: stipulations
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  updateStipulation:
-    handler: functions/stipulations/updateStipulation.handler
-    events:
       - http:
           path: stipulations/{stipulationId}
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  deleteStipulation:
-    handler: functions/stipulations/deleteStipulation.handler
-    events:
       - http:
           path: stipulations/{stipulationId}
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Match Types
-  getMatchTypes:
-    handler: functions/matchTypes/getMatchTypes.handler
+  # Match Types (Phase 1 consolidated: getMatchTypes, createMatchType, updateMatchType, deleteMatchType)
+  matchTypes:
+    handler: functions/matchTypes/handler.handler
     events:
       - http:
           path: match-types
           method: get
           cors: *corsConfig
-
-  createMatchType:
-    handler: functions/matchTypes/createMatchType.handler
-    events:
       - http:
           path: match-types
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  updateMatchType:
-    handler: functions/matchTypes/updateMatchType.handler
-    events:
       - http:
           path: match-types/{matchTypeId}
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  deleteMatchType:
-    handler: functions/matchTypes/deleteMatchType.handler
-    events:
       - http:
           path: match-types/{matchTypeId}
           method: delete

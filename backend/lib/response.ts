@@ -65,3 +65,7 @@ export const noContent = (): APIGatewayProxyResult => {
     body: '',
   };
 };
+
+export const methodNotAllowed = (message: string = 'Method Not Allowed'): APIGatewayProxyResult => {
+  return error(405, message);
+};
