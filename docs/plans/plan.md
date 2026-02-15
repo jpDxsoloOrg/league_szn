@@ -1,110 +1,111 @@
-# Plan: Refresh admin help documentation
+# Plan: Migrate User Guide to Wiki and remove standalone User Guide
 
-**GitHub issue:** [#123](https://github.com/jpDxsolo/league_szn/issues/123) — Refresh admin help documentation
+**GitHub issue:** [#148](https://github.com/jpDxsolo/league_szn/issues/148) — Migrate User Guide to Wiki and remove standalone User Guide
 
 ## Context
 
-The admin help guide (`AdminGuide.tsx`) is currently inline content with no table of contents and no documentation for **Challenges** or **Promos** admin flows. The Wrestler role still says "challenges (coming soon), promos (coming soon)." This plan adds a TOC, groups content into clear sections, documents Challenges and Promos admin (schedule from challenge/promo, delete, bulk clear), documents Schedule Match pre-fill from challenge/promo, and updates User Management copy.
+The User Guide is currently a standalone React page at `/guide` with all content in i18n and conditional sections (e.g. profile/challenges/promos only when authenticated or feature-flagged). The wiki already exists at `/guide/wiki` with markdown articles. This plan moves all User Guide content into wiki articles (preserving and optionally improving the content), then removes the User Guide component and route so Help is a single wiki-based experience.
 
 ## Skills to use
 
 | When | Skill | Purpose |
 |------|--------|---------|
-| After implementation | code-reviewer | Review AdminGuide structure, TOC, and heading hierarchy |
+| After implementation | code-reviewer | Review wiki articles, routing, and removed references |
 | Before commit | git-commit-helper | Conventional commit message |
-| When adding/updating tests | test-generator | Extend AdminGuide tests for TOC and new sections |
+| If README or CLAUDE.md change | readme-updater | Keep docs in sync with Help/wiki structure |
+| When updating tests | test-generator | Adjust or add tests for wiki as Help entry |
 
 Only include skills that actually apply to this request.
 
 ## Agents and parallel work
 
-- **Suggested order**: Step 1 (TOC + section IDs) → Step 2 (reorder + group sections + add Challenges/Promos + update User Management & Schedule Match) → Step 3 (tests).
+- **Suggested order**: Step 1 (wiki content + index + i18n) → Step 2 (routing + remove User Guide + nav/breadcrumbs) → Step 3 (tests + cleanup).
 - **Agent types**: `general-purpose` for Steps 1–2; `general-purpose` or `test-engineer` for Step 3.
 
 ## Files to modify
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `frontend/src/components/admin/AdminGuide.tsx` | Modify | Add TOC with anchor links; assign `id` to each major section; reorder/group sections (Quickstart, League setup, Match operations, Content & social, Contender config, Data management, Workflow); add Challenges and Promos sections; update User Management (remove "coming soon"); update Schedule Match (pre-fill from challenge/promo); update Typical Weekly Workflow to mention challenges/promos where relevant |
-| `frontend/src/components/admin/AdminGuide.css` | Modify | Style TOC (e.g. sticky or compact list, links); optional section-group heading styles |
-| `frontend/src/components/admin/__tests__/AdminGuide.test.tsx` | Modify | Assert TOC is present with correct links; assert new section headings (Challenges, Promos, Content & social); assert "coming soon" is removed; optional a11y for TOC nav |
+| `frontend/public/wiki/index.json` | Modify | Add entries for new wiki articles (slug, titleKey, file) |
+| `frontend/public/wiki/*.md` | Create | New markdown articles for each User Guide section (see steps) |
+| `frontend/src/i18n/locales/en.json` | Modify | Add `wiki.articles.*` keys for new articles; remove or keep `userGuide.*` only if still needed (e.g. nav) |
+| `frontend/src/i18n/locales/de.json` | Modify | Same as en.json for new wiki title keys |
+| `frontend/src/App.tsx` | Modify | Remove `/guide` route that renders UserGuide; add redirect `/guide` → `/guide/wiki` (or make `/guide` render wiki index) |
+| `frontend/src/components/UserGuide.tsx` | Delete | No longer used |
+| `frontend/src/components/UserGuide.css` | Delete | No longer used |
+| `frontend/src/components/Wiki.tsx` | Modify | "Back to guide" link: point to `/guide/wiki` (index) or remove if redundant |
+| `frontend/src/components/WikiBreadcrumbs.tsx` | Modify | Ensure "Help" / breadcrumb for `/guide` context points to wiki index; no broken "Back to User Guide" |
+| `frontend/src/config/navConfig.ts` | Modify | Ensure Help path is `/guide` (redirect) or `/guide/wiki` as desired |
+| `frontend/src/components/TopBar.tsx` | Modify | If Help link is changed, update to match (e.g. `/guide` or `/guide/wiki`) |
+| `frontend/src/components/__tests__/UserGuide.test.tsx` | Delete | Component removed |
+| `frontend/src/components/__tests__/App.test.tsx` | Modify | Remove UserGuide mock; assert `/guide` redirects or renders wiki |
+| `frontend/src/components/__tests__/Wiki.test.tsx` | Modify | Update expectations for back link / breadcrumb if they pointed to `/guide` |
+| `e2e/take-screenshots.ts` | Modify | If `/guide` is now wiki, update route name or path if needed |
+| `e2e/config/selectors.ts` | Modify | Only if guide selector or href changes |
+| `CLAUDE.md` | Modify | Update Help and Wiki section: Help is wiki at `/guide` (redirect to wiki) or `/guide/wiki`; remove User Guide reference |
+| `README.md` | Modify | If it mentions "User Guide" at `/guide`, update to "Help (Wiki)" or similar |
+| `frontend/public/wiki/getting-started.md` | Modify | Update "Use Help to open the User Guide" → "Use Help to browse the Wiki" (or similar) |
+| `frontend/public/wiki/faqs.md` | Modify | Update "The User Guide (Help menu)" → "The Wiki (Help menu)" if present |
 
 ## Implementation steps
 
-### Step 1: Table of contents and section IDs
+### Step 1: Add wiki articles from User Guide content
 
-- In `AdminGuide.tsx`, add a **TOC block** after the intro paragraph and before the first content section.
-- Define a stable list of section IDs used for anchors, e.g.:
-  - `quickstart`, `league-setup`, `user-management`, `divisions`, `manage-players`, `seasons`, `championships`, `match-operations`, `events`, `schedule-match`, `record-results`, `tournaments`, `content-social`, `challenges`, `promos`, `contender-config`, `data-management`, `workflow`
-- Use these as `id` on the wrapping `<section>` (e.g. `<section id="quickstart" className="admin-guide-section">`) or on the section heading so TOC links work (e.g. `<h4 id="quickstart">`). Ensure target elements are focusable for skip links if needed (`tabIndex={-1}`).
-- TOC can be a `<nav aria-label="Table of contents">` with a list of anchor links (`<a href="#quickstart">Quickstart</a>`, etc.). Use consistent heading levels: e.g. `h4` for main sections, `h5` for subsections, so the TOC maps to the same hierarchy.
-- Keep existing CSS classes (`admin-guide`, `admin-guide-section`, `guide-block`, etc.) on existing sections.
+- **Source**: All content currently in `UserGuide.tsx` and i18n keys `userGuide.*` in `en.json` / `de.json` (sections: standings, seasons, divisions, championships, events, tournaments, contenders, profile, challenges, promos, fantasy, tips).
+- **Approach**: Create one markdown file per major section (or group a few into single articles). Suggested articles:
+  - `standings.md` — Standings page, columns, how rankings work, formula.
+  - `seasons.md` — What seasons are, all-time vs season standings, season end.
+  - `divisions.md` — What divisions are, viewing player divisions.
+  - `championships.md` — Viewing championships, viewing history (steps).
+  - `events.md` — Events & PPV, browsing by type, event details.
+  - `tournaments.md` — Tournament types (single elimination, round robin), tournament information.
+  - `contenders.md` — What contender rankings are, reading rankings (rank, score, win %, streak).
+  - `profile.md` — My Profile (what you can see); note "for logged-in wrestlers."
+  - `challenges.md` — Challenge board, issuing, responding, statuses; note "for wrestlers" / when feature is on.
+  - `promos.md` — Promo feed, creating, types, reactions, call-outs and challenges.
+  - `fantasy.md` — How fantasy works, features (picks, leaderboard, costs, results); note "when Fantasy is enabled."
+  - `tips.md` — Tips for following the league (same six tips as current guide).
+- **Punch-up**: When converting i18n strings to markdown, improve clarity or add a sentence where it helps; keep all existing information. Optionally add a short "How to use this site" or "Help overview" article that links to these.
+- **i18n**: Add `wiki.articles.standings`, `wiki.articles.seasons`, … in `en.json` and `de.json` (use same text as current `userGuide.toc.*` or section titles where appropriate).
+- **index.json**: Append one entry per new file: `{ "slug": "standings", "titleKey": "wiki.articles.standings", "file": "standings.md" }`, etc. Order can match the current guide (e.g. public content first, then authenticated, then tips).
 
-### Step 2: Section grouping, new content, and copy updates
+### Step 2: Route Help to wiki and remove User Guide
 
-- **Reorder and group** sections to match the issue:
-  - **Quickstart** (unchanged concept; ensure step list is still accurate; add `id="quickstart"`).
-  - **League setup** (group heading only if desired): User Management, Divisions, Manage Players, Seasons, Championships — each with its own `id` (e.g. `user-management`, `divisions`, `manage-players`, `seasons`, `championships`).
-  - **Match operations**: Events, Schedule Match, Record Results, Tournaments — with IDs `events`, `schedule-match`, `record-results`, `tournaments`.
-  - **Content & social**: New group containing **Challenges** and **Promos** (see below). Use IDs `content-social`, `challenges`, `promos`.
-  - **Contender configuration** — keep as-is with `id="contender-config"`.
-  - **Data management (Danger Zone)** — keep as-is with `id="data-management"`.
-  - **Typical weekly workflow** — keep with `id="workflow"`; add a brief mention of reviewing/clearing challenges and promos where relevant (e.g. after recording results or in weekly cleanup).
+- **Routing** (e.g. in `App.tsx`):
+  - Remove the route that renders `<UserGuide />` at `/guide`.
+  - Add a redirect from `/guide` to `/guide/wiki` (e.g. `<Route path="/guide" element={<Navigate to="/guide/wiki" replace />} />`) so "Help" in the nav can stay as `/guide` and bookmarks work.
+  - Keep existing `/guide/wiki` and `/guide/wiki/:slug` routes unchanged.
+- **Component removal**: Delete `frontend/src/components/UserGuide.tsx` and `frontend/src/components/UserGuide.css`. Remove any import of `UserGuide` from `App.tsx`.
+- **Wiki layout**: In `Wiki.tsx`, the "Back to guide" (or similar) link currently goes to `/guide`. After the change, `/guide` redirects to `/guide/wiki`, so the link can remain `to="/guide"` (user lands on wiki index) or be set to `to="/guide/wiki"` for clarity. In `WikiBreadcrumbs.tsx`, ensure the first-level "Help" link points to `/guide` or `/guide/wiki` and that no copy says "Back to User Guide" if that page no longer exists; use "Help" or "Wiki" as appropriate.
+- **Nav**: In `navConfig.ts` and `TopBar.tsx`, keep Help path as `/guide` (so redirect applies) or change to `/guide/wiki` if preferred; ensure one consistent choice.
+- **CLAUDE.md**: In the "Help and Wiki" section, state that Help is the wiki at `/guide/wiki`, with `/guide` redirecting there; remove the sentence that says "Help is the User Guide at `/guide` (UserGuide.tsx)."
+- **README.md**: If it mentions "User Guide" at `/guide`, update to "Help (Wiki)" or equivalent.
+- **Wiki content**: In `getting-started.md` and `faqs.md`, replace references to "User Guide" with "Wiki" or "Help" so copy stays accurate.
 
-- **Challenges section** (new): Document AdminChallenges tab.
-  - Where to find it: Admin → Challenges tab.
-  - View/filter: Status filter (pending, countered, accepted, scheduled, expired, cancelled, etc.); explain which statuses appear on the public challenge board.
-  - **Schedule**: "Schedule" button navigates to Schedule Match with pre-fill (participants, match type, optional stipulation from challenge); the scheduled match stores a link to the challenge.
-  - Per-row **Delete** (removes the challenge).
-  - **Clear Resolved** bulk action: removes cancelled, expired, and scheduled challenges; confirm dialog.
-  - Use `h4` for "Challenges" and `h5` for subsections (e.g. "Viewing and filtering", "Scheduling a match from a challenge", "Deleting challenges", "Clear Resolved").
+### Step 3: Tests and cleanup
 
-- **Promos section** (new): Document AdminPromos tab.
-  - Where to find it: Admin → Promos tab.
-  - View/filter: Promo list; filter by type (open-mic, call-out, response, etc.).
-  - **Pin / Unpin**: Pinned promos appear at top of public feed.
-  - **Hide**: Hidden promos are removed from the public feed; explain that scheduling a match from a call-out promo can hide it from the feed (if that’s current behavior, document it).
-  - **Schedule Match** (for call-out promos): Navigate to Schedule Match with pre-fill from promo (participants, etc.); match stores link to promo.
-  - Per-row **Delete**.
-  - **Bulk clear** (e.g. "Clear hidden promos" or equivalent): Document the bulk action that clears hidden (or similar) promos.
-  - Use `h4` for "Promos" and `h5` for subsections.
-
-- **Schedule Match section** (update existing): Add a subsection (e.g. **Pre-fill from challenge or promo**):
-  - You can open Schedule Match from the Challenges tab ("Schedule" on a challenge) or from the Promos tab ("Schedule Match" on a call-out promo). Participants, match type, and optional stipulation are pre-filled; you can change them. The scheduled match stores a link to the challenge or promo for reference.
-
-- **User Management / Wrestler role** (update): Remove the phrase "challenges (coming soon), promos (coming soon)". Replace with wording that Wrestler role includes access to profile, challenges, and promos (e.g. "Access to personal profile page with stats, contender status, challenges, and promos").
-
-- **Review** other sections (Manage Players, Divisions, Seasons, Championships, Events, Match Card Builder, Record Results, Tournaments, Contender Config, Danger Zone) for accuracy and consistency with the current UI; fix any outdated steps or labels.
-
-- Ensure every major section has an `id` that appears in the TOC so anchor links work.
-
-### Step 3: Tests and verification
-
-- **AdminGuide.test.tsx**:
-  - Assert that a TOC (or nav with table-of-contents semantics) is present and contains links to the major sections (e.g. `#quickstart`, `#challenges`, `#promos`, `#schedule-match`, `#data-management`, `#workflow`).
-  - Assert that section headings "Challenges" and "Promos" (or "Content & social" and subsections) are present.
-  - Assert that the Wrestler role description no longer contains "coming soon" (e.g. expect not to find that exact text in the document).
-  - If the test currently relies on exact heading order or count, update it to allow the new structure (e.g. more headings for Challenges/Promos subsections).
-- Run existing tests and fix any regressions.
-- Optionally use **test-generator** for TOC link count or accessibility assertions.
+- **Remove** `frontend/src/components/__tests__/UserGuide.test.tsx` (component no longer exists).
+- **App.test.tsx**: Remove mock for `UserGuide`; ensure test that visits `/guide` expects redirect to `/guide/wiki` or that the page content is wiki (index or article).
+- **Wiki.test.tsx**: If tests assert "back to guide" link href or text, update so they expect `/guide` or `/guide/wiki` and no "User Guide" wording.
+- **E2E**: In `e2e/take-screenshots.ts`, if there is a step for `/guide`, confirm it still works (redirect or wiki); update `e2e/config/selectors.ts` only if the Help link href or selector changes.
+- **i18n cleanup**: Once no component uses `userGuide.*`, remove the `userGuide` block from `en.json` and `de.json` (or leave a minimal set if something still references it, e.g. a nav tooltip). Ensure all new `wiki.articles.*` keys are present in both locales.
 
 ## Dependencies and order
 
-- Step 1 must be done first (TOC and section IDs) so the rest of the guide can link to them.
-- Step 2 depends on Step 1 and adds new sections, grouping, and copy updates.
-- Step 3 depends on Steps 1–2.
+- Step 1 must be done first so the wiki has all content before we remove the User Guide.
+- Step 2 depends on Step 1 (wiki index and articles in place).
+- Step 3 depends on Step 2.
 
 **Suggested order**: Step 1 → Step 2 → Step 3.
 
 ## Testing and verification
 
-- **Manual**: Open Admin Guide; confirm TOC at top with links to each major section. Click each TOC link and confirm scroll/focus lands on the correct section. Confirm section groups (League setup, Match operations, Content & social, etc.) and new Challenges and Promos content match the AdminChallenges and AdminPromos UI (filter, Schedule, delete, bulk clear). Confirm User Management no longer says "coming soon" and Schedule Match documents pre-fill from challenge/promo. Confirm Data management and Workflow sections still accurate.
-- **Existing tests**: AdminGuide tests assert headings and intro; update for TOC and new sections and "coming soon" removal.
-- **New tests**: TOC presence and links; Challenges and Promos sections present; "coming soon" absent.
+- **Manual**: Click "Help" in nav; confirm redirect to `/guide/wiki` and wiki index loads. Open each new article (standings, seasons, …) and confirm content matches or improves on the old User Guide. Check breadcrumbs and "Back" link. Switch locale and confirm wiki article titles translate. Ensure Getting Started and FAQs no longer say "User Guide."
+- **Existing tests**: Remove UserGuide tests; update App and Wiki tests as above.
+- **New tests**: Optionally add a smoke test that `/guide` redirects to `/guide/wiki` and that wiki index lists the new articles (e.g. by slug or titleKey).
 
 ## Risks and edge cases
 
-- **Heading hierarchy**: Use consistent `h4` for main sections and `h5` for subsections so the TOC and accessibility tree stay consistent. If the component currently uses mixed levels, normalize to this pattern.
-- **Deep links**: If the app later supports hash routing (e.g. `/admin#challenges`), the same `id` values will work.
-- **Copy accuracy**: Challenges statuses and Promos bulk actions must match the actual AdminChallenges and AdminPromos behavior (e.g. "Clear Resolved" = cancelled/expired/scheduled; promo bulk clear = hidden or as implemented). Verify against the components and API before finalizing copy.
-- **User help**: Issue 123 is admin help only; user help refresh is issue 122 and not in scope.
+- **Deep links**: Old links to `/guide` will redirect to `/guide/wiki`; links to `/guide#standings` may land on wiki index without hash (acceptable; user can click Standings in wiki).
+- **Conditional content**: Profile, Challenges, Promos, Fantasy are "for wrestlers" or feature-gated. Wiki articles are visible to everyone; state in the article intro that the feature is for logged-in wrestlers or when the feature is enabled, so no conditional rendering is needed in the wiki.
+- **Admin help**: Unchanged; admin guide remains at `/admin/guide` and is out of scope.
