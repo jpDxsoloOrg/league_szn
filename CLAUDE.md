@@ -111,6 +111,16 @@ wwe-2k-league/
 └── README.md
 ```
 
+## Help and Wiki
+
+- **Help** is the User Guide at `/guide` (`UserGuide.tsx`), linked from nav as "Help". It includes a link to the **Wiki**.
+- **Wiki** is at `/guide/wiki` (index) and `/guide/wiki/:slug` (article). Components: `Wiki.tsx` (layout), `WikiIndex.tsx`, `WikiArticle.tsx`, `WikiBreadcrumbs.tsx`.
+- **Wiki content** lives in the repo as static files; there is no admin UI for editing. All editing is done by changing files and redeploying.
+  - **Location**: `frontend/public/wiki/`
+  - **Index**: `frontend/public/wiki/index.json` — JSON array of `{ "slug": string, "titleKey": string, "file": string }`. The app fetches this to build the wiki index page.
+  - **Articles**: Markdown files in `frontend/public/wiki/*.md` (e.g. `getting-started.md`, `faqs.md`). Each article is loaded at runtime by slug via `fetch(\`/wiki/${slug}.md\`)`.
+- **To add a wiki article**: (1) Add a new `.md` file under `frontend/public/wiki/`. (2) Append an entry to `frontend/public/wiki/index.json` with `slug` (URL segment), `titleKey` (e.g. `wiki.articles.myTopic`), and `file` (e.g. `my-topic.md`). (3) Add the `titleKey` translation in `frontend/src/i18n/locales/en.json` and `frontend/src/i18n/locales/de.json` under `wiki.articles`.
+
 ## Data Model
 
 ### Players Table

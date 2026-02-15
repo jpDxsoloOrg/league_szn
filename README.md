@@ -38,7 +38,7 @@ A serverless web application for managing a WWE 2K league with standings, champi
 | **Promos** | View wrestler promos with emoji reactions |
 | **Contender Rankings** | Automatic #1 contender tracking per championship based on recent performance |
 | **Challenges** | View open and completed match challenges between wrestlers |
-| **User Guide** | Built-in help documentation covering all features |
+| **User Guide & Wiki** | Built-in help at `/guide` and wiki articles at `/guide/wiki`. Wiki content lives in `frontend/public/wiki/` (markdown + `index.json`); see CLAUDE.md for how to add articles. |
 | **Internationalization** | Full English and German language support |
 
 ### Wrestler Features (Wrestler Auth Required)
