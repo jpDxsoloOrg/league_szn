@@ -175,49 +175,48 @@ functions:
           method: post
           cors: *corsConfig
 
-  # User Management (Admin only)
-  listUsers:
-    handler: functions/users/listUsers.handler
+  # User Management (Phase 3 consolidated: listUsers, updateUserRole, toggleUserEnabled)
+  users:
+    handler: functions/users/handler.handler
     events:
       - http:
           path: admin/users
           method: get
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  updateUserRole:
-    handler: functions/users/updateUserRole.handler
-    events:
       - http:
           path: admin/users/role
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  toggleUserEnabled:
-    handler: functions/users/toggleUserEnabled.handler
-    events:
       - http:
           path: admin/users/toggle-enabled
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Site Configuration (feature toggles)
-  getSiteConfig:
-    handler: functions/admin/getSiteConfig.handler
+  # Site Configuration + Admin tools (Phase 3 consolidated: getSiteConfig, updateSiteConfig, clearAll, seedData)
+  admin:
+    handler: functions/admin/handler.handler
+    timeout: 29
     events:
       - http:
           path: site-config
           method: get
           cors: *corsConfig
-
-  updateSiteConfig:
-    handler: functions/admin/updateSiteConfig.handler
-    events:
       - http:
           path: admin/site-config
           method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/clear-all
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/seed-data
+          method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
 
@@ -276,27 +275,19 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Matches
-  getMatches:
-    handler: functions/matches/getMatches.handler
+  # Matches (Phase 3 consolidated: getMatches, scheduleMatch, recordResult)
+  matches:
+    handler: functions/matches/handler.handler
     events:
       - http:
           path: matches
           method: get
           cors: *corsConfig
-
-  scheduleMatch:
-    handler: functions/matches/scheduleMatch.handler
-    events:
       - http:
           path: matches
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  recordResult:
-    handler: functions/matches/recordResult.handler
-    events:
       - http:
           path: matches/{matchId}/result
           method: put
@@ -356,27 +347,19 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Tournaments
-  getTournaments:
-    handler: functions/tournaments/getTournaments.handler
+  # Tournaments (Phase 3 consolidated: getTournaments, createTournament, updateTournament)
+  tournaments:
+    handler: functions/tournaments/handler.handler
     events:
       - http:
           path: tournaments
           method: get
           cors: *corsConfig
-
-  createTournament:
-    handler: functions/tournaments/createTournament.handler
-    events:
       - http:
           path: tournaments
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  updateTournament:
-    handler: functions/tournaments/updateTournament.handler
-    events:
       - http:
           path: tournaments/{tournamentId}
           method: put
@@ -532,19 +515,15 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Contenders
-  getContenders:
-    handler: functions/contenders/getContenders.handler
+  # Contenders (Phase 3 consolidated: getContenders, calculateRankings)
+  contenders:
+    handler: functions/contenders/handler.handler
+    timeout: 29
     events:
       - http:
           path: championships/{championshipId}/contenders
           method: get
           cors: *corsConfig
-
-  calculateRankings:
-    handler: functions/contenders/calculateRankings.handler
-    timeout: 29
-    events:
       - http:
           path: admin/contenders/recalculate
           method: post
@@ -577,27 +556,6 @@ functions:
           path: api-docs/spec
           method: get
           cors: *corsConfig
-
-  # Admin
-  clearAll:
-    handler: functions/admin/clearAll.handler
-    timeout: 29  # Increased timeout for bulk delete operations (API Gateway max is 29s)
-    events:
-      - http:
-          path: admin/clear-all
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-
-  seedData:
-    handler: functions/admin/seedData.handler
-    timeout: 29  # Increased timeout for bulk insert operations (API Gateway max is 29s)
-    events:
-      - http:
-          path: admin/seed-data
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
 
   # Statistics
   getStatistics:
