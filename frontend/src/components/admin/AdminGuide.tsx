@@ -434,8 +434,24 @@ export default function AdminGuide() {
         <div className="guide-block highlight-box">
           <h5>Match types and stipulations</h5>
           <p>Match types and stipulations are not fixed—you add and edit them in the <strong>Match Config</strong> tab (Admin → Match Config). There you’ll find two sub-tabs: <strong>Match Types</strong> and <strong>Stipulations</strong>.</p>
-          <p><strong>Match types</strong> define the format (e.g. how many competitors, how a winner is determined). Add as many as your league uses. Examples: Singles (1 vs 1), Tag Team (2 vs 2), Triple Threat (3 participants, first pin/submit wins), Fatal 4-Way, Six Pack Challenge, Battle Royal (last one standing). Create a new match type with a name and optional description.</p>
-          <p><strong>Stipulations</strong> are optional rules or gimmicks for a match. Add any stipulations your league uses. Examples: Ladder, Steel Cage, Hell in a Cell, Last Man Standing, Tables, Iron Man. Create a new stipulation with a name and optional description. When scheduling a match, you pick one from the list or leave it as a standard match.</p>
+
+          <h6>Match types</h6>
+          <p>Match types define the format (how many competitors, how a winner is determined). Add as many as your league uses; each needs a name and optional description. Examples:</p>
+          <ul>
+            <li><strong>Singles</strong> — 1 vs 1</li>
+            <li><strong>Tag Team</strong> — 2 vs 2</li>
+            <li><strong>Triple Threat</strong> — 3 participants, first pin/submit wins</li>
+            <li><strong>Fatal 4-Way</strong> — 4 participants, first pin/submit wins</li>
+            <li><strong>Six Pack Challenge</strong> — 6 participants</li>
+            <li><strong>Battle Royal</strong> — multiple participants, last one standing wins</li>
+          </ul>
+
+          <h6>Stipulations</h6>
+          <p>Stipulations are optional rules or gimmicks for a match. Add any your league uses (name and optional description). When scheduling a match, pick one from the list or leave it as a standard match. Examples:</p>
+          <ul>
+            <li>Ladder, Steel Cage, Hell in a Cell</li>
+            <li>Last Man Standing, Tables, Iron Man</li>
+          </ul>
         </div>
       </section>
 
