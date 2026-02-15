@@ -30,6 +30,15 @@ function slugify(text: string): string {
     .replace(/[^a-z0-9-]/g, '');
 }
 
+/** Treat SPA index.html or any HTML document as invalid wiki content. */
+function isHtmlResponse(text: string): boolean {
+  const trimmed = text.trim();
+  return (
+    trimmed.toLowerCase().startsWith('<!doctype') ||
+    trimmed.toLowerCase().startsWith('<html')
+  );
+}
+
 function parseHeadings(markdown: string): TocItem[] {
   const items: TocItem[] = [];
   const idCount: Record<string, number> = {};
@@ -84,6 +93,7 @@ export default function WikiArticle() {
   const locale = i18n.language?.startsWith('de') ? 'de' : 'en';
   const { hasRole, isAuthenticated, isAdminOrModerator, isLoading: authLoading } = useAuth();
   const [content, setContent] = useState<string | null>(null);
+  const [contentFromFallback, setContentFromFallback] = useState(false);
   const [articles, setArticles] = useState<WikiArticleEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,48 +129,95 @@ export default function WikiArticle() {
     setLoading(true);
     setError(null);
     setAccessDenied(false);
-    fetch('/wiki/index.json')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: WikiArticleEntry[]) => {
+    setContentFromFallback(false);
+
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const indexRes = await fetch('/wiki/index.json');
+        const data: WikiArticleEntry[] = indexRes.ok ? await indexRes.json() : [];
         const articleList = Array.isArray(data) ? data : [];
         const entry = articleList.find((a) => a.slug === slug);
         setArticles(articleList);
+
         if (entry?.adminOnly) {
-          if (authLoading) return undefined;
+          if (authLoading) return;
           if (!isAuthenticated) {
             setLoading(false);
-            return undefined;
+            return;
           }
           if (!isAdminOrModerator) {
             setAccessDenied(true);
             setLoading(false);
-            return undefined;
+            return;
           }
         }
+
         const contentPath =
           locale === 'de' ? `/wiki/de/${slug}.md` : `/wiki/${slug}.md`;
-        return fetch(contentPath).then((res) => {
-          if (res.ok) return res.text();
-          if (locale === 'de' && res.status === 404) {
-            return fetch(`/wiki/${slug}.md`).then((fallback) =>
-              fallback.ok ? fallback.text() : Promise.reject(new Error('Article not found'))
-            );
+        const res = await fetch(contentPath);
+        let text: string;
+        let usedFallback = false;
+
+        if (res.ok) {
+          text = await res.text();
+        } else if (locale === 'de' && res.status === 404) {
+          const fallbackRes = await fetch(`/wiki/${slug}.md`);
+          if (!fallbackRes.ok) {
+            throw new Error('Article not found');
           }
+          text = await fallbackRes.text();
+          usedFallback = true;
+        } else {
           throw new Error('Article not found');
-        });
-      })
-      .then((text) => {
-        if (typeof text === 'string') {
-          setContent(text);
-          setError(null);
         }
-      })
-      .catch((err: Error) => {
-        setError(err.message);
-        setContent(null);
-        setArticles([]);
-      })
-      .finally(() => setLoading(false));
+
+        if (cancelled) return;
+
+        if (isHtmlResponse(text)) {
+          if (locale === 'de' && !usedFallback) {
+            const fallbackRes = await fetch(`/wiki/${slug}.md`);
+            if (!fallbackRes.ok) {
+              setError('Article not found');
+              setContent(null);
+              return;
+            }
+            const fallbackText = await fallbackRes.text();
+            if (cancelled) return;
+            if (isHtmlResponse(fallbackText)) {
+              setError('Article not found');
+              setContent(null);
+              return;
+            }
+            setContent(fallbackText);
+            setContentFromFallback(true);
+            setError(null);
+          } else {
+            setError('Article not found');
+            setContent(null);
+          }
+          return;
+        }
+
+        setContent(text);
+        setContentFromFallback(usedFallback && locale === 'de');
+        setError(null);
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Article not found');
+          setContent(null);
+          setArticles([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [slug, locale, isAuthenticated, isAdminOrModerator, authLoading]);
 
   if (loading || authLoading) {
@@ -228,6 +285,11 @@ export default function WikiArticle() {
             </ul>
           </div>
         </nav>
+      ) : null}
+      {locale === 'de' && contentFromFallback ? (
+        <p className="wiki-fallback-notice" role="status">
+          {t('wiki.showingEnglishFallback')}
+        </p>
       ) : null}
       <div className="wiki-content">
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={wikiMarkdownComponents}>{content}</ReactMarkdown>

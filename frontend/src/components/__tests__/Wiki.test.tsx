@@ -5,7 +5,10 @@ import { MemoryRouter, Routes, Route, Navigate } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 
 const { mockUseTranslation } = vi.hoisted(() => ({
-  mockUseTranslation: vi.fn(() => ({ t: (key: string) => key })),
+  mockUseTranslation: vi.fn(() => ({
+    t: (key: string) => key,
+    i18n: { language: 'en' },
+  })),
 }));
 const { mockUseAuth } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(() => ({
@@ -96,5 +99,72 @@ describe('Wiki', () => {
     await waitFor(() => {
       expect(screen.getByRole('link', { name: 'wiki.breadcrumb.help' })).toBeInTheDocument();
     });
+  });
+
+  it('does not render HTML as content when German path returns index.html and fallback returns markdown', async () => {
+    mockUseTranslation.mockReturnValue({
+      t: (key: string) => key,
+      i18n: { language: 'de' },
+    });
+    const adminIndex = [
+      { slug: 'admin', titleKey: 'wiki.articles.adminGuide', file: 'admin.md', adminOnly: true },
+    ];
+    const mockFetch = global.fetch as ReturnType<typeof vi.fn>;
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(adminIndex) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(adminIndex) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(adminIndex) })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: () =>
+          Promise.resolve('<!doctype html><html lang="en"><body>SPA</body></html>'),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        text: () => Promise.resolve('# Admin Guide\n\nContent here.'),
+      });
+    mockUseAuth.mockReturnValue({
+      isAdminOrModerator: true,
+      isAuthenticated: true,
+      isLoading: false,
+      hasRole: () => true,
+    });
+    renderWikiRoutes('/guide/wiki/admin');
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('wiki.showingEnglishFallback');
+    });
+    expect(screen.getByText('Admin Guide')).toBeInTheDocument();
+    expect(screen.getByText('Content here.')).toBeInTheDocument();
+    expect(screen.queryByText('SPA')).not.toBeInTheDocument();
+    expect(screen.queryByText(/<!doctype/i)).not.toBeInTheDocument();
+  });
+
+  it('shows error when both German and English fetch return HTML', async () => {
+    mockUseTranslation.mockReturnValue({
+      t: (key: string) => key,
+      i18n: { language: 'de' },
+    });
+    const adminIndex = [
+      { slug: 'admin', titleKey: 'wiki.articles.adminGuide', file: 'admin.md', adminOnly: true },
+    ];
+    const mockFetch = global.fetch as ReturnType<typeof vi.fn>;
+    const htmlBody = '<!doctype html><html><body>SPA</body></html>';
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(adminIndex) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(adminIndex) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(adminIndex) })
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(htmlBody) })
+      .mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(htmlBody) });
+    mockUseAuth.mockReturnValue({
+      isAdminOrModerator: true,
+      isAuthenticated: true,
+      isLoading: false,
+      hasRole: () => true,
+    });
+    renderWikiRoutes('/guide/wiki/admin');
+    await waitFor(() => {
+      expect(screen.getByText(/common\.error|Article not found/)).toBeInTheDocument();
+    });
+    expect(screen.queryByText('SPA')).not.toBeInTheDocument();
   });
 });
