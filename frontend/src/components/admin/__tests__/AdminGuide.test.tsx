@@ -38,4 +38,35 @@ describe('AdminGuide', () => {
     expect(headingTexts).toContain('Contender Configuration');
     expect(headingTexts).toContain('Typical Weekly Workflow');
   });
+
+  it('renders table of contents with links to major sections', () => {
+    render(<AdminGuide />);
+
+    const nav = screen.getByRole('navigation', { name: 'Table of contents' });
+    expect(nav).toBeInTheDocument();
+
+    const tocLinks = nav.querySelectorAll('a[href^="#"]');
+    const hrefs = Array.from(tocLinks).map(a => a.getAttribute('href'));
+
+    expect(hrefs).toContain('#quickstart');
+    expect(hrefs).toContain('#challenges');
+    expect(hrefs).toContain('#promos');
+    expect(hrefs).toContain('#schedule-match');
+    expect(hrefs).toContain('#data-management');
+    expect(hrefs).toContain('#workflow');
+  });
+
+  it('renders Challenges and Promos sections under Content & social', () => {
+    render(<AdminGuide />);
+
+    expect(screen.getByRole('heading', { name: 'Content & social' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Challenges' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Promos' })).toBeInTheDocument();
+  });
+
+  it('does not contain "coming soon" in Wrestler role description', () => {
+    render(<AdminGuide />);
+
+    expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
+  });
 });
