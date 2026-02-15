@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { Components } from 'react-markdown';
@@ -78,7 +79,8 @@ const baseMarkdownComponents: Components = {
 
 export default function WikiArticle() {
   const { slug } = useParams<{ slug: string }>();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language?.startsWith('de') ? 'de' : 'en';
   const { hasRole } = useAuth();
   const [content, setContent] = useState<string | null>(null);
   const [articles, setArticles] = useState<WikiArticleEntry[]>([]);
@@ -118,11 +120,17 @@ export default function WikiArticle() {
       .then((res) => (res.ok ? res.json() : []))
       .then((data: WikiArticleEntry[]) => (Array.isArray(data) ? data : []))
       .catch(() => []);
-    const contentPromise = fetch(`/wiki/${slug}.md`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Article not found');
-        return res.text();
-      });
+    const contentPath =
+      locale === 'de' ? `/wiki/de/${slug}.md` : `/wiki/${slug}.md`;
+    const contentPromise = fetch(contentPath).then((res) => {
+      if (res.ok) return res.text();
+      if (locale === 'de' && res.status === 404) {
+        return fetch(`/wiki/${slug}.md`).then((fallback) =>
+          fallback.ok ? fallback.text() : Promise.reject(new Error('Article not found'))
+        );
+      }
+      throw new Error('Article not found');
+    });
     Promise.all([articlesPromise, contentPromise])
       .then(([articleList, text]) => {
         setArticles(articleList);
@@ -135,7 +143,7 @@ export default function WikiArticle() {
         setArticles([]);
       })
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, locale]);
 
   if (loading) {
     return <p className="wiki-loading">{t('common.loading')}</p>;
@@ -192,7 +200,7 @@ export default function WikiArticle() {
         </nav>
       ) : null}
       <div className="wiki-content">
-        <ReactMarkdown components={wikiMarkdownComponents}>{content}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={wikiMarkdownComponents}>{content}</ReactMarkdown>
       </div>
       {(prevEntry || nextEntry) ? (
         <nav className="wiki-article-nav" aria-label={t('wiki.articleNavLabel')}>

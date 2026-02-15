@@ -29,7 +29,6 @@ vi.mock('../TopBar', () => ({ default: () => <div data-testid="topbar">TopBar</d
 vi.mock('../Standings', () => ({ default: () => <div data-testid="standings">Standings</div> }));
 vi.mock('../Championships', () => ({ default: () => <div data-testid="championships">Championships</div> }));
 vi.mock('../Tournaments', () => ({ default: () => <div data-testid="tournaments">Tournaments</div> }));
-vi.mock('../UserGuide', () => ({ default: () => <div data-testid="guide">Guide</div> }));
 vi.mock('../admin/AdminPanel', () => ({ default: () => <div data-testid="admin-panel">AdminPanel</div> }));
 vi.mock('../auth/Login', () => ({ default: () => <div data-testid="login">Login</div> }));
 vi.mock('../auth/Signup', () => ({ default: () => <div data-testid="signup">Signup</div> }));
@@ -168,6 +167,16 @@ describe('App', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/events');
+    });
+  });
+
+  it('redirects /guide to /guide/wiki', async () => {
+    mockUseAuth.mockReturnValue(unauthenticatedAuth());
+    testEntries = ['/guide'];
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/guide/wiki');
     });
   });
 
