@@ -111,7 +111,6 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     items: [
       { path: '/admin/users', i18nKey: 'admin.panel.tabs.users' },
       { path: '/admin/features', i18nKey: 'admin.panel.tabs.features' },
-      { path: '/admin/guide', i18nKey: 'admin.panel.tabs.help' },
       { path: '/admin/danger', i18nKey: 'admin.panel.tabs.dangerZone', danger: true },
     ],
   },
@@ -132,7 +131,7 @@ export function getAdminGroupForPath(pathname: string): string | null {
   const leagueSetup = ['/admin/players', '/admin/divisions', '/admin/seasons', '/admin/championships', '/admin/tournaments'];
   const contentSocial = ['/admin/challenges', '/admin/promos', '/admin/contender-config'];
   const fantasy = ['/admin/fantasy-shows', '/admin/fantasy-config'];
-  const system = ['/admin/users', '/admin/features', '/admin/guide', '/admin/danger'];
+  const system = ['/admin/users', '/admin/features', '/admin/danger'];
   if (matchOps.some((p) => pathname === p)) return 'matchOps';
   if (leagueSetup.some((p) => pathname === p)) return 'leagueSetup';
   if (contentSocial.some((p) => pathname === p)) return 'contentSocial';

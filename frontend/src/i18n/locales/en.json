@@ -29,7 +29,8 @@
     "next": "Next",
     "submitting": "Submitting...",
     "loading": "Loading...",
-    "print": "Print"
+    "print": "Print",
+    "accessDenied": "Access Denied"
   },
   "nav": {
     "standings": "Standings",
@@ -68,6 +69,7 @@
     "onThisPage": "On this page",
     "searchPlaceholder": "Search wiki",
     "noResults": "No results",
+    "adminOnlyArticle": "You don't have permission to view this article.",
     "breadcrumbNav": "Wiki breadcrumb navigation",
     "breadcrumb": {
       "help": "Help",
@@ -87,7 +89,23 @@
       "challenges": "Challenges",
       "promos": "Promos",
       "fantasy": "Fantasy Wrestling",
-      "tips": "Tips"
+      "tips": "Tips",
+      "adminGuide": "Admin",
+      "adminQuickstart": "Admin: Quickstart",
+      "adminUserManagement": "Admin: User Management",
+      "adminDivisions": "Admin: Divisions",
+      "adminManagePlayers": "Admin: Manage Players",
+      "adminSeasons": "Admin: Seasons",
+      "adminChampionships": "Admin: Championships",
+      "adminEvents": "Admin: Events",
+      "adminScheduleMatch": "Admin: Schedule Match",
+      "adminRecordResults": "Admin: Record Results",
+      "adminTournaments": "Admin: Tournaments",
+      "adminChallenges": "Admin: Challenges",
+      "adminPromos": "Admin: Promos",
+      "adminContenderConfig": "Admin: Contender Config",
+      "adminDataManagement": "Admin: Data Management",
+      "adminWorkflow": "Admin: Typical Workflow"
     }
   },
   "languageSwitcher": {

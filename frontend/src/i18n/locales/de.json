@@ -29,7 +29,8 @@
     "next": "Weiter",
     "submitting": "Wird eingereicht...",
     "loading": "Wird geladen...",
-    "print": "Drucken"
+    "print": "Drucken",
+    "accessDenied": "Zugriff verweigert"
   },
   "nav": {
     "standings": "Tabelle",
@@ -68,6 +69,7 @@
     "onThisPage": "Auf dieser Seite",
     "searchPlaceholder": "Wiki durchsuchen",
     "noResults": "Keine Ergebnisse",
+    "adminOnlyArticle": "Sie haben keine Berechtigung, diesen Artikel anzuzeigen.",
     "breadcrumbNav": "Wiki-Breadcrumb-Navigation",
     "breadcrumb": {
       "help": "Hilfe",
@@ -87,7 +89,23 @@
       "challenges": "Herausforderungen",
       "promos": "Promos",
       "fantasy": "Fantasy Wrestling",
-      "tips": "Tipps"
+      "tips": "Tipps",
+      "adminGuide": "Admin",
+      "adminQuickstart": "Admin: Schnellstart",
+      "adminUserManagement": "Admin: Benutzerverwaltung",
+      "adminDivisions": "Admin: Divisionen",
+      "adminManagePlayers": "Admin: Spieler verwalten",
+      "adminSeasons": "Admin: Saisons",
+      "adminChampionships": "Admin: Meisterschaften",
+      "adminEvents": "Admin: Events",
+      "adminScheduleMatch": "Admin: Match planen",
+      "adminRecordResults": "Admin: Ergebnisse eintragen",
+      "adminTournaments": "Admin: Turniere",
+      "adminChallenges": "Admin: Herausforderungen",
+      "adminPromos": "Admin: Promos",
+      "adminContenderConfig": "Admin: Herausforderer-Konfig",
+      "adminDataManagement": "Admin: Datenverwaltung",
+      "adminWorkflow": "Admin: Typischer Wochenablauf"
     }
   },
   "languageSwitcher": {

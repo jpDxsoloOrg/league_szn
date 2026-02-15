@@ -33,7 +33,6 @@ export default function TopBar() {
         'fantasy-config': t('admin.panel.tabs.fantasyConfig'),
         users: t('admin.panel.tabs.users'),
         features: t('admin.panel.tabs.features'),
-        guide: t('admin.panel.tabs.help'),
         danger: t('admin.panel.tabs.dangerZone'),
       };
 
@@ -54,7 +53,6 @@ export default function TopBar() {
         'fantasy-config': t('admin.panel.groups.fantasy'),
         users: t('admin.panel.groups.system'),
         features: t('admin.panel.groups.system'),
-        guide: t('admin.panel.groups.system'),
         danger: t('admin.panel.groups.system'),
       };
 

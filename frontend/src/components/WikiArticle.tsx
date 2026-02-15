@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import ReactMarkdown from 'react-markdown';
@@ -9,10 +9,11 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { Components } from 'react-markdown';
 import './Wiki.css';
 
-interface WikiArticleEntry {
+export interface WikiArticleEntry {
   slug: string;
   titleKey: string;
   file: string;
+  adminOnly?: boolean;
 }
 
 interface TocItem {
@@ -81,11 +82,12 @@ export default function WikiArticle() {
   const { slug } = useParams<{ slug: string }>();
   const { t, i18n } = useTranslation();
   const locale = i18n.language?.startsWith('de') ? 'de' : 'en';
-  const { hasRole } = useAuth();
+  const { hasRole, isAuthenticated, isAdminOrModerator, isLoading: authLoading } = useAuth();
   const [content, setContent] = useState<string | null>(null);
   const [articles, setArticles] = useState<WikiArticleEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
   const [tocOpen, setTocOpen] = useState(false);
   const headingIndexRef = useRef(0);
   const tocItems = useMemo(() => (content ? parseHeadings(content) : []), [content]);
@@ -116,26 +118,42 @@ export default function WikiArticle() {
     }
     setLoading(true);
     setError(null);
-    const articlesPromise = fetch('/wiki/index.json')
+    setAccessDenied(false);
+    fetch('/wiki/index.json')
       .then((res) => (res.ok ? res.json() : []))
-      .then((data: WikiArticleEntry[]) => (Array.isArray(data) ? data : []))
-      .catch(() => []);
-    const contentPath =
-      locale === 'de' ? `/wiki/de/${slug}.md` : `/wiki/${slug}.md`;
-    const contentPromise = fetch(contentPath).then((res) => {
-      if (res.ok) return res.text();
-      if (locale === 'de' && res.status === 404) {
-        return fetch(`/wiki/${slug}.md`).then((fallback) =>
-          fallback.ok ? fallback.text() : Promise.reject(new Error('Article not found'))
-        );
-      }
-      throw new Error('Article not found');
-    });
-    Promise.all([articlesPromise, contentPromise])
-      .then(([articleList, text]) => {
+      .then((data: WikiArticleEntry[]) => {
+        const articleList = Array.isArray(data) ? data : [];
+        const entry = articleList.find((a) => a.slug === slug);
         setArticles(articleList);
-        setContent(text);
-        setError(null);
+        if (entry?.adminOnly) {
+          if (authLoading) return undefined;
+          if (!isAuthenticated) {
+            setLoading(false);
+            return undefined;
+          }
+          if (!isAdminOrModerator) {
+            setAccessDenied(true);
+            setLoading(false);
+            return undefined;
+          }
+        }
+        const contentPath =
+          locale === 'de' ? `/wiki/de/${slug}.md` : `/wiki/${slug}.md`;
+        return fetch(contentPath).then((res) => {
+          if (res.ok) return res.text();
+          if (locale === 'de' && res.status === 404) {
+            return fetch(`/wiki/${slug}.md`).then((fallback) =>
+              fallback.ok ? fallback.text() : Promise.reject(new Error('Article not found'))
+            );
+          }
+          throw new Error('Article not found');
+        });
+      })
+      .then((text) => {
+        if (typeof text === 'string') {
+          setContent(text);
+          setError(null);
+        }
       })
       .catch((err: Error) => {
         setError(err.message);
@@ -143,10 +161,22 @@ export default function WikiArticle() {
         setArticles([]);
       })
       .finally(() => setLoading(false));
-  }, [slug, locale]);
+  }, [slug, locale, isAuthenticated, isAdminOrModerator, authLoading]);
 
-  if (loading) {
+  if (loading || authLoading) {
     return <p className="wiki-loading">{t('common.loading')}</p>;
+  }
+  const entry = articles.find((a) => a.slug === slug);
+  if (entry?.adminOnly && !isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  if (accessDenied || (entry?.adminOnly && !isAdminOrModerator)) {
+    return (
+      <div className="access-denied">
+        <h2>{t('common.accessDenied', 'Access Denied')}</h2>
+        <p>{t('wiki.adminOnlyArticle', 'You don\'t have permission to view this article.')}</p>
+      </div>
+    );
   }
   if (error || !content) {
     return <p className="wiki-error">{t('common.error')}: {error ?? 'No content'}</p>;

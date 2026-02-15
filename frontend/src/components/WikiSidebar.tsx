@@ -1,17 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 import './Wiki.css';
 
 interface WikiArticleEntry {
   slug: string;
   titleKey: string;
   file: string;
+  adminOnly?: boolean;
 }
 
 export default function WikiSidebar() {
   const { slug: currentSlug } = useParams<{ slug?: string }>();
   const { t } = useTranslation();
+  const { isAdminOrModerator } = useAuth();
   const [articles, setArticles] = useState<WikiArticleEntry[]>([]);
   const [open, setOpen] = useState(false);
 
@@ -21,6 +24,19 @@ export default function WikiSidebar() {
       .then((data: WikiArticleEntry[]) => setArticles(Array.isArray(data) ? data : []))
       .catch(() => setArticles([]));
   }, []);
+
+  const visibleArticles = useMemo(
+    () =>
+      articles.filter(
+        (a) =>
+          !a.adminOnly ||
+          (isAdminOrModerator && a.slug === 'admin')
+      ),
+    [articles, isAdminOrModerator]
+  );
+
+  const isAdminCurrent =
+    currentSlug === 'admin' || (currentSlug?.startsWith('admin-') ?? false);
 
   return (
     <>
@@ -39,12 +55,22 @@ export default function WikiSidebar() {
       >
         <nav>
           <ul className="wiki-sidebar-list">
-            {articles.map((entry) => (
+            {visibleArticles.map((entry) => (
               <li key={entry.slug}>
                 <Link
                   to={`/guide/wiki/${entry.slug}`}
-                  className={currentSlug === entry.slug ? 'wiki-sidebar-current' : ''}
-                  aria-current={currentSlug === entry.slug ? 'page' : undefined}
+                  className={
+                    currentSlug === entry.slug ||
+                    (entry.slug === 'admin' && isAdminCurrent)
+                      ? 'wiki-sidebar-current'
+                      : ''
+                  }
+                  aria-current={
+                    currentSlug === entry.slug ||
+                    (entry.slug === 'admin' && isAdminCurrent)
+                      ? 'page'
+                      : undefined
+                  }
                   onClick={() => setOpen(false)}
                 >
                   {t(entry.titleKey)}

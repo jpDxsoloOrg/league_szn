@@ -37,9 +37,9 @@ Using the same request and the issue body:
    - **test-generator**: New or changed behavior that needs tests.
 3. **Identify parallel work**: Group tasks that have no dependency on each other (e.g. backend types + frontend types, or unrelated components) so they can be run in parallel by agents.
 
-## Step 3: Write plan.md
+## Step 3: Write the plan file
 
-Create a single plan file at **docs/plans/plan.md** (overwriting any existing plan there) with this structure so it works with the **execute-plan** command and with skills/agents:
+Create a single plan file with a **unique name** that is not already in use (see CLAUDE.md). Use the path **docs/plans/plan-issue-&lt;issue_number&gt;-&lt;short-slug&gt;.md**, where &lt;short-slug&gt; is a kebab-case version of the issue title (e.g. "Add admin guide to help wiki" → `wiki-admin-guide`). Check existing files in `docs/plans/` to avoid duplicates. The plan must have this structure so it works with the **execute-plan** command and with skills/agents:
 
 ```markdown
 # Plan: <Short title from the issue>
@@ -105,12 +105,13 @@ Backward compatibility, config/env, or edge cases to watch for.
 Tell the user:
 
 1. **Issue**: Link to the new issue (e.g. `https://github.com/jpDxsolo/league_szn/issues/<number>`).
-2. **Plan**: Path to the plan file (`docs/plans/plan.md`).
-3. **Next step**: "Run the **execute-plan** command with this plan to implement it with parallel agents, or edit `docs/plans/plan.md` first and then run execute-plan."
+2. **Plan**: Path to the plan file (e.g. `docs/plans/plan-issue-<number>-<slug>.md`).
+3. **Next step**: "Run the **execute-plan** command with this plan to implement it with parallel agents, or edit the plan file first and then run execute-plan."
 
 ## Important rules
 
 - **Always create both** the GitHub issue and the plan file.
+- **Plan filename**: Use a unique name per CLAUDE.md (e.g. `docs/plans/plan-issue-<number>-<slug>.md`). Do not overwrite an existing plan; pick a slug that is not already in use.
 - **Owner/repo**: Use `owner: jpDxsolo`, `repo: league_szn` for all GitHub MCP calls.
 - **Plan format**: Keep "Implementation steps", "Files to modify", "Dependencies and order", and "Suggested order" so execute-plan and agents can use it.
 - **Skills and agents**: Only recommend skills and agent types that fit the request; use parallel work (e.g. `Steps 1+2 -> Step 3`) where steps are independent.
