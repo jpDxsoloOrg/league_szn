@@ -134,6 +134,23 @@
   padding: 1.5rem;
 }
 
+.wiki-edit-link {
+  display: inline-block;
+  color: #93c5fd;
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.wiki-edit-link:hover {
+  text-decoration: underline;
+}
+
+.wiki-edit-link:focus {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
+}
+
 .wiki-article .wiki-content {
   color: #ccc;
   line-height: 1.6;
@@ -238,7 +255,8 @@
   .wiki-breadcrumbs,
   .wiki-layout-header,
   .wiki-back-link,
-  .wiki-print-btn {
+  .wiki-print-btn,
+  .wiki-edit-link {
     display: none !important;
   }
 
