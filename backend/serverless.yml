@@ -221,55 +221,34 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Player Profile (self-service for wrestlers)
-  getMyProfile:
-    handler: functions/players/getMyProfile.handler
+  # Players (Phase 2 consolidation: 6 handlers → 1 Lambda)
+  players:
+    handler: functions/players/handler.handler
     events:
       - http:
           path: players/me
           method: get
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  updateMyProfile:
-    handler: functions/players/updateMyProfile.handler
-    events:
       - http:
           path: players/me
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  # Players
-  getPlayers:
-    handler: functions/players/getPlayers.handler
-    events:
       - http:
           path: players
           method: get
           cors: *corsConfig
-
-  createPlayer:
-    handler: functions/players/createPlayer.handler
-    events:
       - http:
           path: players
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  updatePlayer:
-    handler: functions/players/updatePlayer.handler
-    events:
       - http:
           path: players/{playerId}
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  deletePlayer:
-    handler: functions/players/deletePlayer.handler
-    events:
       - http:
           path: players/{playerId}
           method: delete
@@ -303,53 +282,33 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Championships
-  getChampionships:
-    handler: functions/championships/getChampionships.handler
+  # Championships (Phase 2 consolidation: 6 handlers → 1 Lambda)
+  championships:
+    handler: functions/championships/handler.handler
     events:
       - http:
           path: championships
           method: get
           cors: *corsConfig
-
-  createChampionship:
-    handler: functions/championships/createChampionship.handler
-    events:
       - http:
           path: championships
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  getChampionshipHistory:
-    handler: functions/championships/getChampionshipHistory.handler
-    events:
       - http:
           path: championships/{championshipId}/history
           method: get
           cors: *corsConfig
-
-  updateChampionship:
-    handler: functions/championships/updateChampionship.handler
-    events:
       - http:
           path: championships/{championshipId}
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  deleteChampionship:
-    handler: functions/championships/deleteChampionship.handler
-    events:
       - http:
           path: championships/{championshipId}
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  vacateChampionship:
-    handler: functions/championships/vacateChampionship.handler
-    events:
       - http:
           path: championships/{championshipId}/vacate
           method: post
@@ -536,44 +495,28 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Events
-  getEvents:
-    handler: functions/events/getEvents.handler
+  # Events (Phase 2 consolidation: 5 handlers → 1 Lambda)
+  events:
+    handler: functions/events/handler.handler
     events:
       - http:
           path: events
           method: get
           cors: *corsConfig
-
-  getEvent:
-    handler: functions/events/getEvent.handler
-    events:
       - http:
           path: events/{eventId}
           method: get
           cors: *corsConfig
-
-  createEvent:
-    handler: functions/events/createEvent.handler
-    events:
       - http:
           path: events
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  updateEvent:
-    handler: functions/events/updateEvent.handler
-    events:
       - http:
           path: events/{eventId}
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  deleteEvent:
-    handler: functions/events/deleteEvent.handler
-    events:
       - http:
           path: events/{eventId}
           method: delete
@@ -770,124 +713,76 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Challenges
-  getChallenges:
-    handler: functions/challenges/getChallenges.handler
+  # Challenges (Phase 2 consolidation: 7 handlers → 1 Lambda)
+  challenges:
+    handler: functions/challenges/handler.handler
     events:
       - http:
           path: challenges
           method: get
           cors: *corsConfig
-
-  getChallenge:
-    handler: functions/challenges/getChallenge.handler
-    events:
       - http:
           path: challenges/{challengeId}
           method: get
-          cors: true
-
-  createChallenge:
-    handler: functions/challenges/createChallenge.handler
-    events:
+          cors: *corsConfig
       - http:
           path: challenges
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  respondToChallenge:
-    handler: functions/challenges/respondToChallenge.handler
-    events:
       - http:
           path: challenges/{challengeId}/respond
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  cancelChallenge:
-    handler: functions/challenges/cancelChallenge.handler
-    events:
       - http:
           path: challenges/{challengeId}/cancel
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  deleteChallenge:
-    handler: functions/challenges/deleteChallenge.handler
-    events:
       - http:
           path: challenges/{challengeId}
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  bulkDeleteChallenges:
-    handler: functions/challenges/bulkDeleteChallenges.handler
-    events:
       - http:
           path: challenges/bulk-delete
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Promos
-  getPromos:
-    handler: functions/promos/getPromos.handler
+  # Promos (Phase 2 consolidation: 7 handlers → 1 Lambda)
+  promos:
+    handler: functions/promos/handler.handler
     events:
       - http:
           path: promos
           method: get
           cors: *corsConfig
-
-  getPromo:
-    handler: functions/promos/getPromo.handler
-    events:
       - http:
           path: promos/{promoId}
           method: get
           cors: *corsConfig
-
-  createPromo:
-    handler: functions/promos/createPromo.handler
-    events:
       - http:
           path: promos
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  reactToPromo:
-    handler: functions/promos/reactToPromo.handler
-    events:
       - http:
           path: promos/{promoId}/react
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  adminUpdatePromo:
-    handler: functions/promos/adminUpdatePromo.handler
-    events:
       - http:
           path: admin/promos/{promoId}
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  deletePromo:
-    handler: functions/promos/deletePromo.handler
-    events:
       - http:
           path: admin/promos/{promoId}
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  bulkDeletePromos:
-    handler: functions/promos/bulkDeletePromos.handler
-    events:
       - http:
           path: admin/promos/bulk-delete
           method: post
