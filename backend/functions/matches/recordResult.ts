@@ -597,12 +597,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Fire-and-forget: trigger ranking and cost recalculation via async Lambda invocation
     try {
-      await invokeAsync('calculateRankings', { source: 'recordResult' });
+      await invokeAsync('contenders', { source: 'recordResult' });
     } catch (err) {
       console.warn('Failed to invoke calculateRankings async:', err);
     }
     try {
-      await invokeAsync('recalculateWrestlerCosts', { source: 'recordResult' });
+      await invokeAsync('fantasy', { source: 'recordResult' });
     } catch (err) {
       console.warn('Failed to invoke recalculateWrestlerCosts async:', err);
     }

@@ -552,113 +552,64 @@ functions:
           method: get
           cors: *corsConfig
 
-  # Fantasy Config
-  getFantasyConfig:
-    handler: functions/fantasy/getFantasyConfig.handler
+  # Fantasy (Phase 3 consolidated: all 12 fantasy handlers)
+  fantasy:
+    handler: functions/fantasy/handler.handler
+    timeout: 29
     events:
       - http:
           path: fantasy/config
           method: get
           cors: *corsConfig
-
-  updateFantasyConfig:
-    handler: functions/fantasy/updateFantasyConfig.handler
-    events:
       - http:
           path: admin/fantasy/config
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  # Wrestler Costs
-  getWrestlerCosts:
-    handler: functions/fantasy/getWrestlerCosts.handler
-    events:
       - http:
           path: fantasy/wrestlers/costs
           method: get
           cors: *corsConfig
-
-  initializeWrestlerCosts:
-    handler: functions/fantasy/initializeWrestlerCosts.handler
-    events:
       - http:
           path: admin/fantasy/wrestlers/costs/initialize
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  recalculateWrestlerCosts:
-    handler: functions/fantasy/recalculateWrestlerCosts.handler
-    timeout: 29
-    events:
       - http:
           path: admin/fantasy/wrestlers/costs/recalculate
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  updateWrestlerCost:
-    handler: functions/fantasy/updateWrestlerCost.handler
-    events:
       - http:
           path: admin/fantasy/wrestlers/{playerId}/cost
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  # Fantasy Leaderboard
-  getFantasyLeaderboard:
-    handler: functions/fantasy/getFantasyLeaderboard.handler
-    events:
       - http:
           path: fantasy/leaderboard
           method: get
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  # Fantasy Scoring
-  scoreCompletedEvents:
-    handler: functions/fantasy/scoreCompletedEvents.handler
-    timeout: 29
-    events:
       - http:
           path: fantasy/score
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  # Fantasy Picks
-  submitPicks:
-    handler: functions/fantasy/submitPicks.handler
-    events:
       - http:
           path: fantasy/picks/{eventId}
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  getUserPicks:
-    handler: functions/fantasy/getUserPicks.handler
-    events:
       - http:
           path: fantasy/picks/{eventId}
           method: get
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  getAllMyPicks:
-    handler: functions/fantasy/getAllMyPicks.handler
-    events:
       - http:
           path: fantasy/me/picks
           method: get
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  clearPicks:
-    handler: functions/fantasy/clearPicks.handler
-    events:
       - http:
           path: fantasy/picks/{eventId}
           method: delete
