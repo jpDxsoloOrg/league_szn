@@ -1314,11 +1314,27 @@ paths:
     post:
       tags: [Admin]
       summary: Seed sample data
+      description: |
+        Seeds sample data. Optional request body can specify which modules to seed (e.g. core, championships, matches).
+        If modules is omitted or empty, all data is seeded. Dependencies are auto-included when modular seed is used.
+        Valid module IDs: core, championships, matches, standings, tournaments, events, contenders, fantasy, config.
       security: [{ BearerAuth: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                modules:
+                  type: array
+                  items: { type: string }
+                  description: Optional list of seed module IDs to run (only these + dependencies). Omit or empty = seed all.
       responses:
-        '201': { description: Seeded }
+        '200': { description: Seeded; body includes message and createdCounts }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '500': { description: 'Server error (e.g. invalid module IDs)', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /statistics:
     get:

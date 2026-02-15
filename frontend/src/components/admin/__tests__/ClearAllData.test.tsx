@@ -149,4 +149,97 @@ describe('ClearAllData', () => {
     expect(screen.getByText('Created Items:')).toBeInTheDocument();
     expect(screen.getByText(/Players: 12/)).toBeInTheDocument();
   });
+
+  it('calls seedData with no args when no modules selected (full seed)', async () => {
+    const user = userEvent.setup();
+    mockAdminApi.seedData.mockResolvedValue({
+      message: 'Sample data generated',
+      createdCounts: { divisions: 3, players: 12 },
+    });
+
+    render(<ClearAllData />);
+    const seedBtn = screen.getByRole('button', { name: /Generate Sample Data/i });
+    await user.click(seedBtn);
+
+    await waitFor(() => {
+      expect(mockAdminApi.seedData).toHaveBeenCalledTimes(1);
+    });
+    expect(mockAdminApi.seedData).toHaveBeenCalledWith();
+  });
+
+  it('calls seedData with selected modules when checkboxes are selected', async () => {
+    const user = userEvent.setup();
+    mockAdminApi.seedData.mockResolvedValue({
+      message: 'Sample data generated',
+      createdCounts: { divisions: 3, players: 12 },
+    });
+
+    render(<ClearAllData />);
+    const coreCheckbox = screen.getByRole('checkbox', { name: /Core \(Divisions, Players, Seasons\)/ });
+    await user.click(coreCheckbox);
+    const championshipsCheckbox = screen.getByRole('checkbox', { name: /^Championships$/ });
+    await user.click(championshipsCheckbox);
+
+    const seedBtn = screen.getByRole('button', { name: /Generate Sample Data/i });
+    await user.click(seedBtn);
+
+    await waitFor(() => {
+      expect(mockAdminApi.seedData).toHaveBeenCalledTimes(1);
+    });
+    expect(mockAdminApi.seedData).toHaveBeenCalledWith({ modules: ['core', 'championships'] });
+  });
+
+  it('Select all selects every seed option; Generate calls seedData with all modules', async () => {
+    const user = userEvent.setup();
+    mockAdminApi.seedData.mockResolvedValue({
+      message: 'Sample data generated',
+      createdCounts: { divisions: 3 },
+    });
+
+    render(<ClearAllData />);
+    const selectAllBtn = screen.getByRole('button', { name: /Select all/i });
+    await user.click(selectAllBtn);
+
+    const seedBtn = screen.getByRole('button', { name: /Generate Sample Data/i });
+    await user.click(seedBtn);
+
+    await waitFor(() => {
+      expect(mockAdminApi.seedData).toHaveBeenCalledTimes(1);
+    });
+    expect(mockAdminApi.seedData).toHaveBeenCalledWith({
+      modules: [
+        'core',
+        'championships',
+        'matches',
+        'standings',
+        'tournaments',
+        'events',
+        'contenders',
+        'fantasy',
+        'config',
+      ],
+    });
+  });
+
+  it('Select none clears selection; Generate calls seedData with no args', async () => {
+    const user = userEvent.setup();
+    mockAdminApi.seedData.mockResolvedValue({
+      message: 'Sample data generated',
+      createdCounts: { divisions: 3 },
+    });
+
+    render(<ClearAllData />);
+    const selectAllBtn = screen.getByRole('button', { name: /Select all/i });
+    await user.click(selectAllBtn);
+    const selectNoneBtn = screen.getByRole('button', { name: /Select none/i });
+    await user.click(selectNoneBtn);
+
+    const seedBtn = screen.getByRole('button', { name: /Generate Sample Data/i });
+    await user.click(seedBtn);
+
+    await waitFor(() => {
+      expect(mockAdminApi.seedData).toHaveBeenCalledTimes(1);
+    });
+    expect(mockAdminApi.seedData).toHaveBeenCalledWith();
+  });
 });

@@ -31,6 +31,75 @@
   color: #ccc;
 }
 
+/* Seed options (pick-and-choose modules) */
+.seed-options {
+  background-color: #252525;
+  border-radius: 4px;
+  padding: 15px;
+  margin: 15px 0;
+}
+
+.seed-options h4 {
+  color: #4ade80;
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.seed-options-note {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  color: #aaa;
+}
+
+.seed-options-actions {
+  margin-bottom: 12px;
+}
+
+.seed-option-link {
+  background: none;
+  border: none;
+  color: #4ade80;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.seed-option-link:hover {
+  color: #86efac;
+}
+
+.seed-options-sep {
+  margin: 0 8px;
+  color: #666;
+  font-size: 13px;
+}
+
+.seed-options-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.seed-option {
+  margin: 6px 0;
+}
+
+.seed-option label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #ccc;
+}
+
+.seed-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #4ade80;
+}
+
 .seed-details {
   background-color: #252525;
   border-radius: 4px;
