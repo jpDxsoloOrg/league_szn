@@ -526,6 +526,22 @@ components:
         password: { type: string }
         username: { type: string }
 
+    LoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string }
+
+    LoginResponse:
+      type: object
+      properties:
+        accessToken: { type: string, description: 'JWT access token for API authorization' }
+        idToken: { type: string, description: 'JWT ID token with user claims' }
+        refreshToken: { type: string, description: 'Token to refresh the session' }
+        expiresIn: { type: integer, description: 'Token lifetime in seconds' }
+        tokenType: { type: string, example: 'Bearer' }
+
     GenerateUploadUrlResponse:
       type: object
       properties:
@@ -619,6 +635,25 @@ paths:
         '201': { description: Admin created }
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '409': { description: Conflict, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with username and password
+      description: Authenticates against AWS Cognito and returns JWT tokens. Use the accessToken in the Authorization header as "Bearer {accessToken}" to call protected endpoints.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginInput' }
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { description: 'Invalid credentials', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /admin/users:
     get:

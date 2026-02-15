@@ -167,6 +167,14 @@ functions:
           method: post
           cors: *corsConfig
 
+  login:
+    handler: functions/auth/login.handler
+    events:
+      - http:
+          path: auth/login
+          method: post
+          cors: *corsConfig
+
   # User Management (Admin only)
   listUsers:
     handler: functions/users/listUsers.handler
