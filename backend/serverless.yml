@@ -99,8 +99,8 @@ provider:
           Action:
             - lambda:InvokeFunction
           Resource:
-            - arn:aws:lambda:${self:provider.region}:*:function:${self:service}-${self:provider.stage}-calculateRankings
-            - arn:aws:lambda:${self:provider.region}:*:function:${self:service}-${self:provider.stage}-recalculateWrestlerCosts
+            - arn:aws:lambda:${self:provider.region}:*:function:${self:service}-${self:provider.stage}-contenders
+            - arn:aws:lambda:${self:provider.region}:*:function:${self:service}-${self:provider.stage}-fantasy
 
 plugins:
   - serverless-plugin-typescript
@@ -175,49 +175,48 @@ functions:
           method: post
           cors: *corsConfig
 
-  # User Management (Admin only)
-  listUsers:
-    handler: functions/users/listUsers.handler
+  # User Management (Admin only) (Phase 3 consolidated: listUsers, updateUserRole, toggleUserEnabled)
+  users:
+    handler: functions/users/handler.handler
     events:
       - http:
           path: admin/users
           method: get
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  updateUserRole:
-    handler: functions/users/updateUserRole.handler
-    events:
       - http:
           path: admin/users/role
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  toggleUserEnabled:
-    handler: functions/users/toggleUserEnabled.handler
-    events:
       - http:
           path: admin/users/toggle-enabled
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Site Configuration (feature toggles)
-  getSiteConfig:
-    handler: functions/admin/getSiteConfig.handler
+  # Site Configuration and admin data (Phase 3 consolidated: getSiteConfig, updateSiteConfig, clearAll, seedData)
+  admin:
+    handler: functions/admin/handler.handler
+    timeout: 29
     events:
       - http:
           path: site-config
           method: get
           cors: *corsConfig
-
-  updateSiteConfig:
-    handler: functions/admin/updateSiteConfig.handler
-    events:
       - http:
           path: admin/site-config
           method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/clear-all
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/seed-data
+          method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
 
@@ -276,27 +275,19 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Matches
-  getMatches:
-    handler: functions/matches/getMatches.handler
+  # Matches (Phase 3 consolidated: getMatches, scheduleMatch, recordResult)
+  matches:
+    handler: functions/matches/handler.handler
     events:
       - http:
           path: matches
           method: get
           cors: *corsConfig
-
-  scheduleMatch:
-    handler: functions/matches/scheduleMatch.handler
-    events:
       - http:
           path: matches
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  recordResult:
-    handler: functions/matches/recordResult.handler
-    events:
       - http:
           path: matches/{matchId}/result
           method: put
@@ -464,6 +455,15 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
+  bulkCreateStipulations:
+    handler: functions/stipulations/bulkCreateStipulations.handler
+    events:
+      - http:
+          path: stipulations/bulk
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
   # Match Types (Phase 1 consolidated: getMatchTypes, createMatchType, updateMatchType, deleteMatchType)
   matchTypes:
     handler: functions/matchTypes/handler.handler
@@ -477,6 +477,16 @@ functions:
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
+
+  bulkCreateMatchTypes:
+    handler: functions/matchTypes/bulkCreateMatchTypes.handler
+    events:
+      - http:
+          path: match-types/bulk
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
       - http:
           path: match-types/{matchTypeId}
           method: put
@@ -532,19 +542,15 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Contenders
-  getContenders:
-    handler: functions/contenders/getContenders.handler
+  # Contenders (Phase 3 consolidated: getContenders, calculateRankings)
+  contenders:
+    handler: functions/contenders/handler.handler
+    timeout: 29
     events:
       - http:
           path: championships/{championshipId}/contenders
           method: get
           cors: *corsConfig
-
-  calculateRankings:
-    handler: functions/contenders/calculateRankings.handler
-    timeout: 29
-    events:
       - http:
           path: admin/contenders/recalculate
           method: post
@@ -578,27 +584,6 @@ functions:
           method: get
           cors: *corsConfig
 
-  # Admin
-  clearAll:
-    handler: functions/admin/clearAll.handler
-    timeout: 29  # Increased timeout for bulk delete operations (API Gateway max is 29s)
-    events:
-      - http:
-          path: admin/clear-all
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-
-  seedData:
-    handler: functions/admin/seedData.handler
-    timeout: 29  # Increased timeout for bulk insert operations (API Gateway max is 29s)
-    events:
-      - http:
-          path: admin/seed-data
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-
   # Statistics
   getStatistics:
     handler: functions/statistics/getStatistics.handler
@@ -609,113 +594,64 @@ functions:
           method: get
           cors: *corsConfig
 
-  # Fantasy Config
-  getFantasyConfig:
-    handler: functions/fantasy/getFantasyConfig.handler
+  # Fantasy (Phase 3 consolidated: all 12 fantasy handlers)
+  fantasy:
+    handler: functions/fantasy/handler.handler
+    timeout: 29
     events:
       - http:
           path: fantasy/config
           method: get
           cors: *corsConfig
-
-  updateFantasyConfig:
-    handler: functions/fantasy/updateFantasyConfig.handler
-    events:
       - http:
           path: admin/fantasy/config
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  # Wrestler Costs
-  getWrestlerCosts:
-    handler: functions/fantasy/getWrestlerCosts.handler
-    events:
       - http:
           path: fantasy/wrestlers/costs
           method: get
           cors: *corsConfig
-
-  initializeWrestlerCosts:
-    handler: functions/fantasy/initializeWrestlerCosts.handler
-    events:
       - http:
           path: admin/fantasy/wrestlers/costs/initialize
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  recalculateWrestlerCosts:
-    handler: functions/fantasy/recalculateWrestlerCosts.handler
-    timeout: 29
-    events:
       - http:
           path: admin/fantasy/wrestlers/costs/recalculate
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  updateWrestlerCost:
-    handler: functions/fantasy/updateWrestlerCost.handler
-    events:
       - http:
           path: admin/fantasy/wrestlers/{playerId}/cost
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  # Fantasy Leaderboard
-  getFantasyLeaderboard:
-    handler: functions/fantasy/getFantasyLeaderboard.handler
-    events:
       - http:
           path: fantasy/leaderboard
           method: get
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  # Fantasy Scoring
-  scoreCompletedEvents:
-    handler: functions/fantasy/scoreCompletedEvents.handler
-    timeout: 29
-    events:
       - http:
           path: fantasy/score
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  # Fantasy Picks
-  submitPicks:
-    handler: functions/fantasy/submitPicks.handler
-    events:
       - http:
           path: fantasy/picks/{eventId}
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  getUserPicks:
-    handler: functions/fantasy/getUserPicks.handler
-    events:
       - http:
           path: fantasy/picks/{eventId}
           method: get
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  getAllMyPicks:
-    handler: functions/fantasy/getAllMyPicks.handler
-    events:
       - http:
           path: fantasy/me/picks
           method: get
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  clearPicks:
-    handler: functions/fantasy/clearPicks.handler
-    events:
       - http:
           path: fantasy/picks/{eventId}
           method: delete

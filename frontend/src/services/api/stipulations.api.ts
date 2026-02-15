@@ -6,6 +6,13 @@ export const stipulationsApi = {
     return fetchWithAuth(`${API_BASE_URL}/stipulations`, {}, signal);
   },
 
+  bulkCreate: async (names: string[]): Promise<{ created: number; stipulations: Stipulation[] }> => {
+    return fetchWithAuth(`${API_BASE_URL}/stipulations/bulk`, {
+      method: 'POST',
+      body: JSON.stringify({ names }),
+    });
+  },
+
   create: async (stipulation: { name: string; description?: string }): Promise<Stipulation> => {
     return fetchWithAuth(`${API_BASE_URL}/stipulations`, {
       method: 'POST',
