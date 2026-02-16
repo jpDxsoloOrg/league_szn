@@ -8,11 +8,12 @@
   font-size: 1.75rem;
   margin: 0 0 1rem;
   font-weight: 700;
+  color: #d4af37;
 }
 
 .activity-feed__loading,
 .activity-feed__empty {
-  color: var(--text-muted, #666);
+  color: #bbb;
   margin: 1.5rem 0;
 }
 
@@ -25,40 +26,44 @@
 
 .activity-feed__filter-tab {
   padding: 0.4rem 0.75rem;
-  border: 1px solid var(--border-color, #ddd);
+  border: 1px solid #333;
   border-radius: 0.375rem;
-  background: var(--surface, #fff);
-  color: var(--text, #333);
+  background-color: #1a1a1a;
+  color: #bbb;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
 
 .activity-feed__filter-tab:hover {
-  background: var(--surface-hover, #f5f5f5);
-}
-
-.activity-feed__filter-tab--active {
-  background: var(--primary, #2563eb);
-  border-color: var(--primary, #2563eb);
+  border-color: #d4af37;
   color: #fff;
 }
 
+.activity-feed__filter-tab--active {
+  background-color: #d4af37;
+  border-color: #d4af37;
+  color: #000;
+  font-weight: bold;
+}
+
 .activity-feed__filter-tab--active:hover {
-  background: var(--primary-hover, #1d4ed8);
-  border-color: var(--primary-hover, #1d4ed8);
+  background-color: #b8941f;
+  border-color: #b8941f;
+  color: #000;
 }
 
 .activity-feed__error {
   padding: 1rem;
-  background: var(--error-bg, #fef2f2);
-  border: 1px solid var(--error-border, #fecaca);
+  background-color: #1a1a1a;
+  border: 1px solid #333;
   border-radius: 0.5rem;
   margin-bottom: 1rem;
 }
 
 .activity-feed__error p {
   margin: 0 0 0.5rem;
+  color: #f87171;
 }
 
 .activity-feed__list {
@@ -71,13 +76,14 @@
   margin-bottom: 0.5rem;
   border-radius: 0.5rem;
   overflow: hidden;
-  border: 1px solid var(--border-color, #e5e7eb);
-  transition: box-shadow 0.15s, border-color 0.15s;
+  border: 1px solid #333;
+  background-color: #1a1a1a;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .activity-feed__card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border-color: var(--border-hover, #c7d2fe);
+  border-color: #d4af37;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.15);
 }
 
 .activity-feed__card-link {
@@ -86,7 +92,11 @@
   gap: 0.75rem;
   padding: 0.875rem 1rem;
   text-decoration: none;
-  color: inherit;
+  color: #fff;
+}
+
+.activity-feed__card-link:hover {
+  color: #fff;
 }
 
 .activity-feed__card-icon {
@@ -104,20 +114,30 @@
   margin: 0 0 0.25rem;
   font-size: 0.9375rem;
   line-height: 1.4;
+  color: #fff;
 }
 
 .activity-feed__card-time {
   font-size: 0.8125rem;
-  color: var(--text-muted, #6b7280);
+  color: #bbb;
 }
 
-/* Type-specific accents */
-.activity-feed__card--match_result .activity-feed__card-icon { filter: none; }
-.activity-feed__card--championship_change .activity-feed__card:hover { border-color: #fcd34d; }
-.activity-feed__card--season_event .activity-feed__card:hover { border-color: #86efac; }
-.activity-feed__card--tournament_result .activity-feed__card:hover { border-color: #93c5fd; }
-.activity-feed__card--challenge_event .activity-feed__card:hover { border-color: #f9a8d4; }
-.activity-feed__card--promo_posted .activity-feed__card:hover { border-color: #c4b5fd; }
+/* Type-specific hover accents (gold and subtle tints) */
+.activity-feed__card--championship_change.activity-feed__card:hover {
+  border-color: #d4af37;
+}
+.activity-feed__card--season_event.activity-feed__card:hover {
+  border-color: #86efac;
+}
+.activity-feed__card--tournament_result.activity-feed__card:hover {
+  border-color: #93c5fd;
+}
+.activity-feed__card--challenge_event.activity-feed__card:hover {
+  border-color: #f9a8d4;
+}
+.activity-feed__card--promo_posted.activity-feed__card:hover {
+  border-color: #c4b5fd;
+}
 
 .activity-feed__load-more {
   margin-top: 1.5rem;
@@ -126,17 +146,18 @@
 
 .activity-feed__load-more-btn {
   padding: 0.5rem 1.25rem;
-  border: 1px solid var(--border-color, #ddd);
+  border: 1px solid #333;
   border-radius: 0.375rem;
-  background: var(--surface, #fff);
-  color: var(--text, #333);
+  background-color: #d4af37;
+  color: #000;
   font-size: 0.9375rem;
+  font-weight: bold;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background-color 0.2s;
 }
 
 .activity-feed__load-more-btn:hover:not(:disabled) {
-  background: var(--surface-hover, #f5f5f5);
+  background-color: #b8941f;
 }
 
 .activity-feed__load-more-btn:disabled {
