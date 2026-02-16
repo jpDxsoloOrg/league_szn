@@ -43,6 +43,7 @@
   border: 2px solid #d4af37;
   border-radius: 8px;
   padding: 1.5rem;
+  min-width: 0;
 }
 
 .championship-card h4 {
@@ -209,18 +210,34 @@ label.file-input-label:hover {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid #333;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.championship-actions {
-  display: flex;
-  gap: 0.5rem;
+/* Shared action button layout and polish */
+.championship-edit-btn,
+.championship-vacate-btn,
+.championship-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
 .championship-edit-btn {
   background-color: #3b82f6 !important;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  color: #fff;
   flex: 1;
+  min-width: 0;
 }
 
 .championship-edit-btn:hover {
@@ -230,9 +247,8 @@ label.file-input-label:hover {
 .championship-vacate-btn {
   background-color: #78350f !important;
   color: #fde68a;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
   flex: 1;
+  min-width: 0;
 }
 
 .championship-vacate-btn:hover {
@@ -247,9 +263,8 @@ label.file-input-label:hover {
 .championship-delete-btn {
   background-color: #7f1d1d !important;
   color: #fecaca;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
   flex: 1;
+  min-width: 0;
 }
 
 .championship-delete-btn:hover {
@@ -291,6 +306,16 @@ label.file-input-label:hover {
 
   .championship-card {
     padding: 1rem;
+  }
+
+  .championship-actions {
+    flex-direction: column;
+  }
+
+  .championship-edit-btn,
+  .championship-vacate-btn,
+  .championship-delete-btn {
+    min-width: 100%;
   }
 
   .form-actions {
