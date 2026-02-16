@@ -187,8 +187,14 @@
       "wins": "Siege",
       "losses": "Niederlagen",
       "draws": "Unentschieden",
-      "winPercent": "Sieg %"
-    }
+      "winPercent": "Sieg %",
+      "form": "Form",
+      "streak": "Serie"
+    },
+    "winStreak": "Siegesserie",
+    "lossStreak": "Niederlagenserie",
+    "drawStreak": "Unentschiedenserie",
+    "lastResult": "Letztes Ergebnis"
   },
   "championships": {
     "title": "Meisterschaften",

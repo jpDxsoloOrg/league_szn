@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
 const { mockGetStandings, mockGetAllSeasons, mockGetAllDivisions } = vi.hoisted(() => ({
@@ -41,6 +42,12 @@ vi.mock('react-i18next', () => ({
         'standings.table.losses': 'L',
         'standings.table.draws': 'D',
         'standings.table.winPercent': 'Win %',
+        'standings.table.form': 'Form',
+        'standings.table.streak': 'Streak',
+        'standings.lastResult': 'Last result',
+        'standings.winStreak': 'Win Streak',
+        'standings.lossStreak': 'Loss Streak',
+        'standings.drawStreak': 'Draw Streak',
         'common.all': 'All',
         'common.error': 'Error',
         'common.retry': 'Retry',
@@ -52,8 +59,17 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../Standings.css', () => ({}));
+vi.mock('../PlayerHoverCard.css', () => ({}));
 
 import Standings from '../Standings';
+
+function renderStandings() {
+  return render(
+    <MemoryRouter>
+      <Standings />
+    </MemoryRouter>
+  );
+}
 
 // --- Test data ---
 const mockPlayers = [
@@ -128,7 +144,7 @@ describe('Standings', () => {
     mockGetAllSeasons.mockResolvedValue(mockSeasons);
     mockGetAllDivisions.mockResolvedValue(mockDivisions);
 
-    render(<Standings />);
+    renderStandings();
 
     await waitFor(() => {
       expect(screen.getByText('Standings')).toBeInTheDocument();
@@ -163,6 +179,72 @@ describe('Standings', () => {
     // so verify they exist at least once
     expect(screen.getAllByText('Raw').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('SmackDown').length).toBeGreaterThanOrEqual(1);
+    // Form and Streak columns
+    expect(screen.getByText('Form')).toBeInTheDocument();
+    expect(screen.getByText('Streak')).toBeInTheDocument();
+  });
+
+  it('renders player names as links to stats page', async () => {
+    mockGetStandings.mockResolvedValue({
+      players: mockPlayers,
+      sortedByWins: true,
+    });
+    mockGetAllSeasons.mockResolvedValue(mockSeasons);
+    mockGetAllDivisions.mockResolvedValue(mockDivisions);
+
+    renderStandings();
+
+    await waitFor(() => {
+      expect(screen.getByText('John Cena')).toBeInTheDocument();
+    });
+
+    const link = screen.getByRole('link', { name: 'John Cena' });
+    expect(link).toHaveAttribute('href', '/stats/player/p1');
+  });
+
+  it('renders form dots and streak badge when data present', async () => {
+    const playersWithForm = [
+      {
+        ...mockPlayers[0],
+        recentForm: ['W', 'W', 'L', 'W', 'W'] as const,
+        currentStreak: { type: 'W' as const, count: 5 },
+      },
+    ];
+    mockGetStandings.mockResolvedValue({
+      players: playersWithForm,
+      sortedByWins: true,
+    });
+    mockGetAllSeasons.mockResolvedValue([]);
+    mockGetAllDivisions.mockResolvedValue(mockDivisions);
+
+    renderStandings();
+
+    await waitFor(() => {
+      expect(screen.getByText('John Cena')).toBeInTheDocument();
+    });
+
+    // Streak badge shows for 3+ wins
+    expect(screen.getByTitle('Win Streak')).toBeInTheDocument();
+    expect(screen.getByText(/5W/)).toBeInTheDocument();
+  });
+
+  it('renders dash when no recentForm', async () => {
+    mockGetStandings.mockResolvedValue({
+      players: mockPlayers,
+      sortedByWins: true,
+    });
+    mockGetAllSeasons.mockResolvedValue([]);
+    mockGetAllDivisions.mockResolvedValue(mockDivisions);
+
+    renderStandings();
+
+    await waitFor(() => {
+      expect(screen.getByText('John Cena')).toBeInTheDocument();
+    });
+
+    // Form column shows dashes when no recentForm (multiple "-" in table)
+    const formCells = screen.getAllByText('-');
+    expect(formCells.length).toBeGreaterThanOrEqual(1);
   });
 
   it('filters standings by season when season selector is changed', async () => {
@@ -175,7 +257,7 @@ describe('Standings', () => {
 
     const user = userEvent.setup();
 
-    render(<Standings />);
+    renderStandings();
 
     await waitFor(() => {
       expect(screen.getByText('Standings')).toBeInTheDocument();
@@ -220,7 +302,7 @@ describe('Standings', () => {
     mockGetAllSeasons.mockResolvedValue([]);
     mockGetAllDivisions.mockResolvedValue([]);
 
-    render(<Standings />);
+    renderStandings();
 
     await waitFor(() => {
       expect(screen.getByText('No players found.')).toBeInTheDocument();
@@ -232,7 +314,7 @@ describe('Standings', () => {
     mockGetAllSeasons.mockResolvedValue([]);
     mockGetAllDivisions.mockResolvedValue([]);
 
-    render(<Standings />);
+    renderStandings();
 
     await waitFor(() => {
       expect(screen.getByText(/Error/)).toBeInTheDocument();

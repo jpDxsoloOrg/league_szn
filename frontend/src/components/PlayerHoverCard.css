@@ -1,0 +1,34 @@
+.player-hover-card-trigger {
+  position: relative;
+  display: inline-block;
+}
+
+.player-hover-card {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%) translateY(-6px);
+  z-index: 10;
+  min-width: 140px;
+  padding: 0.5rem 0.75rem;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+.player-hover-card-row {
+  font-size: 0.8rem;
+  color: #ccc;
+  white-space: nowrap;
+}
+
+.player-hover-card-row + .player-hover-card-row {
+  margin-top: 0.25rem;
+}
+
+.player-hover-card-label {
+  color: #888;
+  margin-right: 0.5rem;
+}

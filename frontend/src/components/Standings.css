@@ -144,6 +144,78 @@
   text-align: left;
 }
 
+.standings-table .player-name-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.standings-table .player-name-link:hover {
+  text-decoration: underline;
+  color: #d4af37;
+}
+
+.form-cell,
+.streak-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.form-dots {
+  display: inline-flex;
+  flex-direction: row;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.form-dot.win {
+  background-color: #4ade80;
+}
+
+.form-dot.loss {
+  background-color: #f87171;
+}
+
+.form-dot.draw {
+  background-color: #9ca3af;
+}
+
+.form-empty,
+.streak-empty {
+  color: #666;
+}
+
+.streak-badge {
+  display: inline-block;
+  padding: 0.2em 0.5em;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.streak-badge.hot {
+  background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+  color: #fff;
+}
+
+.streak-badge.cold {
+  background-color: #0ea5e9;
+  color: #fff;
+}
+
+.streak-badge.neutral {
+  background-color: #6b7280;
+  color: #fff;
+}
+
 .standings-table .wrestler-name {
   text-align: left;
   color: #bbb;
@@ -243,5 +315,15 @@
   .division-filter .filter-btn {
     padding: 0.375rem 0.75rem;
     font-size: 0.8rem;
+  }
+
+  .form-dot {
+    width: 8px;
+    height: 8px;
+  }
+
+  .streak-badge {
+    font-size: 0.75rem;
+    padding: 0.15em 0.4em;
   }
 }

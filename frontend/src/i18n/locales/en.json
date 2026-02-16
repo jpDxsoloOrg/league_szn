@@ -187,8 +187,14 @@
       "wins": "Wins",
       "losses": "Losses",
       "draws": "Draws",
-      "winPercent": "Win %"
-    }
+      "winPercent": "Win %",
+      "form": "Form",
+      "streak": "Streak"
+    },
+    "winStreak": "Win Streak",
+    "lossStreak": "Loss Streak",
+    "drawStreak": "Draw Streak",
+    "lastResult": "Last result"
   },
   "championships": {
     "title": "Championships",
