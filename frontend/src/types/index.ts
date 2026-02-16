@@ -144,11 +144,16 @@ export interface DashboardMatch {
   matchId: string;
   date: string;
   matchType: string;
+  stipulation?: string;
+  isChampionship?: boolean;
+  championshipName?: string;
+  championshipImageUrl?: string;
+  starRating?: number;
+  matchOfTheNight?: boolean;
   winnerName: string;
   winnerImageUrl?: string;
   loserName: string;
   loserImageUrl?: string;
-  championshipName?: string;
   eventId?: string;
 }
 
@@ -257,11 +262,17 @@ export interface DashboardMatch {
   matchId: string;
   date: string;
   matchType: string;
+  stipulation?: string;
+  isChampionship?: boolean;
+  championshipName?: string;
+  championshipImageUrl?: string;
+  starRating?: number;
+  matchOfTheNight?: boolean;
   winnerName: string;
   winnerImageUrl?: string;
   loserName: string;
   loserImageUrl?: string;
-  championshipName?: string;
+  eventId?: string;
 }
 
 export interface DashboardSeason {

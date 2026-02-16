@@ -1,9 +1,23 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { dashboardApi } from '../services/api';
-import type { DashboardData, DashboardEvent } from '../types';
+import type { DashboardData, DashboardEvent, DashboardMatch } from '../types';
 import './Dashboard.css';
+
+function renderStarRating(rating: number): string {
+  const stars: string[] = [];
+  for (let i = 1; i <= 5; i++) {
+    if (i <= Math.floor(rating)) {
+      stars.push('\u2605');
+    } else if (i === Math.ceil(rating) && rating % 1 >= 0.5) {
+      stars.push('\u2605');
+    } else {
+      stars.push('\u2606');
+    }
+  }
+  return stars.join('');
+}
 
 function formatCountdown(dateStr: string, currentTime: number, t: (key: string) => string): string {
   const target = new Date(dateStr).getTime();
@@ -16,6 +30,89 @@ function formatCountdown(dateStr: string, currentTime: number, t: (key: string) 
   parts.push(`${h}${t('dashboard.countdown.hours')}`);
   parts.push(`${m}${t('dashboard.countdown.minutes')}`);
   return parts.join(' ');
+}
+
+function groupResultsByDate(results: DashboardMatch[]): { dateKey: string; dateLabel: string; matches: DashboardMatch[] }[] {
+  const byDate = new Map<string, DashboardMatch[]>();
+  for (const m of results) {
+    const key = m.date.slice(0, 10);
+    if (!byDate.has(key)) byDate.set(key, []);
+    byDate.get(key)!.push(m);
+  }
+  const sortedKeys = [...byDate.keys()].sort((a, b) => b.localeCompare(a));
+  return sortedKeys.map((dateKey) => ({
+    dateKey,
+    dateLabel: new Date(dateKey + 'T12:00:00').toLocaleDateString(undefined, { dateStyle: 'long' }),
+    matches: byDate.get(dateKey)!,
+  }));
+}
+
+function RecentResultsGrouped({
+  results,
+  t,
+  renderStarRating,
+}: {
+  results: DashboardMatch[];
+  t: (key: string) => string;
+  renderStarRating: (rating: number) => string;
+}) {
+  const groups = useMemo(() => groupResultsByDate(results), [results]);
+  return (
+    <div className="dashboard-results-by-date">
+      {groups.map(({ dateKey, dateLabel, matches }) => (
+        <div key={dateKey} className="dashboard-results-date-group">
+          <div className="dashboard-results-date-separator">{dateLabel}</div>
+          <div className="dashboard-results-list">
+            {matches.map((m) => (
+              <Link
+                key={m.matchId}
+                to={m.eventId ? `/events/${m.eventId}` : '/events'}
+                className="dashboard-result-card"
+              >
+                <div className="dashboard-result-outcome">
+                  <span className="result-winner">{m.winnerName}</span>
+                  <span className="result-vs">{t('dashboard.vs')}</span>
+                  <span className="result-loser">{m.loserName}</span>
+                </div>
+                <div className="dashboard-result-meta">
+                  <span className="result-type">
+                    {m.matchType}
+                    {m.stipulation ? ` – ${m.stipulation}` : ''}
+                  </span>
+                  {m.isChampionship &&
+                    (m.championshipImageUrl ? (
+                      <img
+                        src={m.championshipImageUrl}
+                        alt={m.championshipName ?? ''}
+                        className="result-championship-image"
+                        title={m.championshipName}
+                      />
+                    ) : (
+                      m.championshipName && (
+                        <span className="result-championship-name">{m.championshipName}</span>
+                      )
+                    ))}
+                  {(m.starRating != null || m.matchOfTheNight) && (
+                    <div className="dashboard-result-awards">
+                      {m.starRating != null && (
+                        <span className="result-star-rating" title={t('match.starRating')}>
+                          {renderStarRating(m.starRating)}
+                          <span className="result-star-value">{m.starRating}</span>
+                        </span>
+                      )}
+                      {m.matchOfTheNight && (
+                        <span className="result-motn-badge">{t('match.matchOfTheNightBadge')}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function Dashboard() {
@@ -138,21 +235,7 @@ export default function Dashboard() {
         {data.recentResults.length === 0 ? (
           <p className="dashboard-empty">{t('dashboard.noRecentResults')}</p>
         ) : (
-          <div className="dashboard-results-list">
-            {data.recentResults.map((m) => (
-              <Link
-                key={m.matchId}
-                to={m.eventId ? `/events/${m.eventId}` : '/events'}
-                className="dashboard-result-card"
-              >
-                <span className="result-winner">{m.winnerName}</span>
-                <span className="result-vs">{t('dashboard.vs')}</span>
-                <span className="result-loser">{m.loserName}</span>
-                {m.championshipName && <span className="result-type">({m.championshipName})</span>}
-                {!m.championshipName && <span className="result-type">{m.matchType}</span>}
-              </Link>
-            ))}
-          </div>
+          <RecentResultsGrouped results={data.recentResults} t={t} renderStarRating={renderStarRating} />
         )}
       </section>
 

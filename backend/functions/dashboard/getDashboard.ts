@@ -25,11 +25,16 @@ interface DashboardMatch {
   matchId: string;
   date: string;
   matchType: string;
+  stipulation?: string;
+  isChampionship?: boolean;
+  championshipName?: string;
+  championshipImageUrl?: string;
+  starRating?: number;
+  matchOfTheNight?: boolean;
   winnerName: string;
   winnerImageUrl?: string;
   loserName: string;
   loserImageUrl?: string;
-  championshipName?: string;
   eventId?: string;
 }
 
@@ -60,13 +65,14 @@ interface DashboardResponse {
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    // Fetch data: championships, players, seasons, matches; events and challenges via query
-    const [championships, players, seasons, matches, upcomingEventsResult, pendingChallenges] =
+    // Fetch data: championships, players, seasons, matches, stipulations; events and challenges via query
+    const [championships, players, seasons, matches, stipulations, upcomingEventsResult, pendingChallenges] =
       await Promise.all([
         dynamoDb.scanAll({ TableName: TableNames.CHAMPIONSHIPS }),
         dynamoDb.scanAll({ TableName: TableNames.PLAYERS }),
         dynamoDb.scanAll({ TableName: TableNames.SEASONS }),
         dynamoDb.scanAll({ TableName: TableNames.MATCHES }),
+        dynamoDb.scanAll({ TableName: TableNames.STIPULATIONS }),
         dynamoDb.query({
           TableName: TableNames.EVENTS,
           IndexName: 'StatusIndex',
@@ -95,6 +101,12 @@ export const handler: APIGatewayProxyHandler = async () => {
     for (const c of championships as Record<string, unknown>[]) {
       const id = c.championshipId as string;
       if (id) championshipMap.set(id, c);
+    }
+
+    const stipulationMap = new Map<string, string>();
+    for (const s of (stipulations as Record<string, unknown>[]) ?? []) {
+      const id = s.stipulationId as string;
+      if (id && s.name) stipulationMap.set(id, s.name as string);
     }
 
     // Current champions: active championships with currentChampion
@@ -145,15 +157,20 @@ export const handler: APIGatewayProxyHandler = async () => {
         matchCount: e.matchCount as number | undefined,
       }));
 
-    // Recent results: completed matches, sort by date desc, limit 5
+    // Recent results: only matches with updatedAt (recorded after we added it), sort by updatedAt desc, limit 20 for date grouping
     const completedMatches = (matches as Record<string, unknown>[]).filter(
-      (m) => m.status === 'completed' && m.winners && m.losers
+      (m) =>
+        m.status === 'completed' &&
+        m.winners &&
+        m.losers &&
+        (m.updatedAt as string)
     );
     completedMatches.sort(
       (a, b) =>
-        new Date(b.date as string).getTime() - new Date(a.date as string).getTime()
+        new Date(b.updatedAt as string).getTime() -
+        new Date(a.updatedAt as string).getTime()
     );
-    const recentResults: DashboardMatch[] = completedMatches.slice(0, 5).map((m) => {
+    const recentResults: DashboardMatch[] = completedMatches.slice(0, 20).map((m) => {
       const winnerIds = m.winners as string[];
       const loserIds = m.losers as string[];
       const winnerName = (winnerIds || [])
@@ -163,21 +180,32 @@ export const handler: APIGatewayProxyHandler = async () => {
         })
         .filter(Boolean)
         .join(' & ');
+      // Use " vs " for losers so triple threat / fatal four way read as "A vs B vs C" not "A vs B & C"
       const loserName = (loserIds || [])
         .map((id) => {
           const p = playerMap.get(id);
           return p ? (p.currentWrestler as string) || (p.name as string) : '';
         })
         .filter(Boolean)
-        .join(' & ');
+        .join(' vs ');
       const firstWinner = winnerIds?.[0];
       const firstLoser = loserIds?.[0];
       const champId = m.championshipId as string | undefined;
       const champ = champId ? championshipMap.get(champId) : undefined;
+      const stipulationId = m.stipulationId as string | undefined;
+      const stipulationName = stipulationId ? stipulationMap.get(stipulationId) : undefined;
+      const matchType = (m.matchFormat as string) ?? (m.matchType as string) ?? 'singles';
+      const isChampionship = Boolean(m.isChampionship && champId);
       return {
         matchId: m.matchId as string,
         date: m.date as string,
-        matchType: (m.matchFormat as string) ?? (m.matchType as string) ?? 'singles',
+        matchType,
+        stipulation: stipulationName,
+        isChampionship,
+        championshipName: champ ? (champ.name as string) : undefined,
+        championshipImageUrl: champ?.imageUrl as string | undefined,
+        starRating: m.starRating as number | undefined,
+        matchOfTheNight: Boolean(m.matchOfTheNight),
         winnerName: winnerName || '—',
         winnerImageUrl: firstWinner
           ? (playerMap.get(firstWinner)?.imageUrl as string | undefined)
@@ -186,7 +214,6 @@ export const handler: APIGatewayProxyHandler = async () => {
         loserImageUrl: firstLoser
           ? (playerMap.get(firstLoser)?.imageUrl as string | undefined)
           : undefined,
-        championshipName: champ ? (champ.name as string) : undefined,
         eventId: m.eventId as string | undefined,
       };
     });
