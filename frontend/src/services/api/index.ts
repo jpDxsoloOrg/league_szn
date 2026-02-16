@@ -24,6 +24,7 @@ export { rivalriesApi } from './rivalries.api';
 export { imagesApi } from './images.api';
 export { challengesApi } from './challenges.api';
 export { promosApi } from './promos.api';
+export { activityApi } from './activity.api';
 
 // Type/interface re-exports
 export type { SiteFeatures } from './siteConfig.api';

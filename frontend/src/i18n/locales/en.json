@@ -34,6 +34,7 @@
   },
   "nav": {
     "standings": "Standings",
+    "activity": "Activity",
     "championships": "Championships",
     "tournaments": "Tournaments",
     "events": "Events",
@@ -56,6 +57,31 @@
   },
   "header": {
     "title": "WWE 2K League"
+  },
+  "activity": {
+    "title": "Activity",
+    "loading": "Loading...",
+    "noActivity": "No recent activity.",
+    "loadMore": "Load more",
+    "filters": {
+      "label": "Filter by type",
+      "all": "All"
+    },
+    "types": {
+      "match_result": "Matches",
+      "championship_change": "Championships",
+      "season_event": "Seasons",
+      "tournament_result": "Tournaments",
+      "challenge_event": "Challenges",
+      "promo_posted": "Promos"
+    },
+    "timeAgo": {
+      "justNow": "Just now",
+      "minutes": "{{count}} min ago",
+      "hours": "{{count}} hr ago",
+      "days": "{{count}} days ago",
+      "date": "{{count}} days ago"
+    }
   },
   "wiki": {
     "title": "Wiki",

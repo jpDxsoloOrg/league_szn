@@ -149,3 +149,25 @@ export interface MatchType {
   createdAt: string;
   updatedAt: string;
 }
+
+/** Activity feed item from GET /activity */
+export type ActivityItemType =
+  | 'match_result'
+  | 'championship_change'
+  | 'season_event'
+  | 'tournament_result'
+  | 'challenge_event'
+  | 'promo_posted';
+
+export interface ActivityItem {
+  id: string;
+  type: ActivityItemType;
+  timestamp: string;
+  summary: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface ActivityFeedResponse {
+  items: ActivityItem[];
+  nextCursor: string | null;
+}

@@ -334,6 +334,15 @@ functions:
           method: get
           cors: *corsConfig
 
+  # Activity feed (news feed / activity timeline)
+  activity:
+    handler: functions/activity/handler.handler
+    events:
+      - http:
+          path: activity
+          method: get
+          cors: *corsConfig
+
   # Seasons (Phase 1 consolidated: getSeasons, createSeason, updateSeason, deleteSeason)
   seasons:
     handler: functions/seasons/handler.handler

@@ -31,6 +31,7 @@ export const USER_NAV_GROUPS: NavGroup[] = [
     i18nKey: 'nav.groups.core',
     items: [
       { path: '/', i18nKey: 'nav.standings' },
+      { path: '/activity', i18nKey: 'nav.activity' },
       { path: '/championships', i18nKey: 'nav.championships' },
       { path: '/events', i18nKey: 'nav.events' },
       { path: '/tournaments', i18nKey: 'nav.tournaments' },
@@ -118,7 +119,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
 
 /** Path → group key for user nav (for auto-expand) */
 export function getUserGroupForPath(pathname: string): string | null {
-  const core = ['/', '/championships', '/events', '/tournaments', '/contenders', '/stats'];
+  const core = ['/', '/activity', '/championships', '/events', '/tournaments', '/contenders', '/stats'];
   const wrestler = ['/profile', '/challenges', '/promos'];
   if (core.some((p) => pathname === p) || pathname.startsWith('/events/') || pathname.startsWith('/stats/') || pathname.startsWith('/contenders/')) return 'core';
   if (wrestler.some((p) => pathname === p || pathname.startsWith(p + '/'))) return 'wrestler';
