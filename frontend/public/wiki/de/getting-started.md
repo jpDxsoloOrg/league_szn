@@ -4,6 +4,8 @@ Willkommen auf der WWE-2K-Liga-Website. Diese kurze Anleitung hilft Ihnen bei de
 
 ## Was Sie tun können
 
+- **Dashboard** — Starten Sie vom [Dashboard](dashboard) für aktuelle Champions, kommende Events, letzte Ergebnisse und Schnell-Statistiken.
+- **Aktivität** — Die neuesten Liga-Aktivitäten im [Aktivitäts-Feed](activity) (Matches, Titelwechsel, Herausforderungen, Promos).
 - **Tabelle anzeigen** — Liga-Rangliste, Siege, Niederlagen und Divisionen auf der Tabellen-Seite.
 - **Meisterschaften durchsuchen** — Aktuelle Titelinhaber und Meisterschafts-Historie ansehen.
 - **Events anzeigen** — Kalender, Event-Details und Ergebnisse.
