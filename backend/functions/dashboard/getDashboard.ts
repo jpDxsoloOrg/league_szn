@@ -163,13 +163,14 @@ export const handler: APIGatewayProxyHandler = async () => {
         })
         .filter(Boolean)
         .join(' & ');
+      // Use " vs " for losers so triple threat / fatal four way read as "A vs B vs C" not "A vs B & C"
       const loserName = (loserIds || [])
         .map((id) => {
           const p = playerMap.get(id);
           return p ? (p.currentWrestler as string) || (p.name as string) : '';
         })
         .filter(Boolean)
-        .join(' & ');
+        .join(' vs ');
       const firstWinner = winnerIds?.[0];
       const firstLoser = loserIds?.[0];
       const champId = m.championshipId as string | undefined;
