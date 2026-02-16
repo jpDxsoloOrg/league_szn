@@ -1,8 +1,6 @@
 # Plan: Add wiki sections for all the new features
 
-**GitHub issue:** #198 — [Add to the wiki sections for all the new features](https://github.com/jpDxsolo/league_szn/issues/198)
-
-*If the issue does not exist yet, create it with the title and body in "Issue to create" below.*
+**GitHub issue:** #201 — [Add to the wiki sections for all the new features](https://github.com/jpDxsoloOrg/league_szn/issues/201)
 
 ## Context
 
@@ -94,27 +92,3 @@ The app has added Dashboard, Activity feed, and Statistics (leaderboards, record
 
 - **Index order**: New entries affect article order on the wiki index page; place them so the Help experience stays coherent (e.g. Dashboard near top or after Getting started).
 - **Fallback**: If German markdown is omitted, the app shows the English article with the "showing English fallback" message; acceptable per existing wiki behavior.
-
----
-
-## Issue to create (if not already created)
-
-**Title:** Add to the wiki sections for all the new features
-
-**Body:**
-
-**Summary**  
-Document all recently added app features in the Help wiki so users can find guidance for Dashboard, Activity feed, and Statistics (leaderboards, records, rivalries, tale of the tape, achievements, best matches). The wiki already has articles for Standings, Seasons, Divisions, Championships, Events, Tournaments, Contenders, Profile, Challenges, Promos, Fantasy, and Admin; the new features do not yet have corresponding wiki sections.
-
-**Acceptance criteria**
-- **Dashboard**: Add a wiki article (and optional DE translation) explaining the league dashboard: current champions, upcoming events, recent results, season progress, quick stats, and how to navigate from it.
-- **Activity**: Add a wiki article for the Activity feed: what it shows, how it's ordered, and how it relates to events and results.
-- **Statistics**: Add a wiki article covering the Statistics section: leaderboards, records, rivalries, tale of the tape, achievements, and best matches — what each sub-page shows and how to use it.
-- **Index and i18n**: Register new articles in `frontend/public/wiki/index.json` with appropriate `slug`, `titleKey`, and `file`. Add `titleKey` entries in `frontend/src/i18n/locales/en.json` and `frontend/src/i18n/locales/de.json` under `wiki.articles`.
-- **Consistency**: New articles follow existing wiki patterns (markdown in `frontend/public/wiki/`, optional `frontend/public/wiki/de/` for German), and link back to the wiki index / Help where appropriate.
-
-**Context**  
-Scope: Frontend only — wiki content and index/i18n; no backend or API changes. Wiki location: `frontend/public/wiki/` (EN), `frontend/public/wiki/de/` (DE). See CLAUDE.md "Help and Wiki" for adding articles.
-
-**Notes**  
-One article per major feature (e.g. one "Statistics" article that describes all stats sub-pages) is acceptable. Consider cross-linking from Getting started or FAQs to the new Dashboard and Activity articles.
