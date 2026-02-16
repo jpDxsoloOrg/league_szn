@@ -33,6 +33,7 @@
     "accessDenied": "Zugriff verweigert"
   },
   "nav": {
+    "dashboard": "Dashboard",
     "standings": "Tabelle",
     "activity": "Aktivität",
     "championships": "Meisterschaften",
@@ -57,6 +58,33 @@
   },
   "header": {
     "title": "WWE 2K Liga"
+  },
+  "dashboard": {
+    "title": "Liga-Überblick",
+    "champions": "Aktuelle Champions",
+    "upcomingEvents": "Kommende Events",
+    "recentResults": "Letzte Ergebnisse",
+    "seasonProgress": "Saison-Fortschritt",
+    "quickStats": "Schnellstatistiken",
+    "activeChallenges": "Offene Herausforderungen",
+    "viewAll": "Alle anzeigen",
+    "noChampions": "Keine aktiven Champions",
+    "noUpcomingEvents": "Keine kommenden Events",
+    "noRecentResults": "Keine letzten Ergebnisse",
+    "noActiveSeason": "Keine aktive Saison",
+    "mostWins": "Meiste Siege",
+    "longestStreak": "Längste Siegesserie",
+    "newestChampion": "Neuester Champion",
+    "matchesPlayed": "Gespielte Matches",
+    "seasonStart": "Saisonstart",
+    "daysIn": "Tage in",
+    "countdown": {
+      "days": "T",
+      "hours": "Std",
+      "minutes": "Min"
+    },
+    "vs": "gegen",
+    "def": "bes."
   },
   "activity": {
     "title": "Aktivität",

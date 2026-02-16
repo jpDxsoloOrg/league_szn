@@ -325,7 +325,7 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Dashboard
+  # Dashboard (aggregated league overview)
   getDashboard:
     handler: functions/dashboard/getDashboard.handler
     events:

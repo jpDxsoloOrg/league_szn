@@ -23,15 +23,23 @@ function renderTopBar(route: string) {
 }
 
 describe('TopBar', () => {
-  it('renders top-level page title without breadcrumb for root routes', () => {
+  it('renders top-level page title without breadcrumb for root route (dashboard)', () => {
     renderTopBar('/');
 
-    const title = screen.getByText('nav.standings');
+    const title = screen.getByText('nav.dashboard');
     expect(title).toBeInTheDocument();
     expect(title).toHaveClass('top-bar-title');
     // No breadcrumb parent
     expect(screen.queryByClassName?.('top-bar-parent')).toBeFalsy();
     expect(screen.queryByText('/')).not.toBeInTheDocument();
+  });
+
+  it('renders standings title for /standings', () => {
+    renderTopBar('/standings');
+
+    const title = screen.getByText('nav.standings');
+    expect(title).toBeInTheDocument();
+    expect(title).toHaveClass('top-bar-title');
   });
 
   it('renders breadcrumb with parent (including group) and title for admin sub-routes', () => {
