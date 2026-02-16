@@ -23,6 +23,7 @@ export { statisticsApi } from './statistics.api';
 export { imagesApi } from './images.api';
 export { challengesApi } from './challenges.api';
 export { promosApi } from './promos.api';
+export { dashboardApi } from './dashboard.api';
 
 // Type/interface re-exports
 export type { SiteFeatures } from './siteConfig.api';

@@ -456,6 +456,8 @@ aws cloudformation describe-stacks --stack-name wwe-2k-league-api-devtest \
 - `feat/*` - New features
 - `fix/*` - Bug fixes
 
+**Commands:** **newIssue** (create issue + plan, branch, commit, push, PR); **doIssue &lt;number&gt;** (fetch issue, create branch + plan, execute plan with parallel agents, commit, push, PR); **execute-plan** (run a plan file with parallel agents, then verify and commit/push). See `.claude/commands/` and `docs/plans/README.md`.
+
 Current active branches:
 - `feat/admin_front_end` - Admin panel implementation
 
