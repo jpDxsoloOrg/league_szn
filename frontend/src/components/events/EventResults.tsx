@@ -185,13 +185,18 @@ export default function EventResults() {
                     {t('events.results.titleChange')}
                   </div>
                 )}
-                {matchData.starRating != null && (
-                  <div className="results-match-rating">
-                    ★ {matchData.starRating} {t('match.starRating')}
+                {(matchData.starRating != null || matchData.matchOfTheNight) && (
+                  <div className="results-match-awards">
+                    {matchData.starRating != null && (
+                      <span className="results-match-rating" title={t('match.starRating')}>
+                        {renderStarRating(matchData.starRating)}
+                        <span className="results-match-rating-value">{matchData.starRating}</span>
+                      </span>
+                    )}
+                    {matchData.matchOfTheNight && (
+                      <span className="results-motn-badge">{t('match.matchOfTheNightBadge')}</span>
+                    )}
                   </div>
-                )}
-                {matchData.matchOfTheNight && (
-                  <div className="results-motn-badge">{t('match.matchOfTheNightBadge')}</div>
                 )}
               </div>
             </div>

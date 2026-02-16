@@ -188,7 +188,8 @@
   "match": {
     "starRating": "Sternebewertung",
     "matchOfTheNight": "Match of the Night",
-    "matchOfTheNightBadge": "Match of the Night"
+    "matchOfTheNightBadge": "Match of the Night",
+    "clearRating": "Bewertung löschen"
   },
   "recordResult": {
     "title": "Kampfergebnisse eintragen",

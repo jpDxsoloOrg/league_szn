@@ -373,28 +373,44 @@ export default function RecordResult() {
                   )}
                 </div>
 
-                <div className="star-rating-row">
-                  <label htmlFor="starRating">{t('match.starRating')}</label>
-                  <select
-                    id="starRating"
-                    value={starRating === '' ? '' : starRating}
-                    onChange={(e) => setStarRating(e.target.value === '' ? '' : Number(e.target.value))}
-                  >
-                    <option value="">—</option>
-                    {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map((r) => (
-                      <option key={r} value={r}>{r} ★</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="motn-row">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={matchOfTheNight}
-                      onChange={(e) => setMatchOfTheNight(e.target.checked)}
-                    />
-                    {t('match.matchOfTheNight')}
-                  </label>
+                <div className="rating-awards-block">
+                  <div className="star-rating-row">
+                    <span className="star-rating-label">{t('match.starRating')}</span>
+                    <div className="star-rating-stars" role="group" aria-label={t('match.starRating')}>
+                      {[1, 2, 3, 4, 5].map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          className={`star-btn ${typeof starRating === 'number' && starRating >= value ? 'filled' : ''}`}
+                          onClick={() => setStarRating(starRating === value ? '' : value)}
+                          title={`${value} ${value === 1 ? 'star' : 'stars'}`}
+                          aria-pressed={typeof starRating === 'number' && starRating >= value}
+                        >
+                          {typeof starRating === 'number' && starRating >= value ? '\u2605' : '\u2606'}
+                        </button>
+                      ))}
+                    </div>
+                    {starRating !== '' && (
+                      <button
+                        type="button"
+                        className="star-rating-clear"
+                        onClick={() => setStarRating('')}
+                      >
+                        {t('match.clearRating')}
+                      </button>
+                    )}
+                  </div>
+                  <div className="motn-row">
+                    <label className="motn-label">
+                      <input
+                        type="checkbox"
+                        checked={matchOfTheNight}
+                        onChange={(e) => setMatchOfTheNight(e.target.checked)}
+                        className="motn-checkbox"
+                      />
+                      <span className="motn-text">{t('match.matchOfTheNight')}</span>
+                    </label>
+                  </div>
                 </div>
 
                 <div className="result-actions">

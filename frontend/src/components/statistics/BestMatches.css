@@ -47,22 +47,43 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 1rem;
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--border-color, #eee);
+  gap: 0.75rem 1.25rem;
+  padding: 0.875rem 0.75rem;
+  border-bottom: 1px solid var(--border-color, #333);
+}
+
+.best-match-awards {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .best-match-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 1rem;
   font-weight: 600;
-  color: #eab308;
+  color: #d4af37;
+  letter-spacing: 0.02em;
+}
+
+.best-match-rating-value {
+  font-size: 0.85rem;
+  color: var(--text-muted, #888);
+  font-weight: 500;
 }
 
 .best-match-motn {
-  font-size: 0.85rem;
-  background: linear-gradient(90deg, #fef3c7, #fde68a);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
   color: #92400e;
-  padding: 0.2rem 0.5rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 4px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
 }
 
 .best-match-date {

@@ -242,6 +242,41 @@
   border-radius: 4px;
 }
 
+.match-awards {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.match-star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #d4af37;
+  letter-spacing: 0.02em;
+}
+
+.match-star-value {
+  font-size: 0.8rem;
+  color: #888;
+  font-weight: 500;
+}
+
+.match-motn-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #92400e;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+}
+
 .match-participants {
   display: flex;
   flex-wrap: wrap;

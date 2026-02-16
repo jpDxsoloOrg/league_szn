@@ -268,6 +268,14 @@ interface MatchEntryProps {
   t: (key: string) => string;
 }
 
+function matchStarsDisplay(rating: number): string {
+  const stars: string[] = [];
+  for (let i = 1; i <= 5; i++) {
+    stars.push(i <= Math.floor(rating) ? '\u2605' : '\u2606');
+  }
+  return stars.join('');
+}
+
 function MatchEntry({ match, isCompleted, t }: MatchEntryProps) {
   const { designation, matchData } = match;
   const desColor = designationColors[designation];
@@ -291,13 +299,18 @@ function MatchEntry({ match, isCompleted, t }: MatchEntryProps) {
             {matchData.championshipName || t('events.detail.championshipMatch')}
           </span>
         )}
-        {isCompleted && matchData.starRating != null && (
-          <span className="match-star-rating" title={t('match.starRating')}>
-            ★ {matchData.starRating}
+        {isCompleted && (matchData.starRating != null || matchData.matchOfTheNight) && (
+          <span className="match-awards">
+            {matchData.starRating != null && (
+              <span className="match-star-rating" title={t('match.starRating')}>
+                {matchStarsDisplay(matchData.starRating)}
+                <span className="match-star-value">{matchData.starRating}</span>
+              </span>
+            )}
+            {matchData.matchOfTheNight && (
+              <span className="match-motn-badge">{t('match.matchOfTheNightBadge')}</span>
+            )}
           </span>
-        )}
-        {isCompleted && matchData.matchOfTheNight && (
-          <span className="match-motn-badge">{t('match.matchOfTheNightBadge')}</span>
         )}
       </div>
 

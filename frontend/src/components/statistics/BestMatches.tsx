@@ -77,20 +77,33 @@ export default function BestMatches() {
         <p className="best-matches-empty">{t('statistics.bestMatches.noData')}</p>
       ) : (
         <ul className="best-matches-list">
-          {matches.map((m) => (
-            <li key={m.matchId} className="best-match-item">
-              <span className="best-match-stars">★ {m.starRating}</span>
-              {m.matchOfTheNight && (
-                <span className="best-match-motn">{t('match.matchOfTheNightBadge')}</span>
-              )}
-              <span className="best-match-date">
-                {new Date(m.date).toLocaleDateString()}
-              </span>
-              <span className="best-match-participants">
-                {m.participants.map((pid) => getPlayerName(pid)).join(' vs ')}
-              </span>
-            </li>
-          ))}
+          {matches.map((m) => {
+            const starDisplay = (() => {
+              const stars: string[] = [];
+              const r = m.starRating;
+              for (let i = 1; i <= 5; i++) stars.push(i <= r ? '\u2605' : '\u2606');
+              return stars.join('');
+            })();
+            return (
+              <li key={m.matchId} className="best-match-item">
+                <span className="best-match-awards">
+                  <span className="best-match-stars" title={t('match.starRating')}>
+                    {starDisplay}
+                    <span className="best-match-rating-value">{m.starRating}</span>
+                  </span>
+                  {m.matchOfTheNight && (
+                    <span className="best-match-motn">{t('match.matchOfTheNightBadge')}</span>
+                  )}
+                </span>
+                <span className="best-match-date">
+                  {new Date(m.date).toLocaleDateString()}
+                </span>
+                <span className="best-match-participants">
+                  {m.participants.map((pid) => getPlayerName(pid)).join(' vs ')}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
