@@ -1,14 +1,17 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { standingsApi, seasonsApi, divisionsApi } from '../services/api';
 import { logger } from '../utils/logger';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { Standings as StandingsType, Season, Division, Player } from '../types';
 import PlayerHoverCard from './PlayerHoverCard';
 import './Standings.css';
 
 export default function Standings() {
   const { t } = useTranslation();
+  useDocumentTitle(t('standings.title'));
+  const navigate = useNavigate();
   const [standings, setStandings] = useState<StandingsType | null>(null);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [selectedDivision, setSelectedDivision] = useState<string>('all');
@@ -218,7 +221,20 @@ export default function Standings() {
           </thead>
           <tbody>
             {playersWithStats.map((player, index) => (
-              <tr key={player.playerId}>
+              <tr
+                key={player.playerId}
+                className="standings-row-clickable"
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate(`/stats/player/${player.playerId}`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigate(`/stats/player/${player.playerId}`);
+                  }
+                }}
+                aria-label={t('standings.table.player')}
+              >
                 <td className="rank">{index + 1}</td>
                 <td className="wrestler-image-cell">
                   {player.imageUrl ? (
@@ -233,7 +249,11 @@ export default function Standings() {
                 </td>
                 <td className="player-name">
                   <PlayerHoverCard player={player} divisions={divisions}>
-                    <Link to={`/stats/player/${player.playerId}`} className="player-name-link">
+                    <Link
+                      to={`/stats/player/${player.playerId}`}
+                      className="player-name-link"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {player.name}
                     </Link>
                   </PlayerHoverCard>

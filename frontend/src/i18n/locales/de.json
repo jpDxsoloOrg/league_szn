@@ -30,7 +30,13 @@
     "submitting": "Wird eingereicht...",
     "loading": "Wird geladen...",
     "print": "Drucken",
-    "accessDenied": "Zugriff verweigert"
+    "accessDenied": "Zugriff verweigert",
+    "back": "Zurück",
+    "backToHome": "Zurück zur Startseite"
+  },
+  "notFound": {
+    "title": "Seite nicht gefunden",
+    "message": "Die angeforderte Seite existiert nicht oder wurde verschoben."
   },
   "nav": {
     "dashboard": "Dashboard",

@@ -1,7 +1,8 @@
 .top-bar {
   position: fixed;
   top: 0;
-  left: 300px;
+  left: 260px;
+  transition: left 0.2s ease;
   right: 0;
   height: 56px;
   background-color: #1a1a1a;

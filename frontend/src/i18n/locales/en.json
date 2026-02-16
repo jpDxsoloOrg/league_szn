@@ -30,7 +30,13 @@
     "submitting": "Submitting...",
     "loading": "Loading...",
     "print": "Print",
-    "accessDenied": "Access Denied"
+    "accessDenied": "Access Denied",
+    "back": "Back",
+    "backToHome": "Back to Home"
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "message": "The page you're looking for doesn't exist or has been moved."
   },
   "nav": {
     "dashboard": "Dashboard",
