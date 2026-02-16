@@ -42,7 +42,7 @@ vi.mock('react-i18next', () => ({
         'standings.table.losses': 'L',
         'standings.table.draws': 'D',
         'standings.table.winPercent': 'Win %',
-        'standings.table.form': 'Form',
+        'standings.table.form': 'Last 5',
         'standings.table.streak': 'Streak',
         'standings.lastResult': 'Last result',
         'standings.winStreak': 'Win Streak',
@@ -179,8 +179,8 @@ describe('Standings', () => {
     // so verify they exist at least once
     expect(screen.getAllByText('Raw').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('SmackDown').length).toBeGreaterThanOrEqual(1);
-    // Form and Streak columns
-    expect(screen.getByText('Form')).toBeInTheDocument();
+    // Last 5 (form) and Streak columns
+    expect(screen.getByText('Last 5')).toBeInTheDocument();
     expect(screen.getByText('Streak')).toBeInTheDocument();
   });
 
