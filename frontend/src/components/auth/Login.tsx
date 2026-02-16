@@ -1,11 +1,13 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { playersApi } from '../../services/api';
 import type { Player } from '../../types';
 import './Auth.css';
 
 function DevLogin() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { devSignIn } = useAuth();
   const [players, setPlayers] = useState<Player[]>([]);
@@ -32,21 +34,21 @@ function DevLogin() {
 
   return (
     <div className="auth-card" style={{ marginTop: '1rem', border: '2px dashed #f59e0b' }}>
-      <h3 style={{ color: '#f59e0b' }}>Dev Login</h3>
-      <p className="auth-subtitle">Pick a role to sign in as (dev only)</p>
+      <h3 style={{ color: '#f59e0b' }}>{t('auth.devLoginTitle')}</h3>
+      <p className="auth-subtitle">{t('auth.devLoginSubtitle')}</p>
 
       <button
         onClick={handleDevAdminLogin}
         className="btn-submit"
         style={{ textAlign: 'left', marginBottom: '1rem', backgroundColor: '#dc2626' }}
       >
-        Sign in as Admin
+        {t('auth.signInAsAdmin')}
       </button>
 
       {loadingPlayers ? (
-        <p>Loading players...</p>
+        <p>{t('auth.loadingPlayers')}</p>
       ) : players.length === 0 ? (
-        <p>No players found. Run seed data first.</p>
+        <p>{t('auth.noPlayersFound')}</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {players.map((p) => (
@@ -66,6 +68,7 @@ function DevLogin() {
 }
 
 export default function Login() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
@@ -82,7 +85,7 @@ export default function Login() {
       await signIn(email, password);
       navigate('/');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      const message = err instanceof Error ? err.message : t('auth.loginFailed');
       setError(message);
     } finally {
       setLoading(false);
@@ -92,18 +95,18 @@ export default function Login() {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>Sign In</h2>
-        <p className="auth-subtitle">Sign in to access League SZN</p>
+        <h2>{t('auth.signInTitle')}</h2>
+        <p className="auth-subtitle">{t('auth.signInSubtitle')}</p>
 
         <form onSubmit={handleSubmit} aria-describedby={error ? 'login-error' : undefined}>
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t('auth.email')}</label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
+              placeholder={t('auth.enterEmail')}
               required
               autoFocus
               aria-invalid={error ? 'true' : undefined}
@@ -111,13 +114,13 @@ export default function Login() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t('auth.password')}</label>
             <input
               type="password"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder={t('auth.enterPassword')}
               required
               minLength={8}
               aria-invalid={error ? 'true' : undefined}
@@ -131,14 +134,14 @@ export default function Login() {
           )}
 
           <button type="submit" className="btn-submit" disabled={loading} aria-busy={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? t('auth.signingIn') : t('auth.signInTitle')}
           </button>
         </form>
 
         <div className="auth-footer">
           <p>
-            Don't have an account?{' '}
-            <Link to="/signup">Sign Up</Link>
+            {t('auth.noAccount')}{' '}
+            <Link to="/signup">{t('auth.signUpLink')}</Link>
           </p>
         </div>
       </div>

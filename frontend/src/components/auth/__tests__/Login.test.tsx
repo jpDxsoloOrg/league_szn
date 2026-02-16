@@ -9,6 +9,31 @@ const { mockSignIn, mockNavigate } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
 }));
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const map: Record<string, string> = {
+        'auth.signInTitle': 'Sign In',
+        'auth.signInSubtitle': 'Sign in to access League SZN',
+        'auth.email': 'Email',
+        'auth.password': 'Password',
+        'auth.enterEmail': 'Enter your email',
+        'auth.enterPassword': 'Enter your password',
+        'auth.signingIn': 'Signing in...',
+        'auth.loginFailed': 'Login failed. Please try again.',
+        'auth.noAccount': "Don't have an account?",
+        'auth.signUpLink': 'Sign Up',
+        'auth.devLoginTitle': 'Dev Login',
+        'auth.devLoginSubtitle': 'Pick a role to sign in as (dev only)',
+        'auth.signInAsAdmin': 'Sign in as Admin',
+        'auth.loadingPlayers': 'Loading players...',
+        'auth.noPlayersFound': 'No players found. Run seed data first.',
+      };
+      return map[key] ?? key;
+    },
+  }),
+}));
+
 vi.mock('../../../contexts/AuthContext', () => ({
   useAuth: () => ({
     signIn: mockSignIn,

@@ -256,8 +256,8 @@ export default function TopNav() {
                   </button>
                 ) : (
                   <>
-                    <Link to="/login" className={isActive('/login') ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
-                    <Link to="/signup" className={isActive('/signup') ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>Sign Up</Link>
+                    <Link to="/login" className={isActive('/login') ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>{t('common.signIn')}</Link>
+                    <Link to="/signup" className={isActive('/signup') ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>{t('common.signUp')}</Link>
                   </>
                 )}
               </div>
@@ -389,8 +389,8 @@ export default function TopNav() {
             </button>
           ) : (
             <>
-              <Link to="/login" className={`topnav-menu-link ${isActive('/login') ? 'active' : ''}`}>Sign In</Link>
-              <Link to="/signup" className={`topnav-menu-link ${isActive('/signup') ? 'active' : ''}`}>Sign Up</Link>
+              <Link to="/login" className={`topnav-menu-link ${isActive('/login') ? 'active' : ''}`}>{t('common.signIn')}</Link>
+              <Link to="/signup" className={`topnav-menu-link ${isActive('/signup') ? 'active' : ''}`}>{t('common.signUp')}</Link>
             </>
           )}
         </div>
