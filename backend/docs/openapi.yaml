@@ -118,6 +118,8 @@ components:
         winners: { type: array, items: { type: string } }
         losers: { type: array, items: { type: string } }
         winningTeam: { type: integer }
+        starRating: { type: number, minimum: 0.5, maximum: 5, description: 'Optional star rating (0.5–5.0, half-step)' }
+        matchOfTheNight: { type: boolean, description: 'Optional Match of the Night flag' }
 
     Championship:
       type: object
@@ -1340,6 +1342,7 @@ paths:
     get:
       tags: [Statistics]
       summary: Get statistics (shape varies by section)
+      description: 'Sections include player-stats, head-to-head, leaderboards, records, achievements, match-ratings. Use section=match-ratings for top rated matches and per-player averages (optional seasonId).'
       parameters:
         - name: section
           in: query
@@ -1359,6 +1362,19 @@ paths:
       responses:
         '200': { description: 'Statistics (shape varies by section param)' }
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /rivalries:
+    get:
+      tags: [Rivalries]
+      summary: Get top rivalries from match history
+      parameters:
+        - name: seasonId
+          in: query
+          schema: { type: string }
+          description: Optional season ID to filter matches (default all seasons)
+      responses:
+        '200': { description: List of rivalries (player pairs with 3+ matches, series record, intensity badge)' }
+        '500': { description: 'Server error', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /fantasy/config:
     get:

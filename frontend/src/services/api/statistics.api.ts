@@ -51,6 +51,19 @@ export interface AchievementsResponse {
   achievements?: Achievement[];
 }
 
+export interface TopRatedMatch {
+  matchId: string;
+  date: string;
+  participants: string[];
+  starRating?: number;
+  matchOfTheNight: boolean;
+}
+
+export interface MatchRatingsResponse {
+  topRatedMatches: TopRatedMatch[];
+  playerAverages: { playerId: string; averageRating: number; matchCount: number }[];
+}
+
 export const statisticsApi = {
   getPlayerStats: async (playerId?: string, seasonId?: string, signal?: AbortSignal): Promise<PlayerStatsResponse> => {
     const params = new URLSearchParams({ section: 'player-stats' });
@@ -84,6 +97,12 @@ export const statisticsApi = {
   getAchievements: async (playerId?: string, signal?: AbortSignal): Promise<AchievementsResponse> => {
     const params = new URLSearchParams({ section: 'achievements' });
     if (playerId) params.set('playerId', playerId);
+    return fetchWithAuth(`${API_BASE_URL}/statistics?${params}`, {}, signal);
+  },
+
+  getMatchRatings: async (seasonId?: string, signal?: AbortSignal): Promise<MatchRatingsResponse> => {
+    const params = new URLSearchParams({ section: 'match-ratings' });
+    if (seasonId) params.set('seasonId', seasonId);
     return fetchWithAuth(`${API_BASE_URL}/statistics?${params}`, {}, signal);
   },
 };

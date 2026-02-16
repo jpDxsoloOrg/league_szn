@@ -78,6 +78,7 @@ function PlayerStats() {
         <div className="ps-nav-links">
           <Link to="/stats/head-to-head">{t('statistics.nav.headToHead')}</Link>
           <Link to="/stats/leaderboards">{t('statistics.nav.leaderboards')}</Link>
+          <Link to="/stats/best-matches">{t('matchRatings.bestMatches')}</Link>
           <Link to="/stats/tale-of-tape">{t('statistics.nav.taleOfTape')}</Link>
           <Link to="/stats/records">{t('statistics.nav.records')}</Link>
           <Link to="/stats/achievements">{t('statistics.nav.achievements')}</Link>

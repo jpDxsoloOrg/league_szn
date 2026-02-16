@@ -260,10 +260,22 @@ interface MatchEntryProps {
       isChampionship: boolean;
       championshipName?: string;
       status: 'scheduled' | 'completed';
+      starRating?: number;
+      matchOfTheNight?: boolean;
     };
   };
   isCompleted: boolean;
   t: (key: string) => string;
+}
+
+function renderMatchStars(rating: number): string {
+  const full = Math.floor(rating);
+  const half = rating % 1 >= 0.5;
+  const stars: string[] = [];
+  for (let i = 0; i < full; i++) stars.push('\u2605');
+  if (half) stars.push('\u00BD');
+  for (let i = stars.length; i < 5; i++) stars.push('\u2606');
+  return stars.join('');
 }
 
 function MatchEntry({ match, isCompleted, t }: MatchEntryProps) {
@@ -289,6 +301,9 @@ function MatchEntry({ match, isCompleted, t }: MatchEntryProps) {
             {matchData.championshipName || t('events.detail.championshipMatch')}
           </span>
         )}
+        {isCompleted && matchData.matchOfTheNight && (
+          <span className="match-motn-badge">{t('matchRatings.motnBadge')}</span>
+        )}
       </div>
 
       <div className="match-participants">
@@ -307,6 +322,13 @@ function MatchEntry({ match, isCompleted, t }: MatchEntryProps) {
           );
         })}
       </div>
+
+      {isCompleted && matchData.starRating != null && (
+        <div className="match-star-rating">
+          <span className="match-stars">{renderMatchStars(matchData.starRating)}</span>
+          <span className="match-rating-value">{matchData.starRating}/5</span>
+        </div>
+      )}
 
       {match.notes && (
         <div className="match-notes">{match.notes}</div>

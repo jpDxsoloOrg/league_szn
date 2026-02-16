@@ -203,6 +203,12 @@
     "selectMatch": "Select a match to record its result",
     "noScheduledMatches": "No scheduled matches to record results for."
   },
+  "matchRatings": {
+    "starRatingLabel": "Star rating",
+    "matchOfTheNight": "Match of the Night",
+    "bestMatches": "Best Matches",
+    "motnBadge": "Match of the Night"
+  },
   "tournaments": {
     "title": "Tournaments",
     "loading": "Loading tournaments...",

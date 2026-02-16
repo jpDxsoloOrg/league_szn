@@ -8,6 +8,8 @@ import { calculateFantasyPoints } from '../fantasy/calculateFantasyPoints';
 interface RecordResultBody {
   winners: string[];
   losers: string[];
+  starRating?: number; // 0.5–5.0, half-step
+  matchOfTheNight?: boolean;
 }
 
 interface TransactWriteItem {
@@ -133,6 +135,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('A player cannot be both a winner and loser in the same match');
     }
 
+    if (body.starRating != null) {
+      const r = body.starRating;
+      if (typeof r !== 'number' || r < 0.5 || r > 5 || (r * 2) % 1 !== 0) {
+        return badRequest('starRating must be a number between 0.5 and 5.0 in half-star steps');
+      }
+    }
+
     // Get the match using query (matchId is the partition key)
     const matchResult = await dynamoDb.query({
       TableName: TableNames.MATCHES,
@@ -158,22 +167,33 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Build transaction items for atomic updates
     const transactItems: TransactWriteItem[] = [];
 
-    // 1. Update match with results and optimistic locking
+    // 1. Update match with results and optimistic locking (+ optional starRating, matchOfTheNight)
+    const matchUpdateValues: Record<string, unknown> = {
+      ':winners': body.winners,
+      ':losers': body.losers,
+      ':status': 'completed',
+      ':zero': 0,
+      ':one': 1,
+      ':pending': 'pending',
+      ':scheduled': 'scheduled',
+    };
+    let matchSetExpr = 'SET winners = :winners, losers = :losers, #status = :status, version = if_not_exists(version, :zero) + :one';
+    const matchAttrNames: Record<string, string> = { '#status': 'status' };
+    if (body.starRating != null) {
+      matchSetExpr += ', starRating = :starRating';
+      matchUpdateValues[':starRating'] = body.starRating;
+    }
+    if (body.matchOfTheNight === true) {
+      matchSetExpr += ', matchOfTheNight = :matchOfTheNight';
+      matchUpdateValues[':matchOfTheNight'] = true;
+    }
     transactItems.push({
       Update: {
         TableName: TableNames.MATCHES,
         Key: { matchId: match.matchId, date: match.date },
-        UpdateExpression: 'SET winners = :winners, losers = :losers, #status = :status, version = if_not_exists(version, :zero) + :one',
-        ExpressionAttributeNames: { '#status': 'status' },
-        ExpressionAttributeValues: {
-          ':winners': body.winners,
-          ':losers': body.losers,
-          ':status': 'completed',
-          ':zero': 0,
-          ':one': 1,
-          ':pending': 'pending',
-          ':scheduled': 'scheduled',
-        },
+        UpdateExpression: matchSetExpr,
+        ExpressionAttributeNames: matchAttrNames,
+        ExpressionAttributeValues: matchUpdateValues,
         ConditionExpression: '#status = :pending OR #status = :scheduled',
       },
     });

@@ -33,6 +33,7 @@ import Leaderboards from './components/statistics/Leaderboards';
 import RecordBook from './components/statistics/RecordBook';
 import TaleOfTheTape from './components/statistics/TaleOfTheTape';
 import Achievements from './components/statistics/Achievements';
+import BestMatches from './components/statistics/BestMatches';
 // Contender components
 import ContenderRankings from './components/contenders/ContenderRankings';
 import MyContenderStatus from './components/contenders/MyContenderStatus';
@@ -174,6 +175,9 @@ function AppLayout() {
             } />
             <Route path="/stats/achievements" element={
               <FeatureRoute feature="statistics"><Achievements /></FeatureRoute>
+            } />
+            <Route path="/stats/best-matches" element={
+              <FeatureRoute feature="statistics"><BestMatches /></FeatureRoute>
             } />
 
             {/* Events Routes - public */}

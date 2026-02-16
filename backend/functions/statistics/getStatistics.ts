@@ -16,6 +16,8 @@ interface MatchRecord {
   championshipId?: string;
   status: string;
   seasonId?: string;
+  starRating?: number;
+  matchOfTheNight?: boolean;
 }
 
 interface PlayerRecord {
@@ -172,7 +174,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const seasonId = event.queryStringParameters?.seasonId;
 
     if (!section) {
-      return badRequest('Missing required query parameter: section (player-stats, head-to-head, leaderboards, records, championship-stats, achievements)');
+      return badRequest('Missing required query parameter: section (player-stats, head-to-head, leaderboards, records, championship-stats, achievements, match-ratings)');
     }
 
     // Load common data
@@ -730,8 +732,36 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         });
       }
 
+      case 'match-ratings': {
+        const withRating = allCompletedMatches.filter((m) => m.starRating != null && m.starRating >= 0.5);
+        const filtered = seasonId ? withRating.filter((m) => m.seasonId === seasonId) : withRating;
+        const sorted = [...filtered].sort((a, b) => (b.starRating ?? 0) - (a.starRating ?? 0));
+        const topRatedMatches = sorted.slice(0, 20).map((m) => ({
+          matchId: m.matchId,
+          date: m.date,
+          participants: m.participants ?? [],
+          starRating: m.starRating,
+          matchOfTheNight: m.matchOfTheNight === true,
+        }));
+        const playerRatingSum: Record<string, { sum: number; count: number }> = {};
+        for (const m of filtered) {
+          const r = m.starRating ?? 0;
+          for (const pid of m.participants ?? []) {
+            if (!playerRatingSum[pid]) playerRatingSum[pid] = { sum: 0, count: 0 };
+            playerRatingSum[pid].sum += r;
+            playerRatingSum[pid].count += 1;
+          }
+        }
+        const playerAverages = Object.entries(playerRatingSum).map(([playerId, { sum, count }]) => ({
+          playerId,
+          averageRating: count > 0 ? Math.round((sum / count) * 10) / 10 : 0,
+          matchCount: count,
+        }));
+        return success({ topRatedMatches, playerAverages });
+      }
+
       default:
-        return badRequest(`Unknown section: ${section}. Valid sections: player-stats, head-to-head, leaderboards, records, achievements`);
+        return badRequest(`Unknown section: ${section}. Valid sections: player-stats, head-to-head, leaderboards, records, achievements, match-ratings`);
     }
   } catch (err) {
     console.error('Error computing statistics:', err);

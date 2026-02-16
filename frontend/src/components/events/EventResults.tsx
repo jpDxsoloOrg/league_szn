@@ -180,6 +180,16 @@ export default function EventResults() {
                   </div>
                 </div>
 
+                {(matchData as { starRating?: number }).starRating != null && (
+                  <div className="results-match-rating">
+                    <span className="results-stars">{renderStarRating((matchData as { starRating?: number }).starRating!)}</span>
+                    <span className="results-rating-value">{(matchData as { starRating?: number }).starRating} / 5</span>
+                  </div>
+                )}
+                {(matchData as { matchOfTheNight?: boolean }).matchOfTheNight && (
+                  <span className="results-motn-badge">{t('matchRatings.motnBadge')}</span>
+                )}
+
                 {matchData.isChampionship && (
                   <div className="title-change-indicator">
                     {t('events.results.titleChange')}

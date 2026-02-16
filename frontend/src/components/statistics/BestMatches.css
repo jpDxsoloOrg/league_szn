@@ -1,0 +1,95 @@
+.best-matches-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.best-matches-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.best-matches-header h2 {
+  margin: 0;
+}
+
+.best-matches-nav {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.best-matches-nav a {
+  color: #d4af37;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.best-matches-nav a:hover {
+  text-decoration: underline;
+}
+
+.best-matches-season {
+  margin-bottom: 1rem;
+}
+
+.best-matches-list,
+.best-matches-averages {
+  margin-bottom: 2rem;
+}
+
+.best-matches-list h3,
+.best-matches-averages h3 {
+  margin-bottom: 0.75rem;
+}
+
+.best-matches-ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.best-matches-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #333;
+}
+
+.best-matches-date {
+  color: #888;
+  min-width: 100px;
+}
+
+.best-matches-participants,
+.best-matches-player {
+  flex: 1;
+  min-width: 180px;
+}
+
+.best-matches-stars {
+  color: #d4af37;
+}
+
+.best-matches-value {
+  font-weight: 600;
+}
+
+.best-matches-motn {
+  font-size: 0.85rem;
+  color: #d4af37;
+}
+
+.best-matches-count {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.best-matches-empty {
+  color: #888;
+}

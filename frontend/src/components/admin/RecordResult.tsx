@@ -22,6 +22,8 @@ export default function RecordResult() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [starRating, setStarRating] = useState<number | undefined>(undefined);
+  const [matchOfTheNight, setMatchOfTheNight] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -125,6 +127,8 @@ export default function RecordResult() {
     setSelectedMatch(match);
     setWinners([]);
     setWinningTeamIndex(null);
+    setStarRating(undefined);
+    setMatchOfTheNight(false);
     setError(null);
     setSuccess(null);
   };
@@ -202,10 +206,18 @@ export default function RecordResult() {
 
       try {
         setError(null);
-        await matchesApi.recordResult(selectedMatch.matchId, { winners, losers });
+        const payload: { winners: string[]; losers: string[]; starRating?: number; matchOfTheNight?: boolean } = {
+          winners,
+          losers,
+        };
+        if (starRating != null) payload.starRating = starRating;
+        if (matchOfTheNight) payload.matchOfTheNight = true;
+        await matchesApi.recordResult(selectedMatch.matchId, payload);
         setSuccess(t('recordResult.success'));
         setSelectedMatch(null);
         setWinners([]);
+        setStarRating(undefined);
+        setMatchOfTheNight(false);
         await loadData();
       } catch (err) {
         setError(err instanceof Error ? err.message : t('recordResult.error'));
@@ -361,11 +373,43 @@ export default function RecordResult() {
                   )}
                 </div>
 
+                <div className="star-rating-row">
+                  <label htmlFor="starRating">{t('matchRatings.starRatingLabel')}</label>
+                  <select
+                    id="starRating"
+                    value={starRating ?? ''}
+                    onChange={(e) => setStarRating(e.target.value === '' ? undefined : Number(e.target.value))}
+                  >
+                    <option value="">—</option>
+                    {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map((v) => (
+                      <option key={v} value={v}>{v} ★</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="match-of-the-night-row">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={matchOfTheNight}
+                      onChange={(e) => setMatchOfTheNight(e.target.checked)}
+                    />
+                    {t('matchRatings.matchOfTheNight')}
+                  </label>
+                </div>
+
                 <div className="result-actions">
                   <button onClick={handleSubmit} disabled={winners.length === 0 || submitting}>
                     {submitting ? 'Recording...' : 'Record Result'}
                   </button>
-                  <button onClick={() => setSelectedMatch(null)} className="cancel-btn" disabled={submitting}>
+                  <button
+                    onClick={() => {
+                      setSelectedMatch(null);
+                      setStarRating(undefined);
+                      setMatchOfTheNight(false);
+                    }}
+                    className="cancel-btn"
+                    disabled={submitting}
+                  >
                     Cancel
                   </button>
                 </div>

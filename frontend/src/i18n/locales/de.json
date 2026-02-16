@@ -203,6 +203,12 @@
     "selectMatch": "Wählen Sie einen Kampf aus, um das Ergebnis einzutragen",
     "noScheduledMatches": "Keine geplanten Kämpfe zum Eintragen vorhanden."
   },
+  "matchRatings": {
+    "starRatingLabel": "Sternebewertung",
+    "matchOfTheNight": "Kampf der Nacht",
+    "bestMatches": "Beste Kämpfe",
+    "motnBadge": "Kampf der Nacht"
+  },
   "tournaments": {
     "title": "Turniere",
     "loading": "Turniere werden geladen...",
