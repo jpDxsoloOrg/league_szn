@@ -101,13 +101,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Type must be either "single-elimination" or "round-robin"');
     }
 
+    const now = new Date().toISOString();
     const tournament: any = {
       tournamentId: uuidv4(),
       name: body.name,
       type: body.type,
       status: 'upcoming',
       participants: body.participants,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     };
 
     if (body.type === 'single-elimination') {
