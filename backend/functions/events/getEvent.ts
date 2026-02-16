@@ -112,6 +112,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             isChampionship: match.isChampionship || false,
             championshipName,
             status: match.status,
+            ...(match.starRating != null && { starRating: match.starRating }),
+            ...(match.matchOfTheNight != null && { matchOfTheNight: match.matchOfTheNight }),
           },
         };
       })

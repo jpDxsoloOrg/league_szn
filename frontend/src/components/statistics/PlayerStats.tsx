@@ -80,6 +80,7 @@ function PlayerStats() {
           <Link to="/stats/leaderboards">{t('statistics.nav.leaderboards')}</Link>
           <Link to="/stats/tale-of-tape">{t('statistics.nav.taleOfTape')}</Link>
           <Link to="/stats/records">{t('statistics.nav.records')}</Link>
+          <Link to="/stats/best-matches">{t('statistics.nav.bestMatches')}</Link>
           <Link to="/stats/achievements">{t('statistics.nav.achievements')}</Link>
         </div>
       </div>

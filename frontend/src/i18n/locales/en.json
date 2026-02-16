@@ -365,8 +365,10 @@
       "headToHead": "Head-to-Head",
       "leaderboards": "Leaderboards",
       "records": "Record Book",
+      "rivalries": "Rivalries",
       "taleOfTape": "Tale of the Tape",
-      "achievements": "Achievements"
+      "achievements": "Achievements",
+      "bestMatches": "Best Matches"
     },
     "labels": {
       "wins": "Wins",
@@ -474,7 +476,25 @@
         "records": "Records",
         "special": "Special"
       }
+    },
+    "bestMatches": {
+      "title": "Best Matches",
+      "noData": "No rated matches yet. Rate matches when recording results."
     }
+  },
+  "rivalries": {
+    "title": "Rivalries",
+    "leads": "{{name}} leads {{wins}}-{{losses}}",
+    "tied": "Tied {{count}}-{{count}}",
+    "recentMatches": "Matches",
+    "championshipAtStake": "Championship at stake",
+    "intensity": {
+      "heatingUp": "Heating Up 🔥",
+      "intense": "Intense 💥",
+      "historic": "Historic 👑"
+    },
+    "noRivalries": "No rivalries yet. Rivalries appear when two players have faced each other 3+ times.",
+    "viewHeadToHead": "View Head-to-Head"
   },
   "events": {
     "title": "Events & PPV",

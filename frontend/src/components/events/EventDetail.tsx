@@ -260,6 +260,8 @@ interface MatchEntryProps {
       isChampionship: boolean;
       championshipName?: string;
       status: 'scheduled' | 'completed';
+      starRating?: number;
+      matchOfTheNight?: boolean;
     };
   };
   isCompleted: boolean;
@@ -288,6 +290,14 @@ function MatchEntry({ match, isCompleted, t }: MatchEntryProps) {
           <span className="match-championship-badge">
             {matchData.championshipName || t('events.detail.championshipMatch')}
           </span>
+        )}
+        {isCompleted && matchData.starRating != null && (
+          <span className="match-star-rating" title={t('match.starRating')}>
+            ★ {matchData.starRating}
+          </span>
+        )}
+        {isCompleted && matchData.matchOfTheNight && (
+          <span className="match-motn-badge">{t('match.matchOfTheNightBadge')}</span>
         )}
       </div>
 

@@ -185,6 +185,14 @@ export default function EventResults() {
                     {t('events.results.titleChange')}
                   </div>
                 )}
+                {matchData.starRating != null && (
+                  <div className="results-match-rating">
+                    ★ {matchData.starRating} {t('match.starRating')}
+                  </div>
+                )}
+                {matchData.matchOfTheNight && (
+                  <div className="results-motn-badge">{t('match.matchOfTheNightBadge')}</div>
+                )}
               </div>
             </div>
           );

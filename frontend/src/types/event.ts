@@ -48,6 +48,8 @@ export interface EnrichedMatchData {
   isChampionship: boolean;
   championshipName?: string;
   status: 'scheduled' | 'completed';
+  starRating?: number;
+  matchOfTheNight?: boolean;
 }
 
 export interface EventWithMatches extends LeagueEvent {
