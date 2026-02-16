@@ -10,6 +10,7 @@ import TopBar from './components/TopBar';
 import TopNav from './components/TopNav';
 import Dashboard from './components/Dashboard';
 import Standings from './components/Standings';
+import ActivityFeed from './components/ActivityFeed';
 import Championships from './components/Championships';
 import Tournaments from './components/Tournaments';
 import { WikiLayout } from './components/Wiki';
@@ -32,6 +33,8 @@ import PlayerStats from './components/statistics/PlayerStats';
 import HeadToHeadComparison from './components/statistics/HeadToHeadComparison';
 import Leaderboards from './components/statistics/Leaderboards';
 import RecordBook from './components/statistics/RecordBook';
+import BestMatches from './components/statistics/BestMatches';
+import Rivalries from './components/statistics/Rivalries';
 import TaleOfTheTape from './components/statistics/TaleOfTheTape';
 import Achievements from './components/statistics/Achievements';
 // Contender components
@@ -92,6 +95,7 @@ function AppLayout() {
             {/* Public Routes */}
             <Route path="/" element={<Dashboard />} />
             <Route path="/standings" element={<Standings />} />
+            <Route path="/activity" element={<ActivityFeed />} />
             <Route path="/championships" element={<Championships />} />
             <Route path="/matches" element={<Navigate to="/events" replace />} />
             <Route path="/tournaments" element={<Tournaments />} />
@@ -171,11 +175,17 @@ function AppLayout() {
             <Route path="/stats/records" element={
               <FeatureRoute feature="statistics"><RecordBook /></FeatureRoute>
             } />
+            <Route path="/stats/rivalries" element={
+              <FeatureRoute feature="statistics"><Rivalries /></FeatureRoute>
+            } />
             <Route path="/stats/tale-of-tape" element={
               <FeatureRoute feature="statistics"><TaleOfTheTape /></FeatureRoute>
             } />
             <Route path="/stats/achievements" element={
               <FeatureRoute feature="statistics"><Achievements /></FeatureRoute>
+            } />
+            <Route path="/stats/best-matches" element={
+              <FeatureRoute feature="statistics"><BestMatches /></FeatureRoute>
             } />
 
             {/* Events Routes - public */}

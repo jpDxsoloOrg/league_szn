@@ -18,6 +18,8 @@ export default function RecordResult() {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [winners, setWinners] = useState<string[]>([]);
   const [winningTeamIndex, setWinningTeamIndex] = useState<number | null>(null);
+  const [starRating, setStarRating] = useState<number | ''>('');
+  const [matchOfTheNight, setMatchOfTheNight] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -176,15 +178,20 @@ export default function RecordResult() {
 
       try {
         setError(null);
-        await matchesApi.recordResult(selectedMatch.matchId, {
+        const payload: { winners: string[]; losers: string[]; winningTeam: number; starRating?: number; matchOfTheNight?: boolean } = {
           winners,
           losers,
-          winningTeam: winningTeamIndex
-        });
+          winningTeam: winningTeamIndex,
+        };
+        if (starRating !== '') payload.starRating = starRating as number;
+        if (matchOfTheNight) payload.matchOfTheNight = true;
+        await matchesApi.recordResult(selectedMatch.matchId, payload);
         setSuccess(t('recordResult.success'));
         setSelectedMatch(null);
         setWinners([]);
         setWinningTeamIndex(null);
+        setStarRating('');
+        setMatchOfTheNight(false);
         await loadData();
       } catch (err) {
         setError(err instanceof Error ? err.message : t('recordResult.error'));
@@ -202,10 +209,15 @@ export default function RecordResult() {
 
       try {
         setError(null);
-        await matchesApi.recordResult(selectedMatch.matchId, { winners, losers });
+        const payload: { winners: string[]; losers: string[]; starRating?: number; matchOfTheNight?: boolean } = { winners, losers };
+        if (starRating !== '') payload.starRating = starRating as number;
+        if (matchOfTheNight) payload.matchOfTheNight = true;
+        await matchesApi.recordResult(selectedMatch.matchId, payload);
         setSuccess(t('recordResult.success'));
         setSelectedMatch(null);
         setWinners([]);
+        setStarRating('');
+        setMatchOfTheNight(false);
         await loadData();
       } catch (err) {
         setError(err instanceof Error ? err.message : t('recordResult.error'));
@@ -359,6 +371,46 @@ export default function RecordResult() {
                       </div>
                     </>
                   )}
+                </div>
+
+                <div className="rating-awards-block">
+                  <div className="star-rating-row">
+                    <span className="star-rating-label">{t('match.starRating')}</span>
+                    <div className="star-rating-stars" role="group" aria-label={t('match.starRating')}>
+                      {[1, 2, 3, 4, 5].map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          className={`star-btn ${typeof starRating === 'number' && starRating >= value ? 'filled' : ''}`}
+                          onClick={() => setStarRating(starRating === value ? '' : value)}
+                          title={`${value} ${value === 1 ? 'star' : 'stars'}`}
+                          aria-pressed={typeof starRating === 'number' && starRating >= value}
+                        >
+                          {typeof starRating === 'number' && starRating >= value ? '\u2605' : '\u2606'}
+                        </button>
+                      ))}
+                    </div>
+                    {starRating !== '' && (
+                      <button
+                        type="button"
+                        className="star-rating-clear"
+                        onClick={() => setStarRating('')}
+                      >
+                        {t('match.clearRating')}
+                      </button>
+                    )}
+                  </div>
+                  <div className="motn-row">
+                    <label className="motn-label">
+                      <input
+                        type="checkbox"
+                        checked={matchOfTheNight}
+                        onChange={(e) => setMatchOfTheNight(e.target.checked)}
+                        className="motn-checkbox"
+                      />
+                      <span className="motn-text">{t('match.matchOfTheNight')}</span>
+                    </label>
+                  </div>
                 </div>
 
                 <div className="result-actions">

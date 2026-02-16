@@ -31,6 +31,8 @@ export interface Match {
   createdAt: string;
   challengeId?: string;
   promoId?: string;
+  starRating?: number;
+  matchOfTheNight?: boolean;
 }
 
 // Input type for scheduling a new match (uses new field names, backend handles legacy fields)
@@ -203,4 +205,82 @@ export interface MatchType {
   description?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Activity feed item from GET /activity */
+export type ActivityItemType =
+  | 'match_result'
+  | 'championship_change'
+  | 'season_event'
+  | 'tournament_result'
+  | 'challenge_event'
+  | 'promo_posted';
+
+export interface ActivityItem {
+  id: string;
+  type: ActivityItemType;
+  timestamp: string;
+  summary: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface ActivityFeedResponse {
+  items: ActivityItem[];
+  nextCursor: string | null;
+}
+
+// Dashboard types
+export interface DashboardChampion {
+  championshipId: string;
+  championshipName: string;
+  championName: string;
+  championImageUrl?: string;
+  playerId: string;
+  wonDate?: string;
+  defenses?: number;
+}
+
+export interface DashboardEvent {
+  eventId: string;
+  name: string;
+  date: string;
+  eventType: string;
+  venue?: string;
+  matchCount?: number;
+}
+
+export interface DashboardMatch {
+  matchId: string;
+  date: string;
+  matchType: string;
+  winnerName: string;
+  winnerImageUrl?: string;
+  loserName: string;
+  loserImageUrl?: string;
+  championshipName?: string;
+}
+
+export interface DashboardSeason {
+  seasonId: string;
+  name: string;
+  startDate?: string;
+  endDate?: string;
+  status: string;
+  matchesPlayed?: number;
+}
+
+export interface DashboardQuickStats {
+  totalPlayers: number;
+  totalMatches: number;
+  activeChampionships: number;
+  mostWinsPlayer?: { name: string; wins: number };
+}
+
+export interface DashboardData {
+  currentChampions: DashboardChampion[];
+  upcomingEvents: DashboardEvent[];
+  recentResults: DashboardMatch[];
+  seasonInfo: DashboardSeason | null;
+  quickStats: DashboardQuickStats;
+  activeChallengesCount: number;
 }

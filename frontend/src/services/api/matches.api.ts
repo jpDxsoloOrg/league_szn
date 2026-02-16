@@ -16,7 +16,16 @@ export const matchesApi = {
     });
   },
 
-  recordResult: async (matchId: string, result: { winners: string[], losers: string[], winningTeam?: number }): Promise<Match> => {
+  recordResult: async (
+    matchId: string,
+    result: {
+      winners: string[];
+      losers: string[];
+      winningTeam?: number;
+      starRating?: number;
+      matchOfTheNight?: boolean;
+    }
+  ): Promise<Match> => {
     return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}/result`, {
       method: 'PUT',
       body: JSON.stringify(result),

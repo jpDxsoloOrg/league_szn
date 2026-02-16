@@ -343,6 +343,15 @@ functions:
           method: get
           cors: *corsConfig
 
+  # Activity feed (news feed / activity timeline)
+  activity:
+    handler: functions/activity/handler.handler
+    events:
+      - http:
+          path: activity
+          method: get
+          cors: *corsConfig
+
   # Seasons (Phase 1 consolidated: getSeasons, createSeason, updateSeason, deleteSeason)
   seasons:
     handler: functions/seasons/handler.handler
@@ -516,6 +525,15 @@ functions:
     events:
       - http:
           path: statistics
+          method: get
+          cors: *corsConfig
+
+  getRivalries:
+    handler: functions/rivalries/getRivalries.handler
+    timeout: 15
+    events:
+      - http:
+          path: rivalries
           method: get
           cors: *corsConfig
 

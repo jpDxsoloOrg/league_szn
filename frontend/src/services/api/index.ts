@@ -21,9 +21,12 @@ export { siteConfigApi } from './siteConfig.api';
 export { authApi } from './auth.api';
 export { profileApi } from './profile.api';
 export { statisticsApi } from './statistics.api';
+export { rivalriesApi } from './rivalries.api';
 export { imagesApi } from './images.api';
 export { challengesApi } from './challenges.api';
 export { promosApi } from './promos.api';
+export { activityApi } from './activity.api';
+export { dashboardApi } from './dashboard.api';
 
 // Type/interface re-exports
 export type { SiteFeatures } from './siteConfig.api';
@@ -34,4 +37,6 @@ export type {
   LeaderboardsResponse,
   RecordsResponse,
   AchievementsResponse,
+  RatedMatchSummary,
+  MatchRatingsResponse,
 } from './statistics.api';

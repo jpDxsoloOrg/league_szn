@@ -35,6 +35,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "standings": "Standings",
+    "activity": "Activity",
     "championships": "Championships",
     "tournaments": "Tournaments",
     "events": "Events",
@@ -84,6 +85,31 @@
     },
     "vs": "vs",
     "def": "def."
+  },
+  "activity": {
+    "title": "Activity",
+    "loading": "Loading...",
+    "noActivity": "No recent activity.",
+    "loadMore": "Load more",
+    "filters": {
+      "label": "Filter by type",
+      "all": "All"
+    },
+    "types": {
+      "match_result": "Matches",
+      "championship_change": "Championships",
+      "season_event": "Seasons",
+      "tournament_result": "Tournaments",
+      "challenge_event": "Challenges",
+      "promo_posted": "Promos"
+    },
+    "timeAgo": {
+      "justNow": "Just now",
+      "minutes": "{{count}} min ago",
+      "hours": "{{count}} hr ago",
+      "days": "{{count}} days ago",
+      "date": "{{count}} days ago"
+    }
   },
   "wiki": {
     "title": "Wiki",
@@ -212,6 +238,12 @@
       "members": "members",
       "minTeamsError": "Please create at least 2 teams with 2+ members each"
     }
+  },
+  "match": {
+    "starRating": "Star rating",
+    "matchOfTheNight": "Match of the Night",
+    "matchOfTheNightBadge": "Match of the Night",
+    "clearRating": "Clear rating"
   },
   "recordResult": {
     "title": "Record Match Results",
@@ -393,8 +425,10 @@
       "headToHead": "Head-to-Head",
       "leaderboards": "Leaderboards",
       "records": "Record Book",
+      "rivalries": "Rivalries",
       "taleOfTape": "Tale of the Tape",
-      "achievements": "Achievements"
+      "achievements": "Achievements",
+      "bestMatches": "Best Matches"
     },
     "labels": {
       "wins": "Wins",
@@ -502,7 +536,25 @@
         "records": "Records",
         "special": "Special"
       }
+    },
+    "bestMatches": {
+      "title": "Best Matches",
+      "noData": "No rated matches yet. Rate matches when recording results."
     }
+  },
+  "rivalries": {
+    "title": "Rivalries",
+    "leads": "{{name}} leads {{wins}}-{{losses}}",
+    "tied": "Tied {{count}}-{{count}}",
+    "recentMatches": "Matches",
+    "championshipAtStake": "Championship at stake",
+    "intensity": {
+      "heatingUp": "Heating Up 🔥",
+      "intense": "Intense 💥",
+      "historic": "Historic 👑"
+    },
+    "noRivalries": "No rivalries yet. Rivalries appear when two players have faced each other 3+ times.",
+    "viewHeadToHead": "View Head-to-Head"
   },
   "events": {
     "title": "Events & PPV",
