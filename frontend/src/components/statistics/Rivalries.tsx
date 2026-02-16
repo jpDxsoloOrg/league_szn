@@ -49,7 +49,7 @@ function Rivalries() {
   function seriesRecordText(r: Rivalry): string {
     const p1W = r.player1Wins;
     const p2W = r.player2Wins;
-    const d = r.draws;
+    const _draws = r.draws;
     const p1 = r.player1?.wrestlerName ?? r.player1Id;
     const p2 = r.player2?.wrestlerName ?? r.player2Id;
     if (p1W > p2W) return t('rivalries.leads', { name: p1, wins: p1W, losses: p2W });

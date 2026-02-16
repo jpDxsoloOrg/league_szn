@@ -100,7 +100,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    let rivalries = Array.from(aggMap.values())
+    const rivalries = Array.from(aggMap.values())
       .filter((r) => r.matchCount >= MIN_MATCHES_FOR_RIVALRY)
       .map((r) => {
         const sorted = [...r.recentMatchIds].sort(
