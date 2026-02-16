@@ -92,6 +92,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         ExpressionAttributeValues: { ':status': 'completed' },
       });
       for (const m of matches) {
+        const updatedAt = m.updatedAt as string | undefined;
+        if (!updatedAt) continue; // only show matches that have been recorded/updated with updatedAt
         const date = m.date as string;
         const participants = (m.participants as string[]) || [];
         const winners = (m.winners as string[]) || [];
@@ -99,7 +101,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         participants.forEach((p: string) => playerIds.add(p));
         rawItems.push({
           type: 'match_result',
-          timestamp: date,
+          timestamp: updatedAt,
           id: `match-${m.matchId as string}`,
           summary: '', // filled after we have names
           metadata: {
@@ -124,6 +126,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         TableName: TableNames.CHAMPIONSHIP_HISTORY,
       });
       for (const h of history) {
+        const updatedAt = h.updatedAt as string | undefined;
+        if (!updatedAt) continue; // only show championship history with updatedAt
         const wonDate = h.wonDate as string;
         championshipIds.add(h.championshipId as string);
         const champion = h.champion;
@@ -131,7 +135,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         else if (Array.isArray(champion)) champion.forEach((c: string) => playerIds.add(c));
         rawItems.push({
           type: 'championship_change',
-          timestamp: wonDate,
+          timestamp: updatedAt,
           id: `championship-${h.championshipId as string}-${wonDate}`,
           summary: '',
           metadata: {
@@ -151,11 +155,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         TableName: TableNames.SEASONS,
       });
       for (const s of seasons) {
+        const updatedAt = s.updatedAt as string | undefined;
+        if (!updatedAt) continue; // only show seasons with updatedAt
         const startDate = s.startDate as string;
         const status = s.status as string;
         rawItems.push({
           type: 'season_event',
-          timestamp: startDate,
+          timestamp: updatedAt,
           id: `season-start-${s.seasonId as string}`,
           summary: '',
           metadata: {
@@ -170,7 +176,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         if (status === 'completed' && s.endDate) {
           rawItems.push({
             type: 'season_event',
-            timestamp: s.endDate as string,
+            timestamp: updatedAt,
             id: `season-end-${s.seasonId as string}`,
             summary: '',
             metadata: {
@@ -191,13 +197,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         TableName: TableNames.TOURNAMENTS,
       });
       for (const t of tournaments) {
-        const createdAt = t.createdAt as string;
+        const updatedAt = (t.updatedAt as string | undefined) || (t.createdAt as string | undefined);
+        if (!updatedAt) continue; // only show tournaments with updatedAt or createdAt
         const status = t.status as string;
         const winner = t.winner as string | undefined;
         if (winner) playerIds.add(winner);
         rawItems.push({
           type: 'tournament_result',
-          timestamp: createdAt,
+          timestamp: updatedAt,
           id: `tournament-${t.tournamentId as string}`,
           summary: '',
           metadata: {
@@ -206,7 +213,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             type: t.type,
             status,
             winner,
-            createdAt,
+            createdAt: t.createdAt,
           },
         });
       }
@@ -217,12 +224,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         TableName: TableNames.CHALLENGES,
       });
       for (const c of challenges) {
-        const createdAt = c.createdAt as string;
+        const updatedAt = (c.updatedAt as string | undefined) || (c.createdAt as string | undefined);
+        if (!updatedAt) continue; // only show challenges with updatedAt or createdAt
         playerIds.add(c.challengerId as string);
         playerIds.add(c.challengedId as string);
         rawItems.push({
           type: 'challenge_event',
-          timestamp: createdAt,
+          timestamp: updatedAt,
           id: `challenge-${c.challengeId as string}`,
           summary: '',
           metadata: {
@@ -230,7 +238,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             challengerId: c.challengerId,
             challengedId: c.challengedId,
             status: c.status,
-            createdAt,
+            createdAt: c.createdAt,
             updatedAt: c.updatedAt,
           },
         });
@@ -242,11 +250,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         TableName: TableNames.PROMOS,
       });
       for (const p of promos) {
-        const createdAt = p.createdAt as string;
+        const updatedAt = (p.updatedAt as string | undefined) || (p.createdAt as string | undefined);
+        if (!updatedAt) continue; // only show promos with updatedAt or createdAt
         playerIds.add(p.playerId as string);
         rawItems.push({
           type: 'promo_posted',
-          timestamp: createdAt,
+          timestamp: updatedAt,
           id: `promo-${p.promoId as string}`,
           summary: '',
           metadata: {
@@ -254,7 +263,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             playerId: p.playerId,
             promoType: p.promoType,
             title: p.title,
-            createdAt,
+            createdAt: p.createdAt,
           },
         });
       }
@@ -308,12 +317,35 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    rawItems.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    // Sort by timestamp desc, then id asc so same-timestamp items have deterministic order and cursor is stable
+    rawItems.sort((a, b) => {
+      const ta = new Date(a.timestamp).getTime();
+      const tb = new Date(b.timestamp).getTime();
+      if (tb !== ta) return tb - ta;
+      return a.id.localeCompare(b.id);
+    });
 
     let filtered = rawItems;
     if (cursor) {
-      const cursorTime = new Date(cursor).getTime();
-      filtered = rawItems.filter((i) => new Date(i.timestamp).getTime() < cursorTime);
+      let cursorTime: number;
+      let cursorId: string | null = null;
+      if (cursor.includes('|')) {
+        const [ts, id] = cursor.split('|');
+        if (ts && id) {
+          cursorTime = new Date(ts).getTime();
+          cursorId = id;
+        } else {
+          cursorTime = new Date(cursor).getTime();
+        }
+      } else {
+        cursorTime = new Date(cursor).getTime();
+      }
+      filtered = rawItems.filter((i) => {
+        const t = new Date(i.timestamp).getTime();
+        if (t < cursorTime) return true;
+        if (t === cursorTime && cursorId !== null) return i.id > cursorId;
+        return false;
+      });
     }
 
     const items = filtered.slice(0, limit).map(({ id, type, timestamp, summary, metadata }) => ({
@@ -325,7 +357,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }));
 
     const hasMore = filtered.length > limit;
-    const nextCursor = hasMore && items.length > 0 ? items[items.length - 1].timestamp : null;
+    const nextCursor =
+      hasMore && items.length > 0
+        ? `${items[items.length - 1].timestamp}|${items[items.length - 1].id}`
+        : null;
 
     return success({
       items,

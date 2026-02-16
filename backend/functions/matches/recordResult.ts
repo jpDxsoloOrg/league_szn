@@ -335,6 +335,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
           if (historyResult.Items && historyResult.Items.length > 0) {
             const currentReign = historyResult.Items[0];
+            const now = new Date().toISOString();
             championshipTransactItems.push({
               Update: {
                 TableName: TableNames.CHAMPIONSHIP_HISTORY,
@@ -342,10 +343,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
                   championshipId: currentReign.championshipId,
                   wonDate: currentReign.wonDate,
                 },
-                UpdateExpression: 'SET defenses = if_not_exists(defenses, :zero) + :one',
+                UpdateExpression: 'SET defenses = if_not_exists(defenses, :zero) + :one, updatedAt = :now',
                 ExpressionAttributeValues: {
                   ':zero': 0,
                   ':one': 1,
+                  ':now': now,
                 },
               },
             });
@@ -385,6 +387,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               const wonDate = new Date(currentReign.wonDate);
               const lostDate = new Date();
               const daysHeld = Math.floor((lostDate.getTime() - wonDate.getTime()) / (1000 * 60 * 60 * 24));
+              const now = lostDate.toISOString();
 
               championshipTransactItems.push({
                 Update: {
@@ -393,10 +396,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
                     championshipId: currentReign.championshipId,
                     wonDate: currentReign.wonDate,
                   },
-                  UpdateExpression: 'SET lostDate = :lostDate, daysHeld = :daysHeld',
+                  UpdateExpression: 'SET lostDate = :lostDate, daysHeld = :daysHeld, updatedAt = :now',
                   ExpressionAttributeValues: {
-                    ':lostDate': lostDate.toISOString(),
+                    ':lostDate': now,
                     ':daysHeld': daysHeld,
+                    ':now': now,
                   },
                 },
               });
@@ -414,6 +418,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
                 champion: newChampion,
                 matchId: match.matchId,
                 defenses: 0,
+                updatedAt: wonDate,
               },
             },
           });
@@ -483,10 +488,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               }
             }
 
+            const now = new Date().toISOString();
             await dynamoDb.update({
               TableName: TableNames.TOURNAMENTS,
               Key: { tournamentId: match.tournamentId },
-              UpdateExpression: 'SET standings = :standings, winner = :winner, #status = :status, version = if_not_exists(version, :zero) + :one',
+              UpdateExpression: 'SET standings = :standings, winner = :winner, #status = :status, version = if_not_exists(version, :zero) + :one, updatedAt = :now',
               ExpressionAttributeNames: { '#status': 'status' },
               ExpressionAttributeValues: {
                 ':standings': standings,
@@ -494,21 +500,24 @@ export const handler: APIGatewayProxyHandler = async (event) => {
                 ':status': 'completed',
                 ':zero': 0,
                 ':one': 1,
+                ':now': now,
               },
             });
           } else {
             const newStatus = tournament.Item.status === 'upcoming' ? 'in-progress' : tournament.Item.status;
+            const now = new Date().toISOString();
 
             await dynamoDb.update({
               TableName: TableNames.TOURNAMENTS,
               Key: { tournamentId: match.tournamentId },
-              UpdateExpression: 'SET standings = :standings, #status = :status, version = if_not_exists(version, :zero) + :one',
+              UpdateExpression: 'SET standings = :standings, #status = :status, version = if_not_exists(version, :zero) + :one, updatedAt = :now',
               ExpressionAttributeNames: { '#status': 'status' },
               ExpressionAttributeValues: {
                 ':standings': standings,
                 ':status': newStatus,
                 ':zero': 0,
                 ':one': 1,
+                ':now': now,
               },
             });
           }
@@ -556,10 +565,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               const isLastRound = foundRoundIndex === brackets.rounds.length - 1;
 
               if (isLastRound) {
+                const now = new Date().toISOString();
                 await dynamoDb.update({
                   TableName: TableNames.TOURNAMENTS,
                   Key: { tournamentId: match.tournamentId },
-                  UpdateExpression: 'SET brackets = :brackets, winner = :winner, #status = :status, version = if_not_exists(version, :zero) + :one',
+                  UpdateExpression: 'SET brackets = :brackets, winner = :winner, #status = :status, version = if_not_exists(version, :zero) + :one, updatedAt = :now',
                   ExpressionAttributeNames: { '#status': 'status' },
                   ExpressionAttributeValues: {
                     ':brackets': brackets,
@@ -567,6 +577,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
                     ':status': 'completed',
                     ':zero': 0,
                     ':one': 1,
+                    ':now': now,
                   },
                 });
               } else {
@@ -586,17 +597,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
                   }
 
                   const newStatus = tournament.Item.status === 'upcoming' ? 'in-progress' : tournament.Item.status;
+                  const now = new Date().toISOString();
 
                   await dynamoDb.update({
                     TableName: TableNames.TOURNAMENTS,
                     Key: { tournamentId: match.tournamentId },
-                    UpdateExpression: 'SET brackets = :brackets, #status = :status, version = if_not_exists(version, :zero) + :one',
+                    UpdateExpression: 'SET brackets = :brackets, #status = :status, version = if_not_exists(version, :zero) + :one, updatedAt = :now',
                     ExpressionAttributeNames: { '#status': 'status' },
                     ExpressionAttributeValues: {
                       ':brackets': brackets,
                       ':status': newStatus,
                       ':zero': 0,
                       ':one': 1,
+                      ':now': now,
                     },
                   });
                 }

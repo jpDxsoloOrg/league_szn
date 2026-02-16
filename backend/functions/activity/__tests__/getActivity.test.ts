@@ -74,6 +74,7 @@ describe('getActivity', () => {
         {
           matchId: 'm1',
           date: '2024-02-01T12:00:00.000Z',
+          updatedAt: '2024-02-01T14:00:00.000Z',
           status: 'completed',
           participants: ['p1', 'p2'],
           winners: ['p1'],
@@ -93,16 +94,54 @@ describe('getActivity', () => {
     const body = JSON.parse(result!.body);
     expect(body.items).toHaveLength(1);
     expect(body.items[0].type).toBe('match_result');
-    expect(body.items[0].timestamp).toBe('2024-02-01T12:00:00.000Z');
+    expect(body.items[0].timestamp).toBe('2024-02-01T14:00:00.000Z');
     expect(body.items[0].id).toBe('match-m1');
     expect(body.items[0].summary).toBe('Test Player def. Test Player');
     expect(body.nextCursor).toBeNull();
+  });
+
+  it('excludes matches without updatedAt from activity', async () => {
+    mockScanAll
+      .mockResolvedValueOnce([
+        {
+          matchId: 'm1',
+          date: '2024-02-01T12:00:00.000Z',
+          updatedAt: '2024-02-01T14:00:00.000Z',
+          status: 'completed',
+          participants: ['p1', 'p2'],
+          winners: ['p1'],
+          losers: ['p2'],
+          matchFormat: 'singles',
+        },
+        {
+          matchId: 'm2',
+          date: '2024-02-02T12:00:00.000Z',
+          status: 'completed',
+          participants: ['p1', 'p2'],
+          winners: ['p2'],
+          losers: ['p1'],
+          matchFormat: 'singles',
+        },
+      ])
+      .mockResolvedValue([])
+      .mockResolvedValue([])
+      .mockResolvedValue([])
+      .mockResolvedValue([])
+      .mockResolvedValue([]);
+
+    const result = await getActivity(makeEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0].metadata.matchId).toBe('m1');
   });
 
   it('respects limit param', async () => {
     const match = {
       matchId: 'm1',
       date: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
       status: 'completed',
       participants: ['p1', 'p2'],
       winners: ['p1'],
@@ -110,7 +149,11 @@ describe('getActivity', () => {
       matchFormat: 'singles',
     };
     mockScanAll
-      .mockResolvedValueOnce([match, { ...match, matchId: 'm2', date: '2024-01-02T00:00:00.000Z' }, { ...match, matchId: 'm3', date: '2024-01-03T00:00:00.000Z' }])
+      .mockResolvedValueOnce([
+        match,
+        { ...match, matchId: 'm2', date: '2024-01-02T00:00:00.000Z', updatedAt: '2024-01-02T00:00:00.000Z' },
+        { ...match, matchId: 'm3', date: '2024-01-03T00:00:00.000Z', updatedAt: '2024-01-03T00:00:00.000Z' },
+      ])
       .mockResolvedValue([])
       .mockResolvedValue([])
       .mockResolvedValue([])
@@ -141,9 +184,9 @@ describe('getActivity', () => {
     };
     mockScanAll
       .mockResolvedValueOnce([
-        { ...match, matchId: 'm3', date: '2024-01-03T00:00:00.000Z' },
-        { ...match, matchId: 'm2', date: '2024-01-02T00:00:00.000Z' },
-        { ...match, matchId: 'm1', date: '2024-01-01T00:00:00.000Z' },
+        { ...match, matchId: 'm3', date: '2024-01-03T00:00:00.000Z', updatedAt: '2024-01-03T00:00:00.000Z' },
+        { ...match, matchId: 'm2', date: '2024-01-02T00:00:00.000Z', updatedAt: '2024-01-02T00:00:00.000Z' },
+        { ...match, matchId: 'm1', date: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z' },
       ])
       .mockResolvedValue([])
       .mockResolvedValue([])

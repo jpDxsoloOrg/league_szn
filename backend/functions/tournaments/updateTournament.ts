@@ -57,6 +57,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('No valid fields to update');
     }
 
+    updateExpressions.push('updatedAt = :updatedAt');
+    expressionAttributeValues[':updatedAt'] = new Date().toISOString();
+
     const result = await dynamoDb.update({
       TableName: TableNames.TOURNAMENTS,
       Key: { tournamentId },
