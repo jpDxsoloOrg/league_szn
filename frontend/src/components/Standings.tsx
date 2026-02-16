@@ -6,6 +6,7 @@ import { logger } from '../utils/logger';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { Standings as StandingsType, Season, Division, Player } from '../types';
 import PlayerHoverCard from './PlayerHoverCard';
+import DivisionFilter from './DivisionFilter';
 import './Standings.css';
 
 export default function Standings() {
@@ -174,32 +175,13 @@ export default function Standings() {
       )}
 
       {divisions.length > 0 && (
-        <div className="division-filter">
-          <span className="filter-label">{t('standings.filterByDivision')}:</span>
-          <div className="filter-buttons">
-            <button
-              className={`filter-btn ${selectedDivision === 'all' ? 'active' : ''}`}
-              onClick={() => setSelectedDivision('all')}
-            >
-              {t('common.all')}
-            </button>
-            {divisions.map((division) => (
-              <button
-                key={division.divisionId}
-                className={`filter-btn ${selectedDivision === division.divisionId ? 'active' : ''}`}
-                onClick={() => setSelectedDivision(division.divisionId)}
-              >
-                {division.name}
-              </button>
-            ))}
-            <button
-              className={`filter-btn ${selectedDivision === 'none' ? 'active' : ''}`}
-              onClick={() => setSelectedDivision('none')}
-            >
-              {t('standings.noDivision')}
-            </button>
-          </div>
-        </div>
+        <DivisionFilter
+          divisions={divisions}
+          selectedDivision={selectedDivision}
+          onSelect={setSelectedDivision}
+          labelKey="standings.filterByDivision"
+          showNoDivision
+        />
       )}
 
       <div className="standings-table-wrapper">

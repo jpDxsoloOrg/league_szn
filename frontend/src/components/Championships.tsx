@@ -5,6 +5,7 @@ import { formatDate } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { type Division, type Championship, type ChampionshipReign, type Player } from '../types';
+import DivisionFilter from './DivisionFilter';
 import './Championships.css';
 
 export default function Championships() {
@@ -144,32 +145,13 @@ export default function Championships() {
     <div className="championships-container">
       <h2>{t('championships.title')}</h2>
         {divisions.length > 0 && (
-            <div className="division-filter">
-              <span className="filter-label">{t('championships.filterByDivision')}:</span>
-              <div className="filter-buttons">
-                <button
-                  className={`filter-btn ${selectedDivision === 'all' ? 'active' : ''}`}
-                  onClick={() => setSelectedDivision('all')}
-                >
-                  {t('common.all')}
-                </button>
-                {divisions.map((division) => (
-                  <button
-                    key={division.divisionId}
-                    className={`filter-btn ${selectedDivision === division.divisionId ? 'active' : ''}`}
-                    onClick={() => setSelectedDivision(division.divisionId)}
-                  >
-                    {division.name}
-                  </button>
-                ))}
-                <button
-                  className={`filter-btn ${selectedDivision === 'none' ? 'active' : ''}`}
-                  onClick={() => setSelectedDivision('none')}
-                >
-                  {t('standings.noDivision')}
-                </button>
-              </div>
-            </div>
+            <DivisionFilter
+              divisions={divisions}
+              selectedDivision={selectedDivision}
+              onSelect={setSelectedDivision}
+              labelKey="championships.filterByDivision"
+              showNoDivision
+            />
           )}
       <div className="championships-grid">
         {filteredChampionships.map((championship) => (

@@ -13,50 +13,6 @@
   transition: width 0.2s ease;
 }
 
-.sidebar.collapsed {
-  width: 64px;
-  overflow: hidden;
-}
-
-.sidebar.collapsed .sidebar-header > *:not(.sidebar-collapse-toggle),
-.sidebar.collapsed .sidebar-nav,
-.sidebar.collapsed .auth-section {
-  display: none !important;
-}
-
-.sidebar.collapsed .sidebar-header {
-  justify-content: center;
-  padding: 0.5rem;
-}
-
-.sidebar.collapsed .sidebar-header .sidebar-collapse-toggle {
-  margin: 0;
-}
-
-.sidebar-collapse-toggle {
-  background: none;
-  border: none;
-  color: #d4af37;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  font-size: 1.25rem;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.sidebar-collapse-toggle:hover {
-  color: #fff;
-  background-color: #252525;
-  border-radius: 4px;
-}
-
-.collapse-label {
-  font-size: 0.75rem;
-  font-weight: normal;
-}
-
 .sidebar-header {
   display: flex;
   justify-content: space-between;

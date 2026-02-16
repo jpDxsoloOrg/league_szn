@@ -1,0 +1,49 @@
+.division-filter {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.division-filter .filter-label {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+}
+
+.division-filter .filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.division-filter .filter-btn {
+  padding: 0.5rem 1rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.division-filter .filter-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.division-filter .filter-btn.active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #000;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .division-filter .filter-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+  }
+}

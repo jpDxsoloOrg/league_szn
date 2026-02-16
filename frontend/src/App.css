@@ -6,8 +6,8 @@
 
 .App {
   min-height: 100vh;
-  background-color: #0f0f0f;
-  color: #fff;
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
 main {
@@ -18,22 +18,64 @@ main {
   transition: margin-left 0.2s ease;
 }
 
-/* When sidebar is collapsed (64px) */
-.App.layout-sidebar .sidebar.collapsed ~ .top-bar {
-  left: 64px;
-}
-
-.App.layout-sidebar .sidebar.collapsed ~ main {
-  margin-left: 64px;
-}
-
 h2 {
-  color: #d4af37;
+  color: var(--color-primary);
   margin-bottom: 1rem;
 }
 
-button {
-  background-color: #d4af37;
+/* Button variant system: use .btn .btn-primary (or .btn-secondary, .btn-danger, .btn-ghost) on buttons */
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  border: none;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: #000;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.btn-secondary:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.btn-danger {
+  background-color: var(--color-danger);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background-color: var(--color-danger-alt);
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: inherit;
+}
+
+.btn-ghost:hover {
+  background-color: var(--color-surface-hover);
+}
+
+/* Fallback for buttons without explicit variant (e.g. legacy markup in main content only) */
+/* Exclude nav/sidebar/topnav/language/hamburger so their own styles (e.g. gold text on dark) apply */
+button:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggle):not(.nav-subgroup-toggle):not(.user-nav-toggle):not(.topnav-menu-btn):not(.hamburger-btn):not(.language-switcher-btn) {
+  background-color: var(--color-primary);
   color: #000;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -44,14 +86,14 @@ button {
   transition: background-color 0.3s;
 }
 
-button:hover {
-  background-color: #b8941f;
+button:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggle):not(.nav-subgroup-toggle):not(.user-nav-toggle):not(.topnav-menu-btn):not(.hamburger-btn):not(.language-switcher-btn):hover {
+  background-color: var(--color-primary-hover);
 }
 
 input, select, textarea {
-  background-color: #1a1a1a;
-  color: #fff;
-  border: 1px solid #333;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
   padding: 0.5rem;
   border-radius: 4px;
   font-size: 1rem;
@@ -59,7 +101,7 @@ input, select, textarea {
 
 input:focus, select:focus, textarea:focus {
   outline: none;
-  border-color: #d4af37;
+  border-color: var(--color-primary);
 }
 
 table {
@@ -71,17 +113,17 @@ table {
 th, td {
   padding: 0.75rem;
   text-align: left;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--color-border);
 }
 
 th {
-  background-color: #1a1a1a;
-  color: #d4af37;
+  background-color: var(--color-surface);
+  color: var(--color-primary);
   font-weight: bold;
 }
 
 tr:hover {
-  background-color: #1a1a1a;
+  background-color: var(--color-surface);
 }
 
 /* Top nav layout: no sidebar, centered main, use available width */

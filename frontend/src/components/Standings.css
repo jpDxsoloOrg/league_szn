@@ -25,94 +25,51 @@
 }
 
 .season-selector label {
-  color: #bbb;
+  color: var(--color-text-secondary);
   font-size: 0.875rem;
 }
 
 .season-selector select {
   padding: 0.5rem 1rem;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 4px;
-  color: #fff;
+  color: var(--color-text);
   font-size: 0.875rem;
   cursor: pointer;
 }
 
 .season-selector select:focus {
   outline: none;
-  border-color: #d4af37;
+  border-color: var(--color-primary);
 }
 
 .season-badge {
-  background-color: #1a1a1a;
-  border: 1px solid #d4af37;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-primary);
   border-radius: 4px;
   padding: 0.5rem 1rem;
   margin-top: 1rem;
   font-size: 0.875rem;
-  color: #bbb;
+  color: var(--color-text-secondary);
 }
 
 .season-badge strong {
-  color: #d4af37;
-}
-
-.division-filter {
-  margin-top: 1rem;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.division-filter .filter-label {
-  color: #bbb;
-  font-size: 0.875rem;
-  margin-right: 0.5rem;
-}
-
-.division-filter .filter-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.division-filter .filter-btn {
-  padding: 0.5rem 1rem;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 4px;
-  color: #bbb;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.division-filter .filter-btn:hover {
-  border-color: #d4af37;
-  color: #fff;
-}
-
-.division-filter .filter-btn.active {
-  background-color: #d4af37;
-  border-color: #d4af37;
-  color: #000;
-  font-weight: bold;
+  color: var(--color-primary);
 }
 
 .standings-table .division-name {
-  color: #bbb;
+  color: var(--color-text-secondary);
 }
 
 .standings-table .no-division {
-  color: #666;
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
 .no-players-message {
   text-align: center;
-  color: #bbb;
+  color: var(--color-text-secondary);
   padding: 2rem;
   font-style: italic;
 }
@@ -139,7 +96,7 @@
 
 .standings-table .rank {
   font-weight: bold;
-  color: #d4af37;
+  color: var(--color-primary);
   font-size: 1.1rem;
 }
 
@@ -155,7 +112,7 @@
 
 .standings-table .player-name-link:hover {
   text-decoration: underline;
-  color: #d4af37;
+  color: var(--color-primary);
 }
 
 .form-cell,
@@ -180,20 +137,20 @@
 }
 
 .form-dot.win {
-  background-color: #4ade80;
+  background-color: var(--color-success);
 }
 
 .form-dot.loss {
-  background-color: #f87171;
+  background-color: var(--color-danger-alt);
 }
 
 .form-dot.draw {
-  background-color: #9ca3af;
+  background-color: var(--color-neutral-light);
 }
 
 .form-empty,
 .streak-empty {
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .streak-badge {
@@ -206,37 +163,37 @@
 }
 
 .streak-badge.hot {
-  background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #f97316 0%, var(--color-danger) 100%);
   color: #fff;
 }
 
 .streak-badge.cold {
-  background-color: #0ea5e9;
+  background-color: var(--color-info);
   color: #fff;
 }
 
 .streak-badge.neutral {
-  background-color: #6b7280;
+  background-color: var(--color-neutral);
   color: #fff;
 }
 
 .standings-table .wrestler-name {
   text-align: left;
-  color: #bbb;
+  color: var(--color-text-secondary);
 }
 
 .standings-table .wins {
-  color: #4ade80;
+  color: var(--color-success);
   font-weight: bold;
 }
 
 .standings-table .losses {
-  color: #f87171;
+  color: var(--color-danger-alt);
   font-weight: bold;
 }
 
 .standings-table .draws {
-  color: #fbbf24;
+  color: var(--color-warning);
 }
 
 .standings-table .win-percentage {
@@ -257,7 +214,7 @@
   height: 50px;
   object-fit: cover;
   border-radius: 4px;
-  border: 1px solid #333;
+  border: 1px solid var(--color-border);
 }
 
 .standings-table .no-image-placeholder {
@@ -266,10 +223,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #1a1a1a;
-  border: 1px dashed #333;
+  background-color: var(--color-surface);
+  border: 1px dashed var(--color-border);
   border-radius: 4px;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.875rem;
 }
 
@@ -279,7 +236,7 @@
 }
 
 .error p {
-  color: #f87171;
+  color: var(--color-danger-alt);
   margin-bottom: 1rem;
 }
 
@@ -314,11 +271,6 @@
   .standings-table .wrestler-image-cell {
     width: 44px;
     padding: 0.25rem;
-  }
-
-  .division-filter .filter-btn {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.8rem;
   }
 
   .form-dot {

@@ -13,7 +13,7 @@
 }
 
 .costs-header .subtitle {
-  color: #888;
+  color: var(--color-text-muted);
   margin: 0;
 }
 
@@ -33,55 +33,27 @@
 .search-box input {
   width: 100%;
   padding: 0.75rem 1rem;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 4px;
-  color: #fff;
+  color: var(--color-text);
   font-size: 0.9rem;
 }
 
 .search-box input:focus {
   outline: none;
-  border-color: #d4af37;
+  border-color: var(--color-primary);
 }
 
 .search-box input::placeholder {
-  color: #666;
-}
-
-.division-filter {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.filter-btn {
-  padding: 0.5rem 1rem;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 4px;
-  color: #bbb;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.filter-btn:hover {
-  border-color: #d4af37;
-  color: #fff;
-}
-
-.filter-btn.active {
-  background-color: #d4af37;
-  border-color: #d4af37;
-  color: #000;
+  color: var(--color-text-muted);
 }
 
 /* Table */
 .costs-table-wrapper {
   overflow-x: auto;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
 }
 
@@ -99,7 +71,7 @@
   padding: 1rem;
   text-align: left;
   font-size: 0.8rem;
-  color: #888;
+  color: var(--color-text-muted);
   font-weight: normal;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -120,7 +92,7 @@
 }
 
 .costs-table th button:hover {
-  color: #d4af37;
+  color: var(--color-primary);
 }
 
 .sort-indicator {
@@ -301,16 +273,5 @@
 
   .search-box {
     width: 100%;
-  }
-
-  .division-filter {
-    width: 100%;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 0.5rem;
-  }
-
-  .filter-btn {
-    white-space: nowrap;
   }
 }
