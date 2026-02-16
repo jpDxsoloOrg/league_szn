@@ -17,13 +17,25 @@ function getResultForPlayer(
   return 'D';
 }
 
+type CompletedMatchForForm = {
+  date?: string;
+  updatedAt?: string;
+  participants?: string[];
+  winners?: string[];
+  losers?: string[];
+};
+
 function computeRecentFormAndStreak(
   playerId: string,
-  completedMatches: { date: string; participants?: string[]; winners?: string[]; losers?: string[] }[]
+  completedMatches: CompletedMatchForForm[]
 ): { recentForm: FormResult[]; currentStreak: { type: FormResult; count: number } } {
   const playerMatches = completedMatches
     .filter((m) => ((m.participants || []) as string[]).includes(playerId))
-    .sort((a, b) => (b.date as string).localeCompare(a.date as string))
+    .sort((a, b) => {
+      const aTime = new Date((a.updatedAt ?? 0) as string | number).getTime();
+      const bTime = new Date((b.updatedAt ?? 0) as string | number).getTime();
+      return bTime - aTime;
+    })
     .slice(0, 5);
   const recentForm: FormResult[] = playerMatches.map((m) => getResultForPlayer(playerId, m));
   if (recentForm.length === 0) {
@@ -42,12 +54,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const seasonId = event.queryStringParameters?.seasonId;
 
-    const completedMatches = await dynamoDb.scanAll({
+    let completedMatches = await dynamoDb.scanAll({
       TableName: TableNames.MATCHES,
       FilterExpression: '#status = :completed',
       ExpressionAttributeNames: { '#status': 'status' },
       ExpressionAttributeValues: { ':completed': 'completed' },
     });
+
+    // Last 5 and streak: only matches with updatedAt (same as dashboard recent results), sort by updatedAt desc
+    completedMatches = completedMatches.filter((m) => m.updatedAt) as typeof completedMatches;
 
     if (seasonId) {
       // Get season-specific standings with pagination support
