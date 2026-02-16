@@ -317,12 +317,35 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    rawItems.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    // Sort by timestamp desc, then id asc so same-timestamp items have deterministic order and cursor is stable
+    rawItems.sort((a, b) => {
+      const ta = new Date(a.timestamp).getTime();
+      const tb = new Date(b.timestamp).getTime();
+      if (tb !== ta) return tb - ta;
+      return a.id.localeCompare(b.id);
+    });
 
     let filtered = rawItems;
     if (cursor) {
-      const cursorTime = new Date(cursor).getTime();
-      filtered = rawItems.filter((i) => new Date(i.timestamp).getTime() < cursorTime);
+      let cursorTime: number;
+      let cursorId: string | null = null;
+      if (cursor.includes('|')) {
+        const [ts, id] = cursor.split('|');
+        if (ts && id) {
+          cursorTime = new Date(ts).getTime();
+          cursorId = id;
+        } else {
+          cursorTime = new Date(cursor).getTime();
+        }
+      } else {
+        cursorTime = new Date(cursor).getTime();
+      }
+      filtered = rawItems.filter((i) => {
+        const t = new Date(i.timestamp).getTime();
+        if (t < cursorTime) return true;
+        if (t === cursorTime && cursorId !== null) return i.id > cursorId;
+        return false;
+      });
     }
 
     const items = filtered.slice(0, limit).map(({ id, type, timestamp, summary, metadata }) => ({
@@ -334,7 +357,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }));
 
     const hasMore = filtered.length > limit;
-    const nextCursor = hasMore && items.length > 0 ? items[items.length - 1].timestamp : null;
+    const nextCursor =
+      hasMore && items.length > 0
+        ? `${items[items.length - 1].timestamp}|${items[items.length - 1].id}`
+        : null;
 
     return success({
       items,
