@@ -62,6 +62,15 @@ export default function Tournaments() {
     return () => abortController.abort();
   }, []);
 
+  useEffect(() => {
+    if (!selectedTournament) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedTournament(null);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [selectedTournament]);
+
   const getPlayerName = (playerId: string) => {
     const player = players.find(p => p.playerId === playerId);
     return player ? player.name : t('common.unknown');
@@ -213,13 +222,20 @@ export default function Tournaments() {
       </div>
 
       {selectedTournament && (
-        <div className="tournament-modal">
-          <div className="tournament-content">
+        <div
+          className="tournament-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tournament-modal-title"
+          onClick={() => setSelectedTournament(null)}
+        >
+          <div className="tournament-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{selectedTournament.name}</h3>
+              <h3 id="tournament-modal-title">{selectedTournament.name}</h3>
               <button
                 onClick={() => setSelectedTournament(null)}
                 className="close-btn"
+                aria-label={t('common.closeModal') || 'Close modal'}
               >
                 ×
               </button>

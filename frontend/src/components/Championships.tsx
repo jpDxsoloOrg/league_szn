@@ -100,6 +100,15 @@ export default function Championships() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!selectedChampionship) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedChampionship(null);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [selectedChampionship]);
+
   const filteredChampionships = useMemo((): Championship[] => {
     if (selectedDivision === 'all') {
       return championships;
@@ -203,8 +212,9 @@ export default function Championships() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="history-modal-title"
+          onClick={() => setSelectedChampionship(null)}
         >
-          <div className="history-content">
+          <div className="history-content" onClick={(e) => e.stopPropagation()}>
             <div className="history-header">
               <h3 id="history-modal-title">
                 {championships.find(c => c.championshipId === selectedChampionship)?.name} {t('championships.history')}
