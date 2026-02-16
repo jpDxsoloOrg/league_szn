@@ -114,6 +114,63 @@ export interface Standings {
   sortedByWins: boolean;
 }
 
+/** Dashboard API response types */
+export interface DashboardChampion {
+  championshipId: string;
+  championshipName: string;
+  championName: string;
+  championImageUrl?: string;
+  playerId: string;
+  wonDate?: string;
+  defenses?: number;
+}
+
+export interface DashboardEvent {
+  eventId: string;
+  name: string;
+  date: string;
+  eventType: string;
+  venue?: string;
+  matchCount?: number;
+}
+
+export interface DashboardMatch {
+  matchId: string;
+  date: string;
+  matchType: string;
+  winnerName: string;
+  winnerImageUrl?: string;
+  loserName: string;
+  loserImageUrl?: string;
+  championshipName?: string;
+  eventId?: string;
+}
+
+export interface DashboardSeason {
+  seasonId: string;
+  name: string;
+  startDate?: string;
+  endDate?: string;
+  status: string;
+  matchesPlayed?: number;
+}
+
+export interface DashboardQuickStats {
+  totalPlayers: number;
+  totalMatches: number;
+  activeChampionships: number;
+  mostWinsPlayer?: { name: string; wins: number };
+}
+
+export interface DashboardData {
+  currentChampions: DashboardChampion[];
+  upcomingEvents: DashboardEvent[];
+  recentResults: DashboardMatch[];
+  seasonInfo: DashboardSeason | null;
+  quickStats: DashboardQuickStats;
+  activeChallengesCount: number;
+}
+
 export interface Season {
   seasonId: string;
   name: string;

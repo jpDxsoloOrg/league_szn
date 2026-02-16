@@ -8,6 +8,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import TopNav from './components/TopNav';
+import Dashboard from './components/Dashboard';
 import Standings from './components/Standings';
 import Championships from './components/Championships';
 import Tournaments from './components/Tournaments';
@@ -89,7 +90,8 @@ function AppLayout() {
             <Route path="/signup" element={<Signup />} />
 
             {/* Public Routes */}
-            <Route path="/" element={<Standings />} />
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/standings" element={<Standings />} />
             <Route path="/championships" element={<Championships />} />
             <Route path="/matches" element={<Navigate to="/events" replace />} />
             <Route path="/tournaments" element={<Tournaments />} />

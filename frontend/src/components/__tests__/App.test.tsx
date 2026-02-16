@@ -26,6 +26,7 @@ vi.mock('../../i18n', () => ({}));
 // Mock heavy child components to keep tests lightweight
 vi.mock('../Sidebar', () => ({ default: () => <nav data-testid="sidebar">Sidebar</nav> }));
 vi.mock('../TopBar', () => ({ default: () => <div data-testid="topbar">TopBar</div> }));
+vi.mock('../Dashboard', () => ({ default: () => <div data-testid="dashboard">Dashboard</div> }));
 vi.mock('../Standings', () => ({ default: () => <div data-testid="standings">Standings</div> }));
 vi.mock('../Championships', () => ({ default: () => <div data-testid="championships">Championships</div> }));
 vi.mock('../Tournaments', () => ({ default: () => <div data-testid="tournaments">Tournaments</div> }));
@@ -139,7 +140,7 @@ describe('App', () => {
 
     expect(screen.getByTestId('sidebar')).toBeInTheDocument();
     expect(screen.getByTestId('topbar')).toBeInTheDocument();
-    expect(screen.getByTestId('standings')).toBeInTheDocument();
+    expect(screen.getByTestId('dashboard')).toBeInTheDocument();
   });
 
   it('renders public routes without authentication', () => {

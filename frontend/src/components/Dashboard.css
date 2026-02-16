@@ -1,0 +1,253 @@
+.dashboard-container {
+  width: 100%;
+}
+
+.dashboard-title {
+  margin: 0 0 1.5rem 0;
+  color: #d4af37;
+}
+
+.dashboard-section {
+  margin-bottom: 2rem;
+}
+
+.dashboard-section h3 {
+  font-size: 1.125rem;
+  color: #d4af37;
+  margin-bottom: 0.75rem;
+}
+
+.dashboard-empty {
+  color: #888;
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+/* Champions strip: horizontal scroll */
+.dashboard-champions-strip {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+}
+
+.dashboard-champion-card {
+  flex: 0 0 auto;
+  width: 180px;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.dashboard-champion-card img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-champion-card .champ-belt {
+  font-size: 0.75rem;
+  color: #d4af37;
+  margin-bottom: 0.25rem;
+}
+
+.dashboard-champion-card .champ-name {
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Upcoming events */
+.dashboard-events-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.dashboard-event-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.dashboard-event-card .event-name {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-event-card .event-date {
+  font-size: 0.875rem;
+  color: #bbb;
+}
+
+.dashboard-event-card .event-countdown {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #d4af37;
+}
+
+/* Recent results */
+.dashboard-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dashboard-result-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.dashboard-result-card:hover {
+  border-color: #d4af37;
+  background-color: #222;
+}
+
+.dashboard-result-card .result-winner {
+  font-weight: 600;
+  color: #fff;
+}
+
+.dashboard-result-card .result-vs {
+  color: #888;
+  font-size: 0.875rem;
+}
+
+.dashboard-result-card .result-loser {
+  color: #bbb;
+}
+
+.dashboard-result-card .result-type {
+  font-size: 0.75rem;
+  color: #888;
+  margin-left: auto;
+}
+
+/* Season progress */
+.dashboard-season-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.dashboard-season-card .season-name {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-season-card .season-meta {
+  font-size: 0.875rem;
+  color: #bbb;
+  margin-bottom: 0.75rem;
+}
+
+.dashboard-season-card .season-progress-bar {
+  height: 8px;
+  background-color: #333;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dashboard-season-card .season-progress-fill {
+  height: 100%;
+  background-color: #d4af37;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Quick stats */
+.dashboard-quick-stats {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+.dashboard-stat-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.dashboard-stat-card .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #d4af37;
+}
+
+.dashboard-stat-card .stat-label {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 0.25rem;
+}
+
+/* Active challenges */
+.dashboard-challenges-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #1a1a1a;
+  border: 1px solid #d4af37;
+  border-radius: 6px;
+  color: #d4af37;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.dashboard-challenges-cta:hover {
+  background-color: #222;
+}
+
+.dashboard-challenges-cta .badge {
+  background-color: #d4af37;
+  color: #000;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+/* Loading skeleton */
+.dashboard-loading .dashboard-section {
+  min-height: 80px;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.dashboard-error {
+  padding: 2rem;
+  text-align: center;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+
+.dashboard-error p {
+  margin-bottom: 1rem;
+  color: #ccc;
+}
+
+@media (max-width: 768px) {
+  .dashboard-champion-card {
+    width: 150px;
+  }
+
+  .dashboard-quick-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
