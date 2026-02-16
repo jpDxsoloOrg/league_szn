@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { fantasyApi, divisionsApi } from '../../services/api';
 import type { WrestlerWithCost } from '../../types/fantasy';
 import type { Division } from '../../types';
+import DivisionFilter from '../DivisionFilter';
 import './WrestlerCosts.css';
 
 type SortField = 'name' | 'cost' | 'winRate' | 'trend';
@@ -153,23 +154,12 @@ export default function WrestlerCosts() {
           />
         </div>
 
-        <div className="division-filter">
-          <button
-            className={`filter-btn ${selectedDivision === 'all' ? 'active' : ''}`}
-            onClick={() => setSelectedDivision('all')}
-          >
-            {t('common.all')}
-          </button>
-          {divisions.map((division) => (
-            <button
-              key={division.divisionId}
-              className={`filter-btn ${selectedDivision === division.divisionId ? 'active' : ''}`}
-              onClick={() => setSelectedDivision(division.divisionId)}
-            >
-              {division.name}
-            </button>
-          ))}
-        </div>
+        <DivisionFilter
+          divisions={divisions}
+          selectedDivision={selectedDivision}
+          onSelect={setSelectedDivision}
+          showNoDivision={false}
+        />
       </div>
 
       <div className="costs-table-wrapper">

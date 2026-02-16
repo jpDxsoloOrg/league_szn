@@ -10,15 +10,15 @@
 }
 
 .championship-card {
-  background-color: #1a1a1a;
-  border: 2px solid #333;
+  background-color: var(--color-surface);
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   padding: 1.5rem;
   transition: border-color 0.3s;
 }
 
 .championship-card:hover {
-  border-color: #d4af37;
+  border-color: var(--color-primary);
 }
 
 .championship-image-container {
@@ -30,7 +30,7 @@
   margin-bottom: 1rem;
   overflow: hidden;
   border-radius: 4px;
-  background-color: #0f0f0f;
+  background-color: var(--color-bg);
 }
 
 .championship-image {
@@ -45,14 +45,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #0f0f0f;
-  border: 1px dashed #333;
+  background-color: var(--color-bg);
+  border: 1px dashed var(--color-border);
   border-radius: 4px;
   margin-bottom: 1rem;
 }
 
 .championship-image-placeholder span {
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.875rem;
 }
 
@@ -64,17 +64,17 @@
 }
 
 .championship-header h3 {
-  color: #d4af37;
+  color: var(--color-primary);
   margin: 0;
   font-size: 1.25rem;
 }
 
 .championship-type {
-  background-color: #333;
+  background-color: var(--color-border);
   padding: 0.25rem 0.75rem;
   border-radius: 4px;
   font-size: 0.875rem;
-  color: #bbb;
+  color: var(--color-text-secondary);
 }
 
 .current-champion {
@@ -84,14 +84,14 @@
 .current-champion label {
   display: block;
   font-size: 0.875rem;
-  color: #888;
+  color: var(--color-text-muted);
   margin-bottom: 0.5rem;
 }
 
 .current-champion p {
   font-size: 1.125rem;
   font-weight: bold;
-  color: #d4af37;
+  color: var(--color-primary);
   margin: 0;
 }
 
@@ -115,8 +115,8 @@
 }
 
 .history-content {
-  background-color: #0f0f0f;
-  border: 2px solid #d4af37;
+  background-color: var(--color-bg);
+  border: 2px solid var(--color-primary);
   border-radius: 8px;
   padding: 2rem;
   max-width: 800px;
@@ -134,13 +134,13 @@
 
 .history-header h3 {
   margin: 0;
-  color: #d4af37;
+  color: var(--color-primary);
 }
 
 .close-btn {
   background: none;
   border: none;
-  color: #fff;
+  color: var(--color-text);
   font-size: 2rem;
   cursor: pointer;
   padding: 0;
@@ -150,7 +150,7 @@
 }
 
 .close-btn:hover {
-  color: #d4af37;
+  color: var(--color-primary);
 }
 
 .history-table-wrapper {
@@ -164,7 +164,7 @@
 
 .history-table .champion-name {
   font-weight: bold;
-  color: #d4af37;
+  color: var(--color-primary);
 }
 
 @media (max-width: 768px) {
@@ -192,48 +192,5 @@
   .history-table {
     min-width: 400px;
   }
-}
-
-.division-filter {
-  margin-top: 1rem;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.division-filter .filter-label {
-  color: #bbb;
-  font-size: 0.875rem;
-  margin-right: 0.5rem;
-}
-
-.division-filter .filter-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.division-filter .filter-btn {
-  padding: 0.5rem 1rem;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 4px;
-  color: #bbb;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.division-filter .filter-btn:hover {
-  border-color: #d4af37;
-  color: #fff;
-}
-
-.division-filter .filter-btn.active {
-  background-color: #d4af37;
-  border-color: #d4af37;
-  color: #000;
-  font-weight: bold;
 }
 
