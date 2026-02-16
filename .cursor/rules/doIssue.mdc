@@ -1,0 +1,17 @@
+---
+description: When user invokes doIssue with an issue number, fetch the issue, create branch and plan, execute plan with parallel agents, then commit, push, and open a PR
+alwaysApply: true
+---
+
+# doIssue command
+
+When the user says **doIssue** (or "do issue") and provides a **GitHub issue number**, run the **doIssue** workflow:
+
+1. **Get the issue** from **jpDxsolo/league_szn** using the GitHub MCP (issue_read, method: get).
+2. **Create a branch** (e.g. `feat/<issue_number>-<short-slug>`) before writing any plan file.
+3. **Create docs/plans/plan-issue-&lt;number&gt;-&lt;slug&gt;.md** with a unique name, using the issue title and body to draft the plan (skills, agents and parallel work, implementation steps, dependencies, testing, risks).
+4. **Execute the plan** using the same process as **execute-plan**: find the plan, parse it, build waves of parallel work, run each wave (max 5 agents per wave), verify (lint + tests), then commit (use git-commit-helper) and push.
+5. **Create a pull request** targeting `main` with a title and body that reference the issue (e.g. Closes #&lt;number&gt;).
+6. **Report back** with the issue link, plan path, branch, PR link, and a short summary.
+
+Follow the full instructions in **.claude/commands/doIssue.md** (read that file and execute each step). The plan format must match what **execute-plan** expects so the execution phase can run correctly.
