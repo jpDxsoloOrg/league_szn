@@ -29,6 +29,8 @@ interface DashboardMatch {
   isChampionship?: boolean;
   championshipName?: string;
   championshipImageUrl?: string;
+  starRating?: number;
+  matchOfTheNight?: boolean;
   winnerName: string;
   winnerImageUrl?: string;
   loserName: string;
@@ -155,16 +157,20 @@ export const handler: APIGatewayProxyHandler = async () => {
         matchCount: e.matchCount as number | undefined,
       }));
 
-    // Recent results: completed matches, sort by when completed (updatedAt) then date desc, limit 5
+    // Recent results: only matches with updatedAt (recorded after we added it), sort by updatedAt desc, limit 20 for date grouping
     const completedMatches = (matches as Record<string, unknown>[]).filter(
-      (m) => m.status === 'completed' && m.winners && m.losers
+      (m) =>
+        m.status === 'completed' &&
+        m.winners &&
+        m.losers &&
+        (m.updatedAt as string)
     );
-    completedMatches.sort((a, b) => {
-      const aTime = (a.updatedAt as string) ? new Date(a.updatedAt as string).getTime() : new Date(a.date as string).getTime();
-      const bTime = (b.updatedAt as string) ? new Date(b.updatedAt as string).getTime() : new Date(b.date as string).getTime();
-      return bTime - aTime;
-    });
-    const recentResults: DashboardMatch[] = completedMatches.slice(0, 5).map((m) => {
+    completedMatches.sort(
+      (a, b) =>
+        new Date(b.updatedAt as string).getTime() -
+        new Date(a.updatedAt as string).getTime()
+    );
+    const recentResults: DashboardMatch[] = completedMatches.slice(0, 20).map((m) => {
       const winnerIds = m.winners as string[];
       const loserIds = m.losers as string[];
       const winnerName = (winnerIds || [])
@@ -198,6 +204,8 @@ export const handler: APIGatewayProxyHandler = async () => {
         isChampionship,
         championshipName: champ ? (champ.name as string) : undefined,
         championshipImageUrl: champ?.imageUrl as string | undefined,
+        starRating: m.starRating as number | undefined,
+        matchOfTheNight: Boolean(m.matchOfTheNight),
         winnerName: winnerName || '—',
         winnerImageUrl: firstWinner
           ? (playerMap.get(firstWinner)?.imageUrl as string | undefined)

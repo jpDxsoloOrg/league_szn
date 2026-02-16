@@ -148,6 +148,8 @@ export interface DashboardMatch {
   isChampionship?: boolean;
   championshipName?: string;
   championshipImageUrl?: string;
+  starRating?: number;
+  matchOfTheNight?: boolean;
   winnerName: string;
   winnerImageUrl?: string;
   loserName: string;
@@ -264,6 +266,8 @@ export interface DashboardMatch {
   isChampionship?: boolean;
   championshipName?: string;
   championshipImageUrl?: string;
+  starRating?: number;
+  matchOfTheNight?: boolean;
   winnerName: string;
   winnerImageUrl?: string;
   loserName: string;

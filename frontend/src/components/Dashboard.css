@@ -92,6 +92,28 @@
 }
 
 /* Recent results */
+.dashboard-results-by-date {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.dashboard-results-date-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dashboard-results-date-separator {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #d4af37;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #333;
+}
+
 .dashboard-results-list {
   display: flex;
   flex-direction: column;
@@ -140,8 +162,36 @@
 .dashboard-result-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
   flex-shrink: 0;
+}
+
+.dashboard-result-awards {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dashboard-result-card .result-star-rating {
+  font-size: 0.75rem;
+  color: #fbbf24;
+}
+
+.dashboard-result-card .result-star-value {
+  margin-left: 2px;
+  font-size: 0.7rem;
+  color: #888;
+}
+
+.dashboard-result-card .result-motn-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #d4af37;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 4px;
 }
 
 .dashboard-result-card .result-type {

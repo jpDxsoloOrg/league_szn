@@ -126,10 +126,39 @@ describe('getDashboard', () => {
     expect(body.upcomingEvents.length).toBeLessThanOrEqual(3);
   });
 
-  it('limits recent results to 5', async () => {
+  it('excludes completed matches without updatedAt from recent results', async () => {
+    const completedNoUpdatedAt = [
+      {
+        matchId: 'm1',
+        date: '2025-01-10T00:00:00Z',
+        status: 'completed',
+        winners: ['p1'],
+        losers: ['p2'],
+        matchFormat: 'singles',
+      },
+    ];
+    mockScanAll
+      .mockReset()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ playerId: 'p1', currentWrestler: 'A' }, { playerId: 'p2', currentWrestler: 'B' }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(completedNoUpdatedAt)
+      .mockResolvedValueOnce([]);
+    mockQuery.mockReset().mockResolvedValue({ Items: [] });
+    mockQueryAll.mockReset().mockResolvedValue([]);
+
+    const result = await getDashboard({} as never, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.recentResults).toHaveLength(0);
+  });
+
+  it('limits recent results to 20 and only includes matches with updatedAt', async () => {
     const manyMatches = Array.from({ length: 10 }, (_, i) => ({
       matchId: `m${i}`,
       date: new Date(2025, 0, i + 1).toISOString(),
+      updatedAt: new Date(2025, 0, 15 - i).toISOString(),
       status: 'completed',
       winners: ['p1'],
       losers: ['p2'],
@@ -149,7 +178,7 @@ describe('getDashboard', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    expect(body.recentResults).toHaveLength(5);
+    expect(body.recentResults).toHaveLength(10);
   });
 
   it('returns 500 on DynamoDB error', async () => {
