@@ -176,8 +176,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       ':one': 1,
       ':pending': 'pending',
       ':scheduled': 'scheduled',
+      ':now': timestamp,
     };
-    let matchSetExpr = 'SET winners = :winners, losers = :losers, #status = :status, version = if_not_exists(version, :zero) + :one';
+    let matchSetExpr = 'SET winners = :winners, losers = :losers, #status = :status, version = if_not_exists(version, :zero) + :one, updatedAt = :now';
     if (body.starRating != null) {
       matchSetExpr += ', starRating = :starRating';
       matchUpdateValues[':starRating'] = body.starRating;

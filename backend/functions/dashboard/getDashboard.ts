@@ -155,14 +155,15 @@ export const handler: APIGatewayProxyHandler = async () => {
         matchCount: e.matchCount as number | undefined,
       }));
 
-    // Recent results: completed matches, sort by date desc, limit 5
+    // Recent results: completed matches, sort by when completed (updatedAt) then date desc, limit 5
     const completedMatches = (matches as Record<string, unknown>[]).filter(
       (m) => m.status === 'completed' && m.winners && m.losers
     );
-    completedMatches.sort(
-      (a, b) =>
-        new Date(b.date as string).getTime() - new Date(a.date as string).getTime()
-    );
+    completedMatches.sort((a, b) => {
+      const aTime = (a.updatedAt as string) ? new Date(a.updatedAt as string).getTime() : new Date(a.date as string).getTime();
+      const bTime = (b.updatedAt as string) ? new Date(b.updatedAt as string).getTime() : new Date(b.date as string).getTime();
+      return bTime - aTime;
+    });
     const recentResults: DashboardMatch[] = completedMatches.slice(0, 5).map((m) => {
       const winnerIds = m.winners as string[];
       const loserIds = m.losers as string[];
