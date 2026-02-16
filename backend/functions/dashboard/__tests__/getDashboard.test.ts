@@ -18,6 +18,7 @@ vi.mock('../../../lib/dynamodb', () => ({
     PLAYERS: 'Players',
     SEASONS: 'Seasons',
     MATCHES: 'Matches',
+    STIPULATIONS: 'Stipulations',
     EVENTS: 'Events',
     CHALLENGES: 'Challenges',
     SEASON_STANDINGS: 'SeasonStandings',
@@ -36,7 +37,8 @@ describe('getDashboard', () => {
       .mockResolvedValueOnce([]) // championships
       .mockResolvedValueOnce([]) // players
       .mockResolvedValueOnce([]) // seasons
-      .mockResolvedValueOnce([]); // matches
+      .mockResolvedValueOnce([]) // matches
+      .mockResolvedValueOnce([]); // stipulations
     mockQuery.mockResolvedValue({ Items: [] });
     mockQueryAll.mockResolvedValue([]);
   });
@@ -86,7 +88,8 @@ describe('getDashboard', () => {
         { playerId: 'p1', name: 'Alice', currentWrestler: 'Stone Cold' },
       ])
       .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]); // stipulations
     mockQuery.mockReset().mockResolvedValue({ Items: [] });
     mockQueryAll.mockReset().mockResolvedValue([]);
 
@@ -105,7 +108,8 @@ describe('getDashboard', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]); // stipulations
     mockQuery.mockResolvedValue({
       Items: [
         { eventId: 'e1', name: 'Event 1', date: '2025-03-01', eventType: 'ppv' },
@@ -136,7 +140,8 @@ describe('getDashboard', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ playerId: 'p1', currentWrestler: 'A' }, { playerId: 'p2', currentWrestler: 'B' }])
       .mockResolvedValueOnce([])
-      .mockResolvedValueOnce(manyMatches);
+      .mockResolvedValueOnce(manyMatches)
+      .mockResolvedValueOnce([]); // stipulations
     mockQuery.mockReset().mockResolvedValue({ Items: [] });
     mockQueryAll.mockReset().mockResolvedValue([]);
 

@@ -145,11 +145,31 @@ export default function Dashboard() {
                 to={m.eventId ? `/events/${m.eventId}` : '/events'}
                 className="dashboard-result-card"
               >
-                <span className="result-winner">{m.winnerName}</span>
-                <span className="result-vs">{t('dashboard.vs')}</span>
-                <span className="result-loser">{m.loserName}</span>
-                {m.championshipName && <span className="result-type">({m.championshipName})</span>}
-                {!m.championshipName && <span className="result-type">{m.matchType}</span>}
+                <div className="dashboard-result-outcome">
+                  <span className="result-winner">{m.winnerName}</span>
+                  <span className="result-vs">{t('dashboard.vs')}</span>
+                  <span className="result-loser">{m.loserName}</span>
+                </div>
+                <div className="dashboard-result-meta">
+                  <span className="result-type">
+                    {m.matchType}
+                    {m.stipulation ? ` – ${m.stipulation}` : ''}
+                  </span>
+                  {m.isChampionship && (
+                    m.championshipImageUrl ? (
+                      <img
+                        src={m.championshipImageUrl}
+                        alt={m.championshipName ?? ''}
+                        className="result-championship-image"
+                        title={m.championshipName}
+                      />
+                    ) : (
+                      m.championshipName && (
+                        <span className="result-championship-name">{m.championshipName}</span>
+                      )
+                    )
+                  )}
+                </div>
               </Link>
             ))}
           </div>

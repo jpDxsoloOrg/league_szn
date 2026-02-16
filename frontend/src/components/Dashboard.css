@@ -101,6 +101,7 @@
 .dashboard-result-card {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   background-color: #1a1a1a;
@@ -115,9 +116,16 @@
   background-color: #222;
 }
 
+.dashboard-result-outcome {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .dashboard-result-card .result-winner {
   font-weight: 600;
-  color: #fff;
+  color: #4ade80;
 }
 
 .dashboard-result-card .result-vs {
@@ -129,10 +137,27 @@
   color: #bbb;
 }
 
+.dashboard-result-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
 .dashboard-result-card .result-type {
   font-size: 0.75rem;
   color: #888;
-  margin-left: auto;
+}
+
+.dashboard-result-card .result-championship-image {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.dashboard-result-card .result-championship-name {
+  font-size: 0.75rem;
+  color: #d4af37;
 }
 
 /* Season progress */
