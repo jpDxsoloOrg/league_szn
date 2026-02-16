@@ -18,15 +18,6 @@ main {
   transition: margin-left 0.2s ease;
 }
 
-/* When sidebar is collapsed (64px) */
-.App.layout-sidebar .sidebar.collapsed ~ .top-bar {
-  left: 64px;
-}
-
-.App.layout-sidebar .sidebar.collapsed ~ main {
-  margin-left: 64px;
-}
-
 h2 {
   color: var(--color-primary);
   margin-bottom: 1rem;
@@ -81,8 +72,9 @@ h2 {
   background-color: var(--color-surface-hover);
 }
 
-/* Fallback for buttons without explicit variant (e.g. legacy markup) */
-button:not([class*="btn-"]) {
+/* Fallback for buttons without explicit variant (e.g. legacy markup in main content only) */
+/* Exclude nav/sidebar/topnav/language/hamburger so their own styles (e.g. gold text on dark) apply */
+button:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggle):not(.nav-subgroup-toggle):not(.user-nav-toggle):not(.topnav-menu-btn):not(.hamburger-btn):not(.language-switcher-btn) {
   background-color: var(--color-primary);
   color: #000;
   border: none;
@@ -94,7 +86,7 @@ button:not([class*="btn-"]) {
   transition: background-color 0.3s;
 }
 
-button:not([class*="btn-"]):hover {
+button:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggle):not(.nav-subgroup-toggle):not(.user-nav-toggle):not(.topnav-menu-btn):not(.hamburger-btn):not(.language-switcher-btn):hover {
   background-color: var(--color-primary-hover);
 }
 

@@ -82,8 +82,8 @@
 }
 
 .language-option.active {
-  background: rgba(218, 165, 32, 0.2);
-  color: #daa520;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
 .language-option .flag-icon {

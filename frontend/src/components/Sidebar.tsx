@@ -43,13 +43,6 @@ export default function Sidebar() {
   const [adminExpanded, setAdminExpanded] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ core: true });
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(() => {
-    try {
-      return localStorage.getItem('sidebar-collapsed') === 'true';
-    } catch {
-      return false;
-    }
-  });
 
   const toggleGroup = useCallback((groupKey: string) => {
     setExpandedGroups(prev => ({ ...prev, [groupKey]: !prev[groupKey] }));
@@ -84,16 +77,6 @@ export default function Sidebar() {
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('sidebar-collapsed', String(collapsed));
-    } catch {
-      // ignore
-    }
-  }, [collapsed]);
-
-  const toggleCollapsed = useCallback(() => setCollapsed((prev) => !prev), []);
 
   // Prevent body scroll when sidebar is open on mobile
   useEffect(() => {
@@ -134,17 +117,8 @@ export default function Sidebar() {
       <div className="sidebar-overlay" onClick={() => setMobileOpen(false)} />
     )}
 
-    <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''} ${collapsed ? 'collapsed' : ''}`}>
+    <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="sidebar-header">
-        <button
-          type="button"
-          className="sidebar-collapse-toggle"
-          onClick={toggleCollapsed}
-          aria-label={collapsed ? t('nav.switchToSidebar') : 'Collapse sidebar'}
-          title={collapsed ? t('nav.switchToSidebar') : 'Collapse sidebar'}
-        >
-          <span className="collapse-label">{collapsed ? '\u203A' : '\u2039'}</span>
-        </button>
         <h2>{t('header.title')}</h2>
         <LanguageSwitcher />
       </div>
