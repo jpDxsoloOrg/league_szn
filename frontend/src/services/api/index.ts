@@ -34,4 +34,6 @@ export type {
   LeaderboardsResponse,
   RecordsResponse,
   AchievementsResponse,
+  RatedMatchSummary,
+  MatchRatingsResponse,
 } from './statistics.api';

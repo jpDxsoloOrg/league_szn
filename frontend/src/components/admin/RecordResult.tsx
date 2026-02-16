@@ -18,6 +18,8 @@ export default function RecordResult() {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [winners, setWinners] = useState<string[]>([]);
   const [winningTeamIndex, setWinningTeamIndex] = useState<number | null>(null);
+  const [starRating, setStarRating] = useState<number | ''>('');
+  const [matchOfTheNight, setMatchOfTheNight] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -176,15 +178,20 @@ export default function RecordResult() {
 
       try {
         setError(null);
-        await matchesApi.recordResult(selectedMatch.matchId, {
+        const payload: { winners: string[]; losers: string[]; winningTeam: number; starRating?: number; matchOfTheNight?: boolean } = {
           winners,
           losers,
-          winningTeam: winningTeamIndex
-        });
+          winningTeam: winningTeamIndex,
+        };
+        if (starRating !== '') payload.starRating = starRating as number;
+        if (matchOfTheNight) payload.matchOfTheNight = true;
+        await matchesApi.recordResult(selectedMatch.matchId, payload);
         setSuccess(t('recordResult.success'));
         setSelectedMatch(null);
         setWinners([]);
         setWinningTeamIndex(null);
+        setStarRating('');
+        setMatchOfTheNight(false);
         await loadData();
       } catch (err) {
         setError(err instanceof Error ? err.message : t('recordResult.error'));
@@ -202,10 +209,15 @@ export default function RecordResult() {
 
       try {
         setError(null);
-        await matchesApi.recordResult(selectedMatch.matchId, { winners, losers });
+        const payload: { winners: string[]; losers: string[]; starRating?: number; matchOfTheNight?: boolean } = { winners, losers };
+        if (starRating !== '') payload.starRating = starRating as number;
+        if (matchOfTheNight) payload.matchOfTheNight = true;
+        await matchesApi.recordResult(selectedMatch.matchId, payload);
         setSuccess(t('recordResult.success'));
         setSelectedMatch(null);
         setWinners([]);
+        setStarRating('');
+        setMatchOfTheNight(false);
         await loadData();
       } catch (err) {
         setError(err instanceof Error ? err.message : t('recordResult.error'));
@@ -359,6 +371,30 @@ export default function RecordResult() {
                       </div>
                     </>
                   )}
+                </div>
+
+                <div className="star-rating-row">
+                  <label htmlFor="starRating">{t('match.starRating')}</label>
+                  <select
+                    id="starRating"
+                    value={starRating === '' ? '' : starRating}
+                    onChange={(e) => setStarRating(e.target.value === '' ? '' : Number(e.target.value))}
+                  >
+                    <option value="">—</option>
+                    {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map((r) => (
+                      <option key={r} value={r}>{r} ★</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="motn-row">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={matchOfTheNight}
+                      onChange={(e) => setMatchOfTheNight(e.target.checked)}
+                    />
+                    {t('match.matchOfTheNight')}
+                  </label>
                 </div>
 
                 <div className="result-actions">

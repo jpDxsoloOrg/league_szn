@@ -367,7 +367,8 @@
       "records": "Record Book",
       "rivalries": "Rivalries",
       "taleOfTape": "Tale of the Tape",
-      "achievements": "Achievements"
+      "achievements": "Achievements",
+      "bestMatches": "Best Matches"
     },
     "labels": {
       "wins": "Wins",
@@ -475,6 +476,10 @@
         "records": "Records",
         "special": "Special"
       }
+    },
+    "bestMatches": {
+      "title": "Best Matches",
+      "noData": "No rated matches yet. Rate matches when recording results."
     }
   },
   "rivalries": {

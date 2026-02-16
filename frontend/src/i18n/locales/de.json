@@ -185,6 +185,11 @@
       "minTeamsError": "Bitte erstellen Sie mindestens 2 Teams mit je 2+ Mitgliedern"
     }
   },
+  "match": {
+    "starRating": "Sternebewertung",
+    "matchOfTheNight": "Match of the Night",
+    "matchOfTheNightBadge": "Match of the Night"
+  },
   "recordResult": {
     "title": "Kampfergebnisse eintragen",
     "scheduledMatches": "Geplante Kämpfe",
@@ -475,6 +480,10 @@
         "records": "Rekorde",
         "special": "Spezial"
       }
+    },
+    "bestMatches": {
+      "title": "Beste Kämpfe",
+      "noData": "Noch keine bewerteten Kämpfe. Bewerten Sie Kämpfe beim Eintragen der Ergebnisse."
     }
   },
   "rivalries": {

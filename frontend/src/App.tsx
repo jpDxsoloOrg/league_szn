@@ -31,6 +31,7 @@ import PlayerStats from './components/statistics/PlayerStats';
 import HeadToHeadComparison from './components/statistics/HeadToHeadComparison';
 import Leaderboards from './components/statistics/Leaderboards';
 import RecordBook from './components/statistics/RecordBook';
+import BestMatches from './components/statistics/BestMatches';
 import Rivalries from './components/statistics/Rivalries';
 import TaleOfTheTape from './components/statistics/TaleOfTheTape';
 import Achievements from './components/statistics/Achievements';
@@ -178,6 +179,9 @@ function AppLayout() {
             } />
             <Route path="/stats/achievements" element={
               <FeatureRoute feature="statistics"><Achievements /></FeatureRoute>
+            } />
+            <Route path="/stats/best-matches" element={
+              <FeatureRoute feature="statistics"><BestMatches /></FeatureRoute>
             } />
 
             {/* Events Routes - public */}
