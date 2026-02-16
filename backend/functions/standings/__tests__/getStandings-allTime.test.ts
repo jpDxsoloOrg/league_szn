@@ -156,11 +156,11 @@ describe('getStandings — all-time (no seasonId)', () => {
     });
   });
 
-  it('includes recentForm and currentStreak on each player', async () => {
+  it('includes recentForm and currentStreak on each player (ordered by updatedAt desc)', async () => {
     const completedMatches = [
-      { date: '2024-01-05', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'], status: 'completed' },
-      { date: '2024-01-04', participants: ['p1', 'p3'], winners: ['p1'], losers: ['p3'], status: 'completed' },
-      { date: '2024-01-03', participants: ['p1', 'p2'], winners: ['p2'], losers: ['p1'], status: 'completed' },
+      { date: '2024-01-05', updatedAt: '2024-01-05T12:00:00Z', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'], status: 'completed' },
+      { date: '2024-01-04', updatedAt: '2024-01-04T12:00:00Z', participants: ['p1', 'p3'], winners: ['p1'], losers: ['p3'], status: 'completed' },
+      { date: '2024-01-03', updatedAt: '2024-01-03T12:00:00Z', participants: ['p1', 'p2'], winners: ['p2'], losers: ['p1'], status: 'completed' },
     ];
     mockScanAll
       .mockResolvedValueOnce(completedMatches)
@@ -174,11 +174,33 @@ describe('getStandings — all-time (no seasonId)', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     const alice = body.players.find((p: { playerId: string }) => p.playerId === 'p1');
-    expect(alice.recentForm).toEqual(['W', 'W', 'L']); // newest first: 05 W, 04 W, 03 L
+    expect(alice.recentForm).toEqual(['W', 'W', 'L']); // newest first by updatedAt: 05 W, 04 W, 03 L
     expect(alice.currentStreak).toEqual({ type: 'W', count: 2 });
     const bob = body.players.find((p: { playerId: string }) => p.playerId === 'p2');
     expect(bob.recentForm).toEqual(['L', 'W']); // 05 L (vs p1), 03 W (vs p1)
     expect(bob.currentStreak).toEqual({ type: 'L', count: 1 });
+  });
+
+  it('excludes completed matches without updatedAt from recentForm and streak', async () => {
+    const completedMatches = [
+      { date: '2024-01-06', updatedAt: '2024-01-06T12:00:00Z', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'], status: 'completed' },
+      { date: '2024-01-05', participants: ['p1', 'p2'], winners: ['p2'], losers: ['p1'], status: 'completed' }, // no updatedAt
+    ];
+    mockScanAll
+      .mockResolvedValueOnce(completedMatches)
+      .mockResolvedValueOnce([
+        { playerId: 'p1', name: 'Alice', wins: 1, losses: 1, draws: 0 },
+        { playerId: 'p2', name: 'Bob', wins: 1, losses: 1, draws: 0 },
+      ]);
+
+    const result = await getStandings(makeEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    const alice = body.players.find((p: { playerId: string }) => p.playerId === 'p1');
+    // Only the match with updatedAt (p1 won on 01-06) counts
+    expect(alice.recentForm).toEqual(['W']);
+    expect(alice.currentStreak).toEqual({ type: 'W', count: 1 });
   });
 
   it('returns empty recentForm and zero streak when no completed matches', async () => {
