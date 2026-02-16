@@ -32,6 +32,7 @@ import HeadToHeadComparison from './components/statistics/HeadToHeadComparison';
 import Leaderboards from './components/statistics/Leaderboards';
 import RecordBook from './components/statistics/RecordBook';
 import BestMatches from './components/statistics/BestMatches';
+import Rivalries from './components/statistics/Rivalries';
 import TaleOfTheTape from './components/statistics/TaleOfTheTape';
 import Achievements from './components/statistics/Achievements';
 // Contender components
@@ -169,6 +170,9 @@ function AppLayout() {
             } />
             <Route path="/stats/records" element={
               <FeatureRoute feature="statistics"><RecordBook /></FeatureRoute>
+            } />
+            <Route path="/stats/rivalries" element={
+              <FeatureRoute feature="statistics"><Rivalries /></FeatureRoute>
             } />
             <Route path="/stats/tale-of-tape" element={
               <FeatureRoute feature="statistics"><TaleOfTheTape /></FeatureRoute>
