@@ -28,6 +28,7 @@ vi.mock('../../../lib/dynamodb', () => ({
   TableNames: {
     PLAYERS: 'Players',
     SEASON_STANDINGS: 'SeasonStandings',
+    MATCHES: 'Matches',
   },
 }));
 
@@ -72,11 +73,13 @@ describe('getStandings — season-specific (with seasonId)', () => {
       { seasonId: 's1', playerId: 'p1', wins: 5, losses: 2, draws: 1 },
       { seasonId: 's1', playerId: 'p2', wins: 8, losses: 3, draws: 0 },
     ]);
-    mockScanAll.mockResolvedValue([
-      { playerId: 'p1', name: 'Alice', currentWrestler: 'Wrestler A' },
-      { playerId: 'p2', name: 'Bob', currentWrestler: 'Wrestler B' },
-      { playerId: 'p3', name: 'Carol', currentWrestler: 'Wrestler C' },
-    ]);
+    mockScanAll
+      .mockResolvedValueOnce([]) // completed matches
+      .mockResolvedValueOnce([
+        { playerId: 'p1', name: 'Alice', currentWrestler: 'Wrestler A' },
+        { playerId: 'p2', name: 'Bob', currentWrestler: 'Wrestler B' },
+        { playerId: 'p3', name: 'Carol', currentWrestler: 'Wrestler C' },
+      ]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
@@ -100,14 +103,18 @@ describe('getStandings — season-specific (with seasonId)', () => {
     expect(body.players[2].wins).toBe(0);
     expect(body.players[2].losses).toBe(0);
     expect(body.players[2].draws).toBe(0);
+    expect(body.players[0].recentForm).toEqual([]);
+    expect(body.players[0].currentStreak).toEqual({ type: 'W', count: 0 });
   });
 
   it('gives 0-0-0 to players without season standings', async () => {
     mockQueryAll.mockResolvedValue([]); // no standings at all
-    mockScanAll.mockResolvedValue([
-      { playerId: 'p1', name: 'Alice' },
-      { playerId: 'p2', name: 'Bob' },
-    ]);
+    mockScanAll
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { playerId: 'p1', name: 'Alice' },
+        { playerId: 'p2', name: 'Bob' },
+      ]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
@@ -127,11 +134,13 @@ describe('getStandings — season-specific (with seasonId)', () => {
       { seasonId: 's1', playerId: 'p2', wins: 5, losses: 1, draws: 0 },
       { seasonId: 's1', playerId: 'p3', wins: 7, losses: 3, draws: 0 },
     ]);
-    mockScanAll.mockResolvedValue([
-      { playerId: 'p1', name: 'Alice' },
-      { playerId: 'p2', name: 'Bob' },
-      { playerId: 'p3', name: 'Carol' },
-    ]);
+    mockScanAll
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { playerId: 'p1', name: 'Alice' },
+        { playerId: 'p2', name: 'Bob' },
+        { playerId: 'p3', name: 'Carol' },
+      ]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
@@ -144,7 +153,7 @@ describe('getStandings — season-specific (with seasonId)', () => {
 
   it('returns empty players when no players exist for a season', async () => {
     mockQueryAll.mockResolvedValue([]);
-    mockScanAll.mockResolvedValue([]);
+    mockScanAll.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
@@ -156,11 +165,11 @@ describe('getStandings — season-specific (with seasonId)', () => {
 
   it('queries SeasonStandings table with correct seasonId', async () => {
     mockQueryAll.mockResolvedValue([]);
-    mockScanAll.mockResolvedValue([]);
+    mockScanAll.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
     await getStandings(makeSeasonEvent('season-42'), ctx, cb);
 
-    expect(mockQueryAll).toHaveBeenCalledOnce();
+    expect(mockQueryAll).toHaveBeenCalledTimes(1);
     expect(mockQueryAll).toHaveBeenCalledWith({
       TableName: 'SeasonStandings',
       KeyConditionExpression: 'seasonId = :seasonId',
@@ -168,16 +177,15 @@ describe('getStandings — season-specific (with seasonId)', () => {
     });
   });
 
-  it('scans Players table when fetching season standings', async () => {
+  it('scans Matches then Players when fetching season standings', async () => {
     mockQueryAll.mockResolvedValue([]);
-    mockScanAll.mockResolvedValue([]);
+    mockScanAll.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
     await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
-    expect(mockScanAll).toHaveBeenCalledOnce();
-    expect(mockScanAll).toHaveBeenCalledWith({
-      TableName: 'Players',
-    });
+    expect(mockScanAll).toHaveBeenCalledTimes(2);
+    expect(mockScanAll).toHaveBeenNthCalledWith(1, expect.objectContaining({ TableName: 'Matches' }));
+    expect(mockScanAll).toHaveBeenNthCalledWith(2, { TableName: 'Players' });
   });
 
   it('handles standings with falsy wins/losses/draws (defaults to 0)', async () => {
@@ -185,10 +193,12 @@ describe('getStandings — season-specific (with seasonId)', () => {
       { seasonId: 's1', playerId: 'p1', wins: 0, losses: 0, draws: 0 },
       { seasonId: 's1', playerId: 'p2', wins: undefined, losses: undefined, draws: undefined },
     ]);
-    mockScanAll.mockResolvedValue([
-      { playerId: 'p1', name: 'Alice' },
-      { playerId: 'p2', name: 'Bob' },
-    ]);
+    mockScanAll
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { playerId: 'p1', name: 'Alice' },
+        { playerId: 'p2', name: 'Bob' },
+      ]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
@@ -205,9 +215,11 @@ describe('getStandings — season-specific (with seasonId)', () => {
     mockQueryAll.mockResolvedValue([
       { seasonId: 's1', playerId: 'p1', wins: 3, losses: 1, draws: 0 },
     ]);
-    mockScanAll.mockResolvedValue([
-      { playerId: 'p1', name: 'Alice', currentWrestler: 'The Rock', divisionId: 'div-1' },
-    ]);
+    mockScanAll
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { playerId: 'p1', name: 'Alice', currentWrestler: 'The Rock', divisionId: 'div-1' },
+      ]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
@@ -235,7 +247,9 @@ describe('getStandings — error handling (season)', () => {
 
   it('returns 500 when scanAll (players) throws during season query', async () => {
     mockQueryAll.mockResolvedValue([]);
-    mockScanAll.mockRejectedValue(new Error('DynamoDB scan failed'));
+    mockScanAll
+      .mockResolvedValueOnce([]) // Matches scan succeeds
+      .mockRejectedValueOnce(new Error('DynamoDB scan failed')); // Players scan fails
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 

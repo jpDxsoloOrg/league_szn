@@ -10,6 +10,10 @@ export interface Player {
   divisionId?: string;
   createdAt: string;
   updatedAt: string;
+  /** Last 5 match results (newest first): W win, L loss, D draw */
+  recentForm?: ('W' | 'L' | 'D')[];
+  /** Current consecutive result streak from most recent match */
+  currentStreak?: { type: 'W' | 'L' | 'D'; count: number };
 }
 
 export interface Match {

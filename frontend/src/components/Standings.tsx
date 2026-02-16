@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { standingsApi, seasonsApi, divisionsApi } from '../services/api';
 import { logger } from '../utils/logger';
 import type { Standings as StandingsType, Season, Division, Player } from '../types';
+import PlayerHoverCard from './PlayerHoverCard';
 import './Standings.css';
 
 export default function Standings() {
@@ -210,6 +212,8 @@ export default function Standings() {
               <th>{t('standings.table.losses')}</th>
               <th>{t('standings.table.draws')}</th>
               <th>{t('standings.table.winPercent')}</th>
+              <th>{t('standings.table.form')}</th>
+              <th>{t('standings.table.streak')}</th>
             </tr>
           </thead>
           <tbody>
@@ -227,7 +231,13 @@ export default function Standings() {
                     <div className="no-image-placeholder">-</div>
                   )}
                 </td>
-                <td className="player-name">{player.name}</td>
+                <td className="player-name">
+                  <PlayerHoverCard player={player} divisions={divisions}>
+                    <Link to={`/stats/player/${player.playerId}`} className="player-name-link">
+                      {player.name}
+                    </Link>
+                  </PlayerHoverCard>
+                </td>
                 <td className="wrestler-name">{player.currentWrestler}</td>
                 {selectedDivision === 'all' && (
                   <td className="division-name">
@@ -238,6 +248,43 @@ export default function Standings() {
                 <td className="losses">{player.losses}</td>
                 <td className="draws">{player.draws}</td>
                 <td className="win-percentage">{player.winPercentage}%</td>
+                <td className="form-cell">
+                  {player.recentForm && player.recentForm.length > 0 ? (
+                    <span className="form-dots" aria-label={player.recentForm.join(', ')}>
+                      {player.recentForm.map((r, i) => (
+                        <span
+                          key={i}
+                          className={`form-dot ${r === 'W' ? 'win' : r === 'L' ? 'loss' : 'draw'}`}
+                          title={r === 'W' ? 'Win' : r === 'L' ? 'Loss' : 'Draw'}
+                        />
+                      ))}
+                    </span>
+                  ) : (
+                    <span className="form-empty">-</span>
+                  )}
+                </td>
+                <td className="streak-cell">
+                  {player.currentStreak && player.currentStreak.count >= 3 ? (
+                    <span
+                      className={`streak-badge ${player.currentStreak.type === 'W' ? 'hot' : player.currentStreak.type === 'L' ? 'cold' : 'neutral'}`}
+                      title={
+                        player.currentStreak.type === 'W'
+                          ? t('standings.winStreak')
+                          : player.currentStreak.type === 'L'
+                            ? t('standings.lossStreak')
+                            : t('standings.drawStreak')
+                      }
+                    >
+                      {player.currentStreak.type === 'W' && '🔥 '}
+                      {player.currentStreak.type === 'L' && '❄️ '}
+                      {player.currentStreak.type === 'D' && '➖ '}
+                      {player.currentStreak.count}
+                      {player.currentStreak.type === 'W' ? 'W' : player.currentStreak.type === 'L' ? 'L' : 'D'}
+                    </span>
+                  ) : (
+                    <span className="streak-empty">-</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
