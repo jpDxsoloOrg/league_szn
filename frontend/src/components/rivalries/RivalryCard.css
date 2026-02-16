@@ -1,0 +1,134 @@
+.rivalry-card {
+  background: #2d2d2d;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  position: relative;
+}
+
+.rivalry-card--featured {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 1px #d4af37;
+}
+
+.rivalry-card__badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  font-size: 0.75rem;
+  color: #d4af37;
+  font-weight: 600;
+}
+
+.rivalry-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.rivalry-card__players {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rivalry-card__player {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rivalry-card__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.rivalry-card__avatar--placeholder {
+  background: #444;
+}
+
+.rivalry-card__name {
+  font-weight: 600;
+  color: #eee;
+}
+
+.rivalry-card__vs {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.rivalry-card__intensity {
+  font-size: 0.85rem;
+  color: #d4af37;
+}
+
+.rivalry-card__series {
+  margin: 0 0 0.5rem;
+  color: #bbb;
+  font-size: 0.95rem;
+}
+
+.rivalry-card__championship {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: #d4af37;
+}
+
+.rivalry-card__recent {
+  margin-top: 0.75rem;
+}
+
+.rivalry-card__toggle {
+  background: none;
+  border: none;
+  color: #8ab4f8;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.rivalry-card__toggle:hover {
+  color: #a8c7fa;
+}
+
+.rivalry-card__matches {
+  margin: 0.5rem 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.rivalry-card__matches li {
+  margin-bottom: 0.25rem;
+}
+
+.rivalry-card__matches a {
+  color: #8ab4f8;
+  text-decoration: none;
+}
+
+.rivalry-card__matches a:hover {
+  text-decoration: underline;
+}
+
+.rivalry-card__footer {
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #444;
+}
+
+.rivalry-card__link {
+  color: #d4af37;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.rivalry-card__link:hover {
+  text-decoration: underline;
+}

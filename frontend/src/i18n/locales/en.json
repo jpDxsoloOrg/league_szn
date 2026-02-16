@@ -41,6 +41,7 @@
     "challenges": "Challenges",
     "promos": "Promos",
     "statistics": "Stats",
+    "rivalries": "Rivalries",
     "help": "Help",
     "wiki": "Wiki",
     "admin": "Admin",
@@ -228,6 +229,21 @@
       "d": "D",
       "points": "Points"
     }
+  },
+  "rivalries": {
+    "title": "Rivalries",
+    "loading": "Loading rivalries...",
+    "noRivalries": "No rivalries yet. Rivalries appear when two players have 3+ matches in the season.",
+    "intensity": {
+      "heatingUp": "Heating Up",
+      "intense": "Intense",
+      "historic": "Historic"
+    },
+    "seriesLeads": "{{name}} leads {{wins}}-{{losses}}",
+    "seriesTied": "Tied {{wins}}-{{wins}}",
+    "recentMatches": "Recent matches",
+    "rivalryOfTheWeek": "Rivalry of the Week",
+    "championshipAtStake": "Championship at stake"
   },
   "admin": {
     "panel": {

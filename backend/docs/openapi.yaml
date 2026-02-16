@@ -1360,6 +1360,19 @@ paths:
         '200': { description: 'Statistics (shape varies by section param)' }
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /rivalries:
+    get:
+      tags: [Rivalries]
+      summary: Get top rivalries from match history
+      parameters:
+        - name: seasonId
+          in: query
+          schema: { type: string }
+          description: Optional season ID to filter matches (default all seasons)
+      responses:
+        '200': { description: List of rivalries (player pairs with 3+ matches, series record, intensity badge)' }
+        '500': { description: 'Server error', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /fantasy/config:
     get:
       tags: [Fantasy]

@@ -510,6 +510,15 @@ functions:
           method: get
           cors: *corsConfig
 
+  # Rivalries (detect and return top rivalries from match history)
+  getRivalries:
+    handler: functions/rivalries/getRivalries.handler
+    events:
+      - http:
+          path: rivalries
+          method: get
+          cors: *corsConfig
+
   # Fantasy (Phase 3 consolidated: all 12 fantasy handlers)
   fantasy:
     handler: functions/fantasy/handler.handler

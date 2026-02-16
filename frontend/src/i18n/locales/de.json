@@ -41,6 +41,7 @@
     "challenges": "Herausforderungen",
     "promos": "Promos",
     "statistics": "Statistiken",
+    "rivalries": "Rivalitäten",
     "help": "Hilfe",
     "wiki": "Wiki",
     "admin": "Admin",
@@ -228,6 +229,21 @@
       "d": "U",
       "points": "Punkte"
     }
+  },
+  "rivalries": {
+    "title": "Rivalitäten",
+    "loading": "Rivalitäten werden geladen...",
+    "noRivalries": "Noch keine Rivalitäten. Sie erscheinen, wenn zwei Spieler 3+ Kämpfe in der Saison haben.",
+    "intensity": {
+      "heatingUp": "Heiß läuft",
+      "intense": "Intensiv",
+      "historic": "Historisch"
+    },
+    "seriesLeads": "{{name}} führt {{wins}}-{{losses}}",
+    "seriesTied": "Unentschieden {{wins}}-{{wins}}",
+    "recentMatches": "Letzte Kämpfe",
+    "rivalryOfTheWeek": "Rivalität der Woche",
+    "championshipAtStake": "Meisterschaft im Spiel"
   },
   "admin": {
     "panel": {

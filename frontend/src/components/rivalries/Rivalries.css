@@ -1,0 +1,59 @@
+.rivalries-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.rivalries-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.rivalries-page__header h2 {
+  margin: 0;
+}
+
+.rivalries-page__nav {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.rivalries-page__nav a {
+  color: #d4af37;
+  text-decoration: none;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.rivalries-page__nav a:hover {
+  background-color: #333;
+}
+
+.rivalries-page__season {
+  margin-bottom: 1.5rem;
+}
+
+.rivalries-page__empty {
+  color: #888;
+}
+
+.rivalries-page__error {
+  color: #e57373;
+}
+
+.rivalries-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.rivalries-page__grid .rivalry-card--featured {
+  grid-column: 1 / -1;
+}
