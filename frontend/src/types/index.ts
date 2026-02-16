@@ -31,6 +31,8 @@ export interface Match {
   createdAt: string;
   challengeId?: string;
   promoId?: string;
+  starRating?: number;
+  matchOfTheNight?: boolean;
 }
 
 // Input type for scheduling a new match (uses new field names, backend handles legacy fields)

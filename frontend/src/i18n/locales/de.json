@@ -185,6 +185,12 @@
       "minTeamsError": "Bitte erstellen Sie mindestens 2 Teams mit je 2+ Mitgliedern"
     }
   },
+  "match": {
+    "starRating": "Sternebewertung",
+    "matchOfTheNight": "Match of the Night",
+    "matchOfTheNightBadge": "Match of the Night",
+    "clearRating": "Bewertung löschen"
+  },
   "recordResult": {
     "title": "Kampfergebnisse eintragen",
     "scheduledMatches": "Geplante Kämpfe",
@@ -365,6 +371,7 @@
       "headToHead": "Direktvergleich",
       "leaderboards": "Ranglisten",
       "records": "Rekordbuch",
+      "rivalries": "Rivalitäten",
       "taleOfTape": "Tale of the Tape",
       "achievements": "Erfolge"
     },
@@ -474,7 +481,25 @@
         "records": "Rekorde",
         "special": "Spezial"
       }
+    },
+    "bestMatches": {
+      "title": "Beste Kämpfe",
+      "noData": "Noch keine bewerteten Kämpfe. Bewerten Sie Kämpfe beim Eintragen der Ergebnisse."
     }
+  },
+  "rivalries": {
+    "title": "Rivalitäten",
+    "leads": "{{name}} führt {{wins}}-{{losses}}",
+    "tied": "Unentschieden {{count}}-{{count}}",
+    "recentMatches": "Kämpfe",
+    "championshipAtStake": "Titel auf dem Spiel",
+    "intensity": {
+      "heatingUp": "Heiß gelaufen 🔥",
+      "intense": "Intensiv 💥",
+      "historic": "Historisch 👑"
+    },
+    "noRivalries": "Noch keine Rivalitäten. Rivalitäten erscheinen, wenn zwei Spieler mindestens 3 Mal gegeneinander angetreten sind.",
+    "viewHeadToHead": "Direktvergleich anzeigen"
   },
   "events": {
     "title": "Veranstaltungen & PPV",

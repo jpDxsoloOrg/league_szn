@@ -181,6 +181,43 @@
   border-radius: 4px;
 }
 
+.results-match-awards {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.results-match-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #d4af37;
+  letter-spacing: 0.02em;
+}
+
+.results-match-rating-value {
+  font-size: 0.85rem;
+  color: #aaa;
+  font-weight: 500;
+}
+
+.results-motn-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #92400e;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+}
+
 .results-outcome {
   display: flex;
   flex-direction: column;

@@ -61,6 +61,11 @@ vi.mock('../ErrorBoundary', () => ({
   default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+// Avoid loading WikiArticle (and thus react-syntax-highlighter ESM) in App tests
+vi.mock('../Wiki', () => ({ WikiLayout: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
+vi.mock('../WikiIndex', () => ({ default: () => <div data-testid="wiki-index">WikiIndex</div> }));
+vi.mock('../WikiArticle', () => ({ default: () => <div data-testid="wiki-article">WikiArticle</div> }));
+
 vi.mock('../../App.css', () => ({}));
 
 // We need to override the router in App.tsx to use MemoryRouter.

@@ -510,6 +510,15 @@ functions:
           method: get
           cors: *corsConfig
 
+  getRivalries:
+    handler: functions/rivalries/getRivalries.handler
+    timeout: 15
+    events:
+      - http:
+          path: rivalries
+          method: get
+          cors: *corsConfig
+
   # Fantasy (Phase 3 consolidated: all 12 fantasy handlers)
   fantasy:
     handler: functions/fantasy/handler.handler
