@@ -1,10 +1,10 @@
 # Divisionen
 
-Spieler können in Divisionen organisiert werden, ähnlich den Markenaufteilungen bei WWE.
+Spieler können in Divisionen organisiert werden, basierend auf Gewichtsklasse, Kartenposition oder Rolle.
 
 ## Was sind Divisionen?
 
-Divisionen sind Gruppen, denen Spieler zugeordnet werden können, z. B. „Raw“, „SmackDown“ oder „NXT“. Das hilft bei der Organisation des Kaders und kann für markenspezifische Wettbewerbe genutzt werden.
+Divisionen sind Gruppen, denen Spieler zugeordnet werden können, z. B. „Heavyweight", „Cruiserweight", „Main Event", „Mid Card" oder „Jobber". Das hilft bei der Organisation des Kaders und kann für divisionsspezifische Wettbewerbe und Titelkämpfe genutzt werden, wenn Divisionsbeschränkungen aktiviert sind.
 
 ## Spieler-Divisionen anzeigen
 
