@@ -1,0 +1,30 @@
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 2rem;
+  text-align: center;
+}
+
+.not-found-title {
+  font-size: 4rem;
+  color: #d4af37;
+  margin-bottom: 0.5rem;
+}
+
+.not-found-message {
+  color: #bbb;
+  margin-bottom: 1.5rem;
+}
+
+.not-found-link {
+  color: #d4af37;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.not-found-link:hover {
+  text-decoration: underline;
+}

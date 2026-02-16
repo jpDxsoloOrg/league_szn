@@ -154,6 +154,10 @@
   color: #d4af37;
 }
 
+.standings-table .standings-row-clickable {
+  cursor: pointer;
+}
+
 .form-cell,
 .streak-cell {
   text-align: center;

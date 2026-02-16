@@ -2,7 +2,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 300px;
+  width: 250px;
   height: 100vh;
   background-color: #111;
   border-right: 2px solid #d4af37;
@@ -10,6 +10,7 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  transition: width 0.25s ease;
 }
 
 .sidebar-header {
@@ -331,6 +332,57 @@
 /* Overlay backdrop */
 .sidebar-overlay {
   display: none;
+}
+
+/* Medium screens: slightly narrower sidebar to give more room to content */
+@media (min-width: 769px) and (max-width: 1280px) {
+  .sidebar {
+    width: 60px;
+  }
+
+  .sidebar-header {
+    padding: 0.75rem 0.5rem;
+    justify-content: center;
+  }
+
+  .sidebar-header h2 {
+    font-size: 0;
+    line-height: 0;
+    overflow: hidden;
+    width: 24px;
+    height: 24px;
+    margin: 0 auto;
+    border-radius: 4px;
+    background-color: #d4af37;
+  }
+
+  .sidebar-nav a,
+  .sidebar-nav .nav-disabled,
+  .nav-subgroup-toggle span:not(.toggle-arrow),
+  .nav-section-toggle span:not(.toggle-arrow) {
+    font-size: 0;
+    line-height: 0;
+    overflow: hidden;
+    padding: 0.6rem;
+    text-align: center;
+  }
+
+  .sidebar-nav a::before {
+    content: '\u2022';
+    font-size: 1rem;
+    color: inherit;
+  }
+
+  .sidebar-nav .nav-subgroup-toggle .toggle-arrow,
+  .sidebar-nav .nav-section-toggle .toggle-arrow {
+    display: none;
+  }
+
+  .nav-subgroup-items a,
+  .user-nav-items a,
+  .admin-nav-items a {
+    padding-left: 0.6rem;
+  }
 }
 
 @media (max-width: 768px) {

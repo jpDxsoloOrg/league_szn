@@ -3,11 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { championshipsApi, divisionsApi, playersApi } from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { type Division, type Championship, type ChampionshipReign, type Player } from '../types';
 import './Championships.css';
 
 export default function Championships() {
   const { t } = useTranslation();
+  useDocumentTitle(t('championships.title', 'Championships'));
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);

@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import type { EventType, EventCalendarEntry } from '../../types/event';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { eventsApi } from '../../services/api';
 import EventCard from './EventCard';
 import './EventsCalendar.css';
@@ -152,6 +154,8 @@ export default function EventsCalendar() {
     }
   };
 
+  useDocumentTitle(t('events.title'));
+
   const filterTabs: { key: FilterTab; label: string }[] = [
     { key: 'all', label: t('events.filters.all') },
     { key: 'ppv', label: t('events.filters.ppv') },
@@ -240,11 +244,13 @@ export default function EventsCalendar() {
                   {eventsByDay[day] && (
                     <div className="calendar-day-events">
                       {eventsByDay[day].map((evt) => (
-                        <div
+                        <Link
                           key={evt.eventId}
+                          to={`/events/${evt.eventId}`}
                           className="calendar-event-dot"
                           style={{ backgroundColor: eventTypeColors[evt.eventType] }}
                           title={evt.name}
+                          aria-label={evt.name}
                         />
                       ))}
                     </div>

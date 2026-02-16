@@ -4,6 +4,16 @@
   box-sizing: border-box;
 }
 
+/* Page transition: subtle fade-in on route change */
+@keyframes pageFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+main {
+  animation: pageFadeIn 0.2s ease-out;
+}
+
 .App {
   min-height: 100vh;
   background-color: #0f0f0f;
@@ -14,7 +24,8 @@ main {
   padding: 2rem;
   padding-top: calc(56px + 2rem);
   max-width: 1200px;
-  margin-left: 300px;
+  margin-left: 250px;
+  transition: margin-left 0.25s ease;
 }
 
 h2 {
@@ -82,6 +93,13 @@ tr:hover {
   width: 100%;
 }
 
+/* Sidebar collapsed (medium screens): reduce main margin */
+@media (min-width: 769px) and (max-width: 1280px) {
+  main {
+    margin-left: 60px;
+  }
+}
+
 @media (max-width: 768px) {
   main {
     margin-left: 0;
@@ -94,7 +112,7 @@ tr:hover {
   }
 }
 
-/* Print: hide app chrome so wiki and other content print cleanly */
+/* Print: hide app chrome and ensure readable content */
 @media print {
   .sidebar,
   .hamburger-btn,
@@ -107,14 +125,36 @@ tr:hover {
   }
 
   .App {
-    background: #fff;
+    background: #fff !important;
+    color: #000 !important;
   }
 
   main {
-    margin-left: 0;
-    margin-right: 0;
-    padding: 0.5in;
-    padding-top: 0.5in;
-    max-width: none;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 0.5in !important;
+    padding-top: 0.5in !important;
+    max-width: none !important;
+  }
+
+  body, .standings-container, .events-calendar-page, .championships-container {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  h1, h2, h3, th {
+    color: #000 !important;
+  }
+
+  td, p, span, a, label {
+    color: #000 !important;
+  }
+
+  table, th, td {
+    border-color: #333 !important;
+  }
+
+  a[href]::after {
+    content: none;
   }
 }

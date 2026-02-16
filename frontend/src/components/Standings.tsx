@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { standingsApi, seasonsApi, divisionsApi } from '../services/api';
 import { logger } from '../utils/logger';
 import type { Standings as StandingsType, Season, Division, Player } from '../types';
@@ -9,6 +10,7 @@ import './Standings.css';
 
 export default function Standings() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [standings, setStandings] = useState<StandingsType | null>(null);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [selectedDivision, setSelectedDivision] = useState<string>('all');
@@ -119,6 +121,8 @@ export default function Standings() {
     return season ? season.name : t('standings.allTime');
   }, [selectedSeasonId, seasons, t]);
 
+  useDocumentTitle(t('standings.pageTitle'));
+
   if (loading) {
     return <div className="loading">{t('standings.loading')}</div>;
   }
@@ -218,7 +222,19 @@ export default function Standings() {
           </thead>
           <tbody>
             {playersWithStats.map((player, index) => (
-              <tr key={player.playerId}>
+              <tr
+                key={player.playerId}
+                className="standings-row-clickable"
+                onClick={() => navigate(`/stats/player/${player.playerId}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigate(`/stats/player/${player.playerId}`);
+                  }
+                }}
+              >
                 <td className="rank">{index + 1}</td>
                 <td className="wrestler-image-cell">
                   {player.imageUrl ? (
@@ -231,7 +247,7 @@ export default function Standings() {
                     <div className="no-image-placeholder">-</div>
                   )}
                 </td>
-                <td className="player-name">
+                <td className="player-name" onClick={(e) => e.stopPropagation()}>
                   <PlayerHoverCard player={player} divisions={divisions}>
                     <Link to={`/stats/player/${player.playerId}`} className="player-name-link">
                       {player.name}

@@ -5,6 +5,8 @@ import { SiteConfigProvider } from './contexts/SiteConfigContext';
 import { NavLayoutProvider } from './contexts/NavLayoutContext';
 import { useNavLayout } from './contexts/navLayoutContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import ScrollToTop from './components/ScrollToTop';
+import NotFound from './components/NotFound';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import TopNav from './components/TopNav';
@@ -62,6 +64,7 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
+        <ScrollToTop />
         <AuthProvider>
           <SiteConfigProvider>
             <NavLayoutProvider>
@@ -240,6 +243,9 @@ function AppLayout() {
                 </ProtectedRoute>
               </FeatureRoute>
             } />
+
+            {/* Catch-all 404 */}
+            <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
     </div>

@@ -144,11 +144,13 @@
 }
 
 .calendar-event-dot {
+  display: block;
   width: 10px;
   height: 10px;
   border-radius: 50%;
   cursor: pointer;
   transition: transform 0.15s;
+  text-decoration: none;
 }
 
 .calendar-event-dot:hover {

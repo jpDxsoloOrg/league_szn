@@ -153,7 +153,7 @@ export default function Sidebar() {
                       const usePrefix = ['/stats', '/events', '/contenders'].includes(item.path);
                       const active = usePrefix ? isActivePrefix(item.path) : (item.path === '/' ? isActive('/') : isActive(item.path));
                       return (
-                        <Link key={item.path} to={item.path} className={active ? 'active' : ''}>
+                        <Link key={item.path} to={item.path} className={active ? 'active' : ''} title={t(item.i18nKey)}>
                           {t(item.i18nKey)}
                         </Link>
                       );
@@ -168,7 +168,7 @@ export default function Sidebar() {
             if (item.type === 'fantasy' && !features.fantasy) return null;
             if (item.type === 'link') {
               return (
-                <Link key={item.path} to={item.path} className={isActive(item.path) ? 'active' : ''}>
+                <Link key={item.path} to={item.path} className={isActive(item.path) ? 'active' : ''} title={t(item.i18nKey)}>
                   {t(item.i18nKey)}
                 </Link>
               );
@@ -183,7 +183,7 @@ export default function Sidebar() {
               );
             }
             return (
-              <Link key={item.path} to={item.path} className={location.pathname.startsWith(item.path) ? 'active' : ''}>
+              <Link key={item.path} to={item.path} className={location.pathname.startsWith(item.path) ? 'active' : ''} title={t(item.i18nKey)}>
                 {t(item.i18nKey)}
               </Link>
             );
@@ -222,6 +222,7 @@ export default function Sidebar() {
                               key={item.path}
                               to={item.path}
                               className={`${item.danger ? 'danger-link ' : ''}${isActive(item.path) ? 'active' : ''}`}
+                              title={t(item.i18nKey)}
                             >
                               {t(item.i18nKey)}
                             </Link>
