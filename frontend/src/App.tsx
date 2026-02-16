@@ -9,6 +9,7 @@ import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import TopNav from './components/TopNav';
 import Standings from './components/Standings';
+import ActivityFeed from './components/ActivityFeed';
 import Championships from './components/Championships';
 import Tournaments from './components/Tournaments';
 import { WikiLayout } from './components/Wiki';
@@ -92,6 +93,7 @@ function AppLayout() {
 
             {/* Public Routes */}
             <Route path="/" element={<Standings />} />
+            <Route path="/activity" element={<ActivityFeed />} />
             <Route path="/championships" element={<Championships />} />
             <Route path="/matches" element={<Navigate to="/events" replace />} />
             <Route path="/tournaments" element={<Tournaments />} />
