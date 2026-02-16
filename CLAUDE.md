@@ -200,6 +200,10 @@ When a match result is recorded (`recordResult.ts`):
 - Lambda authorizer (`functions/auth/authorizer.ts`) validates tokens using aws-jwt-verify
 - All admin endpoints protected with custom authorizer in API Gateway
 
+### Standings and dashboard data sources (no mock data)
+- **Standings "Last 5" (form)**: The form column comes from the standings API response (`recentForm` and `currentStreak`). The backend (`functions/standings/getStandings.ts`) computes these from the last 5 completed matches per player (DynamoDB Matches with `status = 'completed'`). The frontend displays only what the API returns; there is no client-side mock or fallback data.
+- **Dashboard "Recent Results"**: The matches listed on the dashboard come from the dashboard API response (`recentResults`). The backend (`functions/dashboard/getDashboard.ts`) builds this from DynamoDB Matches (completed only, sorted by date descending, latest 5). The frontend renders only `data.recentResults`; there is no hardcoded or mock match list.
+
 ## Local Development
 
 ### Start DynamoDB Local
