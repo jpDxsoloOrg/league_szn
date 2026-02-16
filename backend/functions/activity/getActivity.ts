@@ -157,11 +157,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       for (const s of seasons) {
         const updatedAt = s.updatedAt as string | undefined;
         if (!updatedAt) continue; // only show seasons with updatedAt
+        const createdAt = s.createdAt as string | undefined;
         const startDate = s.startDate as string;
         const status = s.status as string;
         rawItems.push({
           type: 'season_event',
-          timestamp: updatedAt,
+          timestamp: createdAt || updatedAt,
           id: `season-start-${s.seasonId as string}`,
           summary: '',
           metadata: {
