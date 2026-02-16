@@ -93,6 +93,17 @@ export default function TopNav() {
 
   const closeDropdown = useCallback(() => setOpenGroup(null), []);
 
+  useEffect(() => {
+    if (openGroup === null) return;
+    const handleMouseDown = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        closeDropdown();
+      }
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [openGroup, closeDropdown]);
+
   const isActive = (path: string) => location.pathname === path;
   const isActivePrefix = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
 
@@ -271,7 +282,6 @@ export default function TopNav() {
                   type="button"
                   className="topnav-menu-btn"
                   onClick={() => setOpenGroup(isOpen ? null : group.key)}
-                  onBlur={() => setTimeout(closeDropdown, 150)}
                   aria-expanded={isOpen}
                   aria-haspopup="true"
                 >
@@ -331,7 +341,6 @@ export default function TopNav() {
                 type="button"
                 className="topnav-menu-btn"
                 onClick={() => setOpenGroup(openGroup === 'admin' ? null : 'admin')}
-                onBlur={() => setTimeout(closeDropdown, 150)}
                 aria-expanded={openGroup === 'admin'}
                 aria-haspopup="true"
               >
