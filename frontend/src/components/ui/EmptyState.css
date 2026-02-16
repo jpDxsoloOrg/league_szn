@@ -1,0 +1,55 @@
+.empty-state-ui {
+  text-align: center;
+  padding: 3rem 2rem;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.empty-state-ui__icon {
+  margin-bottom: 1rem;
+  color: var(--color-text-muted);
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.empty-state-ui__icon svg {
+  width: 64px;
+  height: 64px;
+  opacity: 0.7;
+}
+
+.empty-state-ui__title {
+  color: var(--color-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.empty-state-ui__description {
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  margin: 0 0 1.5rem;
+}
+
+.empty-state-ui__action {
+  display: inline-block;
+  padding: 0.5rem 1.25rem;
+  background-color: var(--color-primary);
+  color: var(--color-bg);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.empty-state-ui__action:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.empty-state-ui__action:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

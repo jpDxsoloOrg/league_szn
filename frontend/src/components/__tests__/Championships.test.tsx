@@ -109,7 +109,7 @@ describe('Championships', () => {
 
     renderChampionships();
 
-    expect(screen.getByText('Loading championships...')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('renders championship list with current holders', async () => {

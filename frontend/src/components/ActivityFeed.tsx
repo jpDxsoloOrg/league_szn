@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { activityApi } from '../services/api';
 import type { ActivityItem, ActivityItemType } from '../types';
+import Skeleton from './ui/Skeleton';
+import EmptyState from './ui/EmptyState';
 import './ActivityFeed.css';
 
 const DEFAULT_LIMIT = 20;
@@ -118,7 +120,7 @@ export default function ActivityFeed() {
     return (
       <div className="activity-feed">
         <h1 className="activity-feed__title">{t('activity.title')}</h1>
-        <p className="activity-feed__loading">{t('activity.loading')}</p>
+        <Skeleton variant="block" count={5} />
       </div>
     );
   }
@@ -157,7 +159,10 @@ export default function ActivityFeed() {
       )}
 
       {!error && items.length === 0 && (
-        <p className="activity-feed__empty">{t('activity.noActivity')}</p>
+        <EmptyState
+          title={t('activity.title')}
+          description={t('activity.noActivity')}
+        />
       )}
 
       {!error && items.length > 0 && (

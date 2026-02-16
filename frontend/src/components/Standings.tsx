@@ -7,6 +7,8 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { Standings as StandingsType, Season, Division, Player } from '../types';
 import PlayerHoverCard from './PlayerHoverCard';
 import DivisionFilter from './DivisionFilter';
+import Skeleton from './ui/Skeleton';
+import EmptyState from './ui/EmptyState';
 import './Standings.css';
 
 export default function Standings() {
@@ -124,7 +126,7 @@ export default function Standings() {
   }, [selectedSeasonId, seasons, t]);
 
   if (loading) {
-    return <div className="loading">{t('standings.loading')}</div>;
+    return <Skeleton variant="table" className="standings-skeleton" />;
   }
 
   if (error) {
@@ -138,10 +140,10 @@ export default function Standings() {
 
   if (!standings || standings.players.length === 0) {
     return (
-      <div className="empty-state">
-        <h2>{t('standings.pageTitle')}</h2>
-        <p>{t('standings.noPlayers')}</p>
-      </div>
+      <EmptyState
+        title={t('standings.pageTitle')}
+        description={t('standings.noPlayers')}
+      />
     );
   }
 

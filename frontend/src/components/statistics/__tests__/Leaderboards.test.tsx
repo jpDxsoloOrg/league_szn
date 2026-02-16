@@ -139,6 +139,6 @@ describe('Leaderboards', () => {
 
     renderComponent();
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Loading...' })).toBeInTheDocument();
   });
 });

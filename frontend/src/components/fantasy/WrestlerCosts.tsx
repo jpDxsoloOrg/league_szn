@@ -4,6 +4,7 @@ import { fantasyApi, divisionsApi } from '../../services/api';
 import type { WrestlerWithCost } from '../../types/fantasy';
 import type { Division } from '../../types';
 import DivisionFilter from '../DivisionFilter';
+import Skeleton from '../ui/Skeleton';
 import './WrestlerCosts.css';
 
 type SortField = 'name' | 'cost' | 'winRate' | 'trend';
@@ -119,10 +120,7 @@ export default function WrestlerCosts() {
   if (loading) {
     return (
       <div className="wrestler-costs">
-        <div className="loading-state">
-          <div className="spinner" />
-          <p>{t('common.loading')}</p>
-        </div>
+        <Skeleton variant="table" count={8} />
       </div>
     );
   }

@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { statisticsApi, playersApi } from '../../services/api';
 import type { RatedMatchSummary } from '../../services/api';
 import type { Player } from '../../types';
+import Skeleton from '../ui/Skeleton';
+import EmptyState from '../ui/EmptyState';
 import './BestMatches.css';
 
 export default function BestMatches() {
@@ -46,7 +48,7 @@ export default function BestMatches() {
     return (
       <div className="best-matches">
         <h2>{t('statistics.bestMatches.title')}</h2>
-        <p>{t('common.loading')}</p>
+        <Skeleton variant="block" count={5} />
       </div>
     );
   }
@@ -74,7 +76,10 @@ export default function BestMatches() {
       </div>
 
       {matches.length === 0 ? (
-        <p className="best-matches-empty">{t('statistics.bestMatches.noData')}</p>
+        <EmptyState
+          title={t('statistics.bestMatches.title')}
+          description={t('statistics.bestMatches.noData')}
+        />
       ) : (
         <ul className="best-matches-list">
           {matches.map((m) => {

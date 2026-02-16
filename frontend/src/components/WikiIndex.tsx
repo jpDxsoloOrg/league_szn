@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Fuse from 'fuse.js';
 import { useAuth } from '../contexts/AuthContext';
+import Skeleton from './ui/Skeleton';
 import './Wiki.css';
 
 interface WikiArticleEntry {
@@ -73,7 +74,11 @@ export default function WikiIndex() {
   }, [query, visibleArticles, fuse]);
 
   if (loading) {
-    return <p className="wiki-loading">{t('common.loading')}</p>;
+    return (
+      <div className="wiki-loading">
+        <Skeleton variant="block" count={4} />
+      </div>
+    );
   }
   if (error) {
     return <p className="wiki-error">{t('common.error')}: {error}</p>;

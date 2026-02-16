@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { statisticsApi, seasonsApi } from '../../services/api';
 import type { LeaderboardEntry } from '../../types/statistics';
 import type { Season } from '../../types';
+import Skeleton from '../ui/Skeleton';
 import SeasonSelector from './SeasonSelector';
 import './Leaderboards.css';
 
@@ -92,7 +93,7 @@ function Leaderboards() {
     return (
       <div className="leaderboards">
         <h2>{t('statistics.leaderboards.title')}</h2>
-        <p>{t('common.loading', 'Loading...')}</p>
+        <Skeleton variant="table" count={8} />
       </div>
     );
   }

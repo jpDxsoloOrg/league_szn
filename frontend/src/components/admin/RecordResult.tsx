@@ -4,6 +4,7 @@ import { matchesApi, playersApi, eventsApi, stipulationsApi } from '../../servic
 import type { Match, Player, Stipulation } from '../../types';
 import type { LeagueEvent } from '../../types/event';
 import SearchableSelect from './SearchableSelect';
+import Skeleton from '../ui/Skeleton';
 import './RecordResult.css';
 
 const STANDALONE_FILTER = '__standalone__';
@@ -228,7 +229,7 @@ export default function RecordResult() {
   };
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return <Skeleton variant="block" count={4} />;
   }
 
   return (

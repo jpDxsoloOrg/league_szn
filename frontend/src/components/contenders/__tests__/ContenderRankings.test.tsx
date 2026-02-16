@@ -224,7 +224,7 @@ describe('ContenderRankings', () => {
 
     render(<ContenderRankings />);
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Loading...' })).toBeInTheDocument();
   });
 
   it('shows empty state when no active championships exist', async () => {

@@ -147,7 +147,7 @@ describe('ScheduleMatch', () => {
 
     renderScheduleMatch();
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('renders form with match format select, stipulation dropdown, and participant cards after data loads', async () => {

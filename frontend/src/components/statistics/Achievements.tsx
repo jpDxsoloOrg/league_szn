@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { statisticsApi } from '../../services/api';
 import type { StatsPlayer } from '../../services/api';
 import type { Achievement } from '../../types/statistics';
+import Skeleton from '../ui/Skeleton';
 import './Achievements.css';
 
 type FilterType = 'all' | 'milestone' | 'record' | 'special';
@@ -85,7 +86,7 @@ function Achievements() {
     return (
       <div className="achievements-page">
         <h2>{t('statistics.achievements.title')}</h2>
-        <p>{t('common.loading', 'Loading...')}</p>
+        <Skeleton variant="block" count={4} />
       </div>
     );
   }

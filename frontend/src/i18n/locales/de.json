@@ -38,6 +38,14 @@
     "title": "Seite nicht gefunden",
     "message": "Die angeforderte Seite existiert nicht oder wurde verschoben."
   },
+  "emptyState": {
+    "checkBackSoon": "Schau bald wieder vorbei",
+    "createFirstChampionship": "Erstelle deine erste Meisterschaft",
+    "createFirstPlayer": "Füge deinen ersten Spieler hinzu",
+    "createFirstTournament": "Erstelle dein erstes Turnier",
+    "createFirstDivision": "Erstelle deine erste Division",
+    "goToAdmin": "Zum Admin"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "standings": "Tabelle",

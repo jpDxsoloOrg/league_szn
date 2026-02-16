@@ -135,7 +135,7 @@ describe('RecordResult', () => {
 
     renderRecordResult();
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('lists scheduled matches after loading', async () => {

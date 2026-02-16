@@ -233,7 +233,7 @@ describe('PlayerStats', () => {
 
     renderComponent();
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Loading...' })).toBeInTheDocument();
   });
 
   it('shows error message when player stats API fails', async () => {

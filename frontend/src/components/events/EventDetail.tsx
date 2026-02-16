@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { eventsApi } from '../../services/api';
 import type { MatchDesignation, EventWithMatches } from '../../types/event';
+import Skeleton from '../ui/Skeleton';
 import './EventDetail.css';
 
 const eventTypeColors: Record<string, string> = {
@@ -66,7 +67,7 @@ export default function EventDetail() {
   if (loading) {
     return (
       <div className="event-detail-page">
-        <div className="loading-message">{t('common.loading')}</div>
+        <Skeleton variant="block" count={4} />
       </div>
     );
   }

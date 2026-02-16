@@ -7,6 +7,7 @@ import type { LeagueEvent, MatchDesignation } from '../../types/event';
 import type { ChallengeWithPlayers } from '../../types/challenge';
 import type { PromoWithContext } from '../../types/promo';
 import SearchableSelect from './SearchableSelect';
+import Skeleton from '../ui/Skeleton';
 import './ScheduleMatch.css';
 
 type ScheduleLocationState = {
@@ -288,7 +289,7 @@ export default function ScheduleMatch() {
   };
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return <Skeleton variant="block" count={4} />;
   }
 
   return (
