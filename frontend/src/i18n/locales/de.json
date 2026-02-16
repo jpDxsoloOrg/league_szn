@@ -365,6 +365,7 @@
       "headToHead": "Direktvergleich",
       "leaderboards": "Ranglisten",
       "records": "Rekordbuch",
+      "rivalries": "Rivalitäten",
       "taleOfTape": "Tale of the Tape",
       "achievements": "Erfolge"
     },
@@ -475,6 +476,20 @@
         "special": "Spezial"
       }
     }
+  },
+  "rivalries": {
+    "title": "Rivalitäten",
+    "leads": "{{name}} führt {{wins}}-{{losses}}",
+    "tied": "Unentschieden {{count}}-{{count}}",
+    "recentMatches": "Kämpfe",
+    "championshipAtStake": "Titel auf dem Spiel",
+    "intensity": {
+      "heatingUp": "Heiß gelaufen 🔥",
+      "intense": "Intensiv 💥",
+      "historic": "Historisch 👑"
+    },
+    "noRivalries": "Noch keine Rivalitäten. Rivalitäten erscheinen, wenn zwei Spieler mindestens 3 Mal gegeneinander angetreten sind.",
+    "viewHeadToHead": "Direktvergleich anzeigen"
   },
   "events": {
     "title": "Veranstaltungen & PPV",
