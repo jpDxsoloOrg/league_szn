@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { statisticsApi } from '../../services/api';
 import type { StatsPlayer } from '../../services/api';
 import { usePlayerStats } from '../../hooks/usePlayerStats';
+import Skeleton from '../ui/Skeleton';
+import EmptyState from '../ui/EmptyState';
 import PlayerStatsContent from './PlayerStatsContent';
 import SeasonSelector from './SeasonSelector';
 import './PlayerStats.css';
@@ -48,7 +50,7 @@ function PlayerStats() {
     return (
       <div className="player-stats">
         <h2>{t('statistics.playerStats.title')}</h2>
-        <p>{t('common.loading', 'Loading...')}</p>
+        <Skeleton variant="block" count={3} />
       </div>
     );
   }
@@ -65,8 +67,10 @@ function PlayerStats() {
   if (!player || !overallStats) {
     return (
       <div className="player-stats">
-        <h2>{t('statistics.playerStats.title')}</h2>
-        <p>{t('statistics.playerStats.noData')}</p>
+        <EmptyState
+          title={t('statistics.playerStats.title')}
+          description={t('statistics.playerStats.noData')}
+        />
       </div>
     );
   }

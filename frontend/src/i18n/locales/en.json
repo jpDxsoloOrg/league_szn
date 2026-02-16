@@ -38,6 +38,14 @@
     "title": "Page Not Found",
     "message": "The page you're looking for doesn't exist or has been moved."
   },
+  "emptyState": {
+    "checkBackSoon": "Check back soon",
+    "createFirstChampionship": "Create your first championship",
+    "createFirstPlayer": "Add your first player",
+    "createFirstTournament": "Create your first tournament",
+    "createFirstDivision": "Create your first division",
+    "goToAdmin": "Go to Admin"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "standings": "Standings",

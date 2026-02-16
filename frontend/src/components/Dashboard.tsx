@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { dashboardApi } from '../services/api';
 import type { DashboardData, DashboardEvent, DashboardMatch } from '../types';
+import Skeleton from './ui/Skeleton';
 import './Dashboard.css';
 
 function renderStarRating(rating: number): string {
@@ -167,9 +168,7 @@ export default function Dashboard() {
     return (
       <div className="dashboard-container dashboard-loading">
         <h1 className="dashboard-title">{t('dashboard.title')}</h1>
-        <div className="dashboard-section" />
-        <div className="dashboard-section" />
-        <div className="dashboard-section" />
+        <Skeleton variant="block" count={4} className="dashboard-skeleton" />
       </div>
     );
   }

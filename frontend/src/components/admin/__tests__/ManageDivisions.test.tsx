@@ -35,8 +35,8 @@ describe('ManageDivisions', () => {
   it('renders division list after loading', async () => {
     render(<ManageDivisions />);
 
-    // Loading state
-    expect(screen.getByText('Loading divisions...')).toBeInTheDocument();
+    // Loading state (skeleton with status role)
+    expect(screen.getByRole('status')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('All Divisions (2)')).toBeInTheDocument();

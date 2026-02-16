@@ -6,6 +6,8 @@ import { logger } from '../utils/logger';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { type Division, type Championship, type ChampionshipReign, type Player } from '../types';
 import DivisionFilter from './DivisionFilter';
+import Skeleton from './ui/Skeleton';
+import EmptyState from './ui/EmptyState';
 import './Championships.css';
 
 export default function Championships() {
@@ -120,7 +122,7 @@ export default function Championships() {
   };
 
   if (loading) {
-    return <div className="loading">{t('championships.loading')}</div>;
+    return <Skeleton variant="cards" />;
   }
 
   if (error) {
@@ -134,10 +136,10 @@ export default function Championships() {
 
   if (championships.length === 0) {
     return (
-      <div className="empty-state">
-        <h2>{t('championships.title')}</h2>
-        <p>{t('championships.noChampionships')}</p>
-      </div>
+      <EmptyState
+        title={t('championships.title')}
+        description={t('championships.noChampionships')}
+      />
     );
   }
 

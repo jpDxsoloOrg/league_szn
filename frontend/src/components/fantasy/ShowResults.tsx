@@ -5,6 +5,7 @@ import { eventsApi, fantasyApi, divisionsApi } from '../../services/api';
 import type { EventWithMatches } from '../../types/event';
 import type { FantasyPicks, WrestlerWithCost } from '../../types/fantasy';
 import type { Division } from '../../types';
+import Skeleton from '../ui/Skeleton';
 import './ShowResults.css';
 
 export default function ShowResults() {
@@ -73,10 +74,7 @@ export default function ShowResults() {
   if (loading) {
     return (
       <div className="show-results">
-        <div className="loading-state">
-          <div className="spinner" />
-          <p>{t('common.loading')}</p>
-        </div>
+        <Skeleton variant="block" count={4} />
       </div>
     );
   }

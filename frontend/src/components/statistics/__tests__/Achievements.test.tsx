@@ -166,6 +166,6 @@ describe('Achievements', () => {
 
     renderComponent();
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 });

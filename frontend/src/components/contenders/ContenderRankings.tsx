@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { championshipsApi, contendersApi, divisionsApi } from '../../services/api';
 import type { Championship, Division } from '../../types';
 import type { ChampionshipContenders } from '../../types/contender';
+import Skeleton from '../ui/Skeleton';
+import EmptyState from '../ui/EmptyState';
 import ContenderCard from './ContenderCard';
 import './ContenderRankings.css';
 
@@ -128,7 +130,7 @@ export default function ContenderRankings() {
   if (loading) {
     return (
       <div className="contender-rankings">
-        <div className="loading-message">{t('common.loading')}</div>
+        <Skeleton variant="cards" count={4} />
       </div>
     );
   }
@@ -148,9 +150,10 @@ export default function ContenderRankings() {
           <h2>{t('contenders.title')}</h2>
           <p className="subtitle">{t('contenders.subtitle')}</p>
         </header>
-        <div className="empty-state">
-          <p>{t('contenders.noData')}</p>
-        </div>
+        <EmptyState
+          title={t('contenders.title')}
+          description={t('contenders.noData')}
+        />
       </div>
     );
   }
@@ -185,7 +188,7 @@ export default function ContenderRankings() {
       </div>
 
       {contendersLoading ? (
-        <div className="loading-message">{t('common.loading')}</div>
+        <Skeleton variant="block" count={3} />
       ) : contenderData ? (
         <>
           {/* Current Champion Section */}

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { eventsApi } from '../../services/api';
 import type { MatchDesignation, EventWithMatches } from '../../types/event';
+import Skeleton from '../ui/Skeleton';
+import EmptyState from '../ui/EmptyState';
 import './EventResults.css';
 
 const designationLabels: Record<MatchDesignation, string> = {
@@ -15,6 +17,7 @@ const designationLabels: Record<MatchDesignation, string> = {
 
 export default function EventResults() {
   const { eventId } = useParams<{ eventId: string }>();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const [eventData, setEventData] = useState<EventWithMatches | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +47,7 @@ export default function EventResults() {
   if (loading) {
     return (
       <div className="event-results-page">
-        <div className="loading-message">{t('common.loading')}</div>
+        <Skeleton variant="block" count={4} />
       </div>
     );
   }
@@ -68,12 +71,12 @@ export default function EventResults() {
   if (completedMatches.length === 0) {
     return (
       <div className="event-results-page">
-        <div className="results-not-ready">
-          <p>{t('events.results.notCompleted')}</p>
-          <Link to={`/events/${eventId}`} className="results-back-link">
-            {t('events.results.backToEvent')}
-          </Link>
-        </div>
+        <EmptyState
+          title={t('events.results.notCompleted')}
+          description={t('emptyState.checkBackSoon')}
+          actionLabel={t('events.results.backToEvent')}
+          onAction={() => eventId && navigate(`/events/${eventId}`)}
+        />
       </div>
     );
   }

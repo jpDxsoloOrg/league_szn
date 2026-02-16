@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { statisticsApi, seasonsApi } from '../../services/api';
 import type { StatsPlayer, HeadToHeadResponse } from '../../services/api';
 import type { Season } from '../../types';
+import Skeleton from '../ui/Skeleton';
 import SeasonSelector from './SeasonSelector';
 import './TaleOfTheTape.css';
 
@@ -166,7 +167,7 @@ function TaleOfTheTape() {
     return (
       <div className="tale-of-tape">
         <h2>{t('statistics.taleOfTape.title')}</h2>
-        <p>{t('common.loading', 'Loading...')}</p>
+        <Skeleton variant="block" count={4} />
       </div>
     );
   }
@@ -230,7 +231,7 @@ function TaleOfTheTape() {
       {player1Id === player2Id ? (
         <div className="tot-same-player">{t('statistics.headToHead.selectDifferent')}</div>
       ) : loading ? (
-        <p>{t('common.loading', 'Loading...')}</p>
+        <Skeleton variant="block" count={4} />
       ) : (
         <>
           {/* Boxing-style stat rows */}

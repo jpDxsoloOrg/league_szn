@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tournamentsApi, playersApi } from '../services/api';
 import type { Tournament, Player } from '../types';
+import Skeleton from './ui/Skeleton';
+import EmptyState from './ui/EmptyState';
 import './Tournaments.css';
 
 export default function Tournaments() {
@@ -152,7 +154,7 @@ export default function Tournaments() {
   };
 
   if (loading) {
-    return <div className="loading">{t('tournaments.loading')}</div>;
+    return <Skeleton variant="cards" />;
   }
 
   if (error) {
@@ -166,10 +168,10 @@ export default function Tournaments() {
 
   if (tournaments.length === 0) {
     return (
-      <div className="empty-state">
-        <h2>{t('tournaments.title')}</h2>
-        <p>{t('tournaments.noTournaments')}</p>
-      </div>
+      <EmptyState
+        title={t('tournaments.title')}
+        description={t('tournaments.noTournaments')}
+      />
     );
   }
 

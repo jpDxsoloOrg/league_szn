@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { divisionsApi } from '../../services/api';
 import type { Division } from '../../types';
+import Skeleton from '../ui/Skeleton';
 import './ManageDivisions.css';
 
 export default function ManageDivisions() {
@@ -98,7 +99,7 @@ export default function ManageDivisions() {
   };
 
   if (loading) {
-    return <div className="loading">Loading divisions...</div>;
+    return <Skeleton variant="block" count={4} />;
   }
 
   return (

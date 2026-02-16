@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { rivalriesApi, seasonsApi } from '../../services/api';
 import type { Rivalry } from '../../services/api/rivalries.api';
 import type { Season } from '../../types';
+import Skeleton from '../ui/Skeleton';
+import EmptyState from '../ui/EmptyState';
 import SeasonSelector from './SeasonSelector';
 import './Rivalries.css';
 
@@ -69,7 +71,7 @@ function Rivalries() {
     return (
       <div className="rivalries">
         <h2>{t('rivalries.title')}</h2>
-        <p>{t('common.loading', 'Loading...')}</p>
+        <Skeleton variant="block" count={3} />
       </div>
     );
   }
@@ -104,7 +106,10 @@ function Rivalries() {
       />
 
       {rivalries.length === 0 ? (
-        <p className="rivalries-empty">{t('rivalries.noRivalries')}</p>
+        <EmptyState
+          title={t('rivalries.title')}
+          description={t('rivalries.noRivalries')}
+        />
       ) : (
         <div className="rivalries-grid">
           {rivalries.map((r) => (

@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import type { EventType, EventCalendarEntry } from '../../types/event';
 import { eventsApi } from '../../services/api';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import Skeleton from '../ui/Skeleton';
+import EmptyState from '../ui/EmptyState';
 import EventCard from './EventCard';
 import './EventsCalendar.css';
 
@@ -167,7 +169,7 @@ export default function EventsCalendar() {
     return (
       <div className="events-calendar-page">
         <h2 className="events-title">{t('events.title')}</h2>
-        <div className="loading-message">{t('common.loading')}</div>
+        <Skeleton variant="calendar" />
       </div>
     );
   }
@@ -177,6 +179,18 @@ export default function EventsCalendar() {
       <div className="events-calendar-page">
         <h2 className="events-title">{t('events.title')}</h2>
         <div className="error-message">{error}</div>
+      </div>
+    );
+  }
+
+  if (calendarEntries.length === 0) {
+    return (
+      <div className="events-calendar-page">
+        <h2 className="events-title">{t('events.title')}</h2>
+        <EmptyState
+          title={t('events.title')}
+          description={t('emptyState.checkBackSoon')}
+        />
       </div>
     );
   }

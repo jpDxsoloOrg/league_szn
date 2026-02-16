@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { statisticsApi, seasonsApi } from '../../services/api';
 import type { StatsPlayer, HeadToHeadResponse } from '../../services/api';
 import type { Season } from '../../types';
+import Skeleton from '../ui/Skeleton';
 import SeasonSelector from './SeasonSelector';
 import './HeadToHeadComparison.css';
 
@@ -133,7 +134,7 @@ function HeadToHeadComparison() {
     return (
       <div className="h2h-comparison">
         <h2>{t('statistics.headToHead.title')}</h2>
-        <p>{t('common.loading', 'Loading...')}</p>
+        <Skeleton variant="block" count={4} />
       </div>
     );
   }
@@ -188,7 +189,7 @@ function HeadToHeadComparison() {
       {player1Id === player2Id ? (
         <div className="h2h-same-player">{t('statistics.headToHead.selectDifferent')}</div>
       ) : loading ? (
-        <p>{t('common.loading', 'Loading...')}</p>
+        <Skeleton variant="block" count={4} />
       ) : (
         <>
           {p1Stats && p2Stats && (

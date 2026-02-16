@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { Components } from 'react-markdown';
+import Skeleton from './ui/Skeleton';
 import './Wiki.css';
 
 export interface WikiArticleEntry {
@@ -221,7 +222,11 @@ export default function WikiArticle() {
   }, [slug, locale, isAuthenticated, isAdminOrModerator, authLoading]);
 
   if (loading || authLoading) {
-    return <p className="wiki-loading">{t('common.loading')}</p>;
+    return (
+      <div className="wiki-loading">
+        <Skeleton variant="block" count={4} />
+      </div>
+    );
   }
   const entry = articles.find((a) => a.slug === slug);
   if (entry?.adminOnly && !isAuthenticated) {

@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePlayerStats } from '../../hooks/usePlayerStats';
+import Skeleton from '../ui/Skeleton';
+import EmptyState from '../ui/EmptyState';
 import PlayerStatsContent from './PlayerStatsContent';
 import SeasonSelector from './SeasonSelector';
 import './PlayerStats.css';
@@ -26,7 +28,7 @@ function EmbeddedPlayerStats({ playerId }: EmbeddedPlayerStatsProps) {
   if (loading && !overallStats) {
     return (
       <div className="player-stats">
-        <p>{t('common.loading', 'Loading...')}</p>
+        <Skeleton variant="block" count={3} />
       </div>
     );
   }
@@ -42,7 +44,10 @@ function EmbeddedPlayerStats({ playerId }: EmbeddedPlayerStatsProps) {
   if (!player || !overallStats) {
     return (
       <div className="player-stats">
-        <p>{t('statistics.playerStats.noData')}</p>
+        <EmptyState
+          title={t('statistics.playerStats.title')}
+          description={t('statistics.playerStats.noData')}
+        />
       </div>
     );
   }

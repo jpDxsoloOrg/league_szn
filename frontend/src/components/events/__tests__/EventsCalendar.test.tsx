@@ -19,6 +19,7 @@ vi.mock('react-i18next', () => ({
       const translations: Record<string, string> = {
         'events.title': 'Events',
         'common.loading': 'Loading...',
+        'emptyState.checkBackSoon': 'Check back soon',
         'events.filters.all': 'All',
         'events.filters.ppv': 'PPV',
         'events.filters.weekly': 'Weekly',
@@ -255,19 +256,10 @@ describe('EventsCalendar', () => {
 
     renderEventsCalendar();
 
+    // Empty state shows title and description (no calendar grid when zero events)
     await waitFor(() => {
-      expect(screen.getByText('June 2025')).toBeInTheDocument();
+      expect(screen.getByText('Events')).toBeInTheDocument();
     });
-
-    // Calendar still renders with month header and day headers
-    expect(screen.getByText('Sun')).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
-
-    // No event dots on the calendar
-    const eventDots = document.querySelectorAll('.calendar-event-dot');
-    expect(eventDots.length).toBe(0);
-
-    // Upcoming events section shows empty message
-    expect(screen.getByText('No upcoming events')).toBeInTheDocument();
+    expect(screen.getByText('Check back soon')).toBeInTheDocument();
   });
 });
