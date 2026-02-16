@@ -1,3 +1,7 @@
+.standings-row-clickable {
+  cursor: pointer;
+}
+
 .standings-container {
   width: 100%;
 }

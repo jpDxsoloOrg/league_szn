@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { dashboardApi } from '../services/api';
 import type { DashboardData, DashboardEvent, DashboardMatch } from '../types';
 import './Dashboard.css';
@@ -117,6 +118,7 @@ function RecentResultsGrouped({
 
 export default function Dashboard() {
   const { t } = useTranslation();
+  useDocumentTitle(t('nav.dashboard'));
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
