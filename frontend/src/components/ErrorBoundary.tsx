@@ -1,4 +1,5 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
+import i18n from '../i18n';
 import { logger } from '../utils/logger';
 import './ErrorBoundary.css';
 
@@ -38,9 +39,9 @@ export default class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="error-boundary">
-          <h1>Something went wrong</h1>
-          <p>An unexpected error occurred. Please try reloading the page.</p>
-          <button onClick={this.handleReload}>Reload Page</button>
+          <h1>{i18n.t('errorBoundary.somethingWentWrong')}</h1>
+          <p>{i18n.t('errorBoundary.unexpectedError')}</p>
+          <button onClick={this.handleReload}>{i18n.t('errorBoundary.reloadPage')}</button>
         </div>
       );
     }

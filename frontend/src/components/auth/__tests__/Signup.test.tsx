@@ -10,6 +10,42 @@ const { mockSignUp, mockConfirmSignUp, mockNavigate } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
 }));
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const map: Record<string, string> = {
+        'auth.createAccount': 'Create Account',
+        'auth.joinSubtitle': 'Join League SZN',
+        'auth.email': 'Email',
+        'auth.password': 'Password',
+        'auth.confirmPassword': 'Confirm Password',
+        'auth.enterEmail': 'Enter your email',
+        'auth.passwordPlaceholder': 'Min 8 chars, uppercase, lowercase, number',
+        'auth.enterConfirmPassword': 'Confirm your password',
+        'auth.wrestlerName': 'Wrestler Name',
+        'auth.wrestlerOptional': '(optional)',
+        'auth.wrestlerPlaceholder': 'Enter your wrestler name to request wrestler access',
+        'auth.wrestlerHint': "If you're a wrestler, enter your in-game name. An admin will review and approve your wrestler access.",
+        'auth.createAccountBtn': 'Create Account',
+        'auth.creatingAccount': 'Creating Account...',
+        'auth.alreadyHaveAccount': 'Already have an account?',
+        'auth.signInLink': 'Sign In',
+        'auth.passwordsDoNotMatch': 'Passwords do not match',
+        'auth.signUpFailed': 'Sign up failed. Please try again.',
+        'auth.verifyTitle': 'Verify Your Email',
+        'auth.verifySubtitle': 'We sent a verification code to',
+        'auth.verificationCode': 'Verification Code',
+        'auth.codePlaceholder': 'Enter 6-digit code',
+        'auth.verifyEmail': 'Verify Email',
+        'auth.verifying': 'Verifying...',
+        'auth.backToSignUp': 'Back to sign up',
+        'auth.verificationFailed': 'Verification failed. Please try again.',
+      };
+      return map[key] ?? key;
+    },
+  }),
+}));
+
 vi.mock('../../../contexts/AuthContext', () => ({
   useAuth: () => ({
     signUp: mockSignUp,
