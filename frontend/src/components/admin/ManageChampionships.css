@@ -215,10 +215,27 @@ label.file-input-label:hover {
   gap: 0.5rem;
 }
 
+/* Shared action button layout and polish */
+.championship-edit-btn,
+.championship-vacate-btn,
+.championship-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
 .championship-edit-btn {
   background-color: #3b82f6 !important;
-  padding: 0.5rem 0.5rem;
-  font-size: 0.8125rem;
+  color: #fff;
   flex: 1;
   min-width: 0;
 }
@@ -230,8 +247,6 @@ label.file-input-label:hover {
 .championship-vacate-btn {
   background-color: #78350f !important;
   color: #fde68a;
-  padding: 0.5rem 0.5rem;
-  font-size: 0.8125rem;
   flex: 1;
   min-width: 0;
 }
@@ -248,8 +263,6 @@ label.file-input-label:hover {
 .championship-delete-btn {
   background-color: #7f1d1d !important;
   color: #fecaca;
-  padding: 0.5rem 0.5rem;
-  font-size: 0.8125rem;
   flex: 1;
   min-width: 0;
 }
