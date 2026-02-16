@@ -4,6 +4,7 @@ import { NavLayoutContext, readStoredMode } from './navLayoutContext';
 
 export function NavLayoutProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<NavLayoutMode>(() => readStoredMode());
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     try {
@@ -22,7 +23,7 @@ export function NavLayoutProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <NavLayoutContext.Provider value={{ mode, setMode, toggleMode }}>
+    <NavLayoutContext.Provider value={{ mode, setMode, toggleMode, sidebarCollapsed, setSidebarCollapsed }}>
       {children}
     </NavLayoutContext.Provider>
   );

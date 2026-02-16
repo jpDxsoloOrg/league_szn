@@ -2,7 +2,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 300px;
+  width: 260px;
   height: 100vh;
   background-color: #111;
   border-right: 2px solid #d4af37;
@@ -10,6 +10,12 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  transition: width 0.2s ease;
+}
+
+.sidebar.collapsed {
+  width: 60px;
+  overflow-x: hidden;
 }
 
 .sidebar-header {
@@ -18,12 +24,53 @@
   align-items: center;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #333;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .sidebar-header h2 {
   color: #d4af37;
   font-size: 1.25rem;
   margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-collapse-btn {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 1rem;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.sidebar-collapse-btn:hover {
+  color: #d4af37;
+  background-color: #222;
+}
+
+.sidebar.collapsed .sidebar-header {
+  justify-content: center;
+}
+
+.sidebar.collapsed .nav-section .collapsed-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  min-height: 2.5rem;
 }
 
 .sidebar-nav {

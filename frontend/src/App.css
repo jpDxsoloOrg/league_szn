@@ -14,7 +14,25 @@ main {
   padding: 2rem;
   padding-top: calc(56px + 2rem);
   max-width: 1200px;
-  margin-left: 300px;
+  margin-left: 260px;
+  transition: margin-left 0.2s ease;
+}
+
+.main-content {
+  animation: pageFadeIn 0.2s ease;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.App.sidebar-collapsed main {
+  margin-left: 60px;
 }
 
 h2 {
@@ -83,6 +101,10 @@ tr:hover {
 }
 
 @media (max-width: 768px) {
+  .App.sidebar-collapsed main {
+    margin-left: 0;
+  }
+
   main {
     margin-left: 0;
     padding: 1rem;
@@ -94,7 +116,7 @@ tr:hover {
   }
 }
 
-/* Print: hide app chrome so wiki and other content print cleanly */
+/* Print: hide app chrome and ensure readable content */
 @media print {
   .sidebar,
   .hamburger-btn,
@@ -108,6 +130,7 @@ tr:hover {
 
   .App {
     background: #fff;
+    color: #000;
   }
 
   main {
@@ -116,5 +139,21 @@ tr:hover {
     padding: 0.5in;
     padding-top: 0.5in;
     max-width: none;
+  }
+
+  /* Tables and content readable on white */
+  table, .standings-table, .standings-table th, .standings-table td,
+  th, td, h2, .event-detail-page, .challenge-detail, .promo-thread {
+    color: #000 !important;
+    background: #fff !important;
+    border-color: #333 !important;
+  }
+
+  tr:hover, .standings-table tbody tr:hover {
+    background: #f5f5f5 !important;
+  }
+
+  a {
+    color: #000;
   }
 }

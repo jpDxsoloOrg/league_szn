@@ -149,6 +149,8 @@
   border-radius: 50%;
   cursor: pointer;
   transition: transform 0.15s;
+  display: block;
+  text-decoration: none;
 }
 
 .calendar-event-dot:hover {

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
+import { useNavLayout } from '../contexts/navLayoutContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import {
   USER_NAV_GROUPS,
@@ -40,6 +41,7 @@ export default function Sidebar() {
   const location = useLocation();
   const { isAuthenticated, isAdminOrModerator, isSuperAdmin, isWrestler, isFantasy, signOut } = useAuth();
   const { features } = useSiteConfig();
+  const { sidebarCollapsed, setSidebarCollapsed } = useNavLayout();
   const [adminExpanded, setAdminExpanded] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ core: true });
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -117,77 +119,121 @@ export default function Sidebar() {
       <div className="sidebar-overlay" onClick={() => setMobileOpen(false)} />
     )}
 
-    <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
+    <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
-        <h2>{t('header.title')}</h2>
-        <LanguageSwitcher />
+        {!sidebarCollapsed && <h2>{t('header.title')}</h2>}
+        <div className="sidebar-header-actions">
+          <button
+            type="button"
+            className="sidebar-collapse-btn"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? '\u25B6' : '\u25C0'}
+          </button>
+          {!sidebarCollapsed && <LanguageSwitcher />}
+        </div>
       </div>
 
       <nav className="sidebar-nav">
         <div className="nav-section">
-          {USER_NAV_GROUPS.map((group) => {
-            if (group.key === 'wrestler' && !showWrestlerGroup(features, isWrestler)) return null;
-            return (
-              <div key={group.key} className="nav-subgroup user-nav-subgroup">
-                <button
-                  type="button"
-                  className="nav-subgroup-toggle user-nav-toggle"
-                  onClick={() => toggleGroup(group.key)}
-                  aria-expanded={!!expandedGroups[group.key]}
-                >
-                  <span>{t(group.i18nKey)}</span>
-                  <span className="toggle-arrow">{expandedGroups[group.key] ? '\u25BE' : '\u25B8'}</span>
-                </button>
-                {expandedGroups[group.key] && (
-                  <div className="nav-subgroup-items user-nav-items">
-                    {group.items.map((item) => {
-                      const { show, disabled, disabledLabel } = isUserItemVisible(item, features, isWrestler, isFantasy);
-                      if (!show) return null;
-                      if (disabled && disabledLabel) {
-                        return (
-                          <span key={item.path} className="nav-disabled">
-                            {t(item.i18nKey)} <span className={item.role === 'Wrestler' ? 'role-locked' : 'coming-soon'}>{disabledLabel}</span>
-                          </span>
-                        );
-                      }
-                      const usePrefix = ['/stats', '/events', '/contenders'].includes(item.path);
-                      const active = usePrefix ? isActivePrefix(item.path) : (item.path === '/' ? isActive('/') : isActive(item.path));
-                      return (
-                        <Link key={item.path} to={item.path} className={active ? 'active' : ''}>
-                          {t(item.i18nKey)}
-                        </Link>
-                      );
-                    })}
+          {sidebarCollapsed ? (
+            <>
+              {USER_NAV_GROUPS.flatMap((group) => {
+                if (group.key === 'wrestler' && !showWrestlerGroup(features, isWrestler)) return [];
+                return group.items
+                  .filter((item) => isUserItemVisible(item, features, isWrestler, isFantasy).show && !isUserItemVisible(item, features, isWrestler, isFantasy).disabled)
+                  .map((item) => {
+                    const usePrefix = ['/stats', '/events', '/contenders'].includes(item.path);
+                    const active = usePrefix ? isActivePrefix(item.path) : (item.path === '/' ? isActive('/') : isActive(item.path));
+                    const label = t(item.i18nKey);
+                    return (
+                      <Link key={item.path} to={item.path} className={active ? 'active collapsed-link' : 'collapsed-link'} title={label}>
+                        {label.charAt(0)}
+                      </Link>
+                    );
+                  });
+              })}
+              {USER_NAV_STANDALONE.filter((item) => (item.type === 'fantasy' ? features.fantasy : true)).map((item) => (
+                item.type === 'link' ? (
+                  <Link key={item.path} to={item.path} className={isActive(item.path) ? 'active collapsed-link' : 'collapsed-link'} title={t(item.i18nKey)}>
+                    {t(item.i18nKey).charAt(0)}
+                  </Link>
+                ) : isUserItemVisible(item, features, isWrestler, isFantasy).show && !isUserItemVisible(item, features, isWrestler, isFantasy).disabled ? (
+                  <Link key={item.path} to={item.path} className={location.pathname.startsWith(item.path) ? 'active collapsed-link' : 'collapsed-link'} title={t(item.i18nKey)}>
+                    {t(item.i18nKey).charAt(0)}
+                  </Link>
+                ) : null
+              ))}
+            </>
+          ) : (
+            <>
+              {USER_NAV_GROUPS.map((group) => {
+                if (group.key === 'wrestler' && !showWrestlerGroup(features, isWrestler)) return null;
+                return (
+                  <div key={group.key} className="nav-subgroup user-nav-subgroup">
+                    <button
+                      type="button"
+                      className="nav-subgroup-toggle user-nav-toggle"
+                      onClick={() => toggleGroup(group.key)}
+                      aria-expanded={!!expandedGroups[group.key]}
+                    >
+                      <span>{t(group.i18nKey)}</span>
+                      <span className="toggle-arrow">{expandedGroups[group.key] ? '\u25BE' : '\u25B8'}</span>
+                    </button>
+                    {expandedGroups[group.key] && (
+                      <div className="nav-subgroup-items user-nav-items">
+                        {group.items.map((item) => {
+                          const { show, disabled, disabledLabel } = isUserItemVisible(item, features, isWrestler, isFantasy);
+                          if (!show) return null;
+                          if (disabled && disabledLabel) {
+                            return (
+                              <span key={item.path} className="nav-disabled">
+                                {t(item.i18nKey)} <span className={item.role === 'Wrestler' ? 'role-locked' : 'coming-soon'}>{disabledLabel}</span>
+                              </span>
+                            );
+                          }
+                          const usePrefix = ['/stats', '/events', '/contenders'].includes(item.path);
+                          const active = usePrefix ? isActivePrefix(item.path) : (item.path === '/' ? isActive('/') : isActive(item.path));
+                          return (
+                            <Link key={item.path} to={item.path} className={active ? 'active' : ''}>
+                              {t(item.i18nKey)}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          })}
+                );
+              })}
 
-          {USER_NAV_STANDALONE.map((item) => {
-            if (item.type === 'fantasy' && !features.fantasy) return null;
-            if (item.type === 'link') {
-              return (
-                <Link key={item.path} to={item.path} className={isActive(item.path) ? 'active' : ''}>
-                  {t(item.i18nKey)}
-                </Link>
-              );
-            }
-            const { show, disabled, disabledLabel } = isUserItemVisible(item, features, isWrestler, isFantasy);
-            if (!show) return null;
-            if (disabled && disabledLabel) {
-              return (
-                <span key={item.path} className="nav-disabled">
-                  {t(item.i18nKey)} <span className="coming-soon">{disabledLabel}</span>
-                </span>
-              );
-            }
-            return (
-              <Link key={item.path} to={item.path} className={location.pathname.startsWith(item.path) ? 'active' : ''}>
-                {t(item.i18nKey)}
-              </Link>
-            );
-          })}
+              {USER_NAV_STANDALONE.map((item) => {
+                if (item.type === 'fantasy' && !features.fantasy) return null;
+                if (item.type === 'link') {
+                  return (
+                    <Link key={item.path} to={item.path} className={isActive(item.path) ? 'active' : ''}>
+                      {t(item.i18nKey)}
+                    </Link>
+                  );
+                }
+                const { show, disabled, disabledLabel } = isUserItemVisible(item, features, isWrestler, isFantasy);
+                if (!show) return null;
+                if (disabled && disabledLabel) {
+                  return (
+                    <span key={item.path} className="nav-disabled">
+                      {t(item.i18nKey)} <span className="coming-soon">{disabledLabel}</span>
+                    </span>
+                  );
+                }
+                return (
+                  <Link key={item.path} to={item.path} className={location.pathname.startsWith(item.path) ? 'active' : ''}>
+                    {t(item.i18nKey)}
+                  </Link>
+                );
+              })}
+            </>
+          )}
         </div>
 
         {isAdminOrModerator && (
@@ -236,6 +282,7 @@ export default function Sidebar() {
           </div>
         )}
 
+        {!sidebarCollapsed && (
         <div className="nav-section auth-section">
           {isAuthenticated ? (
             <button className="sidebar-logout" onClick={handleLogout}>
@@ -252,6 +299,7 @@ export default function Sidebar() {
             </>
           )}
         </div>
+        )}
       </nav>
     </aside>
     </>

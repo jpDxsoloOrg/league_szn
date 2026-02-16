@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
 import { NavLayoutProvider } from './contexts/NavLayoutContext';
 import { useNavLayout } from './contexts/navLayoutContext';
+import { useLocation } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -51,6 +52,8 @@ import ShowResults from './components/fantasy/ShowResults';
 import EventsCalendar from './components/events/EventsCalendar';
 import EventDetail from './components/events/EventDetail';
 import EventResults from './components/events/EventResults';
+import NotFound from './components/NotFound';
+import ScrollToTop from './components/ScrollToTop';
 // Profile components
 import WrestlerProfile from './components/profile/WrestlerProfile';
 // Route guard
@@ -62,6 +65,7 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
+        <ScrollToTop />
         <AuthProvider>
           <SiteConfigProvider>
             <NavLayoutProvider>
@@ -75,9 +79,10 @@ function App() {
 }
 
 function AppLayout() {
-  const { mode } = useNavLayout();
+  const { mode, sidebarCollapsed } = useNavLayout();
+  const location = useLocation();
   return (
-    <div className={`App layout-${mode}`}>
+    <div className={`App layout-${mode} ${mode === 'sidebar' && sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       {mode === 'sidebar' ? (
         <>
           <Sidebar />
@@ -86,7 +91,7 @@ function AppLayout() {
       ) : (
         <TopNav />
       )}
-      <main>
+      <main key={location.pathname} className="main-content">
           <Routes>
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
@@ -240,6 +245,7 @@ function AppLayout() {
                 </ProtectedRoute>
               </FeatureRoute>
             } />
+            <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
     </div>

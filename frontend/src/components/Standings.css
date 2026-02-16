@@ -133,6 +133,10 @@
   padding: 0.75rem;
 }
 
+.standings-table tbody tr.standings-row-clickable {
+  cursor: pointer;
+}
+
 .standings-table .rank {
   font-weight: bold;
   color: #d4af37;
