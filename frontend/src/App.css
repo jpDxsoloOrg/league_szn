@@ -14,7 +14,25 @@ main {
   padding: 2rem;
   padding-top: calc(56px + 2rem);
   max-width: 1200px;
-  margin-left: 300px;
+  margin-left: 250px;
+  animation: pageFadeIn 0.2s ease-out;
+}
+
+.App.sidebar-collapsed main {
+  margin-left: 60px;
+}
+
+.App.sidebar-collapsed .top-bar {
+  left: 60px;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 h2 {
@@ -94,7 +112,7 @@ tr:hover {
   }
 }
 
-/* Print: hide app chrome so wiki and other content print cleanly */
+/* Print: hide app chrome and ensure readable content */
 @media print {
   .sidebar,
   .hamburger-btn,
@@ -106,8 +124,10 @@ tr:hover {
     display: none !important;
   }
 
+  body,
   .App {
-    background: #fff;
+    background: #fff !important;
+    color: #000 !important;
   }
 
   main {
@@ -116,5 +136,28 @@ tr:hover {
     padding: 0.5in;
     padding-top: 0.5in;
     max-width: none;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  main h1,
+  main h2,
+  main h3 {
+    color: #000 !important;
+  }
+
+  main table,
+  main th,
+  main td {
+    border-color: #333 !important;
+    color: #000 !important;
+  }
+
+  main th {
+    background: #eee !important;
+  }
+
+  main a {
+    color: #000 !important;
   }
 }

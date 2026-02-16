@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import type { EventType, EventCalendarEntry } from '../../types/event';
 import { eventsApi } from '../../services/api';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import EventCard from './EventCard';
 import './EventsCalendar.css';
 
@@ -16,6 +18,7 @@ type FilterTab = 'all' | EventType;
 
 export default function EventsCalendar() {
   const { t } = useTranslation();
+  useDocumentTitle(t('events.title'));
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
@@ -240,11 +243,13 @@ export default function EventsCalendar() {
                   {eventsByDay[day] && (
                     <div className="calendar-day-events">
                       {eventsByDay[day].map((evt) => (
-                        <div
+                        <Link
                           key={evt.eventId}
+                          to={`/events/${evt.eventId}`}
                           className="calendar-event-dot"
                           style={{ backgroundColor: eventTypeColors[evt.eventType] }}
                           title={evt.name}
+                          aria-label={evt.name}
                         />
                       ))}
                     </div>

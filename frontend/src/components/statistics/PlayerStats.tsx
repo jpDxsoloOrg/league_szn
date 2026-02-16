@@ -6,6 +6,7 @@ import type { StatsPlayer } from '../../services/api';
 import { usePlayerStats } from '../../hooks/usePlayerStats';
 import PlayerStatsContent from './PlayerStatsContent';
 import SeasonSelector from './SeasonSelector';
+import BackLink from '../BackLink';
 import './PlayerStats.css';
 
 function PlayerStats() {
@@ -73,6 +74,9 @@ function PlayerStats() {
 
   return (
     <div className="player-stats">
+      {routePlayerId && (
+        <BackLink to="/stats" label={t('statistics.nav.backToStats', '← Back to Statistics')} />
+      )}
       <div className="ps-header">
         <h2>{t('statistics.playerStats.title')}</h2>
         <div className="ps-nav-links">

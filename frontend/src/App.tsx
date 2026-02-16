@@ -56,12 +56,15 @@ import WrestlerProfile from './components/profile/WrestlerProfile';
 // Route guard
 import ProtectedRoute from './components/ProtectedRoute';
 import FeatureRoute from './components/FeatureRoute';
+import ScrollToTop from './components/ScrollToTop';
+import NotFound from './components/NotFound';
 import './App.css';
 
 function App() {
   return (
     <ErrorBoundary>
       <Router>
+        <ScrollToTop />
         <AuthProvider>
           <SiteConfigProvider>
             <NavLayoutProvider>
@@ -75,9 +78,9 @@ function App() {
 }
 
 function AppLayout() {
-  const { mode } = useNavLayout();
+  const { mode, sidebarCollapsed } = useNavLayout();
   return (
-    <div className={`App layout-${mode}`}>
+    <div className={`App layout-${mode}${mode === 'sidebar' && sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       {mode === 'sidebar' ? (
         <>
           <Sidebar />
@@ -240,6 +243,9 @@ function AppLayout() {
                 </ProtectedRoute>
               </FeatureRoute>
             } />
+
+            {/* Catch-all 404 */}
+            <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
     </div>

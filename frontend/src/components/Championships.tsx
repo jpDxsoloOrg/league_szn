@@ -4,10 +4,12 @@ import { championshipsApi, divisionsApi, playersApi } from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
 import { type Division, type Championship, type ChampionshipReign, type Player } from '../types';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import './Championships.css';
 
 export default function Championships() {
   const { t } = useTranslation();
+  useDocumentTitle(t('championships.title'));
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);

@@ -5,6 +5,8 @@ export interface NavLayoutContextType {
   mode: NavLayoutMode;
   setMode: (mode: NavLayoutMode) => void;
   toggleMode: () => void;
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (value: boolean) => void;
 }
 
 export const NavLayoutContext = createContext<NavLayoutContextType | undefined>(undefined);

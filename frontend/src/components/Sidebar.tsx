@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
+import { useNavLayout } from '../contexts/navLayoutContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import {
   USER_NAV_GROUPS,
@@ -40,6 +41,7 @@ export default function Sidebar() {
   const location = useLocation();
   const { isAuthenticated, isAdminOrModerator, isSuperAdmin, isWrestler, isFantasy, signOut } = useAuth();
   const { features } = useSiteConfig();
+  const { sidebarCollapsed, setSidebarCollapsed } = useNavLayout();
   const [adminExpanded, setAdminExpanded] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ core: true });
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -117,8 +119,17 @@ export default function Sidebar() {
       <div className="sidebar-overlay" onClick={() => setMobileOpen(false)} />
     )}
 
-    <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
+    <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
+        <button
+          type="button"
+          className="sidebar-collapse-toggle"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          aria-label={sidebarCollapsed ? t('nav.expandSidebar', 'Expand sidebar') : t('nav.collapseSidebar', 'Collapse sidebar')}
+          title={sidebarCollapsed ? t('nav.expandSidebar', 'Expand sidebar') : t('nav.collapseSidebar', 'Collapse sidebar')}
+        >
+          {sidebarCollapsed ? '\u25B6' : '\u25C0'}
+        </button>
         <h2>{t('header.title')}</h2>
         <LanguageSwitcher />
       </div>

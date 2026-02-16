@@ -18,7 +18,7 @@ vi.mock('../../contexts/SiteConfigContext', () => ({
 }));
 
 vi.mock('../../contexts/navLayoutContext', () => ({
-  useNavLayout: () => ({ mode: 'sidebar', setMode: vi.fn(), toggleMode: vi.fn() }),
+  useNavLayout: () => ({ mode: 'sidebar', setMode: vi.fn(), toggleMode: vi.fn(), sidebarCollapsed: false, setSidebarCollapsed: vi.fn() }),
 }));
 
 vi.mock('react-i18next', () => ({
