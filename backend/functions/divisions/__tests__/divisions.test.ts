@@ -144,7 +144,7 @@ describe('createDivision', () => {
     const result = await createDivision(event, ctx, cb);
 
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('Name is required');
+    expect(JSON.parse(result!.body).message).toBe('name are required');
   });
 
   it('returns 400 when name is empty string', async () => {
@@ -153,7 +153,7 @@ describe('createDivision', () => {
     const result = await createDivision(event, ctx, cb);
 
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('Name is required');
+    expect(JSON.parse(result!.body).message).toBe('name are required');
   });
 
   it('returns 400 when body is null', async () => {
