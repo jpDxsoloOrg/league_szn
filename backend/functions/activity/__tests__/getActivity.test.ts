@@ -169,7 +169,7 @@ describe('getActivity', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body.items).toHaveLength(2);
-    expect(body.nextCursor).toBe(body.items[1].timestamp);
+    expect(body.nextCursor).toBe(`${body.items[1].timestamp}|${body.items[1].id}`);
   });
 
   it('applies cursor-based pagination', async () => {
