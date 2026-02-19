@@ -1,6 +1,6 @@
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-import { APIGatewayProxyEvent } from "aws-lambda";
+import { APIGatewayProxyEvent, Context, Callback, APIGatewayProxyHandler, APIGatewayProxyResult } from "aws-lambda";
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { handlerFactory } from "../handlers";
 import { badRequest } from "../response";
@@ -33,6 +33,18 @@ const { mockGet, mockPut, mockScan, mockQuery, mockUpdate, mockDelete, mockScanA
   }));
 
   
+  const ctx = {} as Context;
+  const cb = (() => {}) as Callback<APIGatewayProxyResult>;
+  
+  async function invoke(
+    handler: APIGatewayProxyHandler,
+    event: APIGatewayProxyEvent
+  ): Promise<APIGatewayProxyResult> {
+    const result = await handler(event, ctx, cb);
+    expect(result).toBeDefined();
+    return result as APIGatewayProxyResult;
+  }
+
 vi.mock('uuid', () => ({
   v4: () => 'test-uuid-1234',
 }));
@@ -71,7 +83,7 @@ describe('createCreateHandler', () => {
       requiredFields: ['name']
     });
 
-    const result = await handler(event);
+    const result = await invoke(handler, event);
 
     expect(result.statusCode).toBe(201);
     expect(JSON.parse(result.body)).toEqual({
@@ -97,7 +109,7 @@ describe('createCreateHandler', () => {
       optionalFields: ['description']
     });
 
-    const result = await handler(event);
+    const result = await invoke(handler, event);
 
     expect(result.statusCode).toBe(201);
     expect(JSON.parse(result.body)).toEqual({
@@ -120,7 +132,7 @@ describe('createCreateHandler', () => {
       nullableFields: ['description']
     });
 
-    const result = await handler(event);
+    const result = await invoke(handler, event);
 
     expect(result.statusCode).toBe(201);
     expect(JSON.parse(result.body)).toEqual({
@@ -143,7 +155,7 @@ describe('createCreateHandler', () => {
       requiredFields: ['name']
     });
 
-    const result = await handler(event);
+    const result = await invoke(handler, event);
 
     expect(result.statusCode).toBe(400);
     expect(JSON.parse(result.body).message).toBe('Request body is required');
@@ -160,7 +172,7 @@ describe('createCreateHandler', () => {
       requiredFields: ['name']
     });
 
-    const result = await handler(event);
+    const result = await invoke(handler, event);
 
     expect(result.statusCode).toBe(400);
     expect(JSON.parse(result.body).message).toBe('Invalid JSON in request body');
@@ -177,10 +189,10 @@ describe('createCreateHandler', () => {
       requiredFields: ['name']
     });
 
-    const result = await handler(event);
+      const result = await invoke(handler, event);
 
     expect(result.statusCode).toBe(400);
-    expect(JSON.parse(result.body).message).toBe('name are required');
+    expect(JSON.parse(result.body).message).toBe('name is required');
   });
 
   // - DynamoDB put fails (500)
@@ -194,7 +206,7 @@ describe('createCreateHandler', () => {
       requiredFields: ['name']
     });
 
-    const result = await handler(event);
+    const result = await invoke(handler, event);
 
     expect(result.statusCode).toBe(500);
     expect(JSON.parse(result.body).message).toBe('Failed to create division');
@@ -212,7 +224,7 @@ describe('createCreateHandler', () => {
       defaults: { wins: 0, losses: 0 },
     });
 
-    const result = await handler(event);
+    const result = await invoke(handler, event);
 
     expect(result.statusCode).toBe(201);
     expect(JSON.parse(result.body)).toEqual({
@@ -237,7 +249,7 @@ describe('createCreateHandler', () => {
       validate: () => Promise.resolve(badRequest('Invalid JSON in request body')),
     });
 
-    const result = await handler(event);
+    const result = await invoke(handler, event);
 
     expect(result.statusCode).toBe(400);
     expect(JSON.parse(result.body).message).toBe('Invalid JSON in request body');
@@ -256,7 +268,7 @@ describe('createCreateHandler', () => {
       validate: () => Promise.resolve(null)
     });
 
-    const result = await handler(event);
+    const result = await invoke(handler, event);
 
     expect(result.statusCode).toBe(201);
     expect(JSON.parse(result.body)).toEqual({ 
@@ -279,7 +291,7 @@ describe('createCreateHandler', () => {
       buildItem: (_body, baseItem) => Promise.resolve({ ...baseItem, name: 'Test2' })
     });
 
-    const result = await handler(event);
+    const result = await invoke(handler, event);
 
     expect(result.statusCode).toBe(201);
     expect(JSON.parse(result.body)).toEqual({

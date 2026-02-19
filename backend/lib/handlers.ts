@@ -1,11 +1,11 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler, Callback, Context } from "aws-lambda";
 import { dynamoDb, TableNames } from "./dynamodb";
 import { badRequest, created, serverError } from "./response";
 import { parseBody } from "./parseBody";
 import { v4 as uuidv4 } from 'uuid';
 
 export interface CreateHandlerOptions {
-    tableName: keyof typeof TableNames;
+    tableName: (typeof TableNames)[keyof typeof TableNames]
     idField: string;
     entityName: string;
     requiredFields: string[];
@@ -16,13 +16,16 @@ export interface CreateHandlerOptions {
     buildItem?: (body: Record<string, unknown> , baseItem: Record<string, unknown>) => Promise<Record<string, unknown>>;
 }
 
-export function handlerFactory(options: CreateHandlerOptions)
+export function handlerFactory(options: CreateHandlerOptions): APIGatewayProxyHandler
 {
-    return async function(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+    return async function(event: APIGatewayProxyEvent, _context: Context, _callback: Callback): Promise<APIGatewayProxyResult> {
         try {
             const { data: body, error: parseError } = parseBody(event);
             if (parseError) return parseError;
             const requiredFieldsMissing = options.requiredFields.filter(field => !body[field]);
+            if(requiredFieldsMissing.length === 1) {
+                return badRequest(`${requiredFieldsMissing[0]} is required`);
+            }
             if (requiredFieldsMissing.length > 0) return badRequest(`${requiredFieldsMissing.join(', ')} are required`);
 
             if (options.validate) {
@@ -58,7 +61,7 @@ export function handlerFactory(options: CreateHandlerOptions)
             }
             const item = await options.buildItem?.(body, baseItem) ?? baseItem;
             await dynamoDb.put({
-                TableName: TableNames[options.tableName],
+                TableName: options.tableName,
                 Item: item,
             });
             return created(item);

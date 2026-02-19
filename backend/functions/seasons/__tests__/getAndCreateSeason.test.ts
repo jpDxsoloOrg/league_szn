@@ -154,7 +154,7 @@ describe('createSeason', () => {
     const result = await createSeason(event, ctx, cb);
 
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('Season name and start date are required');
+    expect(JSON.parse(result!.body).message).toBe('name is required');
   });
 
   it('returns 400 when startDate is missing', async () => {
@@ -165,7 +165,7 @@ describe('createSeason', () => {
     const result = await createSeason(event, ctx, cb);
 
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('Season name and start date are required');
+    expect(JSON.parse(result!.body).message).toBe('startDate is required');
   });
 
   it('returns 400 when body is null', async () => {

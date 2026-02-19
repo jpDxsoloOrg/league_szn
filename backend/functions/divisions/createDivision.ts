@@ -1,7 +1,8 @@
+import { TableNames } from '../../lib/dynamodb';
 import { handlerFactory } from '../../lib/handlers';
 
 export const handler = handlerFactory({
-  tableName: 'DIVISIONS',
+  tableName: TableNames.DIVISIONS,
   idField: 'divisionId',
   entityName: 'division',
   requiredFields: ['name'],

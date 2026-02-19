@@ -105,7 +105,7 @@ describe('createEvent', () => {
     const result = await createEvent(event, ctx, cb);
 
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('Name, eventType, and date are required');
+    expect(JSON.parse(result!.body).message).toBe('name is required');
   });
 
   it('returns 400 when eventType is missing', async () => {
@@ -113,7 +113,7 @@ describe('createEvent', () => {
     const result = await createEvent(event, ctx, cb);
 
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('Name, eventType, and date are required');
+    expect(JSON.parse(result!.body).message).toBe('eventType is required');
   });
 
   it('returns 400 when date is missing', async () => {
@@ -121,7 +121,7 @@ describe('createEvent', () => {
     const result = await createEvent(event, ctx, cb);
 
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('Name, eventType, and date are required');
+    expect(JSON.parse(result!.body).message).toBe('date is required');
   });
 
   it('returns 400 for invalid eventType', async () => {
@@ -131,7 +131,7 @@ describe('createEvent', () => {
     const result = await createEvent(event, ctx, cb);
 
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('eventType must be one of: ppv, weekly, special, house');
+    expect(JSON.parse(result!.body).message).toBe('eventType must be one of ppv, weekly, special, or house');
   });
 
   it('accepts all valid eventType values (ppv, weekly, special, house)', async () => {

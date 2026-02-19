@@ -1,74 +1,18 @@
-import { APIGatewayProxyHandler } from 'aws-lambda';
-import { v4 as uuidv4 } from 'uuid';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { created, badRequest, serverError } from '../../lib/response';
+import { TableNames } from '../../lib/dynamodb';
+import { handlerFactory } from '../../lib/handlers';
+import { badRequest } from '../../lib/response';
 
-interface CreateEventBody {
-  name: string;
-  eventType: 'ppv' | 'weekly' | 'special' | 'house';
-  date: string;
-  venue?: string;
-  description?: string;
-  imageUrl?: string;
-  themeColor?: string;
-  seasonId?: string;
-  fantasyEnabled?: boolean;
-  fantasyBudget?: number;
-  fantasyPicksPerDivision?: number;
-}
-
-const VALID_EVENT_TYPES = ['ppv', 'weekly', 'special', 'house'];
-
-export const handler: APIGatewayProxyHandler = async (event) => {
-  try {
-    if (!event.body) {
-      return badRequest('Request body is required');
+export const handler = handlerFactory({
+  tableName: TableNames.EVENTS,
+  idField: 'eventId',
+  entityName: 'event',
+  requiredFields: ['name', 'eventType', 'date'],
+  nullableFields: ['venue', 'description', 'imageUrl', 'themeColor', 'seasonId', 'fantasyBudget', 'fantasyPicksPerDivision'],
+  defaults: { status: 'upcoming', matchCards: [], attendance: null, rating: null, fantasyEnabled: true },
+  validate: async (body, _event) => {
+    if (body.eventType !== 'ppv' && body.eventType !== 'weekly' && body.eventType !== 'special' && body.eventType !== 'house') {
+      return badRequest('eventType must be one of ppv, weekly, special, or house');
     }
-
-    let body: CreateEventBody;
-    try {
-      body = JSON.parse(event.body);
-    } catch {
-      return badRequest('Invalid JSON in request body');
-    }
-
-    if (!body.name || !body.eventType || !body.date) {
-      return badRequest('Name, eventType, and date are required');
-    }
-
-    if (!VALID_EVENT_TYPES.includes(body.eventType)) {
-      return badRequest('eventType must be one of: ppv, weekly, special, house');
-    }
-
-    const eventItem: Record<string, any> = {
-      eventId: uuidv4(),
-      name: body.name,
-      eventType: body.eventType,
-      date: body.date,
-      venue: body.venue || null,
-      description: body.description || null,
-      imageUrl: body.imageUrl || null,
-      themeColor: body.themeColor || null,
-      status: 'upcoming',
-      seasonId: body.seasonId || null,
-      matchCards: [],
-      attendance: null,
-      rating: null,
-      fantasyEnabled: true,
-      fantasyBudget: body.fantasyBudget || null,
-      fantasyPicksPerDivision: body.fantasyPicksPerDivision || null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await dynamoDb.put({
-      TableName: TableNames.EVENTS,
-      Item: eventItem,
-    });
-
-    return created(eventItem);
-  } catch (err) {
-    console.error('Error creating event:', err);
-    return serverError('Failed to create event');
-  }
-};
+    return null;
+  },
+});
