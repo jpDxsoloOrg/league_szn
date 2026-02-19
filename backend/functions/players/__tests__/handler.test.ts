@@ -66,7 +66,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     queryStringParameters: null,
     multiValueQueryStringParameters: null,
     stageVariables: null,
-    resource: '',
+    resource: '/players',
     requestContext: { authorizer: {} } as any,
     ...overrides,
   };
@@ -77,7 +77,12 @@ describe('players router', () => {
 
   it('GET /players routes to getPlayers and returns 200', async () => {
     mockScan.mockResolvedValue({ Items: [{ playerId: 'p1', name: 'P1' }] });
-    const event = makeEvent({ httpMethod: 'GET', path: '/dev/players', pathParameters: null });
+    const event = makeEvent({
+      httpMethod: 'GET',
+      path: '/dev/players',
+      resource: '/players',
+      pathParameters: null,
+    });
     const result = await handler(event, ctx, cb);
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body)).toHaveLength(1);
@@ -90,6 +95,7 @@ describe('players router', () => {
     const event = makeEvent({
       httpMethod: 'GET',
       path: '/dev/players/me',
+      resource: '/players/me',
       pathParameters: {},
     });
     const result = await handler(event, ctx, cb);
@@ -104,6 +110,7 @@ describe('players router', () => {
     const event = makeEvent({
       httpMethod: 'PUT',
       path: '/dev/players/me',
+      resource: '/players/me',
       pathParameters: {},
       body: JSON.stringify({ currentWrestler: 'Rock' }),
     });
@@ -116,6 +123,7 @@ describe('players router', () => {
     const event = makeEvent({
       httpMethod: 'POST',
       path: '/dev/players',
+      resource: '/players',
       pathParameters: null,
       body: JSON.stringify({ name: 'John', currentWrestler: 'Rock' }),
     });
@@ -130,6 +138,7 @@ describe('players router', () => {
     const event = makeEvent({
       httpMethod: 'PUT',
       path: '/dev/players/p1',
+      resource: '/players/{playerId}',
       pathParameters: { playerId: 'p1' },
       body: JSON.stringify({ name: 'New', currentWrestler: 'Rock' }),
     });
@@ -145,6 +154,7 @@ describe('players router', () => {
     const event = makeEvent({
       httpMethod: 'DELETE',
       path: '/dev/players/p1',
+      resource: '/players/{playerId}',
       pathParameters: { playerId: 'p1' },
     });
     const result = await handler(event, ctx, cb);
@@ -155,6 +165,7 @@ describe('players router', () => {
     const event = makeEvent({
       httpMethod: 'PATCH',
       path: '/dev/players',
+      resource: '/players',
       pathParameters: null,
     });
     const result = await handler(event, ctx, cb);
