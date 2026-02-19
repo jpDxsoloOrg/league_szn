@@ -1,10 +1,11 @@
 import { DynamoDBClient, CreateTableCommand, ListTablesCommand } from '@aws-sdk/client-dynamodb';
 
 const STAGE = process.env.STAGE || 'offline';
+const DYNAMODB_ENDPOINT = process.env.DYNAMODB_ENDPOINT || 'http://localhost:8000';
 
 const client = new DynamoDBClient({
   region: 'us-east-1',
-  endpoint: 'http://localhost:8000',
+  endpoint: DYNAMODB_ENDPOINT,
   credentials: {
     accessKeyId: 'dummy',
     secretAccessKey: 'dummy',
@@ -221,6 +222,85 @@ const tables = [
     TableName: `wwe-2k-league-api-site-config-${STAGE}`,
     KeySchema: [{ AttributeName: 'configKey', KeyType: 'HASH' }],
     AttributeDefinitions: [{ AttributeName: 'configKey', AttributeType: 'S' }],
+    BillingMode: 'PAY_PER_REQUEST',
+  },
+  {
+    TableName: `wwe-2k-league-api-challenges-${STAGE}`,
+    KeySchema: [{ AttributeName: 'challengeId', KeyType: 'HASH' }],
+    AttributeDefinitions: [
+      { AttributeName: 'challengeId', AttributeType: 'S' },
+      { AttributeName: 'challengerId', AttributeType: 'S' },
+      { AttributeName: 'challengedId', AttributeType: 'S' },
+      { AttributeName: 'createdAt', AttributeType: 'S' },
+      { AttributeName: 'status', AttributeType: 'S' },
+    ],
+    BillingMode: 'PAY_PER_REQUEST',
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: 'ChallengerIndex',
+        KeySchema: [
+          { AttributeName: 'challengerId', KeyType: 'HASH' },
+          { AttributeName: 'createdAt', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+      },
+      {
+        IndexName: 'ChallengedIndex',
+        KeySchema: [
+          { AttributeName: 'challengedId', KeyType: 'HASH' },
+          { AttributeName: 'createdAt', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+      },
+      {
+        IndexName: 'StatusIndex',
+        KeySchema: [
+          { AttributeName: 'status', KeyType: 'HASH' },
+          { AttributeName: 'createdAt', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+      },
+    ],
+  },
+  {
+    TableName: `wwe-2k-league-api-promos-${STAGE}`,
+    KeySchema: [{ AttributeName: 'promoId', KeyType: 'HASH' }],
+    AttributeDefinitions: [
+      { AttributeName: 'promoId', AttributeType: 'S' },
+      { AttributeName: 'playerId', AttributeType: 'S' },
+      { AttributeName: 'createdAt', AttributeType: 'S' },
+      { AttributeName: 'promoType', AttributeType: 'S' },
+    ],
+    BillingMode: 'PAY_PER_REQUEST',
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: 'PlayerIndex',
+        KeySchema: [
+          { AttributeName: 'playerId', KeyType: 'HASH' },
+          { AttributeName: 'createdAt', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+      },
+      {
+        IndexName: 'TypeIndex',
+        KeySchema: [
+          { AttributeName: 'promoType', KeyType: 'HASH' },
+          { AttributeName: 'createdAt', KeyType: 'RANGE' },
+        ],
+        Projection: { ProjectionType: 'ALL' },
+      },
+    ],
+  },
+  {
+    TableName: `wwe-2k-league-api-stipulations-${STAGE}`,
+    KeySchema: [{ AttributeName: 'stipulationId', KeyType: 'HASH' }],
+    AttributeDefinitions: [{ AttributeName: 'stipulationId', AttributeType: 'S' }],
+    BillingMode: 'PAY_PER_REQUEST',
+  },
+  {
+    TableName: `wwe-2k-league-api-match-types-${STAGE}`,
+    KeySchema: [{ AttributeName: 'matchTypeId', KeyType: 'HASH' }],
+    AttributeDefinitions: [{ AttributeName: 'matchTypeId', AttributeType: 'S' }],
     BillingMode: 'PAY_PER_REQUEST',
   },
 ];

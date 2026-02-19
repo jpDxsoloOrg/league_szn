@@ -539,6 +539,29 @@ League SZN uses 17 DynamoDB tables with on-demand (PAY_PER_REQUEST) billing.
 
 You'll need **3 terminals** running simultaneously.
 
+Or use the helper scripts from the repo root:
+
+```bash
+# Start DynamoDB Local + backend + frontend
+# (creates tables and seeds only when local DB is empty)
+./scripts/local-dev-up.sh
+
+# Stop everything started by the script
+./scripts/local-dev-down.sh
+```
+
+Optional: skip seeding by running `SKIP_SEED=1 ./scripts/local-dev-up.sh`.
+
+Port and conflict options:
+
+```bash
+# Choose explicit ports
+DDB_PORT=8100 BACKEND_PORT=3101 BACKEND_LAMBDA_PORT=3102 FRONTEND_PORT=3100 ./scripts/local-dev-up.sh
+
+# Aggressively clear conflicts on selected ports before startup
+KILL_CONFLICTING_PORTS=1 ./scripts/local-dev-up.sh
+```
+
 #### Terminal 1 -- DynamoDB Local
 
 ```bash

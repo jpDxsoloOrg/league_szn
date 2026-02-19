@@ -11,6 +11,7 @@
     "logs": "serverless logs",
     "offline": "SLS_RUNTIME=nodejs20.x serverless offline start --stage offline --noPrependStageInUrl --prefix dev",
     "create-tables": "ts-node scripts/create-tables.ts",
+    "local-db-has-data": "ts-node scripts/local-db-has-data.ts",
     "seed": "ts-node scripts/seed-data.ts",
     "clear-data": "ts-node scripts/clear-data.ts",
     "lint": "eslint functions/ lib/",

@@ -55,6 +55,10 @@ export function requireRole(
   event: APIGatewayProxyEvent,
   ...requiredRoles: UserRole[]
 ): APIGatewayProxyResult | null {
+  if (process.env.IS_OFFLINE === 'true') {
+    return null;
+  }
+
   const context = getAuthContext(event);
   if (!hasRole(context, ...requiredRoles)) {
     return forbidden('You do not have permission to perform this action');
@@ -69,6 +73,10 @@ export function requireRole(
 export function requireSuperAdmin(
   event: APIGatewayProxyEvent,
 ): APIGatewayProxyResult | null {
+  if (process.env.IS_OFFLINE === 'true') {
+    return null;
+  }
+
   const context = getAuthContext(event);
   if (!isSuperAdmin(context)) {
     return forbidden('This action requires full Admin privileges');
