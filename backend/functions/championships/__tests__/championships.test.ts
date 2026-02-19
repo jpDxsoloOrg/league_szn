@@ -72,13 +72,13 @@ describe('createChampionship', () => {
   it('returns 400 when name is missing', async () => {
     const r = await createChampionship(ev({ body: JSON.stringify({ type: 'singles' }) }), ctx, cb);
     expect(r!.statusCode).toBe(400);
-    expect(body(r).message).toBe('Name and type are required');
+    expect(body(r).message).toBe('name is required');
   });
 
   it('returns 400 when type is missing', async () => {
     const r = await createChampionship(ev({ body: JSON.stringify({ name: 'Belt' }) }), ctx, cb);
     expect(r!.statusCode).toBe(400);
-    expect(body(r).message).toBe('Name and type are required');
+    expect(body(r).message).toBe('type is required');
   });
   it('returns 400 when type is invalid', async () => {
     const r = await createChampionship(

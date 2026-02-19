@@ -1,43 +1,19 @@
-import { APIGatewayProxyHandler } from 'aws-lambda';
-import { v4 as uuidv4 } from 'uuid';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { created, badRequest, notFound, serverError } from '../../lib/response';
-import { parseBody } from '../../lib/parseBody';
+import { notFound } from '../../lib/response';
+import { handlerFactory } from '../../lib/handlers';
 
-interface CreatePlayerBody {
-  name: string;
-  currentWrestler: string;
-  imageUrl?: string;
-  divisionId?: string;
-}
-
-export const handler: APIGatewayProxyHandler = async (event) => {
-  try {
-    const { data: body, error: parseError } = parseBody<CreatePlayerBody>(event);
-    if (parseError) return parseError;
-
-    if (!body.name || !body.currentWrestler) {
-      return badRequest('Name and currentWrestler are required');
-    }
-
-    const timestamp = new Date().toISOString();
-    const player: Record<string, any> = {
-      playerId: uuidv4(),
-      name: body.name,
-      currentWrestler: body.currentWrestler,
-      wins: 0,
-      losses: 0,
-      draws: 0,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-
-    // Add imageUrl if provided
-    if (body.imageUrl) {
-      player.imageUrl = body.imageUrl;
-    }
-
-    // Add divisionId if provided, after validating it exists
+export const handler = handlerFactory({
+  tableName: TableNames.PLAYERS,
+  idField: 'playerId',
+  entityName: 'player',
+  requiredFields: ['name', 'currentWrestler'],
+  optionalFields: ['imageUrl', 'divisionId'],
+  defaults: {
+    wins: 0,
+    losses: 0,
+    draws: 0,
+  },
+  validate: async (body, _event) => {
     if (body.divisionId) {
       const divisionResult = await dynamoDb.get({
         TableName: TableNames.DIVISIONS,
@@ -46,17 +22,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (!divisionResult.Item) {
         return notFound(`Division ${body.divisionId} not found`);
       }
-      player.divisionId = body.divisionId;
     }
-
-    await dynamoDb.put({
-      TableName: TableNames.PLAYERS,
-      Item: player,
-    });
-
-    return created(player);
-  } catch (err) {
-    console.error('Error creating player:', err);
-    return serverError('Failed to create player');
-  }
-};
+    return null;
+  },
+});

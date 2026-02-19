@@ -18,12 +18,13 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 
 const isOffline = process.env.IS_OFFLINE === 'true';
+const offlineDynamoDbEndpoint = process.env.DYNAMODB_ENDPOINT || 'http://localhost:8000';
 
 const client = new DynamoDBClient(
   isOffline
     ? {
         region: 'us-east-1',
-        endpoint: 'http://localhost:8000',
+        endpoint: offlineDynamoDbEndpoint,
         credentials: {
           accessKeyId: 'dummy',
           secretAccessKey: 'dummy',

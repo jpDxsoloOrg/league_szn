@@ -1,15 +1,20 @@
 import { APIGatewayTokenAuthorizerHandler, APIGatewayAuthorizerResult } from 'aws-lambda';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 
-const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
-const CLIENT_ID = process.env.COGNITO_CLIENT_ID!;
+let verifier: ReturnType<typeof CognitoJwtVerifier.create> | null = null;
 
-// Create a verifier that expects valid access tokens from Cognito
-const verifier = CognitoJwtVerifier.create({
-  userPoolId: USER_POOL_ID,
-  tokenUse: 'access',
-  clientId: CLIENT_ID,
-});
+const getVerifier = () => {
+  if (verifier) return verifier;
+
+  const userPoolId = process.env.COGNITO_USER_POOL_ID!;
+  const clientId = process.env.COGNITO_CLIENT_ID!;
+  verifier = CognitoJwtVerifier.create({
+    userPoolId,
+    tokenUse: 'access',
+    clientId,
+  });
+  return verifier;
+};
 
 const generatePolicy = (
   principalId: string,
@@ -41,6 +46,19 @@ const generatePolicy = (
 export const handler: APIGatewayTokenAuthorizerHandler = async (event) => {
   console.log('Authorizer event:', JSON.stringify(event, null, 2));
 
+  // Offline mode: skip JWT verification, allow all requests as Admin.
+  // This must run before token presence/format checks so local development
+  // works even when the frontend does not have Cognito tokens.
+  if (process.env.IS_OFFLINE === 'true') {
+    console.log('Offline mode: bypassing JWT verification');
+    const resource = event.methodArn.split('/').slice(0, 2).join('/') + '/*';
+    return generatePolicy('offline-admin', 'Allow', resource, {
+      username: 'offline-admin',
+      email: 'admin@dev.local',
+      groups: 'Admin',
+    });
+  }
+
   const authorizationToken = event.authorizationToken;
 
   if (!authorizationToken) {
@@ -57,20 +75,9 @@ export const handler: APIGatewayTokenAuthorizerHandler = async (event) => {
 
   const token = tokenParts[1];
 
-  // Offline mode: skip JWT verification, allow all requests as Admin
-  if (process.env.IS_OFFLINE === 'true') {
-    console.log('Offline mode: bypassing JWT verification');
-    const resource = event.methodArn.split('/').slice(0, 2).join('/') + '/*';
-    return generatePolicy('offline-admin', 'Allow', resource, {
-      username: 'offline-admin',
-      email: 'admin@dev.local',
-      groups: 'Admin',
-    });
-  }
-
   try {
     // Verify the Cognito JWT token
-    const payload = await verifier.verify(token);
+    const payload = await getVerifier().verify(token);
     console.log('Token verified for user:', payload.sub);
 
     // Extract cognito:groups from the access token

@@ -110,7 +110,7 @@ describe('createPlayer', () => {
     const result = await createPlayer(event, ctx, cb);
 
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('Name and currentWrestler are required');
+    expect(JSON.parse(result!.body).message).toBe('name is required');
   });
 
   it('returns 400 when currentWrestler is missing', async () => {
