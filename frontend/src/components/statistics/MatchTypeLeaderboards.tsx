@@ -49,7 +49,7 @@ function MatchTypeLeaderboards() {
     return () => abortController.abort();
   }, [selectedSeasonId]);
 
-  const matchTypeLabelMap = useMemo(() => ({
+  const matchTypeLabelMap = useMemo<Record<string, string>>(() => ({
     singles: t('statistics.matchTypes.singles'),
     tag: t('statistics.matchTypes.tag'),
     ladder: t('statistics.matchTypes.ladder'),
