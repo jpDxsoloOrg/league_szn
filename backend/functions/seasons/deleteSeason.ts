@@ -50,6 +50,30 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    // Also delete season awards
+    const awardsResult = await dynamoDb.query({
+      TableName: TableNames.SEASON_AWARDS,
+      KeyConditionExpression: '#seasonId = :seasonId',
+      ExpressionAttributeNames: {
+        '#seasonId': 'seasonId',
+      },
+      ExpressionAttributeValues: {
+        ':seasonId': seasonId,
+      },
+    });
+
+    if (awardsResult.Items && awardsResult.Items.length > 0) {
+      for (const award of awardsResult.Items) {
+        await dynamoDb.delete({
+          TableName: TableNames.SEASON_AWARDS,
+          Key: {
+            seasonId: seasonId,
+            awardId: (award as Record<string, string>).awardId,
+          },
+        });
+      }
+    }
+
     return noContent();
   } catch (err) {
     console.error('Error deleting season:', err);
