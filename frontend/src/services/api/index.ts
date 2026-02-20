@@ -38,4 +38,8 @@ export type {
   AchievementsResponse,
   RatedMatchSummary,
   MatchRatingsResponse,
+  MatchTypeStatsEntry,
+  MatchTypeLeaderboardsResponse,
+  PlayerMatchStatsByType,
+  PlayerMatchStatsResponse,
 } from './statistics.api';

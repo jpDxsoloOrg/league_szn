@@ -497,7 +497,8 @@
       "records": "Rekordbuch",
       "rivalries": "Rivalitäten",
       "taleOfTape": "Tale of the Tape",
-      "achievements": "Erfolge"
+      "achievements": "Erfolge",
+      "matchTypeLeaderboards": "Nach Kampftyp"
     },
     "labels": {
       "wins": "Siege",
@@ -570,6 +571,10 @@
         "championships": "Meisterschaften",
         "longestReign": "Längste Regentschaft"
       }
+    },
+    "matchTypeLeaderboards": {
+      "title": "Ranglisten nach Kampftyp",
+      "noData": "Noch keine Kampfdaten für diesen Typ verfügbar."
     },
     "recordBook": {
       "title": "Rekordbuch",

@@ -11,6 +11,7 @@ import { handler as updatePlayerHandler } from './updatePlayer';
 import { handler as deletePlayerHandler } from './deletePlayer';
 import { handler as getMyProfileHandler } from './getMyProfile';
 import { handler as updateMyProfileHandler } from './updateMyProfile';
+import { handler as getPlayerStatisticsHandler } from './getPlayerStatistics';
 
 const noopCallback = () => {};
 
@@ -34,6 +35,9 @@ export const handler: APIGatewayProxyHandler = async (
     if (method === 'PUT') {
       return (await updateMyProfileHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
     }
+  }
+  if (method === 'GET' && pathParams.playerId && path.includes('/statistics')) {
+    return (await getPlayerStatisticsHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
   }
   if (method === 'GET' && !pathParams.playerId) {
     return (await getPlayersHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;

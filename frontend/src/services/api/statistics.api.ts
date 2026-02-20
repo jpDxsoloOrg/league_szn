@@ -72,6 +72,39 @@ export interface MatchRatingsResponse {
   playerAverageRatings: PlayerAverageRating[];
 }
 
+export interface MatchTypeStatsEntry {
+  playerId: string;
+  playerName: string;
+  wrestlerName: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  matchesPlayed: number;
+  winPercentage: number;
+  rank: number;
+}
+
+export interface MatchTypeLeaderboardsResponse {
+  leaderboards: Record<string, MatchTypeStatsEntry[]>;
+}
+
+export interface PlayerMatchStatsByType {
+  wins: number;
+  losses: number;
+  draws: number;
+  matchesPlayed: number;
+  winPercentage: number;
+}
+
+export interface PlayerMatchStatsResponse {
+  playerId: string;
+  playerName: string;
+  wrestlerName: string;
+  overall: PlayerMatchStatsByType;
+  byMatchType: Record<string, PlayerMatchStatsByType>;
+  seasonId?: string;
+}
+
 export const statisticsApi = {
   getPlayerStats: async (playerId?: string, seasonId?: string, signal?: AbortSignal): Promise<PlayerStatsResponse> => {
     const params = new URLSearchParams({ section: 'player-stats' });
@@ -111,5 +144,18 @@ export const statisticsApi = {
   getMatchRatings: async (signal?: AbortSignal): Promise<MatchRatingsResponse> => {
     const params = new URLSearchParams({ section: 'match-ratings' });
     return fetchWithAuth(`${API_BASE_URL}/statistics?${params}`, {}, signal);
+  },
+
+  getMatchTypeLeaderboards: async (seasonId?: string, signal?: AbortSignal): Promise<MatchTypeLeaderboardsResponse> => {
+    const params = new URLSearchParams({ section: 'match-types' });
+    if (seasonId) params.set('seasonId', seasonId);
+    return fetchWithAuth(`${API_BASE_URL}/statistics?${params}`, {}, signal);
+  },
+
+  getPlayerMatchStats: async (playerId: string, seasonId?: string, signal?: AbortSignal): Promise<PlayerMatchStatsResponse> => {
+    const params = new URLSearchParams();
+    if (seasonId) params.set('seasonId', seasonId);
+    const qs = params.toString();
+    return fetchWithAuth(`${API_BASE_URL}/players/${playerId}/statistics${qs ? `?${qs}` : ''}`, {}, signal);
   },
 };

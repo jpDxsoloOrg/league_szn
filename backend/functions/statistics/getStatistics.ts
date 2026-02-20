@@ -769,8 +769,41 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         });
       }
 
+      case 'match-types': {
+        const matchTypeCategories = ['singles', 'tag', 'ladder', 'cage'] as const;
+
+        const leaderboardsByType: Record<string, { playerId: string; playerName: string; wrestlerName: string; wins: number; losses: number; draws: number; matchesPlayed: number; winPercentage: number; rank: number }[]> = {};
+
+        for (const matchType of matchTypeCategories) {
+          const playerStatsForType = players
+            .map((p) => {
+              const stats = computePlayerStatistics(completedMatches, p.playerId, matchType);
+              return {
+                playerId: p.playerId,
+                playerName: p.name,
+                wrestlerName: p.currentWrestler,
+                wins: stats.wins,
+                losses: stats.losses,
+                draws: stats.draws,
+                matchesPlayed: stats.matchesPlayed,
+                winPercentage: stats.winPercentage,
+              };
+            })
+            .filter((s) => s.matchesPlayed > 0)
+            .sort((a, b) => {
+              if (b.winPercentage !== a.winPercentage) return b.winPercentage - a.winPercentage;
+              return b.wins - a.wins;
+            })
+            .map((s, i) => ({ ...s, rank: i + 1 }));
+
+          leaderboardsByType[matchType] = playerStatsForType;
+        }
+
+        return success({ leaderboards: leaderboardsByType });
+      }
+
       default:
-        return badRequest(`Unknown section: ${section}. Valid sections: player-stats, head-to-head, leaderboards, records, achievements, match-ratings`);
+        return badRequest(`Unknown section: ${section}. Valid sections: player-stats, head-to-head, leaderboards, records, achievements, match-ratings, match-types`);
     }
   } catch (err) {
     console.error('Error computing statistics:', err);

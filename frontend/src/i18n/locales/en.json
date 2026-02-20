@@ -498,7 +498,8 @@
       "rivalries": "Rivalries",
       "taleOfTape": "Tale of the Tape",
       "achievements": "Achievements",
-      "bestMatches": "Best Matches"
+      "bestMatches": "Best Matches",
+      "matchTypeLeaderboards": "By Match Type"
     },
     "labels": {
       "wins": "Wins",
@@ -571,6 +572,10 @@
         "championships": "Championships",
         "longestReign": "Longest Reign"
       }
+    },
+    "matchTypeLeaderboards": {
+      "title": "Match Type Leaderboards",
+      "noData": "No match data available for this type yet."
     },
     "recordBook": {
       "title": "Record Book",
