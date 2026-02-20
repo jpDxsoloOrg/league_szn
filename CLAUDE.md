@@ -1,4 +1,5 @@
 # WWE 2K League - Project Documentation for Claude
+# Dx was here ⚡
 
 ## Project Overview
 A serverless web application for managing a WWE 2K league with player standings, championships, matches, and tournaments.
