@@ -114,8 +114,10 @@ describe('FantasyLeaderboard', () => {
     // Active season should be pre-selected
     expect(seasonSelect).toHaveValue('s1');
 
-    // Leaderboard was fetched with active season ID
-    expect(mockFantasyApi.getLeaderboard).toHaveBeenCalledWith('s1', expect.any(Object));
+    // Leaderboard is eventually fetched with active season ID after initial load
+    await waitFor(() => {
+      expect(mockFantasyApi.getLeaderboard).toHaveBeenCalledWith('s1', expect.any(Object));
+    });
   });
 
   it('filters by season when selecting a different option', async () => {
