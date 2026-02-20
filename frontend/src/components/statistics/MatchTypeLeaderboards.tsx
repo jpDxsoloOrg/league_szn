@@ -1,30 +1,43 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { statisticsApi, seasonsApi } from '../../services/api';
+import { statisticsApi, seasonsApi, matchTypesApi, stipulationsApi } from '../../services/api';
 import type { MatchTypeStatsEntry } from '../../services/api';
-import type { Season } from '../../types';
+import type { Season, MatchType, Stipulation } from '../../types';
 import Skeleton from '../ui/Skeleton';
 import SeasonSelector from './SeasonSelector';
 import './Leaderboards.css';
 
 function MatchTypeLeaderboards() {
   const { t } = useTranslation();
-  const [activeType, setActiveType] = useState<string>('');
   const [leaderboards, setLeaderboards] = useState<Record<string, MatchTypeStatsEntry[]>>({});
   const [loading, setLoading] = useState(true);
   const [seasons, setSeasons] = useState<Season[]>([]);
+  const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
+  const [stipulations, setStipulations] = useState<Stipulation[]>([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState('');
+  const [selectedMatchTypeId, setSelectedMatchTypeId] = useState('');
+  const [selectedStipulationId, setSelectedStipulationId] = useState('');
 
   useEffect(() => {
     const abortController = new AbortController();
-    seasonsApi.getAll(abortController.signal)
-      .then(setSeasons)
+
+    Promise.all([
+      seasonsApi.getAll(abortController.signal),
+      matchTypesApi.getAll(abortController.signal),
+      stipulationsApi.getAll(abortController.signal),
+    ])
+      .then(([seasonsData, matchTypesData, stipulationsData]) => {
+        setSeasons(seasonsData);
+        setMatchTypes(matchTypesData);
+        setStipulations(stipulationsData);
+      })
       .catch((err: unknown) => {
         if (err instanceof Error && err.name !== 'AbortError') {
-          console.error('Failed to load seasons', err);
+          console.error('Failed to load filter data', err);
         }
       });
+
     return () => abortController.abort();
   }, []);
 
@@ -56,7 +69,7 @@ function MatchTypeLeaderboards() {
     cage: t('statistics.matchTypes.cage'),
   }), [t]);
 
-  const matchTypes = useMemo(
+  const leaderboardTypeOptions = useMemo(
     () =>
       Object.keys(leaderboards).map((key) => ({
         key,
@@ -70,17 +83,54 @@ function MatchTypeLeaderboards() {
     [leaderboards, matchTypeLabelMap]
   );
 
-  useEffect(() => {
-    if (matchTypes.length === 0) {
-      if (activeType !== '') setActiveType('');
-      return;
-    }
-    if (!activeType || !matchTypes.some((mt) => mt.key === activeType)) {
-      setActiveType(matchTypes[0]?.key ?? '');
-    }
-  }, [matchTypes, activeType]);
+  const leaderboardKeys = useMemo(() => Object.keys(leaderboards), [leaderboards]);
 
-  const entries = activeType ? (leaderboards[activeType] || []) : [];
+  const normalize = (value: string) =>
+    value.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  const resolveLeaderboardKey = (sourceName: string): string | undefined => {
+    const normalized = normalize(sourceName);
+    if (!normalized) return undefined;
+
+    const aliasCandidates: string[] = [];
+    if (normalized.includes('tag')) aliasCandidates.push('tag');
+    if (normalized.includes('ladder')) aliasCandidates.push('ladder');
+    if (
+      normalized.includes('cage') ||
+      normalized.includes('cell') ||
+      normalized.includes('hiac')
+    ) {
+      aliasCandidates.push('cage');
+    }
+    if (normalized.includes('single')) aliasCandidates.push('singles');
+
+    const direct = leaderboardKeys.find((key) => {
+      const normalizedKey = normalize(key);
+      return (
+        normalizedKey === normalized ||
+        normalized.includes(normalizedKey) ||
+        normalizedKey.includes(normalized)
+      );
+    });
+    if (direct) return direct;
+
+    return aliasCandidates.find((candidate) => leaderboardKeys.includes(candidate));
+  };
+
+  const selectedMatchType = matchTypes.find((item) => item.matchTypeId === selectedMatchTypeId);
+  const selectedStipulation = stipulations.find((item) => item.stipulationId === selectedStipulationId);
+
+  const resolvedMatchTypeKey = selectedMatchType
+    ? resolveLeaderboardKey(selectedMatchType.name)
+    : undefined;
+  const resolvedStipulationKey = selectedStipulation
+    ? resolveLeaderboardKey(selectedStipulation.name)
+    : undefined;
+
+  const activeLeaderboardKey =
+    resolvedMatchTypeKey || resolvedStipulationKey || leaderboardKeys[0] || '';
+
+  const entries = activeLeaderboardKey ? (leaderboards[activeLeaderboardKey] || []) : [];
 
   function getMedalColor(rank: number): string | null {
     switch (rank) {
@@ -126,16 +176,48 @@ function MatchTypeLeaderboards() {
         onSeasonChange={setSelectedSeasonId}
       />
 
-      <div className="lb-tabs">
-        {matchTypes.map((mt) => (
-          <button
-            key={mt.key}
-            className={`lb-tab ${activeType === mt.key ? 'lb-tab-active' : ''}`}
-            onClick={() => setActiveType(mt.key)}
+      <div className="lb-filters">
+        <div className="lb-filter">
+          <label htmlFor="match-type-filter">{t('statistics.labels.matchType')}</label>
+          <select
+            id="match-type-filter"
+            value={selectedMatchTypeId}
+            onChange={(e) => {
+              setSelectedMatchTypeId(e.target.value);
+              setSelectedStipulationId('');
+            }}
           >
-            {mt.label}
-          </button>
-        ))}
+            <option value="">{t('common.all', 'All')}</option>
+            {matchTypes.map((mt) => (
+              <option key={mt.matchTypeId} value={mt.matchTypeId}>
+                {mt.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="lb-filter">
+          <label htmlFor="stipulation-filter">{t('statistics.labels.stipulation', 'Stipulation')}</label>
+          <select
+            id="stipulation-filter"
+            value={selectedStipulationId}
+            onChange={(e) => {
+              setSelectedStipulationId(e.target.value);
+              setSelectedMatchTypeId('');
+            }}
+          >
+            <option value="">{t('common.all', 'All')}</option>
+            {stipulations.map((stipulation) => (
+              <option key={stipulation.stipulationId} value={stipulation.stipulationId}>
+                {stipulation.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="lb-filter-summary">
+        {leaderboardTypeOptions.find((option) => option.key === activeLeaderboardKey)?.label}
       </div>
 
       <div className="lb-list">
