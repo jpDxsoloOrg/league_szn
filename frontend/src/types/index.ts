@@ -216,6 +216,17 @@ export interface MatchType {
   updatedAt: string;
 }
 
+export interface MatchFilters {
+  status?: string;
+  playerId?: string;
+  matchType?: string;
+  stipulationId?: string;
+  championshipId?: string;
+  seasonId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 /** Activity feed item from GET /activity */
 export type ActivityItemType =
   | 'match_result'

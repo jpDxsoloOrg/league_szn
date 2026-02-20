@@ -135,6 +135,7 @@ export default function TopBar() {
       '/championships': t('nav.championships'),
       '/tournaments': t('nav.tournaments'),
       '/events': t('nav.events'),
+      '/matches': t('nav.matchSearch'),
       '/contenders': t('nav.contenders'),
       '/challenges': t('nav.challenges'),
       '/promos': t('nav.promos'),

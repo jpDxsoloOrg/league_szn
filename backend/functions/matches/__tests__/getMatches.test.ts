@@ -43,7 +43,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '',
-    requestContext: { authorizer: {} } as any,
+    requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
@@ -98,13 +98,13 @@ describe('getMatches', () => {
     expect(mockScan).toHaveBeenCalledWith(
       expect.objectContaining({
         FilterExpression: '#status = :status',
-        ExpressionAttributeNames: { '#status': 'status' },
-        ExpressionAttributeValues: { ':status': 'scheduled' },
+        ExpressionAttributeNames: expect.objectContaining({ '#status': 'status' }),
+        ExpressionAttributeValues: expect.objectContaining({ ':status': 'scheduled' }),
       }),
     );
   });
 
-  it('does not add filter when no status parameter provided', async () => {
+  it('does not add filter when no query parameters provided', async () => {
     mockScan.mockResolvedValue({ Items: [] });
 
     await getMatches(makeEvent(), ctx, cb);
@@ -113,6 +113,174 @@ describe('getMatches', () => {
     expect(callArgs.FilterExpression).toBeUndefined();
     expect(callArgs.ExpressionAttributeNames).toBeUndefined();
     expect(callArgs.ExpressionAttributeValues).toBeUndefined();
+  });
+
+  it('filters by playerId using contains on participants', async () => {
+    mockScan.mockResolvedValue({ Items: [] });
+
+    const event = makeEvent({
+      queryStringParameters: { playerId: 'p1' },
+    });
+
+    await getMatches(event, ctx, cb);
+
+    expect(mockScan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        FilterExpression: 'contains(#participants, :playerId)',
+        ExpressionAttributeNames: expect.objectContaining({ '#participants': 'participants' }),
+        ExpressionAttributeValues: expect.objectContaining({ ':playerId': 'p1' }),
+      }),
+    );
+  });
+
+  it('filters by matchType', async () => {
+    mockScan.mockResolvedValue({ Items: [] });
+
+    const event = makeEvent({
+      queryStringParameters: { matchType: 'Singles' },
+    });
+
+    await getMatches(event, ctx, cb);
+
+    expect(mockScan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        FilterExpression: '#matchFormat = :matchFormat',
+        ExpressionAttributeNames: expect.objectContaining({ '#matchFormat': 'matchFormat' }),
+        ExpressionAttributeValues: expect.objectContaining({ ':matchFormat': 'Singles' }),
+      }),
+    );
+  });
+
+  it('filters by stipulationId', async () => {
+    mockScan.mockResolvedValue({ Items: [] });
+
+    const event = makeEvent({
+      queryStringParameters: { stipulationId: 'stip1' },
+    });
+
+    await getMatches(event, ctx, cb);
+
+    expect(mockScan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        FilterExpression: '#stipulationId = :stipulationId',
+        ExpressionAttributeNames: expect.objectContaining({ '#stipulationId': 'stipulationId' }),
+        ExpressionAttributeValues: expect.objectContaining({ ':stipulationId': 'stip1' }),
+      }),
+    );
+  });
+
+  it('filters by championshipId', async () => {
+    mockScan.mockResolvedValue({ Items: [] });
+
+    const event = makeEvent({
+      queryStringParameters: { championshipId: 'champ1' },
+    });
+
+    await getMatches(event, ctx, cb);
+
+    expect(mockScan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        FilterExpression: '#championshipId = :championshipId',
+        ExpressionAttributeNames: expect.objectContaining({ '#championshipId': 'championshipId' }),
+        ExpressionAttributeValues: expect.objectContaining({ ':championshipId': 'champ1' }),
+      }),
+    );
+  });
+
+  it('filters by seasonId', async () => {
+    mockScan.mockResolvedValue({ Items: [] });
+
+    const event = makeEvent({
+      queryStringParameters: { seasonId: 's1' },
+    });
+
+    await getMatches(event, ctx, cb);
+
+    expect(mockScan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        FilterExpression: '#seasonId = :seasonId',
+        ExpressionAttributeNames: expect.objectContaining({ '#seasonId': 'seasonId' }),
+        ExpressionAttributeValues: expect.objectContaining({ ':seasonId': 's1' }),
+      }),
+    );
+  });
+
+  it('filters by dateFrom', async () => {
+    mockScan.mockResolvedValue({ Items: [] });
+
+    const event = makeEvent({
+      queryStringParameters: { dateFrom: '2024-01-01' },
+    });
+
+    await getMatches(event, ctx, cb);
+
+    expect(mockScan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        FilterExpression: '#date >= :dateFrom',
+        ExpressionAttributeNames: expect.objectContaining({ '#date': 'date' }),
+        ExpressionAttributeValues: expect.objectContaining({ ':dateFrom': '2024-01-01' }),
+      }),
+    );
+  });
+
+  it('filters by dateTo', async () => {
+    mockScan.mockResolvedValue({ Items: [] });
+
+    const event = makeEvent({
+      queryStringParameters: { dateTo: '2024-12-31' },
+    });
+
+    await getMatches(event, ctx, cb);
+
+    expect(mockScan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        FilterExpression: '#date <= :dateTo',
+        ExpressionAttributeNames: expect.objectContaining({ '#date': 'date' }),
+        ExpressionAttributeValues: expect.objectContaining({ ':dateTo': '2024-12-31' }),
+      }),
+    );
+  });
+
+  it('combines multiple filters with AND logic', async () => {
+    mockScan.mockResolvedValue({ Items: [] });
+
+    const event = makeEvent({
+      queryStringParameters: {
+        status: 'completed',
+        playerId: 'p1',
+        matchType: 'Singles',
+        seasonId: 's1',
+      },
+    });
+
+    await getMatches(event, ctx, cb);
+
+    const callArgs = mockScan.mock.calls[0][0];
+    const filterExpr = callArgs.FilterExpression as string;
+    expect(filterExpr).toContain('#status = :status');
+    expect(filterExpr).toContain('contains(#participants, :playerId)');
+    expect(filterExpr).toContain('#matchFormat = :matchFormat');
+    expect(filterExpr).toContain('#seasonId = :seasonId');
+    expect(filterExpr.split(' AND ')).toHaveLength(4);
+  });
+
+  it('combines dateFrom and dateTo into a single expression', async () => {
+    mockScan.mockResolvedValue({ Items: [] });
+
+    const event = makeEvent({
+      queryStringParameters: {
+        dateFrom: '2024-01-01',
+        dateTo: '2024-12-31',
+      },
+    });
+
+    await getMatches(event, ctx, cb);
+
+    const callArgs = mockScan.mock.calls[0][0];
+    const filterExpr = callArgs.FilterExpression as string;
+    expect(filterExpr).toContain('#date >= :dateFrom');
+    expect(filterExpr).toContain('#date <= :dateTo');
+    expect(filterExpr.split(' AND ')).toHaveLength(2);
   });
 
   it('returns 500 when scan throws', async () => {
