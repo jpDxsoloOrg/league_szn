@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { statisticsApi, seasonsApi } from '../../services/api';
@@ -8,11 +8,9 @@ import Skeleton from '../ui/Skeleton';
 import SeasonSelector from './SeasonSelector';
 import './Leaderboards.css';
 
-type MatchTypeKey = 'singles' | 'tag' | 'ladder' | 'cage';
-
 function MatchTypeLeaderboards() {
   const { t } = useTranslation();
-  const [activeType, setActiveType] = useState<MatchTypeKey>('singles');
+  const [activeType, setActiveType] = useState<string>('');
   const [leaderboards, setLeaderboards] = useState<Record<string, MatchTypeStatsEntry[]>>({});
   const [loading, setLoading] = useState(true);
   const [seasons, setSeasons] = useState<Season[]>([]);
@@ -51,14 +49,38 @@ function MatchTypeLeaderboards() {
     return () => abortController.abort();
   }, [selectedSeasonId]);
 
-  const matchTypes: { key: MatchTypeKey; label: string }[] = [
-    { key: 'singles', label: t('statistics.matchTypes.singles') },
-    { key: 'tag', label: t('statistics.matchTypes.tag') },
-    { key: 'ladder', label: t('statistics.matchTypes.ladder') },
-    { key: 'cage', label: t('statistics.matchTypes.cage') },
-  ];
+  const matchTypeLabelMap = useMemo(() => ({
+    singles: t('statistics.matchTypes.singles'),
+    tag: t('statistics.matchTypes.tag'),
+    ladder: t('statistics.matchTypes.ladder'),
+    cage: t('statistics.matchTypes.cage'),
+  }), [t]);
 
-  const entries = leaderboards[activeType] || [];
+  const matchTypes = useMemo(
+    () =>
+      Object.keys(leaderboards).map((key) => ({
+        key,
+        label:
+          matchTypeLabelMap[key] ||
+          key
+            .replace(/([a-z])([A-Z])/g, '$1 $2')
+            .replace(/[-_]/g, ' ')
+            .replace(/\b\w/g, (c) => c.toUpperCase()),
+      })),
+    [leaderboards, matchTypeLabelMap]
+  );
+
+  useEffect(() => {
+    if (matchTypes.length === 0) {
+      if (activeType !== '') setActiveType('');
+      return;
+    }
+    if (!activeType || !matchTypes.some((mt) => mt.key === activeType)) {
+      setActiveType(matchTypes[0]?.key ?? '');
+    }
+  }, [matchTypes, activeType]);
+
+  const entries = activeType ? (leaderboards[activeType] || []) : [];
 
   function getMedalColor(rank: number): string | null {
     switch (rank) {
