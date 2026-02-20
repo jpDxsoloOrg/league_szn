@@ -119,6 +119,7 @@ function MatchTypeLeaderboards() {
 
   const selectedMatchType = matchTypes.find((item) => item.matchTypeId === selectedMatchTypeId);
   const selectedStipulation = stipulations.find((item) => item.stipulationId === selectedStipulationId);
+  const hasExplicitFilter = Boolean(selectedMatchTypeId || selectedStipulationId);
 
   const resolvedMatchTypeKey = selectedMatchType
     ? resolveLeaderboardKey(selectedMatchType.name)
@@ -127,10 +128,20 @@ function MatchTypeLeaderboards() {
     ? resolveLeaderboardKey(selectedStipulation.name)
     : undefined;
 
+  const resolvedFilterKey = resolvedMatchTypeKey || resolvedStipulationKey;
+  const filterUnresolved = hasExplicitFilter && !resolvedFilterKey;
   const activeLeaderboardKey =
-    resolvedMatchTypeKey || resolvedStipulationKey || leaderboardKeys[0] || '';
+    resolvedFilterKey || (!hasExplicitFilter ? (leaderboardKeys[0] || '') : '');
 
-  const entries = activeLeaderboardKey ? (leaderboards[activeLeaderboardKey] || []) : [];
+  const activeBucketLabel =
+    leaderboardTypeOptions.find((option) => option.key === activeLeaderboardKey)?.label || '';
+  const selectedFilterLabel = selectedMatchType?.name || selectedStipulation?.name || '';
+
+  const entries = filterUnresolved
+    ? []
+    : activeLeaderboardKey
+      ? (leaderboards[activeLeaderboardKey] || [])
+      : [];
 
   function getMedalColor(rank: number): string | null {
     switch (rank) {
@@ -217,7 +228,28 @@ function MatchTypeLeaderboards() {
       </div>
 
       <div className="lb-filter-summary">
-        {leaderboardTypeOptions.find((option) => option.key === activeLeaderboardKey)?.label}
+        {hasExplicitFilter ? (
+          filterUnresolved ? (
+            t(
+              'statistics.matchTypeLeaderboards.filterUnmapped',
+              {
+                defaultValue: 'No leaderboard category matches "{{filter}}".',
+                filter: selectedFilterLabel,
+              }
+            )
+          ) : (
+            t(
+              'statistics.matchTypeLeaderboards.filteredBy',
+              {
+                defaultValue: 'Filtered by "{{filter}}" (showing "{{bucket}}").',
+                filter: selectedFilterLabel,
+                bucket: activeBucketLabel,
+              }
+            )
+          )
+        ) : (
+          activeBucketLabel
+        )}
       </div>
 
       <div className="lb-list">
