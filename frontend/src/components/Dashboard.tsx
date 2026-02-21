@@ -4,6 +4,12 @@ import { Link } from 'react-router-dom';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { dashboardApi } from '../services/api';
 import type { DashboardData, DashboardEvent, DashboardMatch } from '../types';
+import {
+  DEFAULT_CHAMPIONSHIP_IMAGE,
+  DEFAULT_WRESTLER_IMAGE,
+  applyImageFallback,
+  resolveImageSrc,
+} from '../constants/imageFallbacks';
 import Skeleton from './ui/Skeleton';
 import './Dashboard.css';
 
@@ -82,18 +88,15 @@ function RecentResultsGrouped({
                     {m.stipulation ? ` – ${m.stipulation}` : ''}
                   </span>
                   {m.isChampionship &&
-                    (m.championshipImageUrl ? (
+                    (
                       <img
-                        src={m.championshipImageUrl}
+                        src={resolveImageSrc(m.championshipImageUrl, DEFAULT_CHAMPIONSHIP_IMAGE)}
+                        onError={(event) => applyImageFallback(event, DEFAULT_CHAMPIONSHIP_IMAGE)}
                         alt={m.championshipName ?? ''}
                         className="result-championship-image"
                         title={m.championshipName}
                       />
-                    ) : (
-                      m.championshipName && (
-                        <span className="result-championship-name">{m.championshipName}</span>
-                      )
-                    ))}
+                    )}
                   {(m.starRating != null || m.matchOfTheNight) && (
                     <div className="dashboard-result-awards">
                       {m.starRating != null && (
@@ -202,11 +205,11 @@ export default function Dashboard() {
             {data.currentChampions.map((c) => (
               <div key={c.championshipId} className="dashboard-champion-card">
                 <div className="champ-belt">{c.championshipName}</div>
-                {c.championImageUrl ? (
-                  <img src={c.championImageUrl} alt="" />
-                ) : (
-                  <div className="champ-placeholder" style={{ width: 64, height: 64, margin: '0 auto 0.5rem', background: '#333', borderRadius: 4 }} />
-                )}
+                <img
+                  src={resolveImageSrc(c.championImageUrl, DEFAULT_WRESTLER_IMAGE)}
+                  onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+                  alt={c.championName}
+                />
                 <div className="champ-name">{c.championName}</div>
               </div>
             ))}

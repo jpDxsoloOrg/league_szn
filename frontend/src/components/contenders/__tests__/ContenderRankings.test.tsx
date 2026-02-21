@@ -160,7 +160,7 @@ describe('ContenderRankings', () => {
     expect(screen.getByText('Intercontinental')).toBeInTheDocument();
   });
 
-  it('displays current champion card with name and placeholder image', async () => {
+  it('displays current champion card with default image fallback', async () => {
     mockGetAllChampionships.mockResolvedValue(mockChampionships);
     mockGetAllDivisions.mockResolvedValue(mockDivisions);
     mockGetForChampionship.mockResolvedValue(mockContenderData);
@@ -177,9 +177,10 @@ describe('ContenderRankings', () => {
     expect(championCard).toHaveTextContent('The Champ');
     expect(championCard).toHaveTextContent('John Cena');
 
-    // Placeholder image (first letter of wrestler name since no imageUrl)
-    const championPlaceholder = championCard!.querySelector('.placeholder-image');
-    expect(championPlaceholder).toHaveTextContent('T');
+    // Missing imageUrl should use default wrestler image
+    const championImage = championCard!.querySelector('img');
+    expect(championImage).toBeTruthy();
+    expect(championImage).toHaveAttribute('src', '/images/placeholders/wrestler-default.svg');
   });
 
   it('shows ranked contenders with movement indicators and stats', async () => {

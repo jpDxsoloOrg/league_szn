@@ -1,5 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import type { WrestlerWithCost } from '../../types/fantasy';
+import {
+  DEFAULT_WRESTLER_IMAGE,
+  applyImageFallback,
+  resolveImageSrc,
+} from '../../constants/imageFallbacks';
 import './WrestlerCard.css';
 
 interface WrestlerCardProps {
@@ -52,13 +57,11 @@ export default function WrestlerCard({
       </div>
 
       <div className="card-image">
-        {wrestler.imageUrl ? (
-          <img src={wrestler.imageUrl} alt={wrestler.currentWrestler} />
-        ) : (
-          <div className="placeholder-image">
-            {wrestler.currentWrestler.charAt(0)}
-          </div>
-        )}
+        <img
+          src={resolveImageSrc(wrestler.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+          onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+          alt={wrestler.currentWrestler}
+        />
       </div>
 
       <div className="card-info">

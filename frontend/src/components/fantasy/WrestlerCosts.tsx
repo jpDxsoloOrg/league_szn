@@ -3,6 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { fantasyApi, divisionsApi } from '../../services/api';
 import type { WrestlerWithCost } from '../../types/fantasy';
 import type { Division } from '../../types';
+import {
+  DEFAULT_WRESTLER_IMAGE,
+  applyImageFallback,
+  resolveImageSrc,
+} from '../../constants/imageFallbacks';
 import DivisionFilter from '../DivisionFilter';
 import Skeleton from '../ui/Skeleton';
 import './WrestlerCosts.css';
@@ -197,17 +202,12 @@ export default function WrestlerCosts() {
               <tr key={wrestler.playerId}>
                 <td className="col-wrestler">
                   <div className="wrestler-info">
-                    {wrestler.imageUrl ? (
-                      <img
-                        src={wrestler.imageUrl}
-                        alt={wrestler.currentWrestler}
-                        className="wrestler-thumb"
-                      />
-                    ) : (
-                      <div className="wrestler-thumb placeholder">
-                        {wrestler.currentWrestler.charAt(0)}
-                      </div>
-                    )}
+                    <img
+                      src={resolveImageSrc(wrestler.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+                      onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+                      alt={wrestler.currentWrestler}
+                      className="wrestler-thumb"
+                    />
                     <div>
                       <span className="wrestler-name">{wrestler.currentWrestler}</span>
                       <span className="player-name">{wrestler.name}</span>

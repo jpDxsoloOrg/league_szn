@@ -4,6 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { rivalriesApi, seasonsApi } from '../../services/api';
 import type { Rivalry } from '../../services/api/rivalries.api';
 import type { Season } from '../../types';
+import {
+  DEFAULT_WRESTLER_IMAGE,
+  applyImageFallback,
+  resolveImageSrc,
+} from '../../constants/imageFallbacks';
 import Skeleton from '../ui/Skeleton';
 import EmptyState from '../ui/EmptyState';
 import SeasonSelector from './SeasonSelector';
@@ -116,20 +121,22 @@ function Rivalries() {
             <div key={`${r.player1Id}-${r.player2Id}`} className="rivalry-card">
               <div className="rivalry-card-players">
                 <div className="rivalry-player">
-                  {r.player1?.imageUrl ? (
-                    <img src={r.player1.imageUrl} alt="" className="rivalry-player-img" />
-                  ) : (
-                    <div className="rivalry-player-placeholder" />
-                  )}
+                  <img
+                    src={resolveImageSrc(r.player1?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+                    onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+                    alt={r.player1?.wrestlerName ?? r.player1Id}
+                    className="rivalry-player-img"
+                  />
                   <span className="rivalry-player-name">{r.player1?.wrestlerName ?? r.player1Id}</span>
                 </div>
                 <span className="rivalry-vs">vs</span>
                 <div className="rivalry-player">
-                  {r.player2?.imageUrl ? (
-                    <img src={r.player2.imageUrl} alt="" className="rivalry-player-img" />
-                  ) : (
-                    <div className="rivalry-player-placeholder" />
-                  )}
+                  <img
+                    src={resolveImageSrc(r.player2?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+                    onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+                    alt={r.player2?.wrestlerName ?? r.player2Id}
+                    className="rivalry-player-img"
+                  />
                   <span className="rivalry-player-name">{r.player2?.wrestlerName ?? r.player2Id}</span>
                 </div>
               </div>

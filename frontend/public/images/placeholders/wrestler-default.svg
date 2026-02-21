@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Default wrestler image</title>
+  <desc id="desc">Generic wrestler placeholder silhouette on dark gradient background.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f2937" />
+      <stop offset="100%" stop-color="#111827" />
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" fill="url(#bg)" rx="24" />
+  <circle cx="128" cy="94" r="42" fill="#6b7280" />
+  <path d="M48 214c0-42 36-64 80-64s80 22 80 64" fill="#6b7280" />
+  <text x="128" y="236" fill="#d1d5db" font-family="Arial, sans-serif" font-size="16" text-anchor="middle">
+    Wrestler
+  </text>
+</svg>

@@ -3,6 +3,11 @@ import { championshipsApi, divisionsApi, playersApi, imagesApi } from '../../ser
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
 import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
+import {
+  DEFAULT_CHAMPIONSHIP_IMAGE,
+  applyImageFallback,
+  resolveImageSrc,
+} from '../../constants/imageFallbacks';
 import type { Championship, Division, Player } from '../../types';
 import './ManageChampionships.css';
 
@@ -383,15 +388,12 @@ export default function ManageChampionships() {
           <div className="championships-grid">
             {championships.map(championship => (
               <div key={championship.championshipId} className="championship-card">
-                {championship.imageUrl ? (
-                  <img
-                    src={championship.imageUrl}
-                    alt={championship.name}
-                    className="championship-image"
-                  />
-                ) : (
-                  <div className="championship-no-image">No Image</div>
-                )}
+                <img
+                  src={resolveImageSrc(championship.imageUrl, DEFAULT_CHAMPIONSHIP_IMAGE)}
+                  onError={(event) => applyImageFallback(event, DEFAULT_CHAMPIONSHIP_IMAGE)}
+                  alt={championship.name}
+                  className="championship-image"
+                />
                 <h4>{championship.name}</h4>
                 <div className="championship-type">
                   {championship.type === 'singles' ? 'Singles' : 'Tag Team'}
