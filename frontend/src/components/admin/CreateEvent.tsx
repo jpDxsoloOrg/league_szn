@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { EventType, LeagueEvent } from '../../types/event';
 import type { Season } from '../../types';
@@ -20,7 +20,7 @@ const presetColors = [
 function formatEventDate(dateStr: string): string {
   try {
     const d = new Date(dateStr);
-    return d.toLocaleDateString(undefined, {
+    return d.toLocaleString(undefined, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -34,6 +34,7 @@ function formatEventDate(dateStr: string): string {
 
 export default function CreateEvent() {
   const { t } = useTranslation();
+  const loadEventsErrorFallbackRef = useRef(t('events.admin.loadEventsError'));
   const [name, setName] = useState('');
   const [eventType, setEventType] = useState<EventType>('weekly');
   const [date, setDate] = useState('');
@@ -67,7 +68,7 @@ export default function CreateEvent() {
         setEvents(data);
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
-        setLoadError(err instanceof Error ? err.message : 'Failed to load events.');
+        setLoadError(err instanceof Error ? err.message : loadEventsErrorFallbackRef.current);
       } finally {
         setLoadingEvents(false);
       }
@@ -81,6 +82,7 @@ export default function CreateEvent() {
     try {
       setSaving(true);
       setError(null);
+      setDeleteError(null);
       const created = await eventsApi.create({
         name,
         eventType,

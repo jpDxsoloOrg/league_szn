@@ -22,41 +22,44 @@ vi.mock('../../../services/api', () => ({
 }));
 
 vi.mock('react-i18next', () => ({
+  // Keep `t` stable across renders so useEffect([t]) in CreateEvent
+  // does not repeatedly reload events during assertions.
   useTranslation: () => ({
-    t: (key: string, fallback?: string) => {
-      const translations: Record<string, string> = {
-        'events.admin.createEvent': 'Create Event',
-        'events.admin.name': 'Event Name',
-        'events.admin.namePlaceholder': 'e.g., WrestleMania',
-        'events.admin.eventType': 'Event Type',
-        'events.types.ppv': 'PPV',
-        'events.types.weekly': 'Weekly',
-        'events.types.special': 'Special',
-        'events.types.house': 'House Show',
-        'events.admin.date': 'Date & Time',
-        'events.admin.venue': 'Venue',
-        'events.admin.venuePlaceholder': 'e.g., Madison Square Garden',
-        'events.admin.description': 'Description',
-        'events.admin.descriptionPlaceholder': 'Event description...',
-        'events.admin.themeColor': 'Theme Color',
-        'events.admin.season': 'Season',
-        'events.admin.noSeason': '-- No Season --',
-        'events.admin.saveEvent': 'Save Event',
-        'events.admin.saveSuccess': 'Event saved successfully!',
-        'events.admin.existingEvents': 'Existing Events',
-        'events.admin.loadingEvents': 'Loading events...',
-        'events.admin.noEvents': 'No events yet. Create one below.',
-        'events.admin.deleteEvent': 'Delete',
-        'events.admin.deleteEventError': 'Failed to delete event',
-        'events.admin.loadEventsError': 'Failed to load events',
-        'events.admin.confirmDeleteEvent': 'Are you sure you want to delete "{{name}}"?',
-        'common.saving': 'Saving...',
-        'common.delete': 'Delete',
-      };
-      return translations[key] || fallback || key;
-    },
+    t: translationMock,
   }),
 }));
+
+const translations: Record<string, string> = {
+  'events.admin.createEvent': 'Create Event',
+  'events.admin.name': 'Event Name',
+  'events.admin.namePlaceholder': 'e.g., WrestleMania',
+  'events.admin.eventType': 'Event Type',
+  'events.types.ppv': 'PPV',
+  'events.types.weekly': 'Weekly',
+  'events.types.special': 'Special',
+  'events.types.house': 'House Show',
+  'events.admin.date': 'Date & Time',
+  'events.admin.venue': 'Venue',
+  'events.admin.venuePlaceholder': 'e.g., Madison Square Garden',
+  'events.admin.description': 'Description',
+  'events.admin.descriptionPlaceholder': 'Event description...',
+  'events.admin.themeColor': 'Theme Color',
+  'events.admin.season': 'Season',
+  'events.admin.noSeason': '-- No Season --',
+  'events.admin.saveEvent': 'Save Event',
+  'events.admin.saveSuccess': 'Event saved successfully!',
+  'events.admin.existingEvents': 'Existing Events',
+  'events.admin.loadingEvents': 'Loading events...',
+  'events.admin.noEvents': 'No events yet. Create one below.',
+  'events.admin.deleteEvent': 'Delete',
+  'events.admin.deleteEventError': 'Failed to delete event',
+  'events.admin.loadEventsError': 'Localized load events error',
+  'events.admin.confirmDeleteEvent': 'Are you sure you want to delete "{{name}}"?',
+  'common.saving': 'Saving...',
+  'common.delete': 'Delete',
+};
+
+const translationMock = (key: string, fallback?: string) => translations[key] || fallback || key;
 
 vi.mock('../CreateEvent.css', () => ({}));
 
@@ -99,7 +102,9 @@ const mockEvents = [
     eventType: 'ppv' as const,
     date: '2026-04-05T22:00:00.000Z',
     status: 'upcoming' as const,
-    matchCards: [],
+    matchCards: [
+      { position: 1, matchId: 'm-1', designation: 'main-event' as const },
+    ],
     createdAt: '2026-01-02T00:00:00.000Z',
     updatedAt: '2026-01-02T00:00:00.000Z',
   },
@@ -258,9 +263,9 @@ describe('CreateEvent', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Monday Nitro')).toBeInTheDocument();
-      expect(screen.getByText('WrestleMania')).toBeInTheDocument();
     });
 
+    expect(screen.getByText('WrestleMania')).toBeInTheDocument();
     expect(screen.queryByText('No events yet. Create one below.')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(2);
   });
@@ -271,7 +276,6 @@ describe('CreateEvent', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Monday Nitro')).toBeInTheDocument();
-      expect(screen.getByText('WrestleMania')).toBeInTheDocument();
     });
 
     const [firstDeleteButton] = screen.getAllByRole('button', { name: 'Delete' });
@@ -285,6 +289,8 @@ describe('CreateEvent', () => {
       expect(screen.queryByText('Monday Nitro')).not.toBeInTheDocument();
     });
     expect(screen.getByText('WrestleMania')).toBeInTheDocument();
+    expect(screen.queryByText('No events yet. Create one below.')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(1);
   });
 
   it('shows error feedback when deleting an event fails', async () => {
@@ -305,5 +311,52 @@ describe('CreateEvent', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not delete event');
     expect(screen.getByText('Monday Nitro')).toBeInTheDocument();
+  });
+
+  it('clears stale delete error when creating a new event', async () => {
+    mockGetAllEvents.mockResolvedValue(mockEvents);
+    mockDeleteEvent.mockRejectedValue(new Error('Could not delete event'));
+    mockCreateEvent.mockResolvedValue({
+      eventId: 'e-new',
+      name: 'Royal Rumble',
+      eventType: 'ppv',
+      date: '2025-07-20T20:00:00.000Z',
+      status: 'upcoming',
+      matchCards: [],
+      createdAt: '2025-01-01',
+      updatedAt: '2025-01-01',
+    });
+
+    renderCreateEvent();
+
+    await waitFor(() => {
+      expect(screen.getByText('Monday Nitro')).toBeInTheDocument();
+    });
+
+    const [firstDeleteButton] = screen.getAllByRole('button', { name: 'Delete' });
+    fireEvent.click(firstDeleteButton);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not delete event');
+
+    const nameInput = screen.getByPlaceholderText('e.g., WrestleMania');
+    fireEvent.change(nameInput, { target: { value: 'Royal Rumble' } });
+    const dateInput = document.querySelector('input[type="datetime-local"]') as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: '2025-07-20T20:00' } });
+
+    fireEvent.click(screen.getByText('Save Event'));
+
+    await waitFor(() => {
+      expect(mockCreateEvent).toHaveBeenCalled();
+    });
+
+    expect(screen.queryByText('Could not delete event')).not.toBeInTheDocument();
+    expect(screen.getByText('Event saved successfully!')).toBeInTheDocument();
+  });
+
+  it('shows translated fallback when event loading fails with non-Error rejection', async () => {
+    mockGetAllEvents.mockRejectedValue('network down');
+    renderCreateEvent();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Localized load events error');
   });
 });
