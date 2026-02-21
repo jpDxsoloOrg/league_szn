@@ -26,7 +26,7 @@ export interface ActivityFeedResponse {
   nextCursor: string | null;
 }
 
-function parseQuery(event: { queryStringParameters?: Record<string, string> | null }): {
+function parseQuery(event: { queryStringParameters?: Record<string, string | undefined> | null }): {
   limit: number;
   cursor: string | null;
   typeFilter: ActivityTypeFilter | null;

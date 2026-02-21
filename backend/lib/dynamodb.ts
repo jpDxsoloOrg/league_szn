@@ -133,4 +133,5 @@ export const TableNames = {
   PROMOS: process.env.PROMOS_TABLE!,
   STIPULATIONS: process.env.STIPULATIONS_TABLE!,
   MATCH_TYPES: process.env.MATCH_TYPES_TABLE!,
+  SEASON_AWARDS: process.env.SEASON_AWARDS_TABLE!,
 };

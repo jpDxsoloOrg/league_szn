@@ -109,6 +109,7 @@
     "admin": "Admin",
     "contenders": "Herausforderer",
     "matchSearch": "Kampf-Suche",
+    "seasonAwards": "Saison-Auszeichnungen",
     "profile": "Mein Profil",
     "groups": {
       "core": "Liga",
@@ -397,6 +398,7 @@
         "fantasyConfig": "Fantasy Konfig",
         "challenges": "Herausforderungen",
         "promos": "Promos",
+        "seasonAwards": "Saison-Auszeichnungen",
         "contenderConfig": "Herausforderer Konfig",
         "users": "Benutzerverwaltung",
         "features": "Funktionsverwaltung",
@@ -410,6 +412,27 @@
         "fantasy": "Fantasy",
         "system": "System"
       }
+    }
+  },
+  "seasonAwards": {
+    "title": "Saison-Auszeichnungen",
+    "autoAwards": "Automatische Auszeichnungen",
+    "customAwards": "Benutzerdefinierte Auszeichnungen",
+    "noAwards": "Noch keine Auszeichnungen f\u00fcr diese Saison.",
+    "auto": "Auto",
+    "admin": {
+      "title": "Saison-Auszeichnungen verwalten",
+      "selectSeason": "Saison",
+      "chooseSeason": "-- Saison w\u00e4hlen --",
+      "createAward": "Auszeichnung erstellen",
+      "awardName": "Name der Auszeichnung",
+      "awardPlayer": "Spieler",
+      "choosePlayer": "-- Spieler w\u00e4hlen --",
+      "description": "Beschreibung",
+      "value": "Wert",
+      "createSuccess": "Auszeichnung erfolgreich erstellt!",
+      "deleteSuccess": "Auszeichnung erfolgreich gel\u00f6scht!",
+      "confirmDelete": "M\u00f6chten Sie die Auszeichnung \"{{name}}\" wirklich l\u00f6schen?"
     }
   },
   "challenges": {

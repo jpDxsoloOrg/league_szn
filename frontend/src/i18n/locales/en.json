@@ -109,6 +109,7 @@
     "admin": "Admin",
     "contenders": "Contenders",
     "matchSearch": "Match Search",
+    "seasonAwards": "Season Awards",
     "profile": "My Profile",
     "groups": {
       "core": "League",
@@ -397,6 +398,7 @@
         "fantasyConfig": "Fantasy Config",
         "challenges": "Challenges",
         "promos": "Promos",
+        "seasonAwards": "Season Awards",
         "contenderConfig": "Contender Config",
         "users": "User Management",
         "features": "Feature Management",
@@ -410,6 +412,27 @@
         "fantasy": "Fantasy",
         "system": "System"
       }
+    }
+  },
+  "seasonAwards": {
+    "title": "Season Awards",
+    "autoAwards": "Auto-Generated Awards",
+    "customAwards": "Custom Awards",
+    "noAwards": "No awards for this season yet.",
+    "auto": "Auto",
+    "admin": {
+      "title": "Manage Season Awards",
+      "selectSeason": "Season",
+      "chooseSeason": "-- Select a season --",
+      "createAward": "Create Award",
+      "awardName": "Award Name",
+      "awardPlayer": "Player",
+      "choosePlayer": "-- Select a player --",
+      "description": "Description",
+      "value": "Value",
+      "createSuccess": "Award created successfully!",
+      "deleteSuccess": "Award deleted successfully!",
+      "confirmDelete": "Are you sure you want to delete the award \"{{name}}\"?"
     }
   },
   "challenges": {

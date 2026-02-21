@@ -37,6 +37,7 @@ export const USER_NAV_GROUPS: NavGroup[] = [
       { path: '/events', i18nKey: 'nav.events' },
       { path: '/matches', i18nKey: 'nav.matchSearch' },
       { path: '/tournaments', i18nKey: 'nav.tournaments' },
+      { path: '/awards', i18nKey: 'nav.seasonAwards' },
       { path: '/contenders', i18nKey: 'nav.contenders', feature: 'contenders' },
       { path: '/stats', i18nKey: 'nav.statistics', feature: 'statistics' },
     ],
@@ -87,6 +88,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
       { path: '/admin/players', i18nKey: 'admin.panel.tabs.managePlayers' },
       { path: '/admin/divisions', i18nKey: 'admin.panel.tabs.divisions' },
       { path: '/admin/seasons', i18nKey: 'admin.panel.tabs.seasons' },
+      { path: '/admin/season-awards', i18nKey: 'admin.panel.tabs.seasonAwards' },
       { path: '/admin/championships', i18nKey: 'admin.panel.tabs.championships' },
       { path: '/admin/tournaments', i18nKey: 'admin.panel.tabs.tournaments' },
     ],
@@ -121,7 +123,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
 
 /** Path → group key for user nav (for auto-expand) */
 export function getUserGroupForPath(pathname: string): string | null {
-  const core = ['/', '/standings', '/activity', '/championships', '/events', '/matches', '/tournaments', '/contenders', '/stats'];
+  const core = ['/', '/standings', '/activity', '/championships', '/events', '/matches', '/tournaments', '/awards', '/contenders', '/stats'];
   const wrestler = ['/profile', '/challenges', '/promos'];
   if (core.some((p) => pathname === p) || pathname.startsWith('/events/') || pathname.startsWith('/stats/') || pathname.startsWith('/contenders/')) return 'core';
   if (wrestler.some((p) => pathname === p || pathname.startsWith(p + '/'))) return 'wrestler';
@@ -131,7 +133,7 @@ export function getUserGroupForPath(pathname: string): string | null {
 /** Path → admin group key */
 export function getAdminGroupForPath(pathname: string): string | null {
   const matchOps = ['/admin/schedule', '/admin/results', '/admin/events', '/admin/match-config'];
-  const leagueSetup = ['/admin/players', '/admin/divisions', '/admin/seasons', '/admin/championships', '/admin/tournaments'];
+  const leagueSetup = ['/admin/players', '/admin/divisions', '/admin/seasons', '/admin/season-awards', '/admin/championships', '/admin/tournaments'];
   const contentSocial = ['/admin/challenges', '/admin/promos', '/admin/contender-config'];
   const fantasy = ['/admin/fantasy-shows', '/admin/fantasy-config'];
   const system = ['/admin/users', '/admin/features', '/admin/danger'];
