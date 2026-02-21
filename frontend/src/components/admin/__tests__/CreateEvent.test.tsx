@@ -289,7 +289,8 @@ describe('CreateEvent', () => {
       expect(screen.queryByText('Monday Nitro')).not.toBeInTheDocument();
     });
     expect(screen.queryByText('WrestleMania')).not.toBeInTheDocument();
-    expect(screen.getByText('No events yet. Create one below.')).toBeInTheDocument();
+    expect(screen.queryByText('Existing Events')).not.toBeInTheDocument();
+    expect(screen.queryByText('No events yet. Create one below.')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
   });
 
