@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { getOrNotFound } from '../../lib/dynamodbUtils';
+import { success, badRequest, serverError } from '../../lib/response';
 import { requireRole, getAuthContext } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 
@@ -27,17 +28,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('picks must be an object mapping divisionId to playerIds[]');
     }
 
-    // Fetch event
-    const eventResult = await dynamoDb.get({
-      TableName: TableNames.EVENTS,
-      Key: { eventId },
-    });
-
-    if (!eventResult.Item) {
-      return notFound('Event not found');
+    const eventResult = await getOrNotFound(TableNames.EVENTS, { eventId }, 'Event not found');
+    if ('notFoundResponse' in eventResult) {
+      return eventResult.notFoundResponse;
     }
 
-    const eventItem = eventResult.Item;
+    const eventItem = eventResult.item;
 
     if (eventItem.status === 'completed' || eventItem.status === 'cancelled') {
       return badRequest('This event is no longer accepting picks');

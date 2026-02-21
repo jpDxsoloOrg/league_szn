@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { buildUpdateExpression, getOrNotFound } from '../../lib/dynamodbUtils';
+import { success, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
 interface MatchCardEntry {
@@ -43,14 +44,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<UpdateEventBody>(event);
     if (parseError) return parseError;
 
-    // Check if event exists
-    const existing = await dynamoDb.get({
-      TableName: TableNames.EVENTS,
-      Key: { eventId },
-    });
-
-    if (!existing.Item) {
-      return notFound('Event not found');
+    const eventResult = await getOrNotFound(TableNames.EVENTS, { eventId }, 'Event not found');
+    if ('notFoundResponse' in eventResult) {
+      return eventResult.notFoundResponse;
     }
 
     // Validate eventType if provided
@@ -63,122 +59,35 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('status must be one of: upcoming, in-progress, completed, cancelled');
     }
 
-    // Build update expression
-    const updateExpressions: string[] = [];
-    const expressionAttributeNames: Record<string, string> = {};
-    const expressionAttributeValues: Record<string, any> = {};
+    const updateExpr = buildUpdateExpression({
+      name: body.name,
+      eventType: body.eventType,
+      date: body.date,
+      venue: body.venue,
+      description: body.description,
+      imageUrl: body.imageUrl,
+      themeColor: body.themeColor,
+      status: body.status,
+      seasonId: body.seasonId,
+      matchCards: body.matchCards,
+      attendance: body.attendance,
+      rating: body.rating,
+      fantasyEnabled: body.fantasyEnabled,
+      fantasyLocked: body.fantasyLocked,
+      fantasyBudget: body.fantasyBudget,
+      fantasyPicksPerDivision: body.fantasyPicksPerDivision,
+    });
 
-    if (body.name !== undefined) {
-      updateExpressions.push('#name = :name');
-      expressionAttributeNames['#name'] = 'name';
-      expressionAttributeValues[':name'] = body.name;
-    }
-
-    if (body.eventType !== undefined) {
-      updateExpressions.push('#eventType = :eventType');
-      expressionAttributeNames['#eventType'] = 'eventType';
-      expressionAttributeValues[':eventType'] = body.eventType;
-    }
-
-    if (body.date !== undefined) {
-      updateExpressions.push('#date = :date');
-      expressionAttributeNames['#date'] = 'date';
-      expressionAttributeValues[':date'] = body.date;
-    }
-
-    if (body.venue !== undefined) {
-      updateExpressions.push('#venue = :venue');
-      expressionAttributeNames['#venue'] = 'venue';
-      expressionAttributeValues[':venue'] = body.venue;
-    }
-
-    if (body.description !== undefined) {
-      updateExpressions.push('#description = :description');
-      expressionAttributeNames['#description'] = 'description';
-      expressionAttributeValues[':description'] = body.description;
-    }
-
-    if (body.imageUrl !== undefined) {
-      updateExpressions.push('#imageUrl = :imageUrl');
-      expressionAttributeNames['#imageUrl'] = 'imageUrl';
-      expressionAttributeValues[':imageUrl'] = body.imageUrl;
-    }
-
-    if (body.themeColor !== undefined) {
-      updateExpressions.push('#themeColor = :themeColor');
-      expressionAttributeNames['#themeColor'] = 'themeColor';
-      expressionAttributeValues[':themeColor'] = body.themeColor;
-    }
-
-    if (body.status !== undefined) {
-      updateExpressions.push('#status = :status');
-      expressionAttributeNames['#status'] = 'status';
-      expressionAttributeValues[':status'] = body.status;
-    }
-
-    if (body.seasonId !== undefined) {
-      updateExpressions.push('#seasonId = :seasonId');
-      expressionAttributeNames['#seasonId'] = 'seasonId';
-      expressionAttributeValues[':seasonId'] = body.seasonId;
-    }
-
-    if (body.matchCards !== undefined) {
-      updateExpressions.push('#matchCards = :matchCards');
-      expressionAttributeNames['#matchCards'] = 'matchCards';
-      expressionAttributeValues[':matchCards'] = body.matchCards;
-    }
-
-    if (body.attendance !== undefined) {
-      updateExpressions.push('#attendance = :attendance');
-      expressionAttributeNames['#attendance'] = 'attendance';
-      expressionAttributeValues[':attendance'] = body.attendance;
-    }
-
-    if (body.rating !== undefined) {
-      updateExpressions.push('#rating = :rating');
-      expressionAttributeNames['#rating'] = 'rating';
-      expressionAttributeValues[':rating'] = body.rating;
-    }
-
-    if (body.fantasyEnabled !== undefined) {
-      updateExpressions.push('#fantasyEnabled = :fantasyEnabled');
-      expressionAttributeNames['#fantasyEnabled'] = 'fantasyEnabled';
-      expressionAttributeValues[':fantasyEnabled'] = body.fantasyEnabled;
-    }
-
-    if (body.fantasyLocked !== undefined) {
-      updateExpressions.push('#fantasyLocked = :fantasyLocked');
-      expressionAttributeNames['#fantasyLocked'] = 'fantasyLocked';
-      expressionAttributeValues[':fantasyLocked'] = body.fantasyLocked;
-    }
-
-    if (body.fantasyBudget !== undefined) {
-      updateExpressions.push('#fantasyBudget = :fantasyBudget');
-      expressionAttributeNames['#fantasyBudget'] = 'fantasyBudget';
-      expressionAttributeValues[':fantasyBudget'] = body.fantasyBudget;
-    }
-
-    if (body.fantasyPicksPerDivision !== undefined) {
-      updateExpressions.push('#fantasyPicksPerDivision = :fantasyPicksPerDivision');
-      expressionAttributeNames['#fantasyPicksPerDivision'] = 'fantasyPicksPerDivision';
-      expressionAttributeValues[':fantasyPicksPerDivision'] = body.fantasyPicksPerDivision;
-    }
-
-    // Always update the updatedAt timestamp
-    updateExpressions.push('#updatedAt = :updatedAt');
-    expressionAttributeNames['#updatedAt'] = 'updatedAt';
-    expressionAttributeValues[':updatedAt'] = new Date().toISOString();
-
-    if (updateExpressions.length === 1) {
+    if (!updateExpr.hasChanges) {
       return badRequest('No valid fields to update');
     }
 
     const result = await dynamoDb.update({
       TableName: TableNames.EVENTS,
       Key: { eventId },
-      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
-      ExpressionAttributeNames: expressionAttributeNames,
-      ExpressionAttributeValues: expressionAttributeValues,
+      UpdateExpression: updateExpr.UpdateExpression,
+      ExpressionAttributeNames: updateExpr.ExpressionAttributeNames,
+      ExpressionAttributeValues: updateExpr.ExpressionAttributeValues,
       ReturnValues: 'ALL_NEW',
     });
 

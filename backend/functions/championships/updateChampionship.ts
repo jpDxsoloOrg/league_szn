@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { buildUpdateExpression, getOrNotFound } from '../../lib/dynamodbUtils';
+import { success, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -14,72 +15,34 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody(event);
     if (parseError) return parseError;
 
-    // Check if championship exists
-    const existing = await dynamoDb.get({
-      TableName: TableNames.CHAMPIONSHIPS,
-      Key: { championshipId },
+    const championshipResult = await getOrNotFound(
+      TableNames.CHAMPIONSHIPS,
+      { championshipId },
+      'Championship not found'
+    );
+    if ('notFoundResponse' in championshipResult) {
+      return championshipResult.notFoundResponse;
+    }
+
+    const updateExpr = buildUpdateExpression({
+      name: body.name,
+      type: body.type,
+      imageUrl: body.imageUrl,
+      isActive: body.isActive,
+      currentChampion: body.currentChampion,
+      divisionId: body.divisionId,
     });
 
-    if (!existing.Item) {
-      return notFound('Championship not found');
-    }
-
-    // Build update expression
-    const updateExpressions: string[] = [];
-    const expressionAttributeNames: Record<string, string> = {};
-    const expressionAttributeValues: Record<string, any> = {};
-
-    if (body.name !== undefined) {
-      updateExpressions.push('#name = :name');
-      expressionAttributeNames['#name'] = 'name';
-      expressionAttributeValues[':name'] = body.name;
-    }
-
-    if (body.type !== undefined) {
-      updateExpressions.push('#type = :type');
-      expressionAttributeNames['#type'] = 'type';
-      expressionAttributeValues[':type'] = body.type;
-    }
-
-    if (body.imageUrl !== undefined) {
-      updateExpressions.push('#imageUrl = :imageUrl');
-      expressionAttributeNames['#imageUrl'] = 'imageUrl';
-      expressionAttributeValues[':imageUrl'] = body.imageUrl;
-    }
-
-    if (body.isActive !== undefined) {
-      updateExpressions.push('#isActive = :isActive');
-      expressionAttributeNames['#isActive'] = 'isActive';
-      expressionAttributeValues[':isActive'] = body.isActive;
-    }
-
-    if (body.currentChampion !== undefined) {
-      updateExpressions.push('#currentChampion = :currentChampion');
-      expressionAttributeNames['#currentChampion'] = 'currentChampion';
-      expressionAttributeValues[':currentChampion'] = body.currentChampion;
-    }
-
-    if (body.divisionId !== undefined) {
-      updateExpressions.push('#divisionId = :divisionId');
-      expressionAttributeNames['#divisionId'] = 'divisionId';
-      expressionAttributeValues[':divisionId'] = body.divisionId;
-    }
-
-    // Always update the updatedAt timestamp
-    updateExpressions.push('#updatedAt = :updatedAt');
-    expressionAttributeNames['#updatedAt'] = 'updatedAt';
-    expressionAttributeValues[':updatedAt'] = new Date().toISOString();
-
-    if (updateExpressions.length === 1) {
+    if (!updateExpr.hasChanges) {
       return badRequest('No valid fields to update');
     }
 
     const result = await dynamoDb.update({
       TableName: TableNames.CHAMPIONSHIPS,
       Key: { championshipId },
-      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
-      ExpressionAttributeNames: expressionAttributeNames,
-      ExpressionAttributeValues: expressionAttributeValues,
+      UpdateExpression: updateExpr.UpdateExpression,
+      ExpressionAttributeNames: updateExpr.ExpressionAttributeNames,
+      ExpressionAttributeValues: updateExpr.ExpressionAttributeValues,
       ReturnValues: 'ALL_NEW',
     });
 

@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { getOrNotFound } from '../../lib/dynamodbUtils';
+import { success, badRequest, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -22,17 +23,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('currentCost must be a positive number');
     }
 
-    const existing = await dynamoDb.get({
-      TableName: TableNames.WRESTLER_COSTS,
-      Key: { playerId },
-    });
-
-    if (!existing.Item) {
-      return notFound('Wrestler cost not found. Run initialization first.');
+    const existing = await getOrNotFound(
+      TableNames.WRESTLER_COSTS,
+      { playerId },
+      'Wrestler cost not found. Run initialization first.'
+    );
+    if ('notFoundResponse' in existing) {
+      return existing.notFoundResponse;
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const costHistory = [...((existing.Item.costHistory as any[]) || [])];
+    const currentItem = existing.item;
+    const costHistory = [...((currentItem.costHistory as Array<Record<string, unknown>>) || [])];
     costHistory.push({
       date: today,
       cost: body.currentCost,
@@ -41,7 +43,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     while (costHistory.length > 20) costHistory.shift();
 
     const updatedItem = {
-      ...existing.Item,
+      ...currentItem,
       currentCost: body.currentCost,
       costHistory,
       updatedAt: new Date().toISOString(),

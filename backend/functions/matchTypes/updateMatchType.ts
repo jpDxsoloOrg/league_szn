@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { buildUpdateExpression, getOrNotFound } from '../../lib/dynamodbUtils';
+import { success, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
 interface UpdateMatchTypeBody {
@@ -18,41 +19,30 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<UpdateMatchTypeBody>(event);
     if (parseError) return parseError;
 
-    const existingMatchType = await dynamoDb.get({
-      TableName: TableNames.MATCH_TYPES,
-      Key: { matchTypeId },
+    const matchTypeResult = await getOrNotFound(
+      TableNames.MATCH_TYPES,
+      { matchTypeId },
+      'Match type not found'
+    );
+    if ('notFoundResponse' in matchTypeResult) {
+      return matchTypeResult.notFoundResponse;
+    }
+
+    const updateExpr = buildUpdateExpression({
+      name: body.name,
+      description: body.description,
     });
 
-    if (!existingMatchType.Item) {
-      return notFound('Match type not found');
+    if (!updateExpr.hasChanges) {
+      return badRequest('No valid fields to update');
     }
-
-    const updateExpressions: string[] = [];
-    const expressionAttributeNames: Record<string, string> = {};
-    const expressionAttributeValues: Record<string, string> = {};
-
-    if (body.name !== undefined) {
-      updateExpressions.push('#name = :name');
-      expressionAttributeNames['#name'] = 'name';
-      expressionAttributeValues[':name'] = body.name;
-    }
-
-    if (body.description !== undefined) {
-      updateExpressions.push('#description = :description');
-      expressionAttributeNames['#description'] = 'description';
-      expressionAttributeValues[':description'] = body.description;
-    }
-
-    updateExpressions.push('#updatedAt = :updatedAt');
-    expressionAttributeNames['#updatedAt'] = 'updatedAt';
-    expressionAttributeValues[':updatedAt'] = new Date().toISOString();
 
     const result = await dynamoDb.update({
       TableName: TableNames.MATCH_TYPES,
       Key: { matchTypeId },
-      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
-      ExpressionAttributeNames: expressionAttributeNames,
-      ExpressionAttributeValues: expressionAttributeValues,
+      UpdateExpression: updateExpr.UpdateExpression,
+      ExpressionAttributeNames: updateExpr.ExpressionAttributeNames,
+      ExpressionAttributeValues: updateExpr.ExpressionAttributeValues,
       ReturnValues: 'ALL_NEW',
     });
 

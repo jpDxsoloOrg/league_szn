@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { buildUpdateExpression, getOrNotFound } from '../../lib/dynamodbUtils';
+import { success, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -14,58 +15,32 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody(event);
     if (parseError) return parseError;
 
-    // Check if tournament exists
-    const existing = await dynamoDb.get({
-      TableName: TableNames.TOURNAMENTS,
-      Key: { tournamentId },
+    const tournamentResult = await getOrNotFound(
+      TableNames.TOURNAMENTS,
+      { tournamentId },
+      'Tournament not found'
+    );
+    if ('notFoundResponse' in tournamentResult) {
+      return tournamentResult.notFoundResponse;
+    }
+
+    const updateExpr = buildUpdateExpression({
+      status: body.status,
+      winner: body.winner,
+      brackets: body.brackets,
+      standings: body.standings,
     });
 
-    if (!existing.Item) {
-      return notFound('Tournament not found');
-    }
-
-    // Build update expression
-    const updateExpressions: string[] = [];
-    const expressionAttributeNames: Record<string, string> = {};
-    const expressionAttributeValues: Record<string, any> = {};
-
-    if (body.status !== undefined) {
-      updateExpressions.push('#status = :status');
-      expressionAttributeNames['#status'] = 'status';
-      expressionAttributeValues[':status'] = body.status;
-    }
-
-    if (body.winner !== undefined) {
-      updateExpressions.push('#winner = :winner');
-      expressionAttributeNames['#winner'] = 'winner';
-      expressionAttributeValues[':winner'] = body.winner;
-    }
-
-    if (body.brackets !== undefined) {
-      updateExpressions.push('#brackets = :brackets');
-      expressionAttributeNames['#brackets'] = 'brackets';
-      expressionAttributeValues[':brackets'] = body.brackets;
-    }
-
-    if (body.standings !== undefined) {
-      updateExpressions.push('#standings = :standings');
-      expressionAttributeNames['#standings'] = 'standings';
-      expressionAttributeValues[':standings'] = body.standings;
-    }
-
-    if (updateExpressions.length === 0) {
+    if (!updateExpr.hasChanges) {
       return badRequest('No valid fields to update');
     }
-
-    updateExpressions.push('updatedAt = :updatedAt');
-    expressionAttributeValues[':updatedAt'] = new Date().toISOString();
 
     const result = await dynamoDb.update({
       TableName: TableNames.TOURNAMENTS,
       Key: { tournamentId },
-      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
-      ExpressionAttributeNames: expressionAttributeNames,
-      ExpressionAttributeValues: expressionAttributeValues,
+      UpdateExpression: updateExpr.UpdateExpression,
+      ExpressionAttributeNames: updateExpr.ExpressionAttributeNames,
+      ExpressionAttributeValues: updateExpr.ExpressionAttributeValues,
       ReturnValues: 'ALL_NEW',
     });
 

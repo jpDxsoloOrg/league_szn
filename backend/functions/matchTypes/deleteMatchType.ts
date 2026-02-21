@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { noContent, badRequest, notFound, serverError } from '../../lib/response';
+import { getOrNotFound } from '../../lib/dynamodbUtils';
+import { noContent, badRequest, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -9,13 +10,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Match type ID is required');
     }
 
-    const existingMatchType = await dynamoDb.get({
-      TableName: TableNames.MATCH_TYPES,
-      Key: { matchTypeId },
-    });
-
-    if (!existingMatchType.Item) {
-      return notFound('Match type not found');
+    const matchTypeResult = await getOrNotFound(
+      TableNames.MATCH_TYPES,
+      { matchTypeId },
+      'Match type not found'
+    );
+    if ('notFoundResponse' in matchTypeResult) {
+      return matchTypeResult.notFoundResponse;
     }
 
     await dynamoDb.delete({

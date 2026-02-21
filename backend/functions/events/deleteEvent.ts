@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { noContent, badRequest, notFound, serverError, conflict } from '../../lib/response';
+import { getOrNotFound } from '../../lib/dynamodbUtils';
+import { noContent, badRequest, serverError, conflict } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -10,23 +11,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Event ID is required');
     }
 
-    // Check if event exists
-    const existingEvent = await dynamoDb.get({
-      TableName: TableNames.EVENTS,
-      Key: { eventId },
-    });
-
-    if (!existingEvent.Item) {
-      return notFound('Event not found');
+    const existingEvent = await getOrNotFound(TableNames.EVENTS, { eventId }, 'Event not found');
+    if ('notFoundResponse' in existingEvent) {
+      return existingEvent.notFoundResponse;
     }
 
-    const eventItem = existingEvent.Item as Record<string, any>;
+    const eventItem = existingEvent.item as Record<string, unknown>;
 
     // Check if event has completed matches
-    if (eventItem.matchCards && eventItem.matchCards.length > 0) {
+    if (Array.isArray(eventItem.matchCards) && eventItem.matchCards.length > 0) {
       const matchIds = eventItem.matchCards
-        .filter((card: Record<string, any>) => card.matchId)
-        .map((card: Record<string, any>) => card.matchId);
+        .filter((card): card is Record<string, unknown> => !!card && typeof card === 'object')
+        .map((card) => card.matchId)
+        .filter((matchId): matchId is string => typeof matchId === 'string' && matchId.length > 0);
 
       if (matchIds.length > 0) {
         const matchChecks = await Promise.all(
@@ -38,7 +35,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               ExpressionAttributeValues: { ':matchId': matchId },
               Limit: 1,
             });
-            return matchResult.Items?.[0] as Record<string, any> | undefined;
+            return matchResult.Items?.[0] as Record<string, unknown> | undefined;
           })
         );
 

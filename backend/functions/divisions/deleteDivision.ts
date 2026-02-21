@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { noContent, badRequest, notFound, serverError, conflict } from '../../lib/response';
+import { getOrNotFound } from '../../lib/dynamodbUtils';
+import { noContent, badRequest, serverError, conflict } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -10,14 +11,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Division ID is required');
     }
 
-    // Check if division exists
-    const existingDivision = await dynamoDb.get({
-      TableName: TableNames.DIVISIONS,
-      Key: { divisionId },
-    });
-
-    if (!existingDivision.Item) {
-      return notFound('Division not found');
+    const divisionResult = await getOrNotFound(TableNames.DIVISIONS, { divisionId }, 'Division not found');
+    if ('notFoundResponse' in divisionResult) {
+      return divisionResult.notFoundResponse;
     }
 
     // Check if any players are assigned to this division
