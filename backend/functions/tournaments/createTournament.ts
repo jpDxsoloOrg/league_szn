@@ -22,14 +22,11 @@ interface BracketRound {
   matches: BracketMatch[];
 }
 
+const isPowerOfTwo = (value: number): boolean => value > 0 && (value & (value - 1)) === 0;
+
 const generateSingleEliminationBracket = (participants: string[]): { rounds: BracketRound[] } => {
-  // For single elimination, we need a power of 2 participants
-  // If not, some participants get byes in the first round
   const numParticipants = participants.length;
   const numRounds = Math.ceil(Math.log2(numParticipants));
-
-  // Shuffle participants
-  const shuffled = [...participants].sort(() => Math.random() - 0.5);
 
   // Create first round
   const firstRound: BracketRound = {
@@ -40,15 +37,9 @@ const generateSingleEliminationBracket = (participants: string[]): { rounds: Bra
   const numFirstRoundMatches = Math.floor(numParticipants / 2);
   for (let i = 0; i < numFirstRoundMatches; i++) {
     firstRound.matches.push({
-      participant1: shuffled[i * 2],
-      participant2: shuffled[i * 2 + 1],
+      participant1: participants[i * 2],
+      participant2: participants[i * 2 + 1],
     });
-  }
-
-  // Handle byes
-  if (numParticipants % 2 === 1) {
-    // Odd number - last participant gets a bye
-    // They advance automatically to second round
   }
 
   // Create placeholder rounds
@@ -102,7 +93,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const now = new Date().toISOString();
-    const tournament: any = {
+    if (body.type === 'single-elimination') {
+      if (body.participants.length < 4) {
+        return badRequest('Single elimination tournaments require at least 4 participants');
+      }
+      if (!isPowerOfTwo(body.participants.length)) {
+        return badRequest('Single elimination tournaments require a power-of-two participant count (4, 8, 16, ...)');
+      }
+    }
+
+    const tournament: Record<string, unknown> = {
       tournamentId: uuidv4(),
       name: body.name,
       type: body.type,

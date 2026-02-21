@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Default championship image</title>
+  <desc id="desc">Generic championship belt placeholder icon on dark background.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f2937" />
+      <stop offset="100%" stop-color="#111827" />
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" fill="url(#bg)" rx="24" />
+  <rect x="34" y="90" width="188" height="76" rx="22" fill="#b45309" />
+  <rect x="78" y="70" width="100" height="116" rx="24" fill="#fbbf24" />
+  <circle cx="128" cy="128" r="24" fill="#92400e" />
+  <text x="128" y="236" fill="#d1d5db" font-family="Arial, sans-serif" font-size="16" text-anchor="middle">
+    Championship
+  </text>
+</svg>

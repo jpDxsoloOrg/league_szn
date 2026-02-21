@@ -177,6 +177,26 @@ describe('App', () => {
     });
   });
 
+  it('renders /tournaments as Tournaments page', async () => {
+    mockUseAuth.mockReturnValue(authenticatedAuth());
+    testEntries = ['/tournaments'];
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('tournaments')).toBeInTheDocument();
+    });
+  });
+
+  it('renders /admin/tournaments as Admin panel route', async () => {
+    mockUseAuth.mockReturnValue(authenticatedAuth());
+    testEntries = ['/admin/tournaments'];
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-panel')).toBeInTheDocument();
+    });
+  });
+
   it('redirects /guide to /guide/wiki', async () => {
     mockUseAuth.mockReturnValue(unauthenticatedAuth());
     testEntries = ['/guide'];

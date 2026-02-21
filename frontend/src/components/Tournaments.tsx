@@ -98,12 +98,33 @@ export default function Tournaments() {
       ...stats,
     }));
 
-    // Sort by points descending
-    standingsArray.sort((a, b) => b.points - a.points);
+    // Sort by points desc, then wins desc for a stable tiebreak display.
+    standingsArray.sort((a, b) => (b.points - a.points) || (b.wins - a.wins));
+    const leader = standingsArray[0];
+    const runnerUp = standingsArray[1];
+    const pointsGap = leader && runnerUp ? leader.points - runnerUp.points : 0;
 
     return (
       <div className="round-robin-standings">
         <h4>{t('tournaments.standings')}</h4>
+        {leader && (
+          <div className="round-robin-summary">
+            <div className="summary-card">
+              <span className="summary-label">{t('tournaments.summaryLeader')}</span>
+              <span className="summary-value">{getPlayerName(leader.playerId)}</span>
+            </div>
+            <div className="summary-card">
+              <span className="summary-label">{t('tournaments.summaryPoints')}</span>
+              <span className="summary-value">{leader.points}</span>
+            </div>
+            <div className="summary-card">
+              <span className="summary-label">{t('tournaments.summaryGap')}</span>
+              <span className="summary-value">
+                {runnerUp ? t('tournaments.summaryGapValue', { count: pointsGap }) : t('common.unknown')}
+              </span>
+            </div>
+          </div>
+        )}
         <table>
           <thead>
             <tr>
@@ -136,28 +157,30 @@ export default function Tournaments() {
     if (!tournament.brackets) return null;
 
     return (
-      <div className="bracket">
+      <div className="bracket bracket-march-madness">
         <h4>{t('tournaments.bracket')}</h4>
-        {tournament.brackets.rounds.map((round) => (
-          <div key={round.roundNumber} className="bracket-round">
-            <h5>{t('tournaments.round')} {round.roundNumber}</h5>
-            <div className="bracket-matches">
-              {round.matches.map((match, idx) => (
-                <div key={idx} className="bracket-match">
-                  <div className="bracket-participant">
-                    {match.participant1 ? getPlayerName(match.participant1) : t('common.tbd')}
-                    {match.winner === match.participant1 && <span className="winner-indicator">✓</span>}
+        <div className="bracket-rounds-grid">
+          {tournament.brackets.rounds.map((round) => (
+            <div key={round.roundNumber} className="bracket-round-column">
+              <h5>{t('tournaments.round')} {round.roundNumber}</h5>
+              <div className="bracket-matches">
+                {round.matches.map((match, idx) => (
+                  <div key={`round-${round.roundNumber}-match-${idx}`} className="bracket-match">
+                    <div className="bracket-participant">
+                      {match.participant1 ? getPlayerName(match.participant1) : t('common.tbd')}
+                      {match.winner === match.participant1 && <span className="winner-indicator">✓</span>}
+                    </div>
+                    <div className="vs">{t('common.vs')}</div>
+                    <div className="bracket-participant">
+                      {match.participant2 ? getPlayerName(match.participant2) : t('common.tbd')}
+                      {match.winner === match.participant2 && <span className="winner-indicator">✓</span>}
+                    </div>
                   </div>
-                  <div className="vs">{t('common.vs')}</div>
-                  <div className="bracket-participant">
-                    {match.participant2 ? getPlayerName(match.participant2) : t('common.tbd')}
-                    {match.winner === match.participant2 && <span className="winner-indicator">✓</span>}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   };

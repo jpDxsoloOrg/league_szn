@@ -4,6 +4,14 @@ import { sanitizeName } from '../../utils/sanitize';
 import type { Player } from '../../types';
 import './CreateTournament.css';
 
+function isPowerOfTwo(value: number): boolean {
+  return value > 0 && (value & (value - 1)) === 0;
+}
+
+function isValidSingleEliminationParticipantCount(count: number): boolean {
+  return count >= 4 && isPowerOfTwo(count);
+}
+
 export default function CreateTournament() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,9 +53,15 @@ export default function CreateTournament() {
       return;
     }
 
-    if (formData.type === 'single-elimination' && formData.participants.length < 4) {
-      setError('Single elimination tournaments require at least 4 participants');
-      return;
+    if (formData.type === 'single-elimination') {
+      if (formData.participants.length < 4) {
+        setError('Single elimination tournaments require at least 4 participants');
+        return;
+      }
+      if (!isPowerOfTwo(formData.participants.length)) {
+        setError('Single elimination tournaments require a power-of-two participant count (4, 8, 16, ...)');
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -90,6 +104,24 @@ export default function CreateTournament() {
         : [...prev.participants, playerId],
     }));
   };
+
+  const moveParticipantById = (playerId: string, direction: -1 | 1) => {
+    setFormData((prev) => {
+      const fromIndex = prev.participants.indexOf(playerId);
+      if (fromIndex < 0) return prev;
+      const toIndex = fromIndex + direction;
+      if (toIndex < 0 || toIndex >= prev.participants.length) return prev;
+      const reordered = [...prev.participants];
+      const [moved] = reordered.splice(fromIndex, 1);
+      if (!moved) return prev;
+      reordered.splice(toIndex, 0, moved);
+      return { ...prev, participants: reordered };
+    });
+  };
+
+  const selectedPlayers = formData.participants
+    .map((playerId) => players.find((player) => player.playerId === playerId))
+    .filter((player): player is Player => !!player);
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -151,6 +183,46 @@ export default function CreateTournament() {
             ))}
           </div>
         </div>
+
+        {formData.type === 'single-elimination' &&
+          isValidSingleEliminationParticipantCount(formData.participants.length) && (
+          <div className="form-group">
+            <label>Seed / Matchup Order</label>
+            <small className="help-text">
+              This order controls first-round matchups (1 vs 2, 3 vs 4, etc.).
+            </small>
+            <div className="seed-list">
+              {selectedPlayers.map((player, index) => (
+                <div key={player.playerId} className="seed-item">
+                  <div className="seed-item-left">
+                    <span className="seed-badge">Seed {index + 1}</span>
+                    <span className="seed-name">{player.name}</span>
+                  </div>
+                  <div className="seed-item-actions">
+                    <button
+                      type="button"
+                      className="seed-move-btn"
+                      onClick={() => moveParticipantById(player.playerId, -1)}
+                      disabled={index === 0}
+                      aria-label={`Move ${player.name} up`}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="seed-move-btn"
+                      onClick={() => moveParticipantById(player.playerId, 1)}
+                      disabled={index === selectedPlayers.length - 1}
+                      aria-label={`Move ${player.name} down`}
+                    >
+                      ↓
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <button type="submit" disabled={submitting}>
           {submitting ? 'Creating...' : 'Create Tournament'}

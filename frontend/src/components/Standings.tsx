@@ -9,6 +9,11 @@ import PlayerHoverCard from './PlayerHoverCard';
 import DivisionFilter from './DivisionFilter';
 import Skeleton from './ui/Skeleton';
 import EmptyState from './ui/EmptyState';
+import {
+  DEFAULT_WRESTLER_IMAGE,
+  applyImageFallback,
+  resolveImageSrc,
+} from '../constants/imageFallbacks';
 import './Standings.css';
 
 export default function Standings() {
@@ -221,15 +226,12 @@ export default function Standings() {
               >
                 <td className="rank">{index + 1}</td>
                 <td className="wrestler-image-cell">
-                  {player.imageUrl ? (
-                    <img
-                      src={player.imageUrl}
-                      alt={player.currentWrestler}
-                      className="wrestler-thumbnail"
-                    />
-                  ) : (
-                    <div className="no-image-placeholder">-</div>
-                  )}
+                  <img
+                    src={resolveImageSrc(player.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+                    onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+                    alt={player.currentWrestler}
+                    className="wrestler-thumbnail"
+                  />
                 </td>
                 <td className="player-name">
                   <PlayerHoverCard player={player} divisions={divisions}>

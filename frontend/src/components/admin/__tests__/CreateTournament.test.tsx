@@ -103,6 +103,7 @@ describe('CreateTournament', () => {
     fireEvent.click(screen.getByText('The Rock'));
 
     expect(screen.getByText('Participants (Selected: 2)')).toBeInTheDocument();
+    expect(screen.queryByText('Seed / Matchup Order')).not.toBeInTheDocument();
 
     // Submit
     fireEvent.click(screen.getByRole('button', { name: 'Create Tournament' }));
@@ -143,6 +144,10 @@ describe('CreateTournament', () => {
     fireEvent.click(screen.getByText('Triple H'));
 
     expect(screen.getByText('Participants (Selected: 4)')).toBeInTheDocument();
+    expect(screen.getByText('Seed / Matchup Order')).toBeInTheDocument();
+
+    // Reorder seeds: move The Rock down so first matchup is John Cena vs Undertaker
+    fireEvent.click(screen.getByLabelText('Move The Rock down'));
 
     // Submit
     fireEvent.click(screen.getByRole('button', { name: 'Create Tournament' }));
@@ -152,7 +157,7 @@ describe('CreateTournament', () => {
         expect.objectContaining({
           name: 'King of the Ring',
           type: 'single-elimination',
-          participants: ['p1', 'p2', 'p3', 'p4'],
+          participants: ['p1', 'p3', 'p2', 'p4'],
           status: 'upcoming',
         })
       );
@@ -161,5 +166,38 @@ describe('CreateTournament', () => {
     await waitFor(() => {
       expect(screen.getByText('Tournament created successfully!')).toBeInTheDocument();
     });
+  });
+
+  it('validates power-of-two participant count for single elimination', async () => {
+    mockGetAllPlayers.mockResolvedValue(mockPlayers);
+
+    renderCreateTournament();
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Create Tournament' })).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText('Tournament Name'), {
+      target: { value: 'King of Chaos' },
+    });
+
+    // Pick 5 participants: valid minimum but invalid for power-of-two rule
+    fireEvent.click(screen.getByText('John Cena'));
+    fireEvent.click(screen.getByText('The Rock'));
+    fireEvent.click(screen.getByText('Undertaker'));
+    fireEvent.click(screen.getByText('Triple H'));
+    fireEvent.click(screen.getByText('Stone Cold'));
+
+    expect(screen.queryByText('Seed / Matchup Order')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create Tournament' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Single elimination tournaments require a power-of-two participant count (4, 8, 16, ...)')
+      ).toBeInTheDocument();
+    });
+
+    expect(mockCreateTournament).not.toHaveBeenCalled();
   });
 });

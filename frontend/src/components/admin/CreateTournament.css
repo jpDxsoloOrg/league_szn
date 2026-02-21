@@ -26,6 +26,56 @@
   font-family: monospace;
 }
 
+.seed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.seed-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+}
+
+.seed-item-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.seed-badge {
+  background-color: #2a2416;
+  color: #d4af37;
+  border: 1px solid #d4af37;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+}
+
+.seed-name {
+  color: #f5f5f5;
+  font-weight: 500;
+}
+
+.seed-item-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.seed-move-btn {
+  width: 2rem;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+
 @media (max-width: 768px) {
   .tournament-form {
     padding: 1rem;

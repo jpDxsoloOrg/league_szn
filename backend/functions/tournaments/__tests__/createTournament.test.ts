@@ -72,6 +72,10 @@ describe('createTournament', () => {
     expect(body.brackets).toBeDefined();
     expect(body.brackets.rounds).toBeInstanceOf(Array);
     expect(body.brackets.rounds.length).toBeGreaterThanOrEqual(2);
+    expect(body.brackets.rounds[0].matches).toEqual([
+      { participant1: 'p1', participant2: 'p2' },
+      { participant1: 'p3', participant2: 'p4' },
+    ]);
     expect(body.standings).toBeUndefined();
     expect(mockPut).toHaveBeenCalledOnce();
   });
@@ -178,24 +182,21 @@ describe('createTournament', () => {
     expect(JSON.parse(result!.body).message).toBe('Invalid JSON in request body');
   });
 
-  it('generates bracket with byes for odd number of participants', async () => {
-    mockPut.mockResolvedValue({});
+  it('returns 400 for non-power-of-two single elimination participant count', async () => {
     const event = makeEvent({
       body: JSON.stringify({
         name: 'Odd Tournament',
         type: 'single-elimination',
-        participants: ['p1', 'p2', 'p3'],
+        participants: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'],
       }),
     });
 
     const result = await createTournament(event, ctx, cb);
 
-    expect(result!.statusCode).toBe(201);
-    const body = JSON.parse(result!.body);
-    // 3 participants: first round has 1 match (floor(3/2)), second round has 1 match
-    expect(body.brackets.rounds[0].matches).toHaveLength(1);
-    expect(body.brackets.rounds[0].matches[0].participant1).toBeDefined();
-    expect(body.brackets.rounds[0].matches[0].participant2).toBeDefined();
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toBe(
+      'Single elimination tournaments require a power-of-two participant count (4, 8, 16, ...)',
+    );
   });
 
   it('generates correct bracket structure for power-of-2 participants', async () => {
@@ -238,8 +239,7 @@ describe('createTournament', () => {
     expect(JSON.parse(result!.body).message).toBe('Failed to create tournament');
   });
 
-  it('creates tournament with exactly 2 participants (minimum)', async () => {
-    mockPut.mockResolvedValue({});
+  it('returns 400 when single elimination has fewer than 4 participants', async () => {
     const event = makeEvent({
       body: JSON.stringify({
         name: 'Finals',
@@ -250,9 +250,9 @@ describe('createTournament', () => {
 
     const result = await createTournament(event, ctx, cb);
 
-    expect(result!.statusCode).toBe(201);
-    const body = JSON.parse(result!.body);
-    expect(body.brackets.rounds).toHaveLength(1);
-    expect(body.brackets.rounds[0].matches).toHaveLength(1);
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toBe(
+      'Single elimination tournaments require at least 4 participants',
+    );
   });
 });

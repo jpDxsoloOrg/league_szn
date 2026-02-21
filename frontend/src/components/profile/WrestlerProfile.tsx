@@ -4,6 +4,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
 import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
+import {
+  DEFAULT_WRESTLER_IMAGE,
+  applyImageFallback,
+  resolveImageSrc,
+} from '../../constants/imageFallbacks';
 import { useSiteConfig } from '../../contexts/SiteConfigContext'; 
 import   EmbeddedPlayerStats   from "../statistics/EmbeddedPlayerStats";
 import type { Player } from '../../types';
@@ -260,13 +265,12 @@ export default function WrestlerProfile() {
       {/* Profile Header */}
       <div className="profile-header">
         <div className="profile-image-wrapper">
-          {player.imageUrl ? (
-            <img src={player.imageUrl} alt={player.name} className="profile-image" />
-          ) : (
-            <div className="profile-image-placeholder">
-              <span className="icon-text">?</span>
-            </div>
-          )}
+          <img
+            src={resolveImageSrc(player.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+            onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+            alt={player.name}
+            className="profile-image"
+          />
         </div>
         <div className="profile-header-info">
           <h1 className="profile-name">{player.name}</h1>

@@ -154,6 +154,35 @@
   margin-bottom: 1rem;
 }
 
+.round-robin-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.summary-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.summary-label {
+  color: #999;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.summary-value {
+  color: #f5f5f5;
+  font-weight: 700;
+}
+
 .round-robin-standings table {
   width: 100%;
 }
@@ -182,9 +211,23 @@
   margin-bottom: 2rem;
 }
 
-.bracket-round h5 {
+.bracket-round h5,
+.bracket-round-column h5 {
   color: #d4af37;
   margin-bottom: 1rem;
+}
+
+.bracket-rounds-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(220px, 1fr);
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.bracket-round-column {
+  min-width: 220px;
 }
 
 .bracket-matches {
@@ -238,6 +281,10 @@
   }
 
   .participants-list {
+    grid-template-columns: 1fr;
+  }
+
+  .round-robin-summary {
     grid-template-columns: 1fr;
   }
 

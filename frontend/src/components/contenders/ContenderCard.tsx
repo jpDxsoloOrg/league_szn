@@ -1,5 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import type { ContenderWithPlayer } from '../../types/contender';
+import {
+  DEFAULT_WRESTLER_IMAGE,
+  applyImageFallback,
+  resolveImageSrc,
+} from '../../constants/imageFallbacks';
 import './ContenderCard.css';
 
 interface ContenderCardProps {
@@ -58,13 +63,11 @@ export default function ContenderCard({ contender }: ContenderCardProps) {
       </div>
 
       <div className="contender-image">
-        {contender.imageUrl ? (
-          <img src={contender.imageUrl} alt={contender.wrestlerName} />
-        ) : (
-          <div className="placeholder-image">
-            {contender.wrestlerName.charAt(0)}
-          </div>
-        )}
+        <img
+          src={resolveImageSrc(contender.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+          onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+          alt={contender.wrestlerName}
+        />
       </div>
 
       <div className="contender-info">

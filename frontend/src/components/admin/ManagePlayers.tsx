@@ -3,6 +3,11 @@ import { playersApi, imagesApi, divisionsApi } from '../../services/api';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
 import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
+import {
+  DEFAULT_WRESTLER_IMAGE,
+  applyImageFallback,
+  resolveImageSrc,
+} from '../../constants/imageFallbacks';
 import type { Player, Division } from '../../types';
 import './ManagePlayers.css';
 
@@ -344,15 +349,12 @@ export default function ManagePlayers() {
               {players.map((player) => (
                 <tr key={player.playerId}>
                   <td>
-                    {player.imageUrl ? (
-                      <img
-                        src={player.imageUrl}
-                        alt={player.currentWrestler}
-                        className="player-thumbnail"
-                      />
-                    ) : (
-                      <div className="no-image">No Image</div>
-                    )}
+                    <img
+                      src={resolveImageSrc(player.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+                      onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+                      alt={player.currentWrestler}
+                      className="player-thumbnail"
+                    />
                   </td>
                   <td>{player.name}</td>
                   <td>{player.currentWrestler}</td>

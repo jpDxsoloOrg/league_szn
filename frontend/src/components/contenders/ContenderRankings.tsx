@@ -6,6 +6,11 @@ import type { ChampionshipContenders } from '../../types/contender';
 import Skeleton from '../ui/Skeleton';
 import EmptyState from '../ui/EmptyState';
 import ContenderCard from './ContenderCard';
+import {
+  DEFAULT_WRESTLER_IMAGE,
+  applyImageFallback,
+  resolveImageSrc,
+} from '../../constants/imageFallbacks';
 import './ContenderRankings.css';
 
 export default function ContenderRankings() {
@@ -200,16 +205,11 @@ export default function ContenderRankings() {
                   <span className="trophy-icon">&#127942;</span>
                 </div>
                 <div className="champion-image">
-                  {contenderData.currentChampion.imageUrl ? (
-                    <img
-                      src={contenderData.currentChampion.imageUrl}
-                      alt={contenderData.currentChampion.wrestlerName}
-                    />
-                  ) : (
-                    <div className="placeholder-image">
-                      {contenderData.currentChampion.wrestlerName?.charAt(0) || '?'}
-                    </div>
-                  )}
+                  <img
+                    src={resolveImageSrc(contenderData.currentChampion.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+                    onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+                    alt={contenderData.currentChampion.wrestlerName}
+                  />
                 </div>
                 <div className="champion-info">
                   <h4 className="champion-wrestler-name">
