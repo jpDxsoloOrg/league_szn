@@ -1310,14 +1310,29 @@ paths:
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /admin/export-data:
+    get:
+      tags: [Admin]
+      summary: Export seed-compatible data payload
+      description: |
+        Exports all seed-relevant datasets in a single payload that can be re-imported
+        via `POST /admin/seed-data` with `mode: "import"`.
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: Exported payload including version, exportedAt, stage, data, and counts }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /admin/seed-data:
     post:
       tags: [Admin]
-      summary: Seed sample data
+      summary: Seed sample data or import exported payload
       description: |
-        Seeds sample data. Optional request body can specify which modules to seed (e.g. core, championships, matches).
-        If modules is omitted or empty, all data is seeded. Dependencies are auto-included when modular seed is used.
-        Valid module IDs: core, championships, matches, standings, tournaments, events, contenders, fantasy, config.
+        Supports two modes:
+        - Default seed mode (when `mode` is omitted or not `import`): generates sample seed data.
+          Optional request body can specify `modules` (core, championships, matches, standings, tournaments, events, contenders, fantasy, config).
+        - Import mode (`mode: "import"`): validates and imports a previously exported payload from `GET /admin/export-data`.
+          Import mode clears relevant tables first, then inserts all records from payload data.
       security: [{ BearerAuth: [] }]
       requestBody:
         required: false
@@ -1326,15 +1341,34 @@ paths:
             schema:
               type: object
               properties:
+                mode:
+                  type: string
+                  enum: [default, import]
+                  description: Seed mode. Use `import` to import exported payload data.
                 modules:
                   type: array
                   items: { type: string }
                   description: Optional list of seed module IDs to run (only these + dependencies). Omit or empty = seed all.
+                payload:
+                  type: object
+                  description: Required for import mode. Seed export payload with version, exportedAt, stage, and data.
+                  properties:
+                    version: { type: integer }
+                    exportedAt: { type: string, format: date-time }
+                    stage: { type: string }
+                    data:
+                      type: object
+                      additionalProperties:
+                        type: array
+                        items:
+                          type: object
+                          additionalProperties: true
       responses:
-        '200': { description: Seeded; body includes message and createdCounts }
+        '200': { description: Completed; body includes message, mode (import only), and createdCounts }
+        '400': { description: 'Bad request (invalid body, modules, or import payload)', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-        '500': { description: 'Server error (e.g. invalid module IDs)', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '500': { description: 'Server error', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /statistics:
     get:
