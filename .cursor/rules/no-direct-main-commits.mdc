@@ -1,0 +1,15 @@
+---
+description: Prevent direct commits to main
+alwaysApply: true
+---
+
+# Branch Protection Workflow
+
+- Never create commits directly on the `main` branch.
+- If current branch is `main`, create and switch to a working branch first:
+  - Feature work: `feat/<short-slug>`
+  - Bug fixes: `fix/<short-slug>`
+  - Chores/refactors: `chore/<short-slug>` or `refactor/<short-slug>`
+- Commit and push only from the working branch.
+- Open a pull request targeting `main` for all changes.
+- If asked to commit while on `main`, stop and ask whether to create a new branch first.
