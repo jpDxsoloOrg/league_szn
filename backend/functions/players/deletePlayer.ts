@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { noContent, badRequest, notFound, serverError, conflict } from '../../lib/response';
+import { getOrNotFound } from '../../lib/dynamodbUtils';
+import { noContent, badRequest, serverError, conflict } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -10,14 +11,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Player ID is required');
     }
 
-    // Check if player exists
-    const existingPlayer = await dynamoDb.get({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId },
-    });
-
-    if (!existingPlayer.Item) {
-      return notFound('Player not found');
+    const playerResult = await getOrNotFound(TableNames.PLAYERS, { playerId }, 'Player not found');
+    if ('notFoundResponse' in playerResult) {
+      return playerResult.notFoundResponse;
     }
 
     // Check if player is a current champion

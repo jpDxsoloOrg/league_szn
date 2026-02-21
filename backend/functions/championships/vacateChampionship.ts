@@ -1,7 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { getOrNotFound } from '../../lib/dynamodbUtils';
+import { success, badRequest, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -11,17 +12,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Championship ID is required');
     }
 
-    // Get the championship
-    const existing = await dynamoDb.get({
-      TableName: TableNames.CHAMPIONSHIPS,
-      Key: { championshipId },
-    });
-
-    if (!existing.Item) {
-      return notFound('Championship not found');
+    const championshipResult = await getOrNotFound(
+      TableNames.CHAMPIONSHIPS,
+      { championshipId },
+      'Championship not found'
+    );
+    if ('notFoundResponse' in championshipResult) {
+      return championshipResult.notFoundResponse;
     }
 
-    const championship = existing.Item;
+    const championship = championshipResult.item;
 
     if (!championship.currentChampion) {
       return badRequest('Championship is already vacant');

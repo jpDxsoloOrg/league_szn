@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { noContent, badRequest, notFound, serverError } from '../../lib/response';
+import { getOrNotFound } from '../../lib/dynamodbUtils';
+import { noContent, badRequest, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -10,14 +11,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Season ID is required');
     }
 
-    // Check if season exists
-    const existingSeason = await dynamoDb.get({
-      TableName: TableNames.SEASONS,
-      Key: { seasonId },
-    });
-
-    if (!existingSeason.Item) {
-      return notFound('Season not found');
+    const seasonResult = await getOrNotFound(TableNames.SEASONS, { seasonId }, 'Season not found');
+    if ('notFoundResponse' in seasonResult) {
+      return seasonResult.notFoundResponse;
     }
 
     // Delete the season

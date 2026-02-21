@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, badRequest, notFound, serverError, conflict } from '../../lib/response';
+import { buildUpdateExpression, getOrNotFound } from '../../lib/dynamodbUtils';
+import { success, badRequest, serverError, conflict } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
 interface UpdateSeasonBody {
@@ -20,18 +21,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<UpdateSeasonBody>(event);
     if (parseError) return parseError;
 
-    // Get existing season
-    const existingSeason = await dynamoDb.get({
-      TableName: TableNames.SEASONS,
-      Key: { seasonId },
-    });
-
-    if (!existingSeason.Item) {
-      return notFound('Season not found');
+    const seasonResult = await getOrNotFound(TableNames.SEASONS, { seasonId }, 'Season not found');
+    if ('notFoundResponse' in seasonResult) {
+      return seasonResult.notFoundResponse;
     }
+    const existingSeason = seasonResult.item;
 
     // If trying to activate a season, check if there's already an active one
-    if (body.status === 'active' && existingSeason.Item.status !== 'active') {
+    if (body.status === 'active' && existingSeason.status !== 'active') {
       const activeSeasons = await dynamoDb.scan({
         TableName: TableNames.SEASONS,
         FilterExpression: '#status = :active AND seasonId <> :seasonId',
@@ -47,49 +44,53 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    // Build update expression
-    const updateExpressions: string[] = ['updatedAt = :updatedAt'];
-    const expressionAttributeValues: Record<string, any> = {
+    const baseExpr = buildUpdateExpression(
+      {
+        name: body.name,
+        status: body.status,
+      },
+      { includeUpdatedAt: false }
+    );
+
+    const setExpressions: string[] = [];
+    const expressionAttributeValues: Record<string, unknown> = {
+      ...(baseExpr.ExpressionAttributeValues || {}),
       ':updatedAt': new Date().toISOString(),
     };
-    const expressionAttributeNames: Record<string, string> = {};
+    const expressionAttributeNames: Record<string, string> = {
+      ...(baseExpr.ExpressionAttributeNames || {}),
+    };
 
-    if (body.name !== undefined) {
-      updateExpressions.push('#name = :name');
-      expressionAttributeNames['#name'] = 'name';
-      expressionAttributeValues[':name'] = body.name;
+    if (baseExpr.UpdateExpression.startsWith('SET ')) {
+      setExpressions.push(baseExpr.UpdateExpression.slice(4));
     }
 
     if (body.endDate !== undefined) {
-      updateExpressions.push('endDate = :endDate');
+      setExpressions.push('endDate = :endDate');
       expressionAttributeValues[':endDate'] = body.endDate;
     }
 
-    if (body.status !== undefined) {
-      updateExpressions.push('#status = :status');
-      expressionAttributeNames['#status'] = 'status';
-      expressionAttributeValues[':status'] = body.status;
-
-      // If ending the season, set endDate if not already set
-      if (body.status === 'completed' && !body.endDate && !existingSeason.Item.endDate) {
-        updateExpressions.push('endDate = :autoEndDate');
-        expressionAttributeValues[':autoEndDate'] = new Date().toISOString();
-      }
+    // If ending the season, set endDate if not already set
+    if (body.status === 'completed' && !body.endDate && !existingSeason.endDate) {
+      setExpressions.push('endDate = :autoEndDate');
+      expressionAttributeValues[':autoEndDate'] = new Date().toISOString();
     }
 
-    const updateParams: any = {
+    setExpressions.push('updatedAt = :updatedAt');
+
+    if (setExpressions.length === 1) {
+      return badRequest('No valid fields to update');
+    }
+
+    const result = await dynamoDb.update({
       TableName: TableNames.SEASONS,
       Key: { seasonId },
-      UpdateExpression: 'SET ' + updateExpressions.join(', '),
+      UpdateExpression: `SET ${setExpressions.join(', ')}`,
+      ExpressionAttributeNames:
+        Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
       ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: 'ALL_NEW',
-    };
-
-    if (Object.keys(expressionAttributeNames).length > 0) {
-      updateParams.ExpressionAttributeNames = expressionAttributeNames;
-    }
-
-    const result = await dynamoDb.update(updateParams);
+    });
 
     return success(result.Attributes);
   } catch (err) {

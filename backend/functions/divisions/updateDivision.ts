@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { buildUpdateExpression, getOrNotFound } from '../../lib/dynamodbUtils';
+import { success, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
 interface UpdateDivisionBody {
@@ -19,44 +20,26 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<UpdateDivisionBody>(event);
     if (parseError) return parseError;
 
-    // Check if division exists
-    const existingDivision = await dynamoDb.get({
-      TableName: TableNames.DIVISIONS,
-      Key: { divisionId },
+    const divisionResult = await getOrNotFound(TableNames.DIVISIONS, { divisionId }, 'Division not found');
+    if ('notFoundResponse' in divisionResult) {
+      return divisionResult.notFoundResponse;
+    }
+
+    const updateExpr = buildUpdateExpression({
+      name: body.name,
+      description: body.description,
     });
 
-    if (!existingDivision.Item) {
-      return notFound('Division not found');
+    if (!updateExpr.hasChanges) {
+      return badRequest('No valid fields to update');
     }
-
-    // Build update expression
-    const updateExpressions: string[] = [];
-    const expressionAttributeNames: Record<string, string> = {};
-    const expressionAttributeValues: Record<string, any> = {};
-
-    if (body.name !== undefined) {
-      updateExpressions.push('#name = :name');
-      expressionAttributeNames['#name'] = 'name';
-      expressionAttributeValues[':name'] = body.name;
-    }
-
-    if (body.description !== undefined) {
-      updateExpressions.push('#description = :description');
-      expressionAttributeNames['#description'] = 'description';
-      expressionAttributeValues[':description'] = body.description;
-    }
-
-    // Always update the updatedAt timestamp
-    updateExpressions.push('#updatedAt = :updatedAt');
-    expressionAttributeNames['#updatedAt'] = 'updatedAt';
-    expressionAttributeValues[':updatedAt'] = new Date().toISOString();
 
     const result = await dynamoDb.update({
       TableName: TableNames.DIVISIONS,
       Key: { divisionId },
-      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
-      ExpressionAttributeNames: expressionAttributeNames,
-      ExpressionAttributeValues: expressionAttributeValues,
+      UpdateExpression: updateExpr.UpdateExpression,
+      ExpressionAttributeNames: updateExpr.ExpressionAttributeNames,
+      ExpressionAttributeValues: updateExpr.ExpressionAttributeValues,
       ReturnValues: 'ALL_NEW',
     });
 
