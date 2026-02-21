@@ -2,6 +2,7 @@ import { handler as getSiteConfigHandler } from './getSiteConfig';
 import { handler as updateSiteConfigHandler } from './updateSiteConfig';
 import { handler as clearAllHandler } from './clearAll';
 import { handler as seedDataHandler } from './seedData';
+import { handler as exportDataHandler } from './exportData';
 import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
@@ -29,6 +30,11 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/admin/seed-data',
     method: 'POST',
     handler: seedDataHandler,
+  },
+  {
+    resource: '/admin/export-data',
+    method: 'GET',
+    handler: exportDataHandler,
   },
 ];
 
