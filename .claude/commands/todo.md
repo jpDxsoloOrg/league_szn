@@ -6,7 +6,7 @@ The user provides a partial or full TODO title as: `$ARGUMENTS`
 
 ## Step 1: Find the TODO
 
-Read `/Users/jp/wwe-2k-league/TO-DOS.md` and search for a TODO item matching the provided title (case-insensitive partial match is fine).
+Read `/home/jpdev/source/league_szn/league_szn/TO-DOS.md` and search for a TODO item matching the provided title (case-insensitive partial match is fine).
 
 If no match is found, list all available TODOs and ask the user to clarify.
 
