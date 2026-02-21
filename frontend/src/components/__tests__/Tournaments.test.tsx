@@ -37,6 +37,10 @@ vi.mock('react-i18next', () => ({
         'tournaments.standings': 'Standings',
         'tournaments.bracket': 'Bracket',
         'tournaments.round': 'Round',
+        'tournaments.summaryLeader': 'Leader',
+        'tournaments.summaryPoints': 'Points',
+        'tournaments.summaryGap': 'Gap',
+        'tournaments.summaryGapValue': '{{count}} pts',
         'tournaments.table.rank': 'Rank',
         'tournaments.table.player': 'Player',
         'tournaments.table.w': 'W',
@@ -202,6 +206,8 @@ describe('Tournaments', () => {
 
     // Standings heading
     expect(screen.getByText('Standings')).toBeInTheDocument();
+    expect(screen.getByText('Leader')).toBeInTheDocument();
+    expect(screen.getByText('Gap')).toBeInTheDocument();
 
     // Table headers
     expect(screen.getByText('Rank')).toBeInTheDocument();

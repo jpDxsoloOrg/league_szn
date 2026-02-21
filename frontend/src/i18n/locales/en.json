@@ -371,6 +371,10 @@
     "standings": "Standings",
     "bracket": "Bracket",
     "round": "Round",
+    "summaryLeader": "Leader",
+    "summaryPoints": "Points",
+    "summaryGap": "Gap",
+    "summaryGapValue": "{{count}} pts",
     "table": {
       "rank": "Rank",
       "player": "Player",

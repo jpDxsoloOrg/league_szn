@@ -371,6 +371,10 @@
     "standings": "Tabelle",
     "bracket": "Turnierbaum",
     "round": "Runde",
+    "summaryLeader": "Fuehrend",
+    "summaryPoints": "Punkte",
+    "summaryGap": "Abstand",
+    "summaryGapValue": "{{count}} Pkt",
     "table": {
       "rank": "Rang",
       "player": "Spieler",
