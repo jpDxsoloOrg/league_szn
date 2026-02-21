@@ -5,3 +5,22 @@
 .admin-content {
   padding: 1rem 0;
 }
+
+.admin-onboarding-banner {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #444;
+  border-left: 3px solid #d4af37;
+  border-radius: 6px;
+  background: #1a1a1a;
+}
+
+.admin-onboarding-banner p {
+  margin: 0;
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+.admin-onboarding-banner a {
+  color: #d4af37;
+}

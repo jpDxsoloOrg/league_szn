@@ -1,5 +1,6 @@
 [
   {"slug":"getting-started","titleKey":"wiki.articles.gettingStarted","file":"getting-started.md"},
+  {"slug":"user-quickstart","titleKey":"wiki.articles.userQuickstart","file":"user-quickstart.md"},
   {"slug":"faqs","titleKey":"wiki.articles.faqs","file":"faqs.md"},
   {"slug":"standings","titleKey":"wiki.articles.standings","file":"standings.md"},
   {"slug":"seasons","titleKey":"wiki.articles.seasons","file":"seasons.md"},
@@ -18,6 +19,10 @@
   {"slug":"statistics","titleKey":"wiki.articles.statistics","file":"statistics.md"},
   {"slug":"admin","titleKey":"wiki.articles.adminGuide","file":"admin.md","adminOnly":true},
   {"slug":"admin-quickstart","titleKey":"wiki.articles.adminQuickstart","file":"admin-quickstart.md","adminOnly":true},
+  {"slug":"admin-match-config","titleKey":"wiki.articles.adminMatchConfig","file":"admin-match-config.md","adminOnly":true},
+  {"slug":"admin-season-awards","titleKey":"wiki.articles.adminSeasonAwards","file":"admin-season-awards.md","adminOnly":true},
+  {"slug":"admin-fantasy-shows","titleKey":"wiki.articles.adminFantasyShows","file":"admin-fantasy-shows.md","adminOnly":true},
+  {"slug":"admin-fantasy-config","titleKey":"wiki.articles.adminFantasyConfig","file":"admin-fantasy-config.md","adminOnly":true},
   {"slug":"admin-user-management","titleKey":"wiki.articles.adminUserManagement","file":"admin-user-management.md","adminOnly":true},
   {"slug":"admin-divisions","titleKey":"wiki.articles.adminDivisions","file":"admin-divisions.md","adminOnly":true},
   {"slug":"admin-manage-players","titleKey":"wiki.articles.adminManagePlayers","file":"admin-manage-players.md","adminOnly":true},

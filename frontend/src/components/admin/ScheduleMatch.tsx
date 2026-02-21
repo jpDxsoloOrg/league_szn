@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi, stipulationsApi, matchTypesApi } from '../../services/api';
 import type { Player, Championship, Tournament, Season, Stipulation, MatchType } from '../../types';
@@ -295,6 +295,10 @@ export default function ScheduleMatch() {
   return (
     <div className="schedule-match">
       <h2>Schedule Match</h2>
+      <p className="schedule-match-help">
+        Need a refresher on event linkage, seasons, and card positions?{' '}
+        <Link to="/guide/wiki/admin-schedule-match">Open schedule guide</Link>.
+      </p>
 
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}

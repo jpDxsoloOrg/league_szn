@@ -171,6 +171,12 @@ export default function Standings() {
                 </option>
               ))}
             </select>
+            <span className="season-selector-help">
+              {t(
+                'standings.seasonHelp',
+                'Choose a season for season-only standings, or All-Time for overall records.'
+              )}
+            </span>
           </div>
         )}
       </div>

@@ -1,28 +1,22 @@
 import type { Division } from '../../types';
-import { API_BASE_URL, fetchWithAuth } from './apiClient';
+import { createCrudApi } from './crudFactory';
+
+const baseDivisionsApi = createCrudApi<Division, { name: string; description?: string }>('divisions');
 
 export const divisionsApi = {
   getAll: async (signal?: AbortSignal): Promise<Division[]> => {
-    return fetchWithAuth(`${API_BASE_URL}/divisions`, {}, signal);
+    return baseDivisionsApi.getAll(signal);
   },
 
   create: async (division: { name: string; description?: string }): Promise<Division> => {
-    return fetchWithAuth(`${API_BASE_URL}/divisions`, {
-      method: 'POST',
-      body: JSON.stringify(division),
-    });
+    return baseDivisionsApi.create(division);
   },
 
   update: async (divisionId: string, updates: Partial<Division>): Promise<Division> => {
-    return fetchWithAuth(`${API_BASE_URL}/divisions/${divisionId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
+    return baseDivisionsApi.updateById(divisionId, updates);
   },
 
   delete: async (divisionId: string): Promise<void> => {
-    return fetchWithAuth(`${API_BASE_URL}/divisions/${divisionId}`, {
-      method: 'DELETE',
-    });
+    return baseDivisionsApi.deleteById(divisionId);
   },
 };

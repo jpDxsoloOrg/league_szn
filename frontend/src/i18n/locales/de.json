@@ -195,6 +195,7 @@
     },
     "articles": {
       "gettingStarted": "Erste Schritte",
+      "userQuickstart": "Benutzer: Schnellstart",
       "faqs": "Häufige Fragen",
       "standings": "Tabelle",
       "seasons": "Saisons",
@@ -213,6 +214,10 @@
       "statistics": "Statistiken",
       "adminGuide": "Admin",
       "adminQuickstart": "Admin: Schnellstart",
+      "adminMatchConfig": "Admin: Match-Konfiguration",
+      "adminSeasonAwards": "Admin: Saison-Auszeichnungen",
+      "adminFantasyShows": "Admin: Fantasy Shows",
+      "adminFantasyConfig": "Admin: Fantasy-Konfiguration",
       "adminUserManagement": "Admin: Benutzerverwaltung",
       "adminDivisions": "Admin: Divisionen",
       "adminManagePlayers": "Admin: Spieler verwalten",

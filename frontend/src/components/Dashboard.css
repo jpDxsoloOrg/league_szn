@@ -23,6 +23,23 @@
   margin: 0;
 }
 
+.dashboard-empty-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+
+.dashboard-empty-action {
+  font-size: 0.85rem;
+  color: #d4af37;
+  text-decoration: none;
+}
+
+.dashboard-empty-action:hover {
+  text-decoration: underline;
+}
+
 /* Champions strip: horizontal scroll */
 .dashboard-champions-strip {
   display: flex;

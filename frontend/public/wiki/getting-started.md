@@ -15,6 +15,8 @@ Welcome to the WWE 2K League site. This short guide helps you find your way arou
 
 - Use **Help** in the main menu to browse the Wiki.
 - The Wiki has articles on standings, seasons, championships, events, tournaments, and more, plus FAQs.
+- Start with [User Quickstart](user-quickstart) for a fast non-admin walkthrough.
+- If you run league operations, use [Admin Quickstart](admin-quickstart).
 - Switch language with the language control in the header (English / Deutsch).
 
 ## Next steps

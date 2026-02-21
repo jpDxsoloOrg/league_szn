@@ -24,6 +24,10 @@ New admin? Follow these steps to set up your league from scratch.
 
 10. **Configure Contenders** — Go to **Contender Config** to set up automatic #1 contender rankings for each championship. Configure ranking period, minimum matches, division restrictions, and recalculate as needed.
 
+11. **Set Match Config** — Go to **Match Config** and define your match types and stipulations so schedulers use consistent options.
+
+12. **Optional Fantasy Setup** — If your league uses fantasy features, configure global rules in **Fantasy Config** and event-specific settings in **Fantasy Shows**.
+
 ## Quick Demo Mode
 
 Want to try things out first? Go to the **Danger Zone** tab and click **Generate Sample Data** to populate the league with 12 players, 3 divisions, 4 championships, 12 matches, 2 tournaments, and a full season of standings.

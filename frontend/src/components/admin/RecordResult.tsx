@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi, eventsApi, stipulationsApi } from '../../services/api';
 import type { Match, Player, Stipulation } from '../../types';
@@ -240,7 +241,13 @@ export default function RecordResult() {
       {success && <div className="success-message">{success}</div>}
 
       <div className="event-filter-bar">
-        <label htmlFor="eventFilter">Event</label>
+        <div className="event-filter-labels">
+          <label htmlFor="eventFilter">Event</label>
+          <small>
+            Select an event to record card results, or use standalone matches for unslotted bouts.{' '}
+            <Link to="/guide/wiki/admin-record-results">Learn more</Link>
+          </small>
+        </div>
         <SearchableSelect
           id="eventFilter"
           value={selectedEventFilter}
