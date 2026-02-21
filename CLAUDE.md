@@ -459,6 +459,9 @@ aws cloudformation describe-stacks --stack-name wwe-2k-league-api-devtest \
 - `main` - Production-ready code
 - `feat/*` - New features
 - `fix/*` - Bug fixes
+- Before every `git push`, run TypeScript validation and fix all errors:
+  - Frontend: `cd frontend && npx tsc --project tsconfig.app.json --noEmit`
+  - Backend: `cd backend && npx tsc --project tsconfig.json --noEmit`
 
 **Commands:** **newIssue** (create issue + plan, branch, commit, push, PR); **doIssue &lt;number&gt;** (fetch issue, create branch + plan, execute plan with parallel agents, commit, push, PR); **execute-plan** (run a plan file with parallel agents, then verify and commit/push). See `.claude/commands/` and `docs/plans/README.md`.
 

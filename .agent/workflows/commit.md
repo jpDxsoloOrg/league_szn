@@ -49,7 +49,16 @@ feat(match-types): add admin CRUD for match types/stipulations
 - Add matchTypesApi to frontend services
 ```
 
-## Step 4: Push to remote
+## Step 4: Validate TypeScript (required before push)
+
+Run TypeScript validation and stop if either command fails:
+
+```bash
+cd frontend && npx tsc --project tsconfig.app.json --noEmit
+cd ../backend && npx tsc --project tsconfig.json --noEmit
+```
+
+## Step 5: Push to remote
 
 After committing, push to the current branch:
 
@@ -63,7 +72,7 @@ If the branch has no upstream, use:
 git push -u origin HEAD
 ```
 
-## Step 5: Report result
+## Step 6: Report result
 
 Provide a summary:
 - Commit hash

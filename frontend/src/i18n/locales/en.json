@@ -108,6 +108,8 @@
     "wiki": "Wiki",
     "admin": "Admin",
     "contenders": "Contenders",
+    "matchSearch": "Match Search",
+    "seasonAwards": "Season Awards",
     "profile": "My Profile",
     "groups": {
       "core": "League",
@@ -315,6 +317,25 @@
     "matchOfTheNightBadge": "Match of the Night",
     "clearRating": "Clear rating"
   },
+  "matchSearch": {
+    "title": "Match Search",
+    "filtersLabel": "Match filters",
+    "filters": {
+      "player": "Player",
+      "matchType": "Match Type",
+      "stipulation": "Stipulation",
+      "status": "Status",
+      "championship": "Championship",
+      "season": "Season",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "clearAll": "Clear Filters"
+    },
+    "resultsCount": "{{count}} match(es) found",
+    "noResults": "No Matches Found",
+    "noResultsFiltered": "No matches match your current filters. Try adjusting or clearing the filters.",
+    "noMatches": "No matches have been recorded yet."
+  },
   "recordResult": {
     "title": "Record Match Results",
     "scheduledMatches": "Scheduled Matches",
@@ -377,6 +398,7 @@
         "fantasyConfig": "Fantasy Config",
         "challenges": "Challenges",
         "promos": "Promos",
+        "seasonAwards": "Season Awards",
         "contenderConfig": "Contender Config",
         "users": "User Management",
         "features": "Feature Management",
@@ -390,6 +412,27 @@
         "fantasy": "Fantasy",
         "system": "System"
       }
+    }
+  },
+  "seasonAwards": {
+    "title": "Season Awards",
+    "autoAwards": "Auto-Generated Awards",
+    "customAwards": "Custom Awards",
+    "noAwards": "No awards for this season yet.",
+    "auto": "Auto",
+    "admin": {
+      "title": "Manage Season Awards",
+      "selectSeason": "Season",
+      "chooseSeason": "-- Select a season --",
+      "createAward": "Create Award",
+      "awardName": "Award Name",
+      "awardPlayer": "Player",
+      "choosePlayer": "-- Select a player --",
+      "description": "Description",
+      "value": "Value",
+      "createSuccess": "Award created successfully!",
+      "deleteSuccess": "Award deleted successfully!",
+      "confirmDelete": "Are you sure you want to delete the award \"{{name}}\"?"
     }
   },
   "challenges": {
@@ -498,7 +541,8 @@
       "rivalries": "Rivalries",
       "taleOfTape": "Tale of the Tape",
       "achievements": "Achievements",
-      "bestMatches": "Best Matches"
+      "bestMatches": "Best Matches",
+      "matchTypeLeaderboards": "By Match Type"
     },
     "labels": {
       "wins": "Wins",
@@ -571,6 +615,10 @@
         "championships": "Championships",
         "longestReign": "Longest Reign"
       }
+    },
+    "matchTypeLeaderboards": {
+      "title": "Match Type Leaderboards",
+      "noData": "No match data available for this type yet."
     },
     "recordBook": {
       "title": "Record Book",
@@ -715,6 +763,14 @@
     },
     "admin": {
       "createEvent": "Create Event",
+      "existingEvents": "Existing Events",
+      "loadingEvents": "Loading events...",
+      "noEvents": "No events yet. Create one below.",
+      "deleteEvent": "Delete",
+      "confirmDeleteEvent": "Are you sure you want to delete \"{{name}}\"?",
+      "deleteEventSuccess": "Event deleted successfully.",
+      "deleteEventError": "Failed to delete event.",
+      "loadEventsError": "Failed to load events.",
       "name": "Event Name",
       "namePlaceholder": "e.g., WrestleMania 41, Monday Night Raw",
       "eventType": "Event Type",

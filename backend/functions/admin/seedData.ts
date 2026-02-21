@@ -15,6 +15,7 @@ export const SEED_MODULE_IDS = [
   'fantasy',
   'config',
 ] as const;
+type SeedModuleId = (typeof SEED_MODULE_IDS)[number];
 
 /** Dependency order for seed modules (from plan-modular-seed-data.md). Used to auto-include deps when modular seed is implemented. */
 export const SEED_MODULE_ORDER: readonly string[] = [
@@ -38,6 +39,10 @@ function parseModulesFromBody(body: string | null): string[] | null {
   } catch {
     return null;
   }
+}
+
+function isSeedModuleId(moduleId: string): moduleId is SeedModuleId {
+  return (SEED_MODULE_IDS as readonly string[]).includes(moduleId);
 }
 
 const wrestlers = [
@@ -97,8 +102,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   // When modular seed is implemented: run only requested modules (with deps auto-included) in SEED_MODULE_ORDER.
   // Until then, we always run the full monolithic seed; requestedModules is accepted but not yet used.
   if (requestedModules != null && requestedModules.length > 0) {
-    const validSet = new Set(SEED_MODULE_IDS);
-    const valid = requestedModules.filter((m) => validSet.has(m));
+    const valid = requestedModules.filter(isSeedModuleId);
     if (valid.length === 0) {
       return serverError('Invalid or unknown seed module IDs');
     }

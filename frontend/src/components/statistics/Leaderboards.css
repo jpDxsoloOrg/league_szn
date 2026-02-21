@@ -67,6 +67,39 @@
   font-weight: bold;
 }
 
+.lb-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.lb-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.lb-filter label {
+  color: #bbb;
+  font-size: 0.85rem;
+}
+
+.lb-filter select {
+  background-color: #1a1a1a;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.9rem;
+}
+
+.lb-filter-summary {
+  color: #d4af37;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
 /* Leaderboard List */
 .lb-list {
   display: flex;

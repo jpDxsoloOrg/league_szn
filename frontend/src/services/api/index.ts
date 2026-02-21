@@ -26,6 +26,7 @@ export { imagesApi } from './images.api';
 export { challengesApi } from './challenges.api';
 export { promosApi } from './promos.api';
 export { activityApi } from './activity.api';
+export { seasonAwardsApi } from './seasonAwards.api';
 
 // Type/interface re-exports
 export type { SiteFeatures } from './siteConfig.api';
@@ -38,4 +39,9 @@ export type {
   AchievementsResponse,
   RatedMatchSummary,
   MatchRatingsResponse,
+  MatchTypeStatsEntry,
+  MatchTypeLeaderboardsResponse,
+  PlayerMatchStatsByType,
+  PlayerMatchStatsResponse,
 } from './statistics.api';
+export type { SeasonAwardsResponse } from './seasonAwards.api';

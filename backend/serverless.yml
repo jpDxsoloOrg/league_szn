@@ -30,6 +30,7 @@ provider:
     PROMOS_TABLE: ${self:service}-promos-${self:provider.stage}
     STIPULATIONS_TABLE: ${self:service}-stipulations-${self:provider.stage}
     MATCH_TYPES_TABLE: ${self:service}-match-types-${self:provider.stage}
+    SEASON_AWARDS_TABLE: ${self:service}-season-awards-${self:provider.stage}
     DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT, 'http://localhost:8000'}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
@@ -75,6 +76,7 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PROMOS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STIPULATIONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_TYPES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SEASON_AWARDS_TABLE}
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -254,6 +256,10 @@ functions:
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
+      - http:
+          path: players/{playerId}/statistics
+          method: get
+          cors: *corsConfig
 
   # Matches (Phase 3 consolidated: getMatches, scheduleMatch, recordResult)
   matches:
@@ -373,6 +379,25 @@ functions:
           authorizer: adminAuthorizer
       - http:
           path: seasons/{seasonId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  # Season Awards (GET, POST, DELETE for season awards)
+  seasonAwards:
+    handler: functions/seasonAwards/handler.handler
+    events:
+      - http:
+          path: seasons/{seasonId}/awards
+          method: get
+          cors: *corsConfig
+      - http:
+          path: seasons/{seasonId}/awards
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: seasons/{seasonId}/awards/{awardId}
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
@@ -1208,6 +1233,22 @@ resources:
         KeySchema:
           - AttributeName: matchTypeId
             KeyType: HASH
+
+    SeasonAwardsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.SEASON_AWARDS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: seasonId
+            AttributeType: S
+          - AttributeName: awardId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: seasonId
+            KeyType: HASH
+          - AttributeName: awardId
+            KeyType: RANGE
 
     ImagesBucket:
       Type: AWS::S3::Bucket

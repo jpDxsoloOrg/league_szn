@@ -216,6 +216,31 @@ export interface MatchType {
   updatedAt: string;
 }
 
+export type SeasonAwardType = 'mvp' | 'longest_win_streak' | 'iron_man' | 'best_win_pct' | 'most_title_defenses' | 'custom';
+
+export interface SeasonAward {
+  awardId: string;
+  seasonId: string;
+  name: string;
+  awardType: SeasonAwardType;
+  playerId: string;
+  playerName?: string;
+  description?: string;
+  value?: string;
+  createdAt: string;
+}
+
+export interface MatchFilters {
+  status?: string;
+  playerId?: string;
+  matchType?: string;
+  stipulationId?: string;
+  championshipId?: string;
+  seasonId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 /** Activity feed item from GET /activity */
 export type ActivityItemType =
   | 'match_result'

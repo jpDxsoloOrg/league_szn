@@ -108,6 +108,8 @@
     "wiki": "Wiki",
     "admin": "Admin",
     "contenders": "Herausforderer",
+    "matchSearch": "Kampf-Suche",
+    "seasonAwards": "Saison-Auszeichnungen",
     "profile": "Mein Profil",
     "groups": {
       "core": "Liga",
@@ -315,6 +317,25 @@
     "matchOfTheNightBadge": "Match of the Night",
     "clearRating": "Bewertung löschen"
   },
+  "matchSearch": {
+    "title": "Kampf-Suche",
+    "filtersLabel": "Kampffilter",
+    "filters": {
+      "player": "Spieler",
+      "matchType": "Kampftyp",
+      "stipulation": "Stipulation",
+      "status": "Status",
+      "championship": "Meisterschaft",
+      "season": "Saison",
+      "dateFrom": "Von",
+      "dateTo": "Bis",
+      "clearAll": "Filter zurücksetzen"
+    },
+    "resultsCount": "{{count}} Kampf/Kämpfe gefunden",
+    "noResults": "Keine Kämpfe gefunden",
+    "noResultsFiltered": "Keine Kämpfe entsprechen den aktuellen Filtern. Versuchen Sie, die Filter anzupassen oder zurückzusetzen.",
+    "noMatches": "Es wurden noch keine Kämpfe aufgezeichnet."
+  },
   "recordResult": {
     "title": "Kampfergebnisse eintragen",
     "scheduledMatches": "Geplante Kämpfe",
@@ -377,6 +398,7 @@
         "fantasyConfig": "Fantasy Konfig",
         "challenges": "Herausforderungen",
         "promos": "Promos",
+        "seasonAwards": "Saison-Auszeichnungen",
         "contenderConfig": "Herausforderer Konfig",
         "users": "Benutzerverwaltung",
         "features": "Funktionsverwaltung",
@@ -390,6 +412,27 @@
         "fantasy": "Fantasy",
         "system": "System"
       }
+    }
+  },
+  "seasonAwards": {
+    "title": "Saison-Auszeichnungen",
+    "autoAwards": "Automatische Auszeichnungen",
+    "customAwards": "Benutzerdefinierte Auszeichnungen",
+    "noAwards": "Noch keine Auszeichnungen f\u00fcr diese Saison.",
+    "auto": "Auto",
+    "admin": {
+      "title": "Saison-Auszeichnungen verwalten",
+      "selectSeason": "Saison",
+      "chooseSeason": "-- Saison w\u00e4hlen --",
+      "createAward": "Auszeichnung erstellen",
+      "awardName": "Name der Auszeichnung",
+      "awardPlayer": "Spieler",
+      "choosePlayer": "-- Spieler w\u00e4hlen --",
+      "description": "Beschreibung",
+      "value": "Wert",
+      "createSuccess": "Auszeichnung erfolgreich erstellt!",
+      "deleteSuccess": "Auszeichnung erfolgreich gel\u00f6scht!",
+      "confirmDelete": "M\u00f6chten Sie die Auszeichnung \"{{name}}\" wirklich l\u00f6schen?"
     }
   },
   "challenges": {
@@ -497,7 +540,8 @@
       "records": "Rekordbuch",
       "rivalries": "Rivalitäten",
       "taleOfTape": "Tale of the Tape",
-      "achievements": "Erfolge"
+      "achievements": "Erfolge",
+      "matchTypeLeaderboards": "Nach Kampftyp"
     },
     "labels": {
       "wins": "Siege",
@@ -570,6 +614,10 @@
         "championships": "Meisterschaften",
         "longestReign": "Längste Regentschaft"
       }
+    },
+    "matchTypeLeaderboards": {
+      "title": "Ranglisten nach Kampftyp",
+      "noData": "Noch keine Kampfdaten für diesen Typ verfügbar."
     },
     "recordBook": {
       "title": "Rekordbuch",
@@ -714,6 +762,14 @@
     },
     "admin": {
       "createEvent": "Veranstaltung erstellen",
+      "existingEvents": "Bestehende Veranstaltungen",
+      "loadingEvents": "Veranstaltungen werden geladen...",
+      "noEvents": "Noch keine Veranstaltungen. Erstelle unten eine.",
+      "deleteEvent": "Löschen",
+      "confirmDeleteEvent": "Möchtest du \"{{name}}\" wirklich löschen?",
+      "deleteEventSuccess": "Veranstaltung erfolgreich gelöscht.",
+      "deleteEventError": "Veranstaltung konnte nicht gelöscht werden.",
+      "loadEventsError": "Veranstaltungen konnten nicht geladen werden.",
       "name": "Veranstaltungsname",
       "namePlaceholder": "z.B. WrestleMania 41, Monday Night Raw",
       "eventType": "Veranstaltungstyp",

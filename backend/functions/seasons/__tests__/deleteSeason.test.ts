@@ -28,6 +28,7 @@ vi.mock('../../../lib/dynamodb', () => ({
   TableNames: {
     SEASONS: 'Seasons',
     SEASON_STANDINGS: 'SeasonStandings',
+    SEASON_AWARDS: 'SeasonAwards',
   },
 }));
 
@@ -64,6 +65,7 @@ describe('deleteSeason', () => {
   it('deletes season and returns 204', async () => {
     mockGet.mockResolvedValue({ Item: { seasonId: 's1', name: 'Season 1' } });
     mockDelete.mockResolvedValue({});
+    // Two queries: standings + awards, both empty
     mockQuery.mockResolvedValue({ Items: [] });
 
     const event = makeEvent({ pathParameters: { seasonId: 's1' } });
@@ -74,24 +76,31 @@ describe('deleteSeason', () => {
     expect(mockDelete).toHaveBeenCalledTimes(1);
   });
 
-  it('cascades delete to all season standings', async () => {
+  it('cascades delete to all season standings and awards', async () => {
     mockGet.mockResolvedValue({ Item: { seasonId: 's1' } });
     mockDelete.mockResolvedValue({});
-    mockQuery.mockResolvedValue({
-      Items: [
-        { seasonId: 's1', playerId: 'p1' },
-        { seasonId: 's1', playerId: 'p2' },
-        { seasonId: 's1', playerId: 'p3' },
-      ],
-    });
+    // First query: standings, second query: awards
+    mockQuery
+      .mockResolvedValueOnce({
+        Items: [
+          { seasonId: 's1', playerId: 'p1' },
+          { seasonId: 's1', playerId: 'p2' },
+          { seasonId: 's1', playerId: 'p3' },
+        ],
+      })
+      .mockResolvedValueOnce({
+        Items: [
+          { seasonId: 's1', awardId: 'a1' },
+        ],
+      });
 
     const event = makeEvent({ pathParameters: { seasonId: 's1' } });
 
     const result = await deleteSeason(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
-    // 1 season delete + 3 standings deletes = 4 total
-    expect(mockDelete).toHaveBeenCalledTimes(4);
+    // 1 season delete + 3 standings deletes + 1 award delete = 5 total
+    expect(mockDelete).toHaveBeenCalledTimes(5);
     // Verify standings deletes use correct composite key
     expect(mockDelete).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -106,6 +115,12 @@ describe('deleteSeason', () => {
     expect(mockDelete).toHaveBeenCalledWith(
       expect.objectContaining({
         Key: { seasonId: 's1', playerId: 'p3' },
+      }),
+    );
+    // Verify award delete
+    expect(mockDelete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        Key: { seasonId: 's1', awardId: 'a1' },
       }),
     );
   });
@@ -131,7 +146,7 @@ describe('deleteSeason', () => {
     expect(mockDelete).not.toHaveBeenCalled();
   });
 
-  it('handles standings query returning undefined Items', async () => {
+  it('handles standings and awards query returning undefined Items', async () => {
     mockGet.mockResolvedValue({ Item: { seasonId: 's1' } });
     mockDelete.mockResolvedValue({});
     mockQuery.mockResolvedValue({ Items: undefined });
