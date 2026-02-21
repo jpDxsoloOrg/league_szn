@@ -2,7 +2,16 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
+import { parseBody } from '../../lib/parseBody';
 import { v4 as uuidv4 } from 'uuid';
+
+interface CreateChallengeBody {
+  challengedId: string;
+  matchType: string;
+  stipulation?: string;
+  championshipId?: string;
+  message?: string;
+}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -11,17 +20,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Only wrestlers can issue challenges');
     }
 
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    let body;
-    try {
-      body = JSON.parse(event.body);
-    } catch {
-      return badRequest('Invalid JSON in request body');
-    }
-
+    const { data: body, error: parseError } = parseBody<CreateChallengeBody>(event);
+    if (parseError) return parseError;
     const { challengedId, matchType, stipulation, championshipId, message } = body;
 
     if (!challengedId || !matchType) {

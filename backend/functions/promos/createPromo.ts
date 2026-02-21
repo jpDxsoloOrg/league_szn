@@ -2,9 +2,20 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
+import { parseBody } from '../../lib/parseBody';
 import { v4 as uuidv4 } from 'uuid';
 
 const VALID_PROMO_TYPES = ['open-mic', 'call-out', 'response', 'pre-match', 'post-match', 'championship', 'return'];
+
+interface CreatePromoBody {
+  promoType: string;
+  title?: string;
+  content: string;
+  targetPlayerId?: string;
+  targetPromoId?: string;
+  matchId?: string;
+  championshipId?: string;
+}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -13,17 +24,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Only wrestlers can cut promos');
     }
 
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    let body;
-    try {
-      body = JSON.parse(event.body);
-    } catch {
-      return badRequest('Invalid JSON in request body');
-    }
-
+    const { data: body, error: parseError } = parseBody<CreatePromoBody>(event);
+    if (parseError) return parseError;
     const { promoType, title, content, targetPlayerId, targetPromoId, matchId, championshipId } = body;
 
     if (!promoType || !VALID_PROMO_TYPES.includes(promoType)) {

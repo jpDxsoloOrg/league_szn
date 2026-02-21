@@ -4,6 +4,7 @@ import {
   InitiateAuthCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { success, badRequest, unauthorized, serverError } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 const CLIENT_ID = process.env.COGNITO_CLIENT_ID!;
@@ -15,18 +16,9 @@ interface LoginRequest {
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    let parsedBody: LoginRequest;
-    try {
-      parsedBody = JSON.parse(event.body);
-    } catch {
-      return badRequest('Invalid JSON in request body');
-    }
-
-    const { username, password } = parsedBody;
+    const { data: body, error: parseError } = parseBody<LoginRequest>(event);
+    if (parseError) return parseError;
+    const { username, password } = body;
 
     if (!username || !password) {
       return badRequest('Username and password are required');

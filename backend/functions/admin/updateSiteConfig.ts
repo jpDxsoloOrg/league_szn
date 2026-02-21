@@ -2,21 +2,22 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, badRequest, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
+import { parseBody } from '../../lib/parseBody';
 
 const VALID_FEATURES = ['fantasy', 'challenges', 'promos', 'contenders', 'statistics'];
+
+interface UpdateSiteConfigBody {
+  features: Record<string, boolean>;
+}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Admin');
   if (denied) return denied;
 
   try {
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    const { features } = JSON.parse(event.body) as {
-      features: Record<string, boolean>;
-    };
+    const { data: body, error: parseError } = parseBody<UpdateSiteConfigBody>(event);
+    if (parseError) return parseError;
+    const { features } = body;
 
     if (!features || typeof features !== 'object') {
       return badRequest('features object is required');

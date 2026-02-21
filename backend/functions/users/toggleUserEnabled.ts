@@ -6,23 +6,24 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 import { success, badRequest, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
+import { parseBody } from '../../lib/parseBody';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
+
+interface ToggleUserEnabledBody {
+  username: string;
+  enabled: boolean;
+}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Admin');
   if (denied) return denied;
 
   try {
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    const { username, enabled } = JSON.parse(event.body) as {
-      username: string;
-      enabled: boolean;
-    };
+    const { data: body, error: parseError } = parseBody<ToggleUserEnabledBody>(event);
+    if (parseError) return parseError;
+    const { username, enabled } = body;
 
     if (!username || typeof enabled !== 'boolean') {
       return badRequest('username and enabled (boolean) are required');

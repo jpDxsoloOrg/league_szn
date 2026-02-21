@@ -2,6 +2,11 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole, getAuthContext } from '../../lib/auth';
+import { parseBody } from '../../lib/parseBody';
+
+interface SubmitPicksBody {
+  picks: Record<string, string[]>;
+}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -13,20 +18,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Event ID is required');
     }
 
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
     const { sub: fantasyUserId, username } = getAuthContext(event);
-
-    let body;
-    try {
-      body = JSON.parse(event.body);
-    } catch {
-      return badRequest('Invalid JSON in request body');
-    }
-
-    const picks: Record<string, string[]> = body.picks;
+    const { data: body, error: parseError } = parseBody<SubmitPicksBody>(event);
+    if (parseError) return parseError;
+    const { picks } = body;
 
     if (!picks || typeof picks !== 'object') {
       return badRequest('picks must be an object mapping divisionId to playerIds[]');

@@ -3,6 +3,7 @@ import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { invokeAsync } from '../../lib/asyncLambda';
+import { parseBody } from '../../lib/parseBody';
 import { calculateFantasyPoints } from '../fantasy/calculateFantasyPoints';
 
 interface RecordResultBody {
@@ -115,16 +116,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Match ID is required');
     }
 
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    let body: RecordResultBody;
-    try {
-      body = JSON.parse(event.body);
-    } catch {
-      return badRequest('Invalid JSON in request body');
-    }
+    const { data: body, error: parseError } = parseBody<RecordResultBody>(event);
+    if (parseError) return parseError;
 
     if (!body.winners || !body.losers || body.winners.length === 0) {
       return badRequest('Winners and losers are required');
