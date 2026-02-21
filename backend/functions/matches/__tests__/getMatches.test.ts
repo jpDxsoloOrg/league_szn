@@ -11,11 +11,11 @@ vi.mock('../../../lib/dynamodb', () => ({
   dynamoDb: {
     get: vi.fn(),
     put: vi.fn(),
-    scan: mockScan,
+    scan: vi.fn(),
     query: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    scanAll: vi.fn(),
+    scanAll: mockScan,
     queryAll: vi.fn(),
   },
   TableNames: {
@@ -43,7 +43,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '',
-    requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
+    requestContext: { authorizer: {} } as any,
     ...overrides,
   };
 }
@@ -98,13 +98,13 @@ describe('getMatches', () => {
     expect(mockScan).toHaveBeenCalledWith(
       expect.objectContaining({
         FilterExpression: '#status = :status',
-        ExpressionAttributeNames: expect.objectContaining({ '#status': 'status' }),
-        ExpressionAttributeValues: expect.objectContaining({ ':status': 'scheduled' }),
+        ExpressionAttributeNames: { '#status': 'status' },
+        ExpressionAttributeValues: { ':status': 'scheduled' },
       }),
     );
   });
 
-  it('does not add filter when no query parameters provided', async () => {
+  it('does not add filter when no status parameter provided', async () => {
     mockScan.mockResolvedValue({ Items: [] });
 
     await getMatches(makeEvent(), ctx, cb);
@@ -133,22 +133,113 @@ describe('getMatches', () => {
     );
   });
 
-  it('filters by matchType', async () => {
-    mockScan.mockResolvedValue({ Items: [] });
+  it('filters by matchType in-memory with normalized aliases', async () => {
+    mockScan.mockResolvedValue({
+      Items: [
+        { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'singles' },
+        { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'Tag Team' },
+      ],
+    });
 
     const event = makeEvent({
       queryStringParameters: { matchType: 'Singles' },
     });
 
-    await getMatches(event, ctx, cb);
+    const result = await getMatches(event, ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body)).toEqual([
+      { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'singles' },
+    ]);
 
-    expect(mockScan).toHaveBeenCalledWith(
-      expect.objectContaining({
-        FilterExpression: '#matchFormat = :matchFormat',
-        ExpressionAttributeNames: expect.objectContaining({ '#matchFormat': 'matchFormat' }),
-        ExpressionAttributeValues: expect.objectContaining({ ':matchFormat': 'Singles' }),
-      }),
-    );
+    const callArgs = mockScan.mock.calls[0][0];
+    const filterExpr = callArgs.FilterExpression as string | undefined;
+    expect(filterExpr ?? '').not.toContain('#matchFormat');
+  });
+
+  it('matches legacy tag values when filtering by Tag Team', async () => {
+    mockScan.mockResolvedValue({
+      Items: [
+        { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tag' },
+        { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'tag team' },
+        { matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'Singles' },
+      ],
+    });
+
+    const event = makeEvent({
+      queryStringParameters: { matchType: 'Tag Team' },
+    });
+
+    const result = await getMatches(event, ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body)).toEqual([
+      { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'tag team' },
+      { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tag' },
+    ]);
+  });
+
+  it('matches tag aliases when query uses tag-team format', async () => {
+    mockScan.mockResolvedValue({
+      Items: [
+        { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tag' },
+        { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'Tag Team' },
+        { matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'tag-team' },
+        { matchId: 'm4', date: '2024-01-04T00:00:00Z', matchFormat: 'Singles' },
+      ],
+    });
+
+    const event = makeEvent({
+      queryStringParameters: { matchType: 'tag-team' },
+    });
+
+    const result = await getMatches(event, ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body)).toEqual([
+      { matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'tag-team' },
+      { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'Tag Team' },
+      { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tag' },
+    ]);
+  });
+
+  it('matches tag aliases when query uses tagteam format', async () => {
+    mockScan.mockResolvedValue({
+      Items: [
+        { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tagteam' },
+        { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'tag-team' },
+        { matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'tag team' },
+        { matchId: 'm4', date: '2024-01-04T00:00:00Z', matchFormat: 'Singles' },
+      ],
+    });
+
+    const event = makeEvent({
+      queryStringParameters: { matchType: 'tagteam' },
+    });
+
+    const result = await getMatches(event, ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body)).toEqual([
+      { matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'tag team' },
+      { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'tag-team' },
+      { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tagteam' },
+    ]);
+  });
+
+  it('filters using legacy matchType field when matchFormat is missing', async () => {
+    mockScan.mockResolvedValue({
+      Items: [
+        { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchType: 'singles' },
+        { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchType: 'tag' },
+      ],
+    });
+
+    const event = makeEvent({
+      queryStringParameters: { matchType: 'Singles' },
+    });
+
+    const result = await getMatches(event, ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body)).toEqual([
+      { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchType: 'singles' },
+    ]);
   });
 
   it('filters by stipulationId', async () => {
@@ -259,9 +350,8 @@ describe('getMatches', () => {
     const filterExpr = callArgs.FilterExpression as string;
     expect(filterExpr).toContain('#status = :status');
     expect(filterExpr).toContain('contains(#participants, :playerId)');
-    expect(filterExpr).toContain('#matchFormat = :matchFormat');
     expect(filterExpr).toContain('#seasonId = :seasonId');
-    expect(filterExpr.split(' AND ')).toHaveLength(4);
+    expect(filterExpr.split(' AND ')).toHaveLength(3);
   });
 
   it('combines dateFrom and dateTo into a single expression', async () => {
@@ -282,7 +372,6 @@ describe('getMatches', () => {
     expect(filterExpr).toContain('#date <= :dateTo');
     expect(filterExpr.split(' AND ')).toHaveLength(2);
   });
-
   it('returns 500 when scan throws', async () => {
     mockScan.mockRejectedValue(new Error('DynamoDB failure'));
 

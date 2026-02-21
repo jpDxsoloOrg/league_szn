@@ -254,6 +254,10 @@ functions:
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
+      - http:
+          path: players/{playerId}/statistics
+          method: get
+          cors: *corsConfig
 
   # Matches (Phase 3 consolidated: getMatches, scheduleMatch, recordResult)
   matches:
