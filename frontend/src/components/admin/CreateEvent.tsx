@@ -32,6 +32,10 @@ function formatEventDate(dateStr: string): string {
   }
 }
 
+function canDeleteEvent(event: LeagueEvent): boolean {
+  return !event.matchCards || event.matchCards.length === 0;
+}
+
 export default function CreateEvent() {
   const { t } = useTranslation();
   const loadEventsErrorFallbackRef = useRef(t('events.admin.loadEventsError'));
@@ -52,6 +56,9 @@ export default function CreateEvent() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const deletableEvents = events.filter(canDeleteEvent);
+  const shouldShowExistingEventsSection =
+    loadingEvents || !!loadError || !!deleteError || deletableEvents.length > 0;
 
   useEffect(() => {
     seasonsApi.getAll().then(setSeasons).catch(() => {});
@@ -126,51 +133,51 @@ export default function CreateEvent() {
       <h3 className="create-event-title">{t('events.admin.createEvent')}</h3>
 
       {/* Existing events list */}
-      <section className="create-event-existing">
-        <h4 className="create-event-existing-title">{t('events.admin.existingEvents')}</h4>
-        {loadingEvents ? (
-          <p className="create-event-loading">{t('events.admin.loadingEvents')}</p>
-        ) : (
-          <>
-            {loadError && (
-              <div className="create-event-error-msg" role="alert">
-                {loadError}
-              </div>
-            )}
-            {deleteError && (
-              <div className="create-event-error-msg" role="alert">
-                {deleteError}
-              </div>
-            )}
-            {events.length === 0 ? (
-              <p className="create-event-no-events">{t('events.admin.noEvents')}</p>
-            ) : (
-              <ul className="create-event-list">
-                {events.map((ev) => (
-                  <li key={ev.eventId} className="create-event-list-item">
-                    <div className="create-event-list-item-info">
-                      <span className="create-event-list-item-name">{ev.name}</span>
-                      <span className="create-event-list-item-meta">
-                        {t(`events.types.${ev.eventType}`)} · {formatEventDate(ev.date)}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      className="create-event-delete-btn"
-                      onClick={() => handleDelete(ev)}
-                      disabled={deleting === ev.eventId}
-                      title={t('events.admin.deleteEvent')}
-                      aria-label={t('events.admin.deleteEvent')}
-                    >
-                      {deleting === ev.eventId ? t('common.saving') : t('common.delete')}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        )}
-      </section>
+      {shouldShowExistingEventsSection && (
+        <section className="create-event-existing">
+          <h4 className="create-event-existing-title">{t('events.admin.existingEvents')}</h4>
+          {loadingEvents ? (
+            <p className="create-event-loading">{t('events.admin.loadingEvents')}</p>
+          ) : (
+            <>
+              {loadError && (
+                <div className="create-event-error-msg" role="alert">
+                  {loadError}
+                </div>
+              )}
+              {deleteError && (
+                <div className="create-event-error-msg" role="alert">
+                  {deleteError}
+                </div>
+              )}
+              {deletableEvents.length > 0 && (
+                <ul className="create-event-list">
+                  {deletableEvents.map((ev) => (
+                    <li key={ev.eventId} className="create-event-list-item">
+                      <div className="create-event-list-item-info">
+                        <span className="create-event-list-item-name">{ev.name}</span>
+                        <span className="create-event-list-item-meta">
+                          {t(`events.types.${ev.eventType}`)} · {formatEventDate(ev.date)}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="create-event-delete-btn"
+                        onClick={() => handleDelete(ev)}
+                        disabled={deleting === ev.eventId}
+                        title={t('events.admin.deleteEvent')}
+                        aria-label={t('events.admin.deleteEvent')}
+                      >
+                        {deleting === ev.eventId ? t('common.saving') : t('common.delete')}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+        </section>
+      )}
 
       <div className="create-event-form">
         {/* Name */}
