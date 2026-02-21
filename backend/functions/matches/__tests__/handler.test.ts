@@ -27,7 +27,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     requestContext: {} as APIGatewayProxyEvent['requestContext'],
-    resource: '',
+    resource: '/matches',
     ...overrides,
   };
 }
@@ -41,7 +41,7 @@ describe('matches router handler', () => {
   });
 
   it('GET without matchId calls getMatches', async () => {
-    const event = makeEvent({ httpMethod: 'GET', pathParameters: null });
+    const event = makeEvent({ httpMethod: 'GET', resource: '/matches', pathParameters: null });
     await handler(event, ctx, noopCb);
     expect(mockGetMatches).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockScheduleMatch).not.toHaveBeenCalled();
@@ -49,7 +49,7 @@ describe('matches router handler', () => {
   });
 
   it('POST without matchId calls scheduleMatch', async () => {
-    const event = makeEvent({ httpMethod: 'POST', pathParameters: null });
+    const event = makeEvent({ httpMethod: 'POST', resource: '/matches', pathParameters: null });
     await handler(event, ctx, noopCb);
     expect(mockScheduleMatch).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockGetMatches).not.toHaveBeenCalled();
@@ -59,6 +59,7 @@ describe('matches router handler', () => {
   it('PUT with matchId calls recordResult', async () => {
     const event = makeEvent({
       httpMethod: 'PUT',
+      resource: '/matches/{matchId}/result',
       pathParameters: { matchId: 'm1' },
     });
     await handler(event, ctx, noopCb);
@@ -68,7 +69,7 @@ describe('matches router handler', () => {
   });
 
   it('PATCH returns 405 Method Not Allowed', async () => {
-    const event = makeEvent({ httpMethod: 'PATCH' });
+    const event = makeEvent({ httpMethod: 'PATCH', resource: '/matches' });
     const result = await handler(event, ctx, noopCb);
     expect(result).toBeDefined();
     expect(result!.statusCode).toBe(405);

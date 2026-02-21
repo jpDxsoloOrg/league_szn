@@ -27,7 +27,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     requestContext: {} as APIGatewayProxyEvent['requestContext'],
-    resource: '',
+    resource: '/tournaments',
     ...overrides,
   };
 }
@@ -41,7 +41,7 @@ describe('tournaments router handler', () => {
   });
 
   it('GET without tournamentId calls getTournaments', async () => {
-    const event = makeEvent({ httpMethod: 'GET', pathParameters: null });
+    const event = makeEvent({ httpMethod: 'GET', resource: '/tournaments', pathParameters: null });
     await handler(event, ctx, noopCb);
     expect(mockGetTournaments).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockCreateTournament).not.toHaveBeenCalled();
@@ -49,7 +49,7 @@ describe('tournaments router handler', () => {
   });
 
   it('POST without tournamentId calls createTournament', async () => {
-    const event = makeEvent({ httpMethod: 'POST', pathParameters: null });
+    const event = makeEvent({ httpMethod: 'POST', resource: '/tournaments', pathParameters: null });
     await handler(event, ctx, noopCb);
     expect(mockCreateTournament).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockGetTournaments).not.toHaveBeenCalled();
@@ -59,6 +59,7 @@ describe('tournaments router handler', () => {
   it('PUT with tournamentId calls updateTournament', async () => {
     const event = makeEvent({
       httpMethod: 'PUT',
+      resource: '/tournaments/{tournamentId}',
       pathParameters: { tournamentId: 't1' },
     });
     await handler(event, ctx, noopCb);
@@ -68,7 +69,7 @@ describe('tournaments router handler', () => {
   });
 
   it('DELETE returns 405 Method Not Allowed', async () => {
-    const event = makeEvent({ httpMethod: 'DELETE' });
+    const event = makeEvent({ httpMethod: 'DELETE', resource: '/tournaments' });
     const result = await handler(event, ctx, noopCb);
     expect(result).toBeDefined();
     expect(result!.statusCode).toBe(405);

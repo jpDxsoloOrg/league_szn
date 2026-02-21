@@ -68,7 +68,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     queryStringParameters: null,
     multiValueQueryStringParameters: null,
     stageVariables: null,
-    resource: '',
+    resource: '/promos',
     requestContext: { authorizer: {} } as any,
     ...overrides,
   };
@@ -80,7 +80,7 @@ describe('promos router', () => {
   it('GET /promos routes to getPromos and returns 200', async () => {
     mockScanAll.mockResolvedValue([{ promoId: 'pr1', playerId: 'p1', content: 'Hello world', promoType: 'open-mic' }]);
     mockGet.mockResolvedValue({ Item: { playerId: 'p1', name: 'John' } });
-    const event = makeEvent({ httpMethod: 'GET', path: '/dev/promos', pathParameters: null });
+    const event = makeEvent({ httpMethod: 'GET', resource: '/promos', pathParameters: null });
     const result = await handler(event, ctx, cb);
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body)).toHaveLength(1);
@@ -95,7 +95,7 @@ describe('promos router', () => {
     mockScanAll.mockResolvedValue([]);
     const event = makeEvent({
       httpMethod: 'GET',
-      path: '/dev/promos/pr1',
+      resource: '/promos/{promoId}',
       pathParameters: { promoId: 'pr1' },
     });
     const result = await handler(event, ctx, cb);
@@ -108,7 +108,7 @@ describe('promos router', () => {
     mockPut.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'POST',
-      path: '/dev/promos',
+      resource: '/promos',
       pathParameters: null,
       body: JSON.stringify({
         promoType: 'open-mic',
@@ -128,7 +128,7 @@ describe('promos router', () => {
     mockUpdate.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'POST',
-      path: '/dev/promos/pr1/react',
+      resource: '/promos/{promoId}/react',
       pathParameters: { promoId: 'pr1' },
       body: JSON.stringify({ reaction: 'fire' }),
     });
@@ -143,7 +143,7 @@ describe('promos router', () => {
     mockUpdate.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'PUT',
-      path: '/dev/admin/promos/pr1',
+      resource: '/admin/promos/{promoId}',
       pathParameters: { promoId: 'pr1' },
       body: JSON.stringify({ isPinned: true }),
     });
@@ -156,7 +156,7 @@ describe('promos router', () => {
     mockDelete.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'DELETE',
-      path: '/dev/admin/promos/pr1',
+      resource: '/admin/promos/{promoId}',
       pathParameters: { promoId: 'pr1' },
     });
     const result = await handler(event, ctx, cb);
@@ -167,7 +167,7 @@ describe('promos router', () => {
     mockScanAll.mockResolvedValue([]);
     const event = makeEvent({
       httpMethod: 'POST',
-      path: '/dev/admin/promos/bulk-delete',
+      resource: '/admin/promos/bulk-delete',
       pathParameters: null,
       body: JSON.stringify({ isHidden: true }),
     });
@@ -179,7 +179,7 @@ describe('promos router', () => {
   it('returns 405 for unsupported method/path', async () => {
     const event = makeEvent({
       httpMethod: 'PATCH',
-      path: '/dev/promos',
+      resource: '/promos',
       pathParameters: null,
     });
     const result = await handler(event, ctx, cb);
