@@ -72,9 +72,15 @@ function parseSeedRequest(body: string | null): { value?: ParsedSeedRequest; err
   }
 
   const modeValue = parsed.mode;
+  if (modeValue !== undefined && modeValue !== 'default' && modeValue !== 'import') {
+    return { error: 'mode must be either "default" or "import"' };
+  }
   const mode = modeValue === 'import' ? 'import' : 'default';
 
   if (mode === 'import') {
+    if (parsed.modules !== undefined) {
+      return { error: 'modules is not used in import mode; remove modules and provide payload only' };
+    }
     const payloadCandidate = isRecord(parsed.payload) ? parsed.payload : parsed;
     const payloadValidation = validateImportPayload(payloadCandidate);
     if (payloadValidation.error) {
@@ -89,12 +95,37 @@ function parseSeedRequest(body: string | null): { value?: ParsedSeedRequest; err
     };
   }
 
+  if (parsed.payload !== undefined) {
+    return { error: 'payload is only supported when mode is "import"' };
+  }
+
   return {
     value: {
       mode: 'default',
       modules: parseModules(parsed.modules),
     },
   };
+}
+
+function validateImportRecordKeys(payload: SeedImportPayload): string | null {
+  for (const table of EXPORT_TABLES) {
+    const records = payload.data[table.key];
+    for (let index = 0; index < records.length; index++) {
+      const record = records[index];
+      const pkValue = record[table.partitionKey];
+      if (pkValue === undefined || pkValue === null || pkValue === '') {
+        return `Dataset "${table.key}" record at index ${String(index)} is missing required key "${table.partitionKey}"`;
+      }
+
+      if (table.sortKey) {
+        const skValue = record[table.sortKey];
+        if (skValue === undefined || skValue === null || skValue === '') {
+          return `Dataset "${table.key}" record at index ${String(index)} is missing required key "${table.sortKey}"`;
+        }
+      }
+    }
+  }
+  return null;
 }
 
 function validateImportPayload(payload: unknown): { value?: SeedImportPayload; error?: string } {
@@ -187,6 +218,10 @@ async function deleteAllFromTable(
 
 async function importPayload(payload: SeedImportPayload): Promise<Record<string, number>> {
   const createdCounts: Record<string, number> = {};
+  const keyValidationError = validateImportRecordKeys(payload);
+  if (keyValidationError) {
+    throw new Error(keyValidationError);
+  }
 
   for (const table of EXPORT_TABLES) {
     await deleteAllFromTable(table.tableName, table.partitionKey, table.sortKey);
@@ -294,6 +329,10 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       });
     } catch (error) {
       console.error('Error importing seed payload:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to import data payload';
+      if (errorMessage.includes('Dataset "')) {
+        return badRequest(errorMessage);
+      }
       return serverError('Failed to import data payload');
     }
   }

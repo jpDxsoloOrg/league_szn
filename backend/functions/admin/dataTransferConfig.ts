@@ -55,13 +55,13 @@ export const EXPORT_TABLES: readonly ExportTableConfig[] = [
   { key: 'rankingHistory', tableName: TableNames.RANKING_HISTORY, partitionKey: 'playerId', sortKey: 'weekKey' },
   { key: 'fantasyConfig', tableName: TableNames.FANTASY_CONFIG, partitionKey: 'configKey' },
   { key: 'wrestlerCosts', tableName: TableNames.WRESTLER_COSTS, partitionKey: 'playerId' },
-  { key: 'fantasyPicks', tableName: TableNames.FANTASY_PICKS, partitionKey: 'pickId' },
+  { key: 'fantasyPicks', tableName: TableNames.FANTASY_PICKS, partitionKey: 'eventId', sortKey: 'fantasyUserId' },
   { key: 'siteConfig', tableName: TableNames.SITE_CONFIG, partitionKey: 'configKey' },
   { key: 'challenges', tableName: TableNames.CHALLENGES, partitionKey: 'challengeId' },
   { key: 'promos', tableName: TableNames.PROMOS, partitionKey: 'promoId' },
   { key: 'stipulations', tableName: TableNames.STIPULATIONS, partitionKey: 'stipulationId' },
   { key: 'matchTypes', tableName: TableNames.MATCH_TYPES, partitionKey: 'matchTypeId' },
-  { key: 'seasonAwards', tableName: TableNames.SEASON_AWARDS, partitionKey: 'seasonId', sortKey: 'awardKey' },
+  { key: 'seasonAwards', tableName: TableNames.SEASON_AWARDS, partitionKey: 'seasonId', sortKey: 'awardId' },
 ] as const;
 
 export type ExportData = Record<ExportDatasetKey, Record<string, unknown>[]>;

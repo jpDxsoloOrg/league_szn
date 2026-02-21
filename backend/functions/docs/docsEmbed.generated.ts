@@ -1334,7 +1334,7 @@ paths:
         - Default seed mode (when \`mode\` is omitted or not \`import\`): generates sample seed data.
           Optional request body can specify \`modules\` (core, championships, matches, standings, tournaments, events, contenders, fantasy, config).
         - Import mode (\`mode: "import"\`): validates and imports a previously exported payload from \`GET /admin/export-data\`.
-          Import mode clears relevant tables first, then inserts all records from payload data.
+          Import mode validates required table keys in all records before any destructive clear, then clears relevant tables and inserts records.
       security: [{ BearerAuth: [] }]
       requestBody:
         required: false
@@ -1367,7 +1367,7 @@ paths:
                           additionalProperties: true
       responses:
         '200': { description: Completed; body includes message, mode (import only), and createdCounts }
-        '400': { description: 'Bad request (invalid body, modules, or import payload)', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '400': { description: 'Bad request (invalid mode, invalid modules/payload usage, missing datasets, or missing required table keys in payload records)', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '500': { description: 'Server error', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
