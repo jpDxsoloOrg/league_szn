@@ -85,7 +85,14 @@ export interface MatchTypeStatsEntry {
 }
 
 export interface MatchTypeLeaderboardsResponse {
-  leaderboards: Record<string, MatchTypeStatsEntry[]>;
+  leaderboard: MatchTypeStatsEntry[];
+  appliedFilters?: {
+    seasonId?: string;
+    matchTypeId?: string;
+    matchTypeName?: string;
+    stipulationId?: string;
+    stipulationName?: string;
+  };
 }
 
 export interface PlayerMatchStatsByType {
@@ -146,9 +153,14 @@ export const statisticsApi = {
     return fetchWithAuth(`${API_BASE_URL}/statistics?${params}`, {}, signal);
   },
 
-  getMatchTypeLeaderboards: async (seasonId?: string, signal?: AbortSignal): Promise<MatchTypeLeaderboardsResponse> => {
+  getMatchTypeLeaderboards: async (
+    filters?: { seasonId?: string; matchTypeId?: string; stipulationId?: string },
+    signal?: AbortSignal
+  ): Promise<MatchTypeLeaderboardsResponse> => {
     const params = new URLSearchParams({ section: 'match-types' });
-    if (seasonId) params.set('seasonId', seasonId);
+    if (filters?.seasonId) params.set('seasonId', filters.seasonId);
+    if (filters?.matchTypeId) params.set('matchTypeId', filters.matchTypeId);
+    if (filters?.stipulationId) params.set('stipulationId', filters.stipulationId);
     return fetchWithAuth(`${API_BASE_URL}/statistics?${params}`, {}, signal);
   },
 

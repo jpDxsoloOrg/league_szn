@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { statisticsApi, seasonsApi, matchTypesApi, stipulationsApi } from '../../services/api';
@@ -10,7 +10,11 @@ import './Leaderboards.css';
 
 function MatchTypeLeaderboards() {
   const { t } = useTranslation();
-  const [leaderboards, setLeaderboards] = useState<Record<string, MatchTypeStatsEntry[]>>({});
+  const [entries, setEntries] = useState<MatchTypeStatsEntry[]>([]);
+  const [appliedFilters, setAppliedFilters] = useState<{
+    matchTypeName?: string;
+    stipulationName?: string;
+  }>({});
   const [loading, setLoading] = useState(true);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
@@ -47,9 +51,18 @@ function MatchTypeLeaderboards() {
       setLoading(true);
       try {
         const result = await statisticsApi.getMatchTypeLeaderboards(
-          selectedSeasonId || undefined, abortController.signal
+          {
+            seasonId: selectedSeasonId || undefined,
+            matchTypeId: selectedMatchTypeId || undefined,
+            stipulationId: selectedStipulationId || undefined,
+          },
+          abortController.signal
         );
-        setLeaderboards(result.leaderboards);
+        setEntries(result.leaderboard || []);
+        setAppliedFilters({
+          matchTypeName: result.appliedFilters?.matchTypeName,
+          stipulationName: result.appliedFilters?.stipulationName,
+        });
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== 'AbortError') {
           console.error('Failed to load match type leaderboards', err);
@@ -60,88 +73,16 @@ function MatchTypeLeaderboards() {
     };
     fetchData();
     return () => abortController.abort();
-  }, [selectedSeasonId]);
-
-  const matchTypeLabelMap = useMemo<Record<string, string>>(() => ({
-    singles: t('statistics.matchTypes.singles'),
-    tag: t('statistics.matchTypes.tag'),
-    ladder: t('statistics.matchTypes.ladder'),
-    cage: t('statistics.matchTypes.cage'),
-  }), [t]);
-
-  const leaderboardTypeOptions = useMemo(
-    () =>
-      Object.keys(leaderboards).map((key) => ({
-        key,
-        label:
-          matchTypeLabelMap[key] ||
-          key
-            .replace(/([a-z])([A-Z])/g, '$1 $2')
-            .replace(/[-_]/g, ' ')
-            .replace(/\b\w/g, (c) => c.toUpperCase()),
-      })),
-    [leaderboards, matchTypeLabelMap]
-  );
-
-  const leaderboardKeys = useMemo(() => Object.keys(leaderboards), [leaderboards]);
-
-  const normalize = (value: string) =>
-    value.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-  const resolveLeaderboardKey = (sourceName: string): string | undefined => {
-    const normalized = normalize(sourceName);
-    if (!normalized) return undefined;
-
-    const aliasCandidates: string[] = [];
-    if (normalized.includes('tag')) aliasCandidates.push('tag');
-    if (normalized.includes('ladder')) aliasCandidates.push('ladder');
-    if (
-      normalized.includes('cage') ||
-      normalized.includes('cell') ||
-      normalized.includes('hiac')
-    ) {
-      aliasCandidates.push('cage');
-    }
-    if (normalized.includes('single')) aliasCandidates.push('singles');
-
-    const direct = leaderboardKeys.find((key) => {
-      const normalizedKey = normalize(key);
-      return (
-        normalizedKey === normalized ||
-        normalized.includes(normalizedKey) ||
-        normalizedKey.includes(normalized)
-      );
-    });
-    if (direct) return direct;
-
-    return aliasCandidates.find((candidate) => leaderboardKeys.includes(candidate));
-  };
+  }, [selectedSeasonId, selectedMatchTypeId, selectedStipulationId]);
 
   const selectedMatchType = matchTypes.find((item) => item.matchTypeId === selectedMatchTypeId);
   const selectedStipulation = stipulations.find((item) => item.stipulationId === selectedStipulationId);
-  const hasExplicitFilter = Boolean(selectedMatchTypeId || selectedStipulationId);
-
-  const resolvedMatchTypeKey = selectedMatchType
-    ? resolveLeaderboardKey(selectedMatchType.name)
-    : undefined;
-  const resolvedStipulationKey = selectedStipulation
-    ? resolveLeaderboardKey(selectedStipulation.name)
-    : undefined;
-
-  const resolvedFilterKey = resolvedMatchTypeKey || resolvedStipulationKey;
-  const filterUnresolved = hasExplicitFilter && !resolvedFilterKey;
-  const activeLeaderboardKey =
-    resolvedFilterKey || (!hasExplicitFilter ? (leaderboardKeys[0] || '') : '');
-
-  const activeBucketLabel =
-    leaderboardTypeOptions.find((option) => option.key === activeLeaderboardKey)?.label || '';
-  const selectedFilterLabel = selectedMatchType?.name || selectedStipulation?.name || '';
-
-  const entries = filterUnresolved
-    ? []
-    : activeLeaderboardKey
-      ? (leaderboards[activeLeaderboardKey] || [])
-      : [];
+  const activeFilterLabel =
+    appliedFilters.matchTypeName ||
+    appliedFilters.stipulationName ||
+    selectedMatchType?.name ||
+    selectedStipulation?.name ||
+    t('statistics.matchTypeLeaderboards.allFilters', 'All Match Types');
 
   function getMedalColor(rank: number): string | null {
     switch (rank) {
@@ -228,27 +169,12 @@ function MatchTypeLeaderboards() {
       </div>
 
       <div className="lb-filter-summary">
-        {hasExplicitFilter ? (
-          filterUnresolved ? (
-            t(
-              'statistics.matchTypeLeaderboards.filterUnmapped',
-              {
-                defaultValue: 'No leaderboard category matches "{{filter}}".',
-                filter: selectedFilterLabel,
-              }
-            )
-          ) : (
-            t(
-              'statistics.matchTypeLeaderboards.filteredBy',
-              {
-                defaultValue: 'Filtered by "{{filter}}" (showing "{{bucket}}").',
-                filter: selectedFilterLabel,
-                bucket: activeBucketLabel,
-              }
-            )
-          )
-        ) : (
-          activeBucketLabel
+        {t(
+          'statistics.matchTypeLeaderboards.filteredBySimple',
+          {
+            defaultValue: 'Filtered by "{{filter}}".',
+            filter: activeFilterLabel,
+          }
         )}
       </div>
 

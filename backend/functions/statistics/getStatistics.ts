@@ -48,6 +48,28 @@ interface ChampionshipRecord {
   currentChampion?: string | string[];
 }
 
+interface MatchTypeRecord {
+  matchTypeId: string;
+  name: string;
+}
+
+interface StipulationRecord {
+  stipulationId: string;
+  name: string;
+}
+
+function normalizeMatchType(value?: string): string {
+  const normalized = (value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  switch (normalized) {
+    case 'singles':
+      return 'single';
+    case 'fatal4way':
+      return 'fatalfourway';
+    default:
+      return normalized;
+  }
+}
+
 function categorizeMatch(match: MatchRecord): string {
   // Map match formats to stat types — handle legacy matchType field
   const mt = (match.matchFormat || match.matchType || 'singles').toLowerCase();
@@ -770,36 +792,78 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
 
       case 'match-types': {
-        const matchTypeCategories = ['singles', 'tag', 'ladder', 'cage'] as const;
+        const selectedMatchTypeId = event.queryStringParameters?.matchTypeId;
+        const selectedStipulationId = event.queryStringParameters?.stipulationId;
 
-        const leaderboardsByType: Record<string, { playerId: string; playerName: string; wrestlerName: string; wins: number; losses: number; draws: number; matchesPlayed: number; winPercentage: number; rank: number }[]> = {};
+        const [matchTypesResult, stipulationsResult] = await Promise.all([
+          dynamoDb.scanAll({ TableName: TableNames.MATCH_TYPES }),
+          dynamoDb.scanAll({ TableName: TableNames.STIPULATIONS }),
+        ]);
 
-        for (const matchType of matchTypeCategories) {
-          const playerStatsForType = players
-            .map((p) => {
-              const stats = computePlayerStatistics(completedMatches, p.playerId, matchType);
-              return {
-                playerId: p.playerId,
-                playerName: p.name,
-                wrestlerName: p.currentWrestler,
-                wins: stats.wins,
-                losses: stats.losses,
-                draws: stats.draws,
-                matchesPlayed: stats.matchesPlayed,
-                winPercentage: stats.winPercentage,
-              };
-            })
-            .filter((s) => s.matchesPlayed > 0)
-            .sort((a, b) => {
-              if (b.winPercentage !== a.winPercentage) return b.winPercentage - a.winPercentage;
-              return b.wins - a.wins;
-            })
-            .map((s, i) => ({ ...s, rank: i + 1 }));
+        const matchTypes = matchTypesResult as unknown as MatchTypeRecord[];
+        const stipulations = stipulationsResult as unknown as StipulationRecord[];
 
-          leaderboardsByType[matchType] = playerStatsForType;
+        const selectedMatchType = selectedMatchTypeId
+          ? matchTypes.find((mt) => mt.matchTypeId === selectedMatchTypeId)
+          : undefined;
+        if (selectedMatchTypeId && !selectedMatchType) {
+          return badRequest(`Unknown matchTypeId: ${selectedMatchTypeId}`);
         }
 
-        return success({ leaderboards: leaderboardsByType });
+        const selectedStipulation = selectedStipulationId
+          ? stipulations.find((s) => s.stipulationId === selectedStipulationId)
+          : undefined;
+        if (selectedStipulationId && !selectedStipulation) {
+          return badRequest(`Unknown stipulationId: ${selectedStipulationId}`);
+        }
+
+        const filteredMatches = completedMatches.filter((match) => {
+          if (selectedMatchType) {
+            const selectedMatchTypeName = normalizeMatchType(selectedMatchType.name);
+            const matchTypeName = normalizeMatchType(match.matchFormat || match.matchType || '');
+            if (!matchTypeName || matchTypeName !== selectedMatchTypeName) {
+              return false;
+            }
+          }
+
+          if (selectedStipulationId && match.stipulationId !== selectedStipulationId) {
+            return false;
+          }
+
+          return true;
+        });
+
+        const leaderboard = players
+          .map((p) => {
+            const stats = computePlayerStatistics(filteredMatches, p.playerId, 'overall');
+            return {
+              playerId: p.playerId,
+              playerName: p.name,
+              wrestlerName: p.currentWrestler,
+              wins: stats.wins,
+              losses: stats.losses,
+              draws: stats.draws,
+              matchesPlayed: stats.matchesPlayed,
+              winPercentage: stats.winPercentage,
+            };
+          })
+          .filter((s) => s.matchesPlayed > 0)
+          .sort((a, b) => {
+            if (b.winPercentage !== a.winPercentage) return b.winPercentage - a.winPercentage;
+            return b.wins - a.wins;
+          })
+          .map((s, i) => ({ ...s, rank: i + 1 }));
+
+        return success({
+          leaderboard,
+          appliedFilters: {
+            seasonId: seasonId || undefined,
+            matchTypeId: selectedMatchTypeId || undefined,
+            matchTypeName: selectedMatchType?.name,
+            stipulationId: selectedStipulationId || undefined,
+            stipulationName: selectedStipulation?.name,
+          },
+        });
       }
 
       default:
