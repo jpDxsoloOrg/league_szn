@@ -60,7 +60,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     queryStringParameters: null,
     multiValueQueryStringParameters: null,
     stageVariables: null,
-    resource: '',
+    resource: '/challenges',
     requestContext: { authorizer: {} } as any,
     ...overrides,
   };
@@ -83,7 +83,7 @@ describe('challenges router', () => {
   it('GET /challenges routes to getChallenges and returns 200', async () => {
     mockScanAll.mockResolvedValue([{ challengeId: 'ch1', challengerId: 'p1', challengedId: 'p2', status: 'pending' }]);
     mockPlayerLookup();
-    const event = makeEvent({ httpMethod: 'GET', path: '/dev/challenges', pathParameters: null });
+    const event = makeEvent({ httpMethod: 'GET', resource: '/challenges', pathParameters: null });
     const result = await handler(event, ctx, cb);
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body)).toHaveLength(1);
@@ -102,7 +102,7 @@ describe('challenges router', () => {
     });
     const event = makeEvent({
       httpMethod: 'GET',
-      path: '/dev/challenges/ch1',
+      resource: '/challenges/{challengeId}',
       pathParameters: { challengeId: 'ch1' },
     });
     const result = await handler(event, ctx, cb);
@@ -116,7 +116,7 @@ describe('challenges router', () => {
     mockPut.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'POST',
-      path: '/dev/challenges',
+      resource: '/challenges',
       pathParameters: null,
       body: JSON.stringify({ challengerId: 'p1', challengedId: 'p2', matchType: 'Singles' }),
     });
@@ -138,7 +138,7 @@ describe('challenges router', () => {
     mockUpdate.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'POST',
-      path: '/dev/challenges/ch1/respond',
+      resource: '/challenges/{challengeId}/respond',
       pathParameters: { challengeId: 'ch1' },
       body: JSON.stringify({ action: 'accept' }),
     });
@@ -153,7 +153,7 @@ describe('challenges router', () => {
     mockUpdate.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'POST',
-      path: '/dev/challenges/ch1/cancel',
+      resource: '/challenges/{challengeId}/cancel',
       pathParameters: { challengeId: 'ch1' },
     });
     const result = await handler(event, ctx, cb);
@@ -165,7 +165,7 @@ describe('challenges router', () => {
     mockDelete.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'DELETE',
-      path: '/dev/challenges/ch1',
+      resource: '/challenges/{challengeId}',
       pathParameters: { challengeId: 'ch1' },
     });
     const result = await handler(event, ctx, cb);
@@ -176,7 +176,7 @@ describe('challenges router', () => {
     mockQueryAll.mockResolvedValue([]);
     const event = makeEvent({
       httpMethod: 'POST',
-      path: '/dev/challenges/bulk-delete',
+      resource: '/challenges/bulk-delete',
       pathParameters: null,
       body: JSON.stringify({ statuses: ['cancelled', 'expired'] }),
     });
@@ -187,7 +187,7 @@ describe('challenges router', () => {
   it('returns 405 for unsupported method/path', async () => {
     const event = makeEvent({
       httpMethod: 'PATCH',
-      path: '/dev/challenges',
+      resource: '/challenges',
       pathParameters: null,
     });
     const result = await handler(event, ctx, cb);
