@@ -29,7 +29,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     requestContext: {} as APIGatewayProxyEvent['requestContext'],
-    resource: '',
+    resource: '/divisions',
     ...overrides,
   };
 }
@@ -44,39 +44,51 @@ describe('divisions router handler', () => {
   });
 
   it('GET without divisionId calls getDivisions', async () => {
-    const event = makeEvent({ httpMethod: 'GET', pathParameters: null });
-    await handler(event, ctx, noopCb);
+    const event = makeEvent({ httpMethod: 'GET', resource: '/divisions' });
+    const result = await handler(event, ctx, noopCb);
     expect(mockGetDivisions).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockCreateDivision).not.toHaveBeenCalled();
     expect(mockUpdateDivision).not.toHaveBeenCalled();
     expect(mockDeleteDivision).not.toHaveBeenCalled();
+    expect(result!.statusCode).toBe(200);
   });
 
   it('POST without divisionId calls createDivision', async () => {
-    const event = makeEvent({ httpMethod: 'POST', pathParameters: null });
-    await handler(event, ctx, noopCb);
+    const event = makeEvent({ httpMethod: 'POST', resource: '/divisions' });
+    const result = await handler(event, ctx, noopCb);
     expect(mockCreateDivision).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockGetDivisions).not.toHaveBeenCalled();
+    expect(mockUpdateDivision).not.toHaveBeenCalled();
+    expect(mockDeleteDivision).not.toHaveBeenCalled();
+    expect(result!.statusCode).toBe(201);
   });
 
   it('PUT with divisionId calls updateDivision', async () => {
     const event = makeEvent({
       httpMethod: 'PUT',
+      resource: '/divisions/{divisionId}',
       pathParameters: { divisionId: 'div-1' },
     });
-    await handler(event, ctx, noopCb);
+    const result = await handler(event, ctx, noopCb);
     expect(mockUpdateDivision).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockGetDivisions).not.toHaveBeenCalled();
+    expect(mockCreateDivision).not.toHaveBeenCalled();
+    expect(mockDeleteDivision).not.toHaveBeenCalled();
+    expect(result!.statusCode).toBe(200);
   });
 
   it('DELETE with divisionId calls deleteDivision', async () => {
     const event = makeEvent({
       httpMethod: 'DELETE',
+      resource: '/divisions/{divisionId}',
       pathParameters: { divisionId: 'div-1' },
     });
-    await handler(event, ctx, noopCb);
+    const result = await handler(event, ctx, noopCb);
     expect(mockDeleteDivision).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockGetDivisions).not.toHaveBeenCalled();
+    expect(mockCreateDivision).not.toHaveBeenCalled();
+    expect(mockUpdateDivision).not.toHaveBeenCalled();
+    expect(result!.statusCode).toBe(204);
   });
 
   it('PATCH returns 405 Method Not Allowed', async () => {
@@ -86,5 +98,7 @@ describe('divisions router handler', () => {
     expect(result!.statusCode).toBe(405);
     expect(mockGetDivisions).not.toHaveBeenCalled();
     expect(mockCreateDivision).not.toHaveBeenCalled();
+    expect(mockUpdateDivision).not.toHaveBeenCalled();
+    expect(mockDeleteDivision).not.toHaveBeenCalled();
   });
 });

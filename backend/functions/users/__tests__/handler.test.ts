@@ -27,7 +27,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     requestContext: {} as APIGatewayProxyEvent['requestContext'],
-    resource: '',
+    resource: '/admin/users',
     ...overrides,
   };
 }
@@ -41,7 +41,7 @@ describe('users router handler', () => {
   });
 
   it('GET admin/users calls listUsers', async () => {
-    const event = makeEvent({ httpMethod: 'GET', path: '/admin/users' });
+    const event = makeEvent({ httpMethod: 'GET', resource: '/admin/users' });
     await handler(event, ctx, noopCb);
     expect(mockListUsers).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockUpdateUserRole).not.toHaveBeenCalled();
@@ -49,7 +49,7 @@ describe('users router handler', () => {
   });
 
   it('POST admin/users/role calls updateUserRole', async () => {
-    const event = makeEvent({ httpMethod: 'POST', path: '/admin/users/role' });
+    const event = makeEvent({ httpMethod: 'POST', resource: '/admin/users/role' });
     await handler(event, ctx, noopCb);
     expect(mockUpdateUserRole).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockListUsers).not.toHaveBeenCalled();
@@ -57,7 +57,7 @@ describe('users router handler', () => {
   });
 
   it('POST admin/users/toggle-enabled calls toggleUserEnabled', async () => {
-    const event = makeEvent({ httpMethod: 'POST', path: '/admin/users/toggle-enabled' });
+    const event = makeEvent({ httpMethod: 'POST', resource: '/admin/users/toggle-enabled' });
     await handler(event, ctx, noopCb);
     expect(mockToggleUserEnabled).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockListUsers).not.toHaveBeenCalled();
@@ -65,7 +65,7 @@ describe('users router handler', () => {
   });
 
   it('PATCH returns 405 Method Not Allowed', async () => {
-    const event = makeEvent({ httpMethod: 'PATCH', path: '/admin/users' });
+    const event = makeEvent({ httpMethod: 'PATCH', resource: '/admin/users' });
     const result = await handler(event, ctx, noopCb);
     expect(result).toBeDefined();
     expect(result!.statusCode).toBe(405);

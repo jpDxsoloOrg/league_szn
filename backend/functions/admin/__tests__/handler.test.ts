@@ -29,7 +29,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     requestContext: {} as APIGatewayProxyEvent['requestContext'],
-    resource: '',
+    resource: '/site-config',
     ...overrides,
   };
 }
@@ -44,7 +44,7 @@ describe('admin router handler', () => {
   });
 
   it('GET path containing site-config calls getSiteConfig', async () => {
-    const event = makeEvent({ httpMethod: 'GET', path: '/site-config' });
+    const event = makeEvent({ httpMethod: 'GET', resource: '/site-config' });
     await handler(event, ctx, noopCb);
     expect(mockGetSiteConfig).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockUpdateSiteConfig).not.toHaveBeenCalled();
@@ -53,28 +53,28 @@ describe('admin router handler', () => {
   });
 
   it('PUT path containing site-config calls updateSiteConfig', async () => {
-    const event = makeEvent({ httpMethod: 'PUT', path: '/admin/site-config' });
+    const event = makeEvent({ httpMethod: 'PUT', resource: '/admin/site-config' });
     await handler(event, ctx, noopCb);
     expect(mockUpdateSiteConfig).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockGetSiteConfig).not.toHaveBeenCalled();
   });
 
   it('DELETE path containing clear-all calls clearAll', async () => {
-    const event = makeEvent({ httpMethod: 'DELETE', path: '/admin/clear-all' });
+    const event = makeEvent({ httpMethod: 'DELETE', resource: '/admin/clear-all' });
     await handler(event, ctx, noopCb);
     expect(mockClearAll).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockSeedData).not.toHaveBeenCalled();
   });
 
   it('POST path containing seed-data calls seedData', async () => {
-    const event = makeEvent({ httpMethod: 'POST', path: '/admin/seed-data' });
+    const event = makeEvent({ httpMethod: 'POST', resource: '/admin/seed-data' });
     await handler(event, ctx, noopCb);
     expect(mockSeedData).toHaveBeenCalledWith(event, ctx, noopCb);
     expect(mockClearAll).not.toHaveBeenCalled();
   });
 
   it('unknown route returns 405 Method Not Allowed', async () => {
-    const event = makeEvent({ httpMethod: 'PATCH', path: '/admin/other' });
+    const event = makeEvent({ httpMethod: 'PATCH', resource: '/admin/other' });
     const result = await handler(event, ctx, noopCb);
     expect(result).toBeDefined();
     expect(result!.statusCode).toBe(405);

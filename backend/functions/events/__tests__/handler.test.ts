@@ -52,7 +52,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     queryStringParameters: null,
     multiValueQueryStringParameters: null,
     stageVariables: null,
-    resource: '',
+    resource: '/events',
     requestContext: { authorizer: {} } as any,
     ...overrides,
   };
@@ -63,7 +63,7 @@ describe('events router', () => {
 
   it('GET /events routes to getEvents and returns 200', async () => {
     mockScan.mockResolvedValue({ Items: [{ eventId: 'e1', name: 'WrestleMania', date: '2025-04-01' }] });
-    const event = makeEvent({ httpMethod: 'GET', path: '/dev/events', pathParameters: null });
+    const event = makeEvent({ httpMethod: 'GET', resource: '/events', pathParameters: null });
     const result = await handler(event, ctx, cb);
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body)).toHaveLength(1);
@@ -73,7 +73,7 @@ describe('events router', () => {
     mockGet.mockResolvedValue({ Item: { eventId: 'e1', name: 'WrestleMania' } });
     const event = makeEvent({
       httpMethod: 'GET',
-      path: '/dev/events/e1',
+      resource: '/events/{eventId}',
       pathParameters: { eventId: 'e1' },
     });
     const result = await handler(event, ctx, cb);
@@ -85,7 +85,7 @@ describe('events router', () => {
     mockPut.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'POST',
-      path: '/dev/events',
+      resource: '/events',
       pathParameters: null,
       body: JSON.stringify({ name: 'WrestleMania', eventType: 'ppv', date: '2025-04-01' }),
     });
@@ -99,7 +99,7 @@ describe('events router', () => {
     mockUpdate.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'PUT',
-      path: '/dev/events/e1',
+      resource: '/events/{eventId}',
       pathParameters: { eventId: 'e1' },
       body: JSON.stringify({ name: 'Updated', eventType: 'ppv', date: '2025-04-01' }),
     });
@@ -112,7 +112,7 @@ describe('events router', () => {
     mockDelete.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'DELETE',
-      path: '/dev/events/e1',
+      resource: '/events/{eventId}',
       pathParameters: { eventId: 'e1' },
     });
     const result = await handler(event, ctx, cb);
@@ -122,7 +122,7 @@ describe('events router', () => {
   it('returns 405 for unsupported method/path', async () => {
     const event = makeEvent({
       httpMethod: 'PATCH',
-      path: '/dev/events',
+      resource: '/events',
       pathParameters: null,
     });
     const result = await handler(event, ctx, cb);
