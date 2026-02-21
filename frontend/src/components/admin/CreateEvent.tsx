@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { EventType } from '../../types/event';
+import type { EventType, LeagueEvent } from '../../types/event';
 import type { Season } from '../../types';
 import { eventsApi, seasonsApi } from '../../services/api';
 import './CreateEvent.css';
@@ -17,6 +17,21 @@ const presetColors = [
   '#4ade80', '#f59e0b', '#ec4899', '#6b7280',
 ];
 
+function formatEventDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
 export default function CreateEvent() {
   const { t } = useTranslation();
   const [name, setName] = useState('');
@@ -31,8 +46,34 @@ export default function CreateEvent() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [events, setEvents] = useState<LeagueEvent[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   useEffect(() => {
     seasonsApi.getAll().then(setSeasons).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const loadEvents = async () => {
+      try {
+        setLoadingEvents(true);
+        setLoadError(null);
+        setDeleteError(null);
+        const data = await eventsApi.getAll(undefined, controller.signal);
+        setEvents(data);
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setLoadError(err instanceof Error ? err.message : 'Failed to load events.');
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+    loadEvents();
+    return () => controller.abort();
   }, []);
 
   const handleSave = async () => {
@@ -40,7 +81,7 @@ export default function CreateEvent() {
     try {
       setSaving(true);
       setError(null);
-      await eventsApi.create({
+      const created = await eventsApi.create({
         name,
         eventType,
         date: new Date(date).toISOString(),
@@ -50,7 +91,7 @@ export default function CreateEvent() {
         seasonId: seasonId || undefined,
       });
       setSaved(true);
-      // Reset form
+      setEvents((prev) => [created, ...prev]);
       setName('');
       setDate('');
       setVenue('');
@@ -64,9 +105,70 @@ export default function CreateEvent() {
     }
   };
 
+  const handleDelete = async (ev: LeagueEvent) => {
+    if (!window.confirm(t('events.admin.confirmDeleteEvent', { name: ev.name }))) return;
+    try {
+      setDeleting(ev.eventId);
+      setDeleteError(null);
+      await eventsApi.delete(ev.eventId);
+      setEvents((prev) => prev.filter((e) => e.eventId !== ev.eventId));
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : t('events.admin.deleteEventError'));
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   return (
     <div className="create-event">
       <h3 className="create-event-title">{t('events.admin.createEvent')}</h3>
+
+      {/* Existing events list */}
+      <section className="create-event-existing">
+        <h4 className="create-event-existing-title">{t('events.admin.existingEvents')}</h4>
+        {loadingEvents ? (
+          <p className="create-event-loading">{t('events.admin.loadingEvents')}</p>
+        ) : (
+          <>
+            {loadError && (
+              <div className="create-event-error-msg" role="alert">
+                {loadError}
+              </div>
+            )}
+            {deleteError && (
+              <div className="create-event-error-msg" role="alert">
+                {deleteError}
+              </div>
+            )}
+            {events.length === 0 ? (
+              <p className="create-event-no-events">{t('events.admin.noEvents')}</p>
+            ) : (
+              <ul className="create-event-list">
+                {events.map((ev) => (
+                  <li key={ev.eventId} className="create-event-list-item">
+                    <div className="create-event-list-item-info">
+                      <span className="create-event-list-item-name">{ev.name}</span>
+                      <span className="create-event-list-item-meta">
+                        {t(`events.types.${ev.eventType}`)} · {formatEventDate(ev.date)}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="create-event-delete-btn"
+                      onClick={() => handleDelete(ev)}
+                      disabled={deleting === ev.eventId}
+                      title={t('events.admin.deleteEvent')}
+                      aria-label={t('events.admin.deleteEvent')}
+                    >
+                      {deleting === ev.eventId ? t('common.saving') : t('common.delete')}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </section>
 
       <div className="create-event-form">
         {/* Name */}

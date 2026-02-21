@@ -3,14 +3,18 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockCreateEvent, mockGetAllSeasons } = vi.hoisted(() => ({
+const { mockCreateEvent, mockGetAllEvents, mockDeleteEvent, mockGetAllSeasons } = vi.hoisted(() => ({
   mockCreateEvent: vi.fn(),
+  mockGetAllEvents: vi.fn(),
+  mockDeleteEvent: vi.fn(),
   mockGetAllSeasons: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
   eventsApi: {
     create: mockCreateEvent,
+    getAll: mockGetAllEvents,
+    delete: mockDeleteEvent,
   },
   seasonsApi: {
     getAll: mockGetAllSeasons,
@@ -38,8 +42,16 @@ vi.mock('react-i18next', () => ({
         'events.admin.season': 'Season',
         'events.admin.noSeason': '-- No Season --',
         'events.admin.saveEvent': 'Save Event',
-        'events.admin.saveSuccess': 'Event created successfully!',
+        'events.admin.saveSuccess': 'Event saved successfully!',
+        'events.admin.existingEvents': 'Existing Events',
+        'events.admin.loadingEvents': 'Loading events...',
+        'events.admin.noEvents': 'No events yet. Create one below.',
+        'events.admin.deleteEvent': 'Delete',
+        'events.admin.deleteEventError': 'Failed to delete event',
+        'events.admin.loadEventsError': 'Failed to load events',
+        'events.admin.confirmDeleteEvent': 'Are you sure you want to delete "{{name}}"?',
         'common.saving': 'Saving...',
+        'common.delete': 'Delete',
       };
       return translations[key] || fallback || key;
     },
@@ -70,6 +82,29 @@ const mockSeasons = [
   },
 ];
 
+const mockEvents = [
+  {
+    eventId: 'e1',
+    name: 'Monday Nitro',
+    eventType: 'weekly' as const,
+    date: '2026-01-15T20:00:00.000Z',
+    status: 'upcoming' as const,
+    matchCards: [],
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    eventId: 'e2',
+    name: 'WrestleMania',
+    eventType: 'ppv' as const,
+    date: '2026-04-05T22:00:00.000Z',
+    status: 'upcoming' as const,
+    matchCards: [],
+    createdAt: '2026-01-02T00:00:00.000Z',
+    updatedAt: '2026-01-02T00:00:00.000Z',
+  },
+];
+
 function renderCreateEvent() {
   return render(
     <BrowserRouter>
@@ -82,6 +117,9 @@ describe('CreateEvent', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetAllSeasons.mockResolvedValue(mockSeasons);
+    mockGetAllEvents.mockResolvedValue([]);
+    mockDeleteEvent.mockResolvedValue(undefined);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   it('renders form with all required fields', async () => {
@@ -207,10 +245,65 @@ describe('CreateEvent', () => {
 
     // Success message
     await waitFor(() => {
-      expect(screen.getByText('Event created successfully!')).toBeInTheDocument();
+      expect(screen.getByText('Event saved successfully!')).toBeInTheDocument();
     });
 
     // Form should be reset after save
     expect((nameInput as HTMLInputElement).value).toBe('');
+  });
+
+  it('renders existing events list from fetched events', async () => {
+    mockGetAllEvents.mockResolvedValue(mockEvents);
+    renderCreateEvent();
+
+    await waitFor(() => {
+      expect(screen.getByText('Monday Nitro')).toBeInTheDocument();
+      expect(screen.getByText('WrestleMania')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('No events yet. Create one below.')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(2);
+  });
+
+  it('deletes selected event and removes it from UI on success', async () => {
+    mockGetAllEvents.mockResolvedValue(mockEvents);
+    renderCreateEvent();
+
+    await waitFor(() => {
+      expect(screen.getByText('Monday Nitro')).toBeInTheDocument();
+      expect(screen.getByText('WrestleMania')).toBeInTheDocument();
+    });
+
+    const [firstDeleteButton] = screen.getAllByRole('button', { name: 'Delete' });
+    fireEvent.click(firstDeleteButton);
+
+    await waitFor(() => {
+      expect(mockDeleteEvent).toHaveBeenCalledWith('e1');
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Monday Nitro')).not.toBeInTheDocument();
+    });
+    expect(screen.getByText('WrestleMania')).toBeInTheDocument();
+  });
+
+  it('shows error feedback when deleting an event fails', async () => {
+    mockGetAllEvents.mockResolvedValue(mockEvents);
+    mockDeleteEvent.mockRejectedValue(new Error('Could not delete event'));
+    renderCreateEvent();
+
+    await waitFor(() => {
+      expect(screen.getByText('Monday Nitro')).toBeInTheDocument();
+    });
+
+    const [firstDeleteButton] = screen.getAllByRole('button', { name: 'Delete' });
+    fireEvent.click(firstDeleteButton);
+
+    await waitFor(() => {
+      expect(mockDeleteEvent).toHaveBeenCalledWith('e1');
+    });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not delete event');
+    expect(screen.getByText('Monday Nitro')).toBeInTheDocument();
   });
 });
