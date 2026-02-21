@@ -83,13 +83,15 @@ export const handler: APIGatewayTokenAuthorizerHandler = async (event) => {
     // Extract cognito:groups from the access token
     const groups = (payload['cognito:groups'] as string[] | undefined) || [];
     const groupsStr = groups.join(',');
+    const username = typeof payload.username === 'string' ? payload.username : payload.sub;
+    const email = typeof payload.email === 'string' ? payload.email : '';
 
     // Generate an Allow policy for all resources
     const resource = event.methodArn.split('/').slice(0, 2).join('/') + '/*';
 
     return generatePolicy(payload.sub, 'Allow', resource, {
-      username: payload.username || payload.sub,
-      email: (payload['email'] as string) || '',
+      username,
+      email,
       groups: groupsStr,
     });
   } catch (error) {
