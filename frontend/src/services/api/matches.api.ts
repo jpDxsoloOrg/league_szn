@@ -1,10 +1,14 @@
-import type { Match, ScheduleMatchInput } from '../../types';
+import type { Match, MatchFilters, ScheduleMatchInput } from '../../types';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
 export const matchesApi = {
-  getAll: async (filters?: { status?: string }, signal?: AbortSignal): Promise<Match[]> => {
+  getAll: async (filters?: MatchFilters, signal?: AbortSignal): Promise<Match[]> => {
     const params = new URLSearchParams();
-    if (filters?.status) params.set('status', filters.status);
+    if (filters) {
+      for (const [key, value] of Object.entries(filters)) {
+        if (value) params.set(key, value);
+      }
+    }
     const query = params.toString();
     return fetchWithAuth(`${API_BASE_URL}/matches${query ? `?${query}` : ''}`, {}, signal);
   },

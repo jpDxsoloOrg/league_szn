@@ -166,13 +166,14 @@ describe('App', () => {
     });
   });
 
-  it('redirects /matches to /events', async () => {
+  it('renders /matches as MatchSearch page', async () => {
     mockUseAuth.mockReturnValue(authenticatedAuth());
     testEntries = ['/matches'];
     render(<App />);
 
+    // /matches should render the MatchSearch component, not redirect
     await waitFor(() => {
-      expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/events');
+      expect(screen.queryByTestId('navigate')).not.toBeInTheDocument();
     });
   });
 

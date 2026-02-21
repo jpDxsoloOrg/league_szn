@@ -108,6 +108,7 @@
     "wiki": "Wiki",
     "admin": "Admin",
     "contenders": "Herausforderer",
+    "matchSearch": "Kampf-Suche",
     "profile": "Mein Profil",
     "groups": {
       "core": "Liga",
@@ -315,6 +316,25 @@
     "matchOfTheNightBadge": "Match of the Night",
     "clearRating": "Bewertung löschen"
   },
+  "matchSearch": {
+    "title": "Kampf-Suche",
+    "filtersLabel": "Kampffilter",
+    "filters": {
+      "player": "Spieler",
+      "matchType": "Kampftyp",
+      "stipulation": "Stipulation",
+      "status": "Status",
+      "championship": "Meisterschaft",
+      "season": "Saison",
+      "dateFrom": "Von",
+      "dateTo": "Bis",
+      "clearAll": "Filter zurücksetzen"
+    },
+    "resultsCount": "{{count}} Kampf/Kämpfe gefunden",
+    "noResults": "Keine Kämpfe gefunden",
+    "noResultsFiltered": "Keine Kämpfe entsprechen den aktuellen Filtern. Versuchen Sie, die Filter anzupassen oder zurückzusetzen.",
+    "noMatches": "Es wurden noch keine Kämpfe aufgezeichnet."
+  },
   "recordResult": {
     "title": "Kampfergebnisse eintragen",
     "scheduledMatches": "Geplante Kämpfe",
@@ -519,7 +539,8 @@
       "records": "Rekordbuch",
       "rivalries": "Rivalitäten",
       "taleOfTape": "Tale of the Tape",
-      "achievements": "Erfolge"
+      "achievements": "Erfolge",
+      "matchTypeLeaderboards": "Nach Kampftyp"
     },
     "labels": {
       "wins": "Siege",
@@ -592,6 +613,10 @@
         "championships": "Meisterschaften",
         "longestReign": "Längste Regentschaft"
       }
+    },
+    "matchTypeLeaderboards": {
+      "title": "Ranglisten nach Kampftyp",
+      "noData": "Noch keine Kampfdaten für diesen Typ verfügbar."
     },
     "recordBook": {
       "title": "Rekordbuch",

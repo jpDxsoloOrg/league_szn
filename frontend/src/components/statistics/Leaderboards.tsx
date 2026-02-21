@@ -105,6 +105,7 @@ function Leaderboards() {
         <div className="lb-nav-links">
           <Link to="/stats">{t('statistics.nav.playerStats')}</Link>
           <Link to="/stats/head-to-head">{t('statistics.nav.headToHead')}</Link>
+          <Link to="/stats/match-types">{t('statistics.nav.matchTypeLeaderboards')}</Link>
           <Link to="/stats/records">{t('statistics.nav.records')}</Link>
         </div>
       </div>

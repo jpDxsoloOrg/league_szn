@@ -108,6 +108,7 @@
     "wiki": "Wiki",
     "admin": "Admin",
     "contenders": "Contenders",
+    "matchSearch": "Match Search",
     "profile": "My Profile",
     "groups": {
       "core": "League",
@@ -315,6 +316,25 @@
     "matchOfTheNightBadge": "Match of the Night",
     "clearRating": "Clear rating"
   },
+  "matchSearch": {
+    "title": "Match Search",
+    "filtersLabel": "Match filters",
+    "filters": {
+      "player": "Player",
+      "matchType": "Match Type",
+      "stipulation": "Stipulation",
+      "status": "Status",
+      "championship": "Championship",
+      "season": "Season",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "clearAll": "Clear Filters"
+    },
+    "resultsCount": "{{count}} match(es) found",
+    "noResults": "No Matches Found",
+    "noResultsFiltered": "No matches match your current filters. Try adjusting or clearing the filters.",
+    "noMatches": "No matches have been recorded yet."
+  },
   "recordResult": {
     "title": "Record Match Results",
     "scheduledMatches": "Scheduled Matches",
@@ -520,7 +540,8 @@
       "rivalries": "Rivalries",
       "taleOfTape": "Tale of the Tape",
       "achievements": "Achievements",
-      "bestMatches": "Best Matches"
+      "bestMatches": "Best Matches",
+      "matchTypeLeaderboards": "By Match Type"
     },
     "labels": {
       "wins": "Wins",
@@ -593,6 +614,10 @@
         "championships": "Championships",
         "longestReign": "Longest Reign"
       }
+    },
+    "matchTypeLeaderboards": {
+      "title": "Match Type Leaderboards",
+      "noData": "No match data available for this type yet."
     },
     "recordBook": {
       "title": "Record Book",

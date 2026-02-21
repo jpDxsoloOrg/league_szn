@@ -87,6 +87,7 @@ function PlayerStats() {
           <Link to="/stats/records">{t('statistics.nav.records')}</Link>
           <Link to="/stats/best-matches">{t('statistics.nav.bestMatches')}</Link>
           <Link to="/stats/achievements">{t('statistics.nav.achievements')}</Link>
+          <Link to="/stats/match-types">{t('statistics.nav.matchTypeLeaderboards')}</Link>
         </div>
       </div>
 
