@@ -39,8 +39,9 @@ export default function ManageSeasonAwards() {
       ]);
       setSeasons(seasonsData);
       setPlayers(playersData);
-      if (seasonsData.length > 0) {
-        setSelectedSeasonId(seasonsData[0].seasonId);
+      const firstSeason = seasonsData[0];
+      if (firstSeason) {
+        setSelectedSeasonId(firstSeason.seasonId);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -191,7 +192,7 @@ export default function ManageSeasonAwards() {
                         <tr key={award.awardId}>
                           <td>{award.name}</td>
                           <td>{award.playerName}</td>
-                          <td>{(award as Record<string, unknown>).value as string}</td>
+                          <td>{award.value || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
