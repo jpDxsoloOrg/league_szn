@@ -56,6 +56,7 @@ export default function CreateEvent() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const deletableEvents = events.filter(canDeleteEvent);
 
   useEffect(() => {
     seasonsApi.getAll().then(setSeasons).catch(() => {});
@@ -146,11 +147,11 @@ export default function CreateEvent() {
                 {deleteError}
               </div>
             )}
-            {events.length === 0 ? (
+            {deletableEvents.length === 0 ? (
               <p className="create-event-no-events">{t('events.admin.noEvents')}</p>
             ) : (
               <ul className="create-event-list">
-                {events.map((ev) => (
+                {deletableEvents.map((ev) => (
                   <li key={ev.eventId} className="create-event-list-item">
                     <div className="create-event-list-item-info">
                       <span className="create-event-list-item-name">{ev.name}</span>
@@ -158,26 +159,16 @@ export default function CreateEvent() {
                         {t(`events.types.${ev.eventType}`)} · {formatEventDate(ev.date)}
                       </span>
                     </div>
-                    {canDeleteEvent(ev) ? (
-                      <button
-                        type="button"
-                        className="create-event-delete-btn"
-                        onClick={() => handleDelete(ev)}
-                        disabled={deleting === ev.eventId}
-                        title={t('events.admin.deleteEvent')}
-                        aria-label={t('events.admin.deleteEvent')}
-                      >
-                        {deleting === ev.eventId ? t('common.saving') : t('common.delete')}
-                      </button>
-                    ) : (
-                      <span
-                        className="create-event-delete-btn"
-                        aria-label={t('events.admin.hasMatches', 'Has matches')}
-                        title={t('events.admin.hasMatches', 'Has matches')}
-                      >
-                        {t('events.admin.hasMatches', 'Has matches')}
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      className="create-event-delete-btn"
+                      onClick={() => handleDelete(ev)}
+                      disabled={deleting === ev.eventId}
+                      title={t('events.admin.deleteEvent')}
+                      aria-label={t('events.admin.deleteEvent')}
+                    >
+                      {deleting === ev.eventId ? t('common.saving') : t('common.delete')}
+                    </button>
                   </li>
                 ))}
               </ul>
