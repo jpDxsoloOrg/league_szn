@@ -15,6 +15,7 @@ import Standings from './components/Standings';
 import ActivityFeed from './components/ActivityFeed';
 import Championships from './components/Championships';
 import Tournaments from './components/Tournaments';
+import MatchSearch from './components/MatchSearch';
 import { WikiLayout } from './components/Wiki';
 import WikiIndex from './components/WikiIndex';
 import WikiArticle from './components/WikiArticle';
@@ -101,7 +102,7 @@ function AppLayout() {
             <Route path="/standings" element={<Standings />} />
             <Route path="/activity" element={<ActivityFeed />} />
             <Route path="/championships" element={<Championships />} />
-            <Route path="/matches" element={<Navigate to="/events" replace />} />
+            <Route path="/matches" element={<MatchSearch />} />
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/guide" element={<Navigate to="/guide/wiki" replace />} />
             <Route path="/guide/wiki" element={<WikiLayout />}>

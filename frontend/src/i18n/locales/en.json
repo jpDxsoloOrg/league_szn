@@ -108,6 +108,7 @@
     "wiki": "Wiki",
     "admin": "Admin",
     "contenders": "Contenders",
+    "matchSearch": "Match Search",
     "profile": "My Profile",
     "groups": {
       "core": "League",
@@ -314,6 +315,25 @@
     "matchOfTheNight": "Match of the Night",
     "matchOfTheNightBadge": "Match of the Night",
     "clearRating": "Clear rating"
+  },
+  "matchSearch": {
+    "title": "Match Search",
+    "filtersLabel": "Match filters",
+    "filters": {
+      "player": "Player",
+      "matchType": "Match Type",
+      "stipulation": "Stipulation",
+      "status": "Status",
+      "championship": "Championship",
+      "season": "Season",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "clearAll": "Clear Filters"
+    },
+    "resultsCount": "{{count}} match(es) found",
+    "noResults": "No Matches Found",
+    "noResultsFiltered": "No matches match your current filters. Try adjusting or clearing the filters.",
+    "noMatches": "No matches have been recorded yet."
   },
   "recordResult": {
     "title": "Record Match Results",
