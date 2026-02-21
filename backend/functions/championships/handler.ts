@@ -1,50 +1,46 @@
-import {
-  APIGatewayProxyEvent,
-  APIGatewayProxyHandler,
-  APIGatewayProxyResult,
-  Context,
-} from 'aws-lambda';
-import { methodNotAllowed } from '../../lib/response';
 import { handler as getChampionshipsHandler } from './getChampionships';
 import { handler as createChampionshipHandler } from './createChampionship';
 import { handler as getChampionshipHistoryHandler } from './getChampionshipHistory';
 import { handler as updateChampionshipHandler } from './updateChampionship';
 import { handler as deleteChampionshipHandler } from './deleteChampionship';
 import { handler as vacateChampionshipHandler } from './vacateChampionship';
-
-const noopCallback = () => {};
+import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
- * Single Lambda for championships: routes by HTTP method and path.
+ * Single Lambda for championships: routes by HTTP method and resource.
  * Replaces getChampionships, createChampionship, getChampionshipHistory, updateChampionship, deleteChampionship, vacateChampionship.
  */
-export const handler: APIGatewayProxyHandler = async (
-  event: APIGatewayProxyEvent,
-  context: Context,
-  callback: Parameters<APIGatewayProxyHandler>[2]
-): Promise<APIGatewayProxyResult> => {
-  const method = event.httpMethod?.toUpperCase() ?? 'GET';
-  const path = event.path ?? '';
-  const pathParams = event.pathParameters ?? {};
+const routes: ReadonlyArray<RouteConfig> = [
+  {
+    resource: '/championships',
+    method: 'GET',
+    handler: getChampionshipsHandler,
+  },
+  {
+    resource: '/championships',
+    method: 'POST',
+    handler: createChampionshipHandler,
+  },
+  {
+    resource: '/championships/{championshipId}/history',
+    method: 'GET',
+    handler: getChampionshipHistoryHandler,
+  },
+  {
+    resource: '/championships/{championshipId}',
+    method: 'PUT',
+    handler: updateChampionshipHandler,
+  },
+  {
+    resource: '/championships/{championshipId}',
+    method: 'DELETE',
+    handler: deleteChampionshipHandler,
+  },
+  {
+    resource: '/championships/{championshipId}/vacate',
+    method: 'POST',
+    handler: vacateChampionshipHandler,
+  },
+];
 
-  if (path.includes('/vacate') && method === 'POST' && pathParams.championshipId) {
-    return (await vacateChampionshipHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
-  }
-  if (path.includes('/history') && method === 'GET' && pathParams.championshipId) {
-    return (await getChampionshipHistoryHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
-  }
-  if (method === 'GET' && !pathParams.championshipId) {
-    return (await getChampionshipsHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
-  }
-  if (method === 'POST' && !pathParams.championshipId) {
-    return (await createChampionshipHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
-  }
-  if (method === 'PUT' && pathParams.championshipId) {
-    return (await updateChampionshipHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
-  }
-  if (method === 'DELETE' && pathParams.championshipId) {
-    return (await deleteChampionshipHandler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
-  }
-
-  return methodNotAllowed();
-};
+export const handler = createRouter(routes);

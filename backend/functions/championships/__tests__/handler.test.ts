@@ -58,7 +58,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     queryStringParameters: null,
     multiValueQueryStringParameters: null,
     stageVariables: null,
-    resource: '',
+    resource: '/championships',
     requestContext: { authorizer: {} } as any,
     ...overrides,
   };
@@ -69,7 +69,7 @@ describe('championships router', () => {
 
   it('GET /championships routes to getChampionships and returns 200', async () => {
     mockScan.mockResolvedValue({ Items: [{ championshipId: 'c1', name: 'World' }] });
-    const event = makeEvent({ httpMethod: 'GET', path: '/dev/championships', pathParameters: null });
+    const event = makeEvent({ httpMethod: 'GET', resource: '/championships', pathParameters: null });
     const result = await handler(event, ctx, cb);
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body)).toHaveLength(1);
@@ -79,7 +79,7 @@ describe('championships router', () => {
     mockPut.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'POST',
-      path: '/dev/championships',
+      resource: '/championships',
       pathParameters: null,
       body: JSON.stringify({ name: 'World', type: 'singles', divisionId: 'div-1' }),
     });
@@ -92,7 +92,7 @@ describe('championships router', () => {
     mockQuery.mockResolvedValue({ Items: [{ championshipId: 'c1', wonDate: '2025-01-01' }] });
     const event = makeEvent({
       httpMethod: 'GET',
-      path: '/dev/championships/c1/history',
+      resource: '/championships/{championshipId}/history',
       pathParameters: { championshipId: 'c1' },
     });
     const result = await handler(event, ctx, cb);
@@ -108,7 +108,7 @@ describe('championships router', () => {
     mockTransactWrite.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'POST',
-      path: '/dev/championships/c1/vacate',
+      resource: '/championships/{championshipId}/vacate',
       pathParameters: { championshipId: 'c1' },
       body: JSON.stringify({ reason: 'Injury' }),
     });
@@ -121,7 +121,7 @@ describe('championships router', () => {
     mockUpdate.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'PUT',
-      path: '/dev/championships/c1',
+      resource: '/championships/{championshipId}',
       pathParameters: { championshipId: 'c1' },
       body: JSON.stringify({ name: 'World Heavyweight' }),
     });
@@ -135,7 +135,7 @@ describe('championships router', () => {
     mockDelete.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'DELETE',
-      path: '/dev/championships/c1',
+      resource: '/championships/{championshipId}',
       pathParameters: { championshipId: 'c1' },
     });
     const result = await handler(event, ctx, cb);
@@ -145,7 +145,7 @@ describe('championships router', () => {
   it('returns 405 for unsupported method/path', async () => {
     const event = makeEvent({
       httpMethod: 'PATCH',
-      path: '/dev/championships',
+      resource: '/championships',
       pathParameters: null,
     });
     const result = await handler(event, ctx, cb);
