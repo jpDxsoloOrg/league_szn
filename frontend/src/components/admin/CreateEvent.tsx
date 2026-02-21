@@ -32,6 +32,10 @@ function formatEventDate(dateStr: string): string {
   }
 }
 
+function canDeleteEvent(event: LeagueEvent): boolean {
+  return !event.matchCards || event.matchCards.length === 0;
+}
+
 export default function CreateEvent() {
   const { t } = useTranslation();
   const loadEventsErrorFallbackRef = useRef(t('events.admin.loadEventsError'));
@@ -154,16 +158,26 @@ export default function CreateEvent() {
                         {t(`events.types.${ev.eventType}`)} · {formatEventDate(ev.date)}
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      className="create-event-delete-btn"
-                      onClick={() => handleDelete(ev)}
-                      disabled={deleting === ev.eventId}
-                      title={t('events.admin.deleteEvent')}
-                      aria-label={t('events.admin.deleteEvent')}
-                    >
-                      {deleting === ev.eventId ? t('common.saving') : t('common.delete')}
-                    </button>
+                    {canDeleteEvent(ev) ? (
+                      <button
+                        type="button"
+                        className="create-event-delete-btn"
+                        onClick={() => handleDelete(ev)}
+                        disabled={deleting === ev.eventId}
+                        title={t('events.admin.deleteEvent')}
+                        aria-label={t('events.admin.deleteEvent')}
+                      >
+                        {deleting === ev.eventId ? t('common.saving') : t('common.delete')}
+                      </button>
+                    ) : (
+                      <span
+                        className="create-event-delete-btn"
+                        aria-label={t('events.admin.hasMatches', 'Has matches')}
+                        title={t('events.admin.hasMatches', 'Has matches')}
+                      >
+                        {t('events.admin.hasMatches', 'Has matches')}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -3,14 +3,15 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockGet, mockDelete } = vi.hoisted(() => ({
+const { mockGet, mockDelete, mockQuery } = vi.hoisted(() => ({
   mockGet: vi.fn(),
   mockDelete: vi.fn(),
+  mockQuery: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
   dynamoDb: {
-    get: mockGet, put: vi.fn(), scan: vi.fn(), query: vi.fn(),
+    get: mockGet, put: vi.fn(), scan: vi.fn(), query: mockQuery,
     update: vi.fn(), delete: mockDelete, scanAll: vi.fn(), queryAll: vi.fn(),
   },
   TableNames: { EVENTS: 'Events', MATCHES: 'Matches' },
@@ -93,18 +94,18 @@ describe('deleteEvent', () => {
   });
 
   it('deletes event when associated matches are not completed', async () => {
-    mockGet
-      .mockResolvedValueOnce({
-        Item: {
-          eventId: 'e1',
-          matchCards: [
-            { position: 1, matchId: 'm1', designation: 'Main Event' },
-            { position: 2, matchId: 'm2', designation: 'Opener' },
-          ],
-        },
-      })
-      .mockResolvedValueOnce({ Item: { matchId: 'm1', status: 'scheduled' } })
-      .mockResolvedValueOnce({ Item: { matchId: 'm2', status: 'in-progress' } });
+    mockGet.mockResolvedValueOnce({
+      Item: {
+        eventId: 'e1',
+        matchCards: [
+          { position: 1, matchId: 'm1', designation: 'Main Event' },
+          { position: 2, matchId: 'm2', designation: 'Opener' },
+        ],
+      },
+    });
+    mockQuery
+      .mockResolvedValueOnce({ Items: [{ matchId: 'm1', status: 'scheduled' }] })
+      .mockResolvedValueOnce({ Items: [{ matchId: 'm2', status: 'in-progress' }] });
     mockDelete.mockResolvedValue({});
     const event = makeEvent({ pathParameters: { eventId: 'e1' } });
 
@@ -112,17 +113,23 @@ describe('deleteEvent', () => {
 
     expect(result!.statusCode).toBe(204);
     expect(mockDelete).toHaveBeenCalledOnce();
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        TableName: 'Matches',
+        KeyConditionExpression: 'matchId = :matchId',
+        Limit: 1,
+      })
+    );
   });
 
   it('returns 409 when event has a completed match', async () => {
-    mockGet
-      .mockResolvedValueOnce({
-        Item: {
-          eventId: 'e1',
-          matchCards: [{ position: 1, matchId: 'm1', designation: 'Main Event' }],
-        },
-      })
-      .mockResolvedValueOnce({ Item: { matchId: 'm1', status: 'completed' } });
+    mockGet.mockResolvedValueOnce({
+      Item: {
+        eventId: 'e1',
+        matchCards: [{ position: 1, matchId: 'm1', designation: 'Main Event' }],
+      },
+    });
+    mockQuery.mockResolvedValueOnce({ Items: [{ matchId: 'm1', status: 'completed' }] });
     const event = makeEvent({ pathParameters: { eventId: 'e1' } });
 
     const result = await deleteEvent(event, ctx, cb);
@@ -133,20 +140,20 @@ describe('deleteEvent', () => {
   });
 
   it('returns 409 with correct count for multiple completed matches', async () => {
-    mockGet
-      .mockResolvedValueOnce({
-        Item: {
-          eventId: 'e1',
-          matchCards: [
-            { position: 1, matchId: 'm1', designation: 'Main' },
-            { position: 2, matchId: 'm2', designation: 'Co-Main' },
-            { position: 3, matchId: 'm3', designation: 'Opener' },
-          ],
-        },
-      })
-      .mockResolvedValueOnce({ Item: { matchId: 'm1', status: 'completed' } })
-      .mockResolvedValueOnce({ Item: { matchId: 'm2', status: 'completed' } })
-      .mockResolvedValueOnce({ Item: { matchId: 'm3', status: 'scheduled' } });
+    mockGet.mockResolvedValueOnce({
+      Item: {
+        eventId: 'e1',
+        matchCards: [
+          { position: 1, matchId: 'm1', designation: 'Main' },
+          { position: 2, matchId: 'm2', designation: 'Co-Main' },
+          { position: 3, matchId: 'm3', designation: 'Opener' },
+        ],
+      },
+    });
+    mockQuery
+      .mockResolvedValueOnce({ Items: [{ matchId: 'm1', status: 'completed' }] })
+      .mockResolvedValueOnce({ Items: [{ matchId: 'm2', status: 'completed' }] })
+      .mockResolvedValueOnce({ Items: [{ matchId: 'm3', status: 'scheduled' }] });
     const event = makeEvent({ pathParameters: { eventId: 'e1' } });
 
     const result = await deleteEvent(event, ctx, cb);
@@ -156,14 +163,13 @@ describe('deleteEvent', () => {
   });
 
   it('allows deletion when match lookup returns no Item', async () => {
-    mockGet
-      .mockResolvedValueOnce({
-        Item: {
-          eventId: 'e1',
-          matchCards: [{ position: 1, matchId: 'm-deleted', designation: 'Match' }],
-        },
-      })
-      .mockResolvedValueOnce({ Item: undefined });
+    mockGet.mockResolvedValueOnce({
+      Item: {
+        eventId: 'e1',
+        matchCards: [{ position: 1, matchId: 'm-deleted', designation: 'Match' }],
+      },
+    });
+    mockQuery.mockResolvedValueOnce({ Items: [] });
     mockDelete.mockResolvedValue({});
     const event = makeEvent({ pathParameters: { eventId: 'e1' } });
 

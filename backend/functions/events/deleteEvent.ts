@@ -31,11 +31,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (matchIds.length > 0) {
         const matchChecks = await Promise.all(
           matchIds.map(async (matchId: string) => {
-            const matchResult = await dynamoDb.get({
+            // Matches table uses a composite PK (matchId + date), so query by hash key.
+            const matchResult = await dynamoDb.query({
               TableName: TableNames.MATCHES,
-              Key: { matchId },
+              KeyConditionExpression: 'matchId = :matchId',
+              ExpressionAttributeValues: { ':matchId': matchId },
+              Limit: 1,
             });
-            return matchResult.Item as Record<string, any> | undefined;
+            return matchResult.Items?.[0] as Record<string, any> | undefined;
           })
         );
 

@@ -55,6 +55,7 @@ const translations: Record<string, string> = {
   'events.admin.deleteEventError': 'Failed to delete event',
   'events.admin.loadEventsError': 'Localized load events error',
   'events.admin.confirmDeleteEvent': 'Are you sure you want to delete "{{name}}"?',
+  'events.admin.hasMatches': 'Has matches',
   'common.saving': 'Saving...',
   'common.delete': 'Delete',
 };
@@ -267,7 +268,8 @@ describe('CreateEvent', () => {
 
     expect(screen.getByText('WrestleMania')).toBeInTheDocument();
     expect(screen.queryByText('No events yet. Create one below.')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(1);
+    expect(screen.getByText('Has matches')).toBeInTheDocument();
   });
 
   it('deletes selected event and removes it from UI on success', async () => {
@@ -290,7 +292,8 @@ describe('CreateEvent', () => {
     });
     expect(screen.getByText('WrestleMania')).toBeInTheDocument();
     expect(screen.queryByText('No events yet. Create one below.')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+    expect(screen.getByText('Has matches')).toBeInTheDocument();
   });
 
   it('shows error feedback when deleting an event fails', async () => {
