@@ -1,7 +1,14 @@
 import { APIGatewayProxyEvent, APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, serverError } from '../../lib/response';
+import { badRequest, success, serverError } from '../../lib/response';
+import { requireSuperAdmin } from '../../lib/auth';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  EXPORT_SCHEMA_VERSION,
+  EXPORT_TABLES,
+  type ExportData,
+  type SeedImportPayload,
+} from './dataTransferConfig';
 
 /** Valid seed module IDs for pick-and-choose (issue 118). When modular seed exists, only these will be run when requested. */
 export const SEED_MODULE_IDS = [
@@ -30,15 +37,208 @@ export const SEED_MODULE_ORDER: readonly string[] = [
   'config',
 ];
 
-function parseModulesFromBody(body: string | null): string[] | null {
-  if (body == null || body === '') return null;
-  try {
-    const parsed = JSON.parse(body) as { modules?: unknown };
-    if (!Array.isArray(parsed.modules)) return null;
-    return parsed.modules.filter((m): m is string => typeof m === 'string');
-  } catch {
+interface ParsedSeedRequest {
+  mode: 'default' | 'import';
+  modules: string[] | null;
+  payload?: SeedImportPayload;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function parseModules(value: unknown): string[] | null {
+  if (!Array.isArray(value)) {
     return null;
   }
+  const modules = value.filter((moduleId): moduleId is string => typeof moduleId === 'string');
+  return modules.length > 0 ? modules : null;
+}
+
+function parseSeedRequest(body: string | null): { value?: ParsedSeedRequest; error?: string } {
+  if (body == null || body === '') {
+    return { value: { mode: 'default', modules: null } };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    return { error: 'Request body must be valid JSON' };
+  }
+
+  if (!isRecord(parsed)) {
+    return { error: 'Request body must be a JSON object' };
+  }
+
+  const modeValue = parsed.mode;
+  if (modeValue !== undefined && modeValue !== 'default' && modeValue !== 'import') {
+    return { error: 'mode must be either "default" or "import"' };
+  }
+  const mode = modeValue === 'import' ? 'import' : 'default';
+
+  if (mode === 'import') {
+    if (parsed.modules !== undefined) {
+      return { error: 'modules is not used in import mode; remove modules and provide payload only' };
+    }
+    const payloadCandidate = isRecord(parsed.payload) ? parsed.payload : parsed;
+    const payloadValidation = validateImportPayload(payloadCandidate);
+    if (payloadValidation.error) {
+      return { error: payloadValidation.error };
+    }
+    return {
+      value: {
+        mode: 'import',
+        modules: null,
+        payload: payloadValidation.value,
+      },
+    };
+  }
+
+  if (parsed.payload !== undefined) {
+    return { error: 'payload is only supported when mode is "import"' };
+  }
+
+  return {
+    value: {
+      mode: 'default',
+      modules: parseModules(parsed.modules),
+    },
+  };
+}
+
+function validateImportRecordKeys(payload: SeedImportPayload): string | null {
+  for (const table of EXPORT_TABLES) {
+    const records = payload.data[table.key];
+    for (let index = 0; index < records.length; index++) {
+      const record = records[index];
+      const pkValue = record[table.partitionKey];
+      if (pkValue === undefined || pkValue === null || pkValue === '') {
+        return `Dataset "${table.key}" record at index ${String(index)} is missing required key "${table.partitionKey}"`;
+      }
+
+      if (table.sortKey) {
+        const skValue = record[table.sortKey];
+        if (skValue === undefined || skValue === null || skValue === '') {
+          return `Dataset "${table.key}" record at index ${String(index)} is missing required key "${table.sortKey}"`;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function validateImportPayload(payload: unknown): { value?: SeedImportPayload; error?: string } {
+  if (!isRecord(payload)) {
+    return { error: 'Import payload must be an object' };
+  }
+
+  const version = payload.version;
+  if (typeof version !== 'number') {
+    return { error: 'Import payload must include numeric version' };
+  }
+
+  if (version !== EXPORT_SCHEMA_VERSION) {
+    return {
+      error: `Unsupported import payload version ${String(version)}. Expected ${String(EXPORT_SCHEMA_VERSION)}`,
+    };
+  }
+
+  const exportedAt = payload.exportedAt;
+  if (typeof exportedAt !== 'string') {
+    return { error: 'Import payload must include exportedAt string' };
+  }
+
+  const stage = payload.stage;
+  if (typeof stage !== 'string') {
+    return { error: 'Import payload must include stage string' };
+  }
+
+  const data = payload.data;
+  if (!isRecord(data)) {
+    return { error: 'Import payload must include data object' };
+  }
+
+  const normalizedData: Partial<ExportData> = {};
+  for (const table of EXPORT_TABLES) {
+    const dataset = data[table.key];
+    if (!Array.isArray(dataset)) {
+      return { error: `Import payload is missing array dataset "${table.key}"` };
+    }
+    if (!dataset.every(isRecord)) {
+      return { error: `Dataset "${table.key}" must contain only objects` };
+    }
+    normalizedData[table.key] = dataset as Record<string, unknown>[];
+  }
+
+  return {
+    value: {
+      version,
+      exportedAt,
+      stage,
+      data: normalizedData as ExportData,
+    },
+  };
+}
+
+async function deleteAllFromTable(
+  tableName: string,
+  partitionKey: string,
+  sortKey?: string
+): Promise<void> {
+  const expressionAttributeNames: Record<string, string> = {
+    '#pk': partitionKey,
+  };
+  let projectionExpression = '#pk';
+
+  if (sortKey) {
+    expressionAttributeNames['#sk'] = sortKey;
+    projectionExpression = `${projectionExpression}, #sk`;
+  }
+
+  const items = await dynamoDb.scanAll({
+    TableName: tableName,
+    ProjectionExpression: projectionExpression,
+    ExpressionAttributeNames: expressionAttributeNames,
+  });
+
+  for (const item of items) {
+    const key: Record<string, unknown> = {
+      [partitionKey]: item[partitionKey],
+    };
+    if (sortKey) {
+      key[sortKey] = item[sortKey];
+    }
+    await dynamoDb.delete({
+      TableName: tableName,
+      Key: key,
+    });
+  }
+}
+
+async function importPayload(payload: SeedImportPayload): Promise<Record<string, number>> {
+  const createdCounts: Record<string, number> = {};
+  const keyValidationError = validateImportRecordKeys(payload);
+  if (keyValidationError) {
+    throw new Error(keyValidationError);
+  }
+
+  for (const table of EXPORT_TABLES) {
+    await deleteAllFromTable(table.tableName, table.partitionKey, table.sortKey);
+  }
+
+  for (const table of EXPORT_TABLES) {
+    const records = payload.data[table.key];
+    for (const record of records) {
+      await dynamoDb.put({
+        TableName: table.tableName,
+        Item: record,
+      });
+    }
+    createdCounts[table.key] = records.length;
+  }
+
+  return createdCounts;
 }
 
 function isSeedModuleId(moduleId: string): moduleId is SeedModuleId {
@@ -98,13 +298,52 @@ function getISOWeekKey(championshipId: string, date: Date): string {
 }
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent) => {
-  const requestedModules = parseModulesFromBody(event.body ?? null);
+  const parsedRequest = parseSeedRequest(event.body ?? null);
+  if (parsedRequest.error) {
+    return badRequest(parsedRequest.error);
+  }
+
+  const request = parsedRequest.value;
+  if (request == null) {
+    return badRequest('Invalid seed request');
+  }
+
+  if (request.mode === 'import') {
+    const denied = requireSuperAdmin(event);
+    if (denied) {
+      return denied;
+    }
+
+    try {
+      const payload = request.payload;
+      if (payload == null) {
+        return badRequest('Import payload is required for import mode');
+      }
+
+      const createdCounts = await importPayload(payload);
+
+      return success({
+        message: 'Data imported successfully!',
+        mode: 'import',
+        createdCounts,
+      });
+    } catch (error) {
+      console.error('Error importing seed payload:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to import data payload';
+      if (errorMessage.includes('Dataset "')) {
+        return badRequest(errorMessage);
+      }
+      return serverError('Failed to import data payload');
+    }
+  }
+
+  const requestedModules = request.modules;
   // When modular seed is implemented: run only requested modules (with deps auto-included) in SEED_MODULE_ORDER.
   // Until then, we always run the full monolithic seed; requestedModules is accepted but not yet used.
   if (requestedModules != null && requestedModules.length > 0) {
     const valid = requestedModules.filter(isSeedModuleId);
     if (valid.length === 0) {
-      return serverError('Invalid or unknown seed module IDs');
+      return badRequest('Invalid or unknown seed module IDs');
     }
     // TODO: when plan-modular-seed-data.md is done, run only valid modules in dependency order
   }

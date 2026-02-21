@@ -1312,15 +1312,65 @@ paths:
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
+  /admin/export-data:
+    get:
+      tags: [Admin]
+      summary: Export seed-compatible data payload
+      description: |
+        Exports all seed-relevant datasets in a single payload that can be re-imported
+        via \`POST /admin/seed-data\` with \`mode: "import"\`.
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200': { description: Exported payload including version, exportedAt, stage, data, and counts }
+        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
   /admin/seed-data:
     post:
       tags: [Admin]
-      summary: Seed sample data
+      summary: Seed sample data or import exported payload
+      description: |
+        Supports two modes:
+        - Default seed mode (when \`mode\` is omitted or not \`import\`): generates sample seed data.
+          Optional request body can specify \`modules\` (core, championships, matches, standings, tournaments, events, contenders, fantasy, config).
+        - Import mode (\`mode: "import"\`): validates and imports a previously exported payload from \`GET /admin/export-data\`.
+          Import mode validates required table keys in all records before any destructive clear, then clears relevant tables and inserts records.
       security: [{ BearerAuth: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum: [default, import]
+                  description: Seed mode. Use \`import\` to import exported payload data.
+                modules:
+                  type: array
+                  items: { type: string }
+                  description: Optional list of seed module IDs to run (only these + dependencies). Omit or empty = seed all.
+                payload:
+                  type: object
+                  description: Required for import mode. Seed export payload with version, exportedAt, stage, and data.
+                  properties:
+                    version: { type: integer }
+                    exportedAt: { type: string, format: date-time }
+                    stage: { type: string }
+                    data:
+                      type: object
+                      additionalProperties:
+                        type: array
+                        items:
+                          type: object
+                          additionalProperties: true
       responses:
-        '201': { description: Seeded }
+        '200': { description: Completed; body includes message, mode (import only), and createdCounts }
+        '400': { description: 'Bad request (invalid mode, invalid modules/payload usage, missing datasets, or missing required table keys in payload records)', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '500': { description: 'Server error', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /statistics:
     get:
