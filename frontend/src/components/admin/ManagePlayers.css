@@ -9,6 +9,16 @@
   margin-bottom: 2rem;
 }
 
+.players-subtext {
+  margin: 0.35rem 0 0;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.players-subtext a {
+  color: #d4af37;
+}
+
 .player-form-container {
   background-color: #1a1a1a;
   border: 2px solid #d4af37;

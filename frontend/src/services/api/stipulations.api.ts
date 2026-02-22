@@ -1,28 +1,22 @@
 import type { Stipulation } from '../../types';
-import { API_BASE_URL, fetchWithAuth } from './apiClient';
+import { createCrudApi } from './crudFactory';
+
+const baseStipulationsApi = createCrudApi<Stipulation, { name: string; description?: string }>('stipulations');
 
 export const stipulationsApi = {
   getAll: async (signal?: AbortSignal): Promise<Stipulation[]> => {
-    return fetchWithAuth(`${API_BASE_URL}/stipulations`, {}, signal);
+    return baseStipulationsApi.getAll(signal);
   },
 
   create: async (stipulation: { name: string; description?: string }): Promise<Stipulation> => {
-    return fetchWithAuth(`${API_BASE_URL}/stipulations`, {
-      method: 'POST',
-      body: JSON.stringify(stipulation),
-    });
+    return baseStipulationsApi.create(stipulation);
   },
 
   update: async (stipulationId: string, updates: Partial<Stipulation>): Promise<Stipulation> => {
-    return fetchWithAuth(`${API_BASE_URL}/stipulations/${stipulationId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
+    return baseStipulationsApi.updateById(stipulationId, updates);
   },
 
   delete: async (stipulationId: string): Promise<void> => {
-    return fetchWithAuth(`${API_BASE_URL}/stipulations/${stipulationId}`, {
-      method: 'DELETE',
-    });
+    return baseStipulationsApi.deleteById(stipulationId);
   },
 };

@@ -21,6 +21,7 @@
 .season-selector {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
@@ -42,6 +43,13 @@
 .season-selector select:focus {
   outline: none;
   border-color: var(--color-primary);
+}
+
+.season-selector-help {
+  width: 100%;
+  margin-top: 0.1rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
 }
 
 .season-badge {

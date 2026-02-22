@@ -30,7 +30,7 @@ export default function WikiSidebar() {
       articles.filter(
         (a) =>
           !a.adminOnly ||
-          (isAdminOrModerator && a.slug === 'admin')
+          isAdminOrModerator
       ),
     [articles, isAdminOrModerator]
   );

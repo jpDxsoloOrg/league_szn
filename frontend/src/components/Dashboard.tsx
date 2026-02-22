@@ -199,7 +199,12 @@ export default function Dashboard() {
       <section className="dashboard-section">
         <h3>{t('dashboard.champions')}</h3>
         {data.currentChampions.length === 0 ? (
-          <p className="dashboard-empty">{t('dashboard.noChampions')}</p>
+          <div className="dashboard-empty-block">
+            <p className="dashboard-empty">{t('dashboard.noChampions')}</p>
+            <Link className="dashboard-empty-action" to="/championships">
+              {t('dashboard.emptyActions.viewChampionships', 'View championships')}
+            </Link>
+          </div>
         ) : (
           <div className="dashboard-champions-strip">
             {data.currentChampions.map((c) => (
@@ -220,7 +225,12 @@ export default function Dashboard() {
       <section className="dashboard-section">
         <h3>{t('dashboard.upcomingEvents')}</h3>
         {data.upcomingEvents.length === 0 ? (
-          <p className="dashboard-empty">{t('dashboard.noUpcomingEvents')}</p>
+          <div className="dashboard-empty-block">
+            <p className="dashboard-empty">{t('dashboard.noUpcomingEvents')}</p>
+            <Link className="dashboard-empty-action" to="/events">
+              {t('dashboard.emptyActions.viewEvents', 'View events')}
+            </Link>
+          </div>
         ) : (
           <div className="dashboard-events-grid">
             {data.upcomingEvents.map((e: DashboardEvent) => (
@@ -237,7 +247,12 @@ export default function Dashboard() {
       <section className="dashboard-section">
         <h3>{t('dashboard.recentResults')}</h3>
         {data.recentResults.length === 0 ? (
-          <p className="dashboard-empty">{t('dashboard.noRecentResults')}</p>
+          <div className="dashboard-empty-block">
+            <p className="dashboard-empty">{t('dashboard.noRecentResults')}</p>
+            <Link className="dashboard-empty-action" to="/matches">
+              {t('dashboard.emptyActions.browseMatches', 'Browse matches')}
+            </Link>
+          </div>
         ) : (
           <RecentResultsGrouped results={data.recentResults} t={t} renderStarRating={renderStarRating} />
         )}
@@ -246,7 +261,12 @@ export default function Dashboard() {
       <section className="dashboard-section">
         <h3>{t('dashboard.seasonProgress')}</h3>
         {!data.seasonInfo ? (
-          <p className="dashboard-empty">{t('dashboard.noActiveSeason')}</p>
+          <div className="dashboard-empty-block">
+            <p className="dashboard-empty">{t('dashboard.noActiveSeason')}</p>
+            <Link className="dashboard-empty-action" to="/guide/wiki/getting-started">
+              {t('dashboard.emptyActions.seeGuide', 'See getting started')}
+            </Link>
+          </div>
         ) : (
           <div className="dashboard-season-card">
             <div className="season-name">{data.seasonInfo.name}</div>

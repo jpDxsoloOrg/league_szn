@@ -4,6 +4,16 @@
   margin: 0 auto;
 }
 
+.schedule-match-help {
+  margin: 0.5rem 0 0;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.schedule-match-help a {
+  color: #d4af37;
+}
+
 .match-form {
   background-color: #1a1a1a;
   border: 2px solid #333;

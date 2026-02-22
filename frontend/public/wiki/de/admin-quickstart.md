@@ -24,6 +24,10 @@ Neuer Admin? Folge diesen Schritten, um deine Liga von Grund auf einzurichten.
 
 10. **Herausforderer konfigurieren** — Gehe zu **Herausforderer-Konfig**, um die automatischen #1-Herausforderer-Ranglisten pro Meisterschaft einzurichten. Lege Ranglistenzeitraum, Mindestanzahl Matches, Divisionsbeschränkungen fest und berechne bei Bedarf neu.
 
+11. **Match-Konfiguration setzen** — Gehe zu **Match-Konfiguration** und definiere Match-Typen sowie Stipulations für eine konsistente Planung.
+
+12. **Optionale Fantasy-Einrichtung** — Wenn deine Liga Fantasy nutzt, stelle globale Regeln in **Fantasy-Konfiguration** ein und event-spezifische Werte in **Fantasy Shows**.
+
 ## Schnell-Demo
 
 Zuerst ausprobieren? Gehe zum Tab **Gefahrenzone** und klicke auf **Beispieldaten erzeugen**, um die Liga mit 12 Spielern, 3 Divisionen, 4 Meisterschaften, 12 Matches, 2 Turnieren und einer vollen Saison-Tabelle zu füllen.

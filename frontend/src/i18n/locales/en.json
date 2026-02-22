@@ -195,6 +195,7 @@
     },
     "articles": {
       "gettingStarted": "Getting started",
+      "userQuickstart": "User: Quickstart",
       "faqs": "FAQs",
       "standings": "Standings",
       "seasons": "Seasons",
@@ -213,6 +214,10 @@
       "statistics": "Statistics",
       "adminGuide": "Admin",
       "adminQuickstart": "Admin: Quickstart",
+      "adminMatchConfig": "Admin: Match Config",
+      "adminSeasonAwards": "Admin: Season Awards",
+      "adminFantasyShows": "Admin: Fantasy Shows",
+      "adminFantasyConfig": "Admin: Fantasy Config",
       "adminUserManagement": "Admin: User Management",
       "adminDivisions": "Admin: Divisions",
       "adminManagePlayers": "Admin: Manage Players",

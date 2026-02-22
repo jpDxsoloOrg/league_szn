@@ -47,7 +47,7 @@ export default function WikiIndex() {
       articles.filter(
         (a) =>
           !a.adminOnly ||
-          (isAdminOrModerator && a.slug === 'admin')
+          isAdminOrModerator
       ),
     [articles, isAdminOrModerator]
   );

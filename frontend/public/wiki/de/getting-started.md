@@ -15,6 +15,8 @@ Willkommen auf der WWE-2K-Liga-Website. Diese kurze Anleitung hilft Ihnen bei de
 
 - Nutzen Sie **Hilfe** im Hauptmenü, um das Wiki zu durchsuchen.
 - Das Wiki enthält Artikel zu Tabelle, Saisons, Meisterschaften, Events, Turnieren und mehr sowie FAQs.
+- Starten Sie mit [Benutzer-Schnellstart](user-quickstart) für einen schnellen Ablauf ohne Admin-Fokus.
+- Für Liga-Betrieb und Verwaltung nutzen Sie [Admin-Schnellstart](admin-quickstart).
 - Wechseln Sie die Sprache über die Sprachauswahl in der Kopfzeile (English / Deutsch).
 
 ## Nächste Schritte

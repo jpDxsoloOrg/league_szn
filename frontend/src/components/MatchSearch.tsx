@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi, seasonsApi, championshipsApi, stipulationsApi, matchTypesApi } from '../services/api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -153,6 +153,13 @@ export default function MatchSearch() {
       <div className="match-search-header">
         <h2>{t('matchSearch.title')}</h2>
       </div>
+      <p className="match-search-help">
+        {t(
+          'matchSearch.filtersHelp',
+          'Filters are combined together. Use "Clear Filters" to quickly reset and broaden results.'
+        )}{' '}
+        <Link to="/guide/wiki/events">{t('matchSearch.learnMore', 'Learn more')}</Link>
+      </p>
 
       {/* Filter Panel */}
       <div className="match-search-filters" role="search" aria-label={t('matchSearch.filtersLabel')}>

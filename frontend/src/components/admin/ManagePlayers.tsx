@@ -1,4 +1,5 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { playersApi, imagesApi, divisionsApi } from '../../services/api';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
@@ -237,7 +238,13 @@ export default function ManagePlayers() {
   return (
     <div className="manage-players">
       <div className="players-header">
-        <h2>Manage Players</h2>
+        <div>
+          <h2>Manage Players</h2>
+          <p className="players-subtext">
+            Edit existing players, assign divisions, and keep wrestler profiles current. Need process
+            details? <Link to="/guide/wiki/admin-manage-players">Learn more</Link>.
+          </p>
+        </div>
       </div>
 
       {error && <div className="error-message">{error}</div>}
@@ -366,9 +373,13 @@ export default function ManagePlayers() {
                   </td>
                   <td>
                     {player.userId ? (
-                      <span className="linked-badge">Linked</span>
+                      <span className="linked-badge" title="This player is linked to a user account">
+                        Linked
+                      </span>
                     ) : (
-                      <span className="unlinked-badge">Manual</span>
+                      <span className="unlinked-badge" title="This player was created manually and is not linked to a user account">
+                        Manual
+                      </span>
                     )}
                   </td>
                   <td>
