@@ -16,6 +16,7 @@ export default function PlayerHoverCard({ player, divisions, children }: PlayerH
 
   const divisionName = divisions.find((d) => d.divisionId === player.divisionId)?.name ?? null;
   const lastResult = player.recentForm?.[0];
+  const truncatedBio = player.bio ? player.bio.substring(0, 100) + '...' : '';
 
   const handleMouseEnter = useCallback(() => setVisible(true), []);
   const handleMouseLeave = useCallback(() => setVisible(false), []);
@@ -39,6 +40,12 @@ export default function PlayerHoverCard({ player, divisions, children }: PlayerH
             <div className="player-hover-card-row">
               <span className="player-hover-card-label">{t('standings.lastResult')}:</span>
               <span>{lastResult === 'W' ? 'W' : lastResult === 'L' ? 'L' : 'D'}</span>
+            </div>
+          )}
+          {player.bio && (
+            <div className="player-hover-card-row">
+              <span className="player-hover-card-label">{t('bio.preview')}:</span>
+              <span>{truncatedBio}</span>
             </div>
           )}
         </div>

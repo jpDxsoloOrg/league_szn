@@ -1,0 +1,13 @@
+filepath: frontend/public/wiki/index.json
+{
+  "en": {
+    "name": "Name",
+    "description": "Description",
+    "bio": "Biography"
+  },
+  "de": {
+    "name": "Name",
+    "description": "Beschreibung",
+    "bio": "Biografie"
+  }
+}
