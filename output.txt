@@ -1,0 +1,73 @@
+import React, { useState, useContext } from 'react';
+import { AuthContext } from '../../contexts/AuthContext';
+import apiClient from '../../apiClient';
+
+interface WrestlerProfileProps {
+  playerId: string;
+}
+
+const WrestlerProfile: React.FC<WrestlerProfileProps> = ({ playerId }) => {
+  const [bio, setBio] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const { user } = useContext(AuthContext);
+
+  const fetchPlayerBio = async () => {
+    try {
+      const response = await apiClient.get(`/players/${playerId}`);
+      setBio(response.data.bio || '');
+    } catch (error) {
+      console.error('Failed to fetch player bio:', error);
+    }
+  };
+
+  const updatePlayerBio = async () => {
+    if (!user) return;
+
+    try {
+      await apiClient.put(`/players/${playerId}`, { bio });
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update player bio:', error);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchPlayerBio();
+  }, [playerId]);
+
+  const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setBio(e.target.value.slice(0, 255));
+  };
+
+  return (
+    <div className="wrestler-profile">
+      {isEditing ? (
+        <>
+          <textarea
+            value={bio}
+            onChange={handleBioChange}
+            placeholder="Enter your bio"
+            rows={4}
+            cols={50}
+          />
+          <span>{bio.length}/255</span>
+          <button onClick={() => setIsEditing(false)}>Cancel</button>
+          <button onClick={updatePlayerBio}>Save</button>
+        </>
+      ) : (
+        <>
+          {bio ? (
+            <div className="bio-content">{bio}</div>
+          ) : (
+            <p>No bio available.</p>
+          )}
+          {user?.playerId === playerId && (
+            <button onClick={() => setIsEditing(true)}>Edit Bio</button>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+export default WrestlerProfile;

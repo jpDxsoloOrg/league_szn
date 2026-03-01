@@ -9,7 +9,7 @@
   {"slug":"events","titleKey":"wiki.articles.events","file":"events.md"},
   {"slug":"tournaments","titleKey":"wiki.articles.tournaments","file":"tournaments.md"},
   {"slug":"contenders","titleKey":"wiki.articles.contenders","file":"contenders.md"},
-  {"slug":"profile","titleKey":"wiki.articles.profile","file":"profile.md"},
+  {"slug":"profile","titleKey":"wiki.articles.profile","file":"profile.md", "bioKey": {"en": "profile.bio.en", "de": "profile.bio.de"}},
   {"slug":"challenges","titleKey":"wiki.articles.challenges","file":"challenges.md"},
   {"slug":"promos","titleKey":"wiki.articles.promos","file":"promos.md"},
   {"slug":"fantasy","titleKey":"wiki.articles.fantasy","file":"fantasy.md"},

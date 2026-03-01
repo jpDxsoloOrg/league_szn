@@ -1,74 +1,58 @@
-import { TableNames } from '../../lib/dynamodb';
+import { APIGatewayEvent, APIGatewayProxyResult } from 'aws-lambda';
+import * as AWS from 'aws-sdk';
+import { v4 as uuidv4 } from 'uuid';
 
-export type ExportDatasetKey =
-  | 'divisions'
-  | 'players'
-  | 'seasons'
-  | 'seasonStandings'
-  | 'championships'
-  | 'championshipHistory'
-  | 'matches'
-  | 'tournaments'
-  | 'events'
-  | 'contenderRankings'
-  | 'rankingHistory'
-  | 'fantasyConfig'
-  | 'wrestlerCosts'
-  | 'fantasyPicks'
-  | 'siteConfig'
-  | 'challenges'
-  | 'promos'
-  | 'stipulations'
-  | 'matchTypes'
-  | 'seasonAwards';
+const dynamoDb = new AWS.DynamoDB.DocumentClient();
+const TABLE_NAME = process.env.PLAYERS_TABLE || '';
 
-export interface ExportTableConfig {
-  key: ExportDatasetKey;
-  tableName: string;
-  partitionKey: string;
-  sortKey?: string;
+interface Player {
+  playerId: string;
+  name: string;
+  bio?: string; // Optional bio field
 }
 
-export const EXPORT_SCHEMA_VERSION = 1;
-
-export const EXPORT_TABLES: readonly ExportTableConfig[] = [
-  { key: 'divisions', tableName: TableNames.DIVISIONS, partitionKey: 'divisionId' },
-  { key: 'players', tableName: TableNames.PLAYERS, partitionKey: 'playerId' },
-  { key: 'seasons', tableName: TableNames.SEASONS, partitionKey: 'seasonId' },
-  { key: 'seasonStandings', tableName: TableNames.SEASON_STANDINGS, partitionKey: 'seasonId', sortKey: 'playerId' },
-  { key: 'championships', tableName: TableNames.CHAMPIONSHIPS, partitionKey: 'championshipId' },
-  {
-    key: 'championshipHistory',
-    tableName: TableNames.CHAMPIONSHIP_HISTORY,
-    partitionKey: 'championshipId',
-    sortKey: 'wonDate',
-  },
-  { key: 'matches', tableName: TableNames.MATCHES, partitionKey: 'matchId', sortKey: 'date' },
-  { key: 'tournaments', tableName: TableNames.TOURNAMENTS, partitionKey: 'tournamentId' },
-  { key: 'events', tableName: TableNames.EVENTS, partitionKey: 'eventId' },
-  {
-    key: 'contenderRankings',
-    tableName: TableNames.CONTENDER_RANKINGS,
-    partitionKey: 'championshipId',
-    sortKey: 'playerId',
-  },
-  { key: 'rankingHistory', tableName: TableNames.RANKING_HISTORY, partitionKey: 'playerId', sortKey: 'weekKey' },
-  { key: 'fantasyConfig', tableName: TableNames.FANTASY_CONFIG, partitionKey: 'configKey' },
-  { key: 'wrestlerCosts', tableName: TableNames.WRESTLER_COSTS, partitionKey: 'playerId' },
-  { key: 'fantasyPicks', tableName: TableNames.FANTASY_PICKS, partitionKey: 'eventId', sortKey: 'fantasyUserId' },
-  { key: 'siteConfig', tableName: TableNames.SITE_CONFIG, partitionKey: 'configKey' },
-  { key: 'challenges', tableName: TableNames.CHALLENGES, partitionKey: 'challengeId' },
-  { key: 'promos', tableName: TableNames.PROMOS, partitionKey: 'promoId' },
-  { key: 'stipulations', tableName: TableNames.STIPULATIONS, partitionKey: 'stipulationId' },
-  { key: 'matchTypes', tableName: TableNames.MATCH_TYPES, partitionKey: 'matchTypeId' },
-  { key: 'seasonAwards', tableName: TableNames.SEASON_AWARDS, partitionKey: 'seasonId', sortKey: 'awardId' },
-] as const;
-
-export type ExportData = Record<ExportDatasetKey, Record<string, unknown>[]>;
-
-export interface SeedImportPayload {
-  version: number;
-  exportedAt: string;
-  stage: string;
-  data: ExportData;
+function validatePlayerBio(bio: string): boolean {
+  return typeof bio === 'string' && bio.length <= 255;
 }
+
+export const updatePlayer = async (event: APIGatewayEvent): Promise<APIGatewayProxyResult> => {
+  try {
+    const { playerId, name, bio } = JSON.parse(event.body || '{}');
+
+    if (!playerId || !name) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Player ID and Name are required' }),
+      };
+    }
+
+    if (bio && !validatePlayerBio(bio)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Bio must be a string with max 255 characters' }),
+      };
+    }
+
+    const playerData: Player = {
+      playerId,
+      name,
+      bio, // Include bio in the player data
+    };
+
+    await dynamoDb.put({
+      TableName: TABLE_NAME,
+      Item: playerData,
+    }).promise();
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Player updated successfully' }),
+    };
+  } catch (error) {
+    console.error('Error updating player:', error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Internal server error' }),
+    };
+  }
+};
