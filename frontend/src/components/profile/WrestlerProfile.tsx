@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 import './WrestlerProfile.css';
 
-const WrestlerProfile = ({ wrestler }) => {
+interface WrestlerProfileProps {
+  wrestler: {
+    bio?: string;
+  };
+  onUpdateBio: (newBio: string) => void;
+}
+
+const WrestlerProfile: React.FC<WrestlerProfileProps> = ({ wrestler, onUpdateBio }) => {
   const [editMode, setEditMode] = useState(false);
   const [bio, setBio] = useState(wrestler.bio || '');
 
-  const handleBioChange = (event) => {
+  const handleBioChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setBio(event.target.value);
   };
 
@@ -14,8 +21,7 @@ const WrestlerProfile = ({ wrestler }) => {
   };
 
   const saveBio = () => {
-    // Save bio logic here
-    console.log('Saving bio:', bio);
+    onUpdateBio(bio);
     toggleEditMode();
   };
 
@@ -26,9 +32,9 @@ const WrestlerProfile = ({ wrestler }) => {
           <textarea
             value={bio}
             onChange={handleBioChange}
-            maxLength={500}
+            maxLength={255} // Enforce 255-character limit
           />
-          <p>Characters remaining: {500 - bio.length}</p>
+          <p>Characters remaining: {255 - bio.length}</p>
           <button onClick={saveBio}>Save</button>
           <button onClick={toggleEditMode}>Cancel</button>
         </div>
@@ -42,53 +48,6 @@ const WrestlerProfile = ({ wrestler }) => {
           )}
           <button onClick={toggleEditMode}>Edit Bio</button>
         </div>
-      )}
-    </div>
-  );
-};
-
-export default WrestlerProfile;
-
-<<<< CONFLICT: multiple tasks modified this file >>>>
-# From task: b812c5fa-ae97-453c-aeef-f97462f7e2e0
-import React, { useState } from 'react';
-import { useAuthContext } from '../../contexts/AuthContext';
-
-interface WrestlerProfileProps {
-  bio: string;
-  onUpdateBio: (newBio: string) => void;
-}
-
-const WrestlerProfile: React.FC<WrestlerProfileProps> = ({ bio, onUpdateBio }) => {
-  const [editableBio, setEditableBio] = useState(bio);
-  const { user } = useAuthContext();
-
-  const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setEditableBio(e.target.value);
-  };
-
-  const handleSaveBio = () => {
-    onUpdateBio(editableBio);
-  };
-
-  return (
-    <div className="wrestler-profile">
-      {user && user.isAdmin ? (
-        <>
-          <textarea
-            value={editableBio}
-            onChange={handleBioChange}
-            maxLength={255} // Enforce 255-character limit
-            placeholder="Enter your bio"
-            rows={4}
-            className="bio-input"
-          />
-          <button onClick={handleSaveBio} className="save-bio-btn">
-            Save Bio
-          </button>
-        </>
-      ) : (
-        <div className="bio-display">{bio}</div>
       )}
     </div>
   );

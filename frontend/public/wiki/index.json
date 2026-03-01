@@ -36,5 +36,6 @@
   {"slug":"admin-promos","titleKey":"wiki.articles.adminPromos","file":"admin-promos.md","adminOnly":true},
   {"slug":"admin-contender-config","titleKey":"wiki.articles.adminContenderConfig","file":"admin-contender-config.md","adminOnly":true},
   {"slug":"admin-data-management","titleKey":"wiki.articles.adminDataManagement","file":"admin-data-management.md","adminOnly":true},
-  {"slug":"admin-workflow","titleKey":"wiki.articles.adminWorkflow","file":"admin-workflow.md","adminOnly":true}
+  {"slug":"admin-workflow","titleKey":"wiki.articles.adminWorkflow","file":"admin-workflow.md","adminOnly":true},
+  {"slug":"bio","titleKey":{"en":"wiki.articles.bio", "de":"wiki.artikel.bio"},"file":"bio.md"}
 ]

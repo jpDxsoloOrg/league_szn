@@ -1,79 +1,46 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../contexts/AuthContext';
-import { Player } from '../../types/player';
+import axios from 'axios';
 
-interface ManagePlayersPageProps {
-  players: Player[];
-}
-
-const ManagePlayersPage: React.FC<ManagePlayersPageProps> = ({ players }) => {
+const ManagePlayersPage = () => {
+  const [playerBio, setPlayerBio] = useState('');
   const navigate = useNavigate();
-  const { user } = React.useContext(AuthContext);
-  const [bioEdit, setBioEdit] = useState<{ [key: string]: boolean }>({});
-  const [editedBios, setEditedBios] = useState<{ [key: string]: string }>({});
 
-  if (!user || !user.isAdmin) {
-    navigate('/');
-    return null;
-  }
-
-  const toggleBioEdit = (playerId: string) => {
-    setBioEdit((prev) => ({
-      ...prev,
-      [playerId]: !prev[playerId],
-    }));
-  };
-
-  const handleBioChange = (playerId: string, event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setEditedBios({
-      ...editedBios,
-      [playerId]: event.target.value,
-    });
-  };
-
-  const saveBio = async (playerId: string) => {
-    // Assume there's a function updatePlayerBio in your backend API
+  const saveBio = async () => {
     try {
-      await fetch(`/api/players/${playerId}/bio`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ bio: editedBios[playerId] }),
-      });
-      setBioEdit((prev) => ({
-        ...prev,
-        [playerId]: false,
-      }));
+      const response = await axios.post('/api/admin/update-player-bio', { bio: playerBio });
+      if (response.status === 200) {
+        alert('Player bio updated successfully!');
+      } else {
+        console.error('Failed to update player bio');
+      }
     } catch (error) {
-      console.error('Error updating player bio:', error);
+      console.error('Network error:', error);
+      alert('An error occurred while updating the player bio. Please try again.');
+    }
+  };
+
+  const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setPlayerBio(e.target.value);
+  };
+
+  const navigateAwayWithConfirmation = () => {
+    if (window.confirm('You have unsaved changes. Are you sure you want to leave?')) {
+      navigate('/admin');
     }
   };
 
   return (
     <div>
       <h1>Manage Players</h1>
-      {players.map((player) => (
-        <div key={player.id}>
-          <p>{player.name}</p>
-          {bioEdit[player.id] ? (
-            <>
-              <textarea
-                value={editedBios[player.id] || player.bio}
-                onChange={(e) => handleBioChange(player.id, e)}
-              />
-              <button onClick={() => saveBio(player.id)}>Save</button>
-              <button onClick={() => toggleBioEdit(player.id)}>Cancel</button>
-            </>
-          ) : (
-            <>
-              <p>{player.bio}</p>
-              <button onClick={() => toggleBioEdit(player.id)}>Edit Bio</button>
-            </>
-          )}
-        </div>
-      ))}
+      <textarea
+        value={playerBio}
+        onChange={handleBioChange}
+        maxLength={255}
+        placeholder="Enter player bio here"
+      />
+      <button onClick={saveBio}>Save Bio</button>
+      <button onClick={navigateAwayWithConfirmation}>Back to Admin Panel</button>
     </div>
   );
 };

@@ -39,7 +39,7 @@ export default function PlayerHoverCard({ player, divisions, children }: PlayerH
           {lastResult !== undefined && (
             <div className="player-hover-card-row">
               <span className="player-hover-card-label">{t('standings.lastResult')}:</span>
-              <span>{lastResult === 'W' ? 'W' : lastResult === 'L' ? 'L' : 'D'}</span>
+              <span>{lastResult === 'W' ? t('match.result.win') : lastResult === 'L' ? t('match.result.loss') : t('match.result.draw')}</span>
             </div>
           )}
           {player.bio && (
