@@ -4,9 +4,10 @@ import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, requireRole } from '../../lib/auth';
 
-const ALLOWED_FIELDS = ['name', 'currentWrestler', 'imageUrl'];
+const ALLOWED_FIELDS = ['name', 'currentWrestler', 'imageUrl', 'bio'];
 const MAX_NAME_LENGTH = 100;
 const MAX_URL_LENGTH = 2048;
+const MAX_BIO_LENGTH = 255;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Wrestler');
@@ -57,7 +58,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }
 
         if (field === 'imageUrl' && value.length > MAX_URL_LENGTH) {
-          return badRequest(`Image URL must be ${MAX_URL_LENGTH} characters or less`);
+          return badRequest(`Field imageUrl must be ${MAX_URL_LENGTH} characters or less`);
+        }
+
+        if (field === 'bio' && value.length > MAX_BIO_LENGTH) {
+          return badRequest(`Field bio must be ${MAX_BIO_LENGTH} characters or less`);
         }
 
         setExpressions.push(`#${field} = :${field}`);
@@ -66,21 +71,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    // Always update updatedAt
-    setExpressions.push('#updatedAt = :updatedAt');
-    expressionAttributeNames['#updatedAt'] = 'updatedAt';
-    expressionAttributeValues[':updatedAt'] = new Date().toISOString();
-
-    if (setExpressions.length === 1) {
-      return badRequest('No valid fields to update. Allowed fields: ' + ALLOWED_FIELDS.join(', '));
+    if (setExpressions.length === 0) {
+      return badRequest('No valid fields to update');
     }
-
-    const updateExpression = `SET ${setExpressions.join(', ')}`;
 
     const result = await dynamoDb.update({
       TableName: TableNames.PLAYERS,
       Key: { playerId },
-      UpdateExpression: updateExpression,
+      UpdateExpression: `SET ${setExpressions.join(', ')}`,
       ExpressionAttributeNames: expressionAttributeNames,
       ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: 'ALL_NEW',

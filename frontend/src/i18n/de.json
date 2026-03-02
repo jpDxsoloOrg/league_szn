@@ -1,0 +1,9 @@
+{
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen"
+  },
+  "bio": {
+    "placeholder": "Schreibe deine Biografie..."
+  }
+}

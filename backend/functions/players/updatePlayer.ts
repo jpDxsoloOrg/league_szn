@@ -1,61 +1,22 @@
-import { APIGatewayEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { requireRole, parseBody, respondWithJson } from '../../lib/router';
-import { getUserFromToken } from '../../lib/handlers';
-
-export const handler = async (event: APIGatewayEvent): Promise<APIGatewayProxyResult> => {
-  const user = await getUserFromToken(event.headers['Authorization']);
-  
-  if (!user) {
-    return respondWithJson(401, { message: 'Unauthorized' });
-  }
-
-  requireRole(user.role, ['admin']);
-
-  const body = parseBody(event.body);
-
-  if (typeof body.playerId !== 'string') {
-    return respondWithJson(400, { message: 'Invalid playerId' });
-  }
-
-  if (!body.bio || typeof body.bio !== 'string' || body.bio.length > 255) {
-    return respondWithJson(400, { message: 'Invalid bio' });
-  }
-
-  // Assuming updatePlayerProfile is a function that updates the player's profile
-  const success = await updatePlayerProfile(body.playerId, { bio: body.bio });
-
-  if (success) {
-    return respondWithJson(200, { message: 'Player updated successfully' });
-  } else {
-    return respondWithJson(500, { message: 'Failed to update player' });
-  }
-};
-
-<<<< CONFLICT: multiple tasks modified this file >>>>
-# From task: 0fc15840-412f-4d01-b081-9abdf0dbbfab
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { buildUpdateExpression, getOrNotFound } from '../../lib/dynamodbUtils';
-import { success, badRequest, serverError } from '../../lib/response';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
+import { getOrNotFound } from '../../lib/router';
+
+const MAX_BIO_LENGTH = 255;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const playerId = event.pathParameters?.playerId;
-
-    if (!playerId) {
-      return badRequest('Player ID is required');
-    }
-
     const { data: body, error: parseError } = parseBody(event);
     if (parseError) return parseError;
 
     // Check bio length
-    if (body.bio && body.bio.length > 255) {
+    if (body.bio && body.bio.length > MAX_BIO_LENGTH) {
       return badRequest('Bio cannot exceed 255 characters');
     }
 
-    const playerResult = await getOrNotFound(TableNames.PLAYERS, { playerId }, 'Player not found');
+    const playerResult = await getOrNotFound(TableNames.PLAYERS, { playerId: event.pathParameters!.playerId }, 'Player not found');
     if ('notFoundResponse' in playerResult) {
       return playerResult.notFoundResponse;
     }
@@ -96,7 +57,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const result = await dynamoDb.update({
       TableName: TableNames.PLAYERS,
-      Key: { playerId },
+      Key: { playerId: event.pathParameters!.playerId },
       UpdateExpression: updateExpr.UpdateExpression,
       ExpressionAttributeNames: updateExpr.ExpressionAttributeNames,
       ExpressionAttributeValues: updateExpr.ExpressionAttributeValues,
@@ -109,3 +70,36 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return serverError('Failed to update player');
   }
 };
+
+// Helper function to build the UpdateExpression and attribute values
+function buildUpdateExpression(fields: Record<string, unknown>, options?: { removeFields?: string[] }) {
+  const setExpressions: string[] = [];
+  const expressionAttributeNames: Record<string, string> = {};
+  const expressionAttributeValues: Record<string, any> = {};
+  let hasChanges = false;
+
+  for (const [field, value] of Object.entries(fields)) {
+    if (value !== undefined) {
+      setExpressions.push(`#${field} = :${field}`);
+      expressionAttributeNames[`#${field}`] = field;
+      expressionAttributeValues[`:${field}`] = value;
+      hasChanges = true;
+    }
+  }
+
+  const removeExpression: string[] = [];
+  if (options?.removeFields) {
+    for (const field of options.removeFields) {
+      removeExpression.push(`#${field}`);
+      expressionAttributeNames[`#${field}`] = field;
+      hasChanges = true;
+    }
+  }
+
+  return {
+    UpdateExpression: `${setExpressions.length > 0 ? 'SET ' + setExpressions.join(', ') : ''}${removeExpression.length > 0 ? (setExpressions.length > 0 ? ', ' : '') + 'REMOVE ' + removeExpression.join(', ')}`,
+    ExpressionAttributeNames,
+    ExpressionAttributeValues,
+    hasChanges,
+  };
+}

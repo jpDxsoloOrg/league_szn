@@ -1,123 +1,84 @@
-import { handler as getPlayersHandler } from './getPlayers';
-import { handler as createPlayerHandler } from './createPlayer';
-import { handler as updatePlayerHandler } from './updatePlayer';
-import { handler as deletePlayerHandler } from './deletePlayer';
-import { handler as getMyProfileHandler } from './getMyProfile';
-import { handler as updateMyProfileHandler } from './updateMyProfile';
-import { createRouter, type RouteConfig } from '../../lib/router';
-import { handler as getPlayerStatisticsHandler } from './getPlayerStatistics';
-import { validateBio } from '../../lib/validators'; // Assuming we have a validators file
+import { APIGatewayEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { v4 as uuidv4 } from 'uuid';
 
-/**
- * Single Lambda for players: routes by HTTP method and path.
- * Replaces getPlayers, createPlayer, updatePlayer, deletePlayer, getMyProfile, updateMyProfile, getPlayerStatistics.
- */
+// Mock database
+const playersDB = new Map<string, any>();
 
-const routes: ReadonlyArray<RouteConfig> = [
-  {
-    resource: '/players',
-    method: 'GET',
-    handler: getPlayersHandler,
-  },
-  {
-    resource: '/players/me',
-    method: 'GET',
-    handler: getMyProfileHandler,
-  },
-  {
-    resource: '/players/me',
-    method: 'PUT',
-    handler: async (event) => {
-      // Validate bio field
-      if (event.body && typeof event.body === 'object' && 'bio' in event.body) {
-        const { bio } = event.body;
-        const validationError = validateBio(bio);
-        if (validationError) {
+export const handler = async (event: APIGatewayEvent): Promise<APIGatewayProxyResult> => {
+  try {
+    const playerId = event.pathParameters?.playerId;
+    if (!playerId) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Player ID is required' }),
+      };
+    }
+
+    let playerData: any;
+
+    switch (event.httpMethod) {
+      case 'GET':
+        playerData = playersDB.get(playerId);
+        if (!playerData) {
           return {
-            statusCode: 400,
-            body: JSON.stringify({ error: validationError }),
+            statusCode: 404,
+            body: JSON.stringify({ error: 'Player not found' }),
           };
         }
-      }
-      // Proceed with the original handler
-      return updateMyProfileHandler(event);
-    },
-  },
-  {
-    resource: '/players',
-    method: 'POST',
-    handler: createPlayerHandler,
-  },
-  {
-    resource: '/players/{playerId}/statistics',
-    method: 'GET',
-    handler: getPlayerStatisticsHandler,
-  },
-  {
-    resource: '/players/{playerId}',
-    method: 'PUT',
-    handler: updatePlayerHandler,
-  },
-  {
-    resource: '/players/{playerId}',
-    method: 'DELETE',
-    handler: deletePlayerHandler,
-  },
-];
-export const handler = createRouter(routes);
+        break;
+      case 'POST':
+        const newPlayer = JSON.parse(event.body || '{}');
+        if (newPlayer.bio && newPlayer.bio.length > 255) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ error: 'Bio must be 255 characters or less' }),
+          };
+        }
+        newPlayer.playerId = uuidv4();
+        playersDB.set(newPlayer.playerId, newPlayer);
+        playerData = newPlayer;
+        break;
+      case 'PUT':
+        const updatedPlayer = JSON.parse(event.body || '{}');
+        if (updatedPlayer.bio && updatedPlayer.bio.length > 255) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ error: 'Bio must be 255 characters or less' }),
+          };
+        }
+        // Placeholder for actual database update logic
+        playersDB.set(playerId, { ...playersDB.get(playerId), ...updatedPlayer });
+        playerData = updatedPlayer;
+        break;
+      case 'DELETE':
+        if (playersDB.has(playerId)) {
+          playersDB.delete(playerId);
+          return {
+            statusCode: 204,
+            body: JSON.stringify({ message: 'Player deleted' }),
+          };
+        } else {
+          return {
+            statusCode: 404,
+            body: JSON.stringify({ error: 'Player not found' }),
+          };
+        }
+      default:
+        return {
+          statusCode: 405,
+          body: JSON.stringify({ error: 'Method Not Allowed' }),
+        };
+    }
 
-<<<< CONFLICT: multiple tasks modified this file >>>>
-# From task: 20eccc9d-33e1-4052-9133-a88beff31fc7
-import { handler as getPlayersHandler } from './getPlayers';
-import { handler as createPlayerHandler } from './createPlayer';
-import { handler as updatePlayerHandler } from './updatePlayer';
-import { handler as deletePlayerHandler } from './deletePlayer';
-import { handler as getMyProfileHandler } from './getMyProfile';
-import { handler as updateMyProfileHandler } from './updateMyProfile';
-import { createRouter, type RouteConfig } from '../../lib/router';
-import { handler as getPlayerStatisticsHandler } from './getPlayerStatistics';
-
-
-/**
- * Single Lambda for players: routes by HTTP method and path.
- * Replaces getPlayers, createPlayer, updatePlayer, deletePlayer, getMyProfile, updateMyProfile, getPlayerStatistics.
- */
-
-const routes: ReadonlyArray<RouteConfig> = [
-  {
-    resource: '/players',
-    method: 'GET',
-    handler: getPlayersHandler,
-  },
-  {
-    resource: '/players/me',
-    method: 'GET',
-    handler: getMyProfileHandler,
-  },
-  {
-    resource: '/players/me',
-    method: 'PUT',
-    handler: updateMyProfileHandler,
-  },
-  {
-    resource: '/players',
-    method: 'POST',
-    handler: createPlayerHandler,
-  },
-  {
-    resource: '/players/{playerId}/statistics',
-    method: 'GET',
-    handler: getPlayerStatisticsHandler,
-  },
-  {
-    resource: '/players/{playerId}',
-    method: 'PUT',
-    handler: updatePlayerHandler,
-  },
-  {
-    resource: '/players/{playerId}',
-    method: 'DELETE',
-    handler: deletePlayerHandler,
-  },
-];
-export const handler = createRouter(routes);
+    return {
+      statusCode: 200,
+      body: JSON.stringify(playerData),
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Internal Server Error' }),
+    };
+  }
+};

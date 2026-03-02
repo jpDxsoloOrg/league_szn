@@ -1,0 +1,9 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "bio": {
+    "placeholder": "Write your biography..."
+  }
+}
