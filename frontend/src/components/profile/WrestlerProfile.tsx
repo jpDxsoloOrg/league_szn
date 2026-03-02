@@ -43,6 +43,7 @@ export default function WrestlerProfile() {
     name: '',
     currentWrestler: '',
     imageUrl: '',
+    bio: '',
   });
 
   // Image upload state
@@ -63,6 +64,7 @@ export default function WrestlerProfile() {
         name: profile.name,
         currentWrestler: profile.currentWrestler,
         imageUrl: profile.imageUrl || '',
+        bio: profile.bio || '',
       });
     } catch (err) {
       if (err instanceof Error && err.message.includes('404')) {
@@ -151,6 +153,7 @@ export default function WrestlerProfile() {
         name: player.name,
         currentWrestler: player.currentWrestler,
         imageUrl: player.imageUrl || '',
+        bio: player.bio || '',
       });
       setImagePreview(player.imageUrl || null);
       setSelectedFile(null);
@@ -170,6 +173,7 @@ export default function WrestlerProfile() {
         name: player.name,
         currentWrestler: player.currentWrestler,
         imageUrl: player.imageUrl || '',
+        bio: player.bio || '',
       });
     }
   };
@@ -193,7 +197,7 @@ export default function WrestlerProfile() {
         return;
       }
 
-      const updates: { name?: string; currentWrestler?: string; imageUrl?: string } = {
+      const updates: { name?: string; currentWrestler?: string; imageUrl?: string; bio?: string } = {
         name: sanitizedName,
       };
 
@@ -203,6 +207,10 @@ export default function WrestlerProfile() {
 
       if (imageUrl) {
         updates.imageUrl = imageUrl;
+      }
+
+      if (formData.bio.trim()) {
+        updates.bio = formData.bio.trim();
       }
 
       const updated = await profileApi.updateMyProfile(updates);
@@ -279,6 +287,9 @@ export default function WrestlerProfile() {
               Playing as {player.currentWrestler}
             </p>
           )}
+          {player.bio && !editing && (
+            <p className="profile-bio">{player.bio}</p>
+          )}
         </div>
         {!editing && (
           <button
@@ -317,6 +328,22 @@ export default function WrestlerProfile() {
                 onChange={(e) => setFormData({ ...formData, currentWrestler: e.target.value })}
                 placeholder="The wrestler you play as"
               />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="profile-bio">Bio</label>
+              <textarea
+                id="profile-bio"
+                className="bio-textarea"
+                value={formData.bio}
+                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                placeholder="Tell us about yourself..."
+                maxLength={255}
+                rows={4}
+              />
+              <div className="bio-counter">
+                {formData.bio.length} / 255
+              </div>
             </div>
 
             <div className="form-group">

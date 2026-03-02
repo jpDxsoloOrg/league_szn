@@ -32,3 +32,22 @@
   color: #888;
   margin-right: 0.5rem;
 }
+
+.hover-card-bio {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #333;
+  font-size: 0.75rem;
+  color: #aaa;
+  max-width: 200px;
+}
+
+.bio-truncate {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+}

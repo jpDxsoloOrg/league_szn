@@ -30,6 +30,7 @@ export default function ManagePlayers() {
     currentWrestler: '',
     imageUrl: '',
     divisionId: '',
+    bio: '',
   });
 
   // Image upload state
@@ -93,6 +94,10 @@ export default function ManagePlayers() {
     setSelectedFile(null);
     setImagePreview(null);
     setFormData(prev => ({ ...prev, imageUrl: '' }));
+  };
+
+  const getBioCharacterCount = () => {
+    return formData.bio.length;
   };
 
   const uploadImage = async (): Promise<string | null> => {
@@ -163,6 +168,7 @@ export default function ManagePlayers() {
           currentWrestler: sanitizedWrestler,
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || undefined,
+          bio: formData.bio || undefined,
         });
       } else {
         await playersApi.create({
@@ -170,13 +176,14 @@ export default function ManagePlayers() {
           currentWrestler: sanitizedWrestler,
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || undefined,
+          bio: formData.bio || undefined,
           wins: 0,
           losses: 0,
           draws: 0,
         });
       }
 
-      setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '' });
+      setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '', bio: '' });
       setSelectedFile(null);
       setImagePreview(null);
       setShowAddForm(false);
@@ -197,6 +204,7 @@ export default function ManagePlayers() {
       currentWrestler: player.currentWrestler,
       imageUrl: player.imageUrl || '',
       divisionId: player.divisionId || '',
+      bio: player.bio || '',
     });
     setImagePreview(player.imageUrl || null);
     setSelectedFile(null);
@@ -204,7 +212,7 @@ export default function ManagePlayers() {
   };
 
   const handleCancel = () => {
-    setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '' });
+    setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '', bio: '' });
     setSelectedFile(null);
     setImagePreview(null);
     setShowAddForm(false);
@@ -292,6 +300,22 @@ export default function ManagePlayers() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="bio">Bio</label>
+              <textarea
+                id="bio"
+                className="bio-field"
+                value={formData.bio}
+                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                maxLength={255}
+                placeholder="Enter wrestler biography (optional)"
+                rows={4}
+              />
+              <div className="bio-counter">
+                {getBioCharacterCount()} / 255 characters
+              </div>
             </div>
 
             <div className="form-group">

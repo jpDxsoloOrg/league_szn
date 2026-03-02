@@ -72,6 +72,14 @@
   font-style: italic;
 }
 
+.profile-bio {
+  font-size: 0.9rem;
+  color: #aaa;
+  margin: 0.5rem 0 0;
+  line-height: 1.4;
+  max-width: 600px;
+}
+
 .edit-icon-btn {
   margin-left: auto;
   flex-shrink: 0;
@@ -335,6 +343,33 @@
   margin-top: 0.75rem;
   color: #888;
   font-size: 0.875rem;
+}
+
+.bio-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  line-height: 1.5;
+  background-color: #222;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #eee;
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color 0.2s;
+}
+
+.bio-textarea:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+.bio-counter {
+  text-align: right;
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.25rem;
 }
 
 .remove-image-btn {
