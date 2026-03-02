@@ -1,0 +1,13 @@
+{
+  "common": {
+    "hello": "Hallo",
+    "welcome": "Willkommen"
+  },
+  "bio": {
+    "name": "Name",
+    "age": "Alter",
+    "nationality": "Nationalität",
+    "occupation": "Beruf",
+    "biography": "Biografie"
+  }
+}

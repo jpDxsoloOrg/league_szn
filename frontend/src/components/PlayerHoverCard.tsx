@@ -42,12 +42,12 @@ export default function PlayerHoverCard({ player, divisions, children }: PlayerH
               <span>{lastResult === 'W' ? t('match.result.win') : lastResult === 'L' ? t('match.result.loss') : t('match.result.draw')}</span>
             </div>
           )}
-          {player.bio && (
-            <div className="player-hover-card-row">
-              <span className="player-hover-card-label">{t('bio.preview')}:</span>
-              <span>{truncatedBio}</span>
-            </div>
-          )}
+  {player.bio && (
+    <div className="player-hover-card-row">
+      <span className="player-hover-card-label">{t('bio.preview')}:</span>
+      <span>{truncatedBio}</span>
+    </div>
+  )}
         </div>
       )}
     </span>
