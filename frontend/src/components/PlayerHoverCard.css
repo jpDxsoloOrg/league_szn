@@ -1,3 +1,11 @@
+:root {
+  --hover-card-spacing: 0.5rem;
+  --hover-card-bg: #1a1a1a;
+  --hover-card-border: #333;
+  --hover-card-text: #ccc;
+  --hover-card-label: #888;
+}
+
 .player-hover-card-trigger {
   position: relative;
   display: inline-block;
@@ -10,9 +18,10 @@
   transform: translateX(-50%) translateY(-6px);
   z-index: 10;
   min-width: 140px;
-  padding: 0.5rem 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
+  max-width: min(200px, 90vw);
+  padding: var(--hover-card-spacing) 0.75rem;
+  background-color: var(--hover-card-bg);
+  border: 1px solid var(--hover-card-border);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   pointer-events: none;
@@ -20,7 +29,7 @@
 
 .player-hover-card-row {
   font-size: 0.8rem;
-  color: #ccc;
+  color: var(--hover-card-text);
   white-space: nowrap;
 }
 
@@ -29,6 +38,17 @@
 }
 
 .player-hover-card-label {
-  color: #888;
-  margin-right: 0.5rem;
+  color: var(--hover-card-label);
+  margin-right: var(--hover-card-spacing);
+}
+
+.player-hover-card-bio {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--hover-card-border);
+  font-size: 0.75rem;
+  color: var(--hover-card-text);
+  line-height: 1.4;
+  white-space: normal;
+  word-wrap: break-word;
 }

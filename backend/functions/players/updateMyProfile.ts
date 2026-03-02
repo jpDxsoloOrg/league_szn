@@ -4,9 +4,10 @@ import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, requireRole } from '../../lib/auth';
 
-const ALLOWED_FIELDS = ['name', 'currentWrestler', 'imageUrl'];
+const ALLOWED_FIELDS = ['name', 'currentWrestler', 'imageUrl', 'bio'];
 const MAX_NAME_LENGTH = 100;
 const MAX_URL_LENGTH = 2048;
+const MAX_BIO_LENGTH = 255;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Wrestler');
@@ -37,6 +38,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Build update expression from whitelisted fields only
     const setExpressions: string[] = [];
+    const removeExpressions: string[] = [];
     const expressionAttributeNames: Record<string, string> = {};
     const expressionAttributeValues: Record<string, any> = {};
 
@@ -48,11 +50,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           return badRequest(`Field ${field} must be a string`);
         }
 
+        // Trim string values for validation and storage
+        const trimmedValue = value.trim();
+
         if ((field === 'name' || field === 'currentWrestler') && value.length > MAX_NAME_LENGTH) {
           return badRequest(`Field ${field} must be ${MAX_NAME_LENGTH} characters or less`);
         }
 
-        if (field === 'name' && value.trim().length === 0) {
+        if (field === 'name' && trimmedValue.length === 0) {
           return badRequest('Name cannot be empty');
         }
 
@@ -60,9 +65,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           return badRequest(`Image URL must be ${MAX_URL_LENGTH} characters or less`);
         }
 
+        if (field === 'bio') {
+          if (trimmedValue.length > MAX_BIO_LENGTH) {
+            return badRequest(`Bio must be ${MAX_BIO_LENGTH} characters or less`);
+          }
+          if (trimmedValue.length === 0) {
+            // Remove bio field if empty after trimming
+            removeExpressions.push(`#${field}`);
+            expressionAttributeNames[`#${field}`] = field;
+            continue;
+          }
+        }
+
         setExpressions.push(`#${field} = :${field}`);
         expressionAttributeNames[`#${field}`] = field;
-        expressionAttributeValues[`:${field}`] = value;
+        expressionAttributeValues[`:${field}`] = field === 'bio' ? trimmedValue : value;
       }
     }
 
@@ -71,11 +88,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     expressionAttributeNames['#updatedAt'] = 'updatedAt';
     expressionAttributeValues[':updatedAt'] = new Date().toISOString();
 
-    if (setExpressions.length === 1) {
+    if (setExpressions.length === 1 && removeExpressions.length === 0) {
       return badRequest('No valid fields to update. Allowed fields: ' + ALLOWED_FIELDS.join(', '));
     }
 
-    const updateExpression = `SET ${setExpressions.join(', ')}`;
+    let updateExpression = '';
+    if (setExpressions.length > 1) {
+      updateExpression = `SET ${setExpressions.join(', ')}`;
+    }
+    if (removeExpressions.length > 0) {
+      const removeClause = `REMOVE ${removeExpressions.join(', ')}`;
+      updateExpression = updateExpression ? `${updateExpression} ${removeClause}` : removeClause;
+    }
 
     const result = await dynamoDb.update({
       TableName: TableNames.PLAYERS,

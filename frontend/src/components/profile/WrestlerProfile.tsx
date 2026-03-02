@@ -10,7 +10,7 @@ import {
   resolveImageSrc,
 } from '../../constants/imageFallbacks';
 import { useSiteConfig } from '../../contexts/SiteConfigContext'; 
-import   EmbeddedPlayerStats   from "../statistics/EmbeddedPlayerStats";
+import EmbeddedPlayerStats from "../statistics/EmbeddedPlayerStats";
 import type { Player } from '../../types';
 import './WrestlerProfile.css';
 
@@ -25,6 +25,7 @@ interface SeasonRecord {
 
 interface PlayerProfile extends Player {
   seasonRecords?: SeasonRecord[];
+  bio?: string;
 }
 
 export default function WrestlerProfile() {
@@ -43,6 +44,7 @@ export default function WrestlerProfile() {
     name: '',
     currentWrestler: '',
     imageUrl: '',
+    bio: '',
   });
 
   // Image upload state
@@ -63,6 +65,7 @@ export default function WrestlerProfile() {
         name: profile.name,
         currentWrestler: profile.currentWrestler,
         imageUrl: profile.imageUrl || '',
+        bio: profile.bio || '',
       });
     } catch (err) {
       if (err instanceof Error && err.message.includes('404')) {
@@ -151,6 +154,7 @@ export default function WrestlerProfile() {
         name: player.name,
         currentWrestler: player.currentWrestler,
         imageUrl: player.imageUrl || '',
+        bio: player.bio || '',
       });
       setImagePreview(player.imageUrl || null);
       setSelectedFile(null);
@@ -170,6 +174,7 @@ export default function WrestlerProfile() {
         name: player.name,
         currentWrestler: player.currentWrestler,
         imageUrl: player.imageUrl || '',
+        bio: player.bio || '',
       });
     }
   };
@@ -193,7 +198,7 @@ export default function WrestlerProfile() {
         return;
       }
 
-      const updates: { name?: string; currentWrestler?: string; imageUrl?: string } = {
+      const updates: { name?: string; currentWrestler?: string; imageUrl?: string; bio?: string } = {
         name: sanitizedName,
       };
 
@@ -203,6 +208,14 @@ export default function WrestlerProfile() {
 
       if (imageUrl) {
         updates.imageUrl = imageUrl;
+      }
+
+      // Sanitize and validate bio
+      if (formData.bio !== undefined) {
+        const sanitizedBio = formData.bio.trim().slice(0, 255);
+        if (sanitizedBio !== player?.bio) {
+          updates.bio = sanitizedBio;
+        }
       }
 
       const updated = await profileApi.updateMyProfile(updates);
@@ -279,6 +292,9 @@ export default function WrestlerProfile() {
               Playing as {player.currentWrestler}
             </p>
           )}
+          {player.bio && (
+            <p className="profile-bio">{player.bio}</p>
+          )}
         </div>
         {!editing && (
           <button
@@ -287,7 +303,7 @@ export default function WrestlerProfile() {
             aria-label="Edit profile"
             title="Edit profile"
           >
-&#9998;
+            ✎
           </button>
         )}
       </div>
@@ -344,6 +360,21 @@ export default function WrestlerProfile() {
                     <p className="upload-hint">{FILE_UPLOAD_LIMITS.ALLOWED_EXTENSIONS} (max {FILE_UPLOAD_LIMITS.MAX_SIZE_MB}MB)</p>
                   </div>
                 )}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="profile-bio">Bio</label>
+              <textarea
+                id="profile-bio"
+                value={formData.bio}
+                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                placeholder="Tell us about yourself (optional)"
+                maxLength={255}
+                rows={4}
+              />
+              <div className="bio-counter">
+                {formData.bio.length}/255 characters
               </div>
             </div>
 

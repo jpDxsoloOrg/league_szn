@@ -14,6 +14,7 @@ export interface Player {
   recentForm?: ('W' | 'L' | 'D')[];
   /** Current consecutive result streak from most recent match */
   currentStreak?: { type: 'W' | 'L' | 'D'; count: number };
+  bio?: string;
 }
 
 export interface Match {

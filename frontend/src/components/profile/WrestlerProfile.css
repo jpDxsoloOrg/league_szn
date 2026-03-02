@@ -72,6 +72,14 @@
   font-style: italic;
 }
 
+.profile-bio {
+  font-size: 0.95rem;
+  color: #ccc;
+  margin: 0.5rem 0 0;
+  line-height: 1.5;
+  max-width: 600px;
+}
+
 .edit-icon-btn {
   margin-left: auto;
   flex-shrink: 0;
@@ -222,6 +230,32 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #222;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color 0.2s;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+.bio-counter {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #aaa;
+  text-align: right;
 }
 
 .season-record-value {
@@ -388,12 +422,12 @@
 }
 
 .cancel-btn {
-  background-color: #333 !important;
+  background-color: #333;
   color: #fff;
 }
 
 .cancel-btn:hover {
-  background-color: #444 !important;
+  background-color: #444;
 }
 
 
