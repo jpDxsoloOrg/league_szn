@@ -8,6 +8,7 @@ export interface Player {
   draws: number;
   imageUrl?: string;
   divisionId?: string;
+  bio?: string;
   createdAt: string;
   updatedAt: string;
   /** Last 5 match results (newest first): W win, L loss, D draw */

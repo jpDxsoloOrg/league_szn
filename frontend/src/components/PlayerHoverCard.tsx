@@ -41,6 +41,11 @@ export default function PlayerHoverCard({ player, divisions, children }: PlayerH
               <span>{lastResult === 'W' ? 'W' : lastResult === 'L' ? 'L' : 'D'}</span>
             </div>
           )}
+          {player.bio && (
+            <div className="player-hover-card-row player-hover-card-bio">
+              <span>{player.bio.length > 80 ? player.bio.slice(0, 80) + '...' : player.bio}</span>
+            </div>
+          )}
         </div>
       )}
     </span>

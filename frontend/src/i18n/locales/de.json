@@ -1218,5 +1218,13 @@
       "saveSuccess": "Konfiguration für {{championship}} gespeichert",
       "recalculateSuccess": "Rangliste für {{championship}} neu berechnet"
     }
+  },
+  "profile": {
+    "bio": {
+      "label": "Biografie",
+      "placeholder": "Kurze Biografie schreiben...",
+      "counter": "{{count}}/255",
+      "hint": "Nur Text, maximal 255 Zeichen"
+    }
   }
 }

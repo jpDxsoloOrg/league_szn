@@ -1,5 +1,5 @@
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { notFound } from '../../lib/response';
+import { notFound, badRequest } from '../../lib/response';
 import { handlerFactory } from '../../lib/handlers';
 
 export const handler = handlerFactory({
@@ -7,7 +7,7 @@ export const handler = handlerFactory({
   idField: 'playerId',
   entityName: 'player',
   requiredFields: ['name', 'currentWrestler'],
-  optionalFields: ['imageUrl', 'divisionId'],
+  optionalFields: ['imageUrl', 'divisionId', 'bio'],
   defaults: {
     wins: 0,
     losses: 0,
@@ -22,6 +22,9 @@ export const handler = handlerFactory({
       if (!divisionResult.Item) {
         return notFound(`Division ${body.divisionId} not found`);
       }
+    }
+    if (typeof body.bio === 'string' && body.bio.trim().length > 255) {
+      return badRequest('Bio must be 255 characters or less');
     }
     return null;
   },

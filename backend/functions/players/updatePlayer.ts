@@ -20,12 +20,29 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return playerResult.notFoundResponse;
     }
 
+    // Validate bio length
+    if (body.bio !== undefined) {
+      if (typeof body.bio === 'string' && body.bio.trim().length > 255) {
+        return badRequest('Bio must be 255 characters or less');
+      }
+    }
+
     const updateFields: Record<string, unknown> = {
       currentWrestler: body.currentWrestler,
       name: body.name,
       imageUrl: body.imageUrl,
     };
     const removeFields: string[] = [];
+
+    // Handle bio: store trimmed value, remove if empty/whitespace
+    if (body.bio !== undefined) {
+      const trimmedBio = typeof body.bio === 'string' ? body.bio.trim() : '';
+      if (trimmedBio.length > 0) {
+        updateFields.bio = trimmedBio;
+      } else {
+        removeFields.push('bio');
+      }
+    }
 
     if (body.divisionId !== undefined) {
       if (body.divisionId === '' || body.divisionId === null) {

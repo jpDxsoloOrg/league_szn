@@ -30,6 +30,7 @@ export default function ManagePlayers() {
     currentWrestler: '',
     imageUrl: '',
     divisionId: '',
+    bio: '',
   });
 
   // Image upload state
@@ -163,6 +164,7 @@ export default function ManagePlayers() {
           currentWrestler: sanitizedWrestler,
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || undefined,
+          bio: formData.bio.trim() || undefined,
         });
       } else {
         await playersApi.create({
@@ -170,13 +172,14 @@ export default function ManagePlayers() {
           currentWrestler: sanitizedWrestler,
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || undefined,
+          bio: formData.bio.trim() || undefined,
           wins: 0,
           losses: 0,
           draws: 0,
         });
       }
 
-      setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '' });
+      setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '', bio: '' });
       setSelectedFile(null);
       setImagePreview(null);
       setShowAddForm(false);
@@ -197,6 +200,7 @@ export default function ManagePlayers() {
       currentWrestler: player.currentWrestler,
       imageUrl: player.imageUrl || '',
       divisionId: player.divisionId || '',
+      bio: player.bio || '',
     });
     setImagePreview(player.imageUrl || null);
     setSelectedFile(null);
@@ -204,7 +208,7 @@ export default function ManagePlayers() {
   };
 
   const handleCancel = () => {
-    setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '' });
+    setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '', bio: '' });
     setSelectedFile(null);
     setImagePreview(null);
     setShowAddForm(false);
@@ -292,6 +296,19 @@ export default function ManagePlayers() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="bio">Bio</label>
+              <textarea
+                id="bio"
+                value={formData.bio}
+                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                placeholder="Write a short bio..."
+                maxLength={255}
+                rows={3}
+              />
+              <span className="bio-counter">{formData.bio.length}/255</span>
             </div>
 
             <div className="form-group">

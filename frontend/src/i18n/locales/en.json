@@ -1219,5 +1219,13 @@
       "saveSuccess": "Configuration saved for {{championship}}",
       "recalculateSuccess": "Rankings recalculated for {{championship}}"
     }
+  },
+  "profile": {
+    "bio": {
+      "label": "Bio",
+      "placeholder": "Write a short bio...",
+      "counter": "{{count}}/255",
+      "hint": "Plain text only, 255 characters max"
+    }
   }
 }

@@ -32,3 +32,9 @@
   color: #888;
   margin-right: 0.5rem;
 }
+
+.player-hover-card-bio {
+  white-space: normal;
+  font-style: italic;
+  color: #aaa;
+}

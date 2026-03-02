@@ -4,9 +4,10 @@ import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, requireRole } from '../../lib/auth';
 
-const ALLOWED_FIELDS = ['name', 'currentWrestler', 'imageUrl'];
+const ALLOWED_FIELDS = ['name', 'currentWrestler', 'imageUrl', 'bio'];
 const MAX_NAME_LENGTH = 100;
 const MAX_URL_LENGTH = 2048;
+const MAX_BIO_LENGTH = 255;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Wrestler');
@@ -60,9 +61,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           return badRequest(`Image URL must be ${MAX_URL_LENGTH} characters or less`);
         }
 
+        if (field === 'bio' && value.trim().length > MAX_BIO_LENGTH) {
+          return badRequest(`Bio must be ${MAX_BIO_LENGTH} characters or less`);
+        }
+
+        // For bio: skip empty/whitespace values (don't store them)
+        if (field === 'bio' && value.trim().length === 0) {
+          continue;
+        }
+
+        const storedValue = field === 'bio' ? value.trim() : value;
         setExpressions.push(`#${field} = :${field}`);
         expressionAttributeNames[`#${field}`] = field;
-        expressionAttributeValues[`:${field}`] = value;
+        expressionAttributeValues[`:${field}`] = storedValue;
       }
     }
 
