@@ -25,6 +25,7 @@ interface SeasonRecord {
 
 interface PlayerProfile extends Player {
   seasonRecords?: SeasonRecord[];
+  bio?: string;
 }
 
 export default function WrestlerProfile() {
@@ -43,6 +44,7 @@ export default function WrestlerProfile() {
     name: '',
     currentWrestler: '',
     imageUrl: '',
+    bio: '',
   });
 
   // Image upload state
@@ -63,6 +65,7 @@ export default function WrestlerProfile() {
         name: profile.name,
         currentWrestler: profile.currentWrestler,
         imageUrl: profile.imageUrl || '',
+        bio: profile.bio || '',
       });
     } catch (err) {
       if (err instanceof Error && err.message.includes('404')) {
@@ -151,6 +154,7 @@ export default function WrestlerProfile() {
         name: player.name,
         currentWrestler: player.currentWrestler,
         imageUrl: player.imageUrl || '',
+        bio: player.bio || '',
       });
       setImagePreview(player.imageUrl || null);
       setSelectedFile(null);
@@ -170,6 +174,7 @@ export default function WrestlerProfile() {
         name: player.name,
         currentWrestler: player.currentWrestler,
         imageUrl: player.imageUrl || '',
+        bio: player.bio || '',
       });
     }
   };
@@ -187,13 +192,19 @@ export default function WrestlerProfile() {
 
       const sanitizedName = sanitizeName(formData.name, VALIDATION.MAX_NAME_LENGTH);
       const sanitizedWrestler = sanitizeName(formData.currentWrestler, VALIDATION.MAX_NAME_LENGTH);
+      const sanitizedBio = formData.bio ? sanitizeName(formData.bio.trim(), 500) : '';
 
       if (!sanitizedName) {
         setError('Player name cannot be empty');
         return;
       }
 
-      const updates: { name?: string; currentWrestler?: string; imageUrl?: string } = {
+      if (formData.bio && formData.bio.trim().length > 500) {
+        setError('Bio cannot exceed 500 characters');
+        return;
+      }
+
+      const updates: { name?: string; currentWrestler?: string; imageUrl?: string; bio?: string } = {
         name: sanitizedName,
       };
 
@@ -203,6 +214,10 @@ export default function WrestlerProfile() {
 
       if (imageUrl) {
         updates.imageUrl = imageUrl;
+      }
+
+      if (sanitizedBio !== undefined) {
+        updates.bio = sanitizedBio;
       }
 
       const updated = await profileApi.updateMyProfile(updates);
@@ -279,6 +294,9 @@ export default function WrestlerProfile() {
               Playing as {player.currentWrestler}
             </p>
           )}
+          {player.bio && (
+            <p className="profile-bio">{player.bio}</p>
+          )}
         </div>
         {!editing && (
           <button
@@ -286,9 +304,11 @@ export default function WrestlerProfile() {
             onClick={handleEdit}
             aria-label="Edit profile"
             title="Edit profile"
-          >
-&#9998;
-          </button>
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path d="M11.854 2.146a.5.5 0 0 1 0 .708l-8 8a.5.5 0 0 1-.147.103l-3 1a.5.5 0 0 1-.606-.606l1-3a.5.5 0 0 1 .103-.147l8-8a.5.5 0 0 1 .708 0l1.146 1.146a.5.5 0 0 1 0 .708l-7.293 7.293-.647 1.94 1.94-.647 7.293-7.293a.5.5 0 0 1 .708 0z"/>
+              </svg>
+            </button>
         )}
       </div>
       {/* Edit Form (edit mode only) */}
@@ -317,6 +337,24 @@ export default function WrestlerProfile() {
                 onChange={(e) => setFormData({ ...formData, currentWrestler: e.target.value })}
                 placeholder="The wrestler you play as"
               />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="profile-bio">Bio</label>
+              <div className="textarea-wrapper">
+                <textarea
+                  id="profile-bio"
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  placeholder="Tell us about yourself..."
+                  maxLength={500}
+                  rows={4}
+                  className="bio-textarea"
+                />
+                <div className="character-count">
+                  {formData.bio.length}/500
+                </div>
+              </div>
             </div>
 
             <div className="form-group">
