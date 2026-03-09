@@ -205,7 +205,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       dynamoDb.scanAll({ TableName: TableNames.MATCHES }),
     ]);
 
-    const players = playersResult as unknown as PlayerRecord[];
+    // Only include players who have a wrestler assigned (exclude Fantasy-only users)
+    const players = (playersResult as unknown as PlayerRecord[]).filter((p) => p.currentWrestler);
     const allMatches = matchesResult as unknown as MatchRecord[];
     const allCompletedMatches = allMatches.filter((m) => m.status === 'completed');
     const completedMatches = seasonId ? allCompletedMatches.filter((m) => m.seasonId === seasonId) : allCompletedMatches;

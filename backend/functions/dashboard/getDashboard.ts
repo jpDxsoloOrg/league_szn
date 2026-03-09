@@ -91,8 +91,11 @@ export const handler: APIGatewayProxyHandler = async () => {
         }),
       ]);
 
+    // Only include players who have a wrestler assigned (exclude Fantasy-only users)
+    const wrestlerPlayers = (players as Record<string, unknown>[]).filter((p) => p.currentWrestler);
+
     const playerMap = new Map<string, Record<string, unknown>>();
-    for (const p of players as Record<string, unknown>[]) {
+    for (const p of wrestlerPlayers) {
       const id = p.playerId as string;
       if (id) playerMap.set(id, p);
     }
@@ -262,7 +265,7 @@ export const handler: APIGatewayProxyHandler = async () => {
       }
     } else {
       let maxWins = 0;
-      for (const p of players as Record<string, unknown>[]) {
+      for (const p of wrestlerPlayers) {
         const w = (p.wins as number) ?? 0;
         if (w > maxWins) {
           maxWins = w;
@@ -275,7 +278,7 @@ export const handler: APIGatewayProxyHandler = async () => {
     }
 
     const quickStats: DashboardQuickStats = {
-      totalPlayers: players.length,
+      totalPlayers: wrestlerPlayers.length,
       totalMatches,
       activeChampionships: (championships as Record<string, unknown>[]).filter(
         (c) => c.isActive !== false

@@ -8,7 +8,10 @@ export const handler: APIGatewayProxyHandler = async () => {
       TableName: TableNames.PLAYERS,
     });
 
-    return success(result.Items || []);
+    // Only include players who have a wrestler assigned (exclude Fantasy-only users)
+    const wrestlers = (result.Items || []).filter((p) => p.currentWrestler);
+
+    return success(wrestlers);
   } catch (err) {
     console.error('Error fetching players:', err);
     return serverError('Failed to fetch players');

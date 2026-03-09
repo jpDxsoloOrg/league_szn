@@ -73,9 +73,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       });
 
       // Get all player details with pagination support
-      const players = await dynamoDb.scanAll({
+      const allPlayers = await dynamoDb.scanAll({
         TableName: TableNames.PLAYERS,
       });
+
+      // Only include players who have a wrestler assigned (exclude Fantasy-only users)
+      const players = allPlayers.filter((p) => p.currentWrestler);
 
       // Build a map of season standings by playerId
       const standingsMap = new Map(
@@ -119,8 +122,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       TableName: TableNames.PLAYERS,
     });
 
+    // Only include players who have a wrestler assigned (exclude Fantasy-only users)
+    const wrestlers = allPlayers.filter((p) => p.currentWrestler);
+
     // Sort players by wins descending, then by losses ascending
-    const players = allPlayers.sort((a, b) => {
+    const players = wrestlers.sort((a, b) => {
       const aWins = (a.wins as number) || 0;
       const bWins = (b.wins as number) || 0;
       const aLosses = (a.losses as number) || 0;
