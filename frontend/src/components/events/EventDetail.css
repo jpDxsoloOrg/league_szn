@@ -28,6 +28,22 @@
   margin-bottom: 16px;
 }
 
+/* ── Event Banner ─────────────────────────────────────────────────────────── */
+
+.event-banner {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.event-banner-img {
+  max-width: 600px;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  object-fit: contain;
+}
+
 /* ── Event Header ──────────────────────────────────────────────────────────── */
 
 .event-detail-header {
@@ -327,6 +343,11 @@
 @media (max-width: 768px) {
   .event-detail-page {
     padding: 0;
+  }
+
+  .event-banner-img {
+    max-width: 100%;
+    border-radius: 6px;
   }
 
   .event-detail-header {

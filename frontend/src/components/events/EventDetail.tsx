@@ -122,6 +122,16 @@ export default function EventDetail() {
         &larr; {t('events.detail.backToEvents')}
       </Link>
 
+      {eventData.imageUrl && (
+        <div className="event-banner">
+          <img
+            src={eventData.imageUrl}
+            alt={eventData.name}
+            className="event-banner-img"
+          />
+        </div>
+      )}
+
       {/* Event Header */}
       <div
         className="event-detail-header"
