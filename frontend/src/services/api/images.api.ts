@@ -4,7 +4,7 @@ export const imagesApi = {
   generateUploadUrl: async (
     fileName: string,
     fileType: string,
-    folder: 'wrestlers' | 'championships'
+    folder: 'wrestlers' | 'championships' | 'shows'
   ): Promise<{ uploadUrl: string; imageUrl: string; fileKey: string }> => {
     return fetchWithAuth(`${API_BASE_URL}/images/upload-url`, {
       method: 'POST',

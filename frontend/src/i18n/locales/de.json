@@ -1183,7 +1183,19 @@
     "noShows": "Noch keine Shows",
     "createFirst": "Erstelle deine erste Show, um loszulegen",
     "confirmDelete": "Bist du sicher, dass du diese Show löschen möchtest?",
-    "selectCompany": "Unternehmen auswählen"
+    "selectCompany": "Unternehmen auswählen",
+    "dayOfWeek": "Wochentag",
+    "selectDay": "Wochentag auswählen",
+    "image": "Show-Bild",
+    "uploadImage": "Bild hochladen",
+    "removeImage": "Bild entfernen",
+    "monday": "Montag",
+    "tuesday": "Dienstag",
+    "wednesday": "Mittwoch",
+    "thursday": "Donnerstag",
+    "friday": "Freitag",
+    "saturday": "Samstag",
+    "sunday": "Sonntag"
   },
   "companies": {
     "title": "Unternehmen",

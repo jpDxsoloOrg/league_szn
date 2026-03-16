@@ -210,12 +210,16 @@ export interface Company {
   updatedAt: string;
 }
 
+export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
 export interface Show {
   showId: string;
   name: string;
   companyId: string;
   description?: string;
   schedule?: 'weekly' | 'ppv' | 'special';
+  dayOfWeek?: DayOfWeek;
+  imageUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

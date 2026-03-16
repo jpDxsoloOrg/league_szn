@@ -69,6 +69,7 @@ export interface EventCalendarEntry {
   matchCount: number;
   championshipMatchCount: number;
   imageUrl?: string;
+  showId?: string;
 }
 
 export interface CreateEventInput {

@@ -7,7 +7,7 @@ export const handler = handlerFactory({
   idField: 'showId',
   entityName: 'show',
   requiredFields: ['name', 'companyId'],
-  optionalFields: ['description', 'schedule'],
+  optionalFields: ['description', 'schedule', 'dayOfWeek', 'imageUrl'],
   validate: async (body) => {
     if (body.companyId) {
       const companyResult = await dynamoDb.get({

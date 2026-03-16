@@ -13,7 +13,7 @@ export const showsApi = {
     return fetchWithAuth(`${API_BASE_URL}/shows/${showId}`);
   },
 
-  create: async (show: { name: string; companyId: string; description?: string; schedule?: 'weekly' | 'ppv' | 'special' }): Promise<Show> => {
+  create: async (show: { name: string; companyId: string; description?: string; schedule?: 'weekly' | 'ppv' | 'special'; dayOfWeek?: string; imageUrl?: string }): Promise<Show> => {
     return fetchWithAuth(`${API_BASE_URL}/shows`, {
       method: 'POST',
       body: JSON.stringify(show),

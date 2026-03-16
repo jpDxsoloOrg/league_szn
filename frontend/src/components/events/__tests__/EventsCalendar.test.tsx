@@ -3,13 +3,22 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockGetAllEvents } = vi.hoisted(() => ({
+const { mockGetAllEvents, mockGetAllShows, mockGetAllCompanies } = vi.hoisted(() => ({
   mockGetAllEvents: vi.fn(),
+  mockGetAllShows: vi.fn(),
+  mockGetAllCompanies: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
   eventsApi: {
     getAll: mockGetAllEvents,
+    create: vi.fn(),
+  },
+  showsApi: {
+    getAll: mockGetAllShows,
+  },
+  companiesApi: {
+    getAll: mockGetAllCompanies,
   },
 }));
 
@@ -117,6 +126,8 @@ function renderEventsCalendar() {
 describe('EventsCalendar', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetAllShows.mockResolvedValue([]);
+    mockGetAllCompanies.mockResolvedValue([]);
     // Fix the date to June 15, 2025 so calendar renders June 2025
     // shouldAdvanceTime allows promises to resolve while keeping Date fixed
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -150,10 +161,10 @@ describe('EventsCalendar', () => {
     expect(screen.getByText('15')).toBeInTheDocument();
     expect(screen.getByText('30')).toBeInTheDocument();
 
-    // Event dots rendered with title attributes for events in June
-    const wrestleManiaDot = screen.getByTitle('WrestleMania 42');
-    expect(wrestleManiaDot).toBeInTheDocument();
-    expect(wrestleManiaDot).toHaveClass('calendar-event-dot');
+    // Event items rendered with title attributes for events in June
+    const wrestleManiaItem = screen.getByTitle('WrestleMania 42');
+    expect(wrestleManiaItem).toBeInTheDocument();
+    expect(wrestleManiaItem).toHaveClass('calendar-item');
 
     // Filter tabs (some labels like "PPV" also appear in the legend, so target the container)
     const filterContainer = document.querySelector('.events-filter-tabs')!;
@@ -243,9 +254,11 @@ describe('EventsCalendar', () => {
     // Upcoming events section shows events with status "upcoming" or "in-progress"
     // e1 (upcoming), e2 (upcoming), e3 (in-progress) should appear in the list
     // e4 (completed) should NOT appear
-    expect(screen.getByText('WrestleMania 42')).toBeInTheDocument();
-    expect(screen.getByText('Monday Night Raw')).toBeInTheDocument();
-    expect(screen.getByText('Saturday Night Special')).toBeInTheDocument();
+    // Events appear both on the calendar grid and in the upcoming list,
+    // so use getAllByText and verify at least one exists
+    expect(screen.getAllByText('WrestleMania 42').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Monday Night Raw').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Saturday Night Special').length).toBeGreaterThanOrEqual(1);
 
     // "No upcoming events" message should NOT appear
     expect(screen.queryByText('No upcoming events')).not.toBeInTheDocument();

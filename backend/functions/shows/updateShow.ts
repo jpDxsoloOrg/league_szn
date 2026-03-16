@@ -8,6 +8,8 @@ interface UpdateShowBody {
   companyId?: string;
   description?: string;
   schedule?: string;
+  dayOfWeek?: string;
+  imageUrl?: string;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -42,6 +44,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       companyId: body.companyId,
       description: body.description,
       schedule: body.schedule,
+      dayOfWeek: body.dayOfWeek,
+      imageUrl: body.imageUrl,
     });
 
     if (!updateExpr.hasChanges) {
