@@ -409,6 +409,8 @@
         "promos": "Promos",
         "seasonAwards": "Saison-Auszeichnungen",
         "contenderConfig": "Herausforderer Konfig",
+        "companies": "Unternehmen",
+        "shows": "Shows",
         "users": "Benutzerverwaltung",
         "features": "Funktionsverwaltung",
         "help": "Hilfe",
@@ -1165,6 +1167,37 @@
       "filterByType": "Nach Typ filtern",
       "all": "Alle"
     }
+  },
+  "shows": {
+    "title": "Shows",
+    "name": "Show-Name",
+    "company": "Unternehmen",
+    "schedule": "Zeitplan",
+    "description": "Beschreibung",
+    "weekly": "Wöchentlich",
+    "ppv": "PPV",
+    "special": "Spezial",
+    "create": "Show erstellen",
+    "edit": "Show bearbeiten",
+    "delete": "Show löschen",
+    "noShows": "Noch keine Shows",
+    "createFirst": "Erstelle deine erste Show, um loszulegen",
+    "confirmDelete": "Bist du sicher, dass du diese Show löschen möchtest?",
+    "selectCompany": "Unternehmen auswählen"
+  },
+  "companies": {
+    "title": "Unternehmen",
+    "name": "Firmenname",
+    "abbreviation": "Abkürzung",
+    "description": "Beschreibung",
+    "create": "Unternehmen erstellen",
+    "edit": "Unternehmen bearbeiten",
+    "delete": "Unternehmen löschen",
+    "noCompanies": "Noch keine Unternehmen",
+    "createFirst": "Erstelle dein erstes Unternehmen, um loszulegen",
+    "confirmDelete": "Bist du sicher, dass du dieses Unternehmen löschen möchtest?",
+    "rosterCount": "Kader",
+    "deleteBlocked": "Unternehmen mit zugewiesenen Spielern oder Shows kann nicht gelöscht werden"
   },
   "contenders": {
     "title": "Herausforderer-Rangliste",

@@ -22,6 +22,8 @@ export interface LeagueEvent {
   themeColor?: string;
   status: EventStatus;
   seasonId?: string;
+  companyIds?: string[];
+  showId?: string;
   matchCards: MatchCardEntry[];
   attendance?: number;
   rating?: number;
@@ -78,6 +80,8 @@ export interface CreateEventInput {
   imageUrl?: string;
   themeColor?: string;
   seasonId?: string;
+  companyIds?: string[];
+  showId?: string;
   fantasyEnabled?: boolean;
   fantasyBudget?: number;
   fantasyPicksPerDivision?: number;
@@ -89,6 +93,8 @@ export interface UpdateEventInput extends Partial<CreateEventInput> {
   matchCards?: MatchCardEntry[];
   attendance?: number;
   rating?: number;
+  companyIds?: string[];
+  showId?: string;
   fantasyEnabled?: boolean;
   fantasyLocked?: boolean;
   fantasyBudget?: number;

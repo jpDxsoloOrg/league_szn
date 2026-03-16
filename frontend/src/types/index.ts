@@ -200,6 +200,26 @@ export interface Division {
   updatedAt: string;
 }
 
+export interface Company {
+  companyId: string;
+  name: string;
+  abbreviation?: string;
+  imageUrl?: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Show {
+  showId: string;
+  name: string;
+  companyId: string;
+  description?: string;
+  schedule?: 'weekly' | 'ppv' | 'special';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Stipulation {
   stipulationId: string;
   name: string;
