@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { EventType, EventCalendarEntry } from '../../types/event';
-import { eventsApi } from '../../services/api';
+import type { Show } from '../../types';
+import { eventsApi, showsApi, companiesApi } from '../../services/api';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import Skeleton from '../ui/Skeleton';
 import EmptyState from '../ui/EmptyState';
@@ -16,25 +17,52 @@ const eventTypeColors: Record<string, string> = {
   house: '#9ca3af',
 };
 
+const showColor = '#60a5fa';
+
 type FilterTab = 'all' | EventType;
+
+/** Map DayOfWeek string to JS getDay() number (0=Sun..6=Sat) */
+const dayOfWeekToNumber: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+};
+
+interface ShowCalendarEntry {
+  show: Show;
+  companyName: string;
+  date: string; // ISO date for this specific occurrence
+}
 
 export default function EventsCalendar() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   useDocumentTitle(t('events.title'));
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [calendarEntries, setCalendarEntries] = useState<EventCalendarEntry[]>([]);
+  const [shows, setShows] = useState<Show[]>([]);
+  const [companyNames, setCompanyNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [creatingEvent, setCreatingEvent] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    const loadEvents = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
-        const events = await eventsApi.getAll(undefined, controller.signal);
+        const [events, showsData, companiesData] = await Promise.all([
+          eventsApi.getAll(undefined, controller.signal),
+          showsApi.getAll(undefined, controller.signal),
+          companiesApi.getAll(controller.signal),
+        ]);
         const entries: EventCalendarEntry[] = events.map((e) => ({
           eventId: e.eventId,
           name: e.name,
@@ -44,8 +72,13 @@ export default function EventsCalendar() {
           matchCount: e.matchCards?.length || 0,
           championshipMatchCount: 0,
           imageUrl: e.imageUrl,
+          showId: e.showId,
         }));
         setCalendarEntries(entries);
+        setShows(showsData.filter((s) => s.schedule === 'weekly' && s.dayOfWeek));
+        const names: Record<string, string> = {};
+        companiesData.forEach((c) => { names[c.companyId] = c.name; });
+        setCompanyNames(names);
         setError(null);
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
@@ -55,7 +88,7 @@ export default function EventsCalendar() {
         setLoading(false);
       }
     };
-    loadEvents();
+    loadData();
     return () => controller.abort();
   }, []);
 
@@ -97,13 +130,50 @@ export default function EventsCalendar() {
     });
   }, [filteredEntries, currentMonth, currentYear]);
 
+  // Generate weekly show entries for the current month
+  const showEntriesByDay = useMemo(() => {
+    if (activeFilter !== 'all' && activeFilter !== 'weekly') return {};
+
+    const map: Record<number, ShowCalendarEntry[]> = {};
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+    shows.forEach((show) => {
+      if (!show.dayOfWeek) return;
+      const targetDay = dayOfWeekToNumber[show.dayOfWeek];
+      if (targetDay === undefined) return;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const date = new Date(currentYear, currentMonth, d);
+        if (date.getDay() === targetDay) {
+          const dateStr = date.toISOString();
+          // Check if an event already exists for this show on this date
+          const existingEvent = calendarEntries.find((e) => {
+            if (e.showId !== show.showId) return false;
+            const eDate = new Date(e.date);
+            return eDate.getFullYear() === date.getFullYear() &&
+              eDate.getMonth() === date.getMonth() &&
+              eDate.getDate() === date.getDate();
+          });
+
+          if (!existingEvent) {
+            const arr = map[d] ?? (map[d] = []);
+            arr.push({
+              show,
+              companyName: companyNames[show.companyId] || '',
+              date: dateStr,
+            });
+          }
+        }
+      }
+    });
+    return map;
+  }, [shows, currentMonth, currentYear, activeFilter, calendarEntries, companyNames]);
+
   // Build calendar grid
   const calendarDays = useMemo(() => {
     const firstDay = new Date(currentYear, currentMonth, 1).getDay();
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const days: (number | null)[] = [];
-
-    // Leading empty cells
     for (let i = 0; i < firstDay; i++) {
       days.push(null);
     }
@@ -131,7 +201,7 @@ export default function EventsCalendar() {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [filteredEntries]);
 
-  // Recent completed events (most recent first, limited to 10)
+  // Recent completed events
   const recentResults = useMemo(() => {
     return filteredEntries
       .filter((e) => e.status === 'completed')
@@ -156,6 +226,26 @@ export default function EventsCalendar() {
       setCurrentMonth((m) => m + 1);
     }
   };
+
+  const handleShowClick = useCallback(async (entry: ShowCalendarEntry) => {
+    if (creatingEvent) return;
+    const key = `${entry.show.showId}-${entry.date}`;
+    setCreatingEvent(key);
+    try {
+      const event = await eventsApi.create({
+        name: entry.show.name,
+        eventType: 'weekly',
+        date: entry.date,
+        showId: entry.show.showId,
+        companyIds: [entry.show.companyId],
+        imageUrl: entry.show.imageUrl,
+      });
+      navigate(`/events/${event.eventId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create event');
+      setCreatingEvent(null);
+    }
+  }, [creatingEvent, navigate]);
 
   const filterTabs: { key: FilterTab; label: string }[] = [
     { key: 'all', label: t('events.filters.all') },
@@ -183,7 +273,9 @@ export default function EventsCalendar() {
     );
   }
 
-  if (calendarEntries.length === 0) {
+  const hasContent = calendarEntries.length > 0 || shows.length > 0;
+
+  if (!hasContent) {
     return (
       <div className="events-calendar-page">
         <h2 className="events-title">{t('events.title')}</h2>
@@ -213,10 +305,7 @@ export default function EventsCalendar() {
             }
           >
             {tab.key !== 'all' && (
-              <span
-                className="filter-dot"
-                style={{ backgroundColor: eventTypeColors[tab.key] }}
-              />
+              <span className="filter-dot" style={{ backgroundColor: eventTypeColors[tab.key] }} />
             )}
             {tab.label}
           </button>
@@ -226,52 +315,71 @@ export default function EventsCalendar() {
       {/* Calendar */}
       <div className="calendar-container">
         <div className="calendar-nav">
-          <button className="calendar-nav-btn" onClick={goToPreviousMonth}>
-            &lt;
-          </button>
-          <h3 className="calendar-month-label">
-            {monthNames[currentMonth]} {currentYear}
-          </h3>
-          <button className="calendar-nav-btn" onClick={goToNextMonth}>
-            &gt;
-          </button>
+          <button className="calendar-nav-btn" onClick={goToPreviousMonth}>&lt;</button>
+          <h3 className="calendar-month-label">{monthNames[currentMonth]} {currentYear}</h3>
+          <button className="calendar-nav-btn" onClick={goToNextMonth}>&gt;</button>
         </div>
 
         <div className="calendar-grid">
           {dayNames.map((day) => (
-            <div key={day} className="calendar-day-header">
-              {day}
-            </div>
+            <div key={day} className="calendar-day-header">{day}</div>
           ))}
 
-          {calendarDays.map((day, idx) => (
-            <div
-              key={idx}
-              className={`calendar-day-cell ${day === null ? 'empty' : ''} ${
-                eventsByDay[day ?? -1] ? 'has-events' : ''
-              }`}
-            >
-              {day !== null && (
-                <>
-                  <span className="calendar-day-number">{day}</span>
-                  {eventsByDay[day] && (
-                    <div className="calendar-day-events">
-                      {eventsByDay[day].map((evt) => (
+          {calendarDays.map((day, idx) => {
+            const dayEvents = day !== null ? eventsByDay[day] : undefined;
+            const dayShows = day !== null ? showEntriesByDay[day] : undefined;
+            const hasItems = !!(dayEvents || dayShows);
+
+            return (
+              <div
+                key={idx}
+                className={`calendar-day-cell ${day === null ? 'empty' : ''} ${hasItems ? 'has-events' : ''}`}
+              >
+                {day !== null && (
+                  <>
+                    <span className="calendar-day-number">{day}</span>
+                    <div className="calendar-day-items">
+                      {dayEvents?.map((evt) => (
                         <Link
                           key={evt.eventId}
                           to={`/events/${evt.eventId}`}
-                          className="calendar-event-dot"
-                          style={{ backgroundColor: eventTypeColors[evt.eventType] }}
+                          className="calendar-item"
                           title={evt.name}
                           aria-label={evt.name}
-                        />
+                        >
+                          {evt.imageUrl ? (
+                            <img src={evt.imageUrl} alt={evt.name} className="calendar-item-img" />
+                          ) : (
+                            <div className="calendar-item-bar" style={{ backgroundColor: eventTypeColors[evt.eventType] }}>
+                              <span className="calendar-item-label">{evt.name}</span>
+                            </div>
+                          )}
+                        </Link>
+                      ))}
+                      {dayShows?.map((entry) => (
+                        <button
+                          key={`show-${entry.show.showId}`}
+                          className="calendar-item"
+                          title={`${entry.show.name} (${entry.companyName})`}
+                          aria-label={entry.show.name}
+                          disabled={creatingEvent === `${entry.show.showId}-${entry.date}`}
+                          onClick={() => handleShowClick(entry)}
+                        >
+                          {entry.show.imageUrl ? (
+                            <img src={entry.show.imageUrl} alt={entry.show.name} className="calendar-item-img" />
+                          ) : (
+                            <div className="calendar-item-bar" style={{ backgroundColor: showColor }}>
+                              <span className="calendar-item-label">{entry.show.name}</span>
+                            </div>
+                          )}
+                        </button>
                       ))}
                     </div>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Legend */}

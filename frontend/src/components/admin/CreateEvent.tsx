@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { EventType, LeagueEvent } from '../../types/event';
-import type { Season } from '../../types';
-import { eventsApi, seasonsApi } from '../../services/api';
+import type { Season, Company } from '../../types';
+import { eventsApi, seasonsApi, companiesApi } from '../../services/api';
 import './CreateEvent.css';
 
 const eventTypeOptions: { value: EventType; labelKey: string }[] = [
@@ -46,7 +46,9 @@ export default function CreateEvent() {
   const [description, setDescription] = useState('');
   const [themeColor, setThemeColor] = useState('#d4af37');
   const [seasonId, setSeasonId] = useState('');
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
   const [seasons, setSeasons] = useState<Season[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +64,7 @@ export default function CreateEvent() {
 
   useEffect(() => {
     seasonsApi.getAll().then(setSeasons).catch(() => {});
+    companiesApi.getAll().then(setCompanies).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -98,6 +101,7 @@ export default function CreateEvent() {
         description: description || undefined,
         themeColor,
         seasonId: seasonId || undefined,
+        companyIds: selectedCompanyIds.length > 0 ? selectedCompanyIds : undefined,
       });
       setSaved(true);
       setEvents((prev) => [created, ...prev]);
@@ -106,6 +110,7 @@ export default function CreateEvent() {
       setVenue('');
       setDescription('');
       setSeasonId('');
+      setSelectedCompanyIds([]);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create event');
@@ -281,6 +286,31 @@ export default function CreateEvent() {
             ))}
           </select>
         </div>
+
+        {/* Companies */}
+        {companies.length > 0 && (
+          <div className="form-group">
+            <label className="form-label">{t('companies.title')}</label>
+            <div className="company-checkboxes">
+              {companies.map((company) => (
+                <label key={company.companyId} className="company-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={selectedCompanyIds.includes(company.companyId)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedCompanyIds(prev => [...prev, company.companyId]);
+                      } else {
+                        setSelectedCompanyIds(prev => prev.filter(id => id !== company.companyId));
+                      }
+                    }}
+                  />
+                  <span>{company.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Save Button */}
         <button

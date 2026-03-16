@@ -136,6 +136,8 @@ export const TableNames = {
   STIPULATIONS: process.env.STIPULATIONS_TABLE!,
   MATCH_TYPES: process.env.MATCH_TYPES_TABLE!,
   SEASON_AWARDS: process.env.SEASON_AWARDS_TABLE!,
+  COMPANIES: process.env.COMPANIES_TABLE!,
+  SHOWS: process.env.SHOWS_TABLE!,
 };
 
 type DynamoRecord = Record<string, unknown>;

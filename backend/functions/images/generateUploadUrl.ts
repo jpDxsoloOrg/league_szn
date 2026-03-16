@@ -13,7 +13,7 @@ const s3Client = new S3Client({
 interface GenerateUploadUrlBody {
   fileName: string;
   fileType: string;
-  folder: 'wrestlers' | 'championships';
+  folder: 'wrestlers' | 'championships' | 'shows';
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -28,8 +28,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('fileName, fileType, and folder are required');
     }
 
-    if (!['wrestlers', 'championships'].includes(body.folder)) {
-      return badRequest('folder must be either "wrestlers" or "championships"');
+    if (!['wrestlers', 'championships', 'shows'].includes(body.folder)) {
+      return badRequest('folder must be "wrestlers", "championships", or "shows"');
     }
 
     // Validate file type (only allow images)

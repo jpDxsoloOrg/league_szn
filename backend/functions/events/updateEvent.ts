@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { buildUpdateExpression, getOrNotFound } from '../../lib/dynamodbUtils';
-import { success, badRequest, serverError } from '../../lib/response';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
 interface MatchCardEntry {
@@ -28,6 +28,8 @@ interface UpdateEventBody {
   fantasyLocked?: boolean;
   fantasyBudget?: number;
   fantasyPicksPerDivision?: number;
+  companyIds?: string[];
+  showId?: string;
 }
 
 const VALID_EVENT_TYPES = ['ppv', 'weekly', 'special', 'house'];
@@ -59,6 +61,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('status must be one of: upcoming, in-progress, completed, cancelled');
     }
 
+    // Validate companyIds if provided
+    if (body.companyIds !== undefined) {
+      if (!Array.isArray(body.companyIds)) {
+        return badRequest('companyIds must be an array of company IDs');
+      }
+      for (const companyId of body.companyIds) {
+        const companyResult = await dynamoDb.get({
+          TableName: TableNames.COMPANIES,
+          Key: { companyId },
+        });
+        if (!companyResult.Item) {
+          return notFound(`Company ${companyId} not found`);
+        }
+      }
+    }
+
     const updateExpr = buildUpdateExpression({
       name: body.name,
       eventType: body.eventType,
@@ -76,6 +94,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       fantasyLocked: body.fantasyLocked,
       fantasyBudget: body.fantasyBudget,
       fantasyPicksPerDivision: body.fantasyPicksPerDivision,
+      companyIds: body.companyIds,
+      showId: body.showId,
     });
 
     if (!updateExpr.hasChanges) {

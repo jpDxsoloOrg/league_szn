@@ -3,11 +3,12 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockCreateEvent, mockGetAllEvents, mockDeleteEvent, mockGetAllSeasons } = vi.hoisted(() => ({
+const { mockCreateEvent, mockGetAllEvents, mockDeleteEvent, mockGetAllSeasons, mockGetAllCompanies } = vi.hoisted(() => ({
   mockCreateEvent: vi.fn(),
   mockGetAllEvents: vi.fn(),
   mockDeleteEvent: vi.fn(),
   mockGetAllSeasons: vi.fn(),
+  mockGetAllCompanies: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -18,6 +19,9 @@ vi.mock('../../../services/api', () => ({
   },
   seasonsApi: {
     getAll: mockGetAllSeasons,
+  },
+  companiesApi: {
+    getAll: mockGetAllCompanies,
   },
 }));
 
@@ -122,6 +126,7 @@ describe('CreateEvent', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetAllSeasons.mockResolvedValue(mockSeasons);
+    mockGetAllCompanies.mockResolvedValue([]);
     mockGetAllEvents.mockResolvedValue([]);
     mockDeleteEvent.mockResolvedValue(undefined);
     vi.spyOn(window, 'confirm').mockReturnValue(true);

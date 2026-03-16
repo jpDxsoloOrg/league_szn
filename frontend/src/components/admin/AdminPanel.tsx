@@ -24,10 +24,12 @@ import './AdminPanel.css';
 
 import ManageSeasonAwards from './ManageSeasonAwards';
 import AdminContenderConfig from './AdminContenderConfig';
+import ManageCompanies from './ManageCompanies';
+import ManageShows from './ManageShows';
 
-type AdminTab = 'players' | 'divisions' | 'match-config' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'danger' | 'users' | 'features';
+type AdminTab = 'players' | 'divisions' | 'match-config' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'companies' | 'shows' | 'danger' | 'users' | 'features';
 
-const VALID_TABS: AdminTab[] = ['players', 'divisions', 'match-config', 'schedule', 'results', 'championships', 'tournaments', 'challenges', 'promos', 'seasons', 'season-awards', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'danger', 'users', 'features'];
+const VALID_TABS: AdminTab[] = ['players', 'divisions', 'match-config', 'schedule', 'results', 'championships', 'tournaments', 'challenges', 'promos', 'seasons', 'season-awards', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'companies', 'shows', 'danger', 'users', 'features'];
 
 
 export default function AdminPanel() {
@@ -86,6 +88,8 @@ export default function AdminPanel() {
     'fantasy-shows': <ManageFantasyShows />,
     'fantasy-config': <FantasyConfig />,
     'contender-config': <AdminContenderConfig />,
+    companies: <ManageCompanies />,
+    shows: <ManageShows />,
     danger: <ClearAllData />,
   };
 

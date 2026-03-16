@@ -31,6 +31,8 @@ provider:
     STIPULATIONS_TABLE: ${self:service}-stipulations-${self:provider.stage}
     MATCH_TYPES_TABLE: ${self:service}-match-types-${self:provider.stage}
     SEASON_AWARDS_TABLE: ${self:service}-season-awards-${self:provider.stage}
+    COMPANIES_TABLE: ${self:service}-companies-${self:provider.stage}
+    SHOWS_TABLE: ${self:service}-shows-${self:provider.stage}
     DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT, 'http://localhost:8000'}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
@@ -77,6 +79,9 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STIPULATIONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_TYPES_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SEASON_AWARDS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.COMPANIES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SHOWS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SHOWS_TABLE}/index/*
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -403,6 +408,62 @@ functions:
           authorizer: adminAuthorizer
       - http:
           path: seasons/{seasonId}/awards/{awardId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  # Companies (CRUD for wrestling companies)
+  companies:
+    handler: functions/companies/handler.handler
+    events:
+      - http:
+          path: companies
+          method: get
+          cors: *corsConfig
+      - http:
+          path: companies
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: companies/{companyId}
+          method: get
+          cors: *corsConfig
+      - http:
+          path: companies/{companyId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: companies/{companyId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  # Shows (CRUD for wrestling shows, linked to companies)
+  shows:
+    handler: functions/shows/handler.handler
+    events:
+      - http:
+          path: shows
+          method: get
+          cors: *corsConfig
+      - http:
+          path: shows
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: shows/{showId}
+          method: get
+          cors: *corsConfig
+      - http:
+          path: shows/{showId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: shows/{showId}
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
@@ -1254,6 +1315,39 @@ resources:
             KeyType: HASH
           - AttributeName: awardId
             KeyType: RANGE
+
+    ShowsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.SHOWS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: showId
+            AttributeType: S
+          - AttributeName: companyId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: showId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: CompanyShowsIndex
+            KeySchema:
+              - AttributeName: companyId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    CompaniesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.COMPANIES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: companyId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: companyId
+            KeyType: HASH
 
     ImagesBucket:
       Type: AWS::S3::Bucket

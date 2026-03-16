@@ -1,0 +1,143 @@
+.manage-companies {
+  width: 100%;
+}
+
+.companies-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.company-form-container {
+  background-color: #0f1429;
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.company-form-container h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: #d4af37;
+}
+
+.company-form {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.company-form textarea {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #161d3a;
+  border: 2px solid #334155;
+  border-radius: 4px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+.company-form textarea:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+.companies-list h3 {
+  margin-bottom: 1.5rem;
+}
+
+.companies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.company-card {
+  background-color: #0f1429;
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.company-card h4 {
+  margin: 0 0 0.5rem 0;
+  color: #d4af37;
+  font-size: 1.25rem;
+}
+
+.company-abbreviation {
+  display: inline-block;
+  background-color: #1e2a4a;
+  color: #d4af37;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  margin-bottom: 0.75rem;
+}
+
+.company-description {
+  color: #94a3b8;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.company-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #1e2a4a;
+}
+
+.company-edit-btn {
+  background-color: #3b82f6;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  flex: 1;
+}
+
+.company-edit-btn:hover {
+  background-color: #2563eb;
+}
+
+.company-delete-btn {
+  background-color: #7f1d1d !important;
+  color: #fecaca;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  flex: 1;
+}
+
+.company-delete-btn:hover:not(:disabled) {
+  background-color: #991b1b !important;
+}
+
+.company-delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .companies-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .company-form-container {
+    padding: 1rem;
+  }
+
+  .companies-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .company-card {
+    padding: 1rem;
+  }
+}
