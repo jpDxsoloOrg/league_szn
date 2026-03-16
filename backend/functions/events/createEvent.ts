@@ -7,8 +7,8 @@ export const handler = handlerFactory({
   idField: 'eventId',
   entityName: 'event',
   requiredFields: ['name', 'eventType', 'date'],
-  optionalFields: ['companyIds', 'showId'],
-  nullableFields: ['venue', 'description', 'imageUrl', 'themeColor', 'seasonId', 'fantasyBudget', 'fantasyPicksPerDivision'],
+  optionalFields: ['companyIds', 'showId', 'seasonId'],
+  nullableFields: ['venue', 'description', 'imageUrl', 'themeColor', 'fantasyBudget', 'fantasyPicksPerDivision'],
   defaults: { status: 'upcoming', matchCards: [], attendance: null, rating: null, fantasyEnabled: true },
   validate: async (body, _event) => {
     if (body.eventType !== 'ppv' && body.eventType !== 'weekly' && body.eventType !== 'special' && body.eventType !== 'house') {
