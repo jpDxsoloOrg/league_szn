@@ -23,10 +23,6 @@ export default function ManageShows() {
     description: '',
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   const loadData = async () => {
     try {
       setLoading(true);
@@ -42,6 +38,10 @@ export default function ManageShows() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const getCompanyName = (companyId: string) => {
     const company = companies.find(c => c.companyId === companyId);

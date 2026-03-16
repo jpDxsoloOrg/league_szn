@@ -21,21 +21,21 @@ export default function ManageCompanies() {
     description: '',
   });
 
-  useEffect(() => {
-    loadCompanies();
-  }, []);
-
   const loadCompanies = async () => {
     try {
       setLoading(true);
       const data = await companiesApi.getAll();
       setCompanies(data);
     } catch (_err) {
-      setError(t('companies.noCompanies'));
+      setError('Failed to load companies');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadCompanies();
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
