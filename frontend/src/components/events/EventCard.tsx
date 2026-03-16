@@ -42,9 +42,15 @@ export default function EventCard({ event }: EventCardProps) {
   return (
     <Link to={`/events/${event.eventId}`} className="event-card-link">
       <div
-        className={`event-card${event.status === 'completed' ? ' completed' : ''}`}
+        className={`event-card${event.status === 'completed' ? ' completed' : ''}${event.imageUrl ? ' has-thumb' : ''}`}
         style={{ borderLeftColor: typeColor }}
       >
+        {event.imageUrl && (
+          <div className="event-card-thumb">
+            <img src={event.imageUrl} alt="" className="event-card-thumb-img" />
+          </div>
+        )}
+        <div className="event-card-body">
         <div className="event-card-header">
           <h3 className="event-card-name">{event.name}</h3>
           <span
@@ -87,6 +93,7 @@ export default function EventCard({ event }: EventCardProps) {
             <span className="event-card-view-results-arrow">&rarr;</span>
           </div>
         )}
+        </div>
       </div>
     </Link>
   );

@@ -13,9 +13,34 @@
   cursor: pointer;
 }
 
+.event-card.has-thumb {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+
 .event-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.event-card-thumb {
+  flex-shrink: 0;
+  width: 72px;
+  display: flex;
+  align-items: center;
+}
+
+.event-card-thumb-img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.event-card-body {
+  flex: 1;
+  min-width: 0;
 }
 
 .event-card-header {
@@ -136,6 +161,19 @@
 @media (max-width: 768px) {
   .event-card {
     padding: 12px 14px;
+  }
+
+  .event-card.has-thumb {
+    gap: 12px;
+  }
+
+  .event-card-thumb {
+    width: 56px;
+  }
+
+  .event-card-thumb-img {
+    width: 56px;
+    height: 56px;
   }
 
   .event-card-name {
