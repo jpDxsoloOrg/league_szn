@@ -30,6 +30,7 @@ export default function ManagePlayers() {
     currentWrestler: '',
     imageUrl: '',
     divisionId: '',
+    psnId: '',
   });
 
   // Image upload state
@@ -163,6 +164,7 @@ export default function ManagePlayers() {
           currentWrestler: sanitizedWrestler,
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || undefined,
+          psnId: formData.psnId.trim() || undefined,
         });
       } else {
         await playersApi.create({
@@ -170,13 +172,14 @@ export default function ManagePlayers() {
           currentWrestler: sanitizedWrestler,
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || undefined,
+          psnId: formData.psnId.trim() || undefined,
           wins: 0,
           losses: 0,
           draws: 0,
         });
       }
 
-      setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '' });
+      setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '', psnId: '' });
       setSelectedFile(null);
       setImagePreview(null);
       setShowAddForm(false);
@@ -197,6 +200,7 @@ export default function ManagePlayers() {
       currentWrestler: player.currentWrestler,
       imageUrl: player.imageUrl || '',
       divisionId: player.divisionId || '',
+      psnId: player.psnId || '',
     });
     setImagePreview(player.imageUrl || null);
     setSelectedFile(null);
@@ -204,7 +208,7 @@ export default function ManagePlayers() {
   };
 
   const handleCancel = () => {
-    setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '' });
+    setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '', psnId: '' });
     setSelectedFile(null);
     setImagePreview(null);
     setShowAddForm(false);
@@ -295,6 +299,17 @@ export default function ManagePlayers() {
             </div>
 
             <div className="form-group">
+              <label htmlFor="psnId">PSN ID</label>
+              <input
+                type="text"
+                id="psnId"
+                value={formData.psnId}
+                onChange={(e) => setFormData({ ...formData, psnId: e.target.value })}
+                placeholder="PlayStation Network ID"
+              />
+            </div>
+
+            <div className="form-group">
               <label htmlFor="image">Wrestler Image</label>
               <div className="image-upload-container">
                 {imagePreview ? (
@@ -346,6 +361,7 @@ export default function ManagePlayers() {
                 <th>Image</th>
                 <th>Player Name</th>
                 <th>Wrestler</th>
+                <th>PSN</th>
                 <th>Division</th>
                 <th>Record</th>
                 <th>Linked</th>
@@ -365,6 +381,7 @@ export default function ManagePlayers() {
                   </td>
                   <td>{player.name}</td>
                   <td>{player.currentWrestler}</td>
+                  <td>{player.psnId || '-'}</td>
                   <td className="division-cell">{getDivisionName(player.divisionId)}</td>
                   <td>
                     <span className="record">

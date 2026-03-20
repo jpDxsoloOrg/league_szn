@@ -205,6 +205,7 @@ export default function Standings() {
               <th className="image-header">{t('standings.table.image')}</th>
               <th>{t('standings.table.player')}</th>
               <th>{t('standings.table.wrestler')}</th>
+              <th>{t('standings.table.psn')}</th>
               {selectedDivision === 'all' && <th>{t('standings.table.division')}</th>}
               <th>{t('standings.table.wins')}</th>
               <th>{t('standings.table.losses')}</th>
@@ -251,6 +252,7 @@ export default function Standings() {
                   </PlayerHoverCard>
                 </td>
                 <td className="wrestler-name">{player.currentWrestler}</td>
+                <td className="psn-id">{player.psnId || '-'}</td>
                 {selectedDivision === 'all' && (
                   <td className="division-name">
                     {getDivisionName(player.divisionId) || <span className="no-division">-</span>}

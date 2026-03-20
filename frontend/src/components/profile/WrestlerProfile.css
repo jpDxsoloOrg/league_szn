@@ -72,6 +72,12 @@
   font-style: italic;
 }
 
+.profile-psn-id {
+  font-size: 0.85rem;
+  color: #999;
+  margin: 0.15rem 0 0;
+}
+
 .edit-icon-btn {
   margin-left: auto;
   flex-shrink: 0;

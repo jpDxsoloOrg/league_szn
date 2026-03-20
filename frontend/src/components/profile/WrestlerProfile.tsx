@@ -43,6 +43,7 @@ export default function WrestlerProfile() {
     name: '',
     currentWrestler: '',
     imageUrl: '',
+    psnId: '',
   });
 
   // Image upload state
@@ -63,6 +64,7 @@ export default function WrestlerProfile() {
         name: profile.name,
         currentWrestler: profile.currentWrestler,
         imageUrl: profile.imageUrl || '',
+        psnId: profile.psnId || '',
       });
     } catch (err) {
       if (err instanceof Error && err.message.includes('404')) {
@@ -151,6 +153,7 @@ export default function WrestlerProfile() {
         name: player.name,
         currentWrestler: player.currentWrestler,
         imageUrl: player.imageUrl || '',
+        psnId: player.psnId || '',
       });
       setImagePreview(player.imageUrl || null);
       setSelectedFile(null);
@@ -170,6 +173,7 @@ export default function WrestlerProfile() {
         name: player.name,
         currentWrestler: player.currentWrestler,
         imageUrl: player.imageUrl || '',
+        psnId: player.psnId || '',
       });
     }
   };
@@ -193,7 +197,7 @@ export default function WrestlerProfile() {
         return;
       }
 
-      const updates: { name?: string; currentWrestler?: string; imageUrl?: string } = {
+      const updates: { name?: string; currentWrestler?: string; imageUrl?: string; psnId?: string } = {
         name: sanitizedName,
       };
 
@@ -203,6 +207,10 @@ export default function WrestlerProfile() {
 
       if (imageUrl) {
         updates.imageUrl = imageUrl;
+      }
+
+      if (formData.psnId.trim()) {
+        updates.psnId = formData.psnId.trim();
       }
 
       const updated = await profileApi.updateMyProfile(updates);
@@ -279,6 +287,11 @@ export default function WrestlerProfile() {
               Playing as {player.currentWrestler}
             </p>
           )}
+          {player.psnId && (
+            <p className="profile-psn-id">
+              PSN: {player.psnId}
+            </p>
+          )}
         </div>
         {!editing && (
           <button
@@ -316,6 +329,17 @@ export default function WrestlerProfile() {
                 value={formData.currentWrestler}
                 onChange={(e) => setFormData({ ...formData, currentWrestler: e.target.value })}
                 placeholder="The wrestler you play as"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="profile-psn">PSN ID</label>
+              <input
+                type="text"
+                id="profile-psn"
+                value={formData.psnId}
+                onChange={(e) => setFormData({ ...formData, psnId: e.target.value })}
+                placeholder="Your PlayStation Network ID"
               />
             </div>
 

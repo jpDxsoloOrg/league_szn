@@ -254,6 +254,7 @@
       "image": "Image",
       "player": "Player",
       "wrestler": "Wrestler",
+      "psn": "PSN",
       "division": "Division",
       "wins": "Wins",
       "losses": "Losses",

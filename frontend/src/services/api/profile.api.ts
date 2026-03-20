@@ -46,6 +46,7 @@ export const profileApi = {
     name?: string;
     currentWrestler?: string;
     imageUrl?: string;
+    psnId?: string;
   }): Promise<Player> => {
     return fetchWithAuth(`${API_BASE_URL}/players/me`, {
       method: 'PUT',
