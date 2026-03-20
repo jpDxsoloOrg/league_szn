@@ -4,6 +4,7 @@ import {
   ListUsersCommand,
   AdminListGroupsForUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
+import type { UserType } from '@aws-sdk/client-cognito-identity-provider';
 import { success, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 
@@ -15,15 +16,23 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   if (denied) return denied;
 
   try {
-    const result = await cognitoClient.send(
-      new ListUsersCommand({
-        UserPoolId: USER_POOL_ID,
-        Limit: 60,
-      })
-    );
+    const allCognitoUsers: UserType[] = [];
+    let paginationToken: string | undefined;
+
+    do {
+      const result = await cognitoClient.send(
+        new ListUsersCommand({
+          UserPoolId: USER_POOL_ID,
+          Limit: 60,
+          ...(paginationToken ? { PaginationToken: paginationToken } : {}),
+        })
+      );
+      allCognitoUsers.push(...(result.Users || []));
+      paginationToken = result.PaginationToken;
+    } while (paginationToken);
 
     const users = await Promise.all(
-      (result.Users || []).map(async (user) => {
+      allCognitoUsers.map(async (user) => {
         const attrs: Record<string, string> = {};
         (user.Attributes || []).forEach((attr) => {
           if (attr.Name && attr.Value) {
