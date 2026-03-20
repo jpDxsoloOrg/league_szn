@@ -7,7 +7,7 @@ export const handler = handlerFactory({
   idField: 'playerId',
   entityName: 'player',
   requiredFields: ['name', 'currentWrestler'],
-  optionalFields: ['imageUrl', 'divisionId'],
+  optionalFields: ['imageUrl', 'divisionId', 'psnId'],
   defaults: {
     wins: 0,
     losses: 0,

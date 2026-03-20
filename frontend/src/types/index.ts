@@ -7,6 +7,7 @@ export interface Player {
   losses: number;
   draws: number;
   imageUrl?: string;
+  psnId?: string;
   divisionId?: string;
   createdAt: string;
   updatedAt: string;

@@ -24,6 +24,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       currentWrestler: body.currentWrestler,
       name: body.name,
       imageUrl: body.imageUrl,
+      psnId: body.psnId,
     };
     const removeFields: string[] = [];
 

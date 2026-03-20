@@ -4,7 +4,7 @@ import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, requireRole } from '../../lib/auth';
 
-const ALLOWED_FIELDS = ['name', 'currentWrestler', 'imageUrl'];
+const ALLOWED_FIELDS = ['name', 'currentWrestler', 'imageUrl', 'psnId'];
 const MAX_NAME_LENGTH = 100;
 const MAX_URL_LENGTH = 2048;
 
@@ -54,6 +54,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
         if (field === 'name' && value.trim().length === 0) {
           return badRequest('Name cannot be empty');
+        }
+
+        if (field === 'psnId' && value.length > MAX_NAME_LENGTH) {
+          return badRequest(`PSN ID must be ${MAX_NAME_LENGTH} characters or less`);
         }
 
         if (field === 'imageUrl' && value.length > MAX_URL_LENGTH) {
