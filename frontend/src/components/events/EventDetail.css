@@ -153,16 +153,49 @@
   padding: 24px;
 }
 
+.match-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
 .match-card-title {
   color: white;
-  margin: 0 0 20px 0;
+  margin: 0;
   font-size: 1.4rem;
+}
+
+.add-match-btn {
+  background: #d4af37;
+  color: #1a1a1a;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.add-match-btn:hover {
+  background: #e5c44d;
+}
+
+.no-matches-block {
+  text-align: center;
+  padding: 32px;
 }
 
 .no-matches-message {
   color: #bbb;
   text-align: center;
-  padding: 32px;
+  padding: 0 0 16px 0;
+}
+
+.add-match-btn-lg {
+  padding: 12px 28px;
+  font-size: 0.95rem;
 }
 
 /* ── Pre-show / Main Card Dividers ─────────────────────────────────────────── */
