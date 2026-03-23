@@ -13,6 +13,7 @@ import './ScheduleMatch.css';
 type ScheduleLocationState = {
   fromChallenge?: ChallengeWithPlayers;
   fromPromo?: PromoWithContext;
+  fromEvent?: { eventId: string; name: string; date: string };
 };
 
 export default function ScheduleMatch() {
@@ -81,9 +82,15 @@ export default function ScheduleMatch() {
         setFormData(prev => ({ ...prev, seasonId: activeSeason.seasonId }));
       }
 
-      // Pre-fill from challenge or promo (once per navigation)
+      // Pre-fill from event, challenge, or promo (once per navigation)
       if (state && !preFillApplied.current) {
         preFillApplied.current = true;
+        if (state.fromEvent) {
+          setFormData((prev) => ({
+            ...prev,
+            eventId: state.fromEvent!.eventId,
+          }));
+        }
         if (state.fromChallenge) {
           const ch = state.fromChallenge;
           const matchFormat = matchTypesData.some((mt) => mt.name === ch.matchType)
@@ -170,7 +177,11 @@ export default function ScheduleMatch() {
         setLinkChallengeId(null);
         setLinkPromoId(null);
         preFillApplied.current = false;
-        navigate('/admin/schedule', { replace: true, state: {} });
+        if (state?.fromEvent) {
+          navigate(`/events/${state.fromEvent.eventId}`, { replace: true });
+        } else {
+          navigate('/admin/schedule', { replace: true, state: {} });
+        }
         resetForm();
       } catch (err) {
         setError(err instanceof Error ? err.message : t('scheduleMatch.error'));
@@ -205,7 +216,11 @@ export default function ScheduleMatch() {
         setLinkChallengeId(null);
         setLinkPromoId(null);
         preFillApplied.current = false;
-        navigate('/admin/schedule', { replace: true, state: {} });
+        if (state?.fromEvent) {
+          navigate(`/events/${state.fromEvent.eventId}`, { replace: true });
+        } else {
+          navigate('/admin/schedule', { replace: true, state: {} });
+        }
         resetForm();
       } catch (err) {
         setError(err instanceof Error ? err.message : t('scheduleMatch.error'));
@@ -294,7 +309,15 @@ export default function ScheduleMatch() {
 
   return (
     <div className="schedule-match">
-      <h2>Schedule Match</h2>
+      {state?.fromEvent && (
+        <Link to={`/events/${state.fromEvent.eventId}`} className="back-to-event-link">
+          &larr; {t('events.detail.backToEvent', { name: state.fromEvent.name })}
+        </Link>
+      )}
+      <h2>{state?.fromEvent
+        ? t('scheduleMatch.addMatchToEvent', { event: state.fromEvent.name })
+        : t('scheduleMatch.title', 'Schedule Match')
+      }</h2>
       <p className="schedule-match-help">
         Need a refresher on event linkage, seasons, and card positions?{' '}
         <Link to="/guide/wiki/admin-schedule-match">Open schedule guide</Link>.

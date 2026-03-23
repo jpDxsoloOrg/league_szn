@@ -30,7 +30,6 @@
     "previous": "Previous",
     "next": "Next",
     "submitting": "Submitting...",
-    "loading": "Loading...",
     "print": "Print",
     "accessDenied": "Access Denied",
     "back": "Back",
@@ -326,7 +325,8 @@
       "noMembers": "No members selected",
       "members": "members",
       "minTeamsError": "Please create at least 2 teams with 2+ members each"
-    }
+    },
+    "addMatchToEvent": "Add Match to {{event}}"
   },
   "match": {
     "starRating": "Star rating",
@@ -747,7 +747,8 @@
         "thu": "Thu",
         "fri": "Fri",
         "sat": "Sat"
-      }
+      },
+      "createEvent": "Create Event"
     },
     "designations": {
       "preShow": "Pre-Show",
@@ -769,7 +770,10 @@
       "preShow": "Pre-Show",
       "mainCard": "Main Card",
       "championshipMatch": "Championship Match",
-      "winner": "W"
+      "winner": "W",
+      "addMatch": "Add Match",
+      "scheduleFirstMatch": "Schedule First Match",
+      "backToEvent": "← Back to {{name}}"
     },
     "results": {
       "title": "Event Results",

@@ -4,12 +4,39 @@
   padding: 20px;
 }
 
+.events-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.events-title-row .events-title {
+  margin: 0;
+}
+
 .events-title {
   color: white;
   margin: 0 0 20px 0;
   font-size: 1.8rem;
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+.create-event-calendar-btn {
+  background: #d4af37;
+  color: #1a1a1a;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.create-event-calendar-btn:hover {
+  background: #e5c44d;
 }
 
 /* ── Filter Tabs ───────────────────────────────────────────────────────────── */

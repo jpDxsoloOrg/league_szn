@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { eventsApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import type { MatchDesignation, EventWithMatches } from '../../types/event';
 import Skeleton from '../ui/Skeleton';
 import './EventDetail.css';
@@ -39,6 +40,8 @@ const designationColors: Record<MatchDesignation, string> = {
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { isAdminOrModerator } = useAuth();
   const [eventData, setEventData] = useState<EventWithMatches | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -198,10 +201,34 @@ export default function EventDetail() {
 
       {/* Match Card */}
       <div className="event-match-card-section">
-        <h3 className="match-card-title">{t('events.detail.matchCard')}</h3>
+        <div className="match-card-header">
+          <h3 className="match-card-title">{t('events.detail.matchCard')}</h3>
+          {isAdminOrModerator && (eventData.status === 'upcoming' || eventData.status === 'in-progress') && (
+            <button
+              className="add-match-btn"
+              onClick={() => navigate('/admin/schedule', {
+                state: { fromEvent: { eventId: eventData.eventId, name: eventData.name, date: eventData.date } },
+              })}
+            >
+              + {t('events.detail.addMatch', 'Add Match')}
+            </button>
+          )}
+        </div>
 
         {enrichedMatches.length === 0 ? (
-          <p className="no-matches-message">{t('events.detail.noMatches')}</p>
+          <div className="no-matches-block">
+            <p className="no-matches-message">{t('events.detail.noMatches')}</p>
+            {isAdminOrModerator && (eventData.status === 'upcoming' || eventData.status === 'in-progress') && (
+              <button
+                className="add-match-btn add-match-btn-lg"
+                onClick={() => navigate('/admin/schedule', {
+                  state: { fromEvent: { eventId: eventData.eventId, name: eventData.name, date: eventData.date } },
+                })}
+              >
+                + {t('events.detail.scheduleFirstMatch', 'Schedule First Match')}
+              </button>
+            )}
+          </div>
         ) : (
           <>
             {/* Pre-show */}

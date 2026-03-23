@@ -291,7 +291,17 @@ export default function EventsCalendar() {
 
   return (
     <div className="events-calendar-page">
-      <h2 className="events-title">{t('events.title')}</h2>
+      <div className="events-title-row">
+        <h2 className="events-title">{t('events.title')}</h2>
+        {isAdminOrModerator && (
+          <button
+            className="create-event-calendar-btn"
+            onClick={() => navigate('/admin/events')}
+          >
+            + {t('events.calendar.createEvent', 'Create Event')}
+          </button>
+        )}
+      </div>
 
       {/* Filter Tabs */}
       <div className="events-filter-tabs">

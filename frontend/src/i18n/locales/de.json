@@ -1,6 +1,6 @@
 {
   "common": {
-    "loading": "Laden...",
+    "loading": "Wird geladen...",
     "error": "Fehler",
     "retry": "Erneut versuchen",
     "all": "Alle",
@@ -30,7 +30,6 @@
     "previous": "Zurück",
     "next": "Weiter",
     "submitting": "Wird eingereicht...",
-    "loading": "Wird geladen...",
     "print": "Drucken",
     "accessDenied": "Zugriff verweigert",
     "back": "Zurück",
@@ -326,7 +325,8 @@
       "noMembers": "Keine Mitglieder ausgewählt",
       "members": "Mitglieder",
       "minTeamsError": "Bitte erstellen Sie mindestens 2 Teams mit je 2+ Mitgliedern"
-    }
+    },
+    "addMatchToEvent": "Match zu {{event}} hinzufügen"
   },
   "match": {
     "starRating": "Sternebewertung",
@@ -441,21 +441,21 @@
     "title": "Saison-Auszeichnungen",
     "autoAwards": "Automatische Auszeichnungen",
     "customAwards": "Benutzerdefinierte Auszeichnungen",
-    "noAwards": "Noch keine Auszeichnungen f\u00fcr diese Saison.",
+    "noAwards": "Noch keine Auszeichnungen für diese Saison.",
     "auto": "Auto",
     "admin": {
       "title": "Saison-Auszeichnungen verwalten",
       "selectSeason": "Saison",
-      "chooseSeason": "-- Saison w\u00e4hlen --",
+      "chooseSeason": "-- Saison wählen --",
       "createAward": "Auszeichnung erstellen",
       "awardName": "Name der Auszeichnung",
       "awardPlayer": "Spieler",
-      "choosePlayer": "-- Spieler w\u00e4hlen --",
+      "choosePlayer": "-- Spieler wählen --",
       "description": "Beschreibung",
       "value": "Wert",
       "createSuccess": "Auszeichnung erfolgreich erstellt!",
-      "deleteSuccess": "Auszeichnung erfolgreich gel\u00f6scht!",
-      "confirmDelete": "M\u00f6chten Sie die Auszeichnung \"{{name}}\" wirklich l\u00f6schen?"
+      "deleteSuccess": "Auszeichnung erfolgreich gelöscht!",
+      "confirmDelete": "Möchten Sie die Auszeichnung \"{{name}}\" wirklich löschen?"
     }
   },
   "challenges": {
@@ -746,7 +746,8 @@
         "thu": "Do",
         "fri": "Fr",
         "sat": "Sa"
-      }
+      },
+      "createEvent": "Event erstellen"
     },
     "designations": {
       "preShow": "Vorshow",
@@ -768,7 +769,10 @@
       "preShow": "Vorshow",
       "mainCard": "Hauptkarte",
       "championshipMatch": "Meisterschaftskampf",
-      "winner": "S"
+      "winner": "S",
+      "addMatch": "Match hinzufügen",
+      "scheduleFirstMatch": "Erstes Match planen",
+      "backToEvent": "← Zurück zu {{name}}"
     },
     "results": {
       "title": "Veranstaltungsergebnisse",
