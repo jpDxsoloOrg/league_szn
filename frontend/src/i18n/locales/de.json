@@ -85,6 +85,17 @@
     "loadingPlayers": "Spieler werden geladen...",
     "noPlayersFound": "Keine Spieler gefunden. Zuerst Testdaten anlegen."
   },
+  "profileModal": {
+    "title": "Profil vervollständigen",
+    "subtitle": "Bitte fülle die fehlenden Angaben aus, damit andere Spieler dich finden können.",
+    "playerName": "Spielername",
+    "playerNamePlaceholder": "Deinen Spielernamen eingeben",
+    "psnId": "PSN-ID",
+    "psnIdPlaceholder": "Deine PlayStation Network ID eingeben",
+    "later": "Später",
+    "fillRequired": "Bitte fülle mindestens ein Feld aus.",
+    "saveFailed": "Speichern fehlgeschlagen. Bitte versuche es erneut."
+  },
   "emptyState": {
     "checkBackSoon": "Schau bald wieder vorbei",
     "createFirstChampionship": "Erstelle deine erste Meisterschaft",

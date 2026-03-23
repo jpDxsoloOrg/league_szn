@@ -186,6 +186,16 @@
   cursor: wait;
 }
 
+.calendar-item-static {
+  cursor: default;
+}
+
+.calendar-item-static:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: transparent;
+}
+
 .calendar-item-img {
   width: 100%;
   max-height: 70px;
