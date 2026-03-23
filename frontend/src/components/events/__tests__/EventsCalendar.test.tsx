@@ -65,6 +65,27 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.mock('../../../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    isAuthenticated: false,
+    isLoading: false,
+    groups: [],
+    email: null,
+    playerId: null,
+    isAdminOrModerator: false,
+    isSuperAdmin: false,
+    isModerator: false,
+    isWrestler: false,
+    isFantasy: false,
+    hasRole: () => false,
+    signIn: vi.fn(),
+    signUp: vi.fn(),
+    confirmSignUp: vi.fn(),
+    signOut: vi.fn(),
+    refreshProfile: vi.fn(),
+  }),
+}));
+
 vi.mock('../EventsCalendar.css', () => ({}));
 vi.mock('../EventCard.css', () => ({}));
 

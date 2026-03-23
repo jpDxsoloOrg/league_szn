@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { EventType, EventCalendarEntry } from '../../types/event';
 import type { Show } from '../../types';
 import { eventsApi, showsApi, companiesApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import Skeleton from '../ui/Skeleton';
 import EmptyState from '../ui/EmptyState';
@@ -41,6 +42,7 @@ interface ShowCalendarEntry {
 export default function EventsCalendar() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { isAdminOrModerator } = useAuth();
   useDocumentTitle(t('events.title'));
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
@@ -228,7 +230,7 @@ export default function EventsCalendar() {
   };
 
   const handleShowClick = useCallback(async (entry: ShowCalendarEntry) => {
-    if (creatingEvent) return;
+    if (!isAdminOrModerator || creatingEvent) return;
     const key = `${entry.show.showId}-${entry.date}`;
     setCreatingEvent(key);
     try {
@@ -245,7 +247,7 @@ export default function EventsCalendar() {
       setError(err instanceof Error ? err.message : 'Failed to create event');
       setCreatingEvent(null);
     }
-  }, [creatingEvent, navigate]);
+  }, [isAdminOrModerator, creatingEvent, navigate]);
 
   const filterTabs: { key: FilterTab; label: string }[] = [
     { key: 'all', label: t('events.filters.all') },
@@ -356,24 +358,40 @@ export default function EventsCalendar() {
                           )}
                         </Link>
                       ))}
-                      {dayShows?.map((entry) => (
-                        <button
-                          key={`show-${entry.show.showId}`}
-                          className="calendar-item"
-                          title={`${entry.show.name} (${entry.companyName})`}
-                          aria-label={entry.show.name}
-                          disabled={creatingEvent === `${entry.show.showId}-${entry.date}`}
-                          onClick={() => handleShowClick(entry)}
-                        >
-                          {entry.show.imageUrl ? (
-                            <img src={entry.show.imageUrl} alt={entry.show.name} className="calendar-item-img" />
-                          ) : (
-                            <div className="calendar-item-bar" style={{ backgroundColor: showColor }}>
-                              <span className="calendar-item-label">{entry.show.name}</span>
-                            </div>
-                          )}
-                        </button>
-                      ))}
+                      {dayShows?.map((entry) =>
+                        isAdminOrModerator ? (
+                          <button
+                            key={`show-${entry.show.showId}`}
+                            className="calendar-item"
+                            title={`${entry.show.name} (${entry.companyName})`}
+                            aria-label={entry.show.name}
+                            disabled={creatingEvent === `${entry.show.showId}-${entry.date}`}
+                            onClick={() => handleShowClick(entry)}
+                          >
+                            {entry.show.imageUrl ? (
+                              <img src={entry.show.imageUrl} alt={entry.show.name} className="calendar-item-img" />
+                            ) : (
+                              <div className="calendar-item-bar" style={{ backgroundColor: showColor }}>
+                                <span className="calendar-item-label">{entry.show.name}</span>
+                              </div>
+                            )}
+                          </button>
+                        ) : (
+                          <div
+                            key={`show-${entry.show.showId}`}
+                            className="calendar-item calendar-item-static"
+                            title={entry.show.name}
+                          >
+                            {entry.show.imageUrl ? (
+                              <img src={entry.show.imageUrl} alt={entry.show.name} className="calendar-item-img" />
+                            ) : (
+                              <div className="calendar-item-bar" style={{ backgroundColor: showColor }}>
+                                <span className="calendar-item-label">{entry.show.name}</span>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      )}
                     </div>
                   </>
                 )}

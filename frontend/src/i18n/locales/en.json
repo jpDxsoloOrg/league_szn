@@ -85,6 +85,17 @@
     "loadingPlayers": "Loading players...",
     "noPlayersFound": "No players found. Run seed data first."
   },
+  "profileModal": {
+    "title": "Complete Your Profile",
+    "subtitle": "Please fill in the missing details so other players can find you.",
+    "playerName": "Player Name",
+    "playerNamePlaceholder": "Enter your player name",
+    "psnId": "PSN ID",
+    "psnIdPlaceholder": "Enter your PlayStation Network ID",
+    "later": "Later",
+    "fillRequired": "Please fill in at least one field.",
+    "saveFailed": "Failed to save. Please try again."
+  },
   "emptyState": {
     "checkBackSoon": "Check back soon",
     "createFirstChampionship": "Create your first championship",
