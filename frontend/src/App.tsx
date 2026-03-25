@@ -63,7 +63,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import FeatureRoute from './components/FeatureRoute';
 import ProfileCompletionModal from './components/ProfileCompletionModal';
 import './App.css';
-import '@dxsolo/ui/theme.css';
 
 function App() {
   return (

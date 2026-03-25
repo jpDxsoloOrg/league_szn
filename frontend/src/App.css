@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import "@dxsolo/ui/theme.css";
 @source "../node_modules/@dxsolo/ui/dist";
 * {
   margin: 0;
