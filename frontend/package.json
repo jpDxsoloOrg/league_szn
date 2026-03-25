@@ -13,6 +13,8 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@dxsolo/ui": "^1.5.0",
+    "@tailwindcss/vite": "^4.2.2",
     "@types/react-syntax-highlighter": "^15.5.13",
     "amazon-cognito-identity-js": "^6.3.7",
     "aws-amplify": "^6.16.0",
@@ -25,7 +27,8 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.20.1",
     "react-syntax-highlighter": "^16.1.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.981.0",
