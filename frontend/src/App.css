@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@source"../node_modules/@dxsolo/ui/dist";
+@source "../node_modules/@dxsolo/ui/dist";
 * {
   margin: 0;
   padding: 0;
