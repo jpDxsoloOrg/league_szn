@@ -1,12 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 // https://vitejs.dev/config/
 const devPort = Number(process.env.VITE_DEV_PORT ?? 3000)
 const proxyTarget = process.env.VITE_PROXY_TARGET ?? 'http://localhost:3001'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   server: {
     port: devPort,
     proxy: {

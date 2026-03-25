@@ -12,6 +12,7 @@ import {
 } from '../constants/imageFallbacks';
 import Skeleton from './ui/Skeleton';
 import './Dashboard.css';
+import { Button, Input, Badge } from '@dxsolo/ui';
 
 function renderStarRating(rating: number): string {
   const stars: string[] = [];
@@ -66,7 +67,14 @@ function RecentResultsGrouped({
 }) {
   const groups = useMemo(() => groupResultsByDate(results), [results]);
   return (
+    
     <div className="dashboard-results-by-date">
+      <div className="p-8 space-y-4 border-b border-dashed">
+        <p className="text-sm text-gray-500">@dxsolo/ui smoke test (remove after verifying)</p>
+        <Input label="Test Input" placeholder="Type something..." />
+        <Button intent="primary" size="md">Click Me</Button>
+        <Badge intent="success">Active</Badge>
+      </div>
       {groups.map(({ dateKey, dateLabel, matches }) => (
         <div key={dateKey} className="dashboard-results-date-group">
           <div className="dashboard-results-date-separator">{dateLabel}</div>
