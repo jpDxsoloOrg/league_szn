@@ -1,0 +1,86 @@
+.stable-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--color-text);
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+.stable-card:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+}
+
+.stable-card__image-wrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background-color: var(--color-bg);
+}
+
+.stable-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stable-card__body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stable-card__name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.stable-card__members {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.stable-card__stats {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.stable-card__stat {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.stable-card__stat--wins {
+  color: var(--color-success);
+}
+
+.stable-card__stat--losses {
+  color: var(--color-danger-alt);
+}
+
+.stable-card__stat--draws {
+  color: var(--color-warning);
+}
+
+.stable-card__stat--winpct {
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .stable-card__body {
+    padding: 0.75rem;
+  }
+
+  .stable-card__name {
+    font-size: 1rem;
+  }
+}

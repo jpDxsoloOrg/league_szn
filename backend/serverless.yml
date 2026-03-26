@@ -34,6 +34,9 @@ provider:
     SEASON_AWARDS_TABLE: ${self:service}-season-awards-${self:provider.stage}
     COMPANIES_TABLE: ${self:service}-companies-${self:provider.stage}
     SHOWS_TABLE: ${self:service}-shows-${self:provider.stage}
+    STABLES_TABLE: ${self:service}-stables-${self:provider.stage}
+    TAG_TEAMS_TABLE: ${self:service}-tag-teams-${self:provider.stage}
+    STABLE_INVITATIONS_TABLE: ${self:service}-stable-invitations-${self:provider.stage}
     DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT, 'http://localhost:8000'}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
@@ -85,6 +88,12 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.COMPANIES_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SHOWS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SHOWS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STABLES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STABLES_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TAG_TEAMS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TAG_TEAMS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STABLE_INVITATIONS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STABLE_INVITATIONS_TABLE}/index/*
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -787,6 +796,120 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
+  # Stables (consolidated: list, get, standings, create, update, approve, reject, invite, respond, disband, remove-member, delete)
+  stables:
+    handler: functions/stables/handler.handler
+    events:
+      - http:
+          path: stables
+          method: get
+          cors: *corsConfig
+      - http:
+          path: stables/standings
+          method: get
+          cors: *corsConfig
+      - http:
+          path: stables/{stableId}
+          method: get
+          cors: true
+      - http:
+          path: stables
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: stables/{stableId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: stables/{stableId}/approve
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: stables/{stableId}/reject
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: stables/{stableId}/invite
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: stables/{stableId}/invitations/{invitationId}/respond
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: stables/{stableId}/disband
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: stables/{stableId}/remove-member
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: stables/{stableId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  # Tag Teams (consolidated: list, get, standings, create, update, respond, approve, reject, dissolve, delete)
+  tagTeams:
+    handler: functions/tagTeams/handler.handler
+    events:
+      - http:
+          path: tag-teams
+          method: get
+          cors: *corsConfig
+      - http:
+          path: tag-teams/standings
+          method: get
+          cors: *corsConfig
+      - http:
+          path: tag-teams/{tagTeamId}
+          method: get
+          cors: true
+      - http:
+          path: tag-teams
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: tag-teams/{tagTeamId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: tag-teams/{tagTeamId}/respond
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: tag-teams/{tagTeamId}/approve
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: tag-teams/{tagTeamId}/reject
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: tag-teams/{tagTeamId}/dissolve
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: tag-teams/{tagTeamId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
 resources:
   Resources:
     # API Gateway Response for CORS with Authorizer
@@ -1393,6 +1516,121 @@ resources:
         KeySchema:
           - AttributeName: companyId
             KeyType: HASH
+
+    StablesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.STABLES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: stableId
+            AttributeType: S
+          - AttributeName: leaderId
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: stableId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: LeaderIndex
+            KeySchema:
+              - AttributeName: leaderId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: StatusIndex
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    TagTeamsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TAG_TEAMS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: tagTeamId
+            AttributeType: S
+          - AttributeName: player1Id
+            AttributeType: S
+          - AttributeName: player2Id
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: tagTeamId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: Player1Index
+            KeySchema:
+              - AttributeName: player1Id
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: Player2Index
+            KeySchema:
+              - AttributeName: player2Id
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: StatusIndex
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    StableInvitationsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.STABLE_INVITATIONS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: invitationId
+            AttributeType: S
+          - AttributeName: stableId
+            AttributeType: S
+          - AttributeName: invitedPlayerId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: invitationId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: StableIndex
+            KeySchema:
+              - AttributeName: stableId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: InvitedPlayerIndex
+            KeySchema:
+              - AttributeName: invitedPlayerId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
 
     ImagesBucket:
       Type: AWS::S3::Bucket

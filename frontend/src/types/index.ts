@@ -9,6 +9,8 @@ export interface Player {
   imageUrl?: string;
   psnId?: string;
   divisionId?: string;
+  stableId?: string;
+  tagTeamId?: string;
   createdAt: string;
   updatedAt: string;
   /** Last 5 match results (newest first): W win, L loss, D draw */

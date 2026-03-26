@@ -5,6 +5,7 @@ import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { invokeAsync } from '../../lib/asyncLambda';
 import { parseBody } from '../../lib/parseBody';
 import { calculateFantasyPoints } from '../fantasy/calculateFantasyPoints';
+import { updateGroupStats } from './updateGroupStats';
 
 interface RecordResultBody {
   winners: string[];
@@ -659,6 +660,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       await autoCompleteEvent(matchId);
     } catch (err) {
       console.warn('Event auto-complete failed:', err);
+    }
+
+    // Update stable and tag team group stats (non-critical side-effect)
+    try {
+      await updateGroupStats({
+        winners: body.winners,
+        losers: body.losers,
+        isDraw,
+        participants: allParticipants,
+        teams: match.teams as string[][] | undefined,
+      });
+    } catch (err) {
+      console.warn('Group stats update failed:', err);
     }
 
     // Fire-and-forget: trigger ranking and cost recalculation via async Lambda invocation

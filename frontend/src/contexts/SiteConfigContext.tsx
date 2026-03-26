@@ -13,6 +13,7 @@ const DEFAULT_FEATURES: SiteFeatures = {
   promos: true,
   contenders: true,
   statistics: true,
+  stables: true,
 };
 
 const SiteConfigContext = createContext<SiteConfigContextType | undefined>(undefined);

@@ -1,0 +1,119 @@
+.stable-standings-container {
+  width: 100%;
+  margin-top: 1.5rem;
+}
+
+.stable-standings-table-wrapper {
+  overflow-x: auto;
+}
+
+.stable-standings-table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+}
+
+.stable-standings-table th {
+  text-align: center;
+  padding: 1rem;
+  border-bottom: 2px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stable-standings-table td {
+  text-align: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.stable-standings-table tbody tr:hover {
+  background-color: var(--color-surface-hover, rgba(255, 255, 255, 0.03));
+}
+
+.stable-standings-table .rank {
+  font-weight: bold;
+  color: var(--color-primary);
+  font-size: 1.1rem;
+}
+
+.stable-standings-image-header {
+  width: 50px;
+}
+
+.stable-standings-image-cell {
+  width: 50px;
+  padding: 0.5rem;
+}
+
+.stable-standings-thumbnail {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+}
+
+.stable-standings-name {
+  text-align: left;
+  font-weight: 700;
+}
+
+.stable-standings-name-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.stable-standings-name-link:hover {
+  text-decoration: underline;
+  color: var(--color-primary);
+}
+
+.stable-standings-member-count {
+  color: var(--color-text-muted);
+}
+
+.stable-standings-table .wins {
+  color: var(--color-success);
+  font-weight: bold;
+}
+
+.stable-standings-table .losses {
+  color: var(--color-danger-alt);
+  font-weight: bold;
+}
+
+.stable-standings-table .draws {
+  color: var(--color-warning);
+}
+
+.stable-standings-table .win-percentage {
+  font-weight: bold;
+}
+
+/* Reuse form-dot and streak-badge from Standings.css */
+
+@media (max-width: 768px) {
+  .stable-standings-table {
+    min-width: 500px;
+  }
+
+  .stable-standings-table th,
+  .stable-standings-table td {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8rem;
+  }
+
+  .stable-standings-thumbnail {
+    width: 32px;
+    height: 32px;
+  }
+
+  .stable-standings-image-header,
+  .stable-standings-image-cell {
+    width: 40px;
+    padding: 0.25rem;
+  }
+}

@@ -1,0 +1,70 @@
+.tag-teams-list-container {
+  width: 100%;
+}
+
+.tag-teams-list__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.tag-teams-list__header h2 {
+  margin: 0;
+}
+
+.tag-teams-list__view-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.tag-teams-list__toggle-btn {
+  padding: 0.5rem 1.25rem;
+  border: none;
+  background-color: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tag-teams-list__toggle-btn:not(:last-child) {
+  border-right: 1px solid var(--color-border);
+}
+
+.tag-teams-list__toggle-btn:hover {
+  background-color: var(--color-surface-hover, rgba(255, 255, 255, 0.05));
+}
+
+.tag-teams-list__toggle-btn--active {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+.tag-teams-list__toggle-btn--active:hover {
+  background-color: var(--color-primary);
+}
+
+.tag-teams-list__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .tag-teams-list__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tag-teams-list__grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
