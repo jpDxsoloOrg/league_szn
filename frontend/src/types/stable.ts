@@ -20,6 +20,7 @@ export interface StablePlayerInfo {
   playerName: string;
   wrestlerName: string;
   imageUrl?: string;
+  psnId?: string;
   wins: number;
   losses: number;
   draws: number;

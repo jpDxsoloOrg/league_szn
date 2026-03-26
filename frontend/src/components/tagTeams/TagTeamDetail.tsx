@@ -116,8 +116,11 @@ export default function TagTeamDetail() {
                 className="tag-team-detail__player-image"
               />
               <div className="tag-team-detail__player-info">
-                <span className="tag-team-detail__player-name">{tagTeam.player1.playerName}</span>
                 <span className="tag-team-detail__wrestler-name">{tagTeam.player1.wrestlerName}</span>
+                <span className="tag-team-detail__player-name">{tagTeam.player1.playerName}</span>
+                {tagTeam.player1.psnId && (
+                  <span className="tag-team-detail__player-psn">PSN: {tagTeam.player1.psnId}</span>
+                )}
               </div>
             </div>
             <span className="tag-team-detail__ampersand">&amp;</span>
@@ -129,8 +132,11 @@ export default function TagTeamDetail() {
                 className="tag-team-detail__player-image"
               />
               <div className="tag-team-detail__player-info">
-                <span className="tag-team-detail__player-name">{tagTeam.player2.playerName}</span>
                 <span className="tag-team-detail__wrestler-name">{tagTeam.player2.wrestlerName}</span>
+                <span className="tag-team-detail__player-name">{tagTeam.player2.playerName}</span>
+                {tagTeam.player2.psnId && (
+                  <span className="tag-team-detail__player-psn">PSN: {tagTeam.player2.psnId}</span>
+                )}
               </div>
             </div>
           </div>

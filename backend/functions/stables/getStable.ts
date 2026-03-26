@@ -16,9 +16,10 @@ import {
 
 interface PlayerSummary {
   playerId: string;
-  name: string;
-  currentWrestler: string;
+  playerName: string;
+  wrestlerName: string;
   imageUrl?: string;
+  psnId?: string;
   wins: number;
   losses: number;
   draws: number;
@@ -61,7 +62,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       dynamoDb.get({
         TableName: TableNames.PLAYERS,
         Key: { playerId },
-        ProjectionExpression: 'playerId, #n, currentWrestler, imageUrl, wins, losses, draws',
+        ProjectionExpression: 'playerId, #n, currentWrestler, imageUrl, psnId, wins, losses, draws',
         ExpressionAttributeNames: { '#n': 'name' },
       })
     );
@@ -80,9 +81,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (memberResult.Item) {
         const player: PlayerSummary = {
           playerId: memberResult.Item.playerId as string,
-          name: memberResult.Item.name as string,
-          currentWrestler: memberResult.Item.currentWrestler as string,
+          playerName: memberResult.Item.name as string,
+          wrestlerName: memberResult.Item.currentWrestler as string,
           imageUrl: memberResult.Item.imageUrl as string | undefined,
+          psnId: memberResult.Item.psnId as string | undefined,
           wins: (memberResult.Item.wins as number) || 0,
           losses: (memberResult.Item.losses as number) || 0,
           draws: (memberResult.Item.draws as number) || 0,
@@ -90,7 +92,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         members.push(player);
 
         if (player.playerId === stable.leaderId) {
-          leaderName = player.name;
+          leaderName = player.playerName;
         }
       }
     }

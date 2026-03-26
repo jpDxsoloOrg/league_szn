@@ -24,6 +24,7 @@ export interface TagTeamPlayerInfo {
   playerName: string;
   wrestlerName: string;
   imageUrl?: string;
+  psnId?: string;
 }
 
 export interface TagTeamWithPlayers extends TagTeam {

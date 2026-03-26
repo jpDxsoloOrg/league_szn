@@ -299,6 +299,9 @@ export default function MyStable() {
                     <span className="my-stable__member-player">
                       {member.playerName}
                     </span>
+                    {member.psnId && (
+                      <span className="my-stable__member-psn">PSN: {member.psnId}</span>
+                    )}
                   </div>
                   {member.playerId === stable.leaderId && (
                     <span className="my-stable__member-leader-badge">

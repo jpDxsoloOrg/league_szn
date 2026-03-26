@@ -12,9 +12,10 @@ import {
 
 interface PlayerSummary {
   playerId: string;
-  name: string;
-  currentWrestler: string;
+  playerName: string;
+  wrestlerName: string;
   imageUrl?: string;
+  psnId?: string;
 }
 
 interface HeadToHeadRecord {
@@ -169,18 +170,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const player1: PlayerSummary | null = player1Result.Item
       ? {
           playerId: player1Result.Item.playerId as string,
-          name: player1Result.Item.name as string,
-          currentWrestler: player1Result.Item.currentWrestler as string,
+          playerName: player1Result.Item.name as string,
+          wrestlerName: player1Result.Item.currentWrestler as string,
           imageUrl: player1Result.Item.imageUrl as string | undefined,
+          psnId: player1Result.Item.psnId as string | undefined,
         }
       : null;
 
     const player2: PlayerSummary | null = player2Result.Item
       ? {
           playerId: player2Result.Item.playerId as string,
-          name: player2Result.Item.name as string,
-          currentWrestler: player2Result.Item.currentWrestler as string,
+          playerName: player2Result.Item.name as string,
+          wrestlerName: player2Result.Item.currentWrestler as string,
           imageUrl: player2Result.Item.imageUrl as string | undefined,
+          psnId: player2Result.Item.psnId as string | undefined,
         }
       : null;
 

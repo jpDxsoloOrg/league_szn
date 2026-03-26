@@ -183,6 +183,7 @@ export default function StableDetail() {
                 className="stable-detail__member-image"
               />
               <div className="stable-detail__member-info">
+                <span className="stable-detail__member-wrestler">{member.wrestlerName}</span>
                 <span className="stable-detail__member-player">
                   {member.playerName}
                   {member.playerId === stable.leaderId && (
@@ -191,7 +192,9 @@ export default function StableDetail() {
                     </span>
                   )}
                 </span>
-                <span className="stable-detail__member-wrestler">{member.wrestlerName}</span>
+                {member.psnId && (
+                  <span className="stable-detail__member-psn">PSN: {member.psnId}</span>
+                )}
                 <span className="stable-detail__member-record">
                   <span className="wins">{member.wins}W</span>
                   {' '}

@@ -100,9 +100,9 @@ export async function fetchCompletedMatches(): Promise<MatchRecord[]> {
 export async function fetchActiveStables(): Promise<StableRecord[]> {
   const items = await dynamoDb.scanAll({
     TableName: TableNames.STABLES,
-    FilterExpression: '#status = :active',
+    FilterExpression: '#status = :active OR #status = :approved',
     ExpressionAttributeNames: { '#status': 'status' },
-    ExpressionAttributeValues: { ':active': 'active' },
+    ExpressionAttributeValues: { ':active': 'active', ':approved': 'approved' },
   });
 
   return items.map((item) => ({

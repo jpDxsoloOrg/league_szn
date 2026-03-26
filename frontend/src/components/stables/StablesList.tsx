@@ -32,9 +32,12 @@ export default function StablesList() {
       try {
         setLoading(true);
         setError(null);
-        const data = await stablesApi.getAll({ status: 'active' }, abortController.signal);
+        const data = await stablesApi.getAll(undefined, abortController.signal);
         if (!abortController.signal.aborted) {
-          setStables(data);
+          const visibleStables = data.filter(
+            (s) => s.status === 'active' || s.status === 'approved'
+          );
+          setStables(visibleStables);
         }
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {

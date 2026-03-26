@@ -265,6 +265,9 @@ export default function MyTagTeam() {
                   <span className="my-tag-team__partner-player">
                     {partner.playerName}
                   </span>
+                  {partner.psnId && (
+                    <span className="my-tag-team__partner-psn">PSN: {partner.psnId}</span>
+                  )}
                 </div>
               </div>
             </div>
