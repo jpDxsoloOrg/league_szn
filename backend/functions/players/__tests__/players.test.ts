@@ -31,6 +31,9 @@ vi.mock('../../../lib/dynamodb', () => ({
     CHAMPIONSHIPS: 'Championships',
     SEASON_STANDINGS: 'SeasonStandings',
     SEASONS: 'Seasons',
+    STABLES: 'Stables',
+    TAG_TEAMS: 'TagTeams',
+    STABLE_INVITATIONS: 'StableInvitations',
   },
 }));
 
@@ -162,15 +165,32 @@ describe('createPlayer', () => {
 describe('getPlayers', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('returns all players', async () => {
+  it('returns all players with wrestlers assigned', async () => {
     mockScan.mockResolvedValue({
-      Items: [{ playerId: '1', name: 'P1' }, { playerId: '2', name: 'P2' }],
+      Items: [
+        { playerId: '1', name: 'P1', currentWrestler: 'The Rock' },
+        { playerId: '2', name: 'P2', currentWrestler: 'John Cena' },
+      ],
     });
 
     const result = await getPlayers(makeEvent(), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body)).toHaveLength(2);
+  });
+
+  it('filters out players without currentWrestler', async () => {
+    mockScan.mockResolvedValue({
+      Items: [
+        { playerId: '1', name: 'P1', currentWrestler: 'The Rock' },
+        { playerId: '2', name: 'P2' },
+      ],
+    });
+
+    const result = await getPlayers(makeEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body)).toHaveLength(1);
   });
 
   it('returns empty array when no players exist', async () => {

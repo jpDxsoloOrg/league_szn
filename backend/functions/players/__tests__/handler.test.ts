@@ -38,6 +38,9 @@ vi.mock('../../../lib/dynamodb', () => ({
     CHAMPIONSHIPS: 'Championships',
     SEASON_STANDINGS: 'SeasonStandings',
     SEASONS: 'Seasons',
+    STABLES: 'Stables',
+    TAG_TEAMS: 'TagTeams',
+    STABLE_INVITATIONS: 'StableInvitations',
   },
 }));
 
@@ -76,7 +79,7 @@ describe('players router', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('GET /players routes to getPlayers and returns 200', async () => {
-    mockScan.mockResolvedValue({ Items: [{ playerId: 'p1', name: 'P1' }] });
+    mockScan.mockResolvedValue({ Items: [{ playerId: 'p1', name: 'P1', currentWrestler: 'The Rock' }] });
     const event = makeEvent({
       httpMethod: 'GET',
       path: '/dev/players',

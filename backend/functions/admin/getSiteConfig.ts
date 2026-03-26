@@ -8,6 +8,7 @@ const DEFAULT_CONFIG = {
   promos: true,
   contenders: true,
   statistics: true,
+  stables: true,
 };
 
 export const handler: APIGatewayProxyHandler = async () => {

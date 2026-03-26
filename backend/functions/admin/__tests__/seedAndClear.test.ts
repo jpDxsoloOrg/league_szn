@@ -23,6 +23,8 @@ vi.mock('../../../lib/dynamodb', () => ({
     RANKING_HISTORY: 'RankingHistory', FANTASY_CONFIG: 'FantasyConfig',
     WRESTLER_COSTS: 'WrestlerCosts', FANTASY_PICKS: 'FantasyPicks',
     CHALLENGES: 'Challenges', PROMOS: 'Promos',
+    CONTENDER_OVERRIDES: 'ContenderOverrides',
+    STABLES: 'Stables', TAG_TEAMS: 'TagTeams', STABLE_INVITATIONS: 'StableInvitations',
   },
 }));
 
@@ -158,7 +160,7 @@ describe('seedData', () => {
       ctx,
       cb
     );
-    expect(result!.statusCode).toBe(500);
+    expect(result!.statusCode).toBe(400);
     expect(JSON.parse(result!.body).message).toMatch(/Invalid|unknown/i);
   });
 });
@@ -204,11 +206,11 @@ describe('clearAll', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body.message).toBe('All data cleared successfully');
-    expect(mockDelete).toHaveBeenCalledTimes(26); // 13 tables * 2 items
+    expect(mockDelete).toHaveBeenCalledTimes(28); // 14 tables * 2 items
 
     const labels = ['players', 'matches', 'championships', 'championshipHistory',
       'tournaments', 'seasons', 'seasonStandings', 'divisions', 'events',
-      'contenderRankings', 'rankingHistory', 'challenges', 'promos'];
+      'contenderRankings', 'contenderOverrides', 'rankingHistory', 'challenges', 'promos'];
     for (const label of labels) {
       expect(body.deletedCounts[label]).toBe(2);
     }
@@ -283,7 +285,7 @@ describe('clearAll', () => {
     await clearAll(event, ctx, cb);
 
     const scanCalls = mockScanAll.mock.calls;
-    expect(scanCalls.length).toBe(13);
+    expect(scanCalls.length).toBe(14);
     for (const call of scanCalls) {
       expect(call[0].ExpressionAttributeNames).toHaveProperty('#pk');
       expect(call[0].ProjectionExpression).toContain('#pk');
