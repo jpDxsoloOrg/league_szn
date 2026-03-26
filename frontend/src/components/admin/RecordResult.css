@@ -206,6 +206,57 @@
   font-weight: bold;
 }
 
+/* Draw toggle */
+.draw-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: #0f0f0f;
+  border: 1px solid #333;
+  border-radius: 4px;
+}
+
+.draw-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: #e5e5e5;
+}
+
+.draw-toggle-checkbox {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #f59e0b;
+  cursor: pointer;
+}
+
+.draw-toggle-text {
+  user-select: none;
+}
+
+.draw-hint {
+  color: #f59e0b;
+  font-size: 0.85rem;
+}
+
+.participant-option.draw {
+  border-color: #f59e0b;
+  background-color: #422006;
+}
+
+.draw-badge {
+  background-color: #f59e0b;
+  color: #000;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+
 /* Star rating & Match of the Night */
 .rating-awards-block {
   margin-top: 1.25rem;

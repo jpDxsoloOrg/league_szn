@@ -6,12 +6,13 @@ type FormResult = 'W' | 'L' | 'D';
 
 function getResultForPlayer(
   playerId: string,
-  match: { participants?: string[]; winners?: string[]; losers?: string[] }
+  match: { participants?: string[]; winners?: string[]; losers?: string[]; isDraw?: boolean }
 ): FormResult {
   const participants = (match.participants || []) as string[];
+  if (!participants.includes(playerId)) return 'D';
+  if (match.isDraw) return 'D';
   const winners = (match.winners || []) as string[];
   const losers = (match.losers || []) as string[];
-  if (!participants.includes(playerId)) return 'D';
   if (winners.includes(playerId)) return 'W';
   if (losers.includes(playerId)) return 'L';
   return 'D';
@@ -23,6 +24,7 @@ type CompletedMatchForForm = {
   participants?: string[];
   winners?: string[];
   losers?: string[];
+  isDraw?: boolean;
 };
 
 function computeRecentFormAndStreak(

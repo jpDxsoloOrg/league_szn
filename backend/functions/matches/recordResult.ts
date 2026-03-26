@@ -9,6 +9,7 @@ import { calculateFantasyPoints } from '../fantasy/calculateFantasyPoints';
 interface RecordResultBody {
   winners: string[];
   losers: string[];
+  isDraw?: boolean;
   starRating?: number;
   matchOfTheNight?: boolean;
 }
@@ -119,13 +120,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<RecordResultBody>(event);
     if (parseError) return parseError;
 
-    if (!body.winners || !body.losers || body.winners.length === 0) {
-      return badRequest('Winners and losers are required');
-    }
+    if (body.isDraw) {
+      // For draws, winners should contain all draw participants; losers can be empty
+      if (!body.winners || body.winners.length === 0) {
+        return badRequest('Draw participants are required (send as winners)');
+      }
+      // Normalize: losers empty for draws, isDraw flag drives the logic
+      body.losers = [];
+    } else {
+      if (!body.winners || !body.losers || body.winners.length === 0) {
+        return badRequest('Winners and losers are required');
+      }
 
-    const overlap = body.winners.filter((w: string) => body.losers.includes(w));
-    if (overlap.length > 0) {
-      return badRequest('A player cannot be both a winner and loser in the same match');
+      const overlap = body.winners.filter((w: string) => body.losers.includes(w));
+      if (overlap.length > 0) {
+        return badRequest('A player cannot be both a winner and loser in the same match');
+      }
     }
 
     if (body.starRating != null) {
@@ -153,9 +163,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const timestamp = new Date().toISOString();
-    const allParticipants = [...body.winners, ...body.losers];
-    const isDraw = body.winners.length > 1 && body.losers.length > 1 &&
-                   JSON.stringify(body.winners.sort()) === JSON.stringify(body.losers.sort());
+    const isDraw = body.isDraw === true;
+    const allParticipants = isDraw ? [...body.winners] : [...body.winners, ...body.losers];
 
     // Build transaction items for atomic updates
     const transactItems: TransactWriteItem[] = [];
@@ -172,6 +181,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       ':now': timestamp,
     };
     let matchSetExpr = 'SET winners = :winners, losers = :losers, #status = :status, version = if_not_exists(version, :zero) + :one, updatedAt = :now';
+    if (isDraw) {
+      matchSetExpr += ', isDraw = :isDraw';
+      matchUpdateValues[':isDraw'] = true;
+    }
     if (body.starRating != null) {
       matchSetExpr += ', starRating = :starRating';
       matchUpdateValues[':starRating'] = body.starRating;
@@ -638,6 +651,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       winners: body.winners,
       losers: body.losers,
       status: 'completed' as const,
+      ...(isDraw && { isDraw: true }),
       ...(body.starRating != null && { starRating: body.starRating }),
       ...(body.matchOfTheNight != null && { matchOfTheNight: body.matchOfTheNight }),
     };
