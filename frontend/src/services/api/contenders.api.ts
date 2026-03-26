@@ -1,4 +1,4 @@
-import type { ChampionshipContenders } from '../../types/contender';
+import type { ChampionshipContenders, ContenderOverride, SetOverrideRequest } from '../../types/contender';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
 export const contendersApi = {
@@ -11,5 +11,23 @@ export const contendersApi = {
       method: 'POST',
       body: JSON.stringify(championshipId ? { championshipId } : {}),
     });
+  },
+
+  setOverride: async (body: SetOverrideRequest): Promise<ContenderOverride> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/contenders/overrides`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
+
+  removeOverride: async (championshipId: string, playerId: string): Promise<void> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/contenders/overrides/${championshipId}/${playerId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  getOverrides: async (championshipId?: string): Promise<ContenderOverride[]> => {
+    const query = championshipId ? `?championshipId=${championshipId}` : '';
+    return fetchWithAuth(`${API_BASE_URL}/admin/contenders/overrides${query}`, {});
   },
 };

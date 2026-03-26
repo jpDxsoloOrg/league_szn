@@ -89,6 +89,21 @@ export default function ContenderCard({ contender }: ContenderCardProps) {
         </div>
       </div>
 
+      {contender.isOverridden && (
+        <div className={`override-badge ${contender.overrideType}`}>
+          <span className="override-label">
+            {contender.overrideType === 'bump_to_top'
+              ? t('contenders.overrides.bumpedToTop')
+              : t('contenders.overrides.sentToBottom')}
+          </span>
+          {contender.organicRank && (
+            <span className="organic-rank">
+              {t('contenders.overrides.organicRank', { rank: contender.organicRank })}
+            </span>
+          )}
+        </div>
+      )}
+
       {isTopContender && (
         <div className="top-contender-badge">
           {t('contenders.topContender')}

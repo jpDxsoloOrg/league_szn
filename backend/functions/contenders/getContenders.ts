@@ -12,6 +12,9 @@ interface ContenderRanking {
   matchesInPeriod: number;
   winsInPeriod: number;
   previousRank?: number | null;
+  isOverridden?: boolean;
+  overrideType?: string | null;
+  organicRank?: number | null;
   calculatedAt: string;
 }
 
@@ -149,6 +152,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         previousRank: previousRank,
         movement,
         isNew,
+        isOverridden: ranking.isOverridden || false,
+        overrideType: ranking.overrideType || null,
+        organicRank: ranking.organicRank || null,
       };
     });
 

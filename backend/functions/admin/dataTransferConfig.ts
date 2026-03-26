@@ -11,6 +11,7 @@ export type ExportDatasetKey =
   | 'tournaments'
   | 'events'
   | 'contenderRankings'
+  | 'contenderOverrides'
   | 'rankingHistory'
   | 'fantasyConfig'
   | 'wrestlerCosts'
@@ -49,6 +50,12 @@ export const EXPORT_TABLES: readonly ExportTableConfig[] = [
   {
     key: 'contenderRankings',
     tableName: TableNames.CONTENDER_RANKINGS,
+    partitionKey: 'championshipId',
+    sortKey: 'playerId',
+  },
+  {
+    key: 'contenderOverrides',
+    tableName: TableNames.CONTENDER_OVERRIDES,
     partitionKey: 'championshipId',
     sortKey: 'playerId',
   },

@@ -33,6 +33,27 @@ export interface ContenderConfig {
   divisionRestricted: boolean;
 }
 
+export type OverrideType = 'bump_to_top' | 'send_to_bottom';
+
+export interface ContenderOverride {
+  championshipId: string;
+  playerId: string;
+  overrideType: OverrideType;
+  reason: string;
+  createdBy: string;
+  createdAt: string;
+  expiresAt?: string;
+  active: boolean;
+}
+
+export interface SetOverrideRequest {
+  championshipId: string;
+  playerId: string;
+  overrideType: OverrideType;
+  reason: string;
+  expiresAt?: string;
+}
+
 // Display types for UI
 export interface ContenderWithPlayer extends ContenderRanking {
   playerName: string;
@@ -40,6 +61,9 @@ export interface ContenderWithPlayer extends ContenderRanking {
   imageUrl?: string;
   movement: number;
   isNew: boolean;
+  isOverridden?: boolean;
+  overrideType?: OverrideType;
+  organicRank?: number;
 }
 
 export interface ChampionshipContenders {

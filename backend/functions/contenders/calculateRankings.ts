@@ -2,6 +2,7 @@ import { Handler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, serverError } from '../../lib/response';
 import { calculateRankingsForChampionship, RankingResult } from '../../lib/rankingCalculator';
+import { applyOverrides, ActiveOverride, OverrideType, RankingWithOverride } from '../../lib/overrideApplicator';
 
 interface Championship {
   championshipId: string;
@@ -117,8 +118,26 @@ async function calculateAllRankings(requestedChampionshipId?: string): Promise<R
       maxContenders: 10,
     });
 
-    // 2d. Write new rankings to CONTENDER_RANKINGS
-    for (const ranking of rankings) {
+    // 2d. Fetch active overrides for this championship
+    const overrideResult = await dynamoDb.query({
+      TableName: TableNames.CONTENDER_OVERRIDES,
+      KeyConditionExpression: 'championshipId = :cid',
+      FilterExpression: 'active = :active',
+      ExpressionAttributeValues: { ':cid': championshipId, ':active': true },
+    });
+
+    const validOverrides: ActiveOverride[] = (overrideResult.Items || [])
+      .filter((o) => !o.expiresAt || (o.expiresAt as string) > now)
+      .map((o) => ({
+        playerId: o.playerId as string,
+        overrideType: o.overrideType as OverrideType,
+      }));
+
+    // 2e. Apply overrides to rankings
+    const adjustedRankings: RankingWithOverride[] = applyOverrides(rankings, validOverrides);
+
+    // 2f. Write new rankings to CONTENDER_RANKINGS
+    for (const ranking of adjustedRankings) {
       const oldData = existingMap.get(ranking.playerId);
       const previousRank = oldData ? oldData.rank : undefined;
       const oldPeakRank = oldData?.peakRank ?? Infinity;
@@ -144,16 +163,19 @@ async function calculateAllRankings(requestedChampionshipId?: string): Promise<R
           previousRank: previousRank ?? null,
           peakRank,
           weeksAtTop,
+          isOverridden: ranking.isOverridden || false,
+          overrideType: ranking.overrideType || null,
+          organicRank: ranking.organicRank || null,
           calculatedAt: now,
           updatedAt: now,
         },
       });
     }
 
-    // 2e. Write ranking history entries
+    // 2g. Write ranking history entries
     const weekKey = buildWeekKey(championshipId);
 
-    for (const ranking of rankings) {
+    for (const ranking of adjustedRankings) {
       const oldData = existingMap.get(ranking.playerId);
       const previousRank = oldData ? oldData.rank : undefined;
       const movement = previousRank !== undefined ? previousRank - ranking.rank : 0;
@@ -167,12 +189,15 @@ async function calculateAllRankings(requestedChampionshipId?: string): Promise<R
           rank: ranking.rank,
           rankingScore: ranking.rankingScore,
           movement,
+          isOverridden: ranking.isOverridden || false,
+          overrideType: ranking.overrideType || null,
+          organicRank: ranking.organicRank || null,
           createdAt: now,
         },
       });
     }
 
-    totalRankings += rankings.length;
+    totalRankings += adjustedRankings.length;
     processedChampionships.push(championship.name || championshipId);
   }
 
