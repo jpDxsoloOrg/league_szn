@@ -19,6 +19,7 @@ export default function RecordResult() {
   const [selectedEventFilter, setSelectedEventFilter] = useState<string>('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [winners, setWinners] = useState<string[]>([]);
+  const [isDraw, setIsDraw] = useState(false);
   const [winningTeamIndex, setWinningTeamIndex] = useState<number | null>(null);
   const [starRating, setStarRating] = useState<number | ''>('');
   const [matchOfTheNight, setMatchOfTheNight] = useState(false);
@@ -128,6 +129,7 @@ export default function RecordResult() {
   const handleMatchSelect = (match: Match) => {
     setSelectedMatch(match);
     setWinners([]);
+    setIsDraw(false);
     setWinningTeamIndex(null);
     setError(null);
     setSuccess(null);
@@ -168,7 +170,31 @@ export default function RecordResult() {
 
     setSubmitting(true);
 
-    if (isTagTeamMatch) {
+    if (isDraw) {
+      // Draw: all participants get draw stat
+      try {
+        setError(null);
+        const payload: { winners: string[]; losers: string[]; isDraw: boolean; starRating?: number; matchOfTheNight?: boolean } = {
+          winners: selectedMatch.participants,
+          losers: [],
+          isDraw: true,
+        };
+        if (starRating !== '') payload.starRating = starRating as number;
+        if (matchOfTheNight) payload.matchOfTheNight = true;
+        await matchesApi.recordResult(selectedMatch.matchId, payload);
+        setSuccess(t('recordResult.success'));
+        setSelectedMatch(null);
+        setWinners([]);
+        setIsDraw(false);
+        setStarRating('');
+        setMatchOfTheNight(false);
+        await loadData();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('recordResult.error'));
+      } finally {
+        setSubmitting(false);
+      }
+    } else if (isTagTeamMatch) {
       // Tag team match validation
       if (winningTeamIndex === null || winners.length === 0) {
         setError(t('recordResult.selectWinningTeam'));
@@ -255,6 +281,7 @@ export default function RecordResult() {
             setSelectedEventFilter(value);
             setSelectedMatch(null);
             setWinners([]);
+            setIsDraw(false);
             setWinningTeamIndex(null);
           }}
           placeholder="Select an event..."
@@ -330,8 +357,41 @@ export default function RecordResult() {
                   </div>
                 </div>
 
+                <div className="draw-toggle-row">
+                  <label className="draw-toggle-label">
+                    <input
+                      type="checkbox"
+                      checked={isDraw}
+                      onChange={(e) => {
+                        setIsDraw(e.target.checked);
+                        if (e.target.checked) {
+                          setWinners([]);
+                          setWinningTeamIndex(null);
+                        }
+                      }}
+                      className="draw-toggle-checkbox"
+                    />
+                    <span className="draw-toggle-text">Draw</span>
+                  </label>
+                  {isDraw && (
+                    <span className="draw-hint">All participants will receive a draw.</span>
+                  )}
+                </div>
+
                 <div className="participants-selection">
-                  {isTagTeamMatch ? (
+                  {isDraw ? (
+                    <div className="draw-participants-list">
+                      <h4>Draw Participants</h4>
+                      {selectedMatch.participants.map(playerId => (
+                        <div key={playerId} className="participant-option draw">
+                          <div className="participant-info">
+                            {getPlayerName(playerId)}
+                          </div>
+                          <span className="draw-badge">Draw</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : isTagTeamMatch ? (
                     <>
                       <h4>{t('recordResult.selectWinningTeamTitle')}</h4>
                       <div className="teams-list">
@@ -422,7 +482,7 @@ export default function RecordResult() {
                 </div>
 
                 <div className="result-actions">
-                  <button onClick={handleSubmit} disabled={winners.length === 0 || submitting}>
+                  <button onClick={handleSubmit} disabled={(!isDraw && winners.length === 0) || submitting}>
                     {submitting ? 'Recording...' : 'Record Result'}
                   </button>
                   <button onClick={() => setSelectedMatch(null)} className="cancel-btn" disabled={submitting}>

@@ -25,6 +25,7 @@ export const matchesApi = {
     result: {
       winners: string[];
       losers: string[];
+      isDraw?: boolean;
       winningTeam?: number;
       starRating?: number;
       matchOfTheNight?: boolean;
