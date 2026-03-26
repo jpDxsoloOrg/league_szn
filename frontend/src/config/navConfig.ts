@@ -102,6 +102,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
       { path: '/admin/challenges', i18nKey: 'admin.panel.tabs.challenges' },
       { path: '/admin/promos', i18nKey: 'admin.panel.tabs.promos' },
       { path: '/admin/contender-config', i18nKey: 'admin.panel.tabs.contenderConfig' },
+      { path: '/admin/contender-overrides', i18nKey: 'admin.panel.tabs.contenderOverrides' },
     ],
   },
   {
@@ -136,7 +137,7 @@ export function getUserGroupForPath(pathname: string): string | null {
 export function getAdminGroupForPath(pathname: string): string | null {
   const matchOps = ['/admin/schedule', '/admin/results', '/admin/events', '/admin/match-config'];
   const leagueSetup = ['/admin/players', '/admin/divisions', '/admin/seasons', '/admin/season-awards', '/admin/championships', '/admin/tournaments', '/admin/companies', '/admin/shows'];
-  const contentSocial = ['/admin/challenges', '/admin/promos', '/admin/contender-config'];
+  const contentSocial = ['/admin/challenges', '/admin/promos', '/admin/contender-config', '/admin/contender-overrides'];
   const fantasy = ['/admin/fantasy-shows', '/admin/fantasy-config'];
   const system = ['/admin/users', '/admin/features', '/admin/danger'];
   if (matchOps.some((p) => pathname === p)) return 'matchOps';
