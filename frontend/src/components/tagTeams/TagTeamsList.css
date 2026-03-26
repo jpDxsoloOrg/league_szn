@@ -18,7 +18,7 @@
 .tag-teams-list__view-toggle {
   display: flex;
   gap: 0;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border, #444);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -26,8 +26,8 @@
 .tag-teams-list__toggle-btn {
   padding: 0.5rem 1.25rem;
   border: none;
-  background-color: var(--color-surface);
-  color: var(--color-text-secondary);
+  background-color: var(--color-surface, #2d2d2d);
+  color: var(--color-text-secondary, #bbb);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -35,20 +35,20 @@
 }
 
 .tag-teams-list__toggle-btn:not(:last-child) {
-  border-right: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border, #444);
 }
 
 .tag-teams-list__toggle-btn:hover {
-  background-color: var(--color-surface-hover, rgba(255, 255, 255, 0.05));
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .tag-teams-list__toggle-btn--active {
-  background-color: var(--color-primary);
-  color: #fff;
+  background-color: var(--color-primary, #d4af37);
+  color: #1a1a1a;
 }
 
 .tag-teams-list__toggle-btn--active:hover {
-  background-color: var(--color-primary);
+  background-color: var(--color-primary, #d4af37);
 }
 
 .tag-teams-list__grid {
