@@ -51,6 +51,8 @@ export const USER_NAV_GROUPS: NavGroup[] = [
       { path: '/profile', i18nKey: 'nav.profile', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
       { path: '/challenges', i18nKey: 'nav.challenges', feature: 'challenges' },
       { path: '/promos', i18nKey: 'nav.promos', feature: 'promos' },
+      { path: '/my-stable', i18nKey: 'nav.myStable', feature: 'stables', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
+      { path: '/my-tag-team', i18nKey: 'nav.myTagTeam', feature: 'stables', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
     ],
   },
 ];
@@ -131,7 +133,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
 /** Path → group key for user nav (for auto-expand) */
 export function getUserGroupForPath(pathname: string): string | null {
   const core = ['/', '/standings', '/activity', '/championships', '/events', '/matches', '/tournaments', '/awards', '/contenders', '/stats', '/stables', '/tag-teams'];
-  const wrestler = ['/profile', '/challenges', '/promos'];
+  const wrestler = ['/profile', '/challenges', '/promos', '/my-stable', '/my-tag-team'];
   if (core.some((p) => pathname === p) || pathname.startsWith('/events/') || pathname.startsWith('/stats/') || pathname.startsWith('/contenders/') || pathname.startsWith('/stables/') || pathname.startsWith('/tag-teams/')) return 'core';
   if (wrestler.some((p) => pathname === p || pathname.startsWith(p + '/'))) return 'wrestler';
   return null;

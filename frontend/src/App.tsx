@@ -59,9 +59,11 @@ import EventResults from './components/events/EventResults';
 // Stables components
 import StablesList from './components/stables/StablesList';
 import StableDetail from './components/stables/StableDetail';
+import MyStable from './components/stables/MyStable';
 // Tag Teams components
 import TagTeamsList from './components/tagTeams/TagTeamsList';
 import TagTeamDetail from './components/tagTeams/TagTeamDetail';
+import MyTagTeam from './components/tagTeams/MyTagTeam';
 // Profile components
 import WrestlerProfile from './components/profile/WrestlerProfile';
 // Route guard
@@ -218,6 +220,13 @@ function AppLayout() {
             <Route path="/stables/:stableId" element={
               <FeatureRoute feature="stables"><StableDetail /></FeatureRoute>
             } />
+            <Route path="/my-stable" element={
+              <FeatureRoute feature="stables">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <MyStable />
+                </ProtectedRoute>
+              </FeatureRoute>
+            } />
 
             {/* Tag Teams Routes - feature-gated */}
             <Route path="/tag-teams" element={
@@ -225,6 +234,13 @@ function AppLayout() {
             } />
             <Route path="/tag-teams/:tagTeamId" element={
               <FeatureRoute feature="stables"><TagTeamDetail /></FeatureRoute>
+            } />
+            <Route path="/my-tag-team" element={
+              <FeatureRoute feature="stables">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <MyTagTeam />
+                </ProtectedRoute>
+              </FeatureRoute>
             } />
 
             {/* Contender Routes - feature-gated */}
