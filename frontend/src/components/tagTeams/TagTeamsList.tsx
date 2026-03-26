@@ -28,9 +28,9 @@ export default function TagTeamsList() {
       try {
         setLoading(true);
         setError(null);
-        const data = await tagTeamsApi.getAll({ status: 'active' }, abortController.signal);
+        const data = await tagTeamsApi.getAll(undefined, abortController.signal);
         if (!abortController.signal.aborted) {
-          setTagTeams(data);
+          setTagTeams(data.filter((tt) => tt.status === 'active'));
         }
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {

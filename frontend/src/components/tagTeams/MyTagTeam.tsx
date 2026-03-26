@@ -19,6 +19,7 @@ export default function MyTagTeam() {
   const [profile, setProfile] = useState<Player | null>(null);
   const [tagTeam, setTagTeam] = useState<TagTeamDetailResponse | null>(null);
   const [pendingRequests, setPendingRequests] = useState<TagTeam[]>([]);
+  const [pendingTeam, setPendingTeam] = useState<TagTeam | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
@@ -37,20 +38,31 @@ export default function MyTagTeam() {
         const detail = await tagTeamsApi.getById(myProfile.tagTeamId, signal);
         setTagTeam(detail);
         setPendingRequests([]);
+        setPendingTeam(null);
       } else {
         setTagTeam(null);
-        // Check for tag teams where this player is player2 with pending_partner status
+        // Search for any tag team involving this player (pending states)
         try {
-          const allTagTeams = await tagTeamsApi.getAll(
-            { status: 'pending_partner' },
-            signal
+          const allTagTeams = await tagTeamsApi.getAll(undefined, signal);
+
+          // Tag teams where user is player2 and needs to accept
+          const incomingRequests = allTagTeams.filter(
+            (tt) => tt.player2Id === myProfile.playerId && tt.status === 'pending_partner'
           );
-          const myPending = allTagTeams.filter(
-            (tt) => tt.player2Id === myProfile.playerId
+          setPendingRequests(incomingRequests);
+
+          // Tag teams where user is involved and awaiting admin approval,
+          // or user created and waiting for partner response
+          const myPending = allTagTeams.find(
+            (tt) =>
+              (tt.player1Id === myProfile.playerId || tt.player2Id === myProfile.playerId) &&
+              (tt.status === 'pending_admin' ||
+                (tt.status === 'pending_partner' && tt.player1Id === myProfile.playerId))
           );
-          setPendingRequests(myPending);
+          setPendingTeam(myPending || null);
         } catch {
           setPendingRequests([]);
+          setPendingTeam(null);
         }
       }
     } catch (err) {
@@ -168,16 +180,42 @@ export default function MyTagTeam() {
       {!tagTeam && !profile?.tagTeamId ? (
         /* No tag team */
         <div className="my-tag-team__no-team">
-          <div className="my-tag-team__no-team-info">
-            <h3>{t('tagTeams.my.noTeam', 'You are not in a tag team')}</h3>
-            <p>{t('tagTeams.my.noTeamDesc', 'Create a tag team by choosing a partner, or wait for someone to send you a request.')}</p>
-            <button
-              className="btn-primary"
-              onClick={() => setShowCreateModal(true)}
-            >
-              {t('tagTeams.my.createTeam', 'Create a Tag Team')}
-            </button>
-          </div>
+          {pendingTeam ? (
+            /* User has a pending tag team (awaiting admin or partner) */
+            <div className="my-tag-team__pending-team">
+              <div className="my-tag-team__info-card">
+                {pendingTeam.imageUrl && (
+                  <div className="my-tag-team__image-wrapper">
+                    <img
+                      src={resolveImageSrc(pendingTeam.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+                      onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+                      alt={pendingTeam.name}
+                      className="my-tag-team__image"
+                    />
+                  </div>
+                )}
+                <div className="my-tag-team__info">
+                  <h3 className="my-tag-team__name">{pendingTeam.name}</h3>
+                  <span className={`my-tag-team__status my-tag-team__status--${pendingTeam.status}`}>
+                    {pendingTeam.status === 'pending_admin'
+                      ? t('tagTeams.my.awaitingAdmin', 'Awaiting Admin Approval')
+                      : t('tagTeams.my.waitingForPartner', 'Waiting for Partner')}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="my-tag-team__no-team-info">
+              <h3>{t('tagTeams.my.noTeam', 'You are not in a tag team')}</h3>
+              <p>{t('tagTeams.my.noTeamDesc', 'Create a tag team by choosing a partner, or wait for someone to send you a request.')}</p>
+              <button
+                className="btn-primary"
+                onClick={() => setShowCreateModal(true)}
+              >
+                {t('tagTeams.my.createTeam', 'Create a Tag Team')}
+              </button>
+            </div>
+          )}
 
           {pendingRequests.length > 0 && (
             <div className="my-tag-team__pending">

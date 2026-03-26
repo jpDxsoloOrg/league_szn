@@ -89,6 +89,13 @@
   background: var(--color-primary-hover);
 }
 
+/* Pending team (awaiting admin or partner) */
+.my-tag-team__pending-team {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
 /* Pending requests */
 .my-tag-team__pending {
   background-color: var(--color-surface);
