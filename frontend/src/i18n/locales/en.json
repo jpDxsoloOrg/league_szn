@@ -1261,6 +1261,15 @@
       "topContenderPositions": "#1 Contender Positions",
       "topThreePositions": "Top 3 Positions"
     },
+    "overrides": {
+      "badge": "Manual Override",
+      "bumpedToTop": "Bumped to #1",
+      "sentToBottom": "Sent to Bottom",
+      "organicRank": "Algorithmic Rank: #{{rank}}",
+      "overriddenBy": "Set by {{admin}}",
+      "reason": "Reason: {{reason}}",
+      "expires": "Expires: {{date}}"
+    },
     "admin": {
       "title": "Contender Configuration",
       "subtitle": "Configure contender ranking settings per championship",
@@ -1278,7 +1287,29 @@
       "save": "Save Configuration",
       "recalculate": "Recalculate Rankings",
       "saveSuccess": "Configuration saved for {{championship}}",
-      "recalculateSuccess": "Rankings recalculated for {{championship}}"
+      "recalculateSuccess": "Rankings recalculated for {{championship}}",
+      "overrides": {
+        "title": "Manual Overrides",
+        "subtitle": "Override contender positions for storyline or disciplinary reasons",
+        "selectPlayer": "Select Player",
+        "overrideType": "Override Type",
+        "bumpToTop": "Bump to #1 Contender",
+        "sendToBottom": "Send to Bottom",
+        "reason": "Reason (required)",
+        "reasonPlaceholder": "e.g., Storyline decision for upcoming PPV",
+        "expiresAt": "Auto-expire (optional)",
+        "apply": "Apply Override",
+        "remove": "Remove Override",
+        "confirmApply": "Are you sure you want to override {{player}}'s contender ranking for {{championship}}?",
+        "confirmRemove": "Remove the override for {{player}}? Their rank will return to the algorithmic position on next recalculation.",
+        "activeOverrides": "Active Overrides",
+        "noOverrides": "No active overrides",
+        "applySuccess": "Override applied for {{player}}",
+        "removeSuccess": "Override removed for {{player}}",
+        "errorNotEligible": "This player is not in the current rankings. They must meet minimum match requirements first.",
+        "errorIsChampion": "Cannot override the current champion's ranking",
+        "errorWrongDivision": "This player is not in the correct division for this championship"
+      }
     }
   }
 }

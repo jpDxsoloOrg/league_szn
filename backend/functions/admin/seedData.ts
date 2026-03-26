@@ -810,6 +810,45 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     }
     createdCounts.rankingHistory = historyEntries;
 
+    // ── Contender Overrides ─────────────────────────────────────
+    console.log('Creating contender overrides...');
+    let overridesCount = 0;
+
+    // Create an override for the top WHC contender to bump them to top position
+    if (whcContenders.length > 0) {
+      await dynamoDb.put({
+        TableName: TableNames.CONTENDER_OVERRIDES,
+        Item: {
+          championshipId: championships[0].championshipId,
+          playerId: whcContenders[0].playerId,
+          overrideType: 'bump_to_top',
+          reason: 'Storyline: upcoming PPV main event angle',
+          createdBy: 'admin',
+          createdAt: now,
+          active: true,
+        },
+      });
+      overridesCount++;
+    }
+
+    // Create an override for the top IC contender to temporarily hold their position
+    if (icContenders.length > 0) {
+      await dynamoDb.put({
+        TableName: TableNames.CONTENDER_OVERRIDES,
+        Item: {
+          championshipId: championships[1].championshipId,
+          playerId: icContenders[0].playerId,
+          overrideType: 'hold_position',
+          reason: 'Temporary hold to build momentum',
+          createdBy: 'admin',
+          createdAt: now,
+          active: true,
+        },
+      });
+      overridesCount++;
+    }
+    createdCounts.contenderOverrides = overridesCount;
+
     // ── Fantasy Config ─────────────────────────────────────────
     console.log('Creating fantasy config...');
     await dynamoDb.put({

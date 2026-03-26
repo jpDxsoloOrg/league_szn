@@ -21,6 +21,7 @@ provider:
     EVENTS_TABLE: ${self:service}-events-${self:provider.stage}
     CONTENDER_RANKINGS_TABLE: ${self:service}-contender-rankings-${self:provider.stage}
     RANKING_HISTORY_TABLE: ${self:service}-ranking-history-${self:provider.stage}
+    CONTENDER_OVERRIDES_TABLE: ${self:service}-contender-overrides-${self:provider.stage}
     IMAGES_BUCKET: ${self:service}-images-${self:provider.stage}
     FANTASY_CONFIG_TABLE: ${self:service}-fantasy-config-${self:provider.stage}
     WRESTLER_COSTS_TABLE: ${self:service}-wrestler-costs-${self:provider.stage}
@@ -67,6 +68,8 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONTENDER_RANKINGS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RANKING_HISTORY_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RANKING_HISTORY_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONTENDER_OVERRIDES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONTENDER_OVERRIDES_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FANTASY_CONFIG_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.WRESTLER_COSTS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FANTASY_PICKS_TABLE}
@@ -580,6 +583,21 @@ functions:
       - http:
           path: admin/contenders/recalculate
           method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/contenders/overrides
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/contenders/overrides/{championshipId}/{playerId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/contenders/overrides
+          method: get
           cors: *corsConfig
           authorizer: adminAuthorizer
 
@@ -1104,6 +1122,33 @@ resources:
               - AttributeName: championshipId
                 KeyType: HASH
               - AttributeName: rank
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    ContenderOverridesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.CONTENDER_OVERRIDES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: championshipId
+            AttributeType: S
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: championshipId
+            KeyType: HASH
+          - AttributeName: playerId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: ActiveOverridesIndex
+            KeySchema:
+              - AttributeName: championshipId
+                KeyType: HASH
+              - AttributeName: createdAt
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL

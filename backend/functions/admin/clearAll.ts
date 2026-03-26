@@ -110,6 +110,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Delete all contender rankings
     await clearTable('contenderRankings', TableNames.CONTENDER_RANKINGS, 'championshipId', 'playerId');
 
+    // Delete all contender overrides
+    await clearTable('contenderOverrides', TableNames.CONTENDER_OVERRIDES, 'championshipId', 'playerId');
+
     // Delete all ranking history
     await clearTable('rankingHistory', TableNames.RANKING_HISTORY, 'playerId', 'weekKey');
 

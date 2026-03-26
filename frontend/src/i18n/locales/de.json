@@ -1260,6 +1260,15 @@
       "topContenderPositions": "#1 Herausforderer-Positionen",
       "topThreePositions": "Top-3-Positionen"
     },
+    "overrides": {
+      "badge": "Manuelle Anpassung",
+      "bumpedToTop": "Auf #1 gesetzt",
+      "sentToBottom": "Ans Ende gesetzt",
+      "organicRank": "Algorithmischer Rang: #{{rank}}",
+      "overriddenBy": "Gesetzt von {{admin}}",
+      "reason": "Grund: {{reason}}",
+      "expires": "Läuft ab: {{date}}"
+    },
     "admin": {
       "title": "Herausforderer-Konfiguration",
       "subtitle": "Herausforderer-Ranglisteneinstellungen pro Meisterschaft konfigurieren",
@@ -1277,7 +1286,29 @@
       "save": "Konfiguration speichern",
       "recalculate": "Rangliste neu berechnen",
       "saveSuccess": "Konfiguration für {{championship}} gespeichert",
-      "recalculateSuccess": "Rangliste für {{championship}} neu berechnet"
+      "recalculateSuccess": "Rangliste für {{championship}} neu berechnet",
+      "overrides": {
+        "title": "Manuelle Anpassungen",
+        "subtitle": "Herausforderer-Positionen für Storyline oder disziplinarische Gründe anpassen",
+        "selectPlayer": "Spieler auswählen",
+        "overrideType": "Anpassungstyp",
+        "bumpToTop": "Auf #1 Herausforderer setzen",
+        "sendToBottom": "Ans Ende setzen",
+        "reason": "Grund (erforderlich)",
+        "reasonPlaceholder": "z.B. Storyline-Entscheidung für kommendes PPV",
+        "expiresAt": "Automatisch ablaufen (optional)",
+        "apply": "Anpassung anwenden",
+        "remove": "Anpassung entfernen",
+        "confirmApply": "Möchten Sie wirklich das Ranking von {{player}} für {{championship}} anpassen?",
+        "confirmRemove": "Anpassung für {{player}} entfernen? Der Rang wird bei der nächsten Berechnung auf die algorithmische Position zurückgesetzt.",
+        "activeOverrides": "Aktive Anpassungen",
+        "noOverrides": "Keine aktiven Anpassungen",
+        "applySuccess": "Anpassung für {{player}} angewendet",
+        "removeSuccess": "Anpassung für {{player}} entfernt",
+        "errorNotEligible": "Dieser Spieler ist nicht in den aktuellen Rankings. Mindestanzahl an Kämpfen muss erfüllt sein.",
+        "errorIsChampion": "Das Ranking des aktuellen Champions kann nicht angepasst werden",
+        "errorWrongDivision": "Dieser Spieler ist nicht in der richtigen Division für diese Meisterschaft"
+      }
     }
   }
 }

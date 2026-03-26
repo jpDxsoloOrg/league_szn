@@ -199,6 +199,43 @@
   text-transform: uppercase;
 }
 
+/* Override Badge */
+.override-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.override-badge.bump_to_top {
+  background-color: rgba(212, 175, 55, 0.2);
+  color: #d4af37;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.override-badge.send_to_bottom {
+  background-color: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.organic-rank {
+  font-weight: 400;
+  opacity: 0.8;
+  font-size: 0.7rem;
+}
+
+/* When both top-contender-badge and override-badge exist, offset the override badge */
+.contender-card:has(.override-badge) .top-contender-badge {
+  top: 2.25rem;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .contender-card {
@@ -233,5 +270,16 @@
     width: 100%;
     text-align: center;
     margin-top: 0.5rem;
+  }
+
+  .override-badge {
+    position: static;
+    width: 100%;
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+
+  .contender-card:has(.override-badge) .top-contender-badge {
+    top: unset;
   }
 }

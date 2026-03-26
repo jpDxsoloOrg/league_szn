@@ -435,6 +435,33 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             TransactItems: championshipTransactItems,
           } as TransactWriteCommandInput);
         }
+
+        // Auto-remove contender override for new champion(s) after a title change
+        if (!isTitleDefense) {
+          const championIds: string[] = Array.isArray(newChampion) ? newChampion : [newChampion];
+          for (const champId of championIds) {
+            try {
+              const existingOverride = await dynamoDb.get({
+                TableName: TableNames.CONTENDER_OVERRIDES,
+                Key: { championshipId: match.championshipId, playerId: champId },
+              });
+              if (existingOverride.Item && existingOverride.Item.active) {
+                await dynamoDb.update({
+                  TableName: TableNames.CONTENDER_OVERRIDES,
+                  Key: { championshipId: match.championshipId, playerId: champId },
+                  UpdateExpression: 'SET active = :false, removedAt = :now, removedReason = :reason',
+                  ExpressionAttributeValues: {
+                    ':false': false,
+                    ':now': new Date().toISOString(),
+                    ':reason': 'auto-removed: player became champion',
+                  },
+                });
+              }
+            } catch (err) {
+              console.warn(`Failed to auto-remove contender override for player ${champId}:`, err);
+            }
+          }
+        }
       }
     }
 

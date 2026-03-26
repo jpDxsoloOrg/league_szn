@@ -35,6 +35,7 @@ const TABLES = {
   EVENTS: `wwe-2k-league-api-events-${STAGE}`,
   CONTENDER_RANKINGS: `wwe-2k-league-api-contender-rankings-${STAGE}`,
   RANKING_HISTORY: `wwe-2k-league-api-ranking-history-${STAGE}`,
+  CONTENDER_OVERRIDES: `wwe-2k-league-api-contender-overrides-${STAGE}`,
   FANTASY_CONFIG: `wwe-2k-league-api-fantasy-config-${STAGE}`,
   WRESTLER_COSTS: `wwe-2k-league-api-wrestler-costs-${STAGE}`,
   FANTASY_PICKS: `wwe-2k-league-api-fantasy-picks-${STAGE}`,
@@ -556,6 +557,38 @@ async function seedData() {
     console.log(`  ✓ Ranking history: week ${weekOffset + 1}`);
   }
 
+  // ── Contender Overrides ─────────────────────────────────────
+  console.log('\nCreating contender overrides...');
+  // Create an override for the top WHC contender to bump them to top position
+  if (whcContenders.length > 0) {
+    const whcOverride = {
+      championshipId: championships[0].championshipId,
+      playerId: whcContenders[0].playerId,
+      overrideType: 'bump_to_top',
+      reason: 'Storyline: upcoming PPV main event angle',
+      createdBy: 'admin',
+      createdAt: now,
+      active: true,
+    };
+    await putItem(TABLES.CONTENDER_OVERRIDES, whcOverride);
+    console.log(`  ✓ Override: ${whcContenders[0].name} bumped to top for ${championships[0].name}`);
+  }
+
+  // Create an override for the top IC contender to temporarily hold their position
+  if (icContenders.length > 0) {
+    const icOverride = {
+      championshipId: championships[1].championshipId,
+      playerId: icContenders[0].playerId,
+      overrideType: 'hold_position',
+      reason: 'Temporary hold to build momentum',
+      createdBy: 'admin',
+      createdAt: now,
+      active: true,
+    };
+    await putItem(TABLES.CONTENDER_OVERRIDES, icOverride);
+    console.log(`  ✓ Override: ${icContenders[0].name} position held for ${championships[1].name}`);
+  }
+
   // ── Fantasy Config ─────────────────────────────────────────
   console.log('\nCreating fantasy config...');
   const fantasyConfig = {
@@ -642,6 +675,7 @@ async function seedData() {
   console.log(`  - ${tournaments.length} tournaments`);
   console.log(`  - ${events.length} events`);
   console.log(`  - ${whcContenders.length + icContenders.length} contender rankings`);
+  console.log(`  - 2 contender overrides`);
   console.log(`  - ${3 * 3} ranking history entries`);
   console.log(`  - 1 fantasy config`);
   console.log(`  - ${players.length} wrestler costs`);
