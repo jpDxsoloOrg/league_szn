@@ -83,14 +83,14 @@ export default function StablesList() {
         <div className="stables-view-toggle">
           <button
             type="button"
-            className={`btn ${activeView === 'list' ? 'btn-primary' : 'btn-secondary'}`}
+            className={`stables-toggle-btn ${activeView === 'list' ? 'stables-toggle-btn--active' : ''}`}
             onClick={() => switchView('list')}
           >
             {t('stables.viewList', 'List')}
           </button>
           <button
             type="button"
-            className={`btn ${activeView === 'standings' ? 'btn-primary' : 'btn-secondary'}`}
+            className={`stables-toggle-btn ${activeView === 'standings' ? 'stables-toggle-btn--active' : ''}`}
             onClick={() => switchView('standings')}
           >
             {t('stables.viewStandings', 'Standings')}
