@@ -76,7 +76,8 @@
 
 .notification-header-actions {
   display: flex;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .notification-header-btn {
@@ -95,17 +96,19 @@
   background-color: #1a1a1a;
 }
 
-.notification-delete-read-btn {
-  color: #555;
+.notification-header-btn.notification-delete-read-btn {
   font-size: 0.65rem;
-  padding: 0.25rem 0;
+  color: #555;
+  padding: 0;
+  border-radius: 0;
+  background: none;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.notification-delete-read-btn:hover {
+.notification-header-btn.notification-delete-read-btn:hover {
   color: #dc3545;
-  background-color: transparent;
+  background: none;
 }
 
 /* Scrollable notification list */
