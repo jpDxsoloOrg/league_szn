@@ -38,11 +38,15 @@ function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
   }
 }
 
-function getNavigationPath(sourceType: AppNotification['sourceType']): string {
-  switch (sourceType) {
+function getNavigationPath(notification: AppNotification, playerId: string | null): string {
+  switch (notification.sourceType) {
     case 'promo': return '/promos';
     case 'challenge': return '/challenges';
-    case 'match': return '/matches';
+    case 'match': {
+      const params = new URLSearchParams({ status: 'scheduled' });
+      if (playerId) params.set('playerId', playerId);
+      return `/matches?${params.toString()}`;
+    }
     case 'announcement': return '/';
     default: return '/';
   }
@@ -51,7 +55,7 @@ function getNavigationPath(sourceType: AppNotification['sourceType']): string {
 export default function NotificationBell() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, playerId } = useAuth();
   const { features } = useSiteConfig();
 
   const [unreadCount, setUnreadCount] = useState(0);
@@ -171,8 +175,8 @@ export default function NotificationBell() {
     }
 
     setIsOpen(false);
-    navigate(getNavigationPath(notification.sourceType));
-  }, [navigate]);
+    navigate(getNavigationPath(notification, playerId));
+  }, [navigate, playerId]);
 
   if (!shouldShow) return null;
 
