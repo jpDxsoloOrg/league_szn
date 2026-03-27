@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { matchesApi, playersApi, eventsApi, stipulationsApi } from '../../services/api';
+import { matchesApi, playersApi, eventsApi, stipulationsApi, tagTeamsApi } from '../../services/api';
 import type { Match, Player, Stipulation } from '../../types';
 import type { LeagueEvent } from '../../types/event';
+import type { TagTeam } from '../../types/tagTeam';
 import SearchableSelect from './SearchableSelect';
 import Skeleton from '../ui/Skeleton';
 import './RecordResult.css';
@@ -16,6 +17,7 @@ export default function RecordResult() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [events, setEvents] = useState<LeagueEvent[]>([]);
   const [stipulations, setStipulations] = useState<Stipulation[]>([]);
+  const [tagTeams, setTagTeams] = useState<(TagTeam & { player1Name?: string; player2Name?: string })[]>([]);
   const [selectedEventFilter, setSelectedEventFilter] = useState<string>('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [winners, setWinners] = useState<string[]>([]);
@@ -35,15 +37,17 @@ export default function RecordResult() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [matchesData, playersData, eventsData, stipulationsData] = await Promise.all([
+      const [matchesData, playersData, eventsData, stipulationsData, tagTeamsData] = await Promise.all([
         matchesApi.getAll({ status: 'scheduled' }),
         playersApi.getAll(),
         eventsApi.getAll(),
         stipulationsApi.getAll(),
+        tagTeamsApi.getAll({ status: 'active' }).catch(() => [] as TagTeam[]),
       ]);
       setMatches(matchesData);
       setPlayers(playersData);
       setStipulations(stipulationsData);
+      setTagTeams(tagTeamsData as (TagTeam & { player1Name?: string; player2Name?: string })[]);
 
       // Only show events that have scheduled matches or are upcoming/in-progress
       const activeEvents = eventsData
@@ -163,6 +167,26 @@ export default function RecordResult() {
   const getPlayerNameShort = (playerId: string): string => {
     const player = players.find(p => p.playerId === playerId);
     return player ? player.name : t('common.unknown');
+  };
+
+  /** Get display name for a team: tag team name if it exists, or "Player1 & Player2" */
+  const getTeamDisplayName = (teamMembers: string[]): string => {
+    if (teamMembers.length === 2) {
+      const tt = tagTeams.find(
+        t => (t.player1Id === teamMembers[0] && t.player2Id === teamMembers[1])
+          || (t.player1Id === teamMembers[1] && t.player2Id === teamMembers[0])
+      );
+      if (tt) return tt.name;
+    }
+    return teamMembers.map(pid => getPlayerNameShort(pid)).join(' & ');
+  };
+
+  /** Format match preview text: for tag matches show teams, otherwise show "vs" list */
+  const formatMatchPreview = (match: Match): string => {
+    if (match.teams && match.teams.length >= 2) {
+      return match.teams.map(team => getTeamDisplayName(team)).join(' vs ');
+    }
+    return match.participants.map(pid => getPlayerNameShort(pid)).join(' vs ');
   };
 
   const handleSubmit = async () => {
@@ -324,11 +348,7 @@ export default function RecordResult() {
                       </div>
                     </div>
                     <div className="match-participants-preview">
-                      {match.participants.map((pid, i) => (
-                        <span key={pid}>
-                          {getPlayerNameShort(pid)}{i < match.participants.length - 1 ? ' vs ' : ''}
-                        </span>
-                      ))}
+                      {formatMatchPreview(match)}
                     </div>
                     {match.stipulationId && (
                       <div className="match-stipulation">{getStipulationName(match.stipulationId)}</div>
@@ -402,11 +422,11 @@ export default function RecordResult() {
                             onClick={() => handleTeamWinnerSelect(teamIndex)}
                           >
                             <div className="team-info">
-                              <div className="team-label">{t('recordResult.team')} {teamIndex + 1}</div>
+                              <div className="team-label">{getTeamDisplayName(team)}</div>
                               <div className="team-members-list">
                                 {team.map(playerId => (
                                   <span key={playerId} className="team-member-name">
-                                    {getPlayerNameShort(playerId)}
+                                    {getPlayerName(playerId)}
                                   </span>
                                 ))}
                               </div>
