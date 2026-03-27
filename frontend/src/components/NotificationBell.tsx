@@ -178,6 +178,19 @@ export default function NotificationBell() {
     navigate(getNavigationPath(notification, playerId));
   }, [navigate, playerId]);
 
+  const handleDeleteNotification = useCallback(async (e: React.MouseEvent, notification: AppNotification) => {
+    e.stopPropagation();
+    try {
+      await notificationsApi.delete(notification.notificationId);
+      setNotifications(prev => prev.filter(n => n.notificationId !== notification.notificationId));
+      if (!notification.isRead) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch {
+      // Silently ignore
+    }
+  }, []);
+
   if (!shouldShow) return null;
 
   return (
@@ -233,20 +246,33 @@ export default function NotificationBell() {
               <div className="notification-empty">{t('notifications.empty')}</div>
             )}
             {notifications.map(notification => (
-              <button
+              <div
                 key={notification.notificationId}
-                type="button"
                 className={`notification-item ${notification.isRead ? 'read' : 'unread'}`}
-                onClick={() => handleNotificationClick(notification)}
               >
-                <span className="notification-item-badge-label">
-                  {t(sourceTypeLabel(notification.sourceType))}
-                </span>
-                <span className="notification-item-message">{notification.message}</span>
-                <span className="notification-item-time">
-                  {formatRelativeTime(notification.createdAt, t)}
-                </span>
-              </button>
+                <button
+                  type="button"
+                  className="notification-item-content"
+                  onClick={() => handleNotificationClick(notification)}
+                >
+                  <span className="notification-item-badge-label">
+                    {t(sourceTypeLabel(notification.sourceType))}
+                  </span>
+                  <span className="notification-item-message">{notification.message}</span>
+                  <span className="notification-item-time">
+                    {formatRelativeTime(notification.createdAt, t)}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="notification-delete-btn"
+                  onClick={(e) => handleDeleteNotification(e, notification)}
+                  aria-label={t('notifications.delete')}
+                  title={t('notifications.delete')}
+                >
+                  &times;
+                </button>
+              </div>
             ))}
           </div>
         </div>

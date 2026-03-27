@@ -1412,6 +1412,7 @@
     "typePromo": "Promo",
     "typeChallenge": "Challenge",
     "typeMatch": "Match",
-    "typeAnnouncement": "Announcement"
+    "typeAnnouncement": "Announcement",
+    "delete": "Delete notification"
   }
 }

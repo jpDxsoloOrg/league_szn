@@ -974,6 +974,11 @@ functions:
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
+      - http:
+          path: notifications/{notificationId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
 
 resources:
   Resources:
@@ -1746,6 +1751,9 @@ resources:
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
 
     ImagesBucket:
       Type: AWS::S3::Bucket

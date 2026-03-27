@@ -34,4 +34,10 @@ export const notificationsApi = {
       method: 'PUT',
     });
   },
+
+  delete: async (notificationId: string): Promise<void> => {
+    await fetchWithAuth(`${API_BASE_URL}/notifications/${notificationId}`, {
+      method: 'DELETE',
+    });
+  },
 };

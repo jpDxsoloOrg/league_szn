@@ -17,6 +17,8 @@ export interface CreateNotificationParams {
   sourceType: NotificationSourceType;
 }
 
+const TTL_DAYS = 30;
+
 /**
  * Creates a single notification for a user.
  * Failures are caught and logged — they never break the calling handler.
@@ -38,6 +40,7 @@ export async function createNotification(params: CreateNotificationParams): Prom
         isRead: false,
         createdAt: now,
         updatedAt: now,
+        ttl: Math.floor(Date.now() / 1000) + TTL_DAYS * 24 * 60 * 60,
       },
     });
   } catch (error: unknown) {

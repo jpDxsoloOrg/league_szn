@@ -105,15 +105,28 @@
 /* Individual notification item */
 .notification-item {
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+  flex-direction: row;
+  align-items: flex-start;
   width: 100%;
-  padding: 0.65rem 1rem;
+  padding: 0;
   border: none;
   border-bottom: 1px solid #1a1a1a;
   text-align: left;
+  background-color: transparent;
+  position: relative;
+}
+
+.notification-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+  padding: 0.65rem 1rem;
+  border: none;
+  text-align: left;
   cursor: pointer;
   background-color: transparent;
+  min-width: 0;
 }
 
 .notification-item:last-child {
@@ -159,6 +172,36 @@
 .notification-item-time {
   font-size: 0.7rem;
   color: #555;
+}
+
+/* Delete button */
+.notification-delete-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin: 0.65rem 0.5rem 0 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #555;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background-color 0.15s;
+}
+
+.notification-item:hover .notification-delete-btn {
+  opacity: 1;
+}
+
+.notification-delete-btn:hover {
+  color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.1);
 }
 
 /* When inside the sidebar, use fixed positioning to break out of sidebar overflow */

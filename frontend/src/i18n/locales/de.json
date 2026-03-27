@@ -1411,6 +1411,7 @@
     "typePromo": "Promo",
     "typeChallenge": "Herausforderung",
     "typeMatch": "Match",
-    "typeAnnouncement": "Ankündigung"
+    "typeAnnouncement": "Ankündigung",
+    "delete": "Benachrichtigung löschen"
   }
 }

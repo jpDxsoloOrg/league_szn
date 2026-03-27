@@ -2,11 +2,12 @@ import { handler as getNotificationsHandler } from './getNotifications';
 import { handler as getUnreadCountHandler } from './getUnreadCount';
 import { handler as markReadHandler } from './markRead';
 import { handler as markAllReadHandler } from './markAllRead';
+import { handler as deleteNotificationHandler } from './deleteNotification';
 import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
  * Single Lambda for notifications: routes by HTTP method and resource.
- * Handles getNotifications, getUnreadCount, markRead, markAllRead.
+ * Handles getNotifications, getUnreadCount, markRead, markAllRead, deleteNotification.
  */
 const routes: ReadonlyArray<RouteConfig> = [
   {
@@ -28,6 +29,11 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/notifications/mark-all-read',
     method: 'PUT',
     handler: markAllReadHandler,
+  },
+  {
+    resource: '/notifications/{notificationId}',
+    method: 'DELETE',
+    handler: deleteNotificationHandler,
   },
 ];
 
