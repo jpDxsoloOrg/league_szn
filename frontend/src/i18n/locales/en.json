@@ -103,6 +103,8 @@
   },
   "publicProfile": {
     "title": "Player Profile",
+    "loading": "Loading Profile",
+    "loadError": "Failed to load profile",
     "allTimeRecord": "All-Time Record",
     "seasonRecords": "Season Records",
     "record": "Record",
@@ -114,12 +116,15 @@
     "stable": "Stable",
     "tagTeam": "Tag Team",
     "notFound": "Player not found",
+    "notFoundTitle": "Player Not Found",
+    "notFoundMessage": "The player you're looking for doesn't exist.",
     "notFoundDescription": "The player you're looking for doesn't exist.",
     "form": "Recent Form",
     "streak": "Current Streak",
     "playingAs": "Playing as",
     "alternateWrestler": "Alternate",
-    "psnId": "PSN ID"
+    "psnId": "PSN ID",
+    "active": "Active"
   },
   "emptyState": {
     "checkBackSoon": "Check back soon",

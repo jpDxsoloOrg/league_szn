@@ -207,7 +207,7 @@ export default function PublicProfile() {
 
       {/* Action Buttons */}
       <div className="profile-actions">
-        <Link to={`/stats/head-to-head?player1=${playerId}`} className="action-btn h2h-btn">
+        <Link to={`/stats/head-to-head?${currentPlayerId ? `player1=${currentPlayerId}&` : ''}player2=${playerId}`} className="action-btn h2h-btn">
           {t('publicProfile.viewHeadToHead')}
         </Link>
         {features.statistics && (

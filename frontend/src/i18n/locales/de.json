@@ -103,6 +103,8 @@
   },
   "publicProfile": {
     "title": "Spielerprofil",
+    "loading": "Profil wird geladen",
+    "loadError": "Profil konnte nicht geladen werden",
     "allTimeRecord": "Gesamt-Bilanz",
     "seasonRecords": "Saison-Bilanzen",
     "record": "Bilanz",
@@ -114,12 +116,15 @@
     "stable": "Stable",
     "tagTeam": "Tag Team",
     "notFound": "Spieler nicht gefunden",
+    "notFoundTitle": "Spieler nicht gefunden",
+    "notFoundMessage": "Der gesuchte Spieler existiert nicht.",
     "notFoundDescription": "Der gesuchte Spieler existiert nicht.",
     "form": "Letzte Form",
     "streak": "Aktuelle Serie",
     "playingAs": "Spielt als",
     "alternateWrestler": "Alternativ",
-    "psnId": "PSN-ID"
+    "psnId": "PSN-ID",
+    "active": "Aktiv"
   },
   "emptyState": {
     "checkBackSoon": "Schau bald wieder vorbei",
