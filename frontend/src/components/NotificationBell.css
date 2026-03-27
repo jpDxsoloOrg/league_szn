@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: center;
   padding: 0.4rem;
-  background: none;
+  background: transparent;
   border: none;
   color: #ccc;
   cursor: pointer;
@@ -19,7 +19,6 @@
 
 .notification-bell-btn:hover {
   color: #d4af37;
-  background-color: #252525;
 }
 
 .notification-bell-icon {
@@ -160,6 +159,12 @@
 .notification-item-time {
   font-size: 0.7rem;
   color: #555;
+}
+
+/* When inside the sidebar, open dropdown to the right */
+.sidebar .notification-dropdown {
+  right: auto;
+  left: 0;
 }
 
 /* Mobile responsive */
