@@ -161,10 +161,12 @@
   color: #555;
 }
 
-/* When inside the sidebar, open dropdown to the right */
+/* When inside the sidebar, use fixed positioning to break out of sidebar overflow */
 .sidebar .notification-dropdown {
+  position: fixed;
+  top: 60px;
+  left: 10px;
   right: auto;
-  left: 0;
 }
 
 /* Mobile responsive */
