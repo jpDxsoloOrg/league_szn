@@ -22,6 +22,8 @@ function HeadToHeadComparison() {
   // Load player list and seasons on mount
   useEffect(() => {
     const abortController = new AbortController();
+    // Read search param synchronously before async work
+    const player1Param = searchParams.get('player1');
     const fetchData = async () => {
       try {
         const [playersResult, seasonsResult] = await Promise.all([
@@ -30,7 +32,6 @@ function HeadToHeadComparison() {
         ]);
         setPlayers(playersResult.players);
         setSeasons(seasonsResult);
-        const player1Param = searchParams.get('player1');
         const paramMatchesPlayer = player1Param
           ? playersResult.players.find((p) => p.playerId === player1Param)
           : undefined;

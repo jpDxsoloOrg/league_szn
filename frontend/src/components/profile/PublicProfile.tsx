@@ -216,7 +216,7 @@ export default function PublicProfile() {
           </Link>
         )}
         {features.challenges && isAuthenticated && isWrestler && currentPlayerId && currentPlayerId !== playerId && (
-          <Link to={`/promos/new?promoType=call-out&targetId=${playerId}`} className="action-btn challenge-btn">
+          <Link to={`/promos/new?promoType=call-out&targetPlayerId=${playerId}`} className="action-btn challenge-btn">
             {t('publicProfile.challenge')}
           </Link>
         )}
