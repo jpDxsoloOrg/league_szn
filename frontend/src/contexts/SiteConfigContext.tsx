@@ -14,6 +14,7 @@ const DEFAULT_FEATURES: SiteFeatures = {
   contenders: true,
   statistics: true,
   stables: true,
+  notifications: true,
 };
 
 const SiteConfigContext = createContext<SiteConfigContextType | undefined>(undefined);

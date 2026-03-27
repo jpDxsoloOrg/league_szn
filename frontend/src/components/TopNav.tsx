@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { useNavLayout } from '../contexts/navLayoutContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import NotificationBell from './NotificationBell';
 import {
   USER_NAV_GROUPS,
   USER_NAV_STANDALONE,
@@ -225,6 +226,7 @@ export default function TopNav() {
         <div className="topnav-bar">
           <h2 className="topnav-title">{t('header.title')}</h2>
           <div className="topnav-bar-right">
+            <NotificationBell />
             <LanguageSwitcher />
             <button
               type="button"
@@ -374,6 +376,7 @@ export default function TopNav() {
           )}
         </nav>
         <div className="topnav-bar-right">
+          <NotificationBell />
           <LanguageSwitcher />
           <button
             type="button"

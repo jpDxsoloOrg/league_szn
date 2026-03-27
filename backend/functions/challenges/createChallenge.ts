@@ -4,6 +4,7 @@ import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { v4 as uuidv4 } from 'uuid';
+import { createNotification } from '../../lib/notifications';
 
 interface CreateChallengeBody {
   challengedId: string;
@@ -78,6 +79,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       TableName: TableNames.CHALLENGES,
       Item: challenge,
     });
+
+    // Notify the challenged player if they have a linked user account
+    const challengedPlayer = challengedResult.Item as Record<string, unknown>;
+    if (challengedPlayer.userId) {
+      await createNotification({
+        userId: challengedPlayer.userId as string,
+        type: 'challenge_received',
+        message: `${challengerPlayer.name as string} has challenged you to a match!`,
+        sourceId: challenge.challengeId,
+        sourceType: 'challenge',
+      });
+    }
 
     return created(challenge);
   } catch (err) {

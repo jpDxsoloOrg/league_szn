@@ -70,6 +70,7 @@ import WrestlerProfile from './components/profile/WrestlerProfile';
 import ProtectedRoute from './components/ProtectedRoute';
 import FeatureRoute from './components/FeatureRoute';
 import ProfileCompletionModal from './components/ProfileCompletionModal';
+import AnnouncementModal from './components/AnnouncementModal';
 import './App.css';
 
 function App() {
@@ -102,6 +103,7 @@ function AppLayout() {
         <TopNav />
       )}
       <ProfileCompletionModal />
+      <AnnouncementModal />
       <main>
           <Routes>
             {/* Auth Routes */}

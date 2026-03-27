@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import NotificationBell from './NotificationBell';
 import {
   USER_NAV_GROUPS,
   USER_NAV_STANDALONE,
@@ -120,7 +121,10 @@ export default function Sidebar() {
     <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="sidebar-header">
         <h2>{t('header.title')}</h2>
-        <LanguageSwitcher />
+        <div className="sidebar-header-actions">
+          <NotificationBell />
+          <LanguageSwitcher />
+        </div>
       </div>
 
       <nav className="sidebar-nav">

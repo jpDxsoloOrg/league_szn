@@ -4,6 +4,7 @@ import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { v4 as uuidv4 } from 'uuid';
+import { createNotification } from '../../lib/notifications';
 
 const VALID_PROMO_TYPES = ['open-mic', 'call-out', 'response', 'pre-match', 'post-match', 'championship', 'return'];
 
@@ -75,6 +76,24 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       TableName: TableNames.PROMOS,
       Item: promo,
     });
+
+    // Notify the target player if they have a linked user account
+    if (targetPlayerId) {
+      const targetResult = await dynamoDb.get({
+        TableName: TableNames.PLAYERS,
+        Key: { playerId: targetPlayerId },
+      });
+      const targetPlayer = targetResult.Item as Record<string, unknown> | undefined;
+      if (targetPlayer?.userId) {
+        await createNotification({
+          userId: targetPlayer.userId as string,
+          type: 'promo_mention',
+          message: `${player.name as string} cut a promo calling you out!`,
+          sourceId: promo.promoId as string,
+          sourceType: 'promo',
+        });
+      }
+    }
 
     return created(promo);
   } catch (err) {

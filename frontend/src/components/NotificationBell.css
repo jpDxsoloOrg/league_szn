@@ -1,0 +1,228 @@
+.notification-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.notification-bell-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem;
+  background: transparent;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.notification-bell-btn:hover {
+  color: #d4af37;
+}
+
+.notification-bell-icon {
+  display: block;
+}
+
+.notification-bell-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  color: #fff;
+  background-color: #dc3545;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+/* Dropdown */
+.notification-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 350px;
+  max-height: 420px;
+  background-color: #111;
+  border: 1px solid #333;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.notification-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+}
+
+.notification-dropdown-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #d4af37;
+}
+
+.notification-mark-all-btn {
+  font-size: 0.75rem;
+  color: #888;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.notification-mark-all-btn:hover {
+  color: #d4af37;
+  background-color: #1a1a1a;
+}
+
+/* Scrollable notification list */
+.notification-dropdown-list {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.notification-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+/* Individual notification item */
+.notification-item {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid #1a1a1a;
+  text-align: left;
+  background-color: transparent;
+  position: relative;
+}
+
+.notification-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+  padding: 0.65rem 1rem;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  background-color: transparent;
+  min-width: 0;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item:hover {
+  background-color: #1a1a1a;
+}
+
+.notification-item.unread {
+  background-color: #1a1a10;
+}
+
+.notification-item.unread .notification-item-message {
+  color: #eee;
+  font-weight: 600;
+}
+
+.notification-item.read .notification-item-message {
+  color: #888;
+  font-weight: 400;
+}
+
+.notification-item-badge-label {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #d4af37;
+  padding: 1px 6px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 3px;
+  align-self: flex-start;
+}
+
+.notification-item-message {
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.notification-item-time {
+  font-size: 0.7rem;
+  color: #555;
+}
+
+/* Delete button */
+.notification-delete-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin: 0.65rem 0.5rem 0 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #555;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background-color 0.15s;
+}
+
+.notification-item:hover .notification-delete-btn {
+  opacity: 1;
+}
+
+.notification-delete-btn:hover {
+  color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* When inside the sidebar, use fixed positioning to break out of sidebar overflow */
+.sidebar .notification-dropdown {
+  position: fixed;
+  top: 60px;
+  left: 10px;
+  right: auto;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .notification-dropdown {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    width: auto;
+    max-height: calc(100vh - 56px);
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}

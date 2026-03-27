@@ -37,6 +37,8 @@ provider:
     STABLES_TABLE: ${self:service}-stables-${self:provider.stage}
     TAG_TEAMS_TABLE: ${self:service}-tag-teams-${self:provider.stage}
     STABLE_INVITATIONS_TABLE: ${self:service}-stable-invitations-${self:provider.stage}
+    ANNOUNCEMENTS_TABLE: ${self:service}-announcements-${self:provider.stage}
+    NOTIFICATIONS_TABLE: ${self:service}-notifications-${self:provider.stage}
     DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT, 'http://localhost:8000'}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
@@ -94,6 +96,10 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TAG_TEAMS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STABLE_INVITATIONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STABLE_INVITATIONS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.ANNOUNCEMENTS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.ANNOUNCEMENTS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.NOTIFICATIONS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.NOTIFICATIONS_TABLE}/index/*
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -915,6 +921,65 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
+  # Announcements (consolidated: getActive, adminList, create, update, delete)
+  announcements:
+    handler: functions/announcements/handler.handler
+    events:
+      - http:
+          path: announcements/active
+          method: get
+          cors: *corsConfig
+      - http:
+          path: admin/announcements
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/announcements
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/announcements/{announcementId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/announcements/{announcementId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  # Notifications (consolidated: list, unreadCount, markRead, markAllRead)
+  notifications:
+    handler: functions/notifications/handler.handler
+    events:
+      - http:
+          path: notifications
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: notifications/unread-count
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: notifications/{notificationId}/read
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: notifications/mark-all-read
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: notifications/{notificationId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
 resources:
   Resources:
     # API Gateway Response for CORS with Authorizer
@@ -1636,6 +1701,59 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
+
+    AnnouncementsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.ANNOUNCEMENTS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: announcementId
+            AttributeType: S
+          - AttributeName: isActive
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: announcementId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ActiveIndex
+            KeySchema:
+              - AttributeName: isActive
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    NotificationsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.NOTIFICATIONS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+          - AttributeName: notificationId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: NotificationIdIndex
+            KeySchema:
+              - AttributeName: notificationId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
 
     ImagesBucket:
       Type: AWS::S3::Bucket

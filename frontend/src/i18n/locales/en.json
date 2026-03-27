@@ -433,6 +433,7 @@
         "help": "Help",
         "stables": "Manage Stables",
         "tagTeams": "Manage Tag Teams",
+        "announcements": "Announcements",
         "dangerZone": "Danger Zone"
       },
       "groups": {
@@ -443,6 +444,45 @@
         "system": "System"
       }
     }
+  },
+  "announcements": {
+    "title": "Manage Announcements",
+    "create": "Create Announcement",
+    "edit": "Edit Announcement",
+    "allAnnouncements": "All Announcements",
+    "noAnnouncements": "No announcements have been created yet.",
+    "preview": "Preview",
+    "showPreview": "Preview",
+    "hidePreview": "Hide Preview",
+    "fieldsRequired": "Title and body are required.",
+    "createSuccess": "Announcement created successfully!",
+    "updateSuccess": "Announcement updated successfully!",
+    "deleteSuccess": "Announcement deleted successfully!",
+    "confirmDelete": "Are you sure you want to delete this announcement? This action cannot be undone.",
+    "loadError": "Failed to load announcements.",
+    "saveError": "Failed to save announcement.",
+    "deleteError": "Failed to delete announcement.",
+    "fields": {
+      "title": "Title",
+      "titlePlaceholder": "Announcement title",
+      "body": "Body (HTML)",
+      "bodyPlaceholder": "<p>Your announcement content here...</p>",
+      "priority": "Priority",
+      "expiresAt": "Expires At",
+      "active": "Active"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "expired": "Expired"
+    },
+    "dontShowAgain": "Don't show again",
+    "counter": "{{current}} of {{total}}"
   },
   "seasonAwards": {
     "title": "Season Awards",
@@ -1359,5 +1399,20 @@
         "errorWrongDivision": "This player is not in the correct division for this championship"
       }
     }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "bell": "Notifications",
+    "markAllRead": "Mark all as read",
+    "empty": "No notifications",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago",
+    "typePromo": "Promo",
+    "typeChallenge": "Challenge",
+    "typeMatch": "Match",
+    "typeAnnouncement": "Announcement",
+    "delete": "Delete notification"
   }
 }

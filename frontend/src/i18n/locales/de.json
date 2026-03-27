@@ -433,6 +433,7 @@
         "help": "Hilfe",
         "stables": "Stables verwalten",
         "tagTeams": "Tag Teams verwalten",
+        "announcements": "Ankündigungen",
         "dangerZone": "Gefahrenzone"
       },
       "groups": {
@@ -443,6 +444,45 @@
         "system": "System"
       }
     }
+  },
+  "announcements": {
+    "title": "Ankündigungen verwalten",
+    "create": "Ankündigung erstellen",
+    "edit": "Ankündigung bearbeiten",
+    "allAnnouncements": "Alle Ankündigungen",
+    "noAnnouncements": "Noch keine Ankündigungen erstellt.",
+    "preview": "Vorschau",
+    "showPreview": "Vorschau",
+    "hidePreview": "Vorschau ausblenden",
+    "fieldsRequired": "Titel und Inhalt sind erforderlich.",
+    "createSuccess": "Ankündigung erfolgreich erstellt!",
+    "updateSuccess": "Ankündigung erfolgreich aktualisiert!",
+    "deleteSuccess": "Ankündigung erfolgreich gelöscht!",
+    "confirmDelete": "Möchten Sie diese Ankündigung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "loadError": "Ankündigungen konnten nicht geladen werden.",
+    "saveError": "Ankündigung konnte nicht gespeichert werden.",
+    "deleteError": "Ankündigung konnte nicht gelöscht werden.",
+    "fields": {
+      "title": "Titel",
+      "titlePlaceholder": "Titel der Ankündigung",
+      "body": "Inhalt (HTML)",
+      "bodyPlaceholder": "<p>Ihr Ankündigungsinhalt hier...</p>",
+      "priority": "Priorität",
+      "expiresAt": "Läuft ab am",
+      "active": "Aktiv"
+    },
+    "priority": {
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch"
+    },
+    "status": {
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "expired": "Abgelaufen"
+    },
+    "dontShowAgain": "Nicht mehr anzeigen",
+    "counter": "{{current}} von {{total}}"
   },
   "seasonAwards": {
     "title": "Saison-Auszeichnungen",
@@ -1358,5 +1398,20 @@
         "errorWrongDivision": "Dieser Spieler ist nicht in der richtigen Division für diese Meisterschaft"
       }
     }
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "bell": "Benachrichtigungen",
+    "markAllRead": "Alle als gelesen markieren",
+    "empty": "Keine Benachrichtigungen",
+    "justNow": "Gerade eben",
+    "minutesAgo": "vor {{count}}min",
+    "hoursAgo": "vor {{count}}h",
+    "daysAgo": "vor {{count}}T",
+    "typePromo": "Promo",
+    "typeChallenge": "Herausforderung",
+    "typeMatch": "Match",
+    "typeAnnouncement": "Ankündigung",
+    "delete": "Benachrichtigung löschen"
   }
 }

@@ -21,6 +21,12 @@
   border-bottom: 1px solid #333;
 }
 
+.sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .sidebar-header h2 {
   color: #d4af37;
   font-size: 1.25rem;
