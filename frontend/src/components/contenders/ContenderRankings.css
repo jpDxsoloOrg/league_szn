@@ -21,55 +21,60 @@
   color: #888;
 }
 
-/* Championship Tabs */
-.championship-tabs {
+/* Championship Selector */
+.championship-selector {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 1.25rem;
   margin-bottom: 2rem;
-  border-bottom: 2px solid #333;
 }
 
-.championship-tabs .division-group {
+.championship-selector .division-group {
   display: flex;
-  align-items: center;
-  gap: 0.25rem;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.championship-tabs .division-label {
-  font-size: 0.7rem;
-  font-weight: 600;
+.championship-selector .division-label {
+  font-size: 0.75rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #666;
-  padding: 0 0.5rem;
-  white-space: nowrap;
+  letter-spacing: 0.1em;
+  color: #d4af37;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #333;
 }
 
-.championship-tabs .tab {
-  flex: 1;
-  padding: 1rem;
-  background-color: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
-  color: #888;
+.championship-selector .division-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.championship-selector .tab {
+  padding: 0.75rem 1rem;
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #aaa;
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  position: relative;
-  bottom: -2px;
+  text-align: center;
 }
 
-.championship-tabs .tab:hover {
-  color: #bbb;
-  background-color: rgba(255, 255, 255, 0.02);
+.championship-selector .tab:hover {
+  color: #fff;
+  border-color: #555;
+  background-color: #222;
 }
 
-.championship-tabs .tab.active {
+.championship-selector .tab.active {
   color: #d4af37;
-  border-bottom-color: #d4af37;
-  background-color: rgba(212, 175, 55, 0.05);
+  border-color: #d4af37;
+  background-color: rgba(212, 175, 55, 0.08);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.15);
 }
 
 /* Current Champion Section */
@@ -223,27 +228,8 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .championship-tabs {
-    flex-direction: column;
-    border-bottom: none;
-  }
-
-  .championship-tabs .division-group {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .championship-tabs .division-label {
-    padding: 0.25rem 0;
-    width: 100%;
-  }
-
-  .championship-tabs .tab {
-    border-bottom: 2px solid #333;
-  }
-
-  .championship-tabs .tab.active {
-    border-bottom-color: #d4af37;
+  .championship-selector .division-buttons {
+    grid-template-columns: 1fr;
   }
 
   .champion-card {
