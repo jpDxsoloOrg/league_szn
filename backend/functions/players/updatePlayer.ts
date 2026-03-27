@@ -25,8 +25,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       name: body.name,
       imageUrl: body.imageUrl,
       psnId: body.psnId,
+      alternateWrestler: body.alternateWrestler,
     };
     const removeFields: string[] = [];
+
+    if (body.alternateWrestler !== undefined) {
+      if (body.alternateWrestler === '' || body.alternateWrestler === null) {
+        removeFields.push('alternateWrestler');
+        delete updateFields.alternateWrestler;
+      }
+    }
 
     if (body.divisionId !== undefined) {
       if (body.divisionId === '' || body.divisionId === null) {

@@ -20,6 +20,10 @@ export const playersApi = {
     });
   },
 
+  getById: async (playerId: string, signal?: AbortSignal): Promise<Player> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${playerId}`, {}, signal);
+  },
+
   delete: async (playerId: string): Promise<void> => {
     return fetchWithAuth(`${API_BASE_URL}/players/${playerId}`, {
       method: 'DELETE',

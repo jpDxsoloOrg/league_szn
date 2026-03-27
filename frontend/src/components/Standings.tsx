@@ -222,11 +222,11 @@ export default function Standings() {
                 className="standings-row-clickable"
                 role="button"
                 tabIndex={0}
-                onClick={() => navigate(`/stats/player/${player.playerId}`)}
+                onClick={() => navigate(`/player/${player.playerId}`)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    navigate(`/stats/player/${player.playerId}`);
+                    navigate(`/player/${player.playerId}`);
                   }
                 }}
                 aria-label={t('standings.table.player')}
@@ -243,7 +243,7 @@ export default function Standings() {
                 <td className="player-name">
                   <PlayerHoverCard player={player} divisions={divisions}>
                     <Link
-                      to={`/stats/player/${player.playerId}`}
+                      to={`/player/${player.playerId}`}
                       className="player-name-link"
                       onClick={(e) => e.stopPropagation()}
                     >

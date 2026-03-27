@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { statisticsApi, seasonsApi } from '../../services/api';
 import type { StatsPlayer, HeadToHeadResponse } from '../../services/api';
@@ -10,6 +10,7 @@ import './HeadToHeadComparison.css';
 
 function HeadToHeadComparison() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
   const [players, setPlayers] = useState<StatsPlayer[]>([]);
   const [player1Id, setPlayer1Id] = useState('');
   const [player2Id, setPlayer2Id] = useState('');
@@ -29,7 +30,18 @@ function HeadToHeadComparison() {
         ]);
         setPlayers(playersResult.players);
         setSeasons(seasonsResult);
-        if (playersResult.players.length >= 2 && playersResult.players[0] && playersResult.players[1]) {
+        const player1Param = searchParams.get('player1');
+        const paramMatchesPlayer = player1Param
+          ? playersResult.players.find((p) => p.playerId === player1Param)
+          : undefined;
+        if (paramMatchesPlayer) {
+          setPlayer1Id(paramMatchesPlayer.playerId);
+          // Pick first other player as player2 default
+          const otherPlayer = playersResult.players.find((p) => p.playerId !== paramMatchesPlayer.playerId);
+          if (otherPlayer) {
+            setPlayer2Id(otherPlayer.playerId);
+          }
+        } else if (playersResult.players.length >= 2 && playersResult.players[0] && playersResult.players[1]) {
           setPlayer1Id(playersResult.players[0].playerId);
           setPlayer2Id(playersResult.players[1].playerId);
         }
@@ -43,6 +55,7 @@ function HeadToHeadComparison() {
     };
     fetchData();
     return () => abortController.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load H2H data when players or season change

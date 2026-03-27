@@ -3,6 +3,7 @@ export interface Player {
   userId?: string;
   name: string;
   currentWrestler: string;
+  alternateWrestler?: string;
   wins: number;
   losses: number;
   draws: number;

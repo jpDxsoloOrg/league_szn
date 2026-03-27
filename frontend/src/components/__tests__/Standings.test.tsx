@@ -199,7 +199,7 @@ describe('Standings', () => {
     });
 
     const link = screen.getByRole('link', { name: 'John Cena' });
-    expect(link).toHaveAttribute('href', '/stats/player/p1');
+    expect(link).toHaveAttribute('href', '/player/p1');
   });
 
   it('renders form dots and streak badge when data present', async () => {

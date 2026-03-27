@@ -45,6 +45,7 @@ export const profileApi = {
   updateMyProfile: async (updates: {
     name?: string;
     currentWrestler?: string;
+    alternateWrestler?: string;
     imageUrl?: string;
     psnId?: string;
   }): Promise<Player> => {

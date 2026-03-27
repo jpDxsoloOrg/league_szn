@@ -66,6 +66,7 @@ import TagTeamDetail from './components/tagTeams/TagTeamDetail';
 import MyTagTeam from './components/tagTeams/MyTagTeam';
 // Profile components
 import WrestlerProfile from './components/profile/WrestlerProfile';
+import PublicProfile from './components/profile/PublicProfile';
 // Route guard
 import ProtectedRoute from './components/ProtectedRoute';
 import FeatureRoute from './components/FeatureRoute';
@@ -123,6 +124,9 @@ function AppLayout() {
               <Route index element={<WikiIndex />} />
               <Route path=":slug" element={<WikiArticle />} />
             </Route>
+
+            {/* Public Player Profile */}
+            <Route path="/player/:playerId" element={<PublicProfile />} />
 
             {/* Admin Routes - Admin only (protected inside AdminPanel) */}
             <Route path="/admin" element={<AdminPanel />} />

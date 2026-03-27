@@ -28,6 +28,7 @@ export default function ManagePlayers() {
   const [formData, setFormData] = useState({
     name: '',
     currentWrestler: '',
+    alternateWrestler: '',
     imageUrl: '',
     divisionId: '',
     psnId: '',
@@ -162,6 +163,7 @@ export default function ManagePlayers() {
         await playersApi.update(editingPlayer.playerId, {
           name: sanitizedName,
           currentWrestler: sanitizedWrestler,
+          alternateWrestler: formData.alternateWrestler.trim() || undefined,
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || undefined,
           psnId: formData.psnId.trim() || undefined,
@@ -170,6 +172,7 @@ export default function ManagePlayers() {
         await playersApi.create({
           name: sanitizedName,
           currentWrestler: sanitizedWrestler,
+          alternateWrestler: formData.alternateWrestler.trim() || undefined,
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || undefined,
           psnId: formData.psnId.trim() || undefined,
@@ -179,7 +182,7 @@ export default function ManagePlayers() {
         });
       }
 
-      setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '', psnId: '' });
+      setFormData({ name: '', currentWrestler: '', alternateWrestler: '', imageUrl: '', divisionId: '', psnId: '' });
       setSelectedFile(null);
       setImagePreview(null);
       setShowAddForm(false);
@@ -198,6 +201,7 @@ export default function ManagePlayers() {
     setFormData({
       name: player.name,
       currentWrestler: player.currentWrestler,
+      alternateWrestler: player.alternateWrestler || '',
       imageUrl: player.imageUrl || '',
       divisionId: player.divisionId || '',
       psnId: player.psnId || '',
@@ -208,7 +212,7 @@ export default function ManagePlayers() {
   };
 
   const handleCancel = () => {
-    setFormData({ name: '', currentWrestler: '', imageUrl: '', divisionId: '', psnId: '' });
+    setFormData({ name: '', currentWrestler: '', alternateWrestler: '', imageUrl: '', divisionId: '', psnId: '' });
     setSelectedFile(null);
     setImagePreview(null);
     setShowAddForm(false);
@@ -279,6 +283,17 @@ export default function ManagePlayers() {
                 onChange={(e) => setFormData({ ...formData, currentWrestler: e.target.value })}
                 required
                 placeholder="Stone Cold Steve Austin"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="alternateWrestler">Alternate Wrestler</label>
+              <input
+                type="text"
+                id="alternateWrestler"
+                value={formData.alternateWrestler}
+                onChange={(e) => setFormData({ ...formData, alternateWrestler: e.target.value })}
+                placeholder="Backup wrestler (optional)"
               />
             </div>
 
@@ -361,6 +376,7 @@ export default function ManagePlayers() {
                 <th>Image</th>
                 <th>Player Name</th>
                 <th>Wrestler</th>
+                <th>Alt. Wrestler</th>
                 <th>PSN</th>
                 <th>Division</th>
                 <th>Record</th>
@@ -381,6 +397,7 @@ export default function ManagePlayers() {
                   </td>
                   <td>{player.name}</td>
                   <td>{player.currentWrestler}</td>
+                  <td>{player.alternateWrestler || '-'}</td>
                   <td>{player.psnId || '-'}</td>
                   <td className="division-cell">{getDivisionName(player.divisionId)}</td>
                   <td>

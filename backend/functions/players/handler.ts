@@ -5,6 +5,7 @@ import { handler as deletePlayerHandler } from './deletePlayer';
 import { handler as getMyProfileHandler } from './getMyProfile';
 import { handler as updateMyProfileHandler } from './updateMyProfile';
 import { createRouter, type RouteConfig } from '../../lib/router';
+import { handler as getPlayerHandler } from './getPlayer';
 import { handler as getPlayerStatisticsHandler } from './getPlayerStatistics';
 
 
@@ -33,6 +34,11 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/players',
     method: 'POST',
     handler: createPlayerHandler,
+  },
+  {
+    resource: '/players/{playerId}',
+    method: 'GET',
+    handler: getPlayerHandler,
   },
   {
     resource: '/players/{playerId}/statistics',

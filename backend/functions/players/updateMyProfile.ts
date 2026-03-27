@@ -4,7 +4,7 @@ import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, requireRole } from '../../lib/auth';
 
-const ALLOWED_FIELDS = ['name', 'currentWrestler', 'imageUrl', 'psnId'];
+const ALLOWED_FIELDS = ['name', 'currentWrestler', 'alternateWrestler', 'imageUrl', 'psnId'];
 const MAX_NAME_LENGTH = 100;
 const MAX_URL_LENGTH = 2048;
 
@@ -37,8 +37,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Build update expression from whitelisted fields only
     const setExpressions: string[] = [];
+    const removeExpressions: string[] = [];
     const expressionAttributeNames: Record<string, string> = {};
-    const expressionAttributeValues: Record<string, any> = {};
+    const expressionAttributeValues: Record<string, unknown> = {};
 
     for (const field of ALLOWED_FIELDS) {
       if (body[field] !== undefined) {
@@ -48,7 +49,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           return badRequest(`Field ${field} must be a string`);
         }
 
-        if ((field === 'name' || field === 'currentWrestler') && value.length > MAX_NAME_LENGTH) {
+        if (field === 'alternateWrestler' && value === '') {
+          removeExpressions.push(`#${field}`);
+          expressionAttributeNames[`#${field}`] = field;
+          continue;
+        }
+
+        if ((field === 'name' || field === 'currentWrestler' || field === 'alternateWrestler') && value.length > MAX_NAME_LENGTH) {
           return badRequest(`Field ${field} must be ${MAX_NAME_LENGTH} characters or less`);
         }
 
@@ -75,11 +82,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     expressionAttributeNames['#updatedAt'] = 'updatedAt';
     expressionAttributeValues[':updatedAt'] = new Date().toISOString();
 
-    if (setExpressions.length === 1) {
+    if (setExpressions.length === 1 && removeExpressions.length === 0) {
       return badRequest('No valid fields to update. Allowed fields: ' + ALLOWED_FIELDS.join(', '));
     }
 
-    const updateExpression = `SET ${setExpressions.join(', ')}`;
+    let updateExpression = `SET ${setExpressions.join(', ')}`;
+    if (removeExpressions.length > 0) {
+      updateExpression += ` REMOVE ${removeExpressions.join(', ')}`;
+    }
 
     const result = await dynamoDb.update({
       TableName: TableNames.PLAYERS,

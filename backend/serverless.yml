@@ -285,6 +285,10 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
       - http:
+          path: players/{playerId}
+          method: get
+          cors: *corsConfig
+      - http:
           path: players/{playerId}/statistics
           method: get
           cors: *corsConfig
