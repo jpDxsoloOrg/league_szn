@@ -1447,6 +1447,7 @@
     "typeChallenge": "Challenge",
     "typeMatch": "Match",
     "typeAnnouncement": "Announcement",
-    "delete": "Delete notification"
+    "delete": "Delete notification",
+    "deleteAllRead": "Delete read"
   }
 }

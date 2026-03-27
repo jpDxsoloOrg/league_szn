@@ -3,6 +3,7 @@ import { handler as getUnreadCountHandler } from './getUnreadCount';
 import { handler as markReadHandler } from './markRead';
 import { handler as markAllReadHandler } from './markAllRead';
 import { handler as deleteNotificationHandler } from './deleteNotification';
+import { handler as deleteReadNotificationsHandler } from './deleteReadNotifications';
 import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
@@ -29,6 +30,11 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/notifications/mark-all-read',
     method: 'PUT',
     handler: markAllReadHandler,
+  },
+  {
+    resource: '/notifications/delete-read',
+    method: 'DELETE',
+    handler: deleteReadNotificationsHandler,
   },
   {
     resource: '/notifications/{notificationId}',

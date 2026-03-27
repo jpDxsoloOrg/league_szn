@@ -40,4 +40,10 @@ export const notificationsApi = {
       method: 'DELETE',
     });
   },
+
+  deleteAllRead: async (): Promise<{ deleted: number }> => {
+    return fetchWithAuth(`${API_BASE_URL}/notifications/delete-read`, {
+      method: 'DELETE',
+    });
+  },
 };

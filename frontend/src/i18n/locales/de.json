@@ -1446,6 +1446,7 @@
     "typeChallenge": "Herausforderung",
     "typeMatch": "Match",
     "typeAnnouncement": "Ankündigung",
-    "delete": "Benachrichtigung löschen"
+    "delete": "Benachrichtigung löschen",
+    "deleteAllRead": "Gelesene löschen"
   }
 }

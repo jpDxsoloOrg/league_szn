@@ -979,6 +979,11 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
       - http:
+          path: notifications/delete-read
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
           path: notifications/{notificationId}
           method: delete
           cors: *corsConfig
