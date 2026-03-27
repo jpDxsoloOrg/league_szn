@@ -15,6 +15,7 @@
     "seed": "ts-node scripts/seed-data.ts",
     "clear-data": "ts-node scripts/clear-data.ts",
     "notify-pending-invites": "ts-node scripts/notify-pending-invites.ts",
+    "notify-pending-invites:prod": "AWS_PROFILE=league-szn DYNAMODB_ENDPOINT=https://dynamodb.us-east-1.amazonaws.com SERVICE_NAME=wwe-2k-league-api STAGE=dev ts-node scripts/notify-pending-invites.ts",
     "lint": "eslint functions/ lib/",
     "test": "vitest run",
     "test:watch": "vitest"
