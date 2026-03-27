@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useCallback, FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { announcementsApi } from '../../services/api';
 import type { Announcement } from '../../types';
@@ -32,7 +32,7 @@ export default function ManageAnnouncements() {
   const [showPreview, setShowPreview] = useState(false);
   const [formData, setFormData] = useState(DEFAULT_FORM);
 
-  const loadAnnouncements = async (signal?: AbortSignal) => {
+  const loadAnnouncements = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       const data = await announcementsApi.getAll(signal);
@@ -43,13 +43,13 @@ export default function ManageAnnouncements() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     const controller = new AbortController();
     loadAnnouncements(controller.signal);
     return () => controller.abort();
-  }, []);
+  }, [loadAnnouncements]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
