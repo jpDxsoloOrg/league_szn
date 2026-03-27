@@ -95,8 +95,17 @@
   background-color: #1a1a1a;
 }
 
+.notification-delete-read-btn {
+  color: #555;
+  font-size: 0.65rem;
+  padding: 0.25rem 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .notification-delete-read-btn:hover {
   color: #dc3545;
+  background-color: transparent;
 }
 
 /* Scrollable notification list */
