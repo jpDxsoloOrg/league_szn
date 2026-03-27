@@ -95,6 +95,37 @@
     "fillRequired": "Bitte fülle mindestens ein Feld aus.",
     "saveFailed": "Speichern fehlgeschlagen. Bitte versuche es erneut."
   },
+  "profile": {
+    "alternateWrestler": "Alternativer Wrestler",
+    "alternateWrestlerPlaceholder": "Dein Backup-Wrestler",
+    "alternate": "Alternativ",
+    "mainWrestler": "Haupt-Wrestler"
+  },
+  "publicProfile": {
+    "title": "Spielerprofil",
+    "loading": "Profil wird geladen",
+    "loadError": "Profil konnte nicht geladen werden",
+    "allTimeRecord": "Gesamt-Bilanz",
+    "seasonRecords": "Saison-Bilanzen",
+    "record": "Bilanz",
+    "winPercent": "Siegquote",
+    "viewHeadToHead": "Direktvergleich anzeigen",
+    "fullStats": "Alle Statistiken",
+    "challenge": "Herausfordern",
+    "division": "Division",
+    "stable": "Stable",
+    "tagTeam": "Tag Team",
+    "notFound": "Spieler nicht gefunden",
+    "notFoundTitle": "Spieler nicht gefunden",
+    "notFoundMessage": "Der gesuchte Spieler existiert nicht.",
+    "notFoundDescription": "Der gesuchte Spieler existiert nicht.",
+    "form": "Letzte Form",
+    "streak": "Aktuelle Serie",
+    "playingAs": "Spielt als",
+    "alternateWrestler": "Alternativ",
+    "psnId": "PSN-ID",
+    "active": "Aktiv"
+  },
   "emptyState": {
     "checkBackSoon": "Schau bald wieder vorbei",
     "createFirstChampionship": "Erstelle deine erste Meisterschaft",
@@ -443,6 +474,9 @@
         "fantasy": "Fantasy",
         "system": "System"
       }
+    },
+    "players": {
+      "alternateWrestler": "Alternativer Wrestler"
     }
   },
   "announcements": {
@@ -1139,7 +1173,12 @@
       "response": "Antwort",
       "responses": "Antworten",
       "ago": "her",
-      "pinned": "Angepinnt"
+      "pinned": "Angepinnt",
+      "acceptChallenge": "Herausforderung annehmen",
+      "accepting": "Wird angenommen...",
+      "challengeAccepted": "Herausforderung angenommen!",
+      "viewChallenge": "Herausforderung ansehen",
+      "challengeNotFound": "Herausforderung nicht gefunden"
     },
     "thread": {
       "title": "Promo-Thread",
@@ -1412,6 +1451,9 @@
     "typeChallenge": "Herausforderung",
     "typeMatch": "Match",
     "typeAnnouncement": "Ankündigung",
-    "delete": "Benachrichtigung löschen"
+    "delete": "Benachrichtigung löschen",
+    "deleteAllRead": "Gelesene löschen",
+    "typeStable": "Stable",
+    "typeTagTeam": "Tag Team"
   }
 }

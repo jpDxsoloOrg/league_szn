@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { statisticsApi, seasonsApi } from '../../services/api';
 import type { StatsPlayer, HeadToHeadResponse } from '../../services/api';
@@ -10,6 +10,7 @@ import './HeadToHeadComparison.css';
 
 function HeadToHeadComparison() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
   const [players, setPlayers] = useState<StatsPlayer[]>([]);
   const [player1Id, setPlayer1Id] = useState('');
   const [player2Id, setPlayer2Id] = useState('');
@@ -21,6 +22,9 @@ function HeadToHeadComparison() {
   // Load player list and seasons on mount
   useEffect(() => {
     const abortController = new AbortController();
+    // Read search params synchronously before async work
+    const player1Param = searchParams.get('player1');
+    const player2Param = searchParams.get('player2');
     const fetchData = async () => {
       try {
         const [playersResult, seasonsResult] = await Promise.all([
@@ -29,9 +33,24 @@ function HeadToHeadComparison() {
         ]);
         setPlayers(playersResult.players);
         setSeasons(seasonsResult);
-        if (playersResult.players.length >= 2 && playersResult.players[0] && playersResult.players[1]) {
-          setPlayer1Id(playersResult.players[0].playerId);
-          setPlayer2Id(playersResult.players[1].playerId);
+        const allPlayers = playersResult.players;
+        const p1Match = player1Param ? allPlayers.find((p) => p.playerId === player1Param) : undefined;
+        const p2Match = player2Param ? allPlayers.find((p) => p.playerId === player2Param) : undefined;
+        if (p1Match || p2Match) {
+          if (p1Match) {
+            setPlayer1Id(p1Match.playerId);
+          } else if (allPlayers.length > 0 && allPlayers[0]) {
+            setPlayer1Id(allPlayers[0].playerId === p2Match?.playerId && allPlayers[1] ? allPlayers[1].playerId : allPlayers[0].playerId);
+          }
+          if (p2Match) {
+            setPlayer2Id(p2Match.playerId);
+          } else {
+            const fallback = allPlayers.find((p) => p.playerId !== (p1Match?.playerId ?? ''));
+            if (fallback) setPlayer2Id(fallback.playerId);
+          }
+        } else if (allPlayers.length >= 2 && allPlayers[0] && allPlayers[1]) {
+          setPlayer1Id(allPlayers[0].playerId);
+          setPlayer2Id(allPlayers[1].playerId);
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== 'AbortError') {
@@ -43,6 +62,7 @@ function HeadToHeadComparison() {
     };
     fetchData();
     return () => abortController.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load H2H data when players or season change

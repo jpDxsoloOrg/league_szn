@@ -42,6 +42,7 @@ export default function WrestlerProfile() {
   const [formData, setFormData] = useState({
     name: '',
     currentWrestler: '',
+    alternateWrestler: '',
     imageUrl: '',
     psnId: '',
   });
@@ -63,6 +64,7 @@ export default function WrestlerProfile() {
       setFormData({
         name: profile.name,
         currentWrestler: profile.currentWrestler,
+        alternateWrestler: profile.alternateWrestler || '',
         imageUrl: profile.imageUrl || '',
         psnId: profile.psnId || '',
       });
@@ -152,6 +154,7 @@ export default function WrestlerProfile() {
       setFormData({
         name: player.name,
         currentWrestler: player.currentWrestler,
+        alternateWrestler: player.alternateWrestler || '',
         imageUrl: player.imageUrl || '',
         psnId: player.psnId || '',
       });
@@ -172,6 +175,7 @@ export default function WrestlerProfile() {
       setFormData({
         name: player.name,
         currentWrestler: player.currentWrestler,
+        alternateWrestler: player.alternateWrestler || '',
         imageUrl: player.imageUrl || '',
         psnId: player.psnId || '',
       });
@@ -197,13 +201,16 @@ export default function WrestlerProfile() {
         return;
       }
 
-      const updates: { name?: string; currentWrestler?: string; imageUrl?: string; psnId?: string } = {
+      const updates: { name?: string; currentWrestler?: string; alternateWrestler?: string; imageUrl?: string; psnId?: string } = {
         name: sanitizedName,
       };
 
       if (sanitizedWrestler) {
         updates.currentWrestler = sanitizedWrestler;
       }
+
+      // Send empty string to clear, or trimmed value to set
+      updates.alternateWrestler = formData.alternateWrestler.trim();
 
       if (imageUrl) {
         updates.imageUrl = imageUrl;
@@ -287,6 +294,11 @@ export default function WrestlerProfile() {
               Playing as {player.currentWrestler}
             </p>
           )}
+          {player.alternateWrestler && (
+            <p className="profile-alternate-wrestler">
+              Alternate: {player.alternateWrestler}
+            </p>
+          )}
           {player.psnId && (
             <p className="profile-psn-id">
               PSN: {player.psnId}
@@ -329,6 +341,17 @@ export default function WrestlerProfile() {
                 value={formData.currentWrestler}
                 onChange={(e) => setFormData({ ...formData, currentWrestler: e.target.value })}
                 placeholder="The wrestler you play as"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="profile-alternate-wrestler">Alternate Wrestler</label>
+              <input
+                type="text"
+                id="profile-alternate-wrestler"
+                value={formData.alternateWrestler}
+                onChange={(e) => setFormData({ ...formData, alternateWrestler: e.target.value })}
+                placeholder="Your backup wrestler"
               />
             </div>
 

@@ -95,6 +95,37 @@
     "fillRequired": "Please fill in at least one field.",
     "saveFailed": "Failed to save. Please try again."
   },
+  "profile": {
+    "alternateWrestler": "Alternate Wrestler",
+    "alternateWrestlerPlaceholder": "Your backup wrestler",
+    "alternate": "Alternate",
+    "mainWrestler": "Main Wrestler"
+  },
+  "publicProfile": {
+    "title": "Player Profile",
+    "loading": "Loading Profile",
+    "loadError": "Failed to load profile",
+    "allTimeRecord": "All-Time Record",
+    "seasonRecords": "Season Records",
+    "record": "Record",
+    "winPercent": "Win %",
+    "viewHeadToHead": "View Head-to-Head",
+    "fullStats": "Full Stats",
+    "challenge": "Challenge",
+    "division": "Division",
+    "stable": "Stable",
+    "tagTeam": "Tag Team",
+    "notFound": "Player not found",
+    "notFoundTitle": "Player Not Found",
+    "notFoundMessage": "The player you're looking for doesn't exist.",
+    "notFoundDescription": "The player you're looking for doesn't exist.",
+    "form": "Recent Form",
+    "streak": "Current Streak",
+    "playingAs": "Playing as",
+    "alternateWrestler": "Alternate",
+    "psnId": "PSN ID",
+    "active": "Active"
+  },
   "emptyState": {
     "checkBackSoon": "Check back soon",
     "createFirstChampionship": "Create your first championship",
@@ -443,6 +474,9 @@
         "fantasy": "Fantasy",
         "system": "System"
       }
+    },
+    "players": {
+      "alternateWrestler": "Alternate Wrestler"
     }
   },
   "announcements": {
@@ -1140,7 +1174,12 @@
       "response": "response",
       "responses": "responses",
       "ago": "ago",
-      "pinned": "Pinned"
+      "pinned": "Pinned",
+      "acceptChallenge": "Accept Challenge",
+      "accepting": "Accepting...",
+      "challengeAccepted": "Challenge Accepted!",
+      "viewChallenge": "View Challenge",
+      "challengeNotFound": "Challenge not found"
     },
     "thread": {
       "title": "Promo Thread",
@@ -1413,6 +1452,9 @@
     "typeChallenge": "Challenge",
     "typeMatch": "Match",
     "typeAnnouncement": "Announcement",
-    "delete": "Delete notification"
+    "delete": "Delete notification",
+    "deleteAllRead": "Delete read",
+    "typeStable": "Stable",
+    "typeTagTeam": "Tag Team"
   }
 }

@@ -3,6 +3,7 @@ import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import { createNotification } from '../../lib/notifications';
 import { v4 as uuidv4 } from 'uuid';
 
 interface CreateTagTeamBody {
@@ -91,6 +92,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       TableName: TableNames.TAG_TEAMS,
       Item: tagTeam,
     });
+
+    // Notify the partner about the tag team invitation
+    if (partnerPlayer.userId) {
+      await createNotification({
+        userId: partnerPlayer.userId as string,
+        type: 'tag_team_invitation',
+        message: `${callerPlayer.name} wants to form a tag team: ${name}`,
+        sourceId: tagTeam.tagTeamId,
+        sourceType: 'tag_team',
+      });
+    }
 
     return created(tagTeam);
   } catch (err) {

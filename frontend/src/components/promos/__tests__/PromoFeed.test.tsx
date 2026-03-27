@@ -51,6 +51,14 @@ vi.mock('../PromoFeed.css', () => ({}));
 vi.mock('../PromoCard.css', () => ({}));
 vi.mock('../PromoReactions.css', () => ({}));
 
+vi.mock('../../../contexts/AuthContext', () => ({
+  useAuth: () => ({ isAuthenticated: false, playerId: null }),
+}));
+
+vi.mock('../../../contexts/SiteConfigContext', () => ({
+  useSiteConfig: () => ({ features: { challenges: false } }),
+}));
+
 import PromoFeed from '../PromoFeed';
 
 const defaultCounts = { fire: 0, mic: 0, trash: 0, 'mind-blown': 0, clap: 0 } as const;

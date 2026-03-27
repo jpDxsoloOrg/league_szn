@@ -285,6 +285,10 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
       - http:
+          path: players/{playerId}
+          method: get
+          cors: *corsConfig
+      - http:
           path: players/{playerId}/statistics
           method: get
           cors: *corsConfig
@@ -972,6 +976,11 @@ functions:
       - http:
           path: notifications/mark-all-read
           method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: notifications/delete-read
+          method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
       - http:

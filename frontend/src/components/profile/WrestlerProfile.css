@@ -72,6 +72,13 @@
   font-style: italic;
 }
 
+.profile-alternate-wrestler {
+  font-size: 0.85rem;
+  color: #999;
+  margin: 0.15rem 0 0;
+  font-style: italic;
+}
+
 .profile-psn-id {
   font-size: 0.85rem;
   color: #999;

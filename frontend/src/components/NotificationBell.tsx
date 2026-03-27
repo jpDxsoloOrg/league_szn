@@ -34,6 +34,8 @@ function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
     case 'challenge': return 'notifications.typeChallenge';
     case 'match': return 'notifications.typeMatch';
     case 'announcement': return 'notifications.typeAnnouncement';
+    case 'stable': return 'notifications.typeStable';
+    case 'tag_team': return 'notifications.typeTagTeam';
     default: return 'notifications.typeAnnouncement';
   }
 }
@@ -47,6 +49,8 @@ function getNavigationPath(notification: AppNotification, playerId: string | nul
       if (playerId) params.set('playerId', playerId);
       return `/matches?${params.toString()}`;
     }
+    case 'stable': return '/my-stable';
+    case 'tag_team': return '/my-tag-team';
     case 'announcement': return '/';
     default: return '/';
   }
@@ -151,16 +155,6 @@ export default function NotificationBell() {
     setIsOpen(prev => !prev);
   }, []);
 
-  const handleMarkAllRead = useCallback(async () => {
-    try {
-      await notificationsApi.markAllRead();
-      setUnreadCount(0);
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-    } catch {
-      // Silently ignore
-    }
-  }, []);
-
   const handleNotificationClick = useCallback(async (notification: AppNotification) => {
     if (!notification.isRead) {
       try {
@@ -227,15 +221,6 @@ export default function NotificationBell() {
         <div className="notification-dropdown">
           <div className="notification-dropdown-header">
             <span className="notification-dropdown-title">{t('notifications.title')}</span>
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                className="notification-mark-all-btn"
-                onClick={handleMarkAllRead}
-              >
-                {t('notifications.markAllRead')}
-              </button>
-            )}
           </div>
 
           <div className="notification-dropdown-list">
@@ -270,7 +255,12 @@ export default function NotificationBell() {
                   aria-label={t('notifications.delete')}
                   title={t('notifications.delete')}
                 >
-                  &times;
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
+                  </svg>
                 </button>
               </div>
             ))}

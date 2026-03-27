@@ -3,6 +3,7 @@ export interface Player {
   userId?: string;
   name: string;
   currentWrestler: string;
+  alternateWrestler?: string;
   wins: number;
   losses: number;
   draws: number;
@@ -302,7 +303,7 @@ export interface Announcement {
   updatedAt: string;
 }
 
-export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement';
+export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation';
 
 export interface AppNotification {
   notificationId: string;
@@ -310,7 +311,7 @@ export interface AppNotification {
   type: NotificationType;
   message: string;
   sourceId: string;
-  sourceType: 'promo' | 'challenge' | 'match' | 'announcement';
+  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team';
   isRead: boolean;
   createdAt: string;
 }

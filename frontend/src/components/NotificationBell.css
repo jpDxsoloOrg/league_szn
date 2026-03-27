@@ -74,19 +74,41 @@
   color: #d4af37;
 }
 
-.notification-mark-all-btn {
-  font-size: 0.75rem;
+.notification-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.notification-header-btn {
+  font-size: 0.7rem;
   color: #888;
   background: none;
   border: none;
   cursor: pointer;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
+  white-space: nowrap;
 }
 
-.notification-mark-all-btn:hover {
+.notification-header-btn:hover {
   color: #d4af37;
   background-color: #1a1a1a;
+}
+
+.notification-header-btn.notification-delete-read-btn {
+  font-size: 0.65rem;
+  color: #555;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.notification-header-btn.notification-delete-read-btn:hover {
+  color: #dc3545;
+  background: none;
 }
 
 /* Scrollable notification list */
@@ -138,17 +160,36 @@
 }
 
 .notification-item.unread {
-  background-color: #1a1a10;
+  background-color: rgba(212, 175, 55, 0.08);
+  border-left: 3px solid #d4af37;
 }
 
 .notification-item.unread .notification-item-message {
-  color: #eee;
+  color: #fff;
   font-weight: 600;
 }
 
+.notification-item.unread .notification-item-time {
+  color: #d4af37;
+}
+
+.notification-item.read {
+  background-color: transparent;
+  border-left: 3px solid transparent;
+}
+
 .notification-item.read .notification-item-message {
-  color: #888;
+  color: #666;
   font-weight: 400;
+}
+
+.notification-item.read .notification-item-badge-label {
+  color: #666;
+  border-color: rgba(102, 102, 102, 0.3);
+}
+
+.notification-item.read .notification-item-time {
+  color: #444;
 }
 
 .notification-item-badge-label {
@@ -174,29 +215,22 @@
   color: #555;
 }
 
-/* Delete button */
+/* Delete button — always visible trash icon */
 .notification-delete-btn {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  margin: 0.65rem 0.5rem 0 0;
+  width: 28px;
+  height: 28px;
+  margin: 0.5rem 0.5rem 0 0;
   padding: 0;
   border: none;
   background: transparent;
   color: #555;
-  font-size: 1rem;
-  line-height: 1;
   cursor: pointer;
-  border-radius: 3px;
-  opacity: 0;
-  transition: opacity 0.15s, color 0.15s, background-color 0.15s;
-}
-
-.notification-item:hover .notification-delete-btn {
-  opacity: 1;
+  border-radius: 4px;
+  transition: color 0.15s, background-color 0.15s;
 }
 
 .notification-delete-btn:hover {

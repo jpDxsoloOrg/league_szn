@@ -200,6 +200,59 @@
   text-decoration: underline;
 }
 
+.promo-challenge-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border-radius: 8px;
+}
+
+.promo-accept-challenge-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.promo-accept-challenge-btn:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.promo-accept-challenge-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.promo-view-challenge-link {
+  color: #ef4444;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.promo-view-challenge-link:hover {
+  text-decoration: underline;
+}
+
+.promo-challenge-accepted {
+  color: #10b981;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.promo-challenge-error {
+  color: #f87171;
+  font-size: 0.8rem;
+}
+
 @media (max-width: 600px) {
   .promo-card {
     padding: 14px;
