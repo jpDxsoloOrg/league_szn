@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { PromoWithContext, PromoType } from '../../types/promo';
@@ -62,7 +62,7 @@ export default function PromoCard({ promo, compact = false, onReact }: PromoCard
   const { playerId } = useAuth();
   const { features } = useSiteConfig();
   const [acceptingChallenge, setAcceptingChallenge] = useState(false);
-  const [challengeAccepted, setChallengeAccepted] = useState(false);
+  const [challengeStatus, setChallengeStatus] = useState<'pending' | 'accepted' | 'not_found' | 'loading'>('loading');
   const [challengeError, setChallengeError] = useState<string | null>(null);
 
   const isTargetOfCallOut =
@@ -71,6 +71,31 @@ export default function PromoCard({ promo, compact = false, onReact }: PromoCard
     promo.targetPlayerId &&
     playerId &&
     promo.targetPlayerId === playerId;
+
+  // Check if the matching challenge is already accepted
+  useEffect(() => {
+    if (!isTargetOfCallOut || !playerId) return;
+    let cancelled = false;
+    const checkStatus = async () => {
+      try {
+        // Check accepted challenges first
+        const accepted = await challengesApi.getAll({ status: 'accepted', playerId });
+        if (!cancelled && accepted.some((c) => c.challengerId === promo.playerId)) {
+          setChallengeStatus('accepted');
+          return;
+        }
+        // Check pending
+        const pending = await challengesApi.getAll({ status: 'pending', playerId });
+        if (!cancelled) {
+          setChallengeStatus(pending.some((c) => c.challengerId === promo.playerId) ? 'pending' : 'not_found');
+        }
+      } catch {
+        if (!cancelled) setChallengeStatus('not_found');
+      }
+    };
+    checkStatus();
+    return () => { cancelled = true; };
+  }, [isTargetOfCallOut, playerId, promo.playerId]);
 
   const handleAcceptChallenge = async () => {
     if (!playerId) return;
@@ -84,7 +109,7 @@ export default function PromoCard({ promo, compact = false, onReact }: PromoCard
         return;
       }
       await challengesApi.respond(match.challengeId, 'accept');
-      setChallengeAccepted(true);
+      setChallengeStatus('accepted');
     } catch {
       setChallengeError(t('promos.card.challengeNotFound', 'Challenge not found'));
     } finally {
@@ -140,13 +165,13 @@ export default function PromoCard({ promo, compact = false, onReact }: PromoCard
         </div>
       )}
 
-      {isTargetOfCallOut && (
+      {isTargetOfCallOut && challengeStatus !== 'loading' && (
         <div className="promo-challenge-actions">
-          {challengeAccepted ? (
+          {challengeStatus === 'accepted' ? (
             <span className="promo-challenge-accepted">
               {t('promos.card.challengeAccepted', 'Challenge Accepted!')}
             </span>
-          ) : (
+          ) : challengeStatus === 'pending' ? (
             <>
               <button
                 className="promo-accept-challenge-btn"
@@ -161,7 +186,7 @@ export default function PromoCard({ promo, compact = false, onReact }: PromoCard
                 {t('promos.card.viewChallenge', 'View Challenge')}
               </Link>
             </>
-          )}
+          ) : null}
           {challengeError && (
             <span className="promo-challenge-error">{challengeError}</span>
           )}
