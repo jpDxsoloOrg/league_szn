@@ -148,22 +148,36 @@
 }
 
 .notification-item.unread {
-  background-color: #1a1a10;
+  background-color: rgba(212, 175, 55, 0.08);
   border-left: 3px solid #d4af37;
 }
 
 .notification-item.unread .notification-item-message {
-  color: #eee;
+  color: #fff;
   font-weight: 600;
 }
 
+.notification-item.unread .notification-item-time {
+  color: #d4af37;
+}
+
 .notification-item.read {
-  opacity: 0.6;
+  background-color: transparent;
+  border-left: 3px solid transparent;
 }
 
 .notification-item.read .notification-item-message {
-  color: #888;
+  color: #666;
   font-weight: 400;
+}
+
+.notification-item.read .notification-item-badge-label {
+  color: #666;
+  border-color: rgba(102, 102, 102, 0.3);
+}
+
+.notification-item.read .notification-item-time {
+  color: #444;
 }
 
 .notification-item-badge-label {
