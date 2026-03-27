@@ -9,6 +9,7 @@ interface ScheduleMatchBody {
   matchFormat: string; // "singles", "tag", "triple-threat", etc.
   stipulationId?: string; // References Stipulations table
   participants: string[];
+  teams?: string[][]; // Array of teams, each team is an array of playerIds (for tag team matches)
   isChampionship: boolean;
   championshipId?: string;
   tournamentId?: string;
@@ -156,6 +157,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       status: 'scheduled',
       createdAt: now,
     };
+    if (body.teams && body.teams.length > 0) match.teams = body.teams;
     if (body.challengeId) match.challengeId = body.challengeId;
     if (body.promoId) match.promoId = body.promoId;
 
