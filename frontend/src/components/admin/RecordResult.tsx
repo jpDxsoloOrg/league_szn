@@ -164,6 +164,27 @@ export default function RecordResult() {
     }
   };
 
+  const handleDeleteMatch = async () => {
+    if (!selectedMatch) return;
+    const confirmed = window.confirm(
+      `Delete this ${selectedMatch.matchFormat} match? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      await matchesApi.delete(selectedMatch.matchId);
+      setSuccess('Match deleted successfully');
+      setSelectedMatch(null);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete match');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const getPlayerNameShort = (playerId: string): string => {
     const player = players.find(p => p.playerId === playerId);
     return player ? player.name : t('common.unknown');
@@ -507,6 +528,15 @@ export default function RecordResult() {
                   </button>
                   <button onClick={() => setSelectedMatch(null)} className="cancel-btn" disabled={submitting}>
                     Cancel
+                  </button>
+                </div>
+                <div className="delete-match-section">
+                  <button
+                    className="delete-match-btn"
+                    onClick={handleDeleteMatch}
+                    disabled={submitting}
+                  >
+                    {t('recordResult.deleteMatch', 'Delete Match')}
                   </button>
                 </div>
               </>

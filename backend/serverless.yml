@@ -301,6 +301,11 @@ functions:
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
+      - http:
+          path: matches/{matchId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
 
   # Championships (Phase 2 consolidated: getChampionships, createChampionship, getChampionshipHistory, updateChampionship, deleteChampionship, vacateChampionship)
   championships:

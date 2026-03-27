@@ -36,4 +36,10 @@ export const matchesApi = {
       body: JSON.stringify(result),
     });
   },
+
+  delete: async (matchId: string): Promise<void> => {
+    await fetchWithAuth(`${API_BASE_URL}/matches/${matchId}`, {
+      method: 'DELETE',
+    });
+  },
 };
