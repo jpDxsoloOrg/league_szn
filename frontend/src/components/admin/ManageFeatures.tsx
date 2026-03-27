@@ -24,6 +24,10 @@ const FEATURE_LABELS: Record<keyof SiteFeatures, { name: string; description: st
     name: 'Statistics',
     description: 'Player stats, head-to-head, leaderboards, records, and achievements',
   },
+  stables: {
+    name: 'Stables & Tag Teams',
+    description: 'Stables, tag teams, group standings, and invitation system',
+  },
 };
 
 export default function ManageFeatures() {

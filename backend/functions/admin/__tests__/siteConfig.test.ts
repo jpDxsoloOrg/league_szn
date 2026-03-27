@@ -10,7 +10,12 @@ const { mockGet, mockPut } = vi.hoisted(() => ({
 
 vi.mock('../../../lib/dynamodb', () => ({
   dynamoDb: { get: mockGet, put: mockPut },
-  TableNames: { SITE_CONFIG: 'SiteConfig' },
+  TableNames: {
+    SITE_CONFIG: 'SiteConfig',
+    STABLES: 'Stables',
+    TAG_TEAMS: 'TagTeams',
+    STABLE_INVITATIONS: 'StableInvitations',
+  },
 }));
 
 import { handler as getSiteConfig } from '../getSiteConfig';
@@ -27,6 +32,7 @@ const DEFAULT_FEATURES = {
   promos: true,
   contenders: true,
   statistics: true,
+  stables: true,
 };
 
 function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent {
@@ -69,6 +75,7 @@ describe('getSiteConfig', () => {
       promos: false,
       contenders: true,
       statistics: true,
+      stables: true,
     };
     mockGet.mockResolvedValue({
       Item: { configKey: 'features', features: storedFeatures },
@@ -210,6 +217,7 @@ describe('updateSiteConfig', () => {
       promos: true,
       contenders: true,
       statistics: true,
+      stables: true,
     };
     mockGet.mockResolvedValue({
       Item: { configKey: 'features', features: existingFeatures },
@@ -231,6 +239,7 @@ describe('updateSiteConfig', () => {
       promos: false,
       contenders: true,
       statistics: true,
+      stables: true,
     });
     expect(mockPut).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -243,6 +252,7 @@ describe('updateSiteConfig', () => {
             promos: false,
             contenders: true,
             statistics: true,
+            stables: true,
           },
         }),
       }),
@@ -268,6 +278,7 @@ describe('updateSiteConfig', () => {
       promos: true,
       contenders: true,
       statistics: false,
+      stables: true,
     });
   });
 

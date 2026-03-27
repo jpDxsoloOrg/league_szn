@@ -1,0 +1,538 @@
+.my-tag-team {
+  width: 100%;
+}
+
+.my-tag-team__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.my-tag-team__header h2 {
+  margin: 0;
+  color: var(--color-text);
+}
+
+.my-tag-team__loading {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--color-text-muted);
+}
+
+.my-tag-team__error {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--color-danger-alt);
+}
+
+.my-tag-team__error p {
+  margin-bottom: 1rem;
+}
+
+.my-tag-team__empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--color-text-muted);
+}
+
+.my-tag-team__feedback {
+  background-color: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* No team state */
+.my-tag-team__no-team {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.my-tag-team__no-team-info {
+  text-align: center;
+  padding: 2rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.my-tag-team__no-team-info h3 {
+  margin: 0 0 0.5rem;
+  color: var(--color-text);
+}
+
+.my-tag-team__no-team-info p {
+  color: var(--color-text-secondary);
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.my-tag-team__no-team-info .btn-primary {
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-primary);
+  color: #000;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.my-tag-team__no-team-info .btn-primary:hover {
+  background: var(--color-primary-hover);
+}
+
+/* Pending team (awaiting admin or partner) */
+.my-tag-team__pending-team {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+/* Pending requests */
+.my-tag-team__pending {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.my-tag-team__pending h3 {
+  margin: 0 0 1rem;
+  color: var(--color-text);
+  font-size: 1.1rem;
+}
+
+.my-tag-team__pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.my-tag-team__pending-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.my-tag-team__pending-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.my-tag-team__pending-name {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.my-tag-team__pending-from {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.my-tag-team__pending-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.my-tag-team__pending-actions .btn-sm-accept {
+  padding: 0.4rem 0.9rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background-color: #4ade80;
+  color: #000;
+  transition: background-color 0.2s;
+}
+
+.my-tag-team__pending-actions .btn-sm-accept:hover {
+  background-color: #22c55e;
+}
+
+.my-tag-team__pending-actions .btn-sm-decline {
+  padding: 0.4rem 0.9rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background-color: #f87171;
+  color: #000;
+  transition: background-color 0.2s;
+}
+
+.my-tag-team__pending-actions .btn-sm-decline:hover {
+  background-color: #ef4444;
+}
+
+/* Detail view */
+.my-tag-team__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.my-tag-team__info-card {
+  display: flex;
+  gap: 1.5rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  align-items: flex-start;
+}
+
+.my-tag-team__image-wrapper {
+  width: 120px;
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background-color: var(--color-bg);
+}
+
+.my-tag-team__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.my-tag-team__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.my-tag-team__name {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.my-tag-team__name a {
+  color: var(--color-text);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.my-tag-team__name a:hover {
+  color: var(--color-primary);
+}
+
+.my-tag-team__status {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+  text-transform: capitalize;
+}
+
+.my-tag-team__status--pending_partner {
+  background-color: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+.my-tag-team__status--pending_admin {
+  background-color: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+}
+
+.my-tag-team__status--active {
+  background-color: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+}
+
+.my-tag-team__status--dissolved {
+  background-color: rgba(156, 163, 175, 0.15);
+  color: #9ca3af;
+}
+
+.my-tag-team__stats {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.my-tag-team__stat {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.my-tag-team__stat--wins {
+  color: var(--color-success);
+}
+
+.my-tag-team__stat--losses {
+  color: var(--color-danger-alt);
+}
+
+.my-tag-team__stat--draws {
+  color: var(--color-warning);
+}
+
+/* Partner */
+.my-tag-team__partner {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.my-tag-team__partner h4 {
+  margin: 0 0 1rem;
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.my-tag-team__partner-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.my-tag-team__partner-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background-color: var(--color-bg);
+}
+
+.my-tag-team__partner-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.my-tag-team__partner-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.my-tag-team__partner-wrestler {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+.my-tag-team__partner-player {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* Standings */
+.my-tag-team__standings {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.my-tag-team__standings h4 {
+  margin: 0 0 1rem;
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.my-tag-team__standings-info {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.my-tag-team__standings-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.my-tag-team__standings-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.my-tag-team__standings-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.my-tag-team__streak--W {
+  color: var(--color-success);
+}
+
+.my-tag-team__streak--L {
+  color: var(--color-danger-alt);
+}
+
+.my-tag-team__streak--D {
+  color: var(--color-warning);
+}
+
+.my-tag-team__standings-form {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.my-tag-team__form-pip {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.my-tag-team__form-pip--W {
+  background-color: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+}
+
+.my-tag-team__form-pip--L {
+  background-color: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+
+.my-tag-team__form-pip--D {
+  background-color: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+/* Actions */
+.my-tag-team__actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.my-tag-team__actions .btn-danger {
+  padding: 0.65rem 1.2rem;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 6px;
+  background: rgba(220, 53, 69, 0.15);
+  color: var(--color-danger-alt);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.my-tag-team__actions .btn-danger:hover:not(:disabled) {
+  background: rgba(220, 53, 69, 0.25);
+}
+
+.my-tag-team__actions .btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Respond actions for pending_partner */
+.my-tag-team__respond-actions {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.my-tag-team__respond-actions p {
+  margin: 0 0 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.my-tag-team__respond-buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.my-tag-team__respond-buttons .btn-sm-accept {
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background-color: #4ade80;
+  color: #000;
+  transition: background-color 0.2s;
+}
+
+.my-tag-team__respond-buttons .btn-sm-accept:hover {
+  background-color: #22c55e;
+}
+
+.my-tag-team__respond-buttons .btn-sm-decline {
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background-color: #f87171;
+  color: #000;
+  transition: background-color 0.2s;
+}
+
+.my-tag-team__respond-buttons .btn-sm-decline:hover {
+  background-color: #ef4444;
+}
+
+@media (max-width: 768px) {
+  .my-tag-team__info-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .my-tag-team__image-wrapper {
+    width: 100%;
+    height: 160px;
+  }
+
+  .my-tag-team__pending-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .my-tag-team__pending-actions {
+    width: 100%;
+  }
+
+  .my-tag-team__pending-actions button {
+    flex: 1;
+  }
+
+  .my-tag-team__standings-info {
+    gap: 1rem;
+  }
+
+  .my-tag-team__actions {
+    flex-direction: column;
+  }
+
+  .my-tag-team__actions button {
+    width: 100%;
+  }
+}

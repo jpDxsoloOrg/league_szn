@@ -29,6 +29,8 @@ export { activityApi } from './activity.api';
 export { seasonAwardsApi } from './seasonAwards.api';
 export { companiesApi } from './companies.api';
 export { showsApi } from './shows.api';
+export { stablesApi } from './stables.api';
+export { tagTeamsApi } from './tagTeams.api';
 
 // Type/interface re-exports
 export type { SiteFeatures } from './siteConfig.api';

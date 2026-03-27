@@ -211,7 +211,7 @@ describe('generateUploadUrl — auth & validation', () => {
 
   // ─── Folder validation ────────────────────────────────────────
 
-  it('returns 400 when folder is not "wrestlers" or "championships"', async () => {
+  it('returns 400 when folder is not a valid option', async () => {
     const event = withAuth(
       makeEvent({
         body: JSON.stringify({ fileName: 'photo.jpg', fileType: 'image/jpeg', folder: 'invalid-folder' }),
@@ -222,7 +222,7 @@ describe('generateUploadUrl — auth & validation', () => {
     const result = await generateUploadUrl(event, ctx, cb);
 
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('folder must be either "wrestlers" or "championships"');
+    expect(JSON.parse(result!.body).message).toBe('folder must be "wrestlers", "championships", or "shows"');
   });
 
   it('accepts "wrestlers" as a valid folder', async () => {

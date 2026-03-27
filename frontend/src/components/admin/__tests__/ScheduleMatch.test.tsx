@@ -13,6 +13,7 @@ const {
   mockGetAllStipulations,
   mockGetAllMatchTypes,
   mockScheduleMatch,
+  mockGetAllTagTeams,
 } = vi.hoisted(() => ({
   mockGetAllPlayers: vi.fn(),
   mockGetAllChampionships: vi.fn(),
@@ -22,6 +23,7 @@ const {
   mockGetAllStipulations: vi.fn(),
   mockGetAllMatchTypes: vi.fn(),
   mockScheduleMatch: vi.fn(),
+  mockGetAllTagTeams: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -33,6 +35,7 @@ vi.mock('../../../services/api', () => ({
   eventsApi: { getAll: mockGetAllEvents },
   stipulationsApi: { getAll: mockGetAllStipulations },
   matchTypesApi: { getAll: mockGetAllMatchTypes },
+  tagTeamsApi: { getAll: mockGetAllTagTeams },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -121,6 +124,7 @@ function setupDefaultMocks() {
   mockGetAllEvents.mockResolvedValue(mockEvents);
   mockGetAllStipulations.mockResolvedValue(mockStipulations);
   mockGetAllMatchTypes.mockResolvedValue(mockMatchTypes);
+  mockGetAllTagTeams.mockResolvedValue([]);
 }
 
 function renderScheduleMatch() {
@@ -144,6 +148,7 @@ describe('ScheduleMatch', () => {
     mockGetAllEvents.mockReturnValue(new Promise(() => {}));
     mockGetAllStipulations.mockReturnValue(new Promise(() => {}));
     mockGetAllMatchTypes.mockReturnValue(new Promise(() => {}));
+    mockGetAllTagTeams.mockReturnValue(new Promise(() => {}));
 
     renderScheduleMatch();
 

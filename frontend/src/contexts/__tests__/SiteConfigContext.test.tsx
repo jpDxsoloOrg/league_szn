@@ -26,6 +26,7 @@ const ALL_ENABLED = {
   promos: true,
   contenders: true,
   statistics: true,
+  stables: true,
 };
 
 describe('SiteConfigContext', () => {
@@ -40,6 +41,7 @@ describe('SiteConfigContext', () => {
       promos: false,
       contenders: true,
       statistics: true,
+      stables: true,
     };
     mockGetFeatures.mockResolvedValue({ features: serverFeatures });
 
@@ -80,6 +82,7 @@ describe('SiteConfigContext', () => {
       promos: true,
       contenders: true,
       statistics: true,
+      stables: true,
     });
   });
 

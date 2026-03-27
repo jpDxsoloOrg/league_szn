@@ -440,3 +440,32 @@
     flex-direction: column;
   }
 }
+
+/* Delete match */
+.delete-match-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #333;
+}
+
+.delete-match-btn {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--color-danger, #ef4444);
+  border-radius: 6px;
+  color: var(--color-danger, #ef4444);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.delete-match-btn:hover:not(:disabled) {
+  background: var(--color-danger, #ef4444);
+  color: #fff;
+}
+
+.delete-match-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

@@ -274,4 +274,70 @@
   .team-players-grid {
     grid-template-columns: 1fr;
   }
+
+  .tag-team-mode-toggle {
+    flex-direction: column;
+  }
+}
+
+/* Tag Team selection mode toggle */
+.tag-team-mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tag-team-mode-btn {
+  padding: 0.5rem 1.25rem;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background-color: #2d2d2d;
+  color: #bbb;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tag-team-mode-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: #bbb;
+}
+
+.tag-team-mode-btn--active {
+  background-color: #d4af37;
+  color: #1a1a1a;
+  border-color: #d4af37;
+}
+
+.tag-team-mode-btn--active:hover {
+  background-color: #d4af37;
+  border-color: #d4af37;
+}
+
+/* Tag Team dropdown */
+.team-tag-team-select {
+  margin-bottom: 0.75rem;
+}
+
+.tag-team-dropdown {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.875rem;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.tag-team-dropdown:focus {
+  border-color: #d4af37;
+  outline: none;
+}
+
+.tag-team-dropdown option {
+  background: #1a1a1a;
+  color: #fff;
 }

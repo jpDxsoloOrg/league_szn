@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi, stipulationsApi, matchTypesApi } from '../../services/api';
+import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi, stipulationsApi, matchTypesApi, tagTeamsApi } from '../../services/api';
 import type { Player, Championship, Tournament, Season, Stipulation, MatchType } from '../../types';
+import type { TagTeam } from '../../types/tagTeam';
 import type { LeagueEvent, MatchDesignation } from '../../types/event';
 import type { ChallengeWithPlayers } from '../../types/challenge';
 import type { PromoWithContext } from '../../types/promo';
@@ -31,6 +32,8 @@ export default function ScheduleMatch() {
   const [events, setEvents] = useState<LeagueEvent[]>([]);
   const [stipulations, setStipulations] = useState<Stipulation[]>([]);
   const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
+  const [activeTagTeams, setActiveTagTeams] = useState<(TagTeam & { player1Name?: string; player2Name?: string })[]>([]);
+  const [tagTeamSelectionMode, setTagTeamSelectionMode] = useState<'tag-teams' | 'individuals'>('tag-teams');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +62,7 @@ export default function ScheduleMatch() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [playersData, championshipsData, tournamentsData, seasonsData, eventsData, stipulationsData, matchTypesData] = await Promise.all([
+      const [playersData, championshipsData, tournamentsData, seasonsData, eventsData, stipulationsData, matchTypesData, tagTeamsData] = await Promise.all([
         playersApi.getAll(),
         championshipsApi.getAll(),
         tournamentsApi.getAll(),
@@ -67,6 +70,7 @@ export default function ScheduleMatch() {
         eventsApi.getAll(),
         stipulationsApi.getAll(),
         matchTypesApi.getAll(),
+        tagTeamsApi.getAll({ status: 'active' }).catch(() => [] as TagTeam[]),
       ]);
       setPlayers(playersData);
       setChampionships(championshipsData);
@@ -75,6 +79,7 @@ export default function ScheduleMatch() {
       setEvents(eventsData.filter(e => e.status === 'upcoming' || e.status === 'in-progress'));
       setStipulations(stipulationsData);
       setMatchTypes(matchTypesData);
+      setActiveTagTeams(tagTeamsData as (TagTeam & { player1Name?: string; player2Name?: string })[]);
 
       // Set active season as default if one exists
       const activeSeason = seasonsData.find(s => s.status === 'active');
@@ -301,6 +306,37 @@ export default function ScheduleMatch() {
   const handleMatchFormatChange = (newFormat: string) => {
     setFormData(prev => ({ ...prev, matchFormat: newFormat, participants: [] }));
     setTeams([[], []]);
+    setTagTeamSelectionMode('tag-teams');
+  };
+
+  const handleSelectTagTeam = (teamIndex: number, tagTeamId: string) => {
+    const tt = activeTagTeams.find(t => t.tagTeamId === tagTeamId);
+    if (!tt) return;
+
+    setTeams(prev => {
+      const newTeams = [...prev];
+      // Remove these players from any other team first
+      const playerIds = [tt.player1Id, tt.player2Id];
+      newTeams.forEach((team, i) => {
+        if (i !== teamIndex && team) {
+          newTeams[i] = team.filter(id => !playerIds.includes(id));
+        }
+      });
+      // Set both members on the target team
+      newTeams[teamIndex] = [tt.player1Id, tt.player2Id];
+      return newTeams;
+    });
+  };
+
+  const getTagTeamForTeam = (teamIndex: number): string => {
+    const team = teams[teamIndex];
+    if (!team || team.length !== 2) return '';
+    // Check if the two members match an active tag team
+    const found = activeTagTeams.find(
+      tt => (tt.player1Id === team[0] && tt.player2Id === team[1])
+        || (tt.player1Id === team[1] && tt.player2Id === team[0])
+    );
+    return found?.tagTeamId ?? '';
   };
 
   if (loading) {
@@ -474,22 +510,70 @@ export default function ScheduleMatch() {
         {isTagTeamMatch ? (
           /* Tag Team Selection UI */
           <div className="form-group">
-            <label>{t('scheduleMatch.tagTeam.selectTeams')}</label>
+            <label>{t('scheduleMatch.tagTeam.selectTeams', 'Select Teams')}</label>
+
+            {/* Selection mode toggle */}
+            <div className="tag-team-mode-toggle">
+              <button
+                type="button"
+                className={`tag-team-mode-btn ${tagTeamSelectionMode === 'tag-teams' ? 'tag-team-mode-btn--active' : ''}`}
+                onClick={() => setTagTeamSelectionMode('tag-teams')}
+              >
+                {t('scheduleMatch.tagTeam.useTagTeams', 'Use Tag Teams')}
+              </button>
+              <button
+                type="button"
+                className={`tag-team-mode-btn ${tagTeamSelectionMode === 'individuals' ? 'tag-team-mode-btn--active' : ''}`}
+                onClick={() => setTagTeamSelectionMode('individuals')}
+              >
+                {t('scheduleMatch.tagTeam.useIndividuals', 'Pick Individuals')}
+              </button>
+            </div>
+
             <div className="tag-team-container">
               {teams.map((team, teamIndex) => (
                 <div key={teamIndex} className="team-section">
                   <div className="team-header">
-                    <h4>{t('scheduleMatch.tagTeam.team')} {teamIndex + 1}</h4>
+                    <h4>{t('scheduleMatch.tagTeam.team', 'Team')} {teamIndex + 1}</h4>
                     {teams.length > 2 && (
                       <button
                         type="button"
                         className="remove-team-btn"
                         onClick={() => removeTeam(teamIndex)}
                       >
-                        {t('common.delete')}
+                        {t('common.delete', 'Remove')}
                       </button>
                     )}
                   </div>
+
+                  {/* Tag Team dropdown mode */}
+                  {tagTeamSelectionMode === 'tag-teams' && (
+                    <div className="team-tag-team-select">
+                      <select
+                        value={getTagTeamForTeam(teamIndex)}
+                        onChange={(e) => handleSelectTagTeam(teamIndex, e.target.value)}
+                        className="tag-team-dropdown"
+                      >
+                        <option value="">{t('scheduleMatch.tagTeam.selectTagTeam', 'Select a Tag Team...')}</option>
+                        {activeTagTeams
+                          .filter(tt => {
+                            // Hide tag teams already assigned to other teams
+                            const assignedToOther = teams.some((otherTeam, i) => {
+                              if (i === teamIndex) return false;
+                              return otherTeam.includes(tt.player1Id) && otherTeam.includes(tt.player2Id);
+                            });
+                            return !assignedToOther;
+                          })
+                          .map(tt => (
+                            <option key={tt.tagTeamId} value={tt.tagTeamId}>
+                              {tt.name} ({tt.player1Name ?? getPlayerName(tt.player1Id)} &amp; {tt.player2Name ?? getPlayerName(tt.player2Id)})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Show selected members */}
                   <div className="team-members">
                     {team.length > 0 ? (
                       team.map(playerId => (
@@ -505,40 +589,44 @@ export default function ScheduleMatch() {
                         </span>
                       ))
                     ) : (
-                      <span className="no-members">{t('scheduleMatch.tagTeam.noMembers')}</span>
+                      <span className="no-members">{t('scheduleMatch.tagTeam.noMembers', 'No members selected')}</span>
                     )}
                   </div>
-                  <div className="team-players-grid">
-                    {players.filter(p => !team.includes(p.playerId)).map(player => {
-                      const playerTeamIndex = getPlayerTeamIndex(player.playerId);
-                      const isInOtherTeam = playerTeamIndex !== -1 && playerTeamIndex !== teamIndex;
-                      return (
-                        <div
-                          key={player.playerId}
-                          className={`participant-card ${isInOtherTeam ? 'in-other-team' : ''}`}
-                          onClick={() => !isInOtherTeam && handleTeamMemberToggle(teamIndex, player.playerId)}
-                        >
-                          <div className="participant-name">{player.name}</div>
-                          <div className="participant-wrestler">{player.currentWrestler}</div>
-                          {isInOtherTeam && (
-                            <div className="other-team-label">
-                              {t('scheduleMatch.tagTeam.team')} {playerTeamIndex + 1}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+
+                  {/* Individual picker mode */}
+                  {tagTeamSelectionMode === 'individuals' && (
+                    <div className="team-players-grid">
+                      {players.filter(p => !team.includes(p.playerId)).map(player => {
+                        const playerTeamIndex = getPlayerTeamIndex(player.playerId);
+                        const isInOtherTeam = playerTeamIndex !== -1 && playerTeamIndex !== teamIndex;
+                        return (
+                          <div
+                            key={player.playerId}
+                            className={`participant-card ${isInOtherTeam ? 'in-other-team' : ''}`}
+                            onClick={() => !isInOtherTeam && handleTeamMemberToggle(teamIndex, player.playerId)}
+                          >
+                            <div className="participant-name">{player.name}</div>
+                            <div className="participant-wrestler">{player.currentWrestler}</div>
+                            {isInOtherTeam && (
+                              <div className="other-team-label">
+                                {t('scheduleMatch.tagTeam.team', 'Team')} {playerTeamIndex + 1}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               ))}
               <button type="button" className="add-team-btn" onClick={addTeam}>
-                + {t('scheduleMatch.tagTeam.addTeam')}
+                + {t('scheduleMatch.tagTeam.addTeam', 'Add Team')}
               </button>
             </div>
             <div className="teams-summary">
               {teams.map((team, i) => (
                 <span key={i} className={`team-count ${team.length >= 2 ? 'valid' : 'invalid'}`}>
-                  {t('scheduleMatch.tagTeam.team')} {i + 1}: {team.length} {t('scheduleMatch.tagTeam.members')}
+                  {t('scheduleMatch.tagTeam.team', 'Team')} {i + 1}: {team.length} {t('scheduleMatch.tagTeam.members', 'members')}
                 </span>
               ))}
             </div>

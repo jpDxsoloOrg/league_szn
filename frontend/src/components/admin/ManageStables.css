@@ -1,0 +1,206 @@
+.admin-stables {
+  width: 100%;
+}
+
+.admin-stables h3 {
+  color: #d4af37;
+  margin-bottom: 1.25rem;
+}
+
+.admin-stables-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.admin-stables-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-stables-filter label {
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+.admin-stables-filter select {
+  background-color: #1a1a1a;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.admin-stables-filter select:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+.admin-stables-count {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.admin-stables-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-stables-table th {
+  background-color: #1a1a1a;
+  color: #d4af37;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 2px solid #333;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.admin-stables-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #333;
+  font-size: 0.9rem;
+  color: #ccc;
+  vertical-align: middle;
+}
+
+.admin-stables-table tr:hover {
+  background-color: #1a1a1a;
+}
+
+.admin-stables-name {
+  font-weight: 600;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.admin-stables-member-count {
+  color: #aaa;
+  font-size: 0.85rem;
+}
+
+.admin-stables-record {
+  font-weight: 500;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.stables-status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.stables-status-badge.pending {
+  background-color: rgba(234, 179, 8, 0.15);
+  color: #eab308;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.stables-status-badge.approved {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.stables-status-badge.active {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.stables-status-badge.disbanded {
+  background-color: rgba(107, 114, 128, 0.15);
+  color: #9ca3af;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+.admin-stables-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.admin-stables-actions button {
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+  white-space: nowrap;
+}
+
+.admin-btn-approve {
+  background-color: #22c55e !important;
+  color: #fff !important;
+}
+
+.admin-btn-approve:hover {
+  background-color: #16a34a !important;
+}
+
+.admin-btn-reject {
+  background-color: #f97316 !important;
+  color: #fff !important;
+}
+
+.admin-btn-reject:hover {
+  background-color: #ea580c !important;
+}
+
+.admin-btn-disband {
+  background-color: #6b7280 !important;
+  color: #fff !important;
+}
+
+.admin-btn-disband:hover {
+  background-color: #4b5563 !important;
+}
+
+.admin-stables-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #888;
+  font-size: 1rem;
+}
+
+.admin-stables-feedback {
+  background-color: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.admin-stables-feedback.error {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+@media (max-width: 768px) {
+  .admin-stables-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .admin-stables-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

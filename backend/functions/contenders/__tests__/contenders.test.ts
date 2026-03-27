@@ -3,26 +3,38 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockGet, mockPut, mockDelete, mockScanAll, mockQueryAll } = vi.hoisted(() => ({
+const { mockGet, mockPut, mockDelete, mockScanAll, mockQueryAll, mockQuery } = vi.hoisted(() => ({
   mockGet: vi.fn(), mockPut: vi.fn(), mockDelete: vi.fn(),
-  mockScanAll: vi.fn(), mockQueryAll: vi.fn(),
+  mockScanAll: vi.fn(), mockQueryAll: vi.fn(), mockQuery: vi.fn(),
 }));
 
 const { mockCalcRankings } = vi.hoisted(() => ({ mockCalcRankings: vi.fn() }));
 
 vi.mock('../../../lib/dynamodb', () => ({
   dynamoDb: {
-    get: mockGet, put: mockPut, scan: vi.fn(), query: vi.fn(),
+    get: mockGet, put: mockPut, scan: vi.fn(), query: mockQuery,
     update: vi.fn(), delete: mockDelete, scanAll: mockScanAll, queryAll: mockQueryAll,
   },
   TableNames: {
     PLAYERS: 'Players', MATCHES: 'Matches', CHAMPIONSHIPS: 'Championships',
     CONTENDER_RANKINGS: 'ContenderRankings', RANKING_HISTORY: 'RankingHistory',
+    CONTENDER_OVERRIDES: 'ContenderOverrides',
+    STABLES: 'Stables', TAG_TEAMS: 'TagTeams', STABLE_INVITATIONS: 'StableInvitations',
   },
 }));
 
 vi.mock('../../../lib/rankingCalculator', () => ({
   calculateRankingsForChampionship: mockCalcRankings,
+}));
+
+vi.mock('../../../lib/overrideApplicator', () => ({
+  applyOverrides: (rankings: unknown[]) => rankings.map((r: unknown, i: number) => ({
+    ...(r as Record<string, unknown>),
+    rank: i + 1,
+    isOverridden: false,
+    overrideType: null,
+    organicRank: null,
+  })),
 }));
 
 import { handler as calculateRankings } from '../calculateRankings';
@@ -72,7 +84,10 @@ function player(id: string, name: string, wrestler: string, img?: string) {
 // ─── calculateRankings ──────────────────────────────────────────────
 
 describe('calculateRankings', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockQuery.mockResolvedValue({ Items: [] });
+  });
 
   it('calculates rankings via rankingCalculator and writes results', async () => {
     mockScanAll.mockResolvedValue([champ('c1', 'World Title')]);

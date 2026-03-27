@@ -4,12 +4,13 @@ import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockGetAllMatches, mockGetAllPlayers, mockGetAllEvents, mockRecordResult, mockGetAllStipulations } = vi.hoisted(() => ({
+const { mockGetAllMatches, mockGetAllPlayers, mockGetAllEvents, mockRecordResult, mockGetAllStipulations, mockGetAllTagTeams } = vi.hoisted(() => ({
   mockGetAllMatches: vi.fn(),
   mockGetAllPlayers: vi.fn(),
   mockGetAllEvents: vi.fn(),
   mockRecordResult: vi.fn(),
   mockGetAllStipulations: vi.fn(),
+  mockGetAllTagTeams: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -20,6 +21,7 @@ vi.mock('../../../services/api', () => ({
   playersApi: { getAll: mockGetAllPlayers },
   eventsApi: { getAll: mockGetAllEvents },
   stipulationsApi: { getAll: mockGetAllStipulations },
+  tagTeamsApi: { getAll: mockGetAllTagTeams },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -112,6 +114,7 @@ function setupDefaultMocks() {
     { stipulationId: 'stip-1', name: 'Steel Cage', createdAt: '', updatedAt: '' },
     { stipulationId: 'stip-2', name: 'Ladder', createdAt: '', updatedAt: '' },
   ]);
+  mockGetAllTagTeams.mockResolvedValue([]);
 }
 
 function renderRecordResult() {
@@ -132,6 +135,7 @@ describe('RecordResult', () => {
     mockGetAllPlayers.mockReturnValue(new Promise(() => {}));
     mockGetAllEvents.mockReturnValue(new Promise(() => {}));
     mockGetAllStipulations.mockReturnValue(new Promise(() => {}));
+    mockGetAllTagTeams.mockReturnValue(new Promise(() => {}));
 
     renderRecordResult();
 

@@ -27,10 +27,12 @@ import AdminContenderConfig from './AdminContenderConfig';
 import AdminContenderOverrides from './AdminContenderOverrides';
 import ManageCompanies from './ManageCompanies';
 import ManageShows from './ManageShows';
+import ManageStables from './ManageStables';
+import ManageTagTeams from './ManageTagTeams';
 
-type AdminTab = 'players' | 'divisions' | 'match-config' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'contender-overrides' | 'companies' | 'shows' | 'danger' | 'users' | 'features';
+type AdminTab = 'players' | 'divisions' | 'match-config' | 'schedule' | 'results' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'contender-overrides' | 'companies' | 'shows' | 'stables' | 'tag-teams' | 'danger' | 'users' | 'features';
 
-const VALID_TABS: AdminTab[] = ['players', 'divisions', 'match-config', 'schedule', 'results', 'championships', 'tournaments', 'challenges', 'promos', 'seasons', 'season-awards', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'contender-overrides', 'companies', 'shows', 'danger', 'users', 'features'];
+const VALID_TABS: AdminTab[] = ['players', 'divisions', 'match-config', 'schedule', 'results', 'championships', 'tournaments', 'challenges', 'promos', 'seasons', 'season-awards', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'contender-overrides', 'companies', 'shows', 'stables', 'tag-teams', 'danger', 'users', 'features'];
 
 
 export default function AdminPanel() {
@@ -92,6 +94,8 @@ export default function AdminPanel() {
     'contender-overrides': <AdminContenderOverrides />,
     companies: <ManageCompanies />,
     shows: <ManageShows />,
+    stables: <ManageStables />,
+    'tag-teams': <ManageTagTeams />,
     danger: <ClearAllData />,
   };
 

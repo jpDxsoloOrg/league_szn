@@ -29,6 +29,9 @@ vi.mock('../../../lib/dynamodb', () => ({
     PLAYERS: 'Players',
     SEASON_STANDINGS: 'SeasonStandings',
     MATCHES: 'Matches',
+    STABLES: 'Stables',
+    TAG_TEAMS: 'TagTeams',
+    STABLE_INVITATIONS: 'StableInvitations',
   },
 }));
 
@@ -112,8 +115,8 @@ describe('getStandings — season-specific (with seasonId)', () => {
     mockScanAll
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
-        { playerId: 'p1', name: 'Alice' },
-        { playerId: 'p2', name: 'Bob' },
+        { playerId: 'p1', name: 'Alice', currentWrestler: 'W1' },
+        { playerId: 'p2', name: 'Bob', currentWrestler: 'W2' },
       ]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
@@ -121,10 +124,11 @@ describe('getStandings — season-specific (with seasonId)', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body.players).toHaveLength(2);
-    body.players.forEach((p: any) => {
-      expect(p.wins).toBe(0);
-      expect(p.losses).toBe(0);
-      expect(p.draws).toBe(0);
+    body.players.forEach((p: unknown) => {
+      const player = p as { wins: number; losses: number; draws: number };
+      expect(player.wins).toBe(0);
+      expect(player.losses).toBe(0);
+      expect(player.draws).toBe(0);
     });
   });
 
@@ -137,9 +141,9 @@ describe('getStandings — season-specific (with seasonId)', () => {
     mockScanAll
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
-        { playerId: 'p1', name: 'Alice' },
-        { playerId: 'p2', name: 'Bob' },
-        { playerId: 'p3', name: 'Carol' },
+        { playerId: 'p1', name: 'Alice', currentWrestler: 'W1' },
+        { playerId: 'p2', name: 'Bob', currentWrestler: 'W2' },
+        { playerId: 'p3', name: 'Carol', currentWrestler: 'W3' },
       ]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
@@ -196,18 +200,19 @@ describe('getStandings — season-specific (with seasonId)', () => {
     mockScanAll
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
-        { playerId: 'p1', name: 'Alice' },
-        { playerId: 'p2', name: 'Bob' },
+        { playerId: 'p1', name: 'Alice', currentWrestler: 'W1' },
+        { playerId: 'p2', name: 'Bob', currentWrestler: 'W2' },
       ]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    body.players.forEach((p: any) => {
-      expect(p.wins).toBe(0);
-      expect(p.losses).toBe(0);
-      expect(p.draws).toBe(0);
+    body.players.forEach((p: unknown) => {
+      const player = p as { wins: number; losses: number; draws: number };
+      expect(player.wins).toBe(0);
+      expect(player.losses).toBe(0);
+      expect(player.draws).toBe(0);
     });
   });
 

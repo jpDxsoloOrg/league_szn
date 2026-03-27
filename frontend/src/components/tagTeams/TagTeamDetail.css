@@ -1,0 +1,335 @@
+.tag-team-detail {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.tag-team-detail__back-link {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.tag-team-detail__back-link:hover {
+  text-decoration: underline;
+}
+
+/* Header */
+.tag-team-detail__header {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.tag-team-detail__team-image {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.tag-team-detail__header-info {
+  flex: 1;
+}
+
+.tag-team-detail__team-name {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.75rem;
+}
+
+.tag-team-detail__status {
+  display: inline-block;
+  padding: 0.2rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.tag-team-detail__status--active {
+  background-color: var(--color-success);
+  color: #fff;
+}
+
+.tag-team-detail__status--dissolved {
+  background-color: var(--color-danger-alt);
+  color: #fff;
+}
+
+.tag-team-detail__status--pending_partner,
+.tag-team-detail__status--pending_admin {
+  background-color: var(--color-warning);
+  color: #000;
+}
+
+.tag-team-detail__players-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.tag-team-detail__player-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tag-team-detail__player-image {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--color-border);
+}
+
+.tag-team-detail__player-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.tag-team-detail__player-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.tag-team-detail__wrestler-name {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.tag-team-detail__ampersand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* Sections */
+.tag-team-detail__section {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tag-team-detail__section-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.2rem;
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: 0.5rem;
+}
+
+/* Stats Grid */
+.tag-team-detail__stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.tag-team-detail__stat-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--color-bg);
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+}
+
+.tag-team-detail__stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.tag-team-detail__stat-value--wins {
+  color: var(--color-success);
+}
+
+.tag-team-detail__stat-value--losses {
+  color: var(--color-danger-alt);
+}
+
+.tag-team-detail__stat-value--draws {
+  color: var(--color-warning);
+}
+
+.tag-team-detail__stat-label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+}
+
+/* Form Row */
+.tag-team-detail__form-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.tag-team-detail__form-label {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+/* Tables */
+.tag-team-detail__table-wrapper {
+  overflow-x: auto;
+}
+
+.tag-team-detail__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tag-team-detail__table th {
+  text-align: center;
+  padding: 0.75rem;
+  border-bottom: 2px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.tag-team-detail__table th:first-child {
+  text-align: left;
+}
+
+.tag-team-detail__table td {
+  text-align: center;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tag-team-detail__match-format,
+.tag-team-detail__opponent-name {
+  text-align: left !important;
+  font-weight: 600;
+}
+
+.tag-team-detail__opponent-name a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.tag-team-detail__opponent-name a:hover {
+  text-decoration: underline;
+}
+
+.tag-team-detail__table .wins {
+  color: var(--color-success);
+  font-weight: bold;
+}
+
+.tag-team-detail__table .losses {
+  color: var(--color-danger-alt);
+  font-weight: bold;
+}
+
+.tag-team-detail__table .draws {
+  color: var(--color-warning);
+}
+
+/* Recent Matches */
+.tag-team-detail__matches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tag-team-detail__match-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.tag-team-detail__match-date {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  min-width: 80px;
+}
+
+.tag-team-detail__match-type {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  min-width: 100px;
+}
+
+.tag-team-detail__match-opponent {
+  flex: 1;
+  font-weight: 600;
+}
+
+.tag-team-detail__match-result {
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.tag-team-detail__match-result--w {
+  background-color: var(--color-success);
+  color: #fff;
+}
+
+.tag-team-detail__match-result--l {
+  background-color: var(--color-danger-alt);
+  color: #fff;
+}
+
+.tag-team-detail__match-result--d {
+  background-color: var(--color-warning);
+  color: #000;
+}
+
+@media (max-width: 768px) {
+  .tag-team-detail__header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .tag-team-detail__players-row {
+    justify-content: center;
+  }
+
+  .tag-team-detail__player-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .tag-team-detail__stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .tag-team-detail__match-item {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tag-team-detail__match-date,
+  .tag-team-detail__match-type {
+    min-width: auto;
+  }
+}

@@ -23,6 +23,11 @@ vi.mock('../../../lib/dynamodb', () => ({
     MATCHES: 'Matches',
     CHAMPIONSHIPS: 'Championships',
     CHAMPIONSHIP_HISTORY: 'ChampionshipHistory',
+    MATCH_TYPES: 'MatchTypes',
+    STIPULATIONS: 'Stipulations',
+    STABLES: 'Stables',
+    TAG_TEAMS: 'TagTeams',
+    STABLE_INVITATIONS: 'StableInvitations',
   },
 }));
 
@@ -88,7 +93,7 @@ describe('getStatistics - match-types section', () => {
     vi.clearAllMocks();
   });
 
-  it('returns leaderboards grouped by match type', async () => {
+  it('returns leaderboard for all matches when no filter applied', async () => {
     mockScanAll.mockImplementation(({ TableName }: { TableName: string }) => {
       if (TableName === 'Players') return Promise.resolve([player1, player2]);
       if (TableName === 'Matches') {
@@ -96,10 +101,10 @@ describe('getStatistics - match-types section', () => {
           makeMatch({ matchFormat: 'Singles', winners: ['p1'], losers: ['p2'] }),
           makeMatch({ matchFormat: 'Singles', winners: ['p1'], losers: ['p2'] }),
           makeMatch({ matchFormat: 'Singles', winners: ['p2'], losers: ['p1'] }),
-          makeMatch({ matchFormat: 'Tag Team', winners: ['p1'], losers: ['p2'], participants: ['p1', 'p2', 'p3', 'p4'] }),
-          makeMatch({ matchFormat: 'Ladder', winners: ['p2'], losers: ['p1'] }),
         ]);
       }
+      if (TableName === 'MatchTypes') return Promise.resolve([]);
+      if (TableName === 'Stipulations') return Promise.resolve([]);
       return Promise.resolve([]);
     });
 
@@ -109,32 +114,28 @@ describe('getStatistics - match-types section', () => {
     expect(result!.statusCode).toBe(200);
 
     const body = JSON.parse(result!.body);
-    expect(body.leaderboards).toBeDefined();
-    expect(body.leaderboards.singles).toBeDefined();
-    expect(body.leaderboards.tag).toBeDefined();
-    expect(body.leaderboards.ladder).toBeDefined();
-    expect(body.leaderboards.cage).toBeDefined();
-
-    // categorizeMatch only distinguishes 'tag' vs 'singles' (ladder/cage fall into singles)
-    // Singles bucket: matches 1,2 (p1 wins), match 3 (p2 wins), match 5 Ladder (p2 wins) = p1: 2W-2L, p2: 2W-2L
-    const singlesLeaders = body.leaderboards.singles;
-    expect(singlesLeaders.length).toBe(2);
-    // Both tied at 50%, both have 2 wins - ranks 1 and 2
-    expect(singlesLeaders[0].wins).toBe(2);
-    expect(singlesLeaders[0].losses).toBe(2);
-    expect(singlesLeaders[0].rank).toBe(1);
-    expect(singlesLeaders[1].rank).toBe(2);
+    expect(body.leaderboard).toBeDefined();
+    expect(body.leaderboard.length).toBe(2);
+    // p1: 2W-1L, p2: 1W-2L
+    expect(body.leaderboard[0].playerId).toBe('p1');
+    expect(body.leaderboard[0].wins).toBe(2);
+    expect(body.leaderboard[0].losses).toBe(1);
+    expect(body.leaderboard[0].rank).toBe(1);
+    expect(body.leaderboard[1].playerId).toBe('p2');
+    expect(body.leaderboard[1].rank).toBe(2);
   });
 
-  it('only includes players with matches in that type', async () => {
+  it('only includes players with matches played', async () => {
+    const player3 = makePlayer('p3', 'Player Three', 'Wrestler C');
     mockScanAll.mockImplementation(({ TableName }: { TableName: string }) => {
-      if (TableName === 'Players') return Promise.resolve([player1, player2]);
+      if (TableName === 'Players') return Promise.resolve([player1, player2, player3]);
       if (TableName === 'Matches') {
         return Promise.resolve([
           makeMatch({ matchFormat: 'Singles', winners: ['p1'], losers: ['p2'] }),
-          // No ladder or cage matches
         ]);
       }
+      if (TableName === 'MatchTypes') return Promise.resolve([]);
+      if (TableName === 'Stipulations') return Promise.resolve([]);
       return Promise.resolve([]);
     });
 
@@ -142,9 +143,9 @@ describe('getStatistics - match-types section', () => {
     const result = await handler(event, ctx, cb);
 
     const body = JSON.parse(result!.body);
-    expect(body.leaderboards.ladder).toHaveLength(0);
-    expect(body.leaderboards.cage).toHaveLength(0);
-    expect(body.leaderboards.singles.length).toBeGreaterThan(0);
+    // p3 has no matches, should be excluded
+    expect(body.leaderboard.length).toBe(2);
+    expect(body.leaderboard.find((e: Record<string, unknown>) => e.playerId === 'p3')).toBeUndefined();
   });
 
   it('filters by seasonId when provided', async () => {
@@ -156,6 +157,8 @@ describe('getStatistics - match-types section', () => {
           makeMatch({ matchFormat: 'Singles', seasonId: 's2', winners: ['p2'], losers: ['p1'] }),
         ]);
       }
+      if (TableName === 'MatchTypes') return Promise.resolve([]);
+      if (TableName === 'Stipulations') return Promise.resolve([]);
       return Promise.resolve([]);
     });
 
@@ -165,11 +168,10 @@ describe('getStatistics - match-types section', () => {
     const result = await handler(event, ctx, cb);
 
     const body = JSON.parse(result!.body);
-    const singlesLeaders = body.leaderboards.singles;
     // Only s1 match: p1 wins
-    expect(singlesLeaders[0].playerId).toBe('p1');
-    expect(singlesLeaders[0].wins).toBe(1);
-    expect(singlesLeaders[0].losses).toBe(0);
+    expect(body.leaderboard[0].playerId).toBe('p1');
+    expect(body.leaderboard[0].wins).toBe(1);
+    expect(body.leaderboard[0].losses).toBe(0);
   });
 
   it('returns 500 on error', async () => {

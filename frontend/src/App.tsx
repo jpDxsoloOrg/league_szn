@@ -56,6 +56,14 @@ import ShowResults from './components/fantasy/ShowResults';
 import EventsCalendar from './components/events/EventsCalendar';
 import EventDetail from './components/events/EventDetail';
 import EventResults from './components/events/EventResults';
+// Stables components
+import StablesList from './components/stables/StablesList';
+import StableDetail from './components/stables/StableDetail';
+import MyStable from './components/stables/MyStable';
+// Tag Teams components
+import TagTeamsList from './components/tagTeams/TagTeamsList';
+import TagTeamDetail from './components/tagTeams/TagTeamDetail';
+import MyTagTeam from './components/tagTeams/MyTagTeam';
 // Profile components
 import WrestlerProfile from './components/profile/WrestlerProfile';
 // Route guard
@@ -204,6 +212,36 @@ function AppLayout() {
             <Route path="/events" element={<EventsCalendar />} />
             <Route path="/events/:eventId" element={<EventDetail />} />
             <Route path="/events/:eventId/results" element={<EventResults />} />
+
+            {/* Stables Routes - feature-gated */}
+            <Route path="/stables" element={
+              <FeatureRoute feature="stables"><StablesList /></FeatureRoute>
+            } />
+            <Route path="/stables/:stableId" element={
+              <FeatureRoute feature="stables"><StableDetail /></FeatureRoute>
+            } />
+            <Route path="/my-stable" element={
+              <FeatureRoute feature="stables">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <MyStable />
+                </ProtectedRoute>
+              </FeatureRoute>
+            } />
+
+            {/* Tag Teams Routes - feature-gated */}
+            <Route path="/tag-teams" element={
+              <FeatureRoute feature="stables"><TagTeamsList /></FeatureRoute>
+            } />
+            <Route path="/tag-teams/:tagTeamId" element={
+              <FeatureRoute feature="stables"><TagTeamDetail /></FeatureRoute>
+            } />
+            <Route path="/my-tag-team" element={
+              <FeatureRoute feature="stables">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <MyTagTeam />
+                </ProtectedRoute>
+              </FeatureRoute>
+            } />
 
             {/* Contender Routes - feature-gated */}
             <Route path="/contenders" element={
