@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tagTeamsApi } from '../../services/api/tagTeams.api';
+import { playersApi } from '../../services/api';
+import type { Player } from '../../types';
 import type { TagTeam, TagTeamStatus } from '../../types/tagTeam';
 import './ManageTagTeams.css';
 
@@ -9,6 +11,7 @@ const ALL_STATUSES: TagTeamStatus[] = ['pending_partner', 'pending_admin', 'acti
 export default function ManageTagTeams() {
   const { t } = useTranslation();
   const [tagTeams, setTagTeams] = useState<TagTeam[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<TagTeamStatus | 'all'>('all');
@@ -18,8 +21,12 @@ export default function ManageTagTeams() {
   const loadTagTeams = useCallback(async () => {
     try {
       setError(null);
-      const data = await tagTeamsApi.getAll();
+      const [data, playersData] = await Promise.all([
+        tagTeamsApi.getAll(),
+        playersApi.getAll(),
+      ]);
       setTagTeams(data);
+      setPlayers(playersData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tag teams');
     } finally {
@@ -121,6 +128,15 @@ export default function ManageTagTeams() {
     return new Date(dateStr).toLocaleDateString();
   };
 
+  const formatPlayer = (playerId: string) => {
+    const player = players.find((p) => p.playerId === playerId);
+    if (!player) return playerId;
+    const parts = [player.name];
+    if (player.currentWrestler) parts.push(player.currentWrestler);
+    if (player.psnId) parts.push(player.psnId);
+    return parts.join(' / ');
+  };
+
   if (loading) {
     return (
       <div className="admin-tagteams">
@@ -196,10 +212,10 @@ export default function ManageTagTeams() {
                   <span className="admin-tagteams-name">{tagTeam.name}</span>
                 </td>
                 <td>
-                  <span className="admin-tagteams-player">{tagTeam.player1Id}</span>
+                  <span className="admin-tagteams-player">{formatPlayer(tagTeam.player1Id)}</span>
                 </td>
                 <td>
-                  <span className="admin-tagteams-player">{tagTeam.player2Id}</span>
+                  <span className="admin-tagteams-player">{formatPlayer(tagTeam.player2Id)}</span>
                 </td>
                 <td>
                   <span className={`tagteams-status-badge ${tagTeam.status.replace('_', '-')}`}>
