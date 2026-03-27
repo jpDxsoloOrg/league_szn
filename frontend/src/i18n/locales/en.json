@@ -1174,7 +1174,12 @@
       "response": "response",
       "responses": "responses",
       "ago": "ago",
-      "pinned": "Pinned"
+      "pinned": "Pinned",
+      "acceptChallenge": "Accept Challenge",
+      "accepting": "Accepting...",
+      "challengeAccepted": "Challenge Accepted!",
+      "viewChallenge": "View Challenge",
+      "challengeNotFound": "Challenge not found"
     },
     "thread": {
       "title": "Promo Thread",

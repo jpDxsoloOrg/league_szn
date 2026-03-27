@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { PromoWithContext, PromoType } from '../../types/promo';
+import { useAuth } from '../../contexts/AuthContext';
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import { challengesApi } from '../../services/api';
 import PromoReactions from './PromoReactions';
 import './PromoCard.css';
 
@@ -55,6 +59,38 @@ function highlightMentions(content: string): (string | JSX.Element)[] {
 
 export default function PromoCard({ promo, compact = false, onReact }: PromoCardProps) {
   const { t } = useTranslation();
+  const { playerId } = useAuth();
+  const { features } = useSiteConfig();
+  const [acceptingChallenge, setAcceptingChallenge] = useState(false);
+  const [challengeAccepted, setChallengeAccepted] = useState(false);
+  const [challengeError, setChallengeError] = useState<string | null>(null);
+
+  const isTargetOfCallOut =
+    features.challenges &&
+    promo.promoType === 'call-out' &&
+    promo.targetPlayerId &&
+    playerId &&
+    promo.targetPlayerId === playerId;
+
+  const handleAcceptChallenge = async () => {
+    if (!playerId) return;
+    setAcceptingChallenge(true);
+    setChallengeError(null);
+    try {
+      const challenges = await challengesApi.getAll({ status: 'pending', playerId });
+      const match = challenges.find((c) => c.challengerId === promo.playerId);
+      if (!match) {
+        setChallengeError(t('promos.card.challengeNotFound', 'Challenge not found'));
+        return;
+      }
+      await challengesApi.respond(match.challengeId, 'accept');
+      setChallengeAccepted(true);
+    } catch {
+      setChallengeError(t('promos.card.challengeNotFound', 'Challenge not found'));
+    } finally {
+      setAcceptingChallenge(false);
+    }
+  };
 
   return (
     <div className={`promo-card ${promo.isPinned ? 'pinned' : ''} ${compact ? 'compact' : ''}`}>
@@ -101,6 +137,34 @@ export default function PromoCard({ promo, compact = false, onReact }: PromoCard
         <div className="promo-target">
           <span className="target-label">{t('promos.card.callingOut', 'Calling out')}</span>
           <span className="target-name">{promo.targetWrestlerName}</span>
+        </div>
+      )}
+
+      {isTargetOfCallOut && (
+        <div className="promo-challenge-actions">
+          {challengeAccepted ? (
+            <span className="promo-challenge-accepted">
+              {t('promos.card.challengeAccepted', 'Challenge Accepted!')}
+            </span>
+          ) : (
+            <>
+              <button
+                className="promo-accept-challenge-btn"
+                onClick={handleAcceptChallenge}
+                disabled={acceptingChallenge}
+              >
+                {acceptingChallenge
+                  ? t('promos.card.accepting', 'Accepting...')
+                  : t('promos.card.acceptChallenge', 'Accept Challenge')}
+              </button>
+              <Link to="/challenges" className="promo-view-challenge-link">
+                {t('promos.card.viewChallenge', 'View Challenge')}
+              </Link>
+            </>
+          )}
+          {challengeError && (
+            <span className="promo-challenge-error">{challengeError}</span>
+          )}
         </div>
       )}
 

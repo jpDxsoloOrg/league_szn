@@ -1173,7 +1173,12 @@
       "response": "Antwort",
       "responses": "Antworten",
       "ago": "her",
-      "pinned": "Angepinnt"
+      "pinned": "Angepinnt",
+      "acceptChallenge": "Herausforderung annehmen",
+      "accepting": "Wird angenommen...",
+      "challengeAccepted": "Herausforderung angenommen!",
+      "viewChallenge": "Herausforderung ansehen",
+      "challengeNotFound": "Herausforderung nicht gefunden"
     },
     "thread": {
       "title": "Promo-Thread",
