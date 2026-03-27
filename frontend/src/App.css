@@ -74,7 +74,7 @@ h2 {
 
 /* Fallback for buttons without explicit variant (e.g. legacy markup in main content only) */
 /* Exclude nav/sidebar/topnav/language/hamburger so their own styles (e.g. gold text on dark) apply */
-button:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggle):not(.nav-subgroup-toggle):not(.user-nav-toggle):not(.topnav-menu-btn):not(.topnav-logout):not(.topnav-layout-btn):not(.top-bar-layout-toggle):not(.hamburger-btn):not(.language-switcher-btn):not(.promo-type-option):not(.preview-toggle):not(.cancel-btn):not(.filter-tab):not(.stables-toggle-btn):not(.tag-teams-list__toggle-btn):not(.tag-team-mode-btn):not(.remove-team-btn):not(.remove-member-btn):not(.add-team-btn):not(.delete-match-btn) {
+button:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggle):not(.nav-subgroup-toggle):not(.user-nav-toggle):not(.topnav-menu-btn):not(.topnav-logout):not(.topnav-layout-btn):not(.top-bar-layout-toggle):not(.hamburger-btn):not(.language-switcher-btn):not(.promo-type-option):not(.preview-toggle):not(.cancel-btn):not(.filter-tab):not(.stables-toggle-btn):not(.tag-teams-list__toggle-btn):not(.tag-team-mode-btn):not(.remove-team-btn):not(.remove-member-btn):not(.add-team-btn):not(.delete-match-btn):not(.notification-bell-btn):not(.notification-mark-all-btn):not(.notification-item) {
   background-color: var(--color-primary);
   color: #000;
   border: none;
@@ -86,7 +86,7 @@ button:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggl
   transition: background-color 0.3s;
 }
 
-button:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggle):not(.nav-subgroup-toggle):not(.user-nav-toggle):not(.topnav-menu-btn):not(.topnav-logout):not(.topnav-layout-btn):not(.top-bar-layout-toggle):not(.hamburger-btn):not(.language-switcher-btn):not(.promo-type-option):not(.preview-toggle):not(.cancel-btn):not(.filter-tab):not(.stables-toggle-btn):not(.tag-teams-list__toggle-btn):not(.tag-team-mode-btn):not(.remove-team-btn):not(.remove-member-btn):not(.add-team-btn):not(.delete-match-btn):hover {
+button:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggle):not(.nav-subgroup-toggle):not(.user-nav-toggle):not(.topnav-menu-btn):not(.topnav-logout):not(.topnav-layout-btn):not(.top-bar-layout-toggle):not(.hamburger-btn):not(.language-switcher-btn):not(.promo-type-option):not(.preview-toggle):not(.cancel-btn):not(.filter-tab):not(.stables-toggle-btn):not(.tag-teams-list__toggle-btn):not(.tag-team-mode-btn):not(.remove-team-btn):not(.remove-member-btn):not(.add-team-btn):not(.delete-match-btn):not(.notification-bell-btn):not(.notification-mark-all-btn):not(.notification-item):hover {
   background-color: var(--color-primary-hover);
 }
 
