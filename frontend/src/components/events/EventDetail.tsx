@@ -243,7 +243,7 @@ export default function EventDetail() {
                       key={match.matchId}
                       match={match}
                       isCompleted={match.matchData?.status === 'completed'}
-                      t={t}
+
                     />
                   ))}
                 </div>
@@ -264,7 +264,7 @@ export default function EventDetail() {
                       key={match.matchId}
                       match={match}
                       isCompleted={match.matchData?.status === 'completed'}
-                      t={t}
+
                     />
                   ))}
                 </div>
@@ -300,10 +300,9 @@ interface MatchEntryProps {
       status: 'scheduled' | 'completed';
       starRating?: number;
       matchOfTheNight?: boolean;
-    };
+    } | null;
   };
   isCompleted: boolean;
-  t: (key: string) => string;
 }
 
 function matchStarsDisplay(rating: number): string {
@@ -314,10 +313,27 @@ function matchStarsDisplay(rating: number): string {
   return stars.join('');
 }
 
-function MatchEntry({ match, isCompleted, t }: MatchEntryProps) {
+function MatchEntry({ match, isCompleted }: MatchEntryProps) {
+  const { t } = useTranslation();
   const { designation, matchData } = match;
   const desColor = designationColors[designation];
   const isMainEvent = designation === 'main-event';
+
+  if (!matchData) {
+    return (
+      <div className={`match-entry ${isMainEvent ? 'main-event-match' : ''}`}>
+        <div className="match-entry-header">
+          <span
+            className="match-designation-badge"
+            style={{ backgroundColor: desColor }}
+          >
+            {t(designationLabels[designation])}
+          </span>
+          <span className="match-type-label">{t('events.detail.matchTBA', 'Match TBA')}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`match-entry ${isMainEvent ? 'main-event-match' : ''}`}>
