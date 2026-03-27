@@ -95,10 +95,6 @@
     "fillRequired": "Bitte fülle mindestens ein Feld aus.",
     "saveFailed": "Speichern fehlgeschlagen. Bitte versuche es erneut."
   },
-  "announcements": {
-    "dontShowAgain": "Nicht mehr anzeigen",
-    "counter": "{{current}} von {{total}}"
-  },
   "emptyState": {
     "checkBackSoon": "Schau bald wieder vorbei",
     "createFirstChampionship": "Erstelle deine erste Meisterschaft",
@@ -484,7 +480,9 @@
       "active": "Aktiv",
       "inactive": "Inaktiv",
       "expired": "Abgelaufen"
-    }
+    },
+    "dontShowAgain": "Nicht mehr anzeigen",
+    "counter": "{{current}} von {{total}}"
   },
   "seasonAwards": {
     "title": "Saison-Auszeichnungen",

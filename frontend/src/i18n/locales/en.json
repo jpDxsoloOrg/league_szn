@@ -95,10 +95,6 @@
     "fillRequired": "Please fill in at least one field.",
     "saveFailed": "Failed to save. Please try again."
   },
-  "announcements": {
-    "dontShowAgain": "Don't show again",
-    "counter": "{{current}} of {{total}}"
-  },
   "emptyState": {
     "checkBackSoon": "Check back soon",
     "createFirstChampionship": "Create your first championship",
@@ -484,7 +480,9 @@
       "active": "Active",
       "inactive": "Inactive",
       "expired": "Expired"
-    }
+    },
+    "dontShowAgain": "Don't show again",
+    "counter": "{{current}} of {{total}}"
   },
   "seasonAwards": {
     "title": "Season Awards",
