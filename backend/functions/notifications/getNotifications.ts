@@ -21,7 +21,7 @@ interface AppNotification {
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const auth = getAuthContext(event);
-    if (!hasRole(auth, 'Wrestler')) {
+    if (!hasRole(auth, 'Fantasy')) {
       return forbidden('You do not have permission to perform this action');
     }
 

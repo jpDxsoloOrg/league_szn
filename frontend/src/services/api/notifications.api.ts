@@ -30,7 +30,7 @@ export const notificationsApi = {
   },
 
   markAllRead: async (): Promise<void> => {
-    await fetchWithAuth(`${API_BASE_URL}/notifications/read-all`, {
+    await fetchWithAuth(`${API_BASE_URL}/notifications/mark-all-read`, {
       method: 'PUT',
     });
   },

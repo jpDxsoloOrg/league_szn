@@ -51,7 +51,7 @@ function getNavigationPath(sourceType: AppNotification['sourceType']): string {
 export default function NotificationBell() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isAuthenticated, isWrestler, isAdminOrModerator } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { features } = useSiteConfig();
 
   const [unreadCount, setUnreadCount] = useState(0);
@@ -62,7 +62,7 @@ export default function NotificationBell() {
   const bellRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const shouldShow = isAuthenticated && features.notifications && (isWrestler || isAdminOrModerator);
+  const shouldShow = isAuthenticated && features.notifications;
 
   const fetchUnreadCount = useCallback(async (signal?: AbortSignal) => {
     try {
