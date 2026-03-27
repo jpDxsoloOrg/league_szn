@@ -170,24 +170,26 @@ export default function ContenderRankings() {
         <p className="subtitle">{t('contenders.subtitle')}</p>
       </header>
 
-      {/* Championship Selector Tabs — grouped by division */}
-      <div className="championship-tabs">
+      {/* Championship Selector — grouped by division */}
+      <div className="championship-selector">
         {championshipsByDivision.map((group) => (
           <div key={group.divisionId || 'open'} className="division-group">
             {championshipsByDivision.length > 1 && (
               <span className="division-label">{group.divisionName}</span>
             )}
-            {group.championships.map((championship) => (
-              <button
-                key={championship.championshipId}
-                className={`tab ${
-                  selectedChampionshipId === championship.championshipId ? 'active' : ''
-                }`}
-                onClick={() => setSelectedChampionshipId(championship.championshipId)}
-              >
-                {championship.name}
-              </button>
-            ))}
+            <div className="division-buttons">
+              {group.championships.map((championship) => (
+                <button
+                  key={championship.championshipId}
+                  className={`tab ${
+                    selectedChampionshipId === championship.championshipId ? 'active' : ''
+                  }`}
+                  onClick={() => setSelectedChampionshipId(championship.championshipId)}
+                >
+                  {championship.name}
+                </button>
+              ))}
+            </div>
           </div>
         ))}
       </div>
