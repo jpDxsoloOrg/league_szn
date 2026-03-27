@@ -28,6 +28,10 @@ const FEATURE_LABELS: Record<keyof SiteFeatures, { name: string; description: st
     name: 'Stables & Tag Teams',
     description: 'Stables, tag teams, group standings, and invitation system',
   },
+  notifications: {
+    name: 'Notifications',
+    description: 'Announcements banner and in-app notification bell for users',
+  },
 };
 
 export default function ManageFeatures() {

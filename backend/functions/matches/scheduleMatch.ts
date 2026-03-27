@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { created, badRequest, notFound, serverError } from '../../lib/response';
+import { createNotifications } from '../../lib/notifications';
 import { parseBody } from '../../lib/parseBody';
 
 interface ScheduleMatchBody {
@@ -234,6 +235,27 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           },
         });
       }
+    }
+
+    // Notify all participants who have linked user accounts
+    const notificationParams = playerResults
+      .filter((p) => {
+        const playerRecord = p.player as Record<string, unknown> | undefined;
+        return playerRecord?.userId;
+      })
+      .map((p) => {
+        const playerRecord = p.player as Record<string, unknown>;
+        return {
+          userId: playerRecord.userId as string,
+          type: 'match_scheduled' as const,
+          message: `You've been scheduled in a ${body.matchFormat} match`,
+          sourceId: match.matchId as string,
+          sourceType: 'match' as const,
+        };
+      });
+
+    if (notificationParams.length > 0) {
+      await createNotifications(notificationParams);
     }
 
     return created(match);

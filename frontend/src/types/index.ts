@@ -290,64 +290,27 @@ export interface ActivityFeedResponse {
   nextCursor: string | null;
 }
 
-// Dashboard types
-export interface DashboardChampion {
-  championshipId: string;
-  championshipName: string;
-  championName: string;
-  championImageUrl?: string;
-  playerId: string;
-  wonDate?: string;
-  defenses?: number;
+export interface Announcement {
+  announcementId: string;
+  title: string;
+  body: string;          // HTML content
+  createdBy: string;
+  isActive: boolean;
+  priority: number;      // 1=low, 2=medium, 3=high
+  expiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface DashboardEvent {
-  eventId: string;
-  name: string;
-  date: string;
-  eventType: string;
-  venue?: string;
-  matchCount?: number;
-}
+export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement';
 
-export interface DashboardMatch {
-  matchId: string;
-  date: string;
-  matchType: string;
-  stipulation?: string;
-  isChampionship?: boolean;
-  championshipName?: string;
-  championshipImageUrl?: string;
-  starRating?: number;
-  matchOfTheNight?: boolean;
-  winnerName: string;
-  winnerImageUrl?: string;
-  loserName: string;
-  loserImageUrl?: string;
-  eventId?: string;
-}
-
-export interface DashboardSeason {
-  seasonId: string;
-  name: string;
-  startDate?: string;
-  endDate?: string;
-  status: string;
-  matchesPlayed?: number;
-}
-
-export interface DashboardQuickStats {
-  totalPlayers: number;
-  totalMatches: number;
-  activeChampionships: number;
-  mostWinsPlayer?: { name: string; wins: number };
-}
-
-export interface DashboardData {
-  currentChampions: DashboardChampion[];
-  upcomingEvents: DashboardEvent[];
-  recentResults: DashboardMatch[];
-  seasonInfo: DashboardSeason | null;
-  quickStats: DashboardQuickStats;
-  activeChallengesCount: number;
+export interface AppNotification {
+  notificationId: string;
+  userId: string;
+  type: NotificationType;
+  message: string;
+  sourceId: string;
+  sourceType: 'promo' | 'challenge' | 'match' | 'announcement';
+  isRead: boolean;
+  createdAt: string;
 }

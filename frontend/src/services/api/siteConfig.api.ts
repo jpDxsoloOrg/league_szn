@@ -7,6 +7,7 @@ export interface SiteFeatures {
   contenders: boolean;
   statistics: boolean;
   stables: boolean;
+  notifications: boolean;
 }
 
 export const siteConfigApi = {
