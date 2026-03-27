@@ -34,6 +34,8 @@ function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
     case 'challenge': return 'notifications.typeChallenge';
     case 'match': return 'notifications.typeMatch';
     case 'announcement': return 'notifications.typeAnnouncement';
+    case 'stable': return 'notifications.typeStable';
+    case 'tag_team': return 'notifications.typeTagTeam';
     default: return 'notifications.typeAnnouncement';
   }
 }
@@ -47,6 +49,8 @@ function getNavigationPath(notification: AppNotification, playerId: string | nul
       if (playerId) params.set('playerId', playerId);
       return `/matches?${params.toString()}`;
     }
+    case 'stable': return '/my-stable';
+    case 'tag_team': return '/my-tag-team';
     case 'announcement': return '/';
     default: return '/';
   }
@@ -151,16 +155,6 @@ export default function NotificationBell() {
     setIsOpen(prev => !prev);
   }, []);
 
-  const handleMarkAllRead = useCallback(async () => {
-    try {
-      await notificationsApi.markAllRead();
-      setUnreadCount(0);
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-    } catch {
-      // Silently ignore
-    }
-  }, []);
-
   const handleNotificationClick = useCallback(async (notification: AppNotification) => {
     if (!notification.isRead) {
       try {
@@ -186,15 +180,6 @@ export default function NotificationBell() {
       if (!notification.isRead) {
         setUnreadCount(prev => Math.max(0, prev - 1));
       }
-    } catch {
-      // Silently ignore
-    }
-  }, []);
-
-  const handleDeleteAllRead = useCallback(async () => {
-    try {
-      await notificationsApi.deleteAllRead();
-      setNotifications(prev => prev.filter(n => !n.isRead));
     } catch {
       // Silently ignore
     }
@@ -236,26 +221,6 @@ export default function NotificationBell() {
         <div className="notification-dropdown">
           <div className="notification-dropdown-header">
             <span className="notification-dropdown-title">{t('notifications.title')}</span>
-            <div className="notification-header-actions">
-              {unreadCount > 0 && (
-                <button
-                  type="button"
-                  className="notification-header-btn"
-                  onClick={handleMarkAllRead}
-                >
-                  {t('notifications.markAllRead')}
-                </button>
-              )}
-              {notifications.some(n => n.isRead) && (
-                <button
-                  type="button"
-                  className="notification-header-btn notification-delete-read-btn"
-                  onClick={handleDeleteAllRead}
-                >
-                  {t('notifications.deleteAllRead')}
-                </button>
-              )}
-            </div>
           </div>
 
           <div className="notification-dropdown-list">

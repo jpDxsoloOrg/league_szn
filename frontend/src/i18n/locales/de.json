@@ -1447,6 +1447,8 @@
     "typeMatch": "Match",
     "typeAnnouncement": "Ankündigung",
     "delete": "Benachrichtigung löschen",
-    "deleteAllRead": "Gelesene löschen"
+    "deleteAllRead": "Gelesene löschen",
+    "typeStable": "Stable",
+    "typeTagTeam": "Tag Team"
   }
 }

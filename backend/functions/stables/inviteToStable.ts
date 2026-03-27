@@ -3,6 +3,7 @@ import { dynamoDb, TableNames, getOrNotFound } from '../../lib/dynamodb';
 import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import { createNotification } from '../../lib/notifications';
 import { v4 as uuidv4 } from 'uuid';
 
 interface InviteBody {
@@ -13,6 +14,7 @@ interface InviteBody {
 interface StableRecord {
   [key: string]: unknown;
   stableId: string;
+  name: string;
   leaderId: string;
   memberIds: string[];
   status: string;
@@ -21,7 +23,9 @@ interface StableRecord {
 interface PlayerRecord {
   [key: string]: unknown;
   playerId: string;
+  name: string;
   stableId?: string;
+  userId?: string;
 }
 
 const MAX_STABLE_MEMBERS = 6;
@@ -141,6 +145,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       TableName: TableNames.STABLE_INVITATIONS,
       Item: invitation,
     });
+
+    // Notify the invited player
+    if (invitedPlayer.userId) {
+      await createNotification({
+        userId: invitedPlayer.userId,
+        type: 'stable_invitation',
+        message: `You've been invited to join ${stable.name}`,
+        sourceId: invitation.invitationId,
+        sourceType: 'stable',
+      });
+    }
 
     return created(invitation);
   } catch (err) {

@@ -5,9 +5,11 @@ export type NotificationType =
   | 'promo_mention'
   | 'challenge_received'
   | 'match_scheduled'
-  | 'announcement';
+  | 'announcement'
+  | 'stable_invitation'
+  | 'tag_team_invitation';
 
-export type NotificationSourceType = 'promo' | 'challenge' | 'match' | 'announcement';
+export type NotificationSourceType = 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team';
 
 export interface CreateNotificationParams {
   userId: string;

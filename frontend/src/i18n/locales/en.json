@@ -1448,6 +1448,8 @@
     "typeMatch": "Match",
     "typeAnnouncement": "Announcement",
     "delete": "Delete notification",
-    "deleteAllRead": "Delete read"
+    "deleteAllRead": "Delete read",
+    "typeStable": "Stable",
+    "typeTagTeam": "Tag Team"
   }
 }
