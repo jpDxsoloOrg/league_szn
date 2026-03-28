@@ -96,6 +96,29 @@
   border: 1px solid;
 }
 
+.event-status-select {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: 1px solid;
+  background: transparent;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.event-status-select:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.event-status-select option {
+  background: #2d2d2d;
+  color: #bbb;
+}
+
 .event-detail-info {
   display: flex;
   flex-direction: column;

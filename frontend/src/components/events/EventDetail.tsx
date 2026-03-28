@@ -45,6 +45,20 @@ export default function EventDetail() {
   const [eventData, setEventData] = useState<EventWithMatches | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!eventData || !eventId || newStatus === eventData.status) return;
+    setUpdatingStatus(true);
+    try {
+      await eventsApi.update(eventId, { status: newStatus as 'upcoming' | 'in-progress' | 'completed' | 'cancelled' });
+      setEventData({ ...eventData, status: newStatus as EventWithMatches['status'] });
+    } catch (err) {
+      console.error('Failed to update event status:', err);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   useEffect(() => {
     if (!eventId) return;
@@ -149,12 +163,27 @@ export default function EventDetail() {
             >
               {t(`events.types.${eventData.eventType}`)}
             </span>
-            <span
-              className="event-detail-status-badge"
-              style={{ color: statusColor, borderColor: statusColor }}
-            >
-              {t(`events.status.${eventData.status}`)}
-            </span>
+            {isAdminOrModerator ? (
+              <select
+                className="event-status-select"
+                value={eventData.status}
+                onChange={(e) => handleStatusChange(e.target.value)}
+                disabled={updatingStatus}
+                style={{ color: statusColor, borderColor: statusColor }}
+              >
+                <option value="upcoming">{t('events.status.upcoming')}</option>
+                <option value="in-progress">{t('events.status.in-progress')}</option>
+                <option value="completed">{t('events.status.completed')}</option>
+                <option value="cancelled">{t('events.status.cancelled')}</option>
+              </select>
+            ) : (
+              <span
+                className="event-detail-status-badge"
+                style={{ color: statusColor, borderColor: statusColor }}
+              >
+                {t(`events.status.${eventData.status}`)}
+              </span>
+            )}
           </div>
         </div>
 
@@ -243,7 +272,7 @@ export default function EventDetail() {
                       key={match.matchId}
                       match={match}
                       isCompleted={match.matchData?.status === 'completed'}
-                      t={t}
+
                     />
                   ))}
                 </div>
@@ -264,7 +293,7 @@ export default function EventDetail() {
                       key={match.matchId}
                       match={match}
                       isCompleted={match.matchData?.status === 'completed'}
-                      t={t}
+
                     />
                   ))}
                 </div>
@@ -300,10 +329,9 @@ interface MatchEntryProps {
       status: 'scheduled' | 'completed';
       starRating?: number;
       matchOfTheNight?: boolean;
-    };
+    } | null;
   };
   isCompleted: boolean;
-  t: (key: string) => string;
 }
 
 function matchStarsDisplay(rating: number): string {
@@ -314,10 +342,27 @@ function matchStarsDisplay(rating: number): string {
   return stars.join('');
 }
 
-function MatchEntry({ match, isCompleted, t }: MatchEntryProps) {
+function MatchEntry({ match, isCompleted }: MatchEntryProps) {
+  const { t } = useTranslation();
   const { designation, matchData } = match;
   const desColor = designationColors[designation];
   const isMainEvent = designation === 'main-event';
+
+  if (!matchData) {
+    return (
+      <div className={`match-entry ${isMainEvent ? 'main-event-match' : ''}`}>
+        <div className="match-entry-header">
+          <span
+            className="match-designation-badge"
+            style={{ backgroundColor: desColor }}
+          >
+            {t(designationLabels[designation])}
+          </span>
+          <span className="match-type-label">{t('events.detail.matchTBA', 'Match TBA')}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`match-entry ${isMainEvent ? 'main-event-match' : ''}`}>

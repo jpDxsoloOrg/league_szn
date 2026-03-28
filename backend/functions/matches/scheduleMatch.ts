@@ -158,6 +158,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       status: 'scheduled',
       createdAt: now,
     };
+    if (body.eventId) match.eventId = body.eventId;
     if (body.teams && body.teams.length > 0) match.teams = body.teams;
     if (body.challengeId) match.challengeId = body.challengeId;
     if (body.promoId) match.promoId = body.promoId;

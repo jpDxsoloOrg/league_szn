@@ -198,15 +198,15 @@
   color: #f87171;
 }
 
-/* Form dots */
-.form-dots {
+/* Form dots (scoped to public-profile to avoid overriding Standings dots) */
+.public-profile .form-dots {
   display: flex;
   gap: 0.375rem;
   justify-content: center;
   margin-top: 0.5rem;
 }
 
-.form-dot {
+.public-profile .form-dot {
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -217,19 +217,19 @@
   font-size: 0.75rem;
 }
 
-.form-dot.win {
+.public-profile .form-dot.win {
   background-color: #065f46;
   color: #a7f3d0;
   border: 1px solid #059669;
 }
 
-.form-dot.loss {
+.public-profile .form-dot.loss {
   background-color: #7f1d1d;
   color: #fecaca;
   border: 1px solid #991b1b;
 }
 
-.form-dot.draw {
+.public-profile .form-dot.draw {
   background-color: #78350f;
   color: #fde68a;
   border: 1px solid #b45309;
