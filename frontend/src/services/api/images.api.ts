@@ -22,7 +22,7 @@ export const imagesApi = {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to upload file');
+      throw new Error('Failed to upload image');
     }
   },
 
