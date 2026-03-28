@@ -102,6 +102,8 @@ export default function AnnouncementModal() {
             <video
               src={current.videoUrl}
               controls
+              playsInline
+              preload="metadata"
               className="announcement-video-player"
             >
               Your browser does not support the video tag.

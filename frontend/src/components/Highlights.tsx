@@ -13,7 +13,6 @@ export default function Highlights() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<VideoCategory | 'all'>('all');
-  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
 
   const loadVideos = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -34,10 +33,6 @@ export default function Highlights() {
     loadVideos(controller.signal);
     return () => controller.abort();
   }, [loadVideos]);
-
-  const handlePlay = (videoId: string) => {
-    setPlayingVideoId(playingVideoId === videoId ? null : videoId);
-  };
 
   return (
     <div className="highlights-page">
@@ -70,40 +65,17 @@ export default function Highlights() {
         <div className="highlights-grid">
           {videos.map((video) => (
             <div key={video.videoId} className="highlight-card">
-              <div
-                className="highlight-preview"
-                onClick={() => handlePlay(video.videoId)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') handlePlay(video.videoId);
-                }}
-              >
-                {playingVideoId === video.videoId ? (
-                  <video
-                    src={video.videoUrl}
-                    controls
-                    autoPlay
-                    className="highlight-video"
-                  >
-                    {t('highlights.videoNotSupported')}
-                  </video>
-                ) : (
-                  <>
-                    {video.thumbnailUrl ? (
-                      <img
-                        src={video.thumbnailUrl}
-                        alt={video.title}
-                        className="highlight-thumbnail"
-                      />
-                    ) : (
-                      <div className="highlight-placeholder" />
-                    )}
-                    <div className="play-overlay">
-                      <span className="play-icon">&#9654;</span>
-                    </div>
-                  </>
-                )}
+              <div className="highlight-preview">
+                <video
+                  src={video.videoUrl}
+                  poster={video.thumbnailUrl || undefined}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="highlight-video"
+                >
+                  {t('highlights.videoNotSupported')}
+                </video>
               </div>
               <div className="highlight-info">
                 <h3>{video.title}</h3>
