@@ -165,7 +165,7 @@ export default function ManagePlayers() {
           currentWrestler: sanitizedWrestler,
           alternateWrestler: formData.alternateWrestler.trim() || undefined,
           imageUrl: imageUrl || undefined,
-          divisionId: formData.divisionId || undefined,
+          divisionId: formData.divisionId || '',
           psnId: formData.psnId.trim() || undefined,
         });
       } else {
