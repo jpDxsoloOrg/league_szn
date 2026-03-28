@@ -249,7 +249,7 @@ export default function EditMatch() {
     return player ? player.name : t('common.unknown');
   };
 
-  const filteredPlayers = divisionFilter === 'all'
+  const filteredPlayers = !divisionFilter || divisionFilter === 'all'
     ? players
     : divisionFilter === 'none'
       ? players.filter(p => !p.divisionId)
