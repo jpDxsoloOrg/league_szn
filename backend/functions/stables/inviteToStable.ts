@@ -107,10 +107,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Check for existing pending invitation for this player+stable
     const existingInvitations = await dynamoDb.scanAll({
       TableName: TableNames.STABLE_INVITATIONS,
-      FilterExpression: '#stableId = :stableId AND #playerId = :playerId AND #status = :pending',
+      FilterExpression: '#stableId = :stableId AND #invitedPlayerId = :playerId AND #status = :pending',
       ExpressionAttributeNames: {
         '#stableId': 'stableId',
-        '#playerId': 'playerId',
+        '#invitedPlayerId': 'invitedPlayerId',
         '#status': 'status',
       },
       ExpressionAttributeValues: {
@@ -131,9 +131,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const invitation = {
       invitationId: uuidv4(),
       stableId,
-      stableName: stable.stableId, // store name for convenience
-      playerId,
-      invitedBy: stable.leaderId,
+      stableName: stable.name,
+      invitedPlayerId: playerId,
+      invitedByPlayerId: stable.leaderId,
       message: message || undefined,
       status: 'pending',
       expiresAt: expiresAt.toISOString(),

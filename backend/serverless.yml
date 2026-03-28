@@ -853,7 +853,12 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
       - http:
-          path: stables/{stableId}/invite
+          path: stables/{stableId}/invitations
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: stables/{stableId}/invitations
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer

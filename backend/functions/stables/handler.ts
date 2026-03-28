@@ -6,6 +6,7 @@ import { handler as updateStableHandler } from './updateStable';
 import { handler as approveStableHandler } from './approveStable';
 import { handler as rejectStableHandler } from './rejectStable';
 import { handler as inviteToStableHandler } from './inviteToStable';
+import { handler as getInvitationsHandler } from './getInvitations';
 import { handler as respondToInvitationHandler } from './respondToInvitation';
 import { handler as disbandStableHandler } from './disbandStable';
 import { handler as removeMemberHandler } from './removeMember';
@@ -52,7 +53,12 @@ const routes: ReadonlyArray<RouteConfig> = [
     handler: rejectStableHandler,
   },
   {
-    resource: '/stables/{stableId}/invite',
+    resource: '/stables/{stableId}/invitations',
+    method: 'GET',
+    handler: getInvitationsHandler,
+  },
+  {
+    resource: '/stables/{stableId}/invitations',
     method: 'POST',
     handler: inviteToStableHandler,
   },
