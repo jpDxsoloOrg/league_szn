@@ -1,30 +1,19 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi, stipulationsApi, matchTypesApi, tagTeamsApi, divisionsApi } from '../../services/api';
-import type { Player, Championship, Tournament, Season, Stipulation, MatchType, Division } from '../../types';
+import type { Match, Player, Championship, Tournament, Season, Stipulation, MatchType, Division } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
 import type { LeagueEvent, MatchDesignation } from '../../types/event';
-import type { ChallengeWithPlayers } from '../../types/challenge';
-import type { PromoWithContext } from '../../types/promo';
 import SearchableSelect from './SearchableSelect';
 import Skeleton from '../ui/Skeleton';
 import './ScheduleMatch.css';
 
-type ScheduleLocationState = {
-  fromChallenge?: ChallengeWithPlayers;
-  fromPromo?: PromoWithContext;
-  fromEvent?: { eventId: string; name: string; date: string };
-};
-
-export default function ScheduleMatch() {
+export default function EditMatch() {
   const { t } = useTranslation();
-  const location = useLocation();
+  const { matchId } = useParams<{ matchId: string }>();
   const navigate = useNavigate();
-  const state = (location.state as ScheduleLocationState | undefined) ?? undefined;
-  const preFillApplied = useRef(false);
-  const [linkChallengeId, setLinkChallengeId] = useState<string | null>(null);
-  const [linkPromoId, setLinkPromoId] = useState<string | null>(null);
+  const [originalMatch, setOriginalMatch] = useState<Match | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -40,8 +29,8 @@ export default function ScheduleMatch() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const loadedRef = useRef(false);
 
-  // Tag team state: array of teams, each team is an array of player IDs
   const [teams, setTeams] = useState<string[][]>([[], []]);
 
   const [formData, setFormData] = useState({
@@ -57,14 +46,17 @@ export default function ScheduleMatch() {
   });
 
   useEffect(() => {
+    if (!matchId || loadedRef.current) return;
+    loadedRef.current = true;
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount to load options and apply pre-fill from location state
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [playersData, championshipsData, tournamentsData, seasonsData, eventsData, stipulationsData, matchTypesData, tagTeamsData, divisionsData] = await Promise.all([
+      const [allMatches, playersData, championshipsData, tournamentsData, seasonsData, eventsData, stipulationsData, matchTypesData, tagTeamsData, divisionsData] = await Promise.all([
+        matchesApi.getAll(),
         playersApi.getAll(),
         championshipsApi.getAll(),
         tournamentsApi.getAll(),
@@ -75,66 +67,67 @@ export default function ScheduleMatch() {
         tagTeamsApi.getAll({ status: 'active' }).catch(() => [] as TagTeam[]),
         divisionsApi.getAll(),
       ]);
+
       setPlayers(playersData);
       setChampionships(championshipsData);
-      setTournaments(tournamentsData.filter(t => t.status !== 'completed'));
+      setTournaments(tournamentsData);
       setSeasons(seasonsData);
-      setEvents(eventsData.filter(e => e.status === 'upcoming' || e.status === 'in-progress'));
+      setEvents(eventsData);
       setStipulations(stipulationsData);
       setMatchTypes(matchTypesData);
       setActiveTagTeams(tagTeamsData as (TagTeam & { player1Name?: string; player2Name?: string })[]);
       setDivisions(divisionsData);
-      // Default to first division if available
       const firstDivision = divisionsData[0];
       if (firstDivision) {
         setDivisionFilter(firstDivision.divisionId);
       }
 
-      // Set active season as default if one exists
-      const activeSeason = seasonsData.find(s => s.status === 'active');
-      if (activeSeason) {
-        setFormData(prev => ({ ...prev, seasonId: activeSeason.seasonId }));
+      // Find the match to edit
+      const match = allMatches.find(m => m.matchId === matchId);
+      if (!match) {
+        setError('Match not found');
+        setLoading(false);
+        return;
       }
 
-      // Pre-fill from event, challenge, or promo (once per navigation)
-      if (state && !preFillApplied.current) {
-        preFillApplied.current = true;
-        if (state.fromEvent) {
-          setFormData((prev) => ({
-            ...prev,
-            eventId: state.fromEvent!.eventId,
-          }));
-        }
-        if (state.fromChallenge) {
-          const ch = state.fromChallenge;
-          const matchFormat = matchTypesData.some((mt) => mt.name === ch.matchType)
-            ? ch.matchType
-            : matchTypesData[0]?.name ?? 'Singles';
-          const stipulationId = ch.stipulation
-            ? (stipulationsData.find((s) => s.name === ch.stipulation)?.stipulationId ?? '')
-            : '';
-          setFormData((prev) => ({
-            ...prev,
-            participants: [ch.challengerId, ch.challengedId],
-            matchFormat,
-            stipulationId,
-            championshipId: ch.championshipId ?? prev.championshipId,
-          }));
-          setLinkChallengeId(ch.challengeId);
-        } else if (state.fromPromo && state.fromPromo.targetPlayerId) {
-          const promo = state.fromPromo;
-          const targetId = promo.targetPlayerId;
-          const defaultFormat = matchTypesData.find((mt) => mt.name === 'Singles')?.name ?? matchTypesData[0]?.name ?? 'Singles';
-          setFormData((prev) => ({
-            ...prev,
-            participants: targetId ? [promo.playerId, targetId] : prev.participants,
-            matchFormat: defaultFormat,
-          }));
-          setLinkPromoId(promo.promoId);
+      if (match.status !== 'scheduled') {
+        setError('Only scheduled matches can be edited. Completed matches cannot be modified.');
+        setLoading(false);
+        return;
+      }
+
+      setOriginalMatch(match);
+
+      // Find event and designation from events
+      let matchEventId = '';
+      let matchDesignation: MatchDesignation = 'midcard';
+      for (const ev of eventsData) {
+        const card = (ev.matchCards || []).find(c => c.matchId === matchId);
+        if (card) {
+          matchEventId = ev.eventId;
+          matchDesignation = card.designation as MatchDesignation;
+          break;
         }
       }
+
+      // Pre-fill form with match data
+      setFormData({
+        matchFormat: match.matchFormat || '',
+        stipulationId: match.stipulationId || '',
+        participants: match.participants || [],
+        isChampionship: match.isChampionship || false,
+        championshipId: match.championshipId || '',
+        tournamentId: match.tournamentId || '',
+        seasonId: match.seasonId || '',
+        eventId: matchEventId,
+        designation: matchDesignation,
+      });
+
+      if (match.teams && match.teams.length >= 2) {
+        setTeams(match.teams);
+      }
     } catch (_err) {
-      setError('Failed to load data');
+      setError('Failed to load match data');
     } finally {
       setLoading(false);
     }
@@ -144,34 +137,23 @@ export default function ScheduleMatch() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (submitting) return; // Prevent double submission
+    if (submitting || !matchId) return;
 
     setError(null);
     setSuccess(null);
     setSubmitting(true);
 
-    // Resolve date: use event date if an event is selected, otherwise today
-    let matchDate: string;
-    if (formData.eventId) {
-      const selectedEvent = events.find(ev => ev.eventId === formData.eventId);
-      matchDate = selectedEvent?.date || new Date().toISOString();
-    } else {
-      matchDate = new Date().toISOString();
-    }
-
     if (isTagTeamMatch) {
-      // For tag team matches, validate teams
       const validTeams = teams.filter(team => team.length >= 2);
       if (validTeams.length < 2) {
         setError(t('scheduleMatch.tagTeam.minTeamsError'));
+        setSubmitting(false);
         return;
       }
-      // All participants are members of all teams combined
       const allParticipants = teams.flat();
 
       try {
-        await matchesApi.schedule({
-          date: matchDate,
+        await matchesApi.update(matchId, {
           matchFormat: formData.matchFormat,
           stipulationId: formData.stipulationId || undefined,
           participants: allParticipants,
@@ -182,36 +164,23 @@ export default function ScheduleMatch() {
           seasonId: formData.seasonId || undefined,
           eventId: formData.eventId || undefined,
           designation: formData.eventId ? formData.designation : undefined,
-          status: 'scheduled',
-          ...(linkChallengeId ? { challengeId: linkChallengeId } : {}),
-          ...(linkPromoId ? { promoId: linkPromoId } : {}),
         });
-
-        setSuccess(t('scheduleMatch.success'));
-        setLinkChallengeId(null);
-        setLinkPromoId(null);
-        preFillApplied.current = false;
-        if (state?.fromEvent) {
-          navigate(`/events/${state.fromEvent.eventId}`, { replace: true });
-        } else {
-          navigate('/admin/schedule', { replace: true, state: {} });
-        }
-        resetForm();
+        setSuccess('Match updated successfully');
+        setTimeout(() => navigate(-1), 1000);
       } catch (err) {
-        setError(err instanceof Error ? err.message : t('scheduleMatch.error'));
+        setError(err instanceof Error ? err.message : 'Failed to update match');
       } finally {
         setSubmitting(false);
       }
     } else {
-      // Non-tag team match validation
       if (formData.participants.length < 2) {
         setError(t('scheduleMatch.minParticipantsError'));
+        setSubmitting(false);
         return;
       }
 
       try {
-        await matchesApi.schedule({
-          date: matchDate,
+        await matchesApi.update(matchId, {
           matchFormat: formData.matchFormat,
           stipulationId: formData.stipulationId || undefined,
           participants: formData.participants,
@@ -221,43 +190,15 @@ export default function ScheduleMatch() {
           seasonId: formData.seasonId || undefined,
           eventId: formData.eventId || undefined,
           designation: formData.eventId ? formData.designation : undefined,
-          status: 'scheduled',
-          ...(linkChallengeId ? { challengeId: linkChallengeId } : {}),
-          ...(linkPromoId ? { promoId: linkPromoId } : {}),
         });
-
-        setSuccess(t('scheduleMatch.success'));
-        setLinkChallengeId(null);
-        setLinkPromoId(null);
-        preFillApplied.current = false;
-        if (state?.fromEvent) {
-          navigate(`/events/${state.fromEvent.eventId}`, { replace: true });
-        } else {
-          navigate('/admin/schedule', { replace: true, state: {} });
-        }
-        resetForm();
+        setSuccess('Match updated successfully');
+        setTimeout(() => navigate(-1), 1000);
       } catch (err) {
-        setError(err instanceof Error ? err.message : t('scheduleMatch.error'));
+        setError(err instanceof Error ? err.message : 'Failed to update match');
       } finally {
         setSubmitting(false);
       }
     }
-  };
-
-  const resetForm = () => {
-    const activeSeason = seasons.find(s => s.status === 'active');
-    setFormData({
-      matchFormat: '',
-      stipulationId: '',
-      participants: [],
-      isChampionship: false,
-      championshipId: '',
-      tournamentId: '',
-      seasonId: activeSeason?.seasonId || '',
-      eventId: '',
-      designation: 'midcard',
-    });
-    setTeams([[], []]);
   };
 
   const handleParticipantToggle = (playerId: string) => {
@@ -269,7 +210,6 @@ export default function ScheduleMatch() {
     }));
   };
 
-  // Tag team helper functions
   const handleTeamMemberToggle = (teamIndex: number, playerId: string) => {
     setTeams(prev => {
       const newTeams = [...prev];
@@ -277,16 +217,13 @@ export default function ScheduleMatch() {
       const team = currentTeam ? [...currentTeam] : [];
 
       if (team.includes(playerId)) {
-        // Remove from this team
         newTeams[teamIndex] = team.filter(id => id !== playerId);
       } else {
-        // Remove from other teams first
         newTeams.forEach((t, i) => {
           if (i !== teamIndex && t) {
             newTeams[i] = t.filter(id => id !== playerId);
           }
         });
-        // Add to this team
         newTeams[teamIndex] = [...team, playerId];
       }
 
@@ -299,7 +236,7 @@ export default function ScheduleMatch() {
   };
 
   const removeTeam = (teamIndex: number) => {
-    if (teams.length <= 2) return; // Keep at least 2 teams
+    if (teams.length <= 2) return;
     setTeams(prev => prev.filter((_, i) => i !== teamIndex));
   };
 
@@ -330,14 +267,12 @@ export default function ScheduleMatch() {
 
     setTeams(prev => {
       const newTeams = [...prev];
-      // Remove these players from any other team first
       const playerIds = [tt.player1Id, tt.player2Id];
       newTeams.forEach((team, i) => {
         if (i !== teamIndex && team) {
           newTeams[i] = team.filter(id => !playerIds.includes(id));
         }
       });
-      // Set both members on the target team
       newTeams[teamIndex] = [tt.player1Id, tt.player2Id];
       return newTeams;
     });
@@ -346,7 +281,6 @@ export default function ScheduleMatch() {
   const getTagTeamForTeam = (teamIndex: number): string => {
     const team = teams[teamIndex];
     if (!team || team.length !== 2) return '';
-    // Check if the two members match an active tag team
     const found = activeTagTeams.find(
       tt => (tt.player1Id === team[0] && tt.player2Id === team[1])
         || (tt.player1Id === team[1] && tt.player2Id === team[0])
@@ -358,21 +292,21 @@ export default function ScheduleMatch() {
     return <Skeleton variant="block" count={4} />;
   }
 
+  if (!originalMatch) {
+    return (
+      <div className="schedule-match">
+        {error && <div className="error-message">{error}</div>}
+        <Link to="/admin/results">&larr; Back to matches</Link>
+      </div>
+    );
+  }
+
   return (
     <div className="schedule-match">
-      {state?.fromEvent && (
-        <Link to={`/events/${state.fromEvent.eventId}`} className="back-to-event-link">
-          &larr; {t('events.detail.backToEvent', { name: state.fromEvent.name })}
-        </Link>
-      )}
-      <h2>{state?.fromEvent
-        ? t('scheduleMatch.addMatchToEvent', { event: state.fromEvent.name })
-        : t('scheduleMatch.title', 'Schedule Match')
-      }</h2>
-      <p className="schedule-match-help">
-        Need a refresher on event linkage, seasons, and card positions?{' '}
-        <Link to="/guide/wiki/admin-schedule-match">Open schedule guide</Link>.
-      </p>
+      <Link to="/admin/results" className="back-to-event-link">
+        &larr; Back to Record Results
+      </Link>
+      <h2>Edit Match</h2>
 
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
@@ -433,7 +367,6 @@ export default function ScheduleMatch() {
                 </option>
               ))}
             </select>
-            <small className="form-hint">Match results count towards the selected season's standings</small>
           </div>
         )}
 
@@ -453,7 +386,6 @@ export default function ScheduleMatch() {
                 })),
               ]}
             />
-            <small className="form-hint">{t('scheduleMatch.eventHint', 'Match will be automatically added to the event\'s card')}</small>
           </div>
         )}
 
@@ -523,15 +455,14 @@ export default function ScheduleMatch() {
         )}
 
         {isTagTeamMatch ? (
-          /* Tag Team Selection UI */
           <div className="form-group">
             <label>{t('scheduleMatch.tagTeam.selectTeams', 'Select Teams')}</label>
 
             {divisions.length > 0 && tagTeamSelectionMode === 'individuals' && (
               <div className="division-filter">
-                <label htmlFor="divisionFilterTag">Filter by Division:</label>
+                <label htmlFor="divisionFilterEditTag">Filter by Division:</label>
                 <select
-                  id="divisionFilterTag"
+                  id="divisionFilterEditTag"
                   value={divisionFilter}
                   onChange={(e) => setDivisionFilter(e.target.value)}
                   className="division-filter-select"
@@ -545,7 +476,6 @@ export default function ScheduleMatch() {
               </div>
             )}
 
-            {/* Selection mode toggle */}
             <div className="tag-team-mode-toggle">
               <button
                 type="button"
@@ -579,7 +509,6 @@ export default function ScheduleMatch() {
                     )}
                   </div>
 
-                  {/* Tag Team dropdown mode */}
                   {tagTeamSelectionMode === 'tag-teams' && (
                     <div className="team-tag-team-select">
                       <select
@@ -590,7 +519,6 @@ export default function ScheduleMatch() {
                         <option value="">{t('scheduleMatch.tagTeam.selectTagTeam', 'Select a Tag Team...')}</option>
                         {activeTagTeams
                           .filter(tt => {
-                            // Hide tag teams already assigned to other teams
                             const assignedToOther = teams.some((otherTeam, i) => {
                               if (i === teamIndex) return false;
                               return otherTeam.includes(tt.player1Id) && otherTeam.includes(tt.player2Id);
@@ -606,7 +534,6 @@ export default function ScheduleMatch() {
                     </div>
                   )}
 
-                  {/* Show selected members */}
                   <div className="team-members">
                     {team.length > 0 ? (
                       team.map(playerId => (
@@ -626,7 +553,6 @@ export default function ScheduleMatch() {
                     )}
                   </div>
 
-                  {/* Individual picker mode */}
                   {tagTeamSelectionMode === 'individuals' && (
                     <div className="team-players-grid">
                       {filteredPlayers.filter(p => !team.includes(p.playerId)).map(player => {
@@ -665,14 +591,13 @@ export default function ScheduleMatch() {
             </div>
           </div>
         ) : (
-          /* Standard Participant Selection UI */
           <div className="form-group">
             <label>{t('scheduleMatch.participants')} ({formData.matchFormat.toLowerCase() === 'singles' ? '2' : '2+'})</label>
             {divisions.length > 0 && (
               <div className="division-filter">
-                <label htmlFor="divisionFilter">Filter by Division:</label>
+                <label htmlFor="divisionFilterEdit">Filter by Division:</label>
                 <select
-                  id="divisionFilter"
+                  id="divisionFilterEdit"
                   value={divisionFilter}
                   onChange={(e) => setDivisionFilter(e.target.value)}
                   className="division-filter-select"
@@ -703,9 +628,14 @@ export default function ScheduleMatch() {
           </div>
         )}
 
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Scheduling...' : t('scheduleMatch.submit')}
-        </button>
+        <div className="edit-match-actions">
+          <button type="submit" disabled={submitting}>
+            {submitting ? 'Saving...' : 'Save Changes'}
+          </button>
+          <button type="button" className="cancel-btn" onClick={() => navigate(-1)} disabled={submitting}>
+            Cancel
+          </button>
+        </div>
       </form>
     </div>
   );

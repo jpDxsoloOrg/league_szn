@@ -95,6 +95,35 @@
   font-weight: bold;
 }
 
+/* Division filter */
+.division-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.division-filter label {
+  color: #999;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.division-filter-select {
+  padding: 0.4rem 0.75rem;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.division-filter-select:focus {
+  border-color: #d4af37;
+  outline: none;
+}
+
 .form-hint {
   display: block;
   margin-top: 0.5rem;

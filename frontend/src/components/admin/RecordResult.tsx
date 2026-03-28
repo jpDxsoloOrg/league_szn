@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi, eventsApi, stipulationsApi, tagTeamsApi } from '../../services/api';
 import type { Match, Player, Stipulation } from '../../types';
@@ -13,6 +13,7 @@ const STANDALONE_FILTER = '__standalone__';
 
 export default function RecordResult() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [matches, setMatches] = useState<Match[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [events, setEvents] = useState<LeagueEvent[]>([]);
@@ -531,6 +532,13 @@ export default function RecordResult() {
                   </button>
                 </div>
                 <div className="delete-match-section">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => navigate(`/admin/edit-match/${selectedMatch.matchId}`)}
+                    disabled={submitting}
+                  >
+                    Edit Match
+                  </button>
                   <button
                     className="delete-match-btn"
                     onClick={handleDeleteMatch}
