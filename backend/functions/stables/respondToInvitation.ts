@@ -12,7 +12,7 @@ interface InvitationRecord {
   [key: string]: unknown;
   invitationId: string;
   stableId: string;
-  playerId: string;
+  invitedPlayerId: string;
   status: string;
 }
 
@@ -75,7 +75,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
 
     const callerPlayer = callerResult.Items?.[0];
-    if (!callerPlayer || callerPlayer.playerId !== invitation.playerId) {
+    if (!callerPlayer || callerPlayer.playerId !== invitation.invitedPlayerId) {
       return badRequest('You can only respond to your own invitations');
     }
 
@@ -104,7 +104,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     try {
       await dynamoDb.update({
         TableName: TableNames.PLAYERS,
-        Key: { playerId: invitation.playerId },
+        Key: { playerId: invitation.invitedPlayerId },
         UpdateExpression: 'SET #stableId = :stableId, #updatedAt = :updatedAt',
         ConditionExpression: 'attribute_not_exists(#stableId) OR #stableId = :empty',
         ExpressionAttributeNames: {
@@ -139,7 +139,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const stable = stableResult.item;
-    const updatedMemberIds = [...stable.memberIds, invitation.playerId];
+    const updatedMemberIds = [...stable.memberIds, invitation.invitedPlayerId];
 
     // Determine new status: if approved and now >= 2 members, set to active
     const newStatus =
