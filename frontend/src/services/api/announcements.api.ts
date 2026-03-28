@@ -7,6 +7,7 @@ export interface CreateAnnouncementInput {
   priority?: number;
   isActive?: boolean;
   expiresAt?: string;
+  videoUrl?: string;
 }
 
 export const announcementsApi = {

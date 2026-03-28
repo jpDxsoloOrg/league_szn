@@ -97,6 +97,17 @@ export default function AnnouncementModal() {
           className="announcement-modal-body"
           dangerouslySetInnerHTML={{ __html: current.body }}
         />
+        {current.videoUrl && (
+          <div className="announcement-modal-video">
+            <video
+              src={current.videoUrl}
+              controls
+              className="announcement-video-player"
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        )}
         {announcements.length > 1 && (
           <div className="announcement-modal-counter">
             {t('announcements.counter', {

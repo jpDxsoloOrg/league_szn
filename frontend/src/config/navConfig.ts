@@ -42,6 +42,7 @@ export const USER_NAV_GROUPS: NavGroup[] = [
       { path: '/stats', i18nKey: 'nav.statistics', feature: 'statistics' },
       { path: '/stables', i18nKey: 'nav.stables', feature: 'stables' },
       { path: '/tag-teams', i18nKey: 'nav.tagTeams', feature: 'stables' },
+      { path: '/highlights', i18nKey: 'nav.highlights' },
     ],
   },
   {
@@ -110,6 +111,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
       { path: '/admin/stables', i18nKey: 'admin.panel.tabs.stables' },
       { path: '/admin/tag-teams', i18nKey: 'admin.panel.tabs.tagTeams' },
       { path: '/admin/announcements', i18nKey: 'admin.panel.tabs.announcements' },
+      { path: '/admin/videos', i18nKey: 'admin.panel.tabs.videos' },
     ],
   },
   {
@@ -133,7 +135,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
 
 /** Path → group key for user nav (for auto-expand) */
 export function getUserGroupForPath(pathname: string): string | null {
-  const core = ['/', '/standings', '/activity', '/championships', '/events', '/matches', '/tournaments', '/awards', '/contenders', '/stats', '/stables', '/tag-teams'];
+  const core = ['/', '/standings', '/activity', '/championships', '/events', '/matches', '/tournaments', '/awards', '/contenders', '/stats', '/stables', '/tag-teams', '/highlights'];
   const wrestler = ['/profile', '/challenges', '/promos', '/my-stable', '/my-tag-team'];
   if (core.some((p) => pathname === p) || pathname.startsWith('/events/') || pathname.startsWith('/stats/') || pathname.startsWith('/contenders/') || pathname.startsWith('/stables/') || pathname.startsWith('/tag-teams/')) return 'core';
   if (wrestler.some((p) => pathname === p || pathname.startsWith(p + '/'))) return 'wrestler';
@@ -144,7 +146,7 @@ export function getUserGroupForPath(pathname: string): string | null {
 export function getAdminGroupForPath(pathname: string): string | null {
   const matchOps = ['/admin/schedule', '/admin/results', '/admin/events', '/admin/match-config'];
   const leagueSetup = ['/admin/players', '/admin/divisions', '/admin/seasons', '/admin/season-awards', '/admin/championships', '/admin/tournaments', '/admin/companies', '/admin/shows'];
-  const contentSocial = ['/admin/challenges', '/admin/promos', '/admin/contender-config', '/admin/contender-overrides', '/admin/stables', '/admin/tag-teams', '/admin/announcements'];
+  const contentSocial = ['/admin/challenges', '/admin/promos', '/admin/contender-config', '/admin/contender-overrides', '/admin/stables', '/admin/tag-teams', '/admin/announcements', '/admin/videos'];
   const fantasy = ['/admin/fantasy-shows', '/admin/fantasy-config'];
   const system = ['/admin/users', '/admin/features', '/admin/danger'];
   if (matchOps.some((p) => pathname === p)) return 'matchOps';

@@ -45,6 +45,19 @@
   margin: 0 0 0.75rem;
 }
 
+.announcement-modal-video {
+  margin-top: 1rem;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.announcement-video-player {
+  width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  background-color: #000;
+}
+
 .announcement-modal-counter {
   color: var(--color-text-secondary);
   font-size: 0.8rem;

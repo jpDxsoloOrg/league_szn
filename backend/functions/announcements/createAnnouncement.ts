@@ -11,6 +11,7 @@ interface CreateAnnouncementBody {
   priority?: number;
   isActive?: boolean;
   expiresAt?: string;
+  videoUrl?: string;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -21,7 +22,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: reqBody, error: parseError } = parseBody<CreateAnnouncementBody>(event);
     if (parseError) return parseError;
 
-    const { title, body, priority, isActive, expiresAt } = reqBody;
+    const { title, body, priority, isActive, expiresAt, videoUrl } = reqBody;
 
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return badRequest('title is required');
@@ -46,6 +47,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     if (expiresAt) {
       announcement.expiresAt = expiresAt;
+    }
+    if (videoUrl && typeof videoUrl === 'string' && videoUrl.trim().length > 0) {
+      announcement.videoUrl = videoUrl.trim();
     }
 
     await dynamoDb.put({

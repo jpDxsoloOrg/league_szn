@@ -31,6 +31,7 @@ export { companiesApi } from './companies.api';
 export { showsApi } from './shows.api';
 export { stablesApi } from './stables.api';
 export { tagTeamsApi } from './tagTeams.api';
+export { videosApi } from './videos.api';
 export { announcementsApi } from './announcements.api';
 export { notificationsApi } from './notifications.api';
 
@@ -51,5 +52,6 @@ export type {
   PlayerMatchStatsResponse,
 } from './statistics.api';
 export type { SeasonAwardsResponse } from './seasonAwards.api';
+export type { CreateVideoInput } from './videos.api';
 export type { CreateAnnouncementInput } from './announcements.api';
 export type { NotificationsListResponse, UnreadCountResponse } from './notifications.api';
