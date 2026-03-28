@@ -280,6 +280,12 @@
   font-weight: bold;
 }
 
+.my-challenge-tag-team-badge {
+  background-color: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
 .my-challenge-response-label {
   font-style: normal;
   color: #bbb;

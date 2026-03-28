@@ -455,6 +455,53 @@
   margin-top: 0.25rem;
 }
 
+/* Tag Team badge */
+.challenge-detail-tag-team-badge {
+  background-color: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+  padding: 0.3rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+/* Tag Team versus display */
+.challenge-detail-team {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.challenge-detail-team-name {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.challenge-detail-team-members {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.challenge-detail-team-member {
+  font-size: 0.95rem;
+  color: #ccc;
+  font-weight: 500;
+}
+
+.challenge-detail-team-member-player {
+  display: block;
+  font-size: 0.8rem;
+  color: #888;
+  font-weight: 400;
+}
+
 @media (max-width: 768px) {
   .challenge-detail-versus {
     flex-direction: column;
