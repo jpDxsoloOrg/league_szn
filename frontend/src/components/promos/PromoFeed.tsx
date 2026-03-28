@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { PromoType } from '../../types/promo';
 import { PromoWithContext } from '../../types/promo';
 import { promosApi } from '../../services/api';
+import { usePromoReadState } from '../../hooks/usePromoReadState';
 import PromoCard from './PromoCard';
 import './PromoFeed.css';
 
@@ -16,6 +17,21 @@ const FILTER_TABS: { key: FeedFilter; labelKey: string; fallback: string }[] = [
   { key: 'championship', labelKey: 'promos.feed.filterChampionship', fallback: 'Championship' },
   { key: 'match', labelKey: 'promos.feed.filterMatch', fallback: 'Pre/Post Match' },
 ];
+
+type DateGroup = 'today' | 'yesterday' | 'thisWeek' | 'older';
+
+function getDateGroup(dateStr: string): DateGroup {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterdayStart = new Date(todayStart.getTime() - 86400000);
+  const weekStart = new Date(todayStart.getTime() - 6 * 86400000);
+
+  if (date >= todayStart) return 'today';
+  if (date >= yesterdayStart) return 'yesterday';
+  if (date >= weekStart) return 'thisWeek';
+  return 'older';
+}
 
 function matchesFilter(promoType: PromoType, filter: FeedFilter): boolean {
   switch (filter) {
@@ -40,6 +56,7 @@ export default function PromoFeed() {
   const [promos, setPromos] = useState<PromoWithContext[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isRead, markAsRead, markAllAsRead, unreadCount } = usePromoReadState();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -85,6 +102,23 @@ export default function PromoFeed() {
     );
   }, [filteredPromos]);
 
+  const groupedPromos = useMemo(() => {
+    const groups: { key: DateGroup; labelKey: string; promos: PromoWithContext[] }[] = [
+      { key: 'today', labelKey: 'promos.feed.groupToday', promos: [] },
+      { key: 'yesterday', labelKey: 'promos.feed.groupYesterday', promos: [] },
+      { key: 'thisWeek', labelKey: 'promos.feed.groupThisWeek', promos: [] },
+      { key: 'older', labelKey: 'promos.feed.groupOlder', promos: [] },
+    ];
+    for (const promo of sortedPromos) {
+      const group = getDateGroup(promo.createdAt);
+      const target = groups.find((g) => g.key === group);
+      if (target) target.promos.push(promo);
+    }
+    return groups.filter((g) => g.promos.length > 0);
+  }, [sortedPromos]);
+
+  const unread = useMemo(() => unreadCount(promos), [unreadCount, promos]);
+
   if (loading) {
     return (
       <div className="promo-feed">
@@ -111,9 +145,21 @@ export default function PromoFeed() {
     <div className="promo-feed">
       <div className="promo-feed-header">
         <h2>{t('promos.feed.title', 'Wrestler Promos')}</h2>
-        <Link to="/promos/new" className="cut-promo-btn">
-          {t('promos.feed.cutPromo', 'Cut a Promo')}
-        </Link>
+        <div className="promo-feed-header-actions">
+          {unread > 0 && (
+            <span className="promo-unread-badge">
+              {unread} {t('promos.feed.unread', 'unread')}
+            </span>
+          )}
+          {unread > 0 && (
+            <button className="mark-all-read-btn" onClick={markAllAsRead}>
+              {t('promos.feed.markAllRead', 'Mark all as read')}
+            </button>
+          )}
+          <Link to="/promos/new" className="cut-promo-btn">
+            {t('promos.feed.cutPromo', 'Cut a Promo')}
+          </Link>
+        </div>
       </div>
 
       <div className="promo-feed-filters">
@@ -148,8 +194,19 @@ export default function PromoFeed() {
             </Link>
           </div>
         ) : (
-          sortedPromos.map((promo) => (
-            <PromoCard key={promo.promoId} promo={promo} onReact={handleReact} />
+          groupedPromos.map((group) => (
+            <div key={group.key} className="promo-date-group">
+              <h3 className="promo-date-group-title">{t(group.labelKey)}</h3>
+              {group.promos.map((promo) => (
+                <PromoCard
+                  key={promo.promoId}
+                  promo={promo}
+                  isRead={isRead(promo.promoId, promo.createdAt)}
+                  onView={() => markAsRead(promo.promoId)}
+                  onReact={handleReact}
+                />
+              ))}
+            </div>
           ))
         )}
       </div>

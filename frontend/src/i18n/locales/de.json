@@ -1161,7 +1161,13 @@
       "filterMatch": "Vor-/Nachkampf",
       "pinnedPromos": "Angepinnt",
       "cutPromo": "Promo schneiden",
-      "noPromos": "Keine Promos gefunden. Sei der Erste, der eine Promo schneidet!"
+      "noPromos": "Keine Promos gefunden. Sei der Erste, der eine Promo schneidet!",
+      "unread": "ungelesen",
+      "markAllRead": "Alle als gelesen markieren",
+      "groupToday": "Heute",
+      "groupYesterday": "Gestern",
+      "groupThisWeek": "Diese Woche",
+      "groupOlder": "Älter"
     },
     "card": {
       "by": "von",
