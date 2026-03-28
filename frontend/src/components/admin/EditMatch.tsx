@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi, stipulationsApi, matchTypesApi, tagTeamsApi } from '../../services/api';
-import type { Match, Player, Championship, Tournament, Season, Stipulation, MatchType } from '../../types';
+import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi, stipulationsApi, matchTypesApi, tagTeamsApi, divisionsApi } from '../../services/api';
+import type { Match, Player, Championship, Tournament, Season, Stipulation, MatchType, Division } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
 import type { LeagueEvent, MatchDesignation } from '../../types/event';
 import SearchableSelect from './SearchableSelect';
@@ -21,6 +21,8 @@ export default function EditMatch() {
   const [events, setEvents] = useState<LeagueEvent[]>([]);
   const [stipulations, setStipulations] = useState<Stipulation[]>([]);
   const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
+  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [divisionFilter, setDivisionFilter] = useState<string>('');
   const [activeTagTeams, setActiveTagTeams] = useState<(TagTeam & { player1Name?: string; player2Name?: string })[]>([]);
   const [tagTeamSelectionMode, setTagTeamSelectionMode] = useState<'tag-teams' | 'individuals'>('tag-teams');
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ export default function EditMatch() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [allMatches, playersData, championshipsData, tournamentsData, seasonsData, eventsData, stipulationsData, matchTypesData, tagTeamsData] = await Promise.all([
+      const [allMatches, playersData, championshipsData, tournamentsData, seasonsData, eventsData, stipulationsData, matchTypesData, tagTeamsData, divisionsData] = await Promise.all([
         matchesApi.getAll(),
         playersApi.getAll(),
         championshipsApi.getAll(),
@@ -63,6 +65,7 @@ export default function EditMatch() {
         stipulationsApi.getAll(),
         matchTypesApi.getAll(),
         tagTeamsApi.getAll({ status: 'active' }).catch(() => [] as TagTeam[]),
+        divisionsApi.getAll(),
       ]);
 
       setPlayers(playersData);
@@ -73,6 +76,11 @@ export default function EditMatch() {
       setStipulations(stipulationsData);
       setMatchTypes(matchTypesData);
       setActiveTagTeams(tagTeamsData as (TagTeam & { player1Name?: string; player2Name?: string })[]);
+      setDivisions(divisionsData);
+      const firstDivision = divisionsData[0];
+      if (firstDivision) {
+        setDivisionFilter(firstDivision.divisionId);
+      }
 
       // Find the match to edit
       const match = allMatches.find(m => m.matchId === matchId);
@@ -240,6 +248,12 @@ export default function EditMatch() {
     const player = players.find(p => p.playerId === playerId);
     return player ? player.name : t('common.unknown');
   };
+
+  const filteredPlayers = divisionFilter === 'all'
+    ? players
+    : divisionFilter === 'none'
+      ? players.filter(p => !p.divisionId)
+      : players.filter(p => p.divisionId === divisionFilter);
 
   const handleMatchFormatChange = (newFormat: string) => {
     setFormData(prev => ({ ...prev, matchFormat: newFormat, participants: [] }));
@@ -444,6 +458,24 @@ export default function EditMatch() {
           <div className="form-group">
             <label>{t('scheduleMatch.tagTeam.selectTeams', 'Select Teams')}</label>
 
+            {divisions.length > 0 && tagTeamSelectionMode === 'individuals' && (
+              <div className="division-filter">
+                <label htmlFor="divisionFilterEditTag">Filter by Division:</label>
+                <select
+                  id="divisionFilterEditTag"
+                  value={divisionFilter}
+                  onChange={(e) => setDivisionFilter(e.target.value)}
+                  className="division-filter-select"
+                >
+                  <option value="all">All Divisions</option>
+                  {divisions.map(d => (
+                    <option key={d.divisionId} value={d.divisionId}>{d.name}</option>
+                  ))}
+                  <option value="none">No Division</option>
+                </select>
+              </div>
+            )}
+
             <div className="tag-team-mode-toggle">
               <button
                 type="button"
@@ -523,7 +555,7 @@ export default function EditMatch() {
 
                   {tagTeamSelectionMode === 'individuals' && (
                     <div className="team-players-grid">
-                      {players.filter(p => !team.includes(p.playerId)).map(player => {
+                      {filteredPlayers.filter(p => !team.includes(p.playerId)).map(player => {
                         const playerTeamIndex = getPlayerTeamIndex(player.playerId);
                         const isInOtherTeam = playerTeamIndex !== -1 && playerTeamIndex !== teamIndex;
                         return (
@@ -561,8 +593,25 @@ export default function EditMatch() {
         ) : (
           <div className="form-group">
             <label>{t('scheduleMatch.participants')} ({formData.matchFormat.toLowerCase() === 'singles' ? '2' : '2+'})</label>
+            {divisions.length > 0 && (
+              <div className="division-filter">
+                <label htmlFor="divisionFilterEdit">Filter by Division:</label>
+                <select
+                  id="divisionFilterEdit"
+                  value={divisionFilter}
+                  onChange={(e) => setDivisionFilter(e.target.value)}
+                  className="division-filter-select"
+                >
+                  <option value="all">All Divisions</option>
+                  {divisions.map(d => (
+                    <option key={d.divisionId} value={d.divisionId}>{d.name}</option>
+                  ))}
+                  <option value="none">No Division</option>
+                </select>
+              </div>
+            )}
             <div className="participants-grid">
-              {players.map(player => (
+              {filteredPlayers.map(player => (
                 <div
                   key={player.playerId}
                   className={`participant-card ${formData.participants.includes(player.playerId) ? 'selected' : ''}`}

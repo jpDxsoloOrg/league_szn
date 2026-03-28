@@ -4,6 +4,8 @@
 
 .standings-container {
   width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .standings-header {
@@ -90,7 +92,6 @@
 .standings-table {
   width: 100%;
   min-width: 600px;
-  table-layout: fixed;
 }
 
 .standings-table th,
