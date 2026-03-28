@@ -1854,7 +1854,7 @@ resources:
                 - POST
               AllowedOrigins:
                 - '*'
-              ExposeHeaders:
+              ExposedHeaders:
                 - Content-Length
                 - Content-Range
                 - Accept-Ranges
