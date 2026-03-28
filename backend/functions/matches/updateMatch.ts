@@ -216,8 +216,42 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
 
     // Handle eventId changes — remove from old event, add to new event
+    // Also handle designation changes when staying on the same event
     const oldEventId = existingMatch.eventId as string | undefined;
     const newEventId = body.eventId !== undefined ? (body.eventId as string | null) : undefined;
+
+    // Designation changed but event stayed the same — update the card in-place
+    const effectiveEventId = newEventId !== undefined ? newEventId : oldEventId;
+    if (body.designation !== undefined && effectiveEventId && (newEventId === undefined || newEventId === oldEventId)) {
+      try {
+        const eventResult = await dynamoDb.get({
+          TableName: TableNames.EVENTS,
+          Key: { eventId: effectiveEventId },
+        });
+
+        if (eventResult.Item) {
+          const matchCards = ((eventResult.Item as Record<string, unknown>).matchCards as Record<string, unknown>[] | undefined) || [];
+          const updatedCards = matchCards.map((card) => {
+            if ((card as Record<string, unknown>).matchId === matchId) {
+              return { ...card, designation: body.designation };
+            }
+            return card;
+          });
+
+          await dynamoDb.update({
+            TableName: TableNames.EVENTS,
+            Key: { eventId: effectiveEventId },
+            UpdateExpression: 'SET matchCards = :cards, updatedAt = :now',
+            ExpressionAttributeValues: {
+              ':cards': updatedCards,
+              ':now': now,
+            },
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to update designation on event:', err);
+      }
+    }
 
     if (newEventId !== undefined && newEventId !== oldEventId) {
       // Remove from old event if it had one
