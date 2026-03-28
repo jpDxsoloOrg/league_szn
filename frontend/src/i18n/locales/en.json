@@ -1162,7 +1162,13 @@
       "filterMatch": "Pre/Post Match",
       "pinnedPromos": "Pinned",
       "cutPromo": "Cut a Promo",
-      "noPromos": "No promos found. Be the first to cut a promo!"
+      "noPromos": "No promos found. Be the first to cut a promo!",
+      "unread": "unread",
+      "markAllRead": "Mark all as read",
+      "groupToday": "Today",
+      "groupYesterday": "Yesterday",
+      "groupThisWeek": "This Week",
+      "groupOlder": "Older"
     },
     "card": {
       "by": "by",

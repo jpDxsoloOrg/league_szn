@@ -5,12 +5,15 @@ import { PromoWithContext, PromoType } from '../../types/promo';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { challengesApi } from '../../services/api';
+import { resolveImageSrc, DEFAULT_WRESTLER_IMAGE } from '../../constants/imageFallbacks';
 import PromoReactions from './PromoReactions';
 import './PromoCard.css';
 
 interface PromoCardProps {
   promo: PromoWithContext;
   compact?: boolean;
+  isRead?: boolean;
+  onView?: () => void;
   onReact?: (promoId: string, reaction: import('../../types/promo').ReactionType) => void;
 }
 
@@ -57,13 +60,18 @@ function highlightMentions(content: string): (string | JSX.Element)[] {
   });
 }
 
-export default function PromoCard({ promo, compact = false, onReact }: PromoCardProps) {
+export default function PromoCard({ promo, compact = false, isRead, onView, onReact }: PromoCardProps) {
   const { t } = useTranslation();
   const { playerId } = useAuth();
   const { features } = useSiteConfig();
   const [acceptingChallenge, setAcceptingChallenge] = useState(false);
   const [challengeStatus, setChallengeStatus] = useState<'pending' | 'accepted' | 'not_found' | 'loading'>('loading');
   const [challengeError, setChallengeError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [promo.playerImageUrl]);
 
   const isTargetOfCallOut =
     features.challenges &&
@@ -118,7 +126,10 @@ export default function PromoCard({ promo, compact = false, onReact }: PromoCard
   };
 
   return (
-    <div className={`promo-card ${promo.isPinned ? 'pinned' : ''} ${compact ? 'compact' : ''}`}>
+    <div
+      className={`promo-card ${promo.isPinned ? 'pinned' : ''} ${compact ? 'compact' : ''} ${isRead === false ? 'unread' : ''}`}
+      onClick={() => { if (isRead === false) onView?.(); }}
+    >
       {promo.isPinned && (
         <div className="promo-pinned-indicator">
           <span className="pin-icon">{'\u{1F4CC}'}</span>
@@ -127,11 +138,19 @@ export default function PromoCard({ promo, compact = false, onReact }: PromoCard
       )}
 
       <div className="promo-card-header">
-        <div
-          className="promo-avatar"
-          style={{ backgroundColor: '#666' }}
-        >
-          {getInitial(promo.wrestlerName)}
+        <div className="promo-avatar">
+          {promo.playerImageUrl && !imageError ? (
+            <img
+              src={resolveImageSrc(promo.playerImageUrl, DEFAULT_WRESTLER_IMAGE)}
+              alt={promo.wrestlerName}
+              className="promo-avatar-img"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <span className="promo-avatar-initial">
+              {getInitial(promo.wrestlerName)}
+            </span>
+          )}
         </div>
         <div className="promo-author-info">
           <div className="promo-author-line">

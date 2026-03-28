@@ -92,6 +92,49 @@
   margin: 0 0 12px 0;
 }
 
+.promo-feed-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.promo-unread-badge {
+  color: #d4af37;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.mark-all-read-btn {
+  padding: 6px 14px;
+  border: 1px solid #555;
+  border-radius: 6px;
+  background: transparent;
+  color: #bbb;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.mark-all-read-btn:hover {
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+.promo-date-group {
+  margin-bottom: 8px;
+}
+
+.promo-date-group-title {
+  color: #888;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 16px 0 8px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #333;
+}
+
 .promo-list {
   /* container for promo cards */
 }
