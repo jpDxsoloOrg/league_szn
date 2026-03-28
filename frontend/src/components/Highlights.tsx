@@ -7,6 +7,64 @@ import './Highlights.css';
 
 const CATEGORIES: (VideoCategory | 'all')[] = ['all', 'match', 'highlight', 'promo', 'other'];
 
+function VideoCard({ video }: { video: Video }) {
+  const { t } = useTranslation();
+  const [videoError, setVideoError] = useState(false);
+
+  return (
+    <div className="highlight-card">
+      <div className="highlight-preview">
+        {videoError ? (
+          <div className="video-error-state">
+            <p>{t('highlights.videoError')}</p>
+            <a
+              href={video.videoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="video-direct-link"
+            >
+              {t('highlights.openDirectly')}
+            </a>
+          </div>
+        ) : (
+          <video
+            src={video.videoUrl}
+            poster={video.thumbnailUrl || undefined}
+            controls
+            playsInline
+            preload="metadata"
+            className="highlight-video"
+            onError={() => setVideoError(true)}
+          >
+            {t('highlights.videoNotSupported')}
+          </video>
+        )}
+      </div>
+      <div className="highlight-info">
+        <h3>{video.title}</h3>
+        <div className="highlight-meta">
+          <span className={`category-badge category-${video.category}`}>
+            {t(`videos.categories.${video.category}`)}
+          </span>
+          <span className="highlight-date">
+            {new Date(video.createdAt).toLocaleDateString()}
+          </span>
+        </div>
+        {video.description && (
+          <p className="highlight-description">{video.description}</p>
+        )}
+        {video.tags.length > 0 && (
+          <div className="highlight-tags">
+            {video.tags.map((tag) => (
+              <span key={tag} className="tag">{tag}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Highlights() {
   const { t } = useTranslation();
   const [videos, setVideos] = useState<Video[]>([]);
@@ -64,41 +122,7 @@ export default function Highlights() {
       ) : (
         <div className="highlights-grid">
           {videos.map((video) => (
-            <div key={video.videoId} className="highlight-card">
-              <div className="highlight-preview">
-                <video
-                  src={video.videoUrl}
-                  poster={video.thumbnailUrl || undefined}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="highlight-video"
-                >
-                  {t('highlights.videoNotSupported')}
-                </video>
-              </div>
-              <div className="highlight-info">
-                <h3>{video.title}</h3>
-                <div className="highlight-meta">
-                  <span className={`category-badge category-${video.category}`}>
-                    {t(`videos.categories.${video.category}`)}
-                  </span>
-                  <span className="highlight-date">
-                    {new Date(video.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-                {video.description && (
-                  <p className="highlight-description">{video.description}</p>
-                )}
-                {video.tags.length > 0 && (
-                  <div className="highlight-tags">
-                    {video.tags.map((tag) => (
-                      <span key={tag} className="tag">{tag}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            <VideoCard key={video.videoId} video={video} />
           ))}
         </div>
       )}

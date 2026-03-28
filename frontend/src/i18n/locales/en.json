@@ -565,7 +565,9 @@
     "subtitle": "Watch match highlights, promos, and more",
     "noVideos": "No videos available yet. Check back soon!",
     "loadError": "Failed to load videos.",
-    "videoNotSupported": "Your browser does not support the video tag."
+    "videoNotSupported": "Your browser does not support the video tag.",
+    "videoError": "Unable to play this video in the browser.",
+    "openDirectly": "Open video directly"
   },
   "seasonAwards": {
     "title": "Season Awards",

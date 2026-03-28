@@ -565,7 +565,9 @@
     "subtitle": "Match-Highlights, Promos und mehr ansehen",
     "noVideos": "Noch keine Videos verfügbar. Schauen Sie bald wieder vorbei!",
     "loadError": "Videos konnten nicht geladen werden.",
-    "videoNotSupported": "Ihr Browser unterstützt das Video-Tag nicht."
+    "videoNotSupported": "Ihr Browser unterstützt das Video-Tag nicht.",
+    "videoError": "Dieses Video kann im Browser nicht abgespielt werden.",
+    "openDirectly": "Video direkt öffnen"
   },
   "seasonAwards": {
     "title": "Saison-Auszeichnungen",

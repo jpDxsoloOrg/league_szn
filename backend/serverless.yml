@@ -1849,10 +1849,17 @@ resources:
                 - '*'
               AllowedMethods:
                 - GET
+                - HEAD
                 - PUT
                 - POST
               AllowedOrigins:
                 - '*'
+              ExposeHeaders:
+                - Content-Length
+                - Content-Range
+                - Accept-Ranges
+                - Content-Type
+                - ETag
               MaxAge: 3000
 
     ImagesBucketPolicy:
