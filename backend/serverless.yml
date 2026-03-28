@@ -313,6 +313,11 @@ functions:
           authorizer: adminAuthorizer
       - http:
           path: matches/{matchId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matches/{matchId}
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer

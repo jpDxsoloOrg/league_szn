@@ -90,25 +90,76 @@
 .standings-table {
   width: 100%;
   min-width: 600px;
+  table-layout: fixed;
 }
 
-.standings-table th {
-  text-align: center;
-  padding: 1rem;
-}
-
+.standings-table th,
 .standings-table td {
   text-align: center;
-  padding: 0.75rem;
+  padding: 0.5rem 0.4rem;
 }
 
+/* Column widths */
 .standings-table .rank {
+  width: 50px;
+}
+
+.standings-table .image-header,
+.standings-table .wrestler-image-cell {
+  width: 60px;
+}
+
+.standings-table .player-name {
+  width: 14%;
+}
+
+.standings-table .wrestler-name {
+  width: 14%;
+}
+
+.standings-table .psn-id {
+  width: 12%;
+}
+
+.standings-table .division-name {
+  width: 11%;
+}
+
+.standings-table .wins,
+.standings-table .losses,
+.standings-table .draws {
+  width: 55px;
+}
+
+.standings-table .win-percentage {
+  width: 70px;
+}
+
+.standings-table .form-cell {
+  width: 80px;
+}
+
+.standings-table .streak-cell {
+  width: 70px;
+}
+
+/* Truncate text columns that may overflow */
+.standings-table td.player-name,
+.standings-table td.wrestler-name,
+.standings-table td.psn-id,
+.standings-table td.division-name {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.standings-table td.rank {
   font-weight: bold;
   color: var(--color-primary);
   font-size: 1.1rem;
 }
 
-.standings-table .player-name {
+.standings-table td.player-name {
   font-weight: bold;
   text-align: left;
 }
@@ -185,36 +236,31 @@
   color: #fff;
 }
 
-.standings-table .wrestler-name {
+.standings-table td.wrestler-name {
   text-align: left;
   color: var(--color-text-secondary);
 }
 
-.standings-table .wins {
+.standings-table td.wins {
   color: var(--color-success);
   font-weight: bold;
 }
 
-.standings-table .losses {
+.standings-table td.losses {
   color: var(--color-danger-alt);
   font-weight: bold;
 }
 
-.standings-table .draws {
+.standings-table td.draws {
   color: var(--color-warning);
 }
 
-.standings-table .win-percentage {
+.standings-table td.win-percentage {
   font-weight: bold;
 }
 
-.standings-table .image-header {
-  width: 60px;
-}
-
-.standings-table .wrestler-image-cell {
-  width: 60px;
-  padding: 0.5rem;
+.standings-table td.wrestler-image-cell {
+  padding: 0.25rem;
 }
 
 .standings-table .wrestler-thumbnail {

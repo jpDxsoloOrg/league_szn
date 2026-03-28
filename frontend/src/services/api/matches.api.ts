@@ -37,6 +37,13 @@ export const matchesApi = {
     });
   },
 
+  update: async (matchId: string, data: Partial<Omit<ScheduleMatchInput, 'status'>>): Promise<Match> => {
+    return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
   delete: async (matchId: string): Promise<void> => {
     await fetchWithAuth(`${API_BASE_URL}/matches/${matchId}`, {
       method: 'DELETE',

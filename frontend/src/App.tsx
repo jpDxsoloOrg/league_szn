@@ -21,6 +21,7 @@ import { WikiLayout } from './components/Wiki';
 import WikiIndex from './components/WikiIndex';
 import WikiArticle from './components/WikiArticle';
 import AdminPanel from './components/admin/AdminPanel';
+import EditMatch from './components/admin/EditMatch';
 // Auth components
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
@@ -131,6 +132,7 @@ function AppLayout() {
             {/* Admin Routes - Admin only (protected inside AdminPanel) */}
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/:tab" element={<AdminPanel />} />
+            <Route path="/admin/edit-match/:matchId" element={<EditMatch />} />
 
             {/* Wrestler Profile */}
             <Route path="/profile" element={
