@@ -19,20 +19,33 @@ export interface Challenge {
   responseMessage?: string;
   counteredChallengeId?: string;
   matchId?: string;
+  challengeMode?: 'singles' | 'tag_team';
+  challengerTagTeamId?: string;
+  challengedTagTeamId?: string;
   expiresAt: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface ChallengePlayerInfo {
+  playerId?: string;
   playerName: string;
   wrestlerName: string;
   imageUrl?: string;
 }
 
+export interface TagTeamChallengeInfo {
+  tagTeamId: string;
+  tagTeamName: string;
+  player1: ChallengePlayerInfo;
+  player2: ChallengePlayerInfo;
+}
+
 export interface ChallengeWithPlayers extends Challenge {
   challenger: ChallengePlayerInfo;
   challenged: ChallengePlayerInfo;
+  challengerTagTeam?: TagTeamChallengeInfo;
+  challengedTagTeam?: TagTeamChallengeInfo;
 }
 
 export interface CreateChallengeInput {
@@ -41,6 +54,8 @@ export interface CreateChallengeInput {
   stipulation?: string;
   championshipId?: string;
   message?: string;
+  challengeMode?: 'singles' | 'tag_team';
+  challengedTagTeamId?: string;
 }
 
 export interface CounterChallengeInput {
