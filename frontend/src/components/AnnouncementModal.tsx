@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { announcementsApi } from '../services/api';
 import type { Announcement } from '../types';
+import { toMediaUrl } from '../utils/mediaUrl';
 import './AnnouncementModal.css';
 
 const STORAGE_KEY = 'dismissed_announcements';
@@ -25,18 +26,19 @@ function dismissAnnouncement(id: string): void {
 
 function AnnouncementVideo({ url }: { url: string }) {
   const { t } = useTranslation();
+  const mediaUrl = toMediaUrl(url);
 
   return (
     <div className="announcement-modal-video">
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="announcement-video-link"
+      <video
+        controls
+        playsInline
+        preload="metadata"
+        className="announcement-video-player"
       >
-        <span className="announcement-video-play-icon">&#9654;</span>
-        <span>{t('highlights.playVideo')}</span>
-      </a>
+        <source src={mediaUrl} />
+        {t('highlights.videoNotSupported')}
+      </video>
     </div>
   );
 }

@@ -51,27 +51,12 @@
   overflow: hidden;
 }
 
-.announcement-video-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  background-color: rgba(0, 0, 0, 0.3);
+.announcement-video-player {
+  width: 100%;
+  max-height: 300px;
   border-radius: 8px;
-  color: var(--color-primary, #d4af37);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 1rem;
-  transition: background-color 0.2s;
-}
-
-.announcement-video-link:hover {
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-.announcement-video-play-icon {
-  font-size: 1.5rem;
+  background-color: #000;
+  display: block;
 }
 
 .announcement-modal-counter {

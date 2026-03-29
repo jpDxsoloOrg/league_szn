@@ -1894,6 +1894,29 @@ resources:
                 HTTPPort: 80
                 HTTPSPort: 443
                 OriginProtocolPolicy: http-only
+            - Id: S3MediaOrigin
+              DomainName: ${self:provider.environment.IMAGES_BUCKET}.s3.us-east-1.amazonaws.com
+              S3OriginConfig:
+                OriginAccessIdentity: ''
+          CacheBehaviors:
+            - PathPattern: /media/*
+              TargetOriginId: S3MediaOrigin
+              ViewerProtocolPolicy: redirect-to-https
+              AllowedMethods:
+                - GET
+                - HEAD
+                - OPTIONS
+              CachedMethods:
+                - GET
+                - HEAD
+              Compress: false
+              ForwardedValues:
+                QueryString: false
+                Cookies:
+                  Forward: none
+              DefaultTTL: 86400
+              MaxTTL: 31536000
+              MinTTL: 0
           DefaultCacheBehavior:
             TargetOriginId: S3WebsiteOrigin
             ViewerProtocolPolicy: redirect-to-https

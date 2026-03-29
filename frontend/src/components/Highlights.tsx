@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { videosApi } from '../services/api';
 import type { Video, VideoCategory } from '../types';
+import { toMediaUrl } from '../utils/mediaUrl';
 import Skeleton from './ui/Skeleton';
 import './Highlights.css';
 
@@ -9,29 +10,23 @@ const CATEGORIES: (VideoCategory | 'all')[] = ['all', 'match', 'highlight', 'pro
 
 function VideoCard({ video }: { video: Video }) {
   const { t } = useTranslation();
+  const mediaUrl = toMediaUrl(video.videoUrl);
+  const posterUrl = video.thumbnailUrl ? toMediaUrl(video.thumbnailUrl) : undefined;
 
   return (
     <div className="highlight-card">
-      <a
-        href={video.videoUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="highlight-preview"
-        aria-label={`${t('highlights.playVideo')}: ${video.title}`}
-      >
-        {video.thumbnailUrl ? (
-          <img
-            src={video.thumbnailUrl}
-            alt={video.title}
-            className="highlight-thumbnail"
-          />
-        ) : (
-          <div className="highlight-placeholder" />
-        )}
-        <div className="play-overlay">
-          <span className="play-icon">&#9654;</span>
-        </div>
-      </a>
+      <div className="highlight-preview">
+        <video
+          controls
+          playsInline
+          preload="metadata"
+          poster={posterUrl}
+          className="highlight-video"
+        >
+          <source src={mediaUrl} />
+          {t('highlights.videoNotSupported')}
+        </video>
+      </div>
       <div className="highlight-info">
         <h3>{video.title}</h3>
         <div className="highlight-meta">
