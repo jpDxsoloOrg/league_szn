@@ -105,7 +105,7 @@ export default function MyChallenges() {
       setActionFeedback(`Error: ${err instanceof Error ? err.message : 'Failed'}`);
     }
     setTimeout(() => setActionFeedback(null), 3000);
-  }, [currentPlayerId, isSentByMe, t, features, navigate]);
+  }, [isSentByMe, t, features, navigate]);
 
   const getOpponent = (challenge: ChallengeWithPlayers) => {
     if (challenge.challengerId === currentPlayerId) {
