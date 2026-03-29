@@ -28,20 +28,14 @@ function AnnouncementVideo({ url }: { url: string }) {
 
   return (
     <div className="announcement-modal-video">
-      <iframe
-        src={url}
-        className="announcement-video-player"
-        allow="autoplay; fullscreen"
-        allowFullScreen
-        title={t('announcements.fields.videoUrl')}
-      />
       <a
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="announcement-video-open-link"
+        className="announcement-video-link"
       >
-        {t('highlights.openDirectly')}
+        <span className="announcement-video-play-icon">&#9654;</span>
+        <span>{t('highlights.playVideo')}</span>
       </a>
     </div>
   );

@@ -9,40 +9,29 @@ const CATEGORIES: (VideoCategory | 'all')[] = ['all', 'match', 'highlight', 'pro
 
 function VideoCard({ video }: { video: Video }) {
   const { t } = useTranslation();
-  const [playing, setPlaying] = useState(false);
 
   return (
     <div className="highlight-card">
-      <div className="highlight-preview">
-        {playing ? (
-          <iframe
-            src={video.videoUrl}
-            className="highlight-video-iframe"
-            allow="autoplay; fullscreen"
-            allowFullScreen
-            title={video.title}
+      <a
+        href={video.videoUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="highlight-preview"
+        aria-label={`${t('highlights.playVideo')}: ${video.title}`}
+      >
+        {video.thumbnailUrl ? (
+          <img
+            src={video.thumbnailUrl}
+            alt={video.title}
+            className="highlight-thumbnail"
           />
         ) : (
-          <button
-            className="highlight-play-btn"
-            onClick={() => setPlaying(true)}
-            aria-label={t('highlights.playVideo')}
-          >
-            {video.thumbnailUrl ? (
-              <img
-                src={video.thumbnailUrl}
-                alt={video.title}
-                className="highlight-thumbnail"
-              />
-            ) : (
-              <div className="highlight-placeholder" />
-            )}
-            <div className="play-overlay">
-              <span className="play-icon">&#9654;</span>
-            </div>
-          </button>
+          <div className="highlight-placeholder" />
         )}
-      </div>
+        <div className="play-overlay">
+          <span className="play-icon">&#9654;</span>
+        </div>
+      </a>
       <div className="highlight-info">
         <h3>{video.title}</h3>
         <div className="highlight-meta">

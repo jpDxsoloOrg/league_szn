@@ -68,29 +68,13 @@
 }
 
 .highlight-preview {
+  display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
   background-color: #000;
   overflow: hidden;
   position: relative;
-}
-
-.highlight-video-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-  display: block;
-}
-
-.highlight-play-btn {
-  width: 100%;
-  height: 100%;
-  border: none;
-  padding: 0;
-  background: none;
-  cursor: pointer;
-  position: relative;
-  display: block;
+  text-decoration: none;
 }
 
 .highlight-thumbnail {
@@ -119,7 +103,7 @@
   transition: background-color 0.2s;
 }
 
-.highlight-play-btn:hover .play-overlay {
+.highlight-preview:hover .play-overlay {
   background-color: rgba(0, 0, 0, 0.5);
 }
 
@@ -130,7 +114,7 @@
   transition: transform 0.2s;
 }
 
-.highlight-play-btn:hover .play-icon {
+.highlight-preview:hover .play-icon {
   transform: scale(1.15);
 }
 
