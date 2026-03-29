@@ -2,8 +2,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { PromoType, PromoWithContext } from '../../types/promo';
-import { playersApi, promosApi, championshipsApi, matchesApi, challengesApi, stipulationsApi, matchTypesApi } from '../../services/api';
+import { playersApi, promosApi, championshipsApi, matchesApi, challengesApi, stipulationsApi, matchTypesApi, tagTeamsApi } from '../../services/api';
 import type { Player, Match, Championship, Stipulation, MatchType } from '../../types';
+import type { TagTeam } from '../../types/tagTeam';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import PromoCard from './PromoCard';
 import './PromoEditor.css';
@@ -119,6 +120,8 @@ export default function PromoEditor() {
   const [challengeStipulation, setChallengeStipulation] = useState('');
   const [challengeCreated, setChallengeCreated] = useState(false);
   const [challengeWarning, setChallengeWarning] = useState<string | null>(null);
+  const [challengeMode, setChallengeMode] = useState<'singles' | 'tag_team'>('singles');
+  const [selectedTagTeamId, setSelectedTagTeamId] = useState('');
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [allPromos, setAllPromos] = useState<PromoWithContext[]>([]);
@@ -127,6 +130,8 @@ export default function PromoEditor() {
   const [stipulations, setStipulations] = useState<Stipulation[]>([]);
   const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
+  const [tagTeams, setTagTeams] = useState<TagTeam[]>([]);
+  const [playerTagTeam, setPlayerTagTeam] = useState<TagTeam | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -137,28 +142,41 @@ export default function PromoEditor() {
       championshipsApi.getAll(controller.signal),
       stipulationsApi.getAll(controller.signal),
       matchTypesApi.getAll(controller.signal),
+      tagTeamsApi.getAll({ status: 'active' }, controller.signal).catch(() => [] as TagTeam[]),
     ])
-      .then(([pl, pr, ma, ch, stips, mTypes]) => {
+      .then(([pl, pr, ma, ch, stips, mTypes, fetchedTagTeams]) => {
         setPlayers(pl);
         setAllPromos(pr);
         setMatches(ma);
         setChampionships(ch);
         setStipulations(stips);
         setMatchTypes(mTypes);
+        setTagTeams(fetchedTagTeams);
 
         // Find current user's player
+        let foundPlayer: Player | null = null;
         const idToken = sessionStorage.getItem('idToken');
         if (idToken) {
           try {
             const payload = JSON.parse(atob(idToken.split('.')[1]!));
             const myPlayer = pl.find((p: Player) => p.userId === payload.sub);
             if (myPlayer) {
-              setCurrentPlayer(myPlayer);
-              return;
+              foundPlayer = myPlayer;
             }
           } catch { /* ignore */ }
         }
-        if (pl.length > 0) setCurrentPlayer(pl[0] ?? null);
+        if (!foundPlayer && pl.length > 0) {
+          foundPlayer = pl[0] ?? null;
+        }
+        setCurrentPlayer(foundPlayer);
+
+        // Find current player's tag team
+        if (foundPlayer) {
+          const myTeam = fetchedTagTeams.find(
+            (tt) => tt.player1Id === foundPlayer!.playerId || tt.player2Id === foundPlayer!.playerId
+          );
+          setPlayerTagTeam(myTeam || null);
+        }
       })
       .catch(() => {});
 
@@ -245,19 +263,36 @@ export default function PromoEditor() {
       });
 
       // Auto-create challenge when submitting a call-out promo
-      if (promoType === 'call-out' && targetPlayerId && features.challenges) {
-        try {
-          await challengesApi.create({
-            challengedId: targetPlayerId,
-            matchType: challengeMatchType,
-            stipulation: challengeStipulation || undefined,
-            message: (title || content.slice(0, 500)) || undefined,
-          });
-          setChallengeCreated(true);
-        } catch {
-          setChallengeWarning(
-            t('promos.editor.challengeFailed', 'Promo published, but the challenge could not be created. You can issue it separately.')
-          );
+      if (promoType === 'call-out' && features.challenges) {
+        const shouldCreateChallenge = challengeMode === 'tag_team'
+          ? !!selectedTagTeamId
+          : !!targetPlayerId;
+
+        if (shouldCreateChallenge) {
+          try {
+            if (challengeMode === 'tag_team') {
+              await challengesApi.create({
+                challengedId: '',
+                challengeMode: 'tag_team',
+                challengedTagTeamId: selectedTagTeamId,
+                matchType: challengeMatchType,
+                stipulation: challengeStipulation || undefined,
+                message: (title || content.slice(0, 500)) || undefined,
+              });
+            } else {
+              await challengesApi.create({
+                challengedId: targetPlayerId,
+                matchType: challengeMatchType,
+                stipulation: challengeStipulation || undefined,
+                message: (title || content.slice(0, 500)) || undefined,
+              });
+            }
+            setChallengeCreated(true);
+          } catch {
+            setChallengeWarning(
+              t('promos.editor.challengeFailed', 'Promo published, but the challenge could not be created. You can issue it separately.')
+            );
+          }
         }
       }
 
@@ -300,6 +335,8 @@ export default function PromoEditor() {
                 setChallengeStipulation('');
                 setChallengeCreated(false);
                 setChallengeWarning(null);
+                setChallengeMode('singles');
+                setSelectedTagTeamId('');
                 setError(null);
               }}
             >
@@ -401,8 +438,44 @@ export default function PromoEditor() {
           </div>
         </div>
 
-        {/* Target Player */}
-        {showTargetPlayer && (
+        {/* Challenge Mode Toggle (call-out only, when player has a tag team) */}
+        {promoType === 'call-out' && playerTagTeam && (
+          <div className="form-group">
+            <label className="form-label">
+              {t('challenges.issue.challengeMode', 'Challenge Mode')}
+            </label>
+            <div className="challenge-mode-toggle">
+              <label className="challenge-mode-option">
+                <input
+                  type="radio"
+                  name="challengeMode"
+                  value="singles"
+                  checked={challengeMode === 'singles'}
+                  onChange={() => { setChallengeMode('singles'); setSelectedTagTeamId(''); }}
+                />
+                {t('challenges.issue.singlesChallenge', 'Singles')}
+              </label>
+              <label className="challenge-mode-option">
+                <input
+                  type="radio"
+                  name="challengeMode"
+                  value="tag_team"
+                  checked={challengeMode === 'tag_team'}
+                  onChange={() => { setChallengeMode('tag_team'); setTargetPlayerId(''); setTargetPromoId(''); }}
+                />
+                {t('challenges.issue.tagTeamChallenge', 'Tag Team')}
+              </label>
+            </div>
+            {challengeMode === 'tag_team' && (
+              <div className="on-behalf-of">
+                {t('challenges.issue.onBehalfOf', 'On behalf of')}: <strong>{playerTagTeam.name}</strong>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Target Player (singles call-out or response promo) */}
+        {showTargetPlayer && (promoType !== 'call-out' || challengeMode === 'singles') && (
           <div className="form-group">
             <label className="form-label" htmlFor="target-player">
               {t('promos.editor.targetPlayer', 'Target Wrestler')}
@@ -424,6 +497,37 @@ export default function PromoEditor() {
                   {player.currentWrestler} ({player.name})
                 </option>
               ))}
+            </select>
+          </div>
+        )}
+
+        {/* Target Tag Team (tag team mode) */}
+        {promoType === 'call-out' && challengeMode === 'tag_team' && (
+          <div className="form-group">
+            <label className="form-label" htmlFor="target-tag-team">
+              {t('challenges.issue.selectOpponentTeam', 'Target Tag Team')}
+            </label>
+            <select
+              id="target-tag-team"
+              className="form-select"
+              value={selectedTagTeamId}
+              onChange={(e) => setSelectedTagTeamId(e.target.value)}
+            >
+              <option value="">
+                {t('challenges.issue.selectOpponentTeamPlaceholder', '-- Select a tag team --')}
+              </option>
+              {tagTeams
+                .filter((tt) => tt.tagTeamId !== playerTagTeam?.tagTeamId)
+                .map((tt) => {
+                  const p1 = players.find((p) => p.playerId === tt.player1Id);
+                  const p2 = players.find((p) => p.playerId === tt.player2Id);
+                  const names = [p1?.currentWrestler || tt.player1Id, p2?.currentWrestler || tt.player2Id].join(' & ');
+                  return (
+                    <option key={tt.tagTeamId} value={tt.tagTeamId}>
+                      {tt.name} ({names})
+                    </option>
+                  );
+                })}
             </select>
           </div>
         )}
