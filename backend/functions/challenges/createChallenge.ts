@@ -4,7 +4,7 @@ import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { v4 as uuidv4 } from 'uuid';
-import { createNotification, createNotifications } from '../../lib/notifications';
+import { createNotification } from '../../lib/notifications';
 
 interface CreateChallengeBody {
   challengedId: string;
@@ -12,32 +12,6 @@ interface CreateChallengeBody {
   stipulation?: string;
   championshipId?: string;
   message?: string;
-  challengeMode?: 'singles' | 'tag_team';
-  challengedTagTeamId?: string;
-}
-
-async function findPlayerActiveTagTeam(playerId: string): Promise<Record<string, unknown> | null> {
-  const [player1Result, player2Result] = await Promise.all([
-    dynamoDb.query({
-      TableName: TableNames.TAG_TEAMS,
-      IndexName: 'Player1Index',
-      KeyConditionExpression: 'player1Id = :pid',
-      FilterExpression: '#s = :active',
-      ExpressionAttributeNames: { '#s': 'status' },
-      ExpressionAttributeValues: { ':pid': playerId, ':active': 'active' },
-    }),
-    dynamoDb.query({
-      TableName: TableNames.TAG_TEAMS,
-      IndexName: 'Player2Index',
-      KeyConditionExpression: 'player2Id = :pid',
-      FilterExpression: '#s = :active',
-      ExpressionAttributeNames: { '#s': 'status' },
-      ExpressionAttributeValues: { ':pid': playerId, ':active': 'active' },
-    }),
-  ]);
-
-  const match = player1Result.Items?.[0] || player2Result.Items?.[0];
-  return match ? (match as Record<string, unknown>) : null;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -49,10 +23,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { data: body, error: parseError } = parseBody<CreateChallengeBody>(event);
     if (parseError) return parseError;
-    const { challengedId, matchType, stipulation, championshipId, message, challengeMode, challengedTagTeamId } = body;
+    const { challengedId, matchType, stipulation, championshipId, message } = body;
 
-    if (!matchType) {
-      return badRequest('matchType is required');
+    if (!challengedId || !matchType) {
+      return badRequest('challengedId and matchType are required');
     }
 
     // Find the challenger's player record via their user sub
@@ -70,98 +44,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const challengerId = challengerPlayer.playerId as string;
 
-    const now = new Date();
-    const expiresAt = new Date(now);
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7-day expiration
-
-    if (challengeMode === 'tag_team') {
-      // --- Tag Team Challenge Flow ---
-      if (!challengedTagTeamId) {
-        return badRequest('challengedTagTeamId is required for tag team challenges');
-      }
-
-      const challengerTagTeam = await findPlayerActiveTagTeam(challengerId);
-      if (!challengerTagTeam) {
-        return badRequest('You are not in an active tag team');
-      }
-
-      const challengedTagTeamResult = await dynamoDb.get({
-        TableName: TableNames.TAG_TEAMS,
-        Key: { tagTeamId: challengedTagTeamId },
-      });
-
-      if (!challengedTagTeamResult.Item) {
-        return badRequest('Challenged tag team not found');
-      }
-
-      const challengedTeam = challengedTagTeamResult.Item as Record<string, unknown>;
-
-      if (challengedTeam.status !== 'active') {
-        return badRequest('Challenged tag team is not active');
-      }
-
-      if ((challengerTagTeam.tagTeamId as string) === challengedTagTeamId) {
-        return badRequest('A tag team cannot challenge itself');
-      }
-
-      const challenge = {
-        challengeId: uuidv4(),
-        challengerId,
-        challengedId: challengedTeam.player1Id as string,
-        challengeMode: 'tag_team' as const,
-        challengerTagTeamId: challengerTagTeam.tagTeamId as string,
-        challengedTagTeamId,
-        matchType,
-        stipulation: stipulation || undefined,
-        championshipId: championshipId || undefined,
-        message: message || undefined,
-        status: 'pending',
-        expiresAt: expiresAt.toISOString(),
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      };
-
-      await dynamoDb.put({
-        TableName: TableNames.CHALLENGES,
-        Item: challenge,
-      });
-
-      // Notify both members of the challenged tag team
-      const challengedPlayerIds = [
-        challengedTeam.player1Id as string,
-        challengedTeam.player2Id as string,
-      ];
-
-      const playerResults = await Promise.all(
-        challengedPlayerIds.map((pid) =>
-          dynamoDb.get({ TableName: TableNames.PLAYERS, Key: { playerId: pid } })
-        )
-      );
-
-      const challengerTagTeamName = challengerTagTeam.name as string;
-      const notifications = playerResults
-        .map((result) => result.Item as Record<string, unknown> | undefined)
-        .filter((player): player is Record<string, unknown> => !!player?.userId)
-        .map((player) => ({
-          userId: player.userId as string,
-          type: 'challenge_received' as const,
-          message: `${challengerTagTeamName} has challenged your tag team to a match!`,
-          sourceId: challenge.challengeId,
-          sourceType: 'challenge' as const,
-        }));
-
-      if (notifications.length > 0) {
-        await createNotifications(notifications);
-      }
-
-      return created(challenge);
-    }
-
-    // --- Singles Challenge Flow (default) ---
-    if (!challengedId) {
-      return badRequest('challengedId is required');
-    }
-
     if (challengerId === challengedId) {
       return badRequest('You cannot challenge yourself');
     }
@@ -175,11 +57,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Challenged player not found');
     }
 
+    const now = new Date();
+    const expiresAt = new Date(now);
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7-day expiration
+
     const challenge = {
       challengeId: uuidv4(),
       challengerId,
       challengedId,
-      challengeMode: 'singles' as const,
       matchType,
       stipulation: stipulation || undefined,
       championshipId: championshipId || undefined,

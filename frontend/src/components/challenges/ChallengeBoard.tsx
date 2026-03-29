@@ -172,76 +172,32 @@ export default function ChallengeBoard() {
                 </span>
               </div>
 
-              {challenge.challengeMode === 'tag_team' && (
-                <span className="challenge-tag-team-badge">
-                  {t('challenges.board.tagTeamMatch')}
-                </span>
-              )}
-
               <div className="challenge-versus">
-                {challenge.challengeMode === 'tag_team' && challenge.challengerTagTeam ? (
-                  <>
-                    <div className="challenge-player">
-                      <div className="challenge-player-avatar">
-                        {getInitial(challenge.challengerTagTeam.tagTeamName)}
-                      </div>
-                      <div className="challenge-wrestler-name">
-                        {challenge.challengerTagTeam.tagTeamName}
-                      </div>
-                      <div className="challenge-team-members">
-                        {challenge.challengerTagTeam.player1.wrestlerName} &amp; {challenge.challengerTagTeam.player2.wrestlerName}
-                      </div>
-                    </div>
-                    <span className="challenge-vs-divider">
-                      {t('common.vs').toUpperCase()}
-                    </span>
-                    <div className="challenge-player">
-                      <div className="challenge-player-avatar">
-                        {getInitial(challenge.challengedTagTeam?.tagTeamName ?? challenge.challenged.wrestlerName)}
-                      </div>
-                      <div className="challenge-wrestler-name">
-                        {challenge.challengedTagTeam?.tagTeamName ?? challenge.challenged.wrestlerName}
-                      </div>
-                      {challenge.challengedTagTeam ? (
-                        <div className="challenge-team-members">
-                          {challenge.challengedTagTeam.player1.wrestlerName} &amp; {challenge.challengedTagTeam.player2.wrestlerName}
-                        </div>
-                      ) : (
-                        <div className="challenge-player-name">
-                          {challenge.challenged.playerName}
-                        </div>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="challenge-player">
-                      <div className="challenge-player-avatar">
-                        {getInitial(challenge.challenger.wrestlerName)}
-                      </div>
-                      <div className="challenge-wrestler-name">
-                        {challenge.challenger.wrestlerName}
-                      </div>
-                      <div className="challenge-player-name">
-                        {challenge.challenger.playerName}
-                      </div>
-                    </div>
-                    <span className="challenge-vs-divider">
-                      {t('common.vs').toUpperCase()}
-                    </span>
-                    <div className="challenge-player">
-                      <div className="challenge-player-avatar">
-                        {getInitial(challenge.challenged.wrestlerName)}
-                      </div>
-                      <div className="challenge-wrestler-name">
-                        {challenge.challenged.wrestlerName}
-                      </div>
-                      <div className="challenge-player-name">
-                        {challenge.challenged.playerName}
-                      </div>
-                    </div>
-                  </>
-                )}
+                <div className="challenge-player">
+                  <div className="challenge-player-avatar">
+                    {getInitial(challenge.challenger.wrestlerName)}
+                  </div>
+                  <div className="challenge-wrestler-name">
+                    {challenge.challenger.wrestlerName}
+                  </div>
+                  <div className="challenge-player-name">
+                    {challenge.challenger.playerName}
+                  </div>
+                </div>
+                <span className="challenge-vs-divider">
+                  {t('common.vs').toUpperCase()}
+                </span>
+                <div className="challenge-player">
+                  <div className="challenge-player-avatar">
+                    {getInitial(challenge.challenged.wrestlerName)}
+                  </div>
+                  <div className="challenge-wrestler-name">
+                    {challenge.challenged.wrestlerName}
+                  </div>
+                  <div className="challenge-player-name">
+                    {challenge.challenged.playerName}
+                  </div>
+                </div>
               </div>
 
               {challenge.message && (

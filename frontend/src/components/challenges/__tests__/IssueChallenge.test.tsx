@@ -5,13 +5,12 @@ import { BrowserRouter } from 'react-router-dom';
 import type { Player } from '../../../types';
 
 // --- Hoisted mocks ---
-const { mockGetAllPlayers, mockGetMyProfile, mockCreateChallenge, mockGetAllStipulations, mockGetAllMatchTypes, mockGetAllTagTeams } = vi.hoisted(() => ({
+const { mockGetAllPlayers, mockGetMyProfile, mockCreateChallenge, mockGetAllStipulations, mockGetAllMatchTypes } = vi.hoisted(() => ({
   mockGetAllPlayers: vi.fn(),
   mockGetMyProfile: vi.fn(),
   mockCreateChallenge: vi.fn(),
   mockGetAllStipulations: vi.fn(),
   mockGetAllMatchTypes: vi.fn(),
-  mockGetAllTagTeams: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -20,7 +19,6 @@ vi.mock('../../../services/api', () => ({
   challengesApi: { create: mockCreateChallenge },
   stipulationsApi: { getAll: mockGetAllStipulations },
   matchTypesApi: { getAll: mockGetAllMatchTypes },
-  tagTeamsApi: { getAll: mockGetAllTagTeams },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -92,7 +90,6 @@ describe('IssueChallenge', () => {
       { stipulationId: 'stip-2', name: 'Ladder', createdAt: '', updatedAt: '' },
       { stipulationId: 'stip-3', name: 'Hell in a Cell', createdAt: '', updatedAt: '' },
     ]);
-    mockGetAllTagTeams.mockResolvedValue([]);
     mockGetAllMatchTypes.mockResolvedValue([
       { matchTypeId: 'mt-1', name: 'Singles', createdAt: '', updatedAt: '' },
       { matchTypeId: 'mt-2', name: 'Tag Team', createdAt: '', updatedAt: '' },

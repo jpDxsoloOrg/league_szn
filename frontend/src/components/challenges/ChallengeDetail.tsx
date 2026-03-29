@@ -123,17 +123,8 @@ export default function ChallengeDetail() {
     );
   }
 
-  const isTagTeam = challenge.challengeMode === 'tag_team';
-
-  const isSent = challenge.challengerId === currentPlayerId ||
-    (isTagTeam && !!challenge.challengerTagTeam &&
-     (challenge.challengerTagTeam.player1?.playerId === currentPlayerId ||
-      challenge.challengerTagTeam.player2?.playerId === currentPlayerId));
-
-  const isReceived = challenge.challengedId === currentPlayerId ||
-    (isTagTeam && !!challenge.challengedTagTeam &&
-     (challenge.challengedTagTeam.player1?.playerId === currentPlayerId ||
-      challenge.challengedTagTeam.player2?.playerId === currentPlayerId));
+  const isReceived = challenge.challengedId === currentPlayerId;
+  const isSent = challenge.challengerId === currentPlayerId;
 
   const createdDate = new Date(challenge.createdAt).toLocaleDateString(undefined, {
     year: 'numeric',
@@ -164,11 +155,6 @@ export default function ChallengeDetail() {
               {t('challenges.board.titleMatch')}
             </span>
           )}
-          {isTagTeam && (
-            <span className="challenge-detail-tag-team-badge">
-              {t('challenges.board.tagTeamMatch')}
-            </span>
-          )}
         </div>
         <span className={`challenge-status-badge ${challenge.status}`}>
           {t(`challenges.status.${challenge.status}`)}
@@ -176,97 +162,37 @@ export default function ChallengeDetail() {
       </div>
 
       <div className="challenge-detail-versus">
-        {isTagTeam && challenge.challengerTagTeam && challenge.challengedTagTeam ? (
-          <>
-            <div className="challenge-detail-team">
-              <div className="challenge-detail-player-avatar challenger">
-                {getInitial(challenge.challengerTagTeam.tagTeamName)}
-              </div>
-              <div className="challenge-detail-team-name">
-                {challenge.challengerTagTeam.tagTeamName}
-              </div>
-              <div className="challenge-detail-team-members">
-                <div className="challenge-detail-team-member">
-                  {challenge.challengerTagTeam.player1.wrestlerName}
-                  <span className="challenge-detail-team-member-player">
-                    {challenge.challengerTagTeam.player1.playerName}
-                  </span>
-                </div>
-                <div className="challenge-detail-team-member">
-                  {challenge.challengerTagTeam.player2.wrestlerName}
-                  <span className="challenge-detail-team-member-player">
-                    {challenge.challengerTagTeam.player2.playerName}
-                  </span>
-                </div>
-              </div>
-              <span className="challenge-detail-role-label challenger-label">
-                {t('challenges.detail.challengerTeam')}
-              </span>
-            </div>
+        <div className="challenge-detail-player">
+          <div className="challenge-detail-player-avatar challenger">
+            {getInitial(challenge.challenger.wrestlerName)}
+          </div>
+          <div className="challenge-detail-wrestler">
+            {challenge.challenger.wrestlerName}
+          </div>
+          <div className="challenge-detail-player-label">
+            {challenge.challenger.playerName}
+          </div>
+          <span className="challenge-detail-role-label challenger-label">
+            {t('challenges.detail.challenger')}
+          </span>
+        </div>
 
-            <div className="challenge-detail-vs">{t('common.vs').toUpperCase()}</div>
+        <div className="challenge-detail-vs">{t('common.vs').toUpperCase()}</div>
 
-            <div className="challenge-detail-team">
-              <div className="challenge-detail-player-avatar challenged">
-                {getInitial(challenge.challengedTagTeam.tagTeamName)}
-              </div>
-              <div className="challenge-detail-team-name">
-                {challenge.challengedTagTeam.tagTeamName}
-              </div>
-              <div className="challenge-detail-team-members">
-                <div className="challenge-detail-team-member">
-                  {challenge.challengedTagTeam.player1.wrestlerName}
-                  <span className="challenge-detail-team-member-player">
-                    {challenge.challengedTagTeam.player1.playerName}
-                  </span>
-                </div>
-                <div className="challenge-detail-team-member">
-                  {challenge.challengedTagTeam.player2.wrestlerName}
-                  <span className="challenge-detail-team-member-player">
-                    {challenge.challengedTagTeam.player2.playerName}
-                  </span>
-                </div>
-              </div>
-              <span className="challenge-detail-role-label challenged-label">
-                {t('challenges.detail.challengedTeam')}
-              </span>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="challenge-detail-player">
-              <div className="challenge-detail-player-avatar challenger">
-                {getInitial(challenge.challenger.wrestlerName)}
-              </div>
-              <div className="challenge-detail-wrestler">
-                {challenge.challenger.wrestlerName}
-              </div>
-              <div className="challenge-detail-player-label">
-                {challenge.challenger.playerName}
-              </div>
-              <span className="challenge-detail-role-label challenger-label">
-                {t('challenges.detail.challenger')}
-              </span>
-            </div>
-
-            <div className="challenge-detail-vs">{t('common.vs').toUpperCase()}</div>
-
-            <div className="challenge-detail-player">
-              <div className="challenge-detail-player-avatar challenged">
-                {getInitial(challenge.challenged.wrestlerName)}
-              </div>
-              <div className="challenge-detail-wrestler">
-                {challenge.challenged.wrestlerName}
-              </div>
-              <div className="challenge-detail-player-label">
-                {challenge.challenged.playerName}
-              </div>
-              <span className="challenge-detail-role-label challenged-label">
-                {t('challenges.detail.challenged')}
-              </span>
-            </div>
-          </>
-        )}
+        <div className="challenge-detail-player">
+          <div className="challenge-detail-player-avatar challenged">
+            {getInitial(challenge.challenged.wrestlerName)}
+          </div>
+          <div className="challenge-detail-wrestler">
+            {challenge.challenged.wrestlerName}
+          </div>
+          <div className="challenge-detail-player-label">
+            {challenge.challenged.playerName}
+          </div>
+          <span className="challenge-detail-role-label challenged-label">
+            {t('challenges.detail.challenged')}
+          </span>
+        </div>
       </div>
 
       <div className="challenge-detail-messages">

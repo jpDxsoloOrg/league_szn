@@ -55,7 +55,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Challenge is no longer pending');
     }
 
-    // Verify the responder is allowed to respond
+    // Verify the responder is the challenged player
     const playerResult = await dynamoDb.query({
       TableName: TableNames.PLAYERS,
       IndexName: 'UserIdIndex',
@@ -63,28 +63,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       ExpressionAttributeValues: { ':uid': auth.sub },
     });
     const responderPlayer = playerResult.Items?.[0];
-    if (!responderPlayer) {
+    if (!responderPlayer || responderPlayer.playerId !== challenge.challengedId) {
       return forbidden('Only the challenged player can respond');
-    }
-
-    if (challenge.challengeMode === 'tag_team') {
-      // Tag team challenge: either member of the challenged tag team can respond
-      const tagTeamResult = await dynamoDb.get({
-        TableName: TableNames.TAG_TEAMS,
-        Key: { tagTeamId: challenge.challengedTagTeamId as string },
-      });
-      const tagTeam = tagTeamResult.Item;
-      if (!tagTeam || tagTeam.status !== 'active') {
-        return badRequest('The challenged tag team has been dissolved');
-      }
-      if (responderPlayer.playerId !== tagTeam.player1Id && responderPlayer.playerId !== tagTeam.player2Id) {
-        return forbidden('Only members of the challenged tag team can respond');
-      }
-    } else {
-      // Singles challenge: only the challenged player can respond
-      if (responderPlayer.playerId !== challenge.challengedId) {
-        return forbidden('Only the challenged player can respond');
-      }
     }
 
     const now = new Date().toISOString();
@@ -122,7 +102,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const counterChallenge: Record<string, unknown> = {
       challengeId: counterChallengeId,
-      challengerId: responderPlayer.playerId as string,
+      challengerId: challenge.challengedId as string,
       challengedId: challenge.challengerId as string,
       matchType: counterMatchType,
       status: 'pending',
@@ -130,11 +110,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       createdAt: now,
       updatedAt: now,
     };
-    if (challenge.challengeMode === 'tag_team') {
-      counterChallenge.challengeMode = 'tag_team';
-      counterChallenge.challengerTagTeamId = challenge.challengedTagTeamId;
-      counterChallenge.challengedTagTeamId = challenge.challengerTagTeamId;
-    }
     if (counterStipulation) counterChallenge.stipulation = counterStipulation;
     if (counterMessage) counterChallenge.message = counterMessage;
 
