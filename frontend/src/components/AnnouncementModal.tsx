@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { announcementsApi } from '../services/api';
 import type { Announcement } from '../types';
+import { toMediaUrl } from '../utils/mediaUrl';
 import './AnnouncementModal.css';
 
 const STORAGE_KEY = 'dismissed_announcements';
@@ -21,6 +22,25 @@ function dismissAnnouncement(id: string): void {
     ids.push(id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
   }
+}
+
+function AnnouncementVideo({ url }: { url: string }) {
+  const { t } = useTranslation();
+  const mediaUrl = toMediaUrl(url);
+
+  return (
+    <div className="announcement-modal-video">
+      <video
+        controls
+        playsInline
+        preload="metadata"
+        className="announcement-video-player"
+      >
+        <source src={mediaUrl} />
+        {t('highlights.videoNotSupported')}
+      </video>
+    </div>
+  );
 }
 
 export default function AnnouncementModal() {
@@ -97,6 +117,9 @@ export default function AnnouncementModal() {
           className="announcement-modal-body"
           dangerouslySetInnerHTML={{ __html: current.body }}
         />
+        {current.videoUrl && (
+          <AnnouncementVideo url={current.videoUrl} />
+        )}
         {announcements.length > 1 && (
           <div className="announcement-modal-counter">
             {t('announcements.counter', {

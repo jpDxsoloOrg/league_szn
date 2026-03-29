@@ -18,6 +18,7 @@ const DEFAULT_FORM = {
   priority: 1,
   expiresAt: '',
   isActive: true,
+  videoUrl: '',
 };
 
 export default function ManageAnnouncements() {
@@ -68,6 +69,7 @@ export default function ManageAnnouncements() {
         priority: formData.priority,
         isActive: formData.isActive,
         expiresAt: formData.expiresAt ? new Date(formData.expiresAt).toISOString() : undefined,
+        videoUrl: formData.videoUrl.trim() || undefined,
       };
 
       if (editing) {
@@ -96,6 +98,7 @@ export default function ManageAnnouncements() {
       priority: announcement.priority,
       expiresAt: announcement.expiresAt ? announcement.expiresAt.slice(0, 10) : '',
       isActive: announcement.isActive,
+      videoUrl: announcement.videoUrl || '',
     });
     setShowForm(true);
     setShowPreview(false);
@@ -169,6 +172,17 @@ export default function ManageAnnouncements() {
                 required
                 placeholder={t('announcements.fields.bodyPlaceholder')}
                 rows={6}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="ann-video">{t('announcements.fields.videoUrl')}</label>
+              <input
+                type="url"
+                id="ann-video"
+                value={formData.videoUrl}
+                onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                placeholder={t('announcements.fields.videoUrlPlaceholder')}
               />
             </div>
 

@@ -13,7 +13,7 @@ const s3Client = new S3Client({
 interface GenerateUploadUrlBody {
   fileName: string;
   fileType: string;
-  folder: 'wrestlers' | 'championships' | 'shows';
+  folder: 'wrestlers' | 'championships' | 'shows' | 'videos';
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -28,13 +28,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('fileName, fileType, and folder are required');
     }
 
-    if (!['wrestlers', 'championships', 'shows'].includes(body.folder)) {
-      return badRequest('folder must be "wrestlers", "championships", or "shows"');
+    if (!['wrestlers', 'championships', 'shows', 'videos'].includes(body.folder)) {
+      return badRequest('folder must be "wrestlers", "championships", "shows", or "videos"');
     }
 
-    // Validate file type (only allow images)
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    // Validate file type based on folder
+    const imageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const videoTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+    const allowedTypes = body.folder === 'videos' ? [...videoTypes, ...imageTypes] : imageTypes;
     if (!allowedTypes.includes(body.fileType)) {
+      if (body.folder === 'videos') {
+        return badRequest('Invalid file type. Only MP4, WebM, MOV video files and JPEG, PNG, GIF, WebP images are allowed for videos');
+      }
       return badRequest('Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed');
     }
 

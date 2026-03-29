@@ -72,6 +72,7 @@ import PublicProfile from './components/profile/PublicProfile';
 import ProtectedRoute from './components/ProtectedRoute';
 import FeatureRoute from './components/FeatureRoute';
 import ProfileCompletionModal from './components/ProfileCompletionModal';
+import Highlights from './components/Highlights';
 import AnnouncementModal from './components/AnnouncementModal';
 import './App.css';
 
@@ -120,6 +121,7 @@ function AppLayout() {
             <Route path="/matches" element={<MatchSearch />} />
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/awards" element={<SeasonAwardsPage />} />
+            <Route path="/highlights" element={<Highlights />} />
             <Route path="/guide" element={<Navigate to="/guide/wiki" replace />} />
             <Route path="/guide/wiki" element={<WikiLayout />}>
               <Route index element={<WikiIndex />} />

@@ -299,6 +299,23 @@ export interface Announcement {
   isActive: boolean;
   priority: number;      // 1=low, 2=medium, 3=high
   expiresAt?: string;
+  videoUrl?: string;     // Optional attached video URL
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type VideoCategory = 'match' | 'highlight' | 'promo' | 'other';
+
+export interface Video {
+  videoId: string;
+  title: string;
+  description: string;
+  videoUrl: string;
+  thumbnailUrl?: string;
+  category: VideoCategory;
+  tags: string[];
+  isPublished: boolean;
+  uploadedBy: string;
   createdAt: string;
   updatedAt: string;
 }

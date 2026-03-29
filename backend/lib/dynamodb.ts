@@ -142,6 +142,7 @@ export const TableNames = {
   STABLES: process.env.STABLES_TABLE!,
   TAG_TEAMS: process.env.TAG_TEAMS_TABLE!,
   STABLE_INVITATIONS: process.env.STABLE_INVITATIONS_TABLE!,
+  VIDEOS: process.env.VIDEOS_TABLE!,
   ANNOUNCEMENTS: process.env.ANNOUNCEMENTS_TABLE!,
   NOTIFICATIONS: process.env.NOTIFICATIONS_TABLE!,
 };

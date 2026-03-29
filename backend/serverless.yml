@@ -37,6 +37,7 @@ provider:
     STABLES_TABLE: ${self:service}-stables-${self:provider.stage}
     TAG_TEAMS_TABLE: ${self:service}-tag-teams-${self:provider.stage}
     STABLE_INVITATIONS_TABLE: ${self:service}-stable-invitations-${self:provider.stage}
+    VIDEOS_TABLE: ${self:service}-videos-${self:provider.stage}
     ANNOUNCEMENTS_TABLE: ${self:service}-announcements-${self:provider.stage}
     NOTIFICATIONS_TABLE: ${self:service}-notifications-${self:provider.stage}
     DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT, 'http://localhost:8000'}
@@ -96,6 +97,8 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TAG_TEAMS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STABLE_INVITATIONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STABLE_INVITATIONS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.ANNOUNCEMENTS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.ANNOUNCEMENTS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.NOTIFICATIONS_TABLE}
@@ -936,6 +939,38 @@ functions:
           authorizer: adminAuthorizer
 
   # Announcements (consolidated: getActive, adminList, create, update, delete)
+  videos:
+    handler: functions/videos/handler.handler
+    events:
+      - http:
+          path: videos
+          method: get
+          cors: *corsConfig
+      - http:
+          path: videos/{videoId}
+          method: get
+          cors: *corsConfig
+      - http:
+          path: admin/videos
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/videos
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/videos/{videoId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/videos/{videoId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
   announcements:
     handler: functions/announcements/handler.handler
     events:
@@ -1721,6 +1756,31 @@ resources:
             Projection:
               ProjectionType: ALL
 
+    VideosTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.VIDEOS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: videoId
+            AttributeType: S
+          - AttributeName: isPublished
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: videoId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: PublishedIndex
+            KeySchema:
+              - AttributeName: isPublished
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
     AnnouncementsTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -1789,10 +1849,17 @@ resources:
                 - '*'
               AllowedMethods:
                 - GET
+                - HEAD
                 - PUT
                 - POST
               AllowedOrigins:
                 - '*'
+              ExposedHeaders:
+                - Content-Length
+                - Content-Range
+                - Accept-Ranges
+                - Content-Type
+                - ETag
               MaxAge: 3000
 
     ImagesBucketPolicy:
@@ -1827,6 +1894,29 @@ resources:
                 HTTPPort: 80
                 HTTPSPort: 443
                 OriginProtocolPolicy: http-only
+            - Id: S3MediaOrigin
+              DomainName: ${self:provider.environment.IMAGES_BUCKET}.s3.us-east-1.amazonaws.com
+              S3OriginConfig:
+                OriginAccessIdentity: ''
+          CacheBehaviors:
+            - PathPattern: videos/*
+              TargetOriginId: S3MediaOrigin
+              ViewerProtocolPolicy: redirect-to-https
+              AllowedMethods:
+                - GET
+                - HEAD
+                - OPTIONS
+              CachedMethods:
+                - GET
+                - HEAD
+              Compress: false
+              ForwardedValues:
+                QueryString: false
+                Cookies:
+                  Forward: none
+              DefaultTTL: 86400
+              MaxTTL: 31536000
+              MinTTL: 0
           DefaultCacheBehavior:
             TargetOriginId: S3WebsiteOrigin
             ViewerProtocolPolicy: redirect-to-https

@@ -155,6 +155,7 @@
     "tagTeams": "Tag Teams",
     "myStable": "Mein Stable",
     "myTagTeam": "Mein Tag Team",
+    "highlights": "Highlights",
     "profile": "Mein Profil",
     "groups": {
       "core": "Liga",
@@ -465,6 +466,7 @@
         "stables": "Stables verwalten",
         "tagTeams": "Tag Teams verwalten",
         "announcements": "Ankündigungen",
+        "videos": "Videos verwalten",
         "dangerZone": "Gefahrenzone"
       },
       "groups": {
@@ -503,7 +505,9 @@
       "bodyPlaceholder": "<p>Ihr Ankündigungsinhalt hier...</p>",
       "priority": "Priorität",
       "expiresAt": "Läuft ab am",
-      "active": "Aktiv"
+      "active": "Aktiv",
+      "videoUrl": "Video-URL (optional)",
+      "videoUrlPlaceholder": "https://... Link zur Videodatei"
     },
     "priority": {
       "low": "Niedrig",
@@ -517,6 +521,54 @@
     },
     "dontShowAgain": "Nicht mehr anzeigen",
     "counter": "{{current}} von {{total}}"
+  },
+  "videos": {
+    "title": "Videos verwalten",
+    "upload": "Video hochladen",
+    "edit": "Video bearbeiten",
+    "allVideos": "Alle Videos",
+    "noVideos": "Noch keine Videos hochgeladen.",
+    "titleRequired": "Titel ist erforderlich.",
+    "videoRequired": "Eine Videodatei oder URL ist erforderlich.",
+    "createSuccess": "Video erfolgreich hochgeladen!",
+    "updateSuccess": "Video erfolgreich aktualisiert!",
+    "deleteSuccess": "Video erfolgreich gelöscht!",
+    "confirmDelete": "Möchten Sie dieses Video wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "loadError": "Videos konnten nicht geladen werden.",
+    "saveError": "Video konnte nicht gespeichert werden.",
+    "deleteError": "Video konnte nicht gelöscht werden.",
+    "uploadingVideo": "Video wird hochgeladen...",
+    "uploadingThumbnail": "Vorschaubild wird hochgeladen...",
+    "currentUrl": "Aktuelle Video-URL",
+    "currentThumbnail": "Aktuelles Vorschaubild",
+    "published": "Veröffentlicht",
+    "draft": "Entwurf",
+    "tagsPlaceholder": "Tag1, Tag2, Tag3",
+    "fields": {
+      "title": "Titel",
+      "description": "Beschreibung",
+      "videoFile": "Videodatei",
+      "thumbnail": "Vorschaubild (optional)",
+      "category": "Kategorie",
+      "tags": "Tags (kommagetrennt)",
+      "published": "Veröffentlicht"
+    },
+    "categories": {
+      "match": "Match",
+      "highlight": "Highlight",
+      "promo": "Promo",
+      "other": "Sonstiges"
+    }
+  },
+  "highlights": {
+    "title": "Highlights & Videos",
+    "subtitle": "Match-Highlights, Promos und mehr ansehen",
+    "noVideos": "Noch keine Videos verfügbar. Schauen Sie bald wieder vorbei!",
+    "loadError": "Videos konnten nicht geladen werden.",
+    "videoNotSupported": "Ihr Browser unterstützt das Video-Tag nicht.",
+    "videoError": "Dieses Video kann im Browser nicht abgespielt werden.",
+    "openDirectly": "Video direkt öffnen",
+    "playVideo": "Video abspielen"
   },
   "seasonAwards": {
     "title": "Saison-Auszeichnungen",
