@@ -39,7 +39,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         ExpressionAttributeValues: { ':uid': auth.sub },
       });
       const player = playerResult.Items?.[0];
-      if (!player || player.playerId !== challenge.challengerId) {
+      if (!player) {
+        return forbidden('Player not found for current user');
+      }
+
+      if (challenge.challengeMode === 'tag_team') {
+        const tagTeamResult = await dynamoDb.get({
+          TableName: TableNames.TAG_TEAMS,
+          Key: { tagTeamId: challenge.challengerTagTeamId as string },
+        });
+        const tagTeam = tagTeamResult.Item;
+        if (!tagTeam || (player.playerId !== tagTeam.player1Id && player.playerId !== tagTeam.player2Id)) {
+          return forbidden('Only members of the challenger tag team or an admin can cancel');
+        }
+      } else if (player.playerId !== challenge.challengerId) {
         return forbidden('Only the challenger or an admin can cancel a challenge');
       }
     }

@@ -177,7 +177,15 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
         </div>
       )}
 
-      {(promo.promoType === 'call-out') && promo.targetWrestlerName && (
+      {(promo.promoType === 'call-out') && promo.challengeMode === 'tag_team' && promo.challengerTagTeamName && promo.targetTagTeamName && (
+        <div className="promo-target promo-target--tag-team">
+          <span className="target-name">{promo.challengerTagTeamName}</span>
+          <span className="target-label">{t('promos.card.callingOut', 'calling out')}</span>
+          <span className="target-name">{promo.targetTagTeamName}</span>
+        </div>
+      )}
+
+      {(promo.promoType === 'call-out') && promo.challengeMode !== 'tag_team' && promo.targetWrestlerName && (
         <div className="promo-target">
           <span className="target-label">{t('promos.card.callingOut', 'Calling out')}</span>
           <span className="target-name">{promo.targetWrestlerName}</span>

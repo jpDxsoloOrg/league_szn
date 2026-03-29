@@ -28,6 +28,7 @@ vi.mock('../../../lib/dynamodb', () => ({
   TableNames: {
     CHALLENGES: 'Challenges',
     PLAYERS: 'Players',
+    TAG_TEAMS: 'TagTeams',
   },
 }));
 
@@ -152,7 +153,7 @@ describe('cancelChallenge', () => {
     const result = await cancelChallenge(event, ctx, cb);
 
     expect(result!.statusCode).toBe(403);
-    expect(JSON.parse(result!.body).message).toBe('Only the challenger or an admin can cancel a challenge');
+    expect(JSON.parse(result!.body).message).toBe('Player not found for current user');
   });
 
   it('cancels challenge when user is the challenger', async () => {

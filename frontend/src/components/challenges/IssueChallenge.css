@@ -97,6 +97,47 @@
   font-size: 0.95rem;
 }
 
+.challenge-mode-toggle {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.challenge-mode-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background-color: #222;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #ccc;
+  font-size: 0.95rem;
+  transition: background-color 0.3s;
+}
+
+.challenge-mode-option:hover {
+  background-color: #333;
+}
+
+.challenge-mode-option input[type='radio'] {
+  accent-color: #d4af37;
+  cursor: pointer;
+}
+
+.on-behalf-of {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background-color: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 6px;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.on-behalf-of strong {
+  color: #d4af37;
+}
+
 .issue-preview {
   background-color: #2d2d2d;
   border-radius: 8px;

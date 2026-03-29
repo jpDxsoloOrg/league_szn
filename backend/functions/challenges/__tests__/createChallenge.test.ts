@@ -9,7 +9,12 @@ const { mockGet, mockPut, mockQuery } = vi.hoisted(() => ({
 
 vi.mock('../../../lib/dynamodb', () => ({
   dynamoDb: { get: mockGet, put: mockPut, query: mockQuery },
-  TableNames: { CHALLENGES: 'Challenges', PLAYERS: 'Players' },
+  TableNames: { CHALLENGES: 'Challenges', PLAYERS: 'Players', TAG_TEAMS: 'TagTeams' },
+}));
+
+vi.mock('../../../lib/notifications', () => ({
+  createNotification: vi.fn().mockResolvedValue(undefined),
+  createNotifications: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('uuid', () => ({ v4: () => 'test-uuid-1234' }));
@@ -118,15 +123,16 @@ describe('createChallenge', () => {
   });
 
   it('returns 400 when challengedId is missing', async () => {
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
     const result = await createChallenge(wrestlerEvent({ matchType: 'Singles' }), ctx, cb);
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('challengedId and matchType are required');
+    expect(JSON.parse(result!.body).message).toBe('challengedId is required');
   });
 
   it('returns 400 when matchType is missing', async () => {
     const result = await createChallenge(wrestlerEvent({ challengedId: 'p2' }), ctx, cb);
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('challengedId and matchType are required');
+    expect(JSON.parse(result!.body).message).toBe('matchType is required');
   });
 
   it('returns 400 when no player profile is linked to the user account', async () => {

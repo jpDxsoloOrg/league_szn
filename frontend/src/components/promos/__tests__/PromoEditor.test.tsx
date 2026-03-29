@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampionships, mockCreatePromo, mockGetAllStipulations, mockGetAllMatchTypes } =
+const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampionships, mockCreatePromo, mockGetAllStipulations, mockGetAllMatchTypes, mockGetAllTagTeams } =
   vi.hoisted(() => ({
     mockGetAllPlayers: vi.fn(),
     mockGetAllPromos: vi.fn(),
@@ -13,6 +13,7 @@ const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampi
     mockCreatePromo: vi.fn(),
     mockGetAllStipulations: vi.fn(),
     mockGetAllMatchTypes: vi.fn(),
+    mockGetAllTagTeams: vi.fn(),
   }));
 
 vi.mock('../../../services/api', () => ({
@@ -22,6 +23,7 @@ vi.mock('../../../services/api', () => ({
   championshipsApi: { getAll: mockGetAllChampionships },
   stipulationsApi: { getAll: mockGetAllStipulations },
   matchTypesApi: { getAll: mockGetAllMatchTypes },
+  tagTeamsApi: { getAll: mockGetAllTagTeams },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -123,6 +125,7 @@ describe('PromoEditor', () => {
       { matchTypeId: 'mt-1', name: 'Singles', createdAt: '', updatedAt: '' },
       { matchTypeId: 'mt-2', name: 'Tag Team', createdAt: '', updatedAt: '' },
     ]);
+    mockGetAllTagTeams.mockResolvedValue([]);
     // Mock sessionStorage for current player detection
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
   });

@@ -41,16 +41,35 @@ export default function MyChallenges() {
   }, []);
 
   const sentChallenges = useMemo(
-    () => challenges.filter((c) => c.challengerId === currentPlayerId),
+    () => challenges.filter((c) =>
+      c.challengerId === currentPlayerId ||
+      (c.challengeMode === 'tag_team' && c.challengerTagTeam &&
+       (c.challengerTagTeam.player1?.playerId === currentPlayerId ||
+        c.challengerTagTeam.player2?.playerId === currentPlayerId))
+    ),
     [challenges, currentPlayerId]
   );
 
   const receivedChallenges = useMemo(
-    () => challenges.filter((c) => c.challengedId === currentPlayerId),
+    () => challenges.filter((c) =>
+      c.challengedId === currentPlayerId ||
+      (c.challengeMode === 'tag_team' && c.challengedTagTeam &&
+       (c.challengedTagTeam.player1?.playerId === currentPlayerId ||
+        c.challengedTagTeam.player2?.playerId === currentPlayerId))
+    ),
     [challenges, currentPlayerId]
   );
 
   const currentList = activeTab === 'sent' ? sentChallenges : receivedChallenges;
+
+  const isSentByMe = useCallback((challenge: ChallengeWithPlayers): boolean => {
+    if (challenge.challengerId === currentPlayerId) return true;
+    if (challenge.challengeMode === 'tag_team' && challenge.challengerTagTeam) {
+      return challenge.challengerTagTeam.player1?.playerId === currentPlayerId ||
+        challenge.challengerTagTeam.player2?.playerId === currentPlayerId;
+    }
+    return false;
+  }, [currentPlayerId]);
 
   const handleAction = useCallback(async (action: string, challenge: ChallengeWithPlayers) => {
     try {
@@ -59,10 +78,16 @@ export default function MyChallenges() {
       } else if (action === 'cancel') {
         await challengesApi.cancel(challenge.challengeId);
       }
-      const opponent =
-        challenge.challengerId === currentPlayerId
+      let opponent: string;
+      if (challenge.challengeMode === 'tag_team') {
+        opponent = isSentByMe(challenge)
+          ? (challenge.challengedTagTeam?.tagTeamName ?? challenge.challenged.wrestlerName)
+          : (challenge.challengerTagTeam?.tagTeamName ?? challenge.challenger.wrestlerName);
+      } else {
+        opponent = isSentByMe(challenge)
           ? challenge.challenged.wrestlerName
           : challenge.challenger.wrestlerName;
+      }
       setActionFeedback(
         t('challenges.my.actionFeedback', { action, opponent })
       );
@@ -80,7 +105,7 @@ export default function MyChallenges() {
       setActionFeedback(`Error: ${err instanceof Error ? err.message : 'Failed'}`);
     }
     setTimeout(() => setActionFeedback(null), 3000);
-  }, [currentPlayerId, t, features, navigate]);
+  }, [isSentByMe, t, features, navigate]);
 
   const getOpponent = (challenge: ChallengeWithPlayers) => {
     if (challenge.challengerId === currentPlayerId) {
@@ -91,26 +116,53 @@ export default function MyChallenges() {
 
   const renderChallengeItem = (challenge: ChallengeWithPlayers) => {
     const opponent = getOpponent(challenge);
-    const isSent = challenge.challengerId === currentPlayerId;
+    const isSent = isSentByMe(challenge);
+    const isTagTeam = challenge.challengeMode === 'tag_team';
+    const opponentTagTeam = isTagTeam
+      ? (isSent ? challenge.challengedTagTeam : challenge.challengerTagTeam)
+      : undefined;
     const date = new Date(challenge.createdAt).toLocaleDateString();
 
     return (
       <div key={challenge.challengeId} className="my-challenge-item">
         <div className="my-challenge-item-top">
           <div className="my-challenge-opponent">
-            <div className="my-challenge-opponent-avatar">
-              {getInitial(opponent.wrestlerName)}
-            </div>
-            <div className="my-challenge-opponent-info">
-              <span className="my-challenge-opponent-wrestler">
-                {opponent.wrestlerName}
-              </span>
-              <span className="my-challenge-opponent-name">
-                {opponent.playerName}
-              </span>
-            </div>
+            {isTagTeam && opponentTagTeam ? (
+              <>
+                <div className="my-challenge-opponent-avatar">
+                  {getInitial(opponentTagTeam.tagTeamName)}
+                </div>
+                <div className="my-challenge-opponent-info">
+                  <span className="my-challenge-opponent-wrestler">
+                    {opponentTagTeam.tagTeamName}
+                  </span>
+                  <span className="my-challenge-opponent-name">
+                    {opponentTagTeam.player1.wrestlerName} &amp; {opponentTagTeam.player2.wrestlerName}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="my-challenge-opponent-avatar">
+                  {getInitial(opponent.wrestlerName)}
+                </div>
+                <div className="my-challenge-opponent-info">
+                  <span className="my-challenge-opponent-wrestler">
+                    {opponent.wrestlerName}
+                  </span>
+                  <span className="my-challenge-opponent-name">
+                    {opponent.playerName}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
           <div className="my-challenge-meta">
+            {isTagTeam && (
+              <span className="my-challenge-type-tag my-challenge-tag-team-badge">
+                {t('challenges.board.tagTeamMatch')}
+              </span>
+            )}
             <span className="my-challenge-type-tag">{challenge.matchType}</span>
             {challenge.stipulation && (
               <span className="my-challenge-type-tag">{challenge.stipulation}</span>
