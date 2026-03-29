@@ -1899,7 +1899,7 @@ resources:
               S3OriginConfig:
                 OriginAccessIdentity: ''
           CacheBehaviors:
-            - PathPattern: /media/*
+            - PathPattern: videos/*
               TargetOriginId: S3MediaOrigin
               ViewerProtocolPolicy: redirect-to-https
               AllowedMethods:
