@@ -16,6 +16,9 @@ interface CreatePromoBody {
   targetPromoId?: string;
   matchId?: string;
   championshipId?: string;
+  challengeMode?: 'singles' | 'tag_team';
+  challengerTagTeamName?: string;
+  targetTagTeamName?: string;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -27,7 +30,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { data: body, error: parseError } = parseBody<CreatePromoBody>(event);
     if (parseError) return parseError;
-    const { promoType, title, content, targetPlayerId, targetPromoId, matchId, championshipId } = body;
+    const { promoType, title, content, targetPlayerId, targetPromoId, matchId, championshipId, challengeMode, challengerTagTeamName, targetTagTeamName } = body;
 
     if (!promoType || !VALID_PROMO_TYPES.includes(promoType)) {
       return badRequest('Valid promoType is required');
@@ -71,6 +74,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (targetPromoId) promo.targetPromoId = targetPromoId;
     if (matchId) promo.matchId = matchId;
     if (championshipId) promo.championshipId = championshipId;
+    if (challengeMode) promo.challengeMode = challengeMode;
+    if (challengerTagTeamName) promo.challengerTagTeamName = challengerTagTeamName;
+    if (targetTagTeamName) promo.targetTagTeamName = targetTagTeamName;
 
     await dynamoDb.put({
       TableName: TableNames.PROMOS,

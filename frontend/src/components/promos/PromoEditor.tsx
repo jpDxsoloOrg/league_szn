@@ -252,6 +252,7 @@ export default function PromoEditor() {
     setChallengeCreated(false);
     setChallengeWarning(null);
     try {
+      const selectedTeam = tagTeams.find((tt) => tt.tagTeamId === selectedTagTeamId);
       await promosApi.create({
         promoType,
         title: title || undefined,
@@ -260,6 +261,11 @@ export default function PromoEditor() {
         targetPromoId: targetPromoId || undefined,
         matchId: matchId || undefined,
         championshipId: championshipId || undefined,
+        ...(promoType === 'call-out' && challengeMode === 'tag_team' && playerTagTeam && selectedTeam ? {
+          challengeMode: 'tag_team',
+          challengerTagTeamName: playerTagTeam.name,
+          targetTagTeamName: selectedTeam.name,
+        } : {}),
       });
 
       // Auto-create challenge when submitting a call-out promo

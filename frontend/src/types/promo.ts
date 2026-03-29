@@ -20,6 +20,9 @@ export interface Promo {
   matchId?: string;
   championshipId?: string;
   imageUrl?: string;
+  challengeMode?: 'singles' | 'tag_team';
+  challengerTagTeamName?: string;
+  targetTagTeamName?: string;
   reactions: Record<string, ReactionType>;
   reactionCounts: Record<ReactionType, number>;
   isPinned: boolean;
@@ -48,4 +51,7 @@ export interface CreatePromoInput {
   targetPromoId?: string;
   matchId?: string;
   championshipId?: string;
+  challengeMode?: 'singles' | 'tag_team';
+  challengerTagTeamName?: string;
+  targetTagTeamName?: string;
 }
