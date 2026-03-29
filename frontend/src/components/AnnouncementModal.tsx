@@ -28,15 +28,13 @@ function AnnouncementVideo({ url }: { url: string }) {
 
   return (
     <div className="announcement-modal-video">
-      <video
-        controls
-        playsInline
-        preload="metadata"
+      <iframe
+        src={url}
         className="announcement-video-player"
-      >
-        <source src={url} />
-        {t('highlights.videoNotSupported')}
-      </video>
+        allow="autoplay; fullscreen"
+        allowFullScreen
+        title={t('announcements.fields.videoUrl')}
+      />
       <a
         href={url}
         target="_blank"

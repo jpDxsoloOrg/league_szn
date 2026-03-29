@@ -9,29 +9,39 @@ const CATEGORIES: (VideoCategory | 'all')[] = ['all', 'match', 'highlight', 'pro
 
 function VideoCard({ video }: { video: Video }) {
   const { t } = useTranslation();
+  const [playing, setPlaying] = useState(false);
 
   return (
     <div className="highlight-card">
       <div className="highlight-preview">
-        <video
-          controls
-          playsInline
-          preload="metadata"
-          poster={video.thumbnailUrl || undefined}
-          className="highlight-video"
-        >
-          <source src={video.videoUrl} />
-          {t('highlights.videoNotSupported')}
-        </video>
-        <a
-          href={video.videoUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="video-direct-link-overlay"
-          title={t('highlights.openDirectly')}
-        >
-          &#8599;
-        </a>
+        {playing ? (
+          <iframe
+            src={video.videoUrl}
+            className="highlight-video-iframe"
+            allow="autoplay; fullscreen"
+            allowFullScreen
+            title={video.title}
+          />
+        ) : (
+          <button
+            className="highlight-play-btn"
+            onClick={() => setPlaying(true)}
+            aria-label={t('highlights.playVideo')}
+          >
+            {video.thumbnailUrl ? (
+              <img
+                src={video.thumbnailUrl}
+                alt={video.title}
+                className="highlight-thumbnail"
+              />
+            ) : (
+              <div className="highlight-placeholder" />
+            )}
+            <div className="play-overlay">
+              <span className="play-icon">&#9654;</span>
+            </div>
+          </button>
+        )}
       </div>
       <div className="highlight-info">
         <h3>{video.title}</h3>

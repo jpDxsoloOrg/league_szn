@@ -567,7 +567,8 @@
     "loadError": "Videos konnten nicht geladen werden.",
     "videoNotSupported": "Ihr Browser unterstützt das Video-Tag nicht.",
     "videoError": "Dieses Video kann im Browser nicht abgespielt werden.",
-    "openDirectly": "Video direkt öffnen"
+    "openDirectly": "Video direkt öffnen",
+    "playVideo": "Video abspielen"
   },
   "seasonAwards": {
     "title": "Saison-Auszeichnungen",

@@ -567,7 +567,8 @@
     "loadError": "Failed to load videos.",
     "videoNotSupported": "Your browser does not support the video tag.",
     "videoError": "Unable to play this video in the browser.",
-    "openDirectly": "Open video directly"
+    "openDirectly": "Open video directly",
+    "playVideo": "Play video"
   },
   "seasonAwards": {
     "title": "Season Awards",

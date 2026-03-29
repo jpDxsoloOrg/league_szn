@@ -53,7 +53,8 @@
 
 .announcement-video-player {
   width: 100%;
-  max-height: 300px;
+  height: 250px;
+  border: none;
   border-radius: 8px;
   background-color: #000;
   display: block;
