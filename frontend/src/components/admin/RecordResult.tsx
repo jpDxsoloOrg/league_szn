@@ -11,10 +11,13 @@ import './RecordResult.css';
 
 const STANDALONE_FILTER = '__standalone__';
 
+type ViewTab = 'scheduled' | 'completed';
+
 export default function RecordResult() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [matches, setMatches] = useState<Match[]>([]);
+  const [completedMatches, setCompletedMatches] = useState<Match[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [events, setEvents] = useState<LeagueEvent[]>([]);
   const [stipulations, setStipulations] = useState<Stipulation[]>([]);
@@ -30,6 +33,7 @@ export default function RecordResult() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ViewTab>('scheduled');
 
   useEffect(() => {
     loadData();
@@ -38,14 +42,16 @@ export default function RecordResult() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [matchesData, playersData, eventsData, stipulationsData, tagTeamsData] = await Promise.all([
+      const [matchesData, completedMatchesData, playersData, eventsData, stipulationsData, tagTeamsData] = await Promise.all([
         matchesApi.getAll({ status: 'scheduled' }),
+        matchesApi.getAll({ status: 'completed' }),
         playersApi.getAll(),
         eventsApi.getAll(),
         stipulationsApi.getAll(),
         tagTeamsApi.getAll({ status: 'active' }).catch(() => [] as TagTeam[]),
       ]);
       setMatches(matchesData);
+      setCompletedMatches(completedMatchesData);
       setPlayers(playersData);
       setStipulations(stipulationsData);
       setTagTeams(tagTeamsData as (TagTeam & { player1Name?: string; player2Name?: string })[]);
@@ -165,17 +171,22 @@ export default function RecordResult() {
     }
   };
 
-  const handleDeleteMatch = async () => {
-    if (!selectedMatch) return;
-    const confirmed = window.confirm(
-      `Delete this ${selectedMatch.matchFormat} match? This cannot be undone.`
-    );
+  const handleDeleteMatch = async (match?: Match) => {
+    const targetMatch = match || selectedMatch;
+    if (!targetMatch) return;
+
+    const isCompleted = targetMatch.status === 'completed';
+    const confirmMsg = isCompleted
+      ? `Delete this completed ${targetMatch.matchFormat} match? Player stats (wins/losses/draws) will be rolled back. This cannot be undone.`
+      : `Delete this ${targetMatch.matchFormat} match? This cannot be undone.`;
+
+    const confirmed = window.confirm(confirmMsg);
     if (!confirmed) return;
 
     setSubmitting(true);
     setError(null);
     try {
-      await matchesApi.delete(selectedMatch.matchId);
+      await matchesApi.delete(targetMatch.matchId);
       setSuccess('Match deleted successfully');
       setSelectedMatch(null);
       await loadData();
@@ -305,12 +316,45 @@ export default function RecordResult() {
     return <Skeleton variant="block" count={4} />;
   }
 
+  // Filter completed matches by event
+  const filteredCompletedMatches = useMemo(() => {
+    // Sort by date descending (most recent first)
+    const sorted = [...completedMatches].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    if (!selectedEventFilter || selectedEventFilter === '') return sorted;
+    if (selectedEventFilter === STANDALONE_FILTER) {
+      return sorted.filter(m => !matchEventMap.has(m.matchId));
+    }
+    const selectedEvent = events.find(e => e.eventId === selectedEventFilter);
+    if (selectedEvent) {
+      const eventMatchIds = new Set((selectedEvent.matchCards || []).map(c => c.matchId));
+      return sorted.filter(m => eventMatchIds.has(m.matchId));
+    }
+    return sorted;
+  }, [completedMatches, selectedEventFilter, events, matchEventMap]);
+
   return (
     <div className="record-result">
       <h2>Record Match Results</h2>
 
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
+
+      <div className="record-result-tabs">
+        <button
+          className={`record-result-tab ${activeTab === 'scheduled' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('scheduled'); setSelectedMatch(null); }}
+        >
+          Scheduled ({matches.length})
+        </button>
+        <button
+          className={`record-result-tab ${activeTab === 'completed' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('completed'); setSelectedMatch(null); }}
+        >
+          Completed ({completedMatches.length})
+        </button>
+      </div>
 
       <div className="event-filter-bar">
         <div className="event-filter-labels">
@@ -341,220 +385,312 @@ export default function RecordResult() {
         />
       </div>
 
-      {filteredMatches.length === 0 ? (
-        <div className="empty-state">
-          <p>No scheduled matches{selectedEventFilter === STANDALONE_FILTER ? ' outside of events' : ' for this event'}.</p>
-        </div>
-      ) : (
-        <div className="matches-result-grid">
-          <div className="matches-list-section">
-            <h3>Scheduled Matches ({filteredMatches.length})</h3>
-            <div className="scheduled-matches-list">
-              {filteredMatches.map(match => {
-                const designation = matchDesignationMap.get(match.matchId);
-                return (
-                  <div
-                    key={match.matchId}
-                    className={`match-item ${selectedMatch?.matchId === match.matchId ? 'selected' : ''}`}
-                    onClick={() => handleMatchSelect(match)}
-                  >
-                    <div className="match-item-header">
-                      <span className="match-type">{match.matchFormat}</span>
-                      <div className="match-badges">
-                        {designation && (
-                          <span className="designation-badge">{designation.replace('-', ' ')}</span>
-                        )}
-                        {match.isChampionship && (
-                          <span className="championship-badge">Championship</span>
+      {activeTab === 'scheduled' && (
+        <>
+          {filteredMatches.length === 0 ? (
+            <div className="empty-state">
+              <p>No scheduled matches{selectedEventFilter === STANDALONE_FILTER ? ' outside of events' : ' for this event'}.</p>
+            </div>
+          ) : (
+            <div className="matches-result-grid">
+              <div className="matches-list-section">
+                <h3>Scheduled Matches ({filteredMatches.length})</h3>
+                <div className="scheduled-matches-list">
+                  {filteredMatches.map(match => {
+                    const designation = matchDesignationMap.get(match.matchId);
+                    return (
+                      <div
+                        key={match.matchId}
+                        className={`match-item ${selectedMatch?.matchId === match.matchId ? 'selected' : ''}`}
+                        onClick={() => handleMatchSelect(match)}
+                      >
+                        <div className="match-item-header">
+                          <span className="match-type">{match.matchFormat}</span>
+                          <div className="match-badges">
+                            {designation && (
+                              <span className="designation-badge">{designation.replace('-', ' ')}</span>
+                            )}
+                            {match.isChampionship && (
+                              <span className="championship-badge">Championship</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="match-participants-preview">
+                          {formatMatchPreview(match)}
+                        </div>
+                        {match.stipulationId && (
+                          <div className="match-stipulation">{getStipulationName(match.stipulationId)}</div>
                         )}
                       </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="result-entry-section">
+                {selectedMatch ? (
+                  <>
+                    <h3>Record Result</h3>
+                    <div className="match-details">
+                      <div className="detail-row">
+                        <strong>Match Type:</strong> {selectedMatch.matchFormat}
+                      </div>
+                      {selectedMatch.stipulationId && (
+                        <div className="detail-row">
+                          <strong>Stipulation:</strong> {getStipulationName(selectedMatch.stipulationId)}
+                        </div>
+                      )}
+                      <div className="detail-row">
+                        <strong>Date:</strong> {new Date(selectedMatch.date).toLocaleString()}
+                      </div>
                     </div>
-                    <div className="match-participants-preview">
-                      {formatMatchPreview(match)}
+
+                    <div className="draw-toggle-row">
+                      <label className="draw-toggle-label">
+                        <input
+                          type="checkbox"
+                          checked={isDraw}
+                          onChange={(e) => {
+                            setIsDraw(e.target.checked);
+                            if (e.target.checked) {
+                              setWinners([]);
+                              setWinningTeamIndex(null);
+                            }
+                          }}
+                          className="draw-toggle-checkbox"
+                        />
+                        <span className="draw-toggle-text">Draw</span>
+                      </label>
+                      {isDraw && (
+                        <span className="draw-hint">All participants will receive a draw.</span>
+                      )}
                     </div>
+
+                    <div className="participants-selection">
+                      {isDraw ? (
+                        <div className="draw-participants-list">
+                          <h4>Draw Participants</h4>
+                          {selectedMatch.participants.map(playerId => (
+                            <div key={playerId} className="participant-option draw">
+                              <div className="participant-info">
+                                {getPlayerName(playerId)}
+                              </div>
+                              <span className="draw-badge">Draw</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : isTagTeamMatch ? (
+                        <>
+                          <h4>{t('recordResult.selectWinningTeamTitle')}</h4>
+                          <div className="teams-list">
+                            {selectedMatch.teams!.map((team, teamIndex) => (
+                              <div
+                                key={teamIndex}
+                                className={`team-option ${winningTeamIndex === teamIndex ? 'winner' : ''}`}
+                                onClick={() => handleTeamWinnerSelect(teamIndex)}
+                              >
+                                <div className="team-info">
+                                  <div className="team-label">{getTeamDisplayName(team)}</div>
+                                  <div className="team-members-list">
+                                    {team.map(playerId => (
+                                      <span key={playerId} className="team-member-name">
+                                        {getPlayerName(playerId)}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                                {winningTeamIndex === teamIndex && (
+                                  <span className="winner-badge">{t('recordResult.winner')}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <h4>{t('recordResult.selectWinners')}</h4>
+                          <div className="participants-list">
+                            {selectedMatch.participants.map(playerId => (
+                              <div
+                                key={playerId}
+                                className={`participant-option ${winners.includes(playerId) ? 'winner' : ''}`}
+                                onClick={() => handleWinnerToggle(playerId)}
+                              >
+                                <div className="participant-info">
+                                  {getPlayerName(playerId)}
+                                </div>
+                                {winners.includes(playerId) && (
+                                  <span className="winner-badge">{t('recordResult.winner')}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="rating-awards-block">
+                      <div className="star-rating-row">
+                        <span className="star-rating-label">{t('match.starRating')}</span>
+                        <div className="star-rating-stars" role="group" aria-label={t('match.starRating')}>
+                          {[1, 2, 3, 4, 5].map((value) => (
+                            <button
+                              key={value}
+                              type="button"
+                              className={`star-btn ${typeof starRating === 'number' && starRating >= value ? 'filled' : ''}`}
+                              onClick={() => setStarRating(starRating === value ? '' : value)}
+                              title={`${value} ${value === 1 ? 'star' : 'stars'}`}
+                              aria-pressed={typeof starRating === 'number' && starRating >= value}
+                            >
+                              {typeof starRating === 'number' && starRating >= value ? '\u2605' : '\u2606'}
+                            </button>
+                          ))}
+                        </div>
+                        {starRating !== '' && (
+                          <button
+                            type="button"
+                            className="star-rating-clear"
+                            onClick={() => setStarRating('')}
+                          >
+                            {t('match.clearRating')}
+                          </button>
+                        )}
+                      </div>
+                      <div className="motn-row">
+                        <label className="motn-label">
+                          <input
+                            type="checkbox"
+                            checked={matchOfTheNight}
+                            onChange={(e) => setMatchOfTheNight(e.target.checked)}
+                            className="motn-checkbox"
+                          />
+                          <span className="motn-text">{t('match.matchOfTheNight')}</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="result-actions">
+                      <button onClick={handleSubmit} disabled={(!isDraw && winners.length === 0) || submitting}>
+                        {submitting ? 'Recording...' : 'Record Result'}
+                      </button>
+                      <button onClick={() => setSelectedMatch(null)} className="cancel-btn" disabled={submitting}>
+                        Cancel
+                      </button>
+                    </div>
+                    <div className="delete-match-section">
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => navigate(`/admin/edit-match/${selectedMatch.matchId}`)}
+                        disabled={submitting}
+                      >
+                        Edit Match
+                      </button>
+                      <button
+                        className="delete-match-btn"
+                        onClick={() => handleDeleteMatch()}
+                        disabled={submitting}
+                      >
+                        {t('recordResult.deleteMatch', 'Delete Match')}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="empty-state">
+                    <p>Select a match to record its result</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 'completed' && (
+        <>
+          {filteredCompletedMatches.length === 0 ? (
+            <div className="empty-state">
+              <p>No completed matches{selectedEventFilter === STANDALONE_FILTER ? ' outside of events' : selectedEventFilter ? ' for this event' : ''}.</p>
+            </div>
+          ) : (
+            <div className="completed-matches-list">
+              {filteredCompletedMatches.map(match => {
+                const designation = matchDesignationMap.get(match.matchId);
+                const matchWinners = match.winners || [];
+                const matchLosers = match.losers || [];
+                const wasDraw = match.isDraw === true;
+                const isChampionshipOrTournament = (match.isChampionship && match.championshipId) || match.tournamentId;
+
+                return (
+                  <div key={match.matchId} className="completed-match-item">
+                    <div className="completed-match-header">
+                      <div className="completed-match-info">
+                        <span className="match-type">{match.matchFormat}</span>
+                        <span className="completed-match-date">{new Date(match.date).toLocaleDateString()}</span>
+                        <div className="match-badges">
+                          {designation && (
+                            <span className="designation-badge">{designation.replace('-', ' ')}</span>
+                          )}
+                          {match.isChampionship && (
+                            <span className="championship-badge">Championship</span>
+                          )}
+                          {match.tournamentId && (
+                            <span className="designation-badge">Tournament</span>
+                          )}
+                        </div>
+                      </div>
+                      {match.starRating && (
+                        <span className="completed-match-stars">
+                          {'★'.repeat(Math.floor(match.starRating))}
+                          {match.starRating % 1 !== 0 ? '½' : ''}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="completed-match-result">
+                      {wasDraw ? (
+                        <div className="completed-match-draw">
+                          <span className="draw-badge">Draw</span>
+                          <span>{matchWinners.map(id => getPlayerNameShort(id)).join(', ')}</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="completed-match-winners">
+                            <span className="winner-badge">W</span>
+                            <span>{matchWinners.map(id => getPlayerNameShort(id)).join(', ')}</span>
+                          </div>
+                          <div className="completed-match-losers">
+                            <span className="loser-badge">L</span>
+                            <span>{matchLosers.map(id => getPlayerNameShort(id)).join(', ')}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
                     {match.stipulationId && (
                       <div className="match-stipulation">{getStipulationName(match.stipulationId)}</div>
                     )}
+
+                    <div className="completed-match-actions">
+                      {isChampionshipOrTournament ? (
+                        <span className="completed-match-locked">
+                          {match.isChampionship ? 'Championship' : 'Tournament'} matches cannot be deleted
+                        </span>
+                      ) : (
+                        <button
+                          className="delete-match-btn"
+                          onClick={() => handleDeleteMatch(match)}
+                          disabled={submitting}
+                        >
+                          Delete Match
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
-          </div>
-
-          <div className="result-entry-section">
-            {selectedMatch ? (
-              <>
-                <h3>Record Result</h3>
-                <div className="match-details">
-                  <div className="detail-row">
-                    <strong>Match Type:</strong> {selectedMatch.matchFormat}
-                  </div>
-                  {selectedMatch.stipulationId && (
-                    <div className="detail-row">
-                      <strong>Stipulation:</strong> {getStipulationName(selectedMatch.stipulationId)}
-                    </div>
-                  )}
-                  <div className="detail-row">
-                    <strong>Date:</strong> {new Date(selectedMatch.date).toLocaleString()}
-                  </div>
-                </div>
-
-                <div className="draw-toggle-row">
-                  <label className="draw-toggle-label">
-                    <input
-                      type="checkbox"
-                      checked={isDraw}
-                      onChange={(e) => {
-                        setIsDraw(e.target.checked);
-                        if (e.target.checked) {
-                          setWinners([]);
-                          setWinningTeamIndex(null);
-                        }
-                      }}
-                      className="draw-toggle-checkbox"
-                    />
-                    <span className="draw-toggle-text">Draw</span>
-                  </label>
-                  {isDraw && (
-                    <span className="draw-hint">All participants will receive a draw.</span>
-                  )}
-                </div>
-
-                <div className="participants-selection">
-                  {isDraw ? (
-                    <div className="draw-participants-list">
-                      <h4>Draw Participants</h4>
-                      {selectedMatch.participants.map(playerId => (
-                        <div key={playerId} className="participant-option draw">
-                          <div className="participant-info">
-                            {getPlayerName(playerId)}
-                          </div>
-                          <span className="draw-badge">Draw</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : isTagTeamMatch ? (
-                    <>
-                      <h4>{t('recordResult.selectWinningTeamTitle')}</h4>
-                      <div className="teams-list">
-                        {selectedMatch.teams!.map((team, teamIndex) => (
-                          <div
-                            key={teamIndex}
-                            className={`team-option ${winningTeamIndex === teamIndex ? 'winner' : ''}`}
-                            onClick={() => handleTeamWinnerSelect(teamIndex)}
-                          >
-                            <div className="team-info">
-                              <div className="team-label">{getTeamDisplayName(team)}</div>
-                              <div className="team-members-list">
-                                {team.map(playerId => (
-                                  <span key={playerId} className="team-member-name">
-                                    {getPlayerName(playerId)}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                            {winningTeamIndex === teamIndex && (
-                              <span className="winner-badge">{t('recordResult.winner')}</span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <h4>{t('recordResult.selectWinners')}</h4>
-                      <div className="participants-list">
-                        {selectedMatch.participants.map(playerId => (
-                          <div
-                            key={playerId}
-                            className={`participant-option ${winners.includes(playerId) ? 'winner' : ''}`}
-                            onClick={() => handleWinnerToggle(playerId)}
-                          >
-                            <div className="participant-info">
-                              {getPlayerName(playerId)}
-                            </div>
-                            {winners.includes(playerId) && (
-                              <span className="winner-badge">{t('recordResult.winner')}</span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div className="rating-awards-block">
-                  <div className="star-rating-row">
-                    <span className="star-rating-label">{t('match.starRating')}</span>
-                    <div className="star-rating-stars" role="group" aria-label={t('match.starRating')}>
-                      {[1, 2, 3, 4, 5].map((value) => (
-                        <button
-                          key={value}
-                          type="button"
-                          className={`star-btn ${typeof starRating === 'number' && starRating >= value ? 'filled' : ''}`}
-                          onClick={() => setStarRating(starRating === value ? '' : value)}
-                          title={`${value} ${value === 1 ? 'star' : 'stars'}`}
-                          aria-pressed={typeof starRating === 'number' && starRating >= value}
-                        >
-                          {typeof starRating === 'number' && starRating >= value ? '\u2605' : '\u2606'}
-                        </button>
-                      ))}
-                    </div>
-                    {starRating !== '' && (
-                      <button
-                        type="button"
-                        className="star-rating-clear"
-                        onClick={() => setStarRating('')}
-                      >
-                        {t('match.clearRating')}
-                      </button>
-                    )}
-                  </div>
-                  <div className="motn-row">
-                    <label className="motn-label">
-                      <input
-                        type="checkbox"
-                        checked={matchOfTheNight}
-                        onChange={(e) => setMatchOfTheNight(e.target.checked)}
-                        className="motn-checkbox"
-                      />
-                      <span className="motn-text">{t('match.matchOfTheNight')}</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="result-actions">
-                  <button onClick={handleSubmit} disabled={(!isDraw && winners.length === 0) || submitting}>
-                    {submitting ? 'Recording...' : 'Record Result'}
-                  </button>
-                  <button onClick={() => setSelectedMatch(null)} className="cancel-btn" disabled={submitting}>
-                    Cancel
-                  </button>
-                </div>
-                <div className="delete-match-section">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => navigate(`/admin/edit-match/${selectedMatch.matchId}`)}
-                    disabled={submitting}
-                  >
-                    Edit Match
-                  </button>
-                  <button
-                    className="delete-match-btn"
-                    onClick={handleDeleteMatch}
-                    disabled={submitting}
-                  >
-                    {t('recordResult.deleteMatch', 'Delete Match')}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="empty-state">
-                <p>Select a match to record its result</p>
-              </div>
-            )}
-          </div>
-        </div>
+          )}
+        </>
       )}
     </div>
   );
