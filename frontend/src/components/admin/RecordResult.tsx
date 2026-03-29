@@ -128,6 +128,24 @@ export default function RecordResult() {
     return matches;
   }, [matches, selectedEventFilter, events, matchEventMap]);
 
+  // Filter completed matches by event
+  const filteredCompletedMatches = useMemo(() => {
+    // Sort by date descending (most recent first)
+    const sorted = [...completedMatches].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    if (!selectedEventFilter || selectedEventFilter === '') return sorted;
+    if (selectedEventFilter === STANDALONE_FILTER) {
+      return sorted.filter(m => !matchEventMap.has(m.matchId));
+    }
+    const selectedEvent = events.find(e => e.eventId === selectedEventFilter);
+    if (selectedEvent) {
+      const eventMatchIds = new Set((selectedEvent.matchCards || []).map(c => c.matchId));
+      return sorted.filter(m => eventMatchIds.has(m.matchId));
+    }
+    return sorted;
+  }, [completedMatches, selectedEventFilter, events, matchEventMap]);
+
   const getPlayerName = (playerId: string) => {
     const player = players.find(p => p.playerId === playerId);
     return player ? `${player.name} (${player.currentWrestler})` : 'Unknown';
@@ -315,24 +333,6 @@ export default function RecordResult() {
   if (loading) {
     return <Skeleton variant="block" count={4} />;
   }
-
-  // Filter completed matches by event
-  const filteredCompletedMatches = useMemo(() => {
-    // Sort by date descending (most recent first)
-    const sorted = [...completedMatches].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-    if (!selectedEventFilter || selectedEventFilter === '') return sorted;
-    if (selectedEventFilter === STANDALONE_FILTER) {
-      return sorted.filter(m => !matchEventMap.has(m.matchId));
-    }
-    const selectedEvent = events.find(e => e.eventId === selectedEventFilter);
-    if (selectedEvent) {
-      const eventMatchIds = new Set((selectedEvent.matchCards || []).map(c => c.matchId));
-      return sorted.filter(m => eventMatchIds.has(m.matchId));
-    }
-    return sorted;
-  }, [completedMatches, selectedEventFilter, events, matchEventMap]);
 
   return (
     <div className="record-result">
