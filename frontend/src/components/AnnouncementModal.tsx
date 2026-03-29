@@ -51,6 +51,7 @@ function AnnouncementVideo({ url }: { url: string }) {
         src={url}
         controls
         playsInline
+        crossOrigin="anonymous"
         preload="metadata"
         className="announcement-video-player"
         onError={() => setVideoError(true)}

@@ -32,6 +32,7 @@ function VideoCard({ video }: { video: Video }) {
             poster={video.thumbnailUrl || undefined}
             controls
             playsInline
+            crossOrigin="anonymous"
             preload="metadata"
             className="highlight-video"
             onError={() => setVideoError(true)}
