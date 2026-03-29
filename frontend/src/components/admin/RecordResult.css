@@ -441,6 +441,129 @@
   }
 }
 
+/* Tabs */
+.record-result-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #333;
+}
+
+.record-result-tab {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #999;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.record-result-tab:hover {
+  color: #ccc;
+}
+
+.record-result-tab.active {
+  color: #d4af37;
+  border-bottom-color: #d4af37;
+}
+
+/* Completed matches list */
+.completed-matches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.completed-match-item {
+  background-color: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+
+.completed-match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.completed-match-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.completed-match-date {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.completed-match-stars {
+  color: #d4af37;
+  font-size: 1rem;
+  letter-spacing: 1px;
+}
+
+.completed-match-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.completed-match-winners,
+.completed-match-losers,
+.completed-match-draw {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.completed-match-winners {
+  color: #4ade80;
+}
+
+.completed-match-losers {
+  color: #f87171;
+}
+
+.completed-match-draw {
+  color: #f59e0b;
+}
+
+.loser-badge {
+  background-color: #ef4444;
+  color: #fff;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.completed-match-actions {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #2a2a2a;
+  display: flex;
+  align-items: center;
+}
+
+.completed-match-locked {
+  color: #666;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
 /* Delete match */
 .delete-match-section {
   margin-top: 1.5rem;

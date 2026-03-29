@@ -29,6 +29,7 @@ export interface Match {
   teams?: string[][]; // Array of teams, each team is an array of playerIds (for tag team matches)
   winners?: string[]; // playerIds
   losers?: string[]; // playerIds
+  isDraw?: boolean;
   winningTeam?: number; // Index of winning team (for tag team matches)
   isChampionship: boolean;
   isTitleDefense?: boolean;
