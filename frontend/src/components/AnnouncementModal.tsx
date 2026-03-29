@@ -25,39 +25,26 @@ function dismissAnnouncement(id: string): void {
 
 function AnnouncementVideo({ url }: { url: string }) {
   const { t } = useTranslation();
-  const [videoError, setVideoError] = useState(false);
-
-  if (videoError) {
-    return (
-      <div className="announcement-modal-video">
-        <div className="announcement-video-error">
-          <p>{t('highlights.videoError')}</p>
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="video-direct-link"
-          >
-            {t('highlights.openDirectly')}
-          </a>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="announcement-modal-video">
       <video
-        src={url}
         controls
         playsInline
-        crossOrigin="anonymous"
         preload="metadata"
         className="announcement-video-player"
-        onError={() => setVideoError(true)}
       >
+        <source src={url} />
         {t('highlights.videoNotSupported')}
       </video>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="announcement-video-open-link"
+      >
+        {t('highlights.openDirectly')}
+      </a>
     </div>
   );
 }

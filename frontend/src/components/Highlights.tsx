@@ -9,37 +9,29 @@ const CATEGORIES: (VideoCategory | 'all')[] = ['all', 'match', 'highlight', 'pro
 
 function VideoCard({ video }: { video: Video }) {
   const { t } = useTranslation();
-  const [videoError, setVideoError] = useState(false);
 
   return (
     <div className="highlight-card">
       <div className="highlight-preview">
-        {videoError ? (
-          <div className="video-error-state">
-            <p>{t('highlights.videoError')}</p>
-            <a
-              href={video.videoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="video-direct-link"
-            >
-              {t('highlights.openDirectly')}
-            </a>
-          </div>
-        ) : (
-          <video
-            src={video.videoUrl}
-            poster={video.thumbnailUrl || undefined}
-            controls
-            playsInline
-            crossOrigin="anonymous"
-            preload="metadata"
-            className="highlight-video"
-            onError={() => setVideoError(true)}
-          >
-            {t('highlights.videoNotSupported')}
-          </video>
-        )}
+        <video
+          controls
+          playsInline
+          preload="metadata"
+          poster={video.thumbnailUrl || undefined}
+          className="highlight-video"
+        >
+          <source src={video.videoUrl} />
+          {t('highlights.videoNotSupported')}
+        </video>
+        <a
+          href={video.videoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="video-direct-link-overlay"
+          title={t('highlights.openDirectly')}
+        >
+          &#8599;
+        </a>
       </div>
       <div className="highlight-info">
         <h3>{video.title}</h3>
