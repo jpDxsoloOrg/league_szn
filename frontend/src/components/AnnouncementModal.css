@@ -56,6 +56,27 @@
   max-height: 300px;
   border-radius: 8px;
   background-color: #000;
+  display: block;
+}
+
+.announcement-video-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  text-align: center;
+  color: var(--color-text-secondary, #94a3b8);
+  font-size: 0.9rem;
+}
+
+.announcement-video-error .video-direct-link {
+  color: var(--color-primary, #d4af37);
+  text-decoration: underline;
+  font-size: 0.85rem;
 }
 
 .announcement-modal-counter {
