@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { announcementsApi } from '../services/api';
@@ -48,6 +48,17 @@ export default function AnnouncementModal() {
   const { isAuthenticated, isLoading } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  const initInlineVideos = useCallback(() => {
+    if (!bodyRef.current) return;
+    const videos = bodyRef.current.querySelectorAll('video');
+    videos.forEach((video) => video.load());
+  }, []);
+
+  useEffect(() => {
+    initInlineVideos();
+  }, [currentIndex, initInlineVideos]);
 
   useEffect(() => {
     if (!isAuthenticated || isLoading) return;
@@ -115,6 +126,7 @@ export default function AnnouncementModal() {
         </h2>
         <div
           className="announcement-modal-body"
+          ref={bodyRef}
           dangerouslySetInnerHTML={{ __html: current.body }}
         />
         {current.videoUrl && (
