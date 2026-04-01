@@ -42,7 +42,14 @@ function buildWeekKey(championshipId: string): string {
   return `${championshipId}#${now.getFullYear()}-${paddedWeek}`;
 }
 
-async function calculateAllRankings(requestedChampionshipId?: string): Promise<RankingResultSummary> {
+interface ConfigOverrides {
+  periodDays?: number;
+  minimumMatches?: number;
+  maxContenders?: number;
+  divisionRestricted?: boolean;
+}
+
+async function calculateAllRankings(requestedChampionshipId?: string, configOverrides?: ConfigOverrides): Promise<RankingResultSummary> {
   const now = new Date().toISOString();
 
   // 1. Determine which championships to recalculate
@@ -108,14 +115,19 @@ async function calculateAllRankings(requestedChampionshipId?: string): Promise<R
     }
 
     // 2c. Calculate new rankings (division-locked if championship has divisionId)
+    // If divisionRestricted is explicitly false, ignore the championship's divisionId
+    const useDivisionId = configOverrides?.divisionRestricted === false
+      ? undefined
+      : championship.divisionId;
+
     const rankings: RankingResult[] = await calculateRankingsForChampionship({
       championshipId,
       championshipType: championship.type,
       currentChampion: championship.currentChampion,
-      divisionId: championship.divisionId,
-      periodDays: 30,
-      minimumMatches: 3,
-      maxContenders: 10,
+      divisionId: useDivisionId,
+      periodDays: configOverrides?.periodDays ?? 30,
+      minimumMatches: configOverrides?.minimumMatches ?? 3,
+      maxContenders: configOverrides?.maxContenders ?? 10,
     });
 
     // 2d. Fetch active overrides for this championship
@@ -218,8 +230,14 @@ export const handler: Handler = async (event) => {
       ? (event || {})
       : (event.body ? JSON.parse(event.body) : {});
     const requestedChampionshipId: string | undefined = body.championshipId;
+    const configOverrides: ConfigOverrides = {
+      periodDays: typeof body.rankingPeriodDays === 'number' ? body.rankingPeriodDays : undefined,
+      minimumMatches: typeof body.minimumMatches === 'number' ? body.minimumMatches : undefined,
+      maxContenders: typeof body.maxContenders === 'number' ? body.maxContenders : undefined,
+      divisionRestricted: typeof body.divisionRestricted === 'boolean' ? body.divisionRestricted : undefined,
+    };
 
-    const result = await calculateAllRankings(requestedChampionshipId);
+    const result = await calculateAllRankings(requestedChampionshipId, configOverrides);
 
     // For async invocations, just return the plain result (no API Gateway response wrapper)
     if (isAsyncInvocation) {

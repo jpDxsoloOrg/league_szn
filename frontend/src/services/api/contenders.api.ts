@@ -6,10 +6,22 @@ export const contendersApi = {
     return fetchWithAuth(`${API_BASE_URL}/championships/${championshipId}/contenders`, {}, signal);
   },
 
-  recalculate: async (championshipId?: string): Promise<{ message: string; summary: Record<string, number> }> => {
+  recalculate: async (
+    championshipId?: string,
+    config?: {
+      rankingPeriodDays?: number;
+      minimumMatches?: number;
+      maxContenders?: number;
+      includeDraws?: boolean;
+      divisionRestricted?: boolean;
+    },
+  ): Promise<{ message: string; summary: Record<string, number> }> => {
     return fetchWithAuth(`${API_BASE_URL}/admin/contenders/recalculate`, {
       method: 'POST',
-      body: JSON.stringify(championshipId ? { championshipId } : {}),
+      body: JSON.stringify({
+        ...(championshipId ? { championshipId } : {}),
+        ...(config || {}),
+      }),
     });
   },
 

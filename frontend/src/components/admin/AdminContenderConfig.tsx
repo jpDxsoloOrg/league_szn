@@ -58,7 +58,13 @@ export default function AdminContenderConfig() {
     try {
       setRecalculating(true);
       setMessage(null);
-      const result = await contendersApi.recalculate(selectedChampionshipId || undefined);
+      const result = await contendersApi.recalculate(selectedChampionshipId || undefined, {
+        rankingPeriodDays: config.rankingPeriodDays,
+        minimumMatches: config.minimumMatches,
+        maxContenders: config.maxContenders,
+        includeDraws: config.includeDraws,
+        divisionRestricted: config.divisionRestricted,
+      });
       setMessage({ type: 'success', text: result.message });
       setTimeout(() => setMessage(null), 5000);
     } catch (err) {
