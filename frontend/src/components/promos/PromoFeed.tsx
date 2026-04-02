@@ -169,6 +169,9 @@ export default function PromoFeed() {
           <button className="mark-all-read-btn" onClick={markAllAsRead}>
             {t('promos.feed.markAllRead', 'Mark all as read')}
           </button>
+          <Link to="/promos/new" className="cut-promo-btn">
+            {t('promos.feed.cutPromo', 'Cut a Promo')}
+          </Link>
         </div>
       </div>
 
