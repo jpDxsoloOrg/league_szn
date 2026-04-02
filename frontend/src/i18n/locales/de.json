@@ -1220,7 +1220,9 @@
       "filterCallOuts": "Ansagen",
       "filterResponses": "Antworten",
       "filterChampionship": "Meisterschaft",
-      "filterMatch": "Vor-/Nachkampf",
+      "filterMatch": "Vorkampf",
+      "filterMentions": "Erwähnungen",
+      "hideRead": "Gelesene ausblenden",
       "pinnedPromos": "Angepinnt",
       "cutPromo": "Promo schneiden",
       "noPromos": "Keine Promos gefunden. Sei der Erste, der eine Promo schneidet!",
@@ -1246,7 +1248,8 @@
       "accepting": "Wird angenommen...",
       "challengeAccepted": "Herausforderung angenommen!",
       "viewChallenge": "Herausforderung ansehen",
-      "challengeNotFound": "Herausforderung nicht gefunden"
+      "challengeNotFound": "Herausforderung nicht gefunden",
+      "readMore": "Weiterlesen"
     },
     "thread": {
       "title": "Promo-Thread",

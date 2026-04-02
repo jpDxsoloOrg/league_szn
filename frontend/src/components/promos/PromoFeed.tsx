@@ -1,14 +1,14 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { PromoType } from '../../types/promo';
 import { PromoWithContext } from '../../types/promo';
 import { promosApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { usePromoReadState } from '../../hooks/usePromoReadState';
 import PromoCard from './PromoCard';
 import './PromoFeed.css';
 
-type FeedFilter = 'all' | 'call-out' | 'response' | 'championship' | 'match';
+type FeedFilter = 'all' | 'call-out' | 'response' | 'championship' | 'match' | 'mentions';
 
 const FILTER_TABS: { key: FeedFilter; labelKey: string; fallback: string }[] = [
   { key: 'all', labelKey: 'promos.feed.filterAll', fallback: 'All' },
@@ -16,6 +16,7 @@ const FILTER_TABS: { key: FeedFilter; labelKey: string; fallback: string }[] = [
   { key: 'response', labelKey: 'promos.feed.filterResponses', fallback: 'Responses' },
   { key: 'championship', labelKey: 'promos.feed.filterChampionship', fallback: 'Championship' },
   { key: 'match', labelKey: 'promos.feed.filterMatch', fallback: 'Pre/Post Match' },
+  { key: 'mentions', labelKey: 'promos.feed.filterMentions', fallback: 'Mentions' },
 ];
 
 type DateGroup = 'today' | 'yesterday' | 'thisWeek' | 'older';
@@ -33,18 +34,20 @@ function getDateGroup(dateStr: string): DateGroup {
   return 'older';
 }
 
-function matchesFilter(promoType: PromoType, filter: FeedFilter): boolean {
+function matchesFilter(promo: PromoWithContext, filter: FeedFilter, currentPlayerId: string | null): boolean {
   switch (filter) {
     case 'all':
       return true;
     case 'call-out':
-      return promoType === 'call-out';
+      return promo.promoType === 'call-out';
     case 'response':
-      return promoType === 'response';
+      return promo.promoType === 'response';
     case 'championship':
-      return promoType === 'championship';
+      return promo.promoType === 'championship';
     case 'match':
-      return promoType === 'pre-match' || promoType === 'post-match';
+      return promo.promoType === 'pre-match' || promo.promoType === 'post-match';
+    case 'mentions':
+      return currentPlayerId !== null && promo.targetPlayerId === currentPlayerId;
     default:
       return true;
   }
@@ -52,7 +55,9 @@ function matchesFilter(promoType: PromoType, filter: FeedFilter): boolean {
 
 export default function PromoFeed() {
   const { t } = useTranslation();
+  const { playerId } = useAuth();
   const [activeFilter, setActiveFilter] = useState<FeedFilter>('all');
+  const [hideRead, setHideRead] = useState(false);
   const [promos, setPromos] = useState<PromoWithContext[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,11 +95,21 @@ export default function PromoFeed() {
 
   const pinnedPromos = useMemo(() => promos.filter((p) => p.isPinned), [promos]);
 
+  const mentionCount = useMemo(() => {
+    if (!playerId) return 0;
+    return promos.filter((p) => !p.isPinned && p.targetPlayerId === playerId && !isRead(p.promoId, p.createdAt)).length;
+  }, [promos, playerId, isRead]);
+
   const filteredPromos = useMemo(() => {
-    const nonPinned = promos.filter((p) => !p.isPinned);
-    if (activeFilter === 'all') return nonPinned;
-    return nonPinned.filter((p) => matchesFilter(p.promoType, activeFilter));
-  }, [activeFilter, promos]);
+    let result = promos.filter((p) => !p.isPinned);
+    if (activeFilter !== 'all') {
+      result = result.filter((p) => matchesFilter(p, activeFilter, playerId));
+    }
+    if (hideRead) {
+      result = result.filter((p) => !isRead(p.promoId, p.createdAt));
+    }
+    return result;
+  }, [activeFilter, promos, playerId, hideRead, isRead]);
 
   const sortedPromos = useMemo(() => {
     return [...filteredPromos].sort(
@@ -151,27 +166,33 @@ export default function PromoFeed() {
               {unread} {t('promos.feed.unread', 'unread')}
             </span>
           )}
-          {unread > 0 && (
-            <button className="mark-all-read-btn" onClick={markAllAsRead}>
-              {t('promos.feed.markAllRead', 'Mark all as read')}
-            </button>
-          )}
-          <Link to="/promos/new" className="cut-promo-btn">
-            {t('promos.feed.cutPromo', 'Cut a Promo')}
-          </Link>
+          <button className="mark-all-read-btn" onClick={markAllAsRead}>
+            {t('promos.feed.markAllRead', 'Mark all as read')}
+          </button>
         </div>
       </div>
 
-      <div className="promo-feed-filters">
-        {FILTER_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            className={`filter-tab ${activeFilter === tab.key ? 'active' : ''}`}
-            onClick={() => setActiveFilter(tab.key)}
-          >
-            {t(tab.labelKey, tab.fallback)}
-          </button>
-        ))}
+      <div className="promo-feed-toolbar">
+        <div className="promo-feed-filters">
+          {FILTER_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              className={`filter-tab ${activeFilter === tab.key ? 'active' : ''}`}
+              onClick={() => setActiveFilter(tab.key)}
+            >
+              {t(tab.labelKey, tab.fallback)}
+              {tab.key === 'mentions' && mentionCount > 0 && (
+                <span className="filter-tab-badge">{mentionCount}</span>
+              )}
+            </button>
+          ))}
+        </div>
+        <label className="hide-read-toggle">
+          <span>{t('promos.feed.hideRead', 'Hide Read')}</span>
+          <div className={`toggle-switch ${hideRead ? 'active' : ''}`} onClick={() => setHideRead((v) => !v)}>
+            <div className="toggle-knob" />
+          </div>
+        </label>
       </div>
 
       {pinnedPromos.length > 0 && activeFilter === 'all' && (
@@ -179,9 +200,11 @@ export default function PromoFeed() {
           <h3 className="promo-section-title">
             {t('promos.feed.pinnedPromos', 'Pinned')}
           </h3>
-          {pinnedPromos.map((promo) => (
-            <PromoCard key={promo.promoId} promo={promo} onReact={handleReact} />
-          ))}
+          <div className="promo-grid">
+            {pinnedPromos.map((promo) => (
+              <PromoCard key={promo.promoId} promo={promo} onReact={handleReact} />
+            ))}
+          </div>
         </div>
       )}
 
@@ -197,15 +220,17 @@ export default function PromoFeed() {
           groupedPromos.map((group) => (
             <div key={group.key} className="promo-date-group">
               <h3 className="promo-date-group-title">{t(group.labelKey)}</h3>
-              {group.promos.map((promo) => (
-                <PromoCard
-                  key={promo.promoId}
-                  promo={promo}
-                  isRead={isRead(promo.promoId, promo.createdAt)}
-                  onView={() => markAsRead(promo.promoId)}
-                  onReact={handleReact}
-                />
-              ))}
+              <div className="promo-grid">
+                {group.promos.map((promo) => (
+                  <PromoCard
+                    key={promo.promoId}
+                    promo={promo}
+                    isRead={isRead(promo.promoId, promo.createdAt)}
+                    onView={() => markAsRead(promo.promoId)}
+                    onReact={handleReact}
+                  />
+                ))}
+              </div>
             </div>
           ))
         )}

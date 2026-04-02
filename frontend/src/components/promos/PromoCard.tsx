@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { PromoWithContext, PromoType } from '../../types/promo';
@@ -31,21 +31,6 @@ function getInitial(name: string): string {
   return name.charAt(0).toUpperCase();
 }
 
-function formatTimestamp(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
-
 function highlightMentions(content: string): (string | JSX.Element)[] {
   const parts = content.split(/(@[\w\s]+?)(?=\s[^a-zA-Z]|\s@|,|!|\.|$)/g);
   return parts.map((part, idx) => {
@@ -60,6 +45,8 @@ function highlightMentions(content: string): (string | JSX.Element)[] {
   });
 }
 
+const TRUNCATE_LENGTH = 150;
+
 export default function PromoCard({ promo, compact = false, isRead, onView, onReact }: PromoCardProps) {
   const { t } = useTranslation();
   const { playerId } = useAuth();
@@ -68,6 +55,12 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
   const [challengeStatus, setChallengeStatus] = useState<'pending' | 'accepted' | 'not_found' | 'loading'>('loading');
   const [challengeError, setChallengeError] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
+
+  const isTruncated = useMemo(() => promo.content.length > TRUNCATE_LENGTH, [promo.content]);
+  const displayContent = useMemo(
+    () => isTruncated ? promo.content.slice(0, TRUNCATE_LENGTH) + '...' : promo.content,
+    [promo.content, isTruncated]
+  );
 
   useEffect(() => {
     setImageError(false);
@@ -155,7 +148,6 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
         <div className="promo-author-info">
           <div className="promo-author-line">
             <span className="promo-wrestler-name">{promo.wrestlerName}</span>
-            <span className="promo-player-name">({promo.playerName})</span>
             <span
               className="promo-type-badge"
               style={{ backgroundColor: PROMO_TYPE_COLORS[promo.promoType] }}
@@ -163,8 +155,14 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
               {t(`promos.types.${promo.promoType}`, promo.promoType)}
             </span>
           </div>
-          <span className="promo-timestamp">{formatTimestamp(promo.createdAt)}</span>
         </div>
+        <button
+          className="promo-card-chevron"
+          onClick={(e) => { e.stopPropagation(); }}
+          aria-label="More options"
+        >
+          {'\u276E'}
+        </button>
       </div>
 
       {promo.promoType === 'response' && promo.targetPromo && (
@@ -236,8 +234,17 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
 
       {promo.title && <h3 className="promo-title">{promo.title}</h3>}
 
+      {promo.playerName && (
+        <div className="promo-player-subtitle">{promo.playerName}</div>
+      )}
+
       <div className="promo-content">
-        <p>{highlightMentions(promo.content)}</p>
+        <p>{highlightMentions(displayContent)}</p>
+        {isTruncated && (
+          <Link to={`/promos/${promo.promoId}`} className="promo-read-more">
+            {t('promos.card.readMore', 'Read more')}
+          </Link>
+        )}
       </div>
 
       <div className="promo-card-footer">
