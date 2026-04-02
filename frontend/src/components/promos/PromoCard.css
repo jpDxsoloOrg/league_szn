@@ -125,27 +125,6 @@
   letter-spacing: 0.5px;
 }
 
-.promo-card-chevron {
-  background: none;
-  border: none;
-  color: #888;
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 4px;
-  margin-left: auto;
-  flex-shrink: 0;
-  transition: color 0.2s ease, transform 0.2s ease;
-  transform: rotate(-90deg);
-}
-
-.promo-card-chevron.expanded {
-  transform: rotate(-270deg);
-}
-
-.promo-card-chevron:hover {
-  color: #d4af37;
-}
-
 .promo-timestamp {
   color: #666;
   font-size: 0.8rem;

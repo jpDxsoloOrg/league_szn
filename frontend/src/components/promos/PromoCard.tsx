@@ -162,15 +162,6 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
             </span>
           </div>
         </div>
-        {canTruncate && (
-          <button
-            className={`promo-card-chevron ${expanded ? 'expanded' : ''}`}
-            onClick={toggleExpand}
-            aria-label={expanded ? 'Collapse' : 'Expand'}
-          >
-            {'\u276E'}
-          </button>
-        )}
       </div>
 
       {promo.promoType === 'response' && promo.targetPromo && (
