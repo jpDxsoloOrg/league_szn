@@ -84,7 +84,7 @@ describe('PromoCard', () => {
     renderCard(promo);
 
     expect(screen.getByText('Stone Cold')).toBeInTheDocument();
-    expect(screen.getByText('(John)')).toBeInTheDocument();
+    expect(screen.getByText('John')).toBeInTheDocument();
     expect(screen.getByText('Open Mic')).toBeInTheDocument();
     expect(screen.getByText('The Best Promo')).toBeInTheDocument();
     expect(screen.getByText(/I am the greatest of all time!/)).toBeInTheDocument();
