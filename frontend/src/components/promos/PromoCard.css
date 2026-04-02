@@ -238,11 +238,12 @@
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: underline;
+  font-family: inherit;
 }
 
 .promo-read-more:hover {
   color: #e5c54a;
-  text-decoration: underline;
 }
 
 .promo-mention {
