@@ -1221,7 +1221,9 @@
       "filterCallOuts": "Call-Outs",
       "filterResponses": "Responses",
       "filterChampionship": "Championship",
-      "filterMatch": "Pre/Post Match",
+      "filterMatch": "Pre-Match",
+      "filterMentions": "Mentions",
+      "hideRead": "Hide Read",
       "pinnedPromos": "Pinned",
       "cutPromo": "Cut a Promo",
       "noPromos": "No promos found. Be the first to cut a promo!",
@@ -1247,7 +1249,8 @@
       "accepting": "Accepting...",
       "challengeAccepted": "Challenge Accepted!",
       "viewChallenge": "View Challenge",
-      "challengeNotFound": "Challenge not found"
+      "challengeNotFound": "Challenge not found",
+      "readMore": "Read more"
     },
     "thread": {
       "title": "Promo Thread",

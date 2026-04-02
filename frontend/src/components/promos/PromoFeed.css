@@ -1,5 +1,5 @@
 .promo-feed {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
 }
@@ -15,6 +15,186 @@
   color: white;
   font-size: 1.6rem;
   margin: 0;
+}
+
+.promo-feed-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.promo-unread-badge {
+  color: #bbb;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.mark-all-read-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #d4af37;
+  color: #1a1a1a;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: background 0.2s ease;
+}
+
+.mark-all-read-btn:hover {
+  background: #e5c54a;
+}
+
+/* Toolbar: filters + hide read toggle */
+.promo-feed-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.promo-feed-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-tab {
+  position: relative;
+  padding: 8px 18px;
+  border: 1px solid #444;
+  border-radius: 20px;
+  background: transparent;
+  color: #bbb;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.filter-tab:hover {
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+.filter-tab.active {
+  background: #d4af37;
+  color: #1a1a1a;
+  border-color: #d4af37;
+  font-weight: 700;
+}
+
+.filter-tab-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #ef4444;
+  color: white;
+  border-radius: 9px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* Hide Read toggle */
+.hide-read-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: #bbb;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.toggle-switch {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: #444;
+  position: relative;
+  transition: background 0.2s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toggle-switch.active {
+  background: #d4af37;
+}
+
+.toggle-knob {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s ease;
+}
+
+.toggle-switch.active .toggle-knob {
+  transform: translateX(20px);
+}
+
+/* 2-column grid for promo cards */
+.promo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.promo-pinned-section {
+  margin-bottom: 24px;
+}
+
+.promo-section-title {
+  color: #d4af37;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 12px 0;
+}
+
+.promo-date-group {
+  margin-bottom: 8px;
+}
+
+.promo-date-group-title {
+  color: #888;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 16px 0 8px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #333;
+}
+
+.promo-list {
+  /* container for date groups */
+}
+
+.promo-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #888;
+  grid-column: 1 / -1;
+}
+
+.promo-empty-state p {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
 }
 
 .cut-promo-btn {
@@ -48,106 +228,20 @@
   background: rgba(212, 175, 55, 0.1);
 }
 
-.promo-feed-filters {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-}
+@media (max-width: 768px) {
+  .promo-grid {
+    grid-template-columns: 1fr;
+  }
 
-.filter-tab {
-  padding: 8px 18px;
-  border: 1px solid #444;
-  border-radius: 20px;
-  background: transparent;
-  color: #bbb;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
+  .promo-feed-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
 
-.filter-tab:hover {
-  border-color: #d4af37;
-  color: #d4af37;
-}
-
-.filter-tab.active {
-  background: #d4af37;
-  color: #1a1a1a;
-  border-color: #d4af37;
-  font-weight: 700;
-}
-
-.promo-pinned-section {
-  margin-bottom: 24px;
-}
-
-.promo-section-title {
-  color: #d4af37;
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin: 0 0 12px 0;
-}
-
-.promo-feed-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.promo-unread-badge {
-  color: #d4af37;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.mark-all-read-btn {
-  padding: 6px 14px;
-  border: 1px solid #555;
-  border-radius: 6px;
-  background: transparent;
-  color: #bbb;
-  cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.2s ease;
-}
-
-.mark-all-read-btn:hover {
-  border-color: #d4af37;
-  color: #d4af37;
-}
-
-.promo-date-group {
-  margin-bottom: 8px;
-}
-
-.promo-date-group-title {
-  color: #888;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin: 16px 0 8px 0;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #333;
-}
-
-.promo-list {
-  /* container for promo cards */
-}
-
-.promo-empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: #888;
-}
-
-.promo-empty-state p {
-  font-size: 1.1rem;
-  margin-bottom: 20px;
+  .hide-read-toggle {
+    justify-content: flex-end;
+  }
 }
 
 @media (max-width: 600px) {
@@ -163,11 +257,6 @@
 
   .promo-feed-header h2 {
     font-size: 1.3rem;
-  }
-
-  .cut-promo-btn {
-    text-align: center;
-    justify-content: center;
   }
 
   .promo-feed-filters {
