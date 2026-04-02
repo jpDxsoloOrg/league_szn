@@ -1250,7 +1250,8 @@
       "challengeAccepted": "Challenge Accepted!",
       "viewChallenge": "View Challenge",
       "challengeNotFound": "Challenge not found",
-      "readMore": "Read more"
+      "readMore": "Read more",
+      "showLess": "Show less"
     },
     "thread": {
       "title": "Promo Thread",

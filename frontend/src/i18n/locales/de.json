@@ -1249,7 +1249,8 @@
       "challengeAccepted": "Herausforderung angenommen!",
       "viewChallenge": "Herausforderung ansehen",
       "challengeNotFound": "Herausforderung nicht gefunden",
-      "readMore": "Weiterlesen"
+      "readMore": "Weiterlesen",
+      "showLess": "Weniger anzeigen"
     },
     "thread": {
       "title": "Promo-Thread",
