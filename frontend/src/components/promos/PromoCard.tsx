@@ -55,12 +55,18 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
   const [challengeStatus, setChallengeStatus] = useState<'pending' | 'accepted' | 'not_found' | 'loading'>('loading');
   const [challengeError, setChallengeError] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
-  const isTruncated = useMemo(() => promo.content.length > TRUNCATE_LENGTH, [promo.content]);
+  const canTruncate = useMemo(() => promo.content.length > TRUNCATE_LENGTH, [promo.content]);
   const displayContent = useMemo(
-    () => isTruncated ? promo.content.slice(0, TRUNCATE_LENGTH) + '...' : promo.content,
-    [promo.content, isTruncated]
+    () => canTruncate && !expanded ? promo.content.slice(0, TRUNCATE_LENGTH) + '...' : promo.content,
+    [promo.content, canTruncate, expanded]
   );
+
+  const toggleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpanded((v) => !v);
+  };
 
   useEffect(() => {
     setImageError(false);
@@ -156,13 +162,15 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
             </span>
           </div>
         </div>
-        <button
-          className="promo-card-chevron"
-          onClick={(e) => { e.stopPropagation(); }}
-          aria-label="More options"
-        >
-          {'\u276E'}
-        </button>
+        {canTruncate && (
+          <button
+            className={`promo-card-chevron ${expanded ? 'expanded' : ''}`}
+            onClick={toggleExpand}
+            aria-label={expanded ? 'Collapse' : 'Expand'}
+          >
+            {'\u276E'}
+          </button>
+        )}
       </div>
 
       {promo.promoType === 'response' && promo.targetPromo && (
@@ -240,10 +248,12 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
 
       <div className="promo-content">
         <p>{highlightMentions(displayContent)}</p>
-        {isTruncated && (
-          <Link to={`/promos/${promo.promoId}`} className="promo-read-more">
-            {t('promos.card.readMore', 'Read more')}
-          </Link>
+        {canTruncate && (
+          <button className="promo-read-more" onClick={toggleExpand}>
+            {expanded
+              ? t('promos.card.showLess', 'Show less')
+              : t('promos.card.readMore', 'Read more')}
+          </button>
         )}
       </div>
 

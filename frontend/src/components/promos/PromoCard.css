@@ -134,8 +134,12 @@
   padding: 4px;
   margin-left: auto;
   flex-shrink: 0;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease;
   transform: rotate(-90deg);
+}
+
+.promo-card-chevron.expanded {
+  transform: rotate(-270deg);
 }
 
 .promo-card-chevron:hover {
@@ -248,10 +252,13 @@
 .promo-read-more {
   display: inline-block;
   margin-top: 6px;
+  background: none;
+  border: none;
+  padding: 0;
   color: #d4af37;
-  text-decoration: none;
   font-size: 0.9rem;
   font-weight: 600;
+  cursor: pointer;
 }
 
 .promo-read-more:hover {
