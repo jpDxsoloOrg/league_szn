@@ -1,5 +1,5 @@
 import { Amplify } from 'aws-amplify';
-import { signIn, signUp, signOut, confirmSignUp, fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
+import { signIn, signUp, signOut, confirmSignUp, fetchAuthSession, getCurrentUser, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
 import { logger } from '../utils/logger';
 
 export type UserRole = 'Admin' | 'Moderator' | 'Wrestler' | 'Fantasy';
@@ -310,6 +310,52 @@ export const cognitoAuth = {
       return user;
     } catch {
       return null;
+    }
+  },
+
+  /**
+   * Initiate forgot password flow — sends a verification code to the user's email
+   */
+  forgotPassword: async (email: string): Promise<void> => {
+    try {
+      await resetPassword({ username: email });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        const cognitoError = error as Error & { name?: string };
+        if (cognitoError.name === 'UserNotFoundException') {
+          throw new Error('No account found with this email');
+        } else if (cognitoError.name === 'LimitExceededException') {
+          throw new Error('Too many attempts. Please try again later.');
+        }
+        throw new Error(error.message || 'Failed to send reset code');
+      }
+      throw new Error('Failed to send reset code');
+    }
+  },
+
+  /**
+   * Confirm password reset with verification code and new password
+   */
+  confirmForgotPassword: async (email: string, code: string, newPassword: string): Promise<void> => {
+    try {
+      await confirmResetPassword({
+        username: email,
+        confirmationCode: code,
+        newPassword,
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        const cognitoError = error as Error & { name?: string };
+        if (cognitoError.name === 'CodeMismatchException') {
+          throw new Error('Invalid verification code');
+        } else if (cognitoError.name === 'ExpiredCodeException') {
+          throw new Error('Verification code has expired. Please request a new one.');
+        } else if (cognitoError.name === 'InvalidPasswordException') {
+          throw new Error('Password does not meet requirements (min 8 chars, uppercase, lowercase, number)');
+        }
+        throw new Error(error.message || 'Failed to reset password');
+      }
+      throw new Error('Failed to reset password');
     }
   },
 

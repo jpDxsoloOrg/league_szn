@@ -25,6 +25,7 @@ import EditMatch from './components/admin/EditMatch';
 // Auth components
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
+import ForgotPassword from './components/auth/ForgotPassword';
 // Challenge components
 import ChallengeDetail from './components/challenges/ChallengeDetail';
 // IssueChallenge kept as a component but route redirects to PromoEditor in call-out mode
@@ -112,6 +113,7 @@ function AppLayout() {
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* Public Routes */}
             <Route path="/" element={<Dashboard />} />
