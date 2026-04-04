@@ -140,6 +140,9 @@ export default function Login() {
 
         <div className="auth-footer">
           <p>
+            <Link to="/forgot-password">{t('auth.forgotPasswordLink')}</Link>
+          </p>
+          <p>
             {t('auth.noAccount')}{' '}
             <Link to="/signup">{t('auth.signUpLink')}</Link>
           </p>
