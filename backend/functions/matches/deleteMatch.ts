@@ -39,17 +39,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return notFound('Match not found');
     }
 
-    // Block deletion of championship and tournament matches (Phase 1 scope)
-    if (match.isChampionship && match.championshipId) {
-      return badRequest('Cannot delete a championship match. Championship result rollback is not yet supported.');
-    }
-    if (match.tournamentId) {
-      return badRequest('Cannot delete a tournament match. Tournament result rollback is not yet supported.');
-    }
-
     // If match was completed, roll back all stat changes
     if (match.status === 'completed') {
       await rollbackCompletedMatch(match);
+
+      // Roll back championship changes if this was a championship match
+      if (match.isChampionship && match.championshipId) {
+        await rollbackChampionshipResult(match);
+      }
+
+      // Roll back tournament progression if this was a tournament match
+      if (match.tournamentId) {
+        await rollbackTournamentResult(match);
+      }
     }
 
     // Delete the match record
@@ -241,6 +243,231 @@ async function revertEventStatus(eventId: string): Promise<void> {
       ':now': new Date().toISOString(),
     },
   });
+}
+
+async function rollbackChampionshipResult(match: Record<string, unknown>): Promise<void> {
+  const championshipId = match.championshipId as string;
+  const matchId = match.matchId as string;
+
+  // Find the championship history entry created by this match
+  const historyResult = await dynamoDb.queryAll({
+    TableName: TableNames.CHAMPIONSHIP_HISTORY,
+    KeyConditionExpression: 'championshipId = :cid',
+    FilterExpression: 'matchId = :matchId',
+    ExpressionAttributeValues: {
+      ':cid': championshipId,
+      ':matchId': matchId,
+    },
+  });
+
+  const reignCreatedByMatch = historyResult.find(
+    (item) => item.matchId === matchId
+  );
+
+  if (reignCreatedByMatch) {
+    // This match created a new reign — delete it and reopen the previous reign
+    await dynamoDb.delete({
+      TableName: TableNames.CHAMPIONSHIP_HISTORY,
+      Key: {
+        championshipId,
+        wonDate: reignCreatedByMatch.wonDate as string,
+      },
+    });
+
+    // Find the previous reign (most recent one that has a lostDate)
+    const allReigns = await dynamoDb.queryAll({
+      TableName: TableNames.CHAMPIONSHIP_HISTORY,
+      KeyConditionExpression: 'championshipId = :cid',
+      ExpressionAttributeValues: { ':cid': championshipId },
+      ScanIndexForward: false,
+    });
+
+    // The previous reign should be the most recent one with a lostDate
+    const previousReign = allReigns.find((r) => r.lostDate);
+
+    if (previousReign) {
+      // Reopen the previous reign (remove lostDate and daysHeld)
+      await dynamoDb.update({
+        TableName: TableNames.CHAMPIONSHIP_HISTORY,
+        Key: {
+          championshipId,
+          wonDate: previousReign.wonDate as string,
+        },
+        UpdateExpression: 'REMOVE lostDate, daysHeld SET updatedAt = :now',
+        ExpressionAttributeValues: {
+          ':now': new Date().toISOString(),
+        },
+      });
+
+      // Restore previous champion on the championship record
+      await dynamoDb.update({
+        TableName: TableNames.CHAMPIONSHIPS,
+        Key: { championshipId },
+        UpdateExpression: 'SET currentChampion = :champion, updatedAt = :now',
+        ExpressionAttributeValues: {
+          ':champion': previousReign.champion,
+          ':now': new Date().toISOString(),
+        },
+      });
+    } else {
+      // No previous reign — title becomes vacant
+      await dynamoDb.update({
+        TableName: TableNames.CHAMPIONSHIPS,
+        Key: { championshipId },
+        UpdateExpression: 'REMOVE currentChampion SET updatedAt = :now',
+        ExpressionAttributeValues: {
+          ':now': new Date().toISOString(),
+        },
+      });
+    }
+  } else {
+    // This match was a title defense — decrement defense count on current reign
+    const currentReigns = await dynamoDb.queryAll({
+      TableName: TableNames.CHAMPIONSHIP_HISTORY,
+      KeyConditionExpression: 'championshipId = :cid',
+      FilterExpression: 'attribute_not_exists(lostDate)',
+      ExpressionAttributeValues: { ':cid': championshipId },
+    });
+
+    const currentReign = currentReigns[0];
+    if (currentReign && typeof currentReign.defenses === 'number' && currentReign.defenses > 0) {
+      await dynamoDb.update({
+        TableName: TableNames.CHAMPIONSHIP_HISTORY,
+        Key: {
+          championshipId,
+          wonDate: currentReign.wonDate as string,
+        },
+        UpdateExpression: 'SET defenses = defenses - :one, updatedAt = :now',
+        ExpressionAttributeValues: {
+          ':one': 1,
+          ':now': new Date().toISOString(),
+        },
+      });
+    }
+  }
+}
+
+async function rollbackTournamentResult(match: Record<string, unknown>): Promise<void> {
+  const tournamentId = match.tournamentId as string;
+  const winners = (match.winners as string[]) || [];
+  const losers = (match.losers as string[]) || [];
+  const isDraw = match.isDraw === true;
+
+  const tournament = await dynamoDb.get({
+    TableName: TableNames.TOURNAMENTS,
+    Key: { tournamentId },
+  });
+
+  if (!tournament.Item) return;
+
+  if (tournament.Item.type === 'round-robin') {
+    const standings = (tournament.Item.standings as Record<string, { wins: number; losses: number; draws: number; points: number }>) || {};
+
+    if (isDraw) {
+      for (const playerId of winners) {
+        if (standings[playerId]) {
+          standings[playerId].draws = Math.max(0, standings[playerId].draws - 1);
+          standings[playerId].points = Math.max(0, standings[playerId].points - 1);
+        }
+      }
+    } else {
+      for (const playerId of winners) {
+        if (standings[playerId]) {
+          standings[playerId].wins = Math.max(0, standings[playerId].wins - 1);
+          standings[playerId].points = Math.max(0, standings[playerId].points - 2);
+        }
+      }
+      for (const playerId of losers) {
+        if (standings[playerId]) {
+          standings[playerId].losses = Math.max(0, standings[playerId].losses - 1);
+        }
+      }
+    }
+
+    // If tournament was completed, revert to in-progress
+    const newStatus = tournament.Item.status === 'completed' ? 'in-progress' : tournament.Item.status;
+
+    await dynamoDb.update({
+      TableName: TableNames.TOURNAMENTS,
+      Key: { tournamentId },
+      UpdateExpression: 'SET standings = :standings, #status = :status, updatedAt = :now REMOVE winner',
+      ExpressionAttributeNames: { '#status': 'status' },
+      ExpressionAttributeValues: {
+        ':standings': standings,
+        ':status': newStatus,
+        ':now': new Date().toISOString(),
+      },
+    });
+  }
+
+  if (tournament.Item.type === 'single-elimination' && tournament.Item.brackets) {
+    const brackets = tournament.Item.brackets as {
+      rounds: Array<{
+        matches: Array<{
+          participant1?: string;
+          participant2?: string;
+          winner?: string;
+          matchId?: string;
+        }>;
+      }>;
+    };
+    const matchId = match.matchId as string;
+
+    // Find the bracket match and clear the winner
+    let foundRoundIndex = -1;
+    let foundMatchIndex = -1;
+
+    for (let roundIndex = 0; roundIndex < brackets.rounds.length; roundIndex++) {
+      const round = brackets.rounds[roundIndex];
+      if (!round?.matches) continue;
+      for (let matchIndex = 0; matchIndex < round.matches.length; matchIndex++) {
+        const bracketMatch = round.matches[matchIndex];
+        if (bracketMatch?.matchId === matchId) {
+          foundRoundIndex = roundIndex;
+          foundMatchIndex = matchIndex;
+          break;
+        }
+      }
+      if (foundRoundIndex !== -1) break;
+    }
+
+    if (foundRoundIndex !== -1 && foundMatchIndex !== -1) {
+      const foundMatch = brackets.rounds[foundRoundIndex].matches[foundMatchIndex];
+      delete foundMatch.winner;
+      delete foundMatch.matchId;
+
+      // Clear the advancement in the next round
+      const isLastRound = foundRoundIndex === brackets.rounds.length - 1;
+      if (!isLastRound) {
+        const nextRoundIndex = foundRoundIndex + 1;
+        const nextMatchIndex = Math.floor(foundMatchIndex / 2);
+        const isFirstOfPair = foundMatchIndex % 2 === 0;
+
+        const nextMatch = brackets.rounds[nextRoundIndex]?.matches?.[nextMatchIndex];
+        if (nextMatch) {
+          if (isFirstOfPair) {
+            delete nextMatch.participant1;
+          } else {
+            delete nextMatch.participant2;
+          }
+        }
+      }
+
+      const newStatus = tournament.Item.status === 'completed' ? 'in-progress' : tournament.Item.status;
+
+      await dynamoDb.update({
+        TableName: TableNames.TOURNAMENTS,
+        Key: { tournamentId },
+        UpdateExpression: 'SET brackets = :brackets, #status = :status, updatedAt = :now REMOVE winner',
+        ExpressionAttributeNames: { '#status': 'status' },
+        ExpressionAttributeValues: {
+          ':brackets': brackets,
+          ':status': newStatus,
+          ':now': new Date().toISOString(),
+        },
+      });
+    }
+  }
 }
 
 async function removeMatchFromEvent(eventId: string, matchId: string): Promise<void> {
