@@ -56,17 +56,18 @@ export default function RecordResult() {
       setStipulations(stipulationsData);
       setTagTeams(tagTeamsData as (TagTeam & { player1Name?: string; player2Name?: string })[]);
 
-      // Only show events that have scheduled matches or are upcoming/in-progress
-      const activeEvents = eventsData
-        .filter(e => e.status === 'upcoming' || e.status === 'in-progress')
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-      setEvents(activeEvents);
+      // Show all events (including completed) so admins can manage matches from any event
+      const sortedEvents = eventsData
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setEvents(sortedEvents);
 
       // Default to earliest upcoming/in-progress event that has scheduled matches
       const matchIdSet = new Set(matchesData.map(m => m.matchId));
-      const defaultEvent = activeEvents.find(ev =>
-        (ev.matchCards || []).some(card => matchIdSet.has(card.matchId))
-      );
+      const defaultEvent = sortedEvents
+        .filter(e => e.status === 'upcoming' || e.status === 'in-progress')
+        .find(ev =>
+          (ev.matchCards || []).some(card => matchIdSet.has(card.matchId))
+        );
       setSelectedEventFilter(prev => prev || (defaultEvent?.eventId || STANDALONE_FILTER));
     } catch (_err) {
       setError('Failed to load data');
