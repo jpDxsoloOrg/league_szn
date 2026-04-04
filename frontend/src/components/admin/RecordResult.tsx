@@ -194,9 +194,19 @@ export default function RecordResult() {
     if (!targetMatch) return;
 
     const isCompleted = targetMatch.status === 'completed';
-    const confirmMsg = isCompleted
-      ? `Delete this completed ${targetMatch.matchFormat} match? Player stats (wins/losses/draws) will be rolled back. This cannot be undone.`
-      : `Delete this ${targetMatch.matchFormat} match? This cannot be undone.`;
+    const isChampionship = targetMatch.isChampionship && targetMatch.championshipId;
+    const isTournament = !!targetMatch.tournamentId;
+
+    let confirmMsg: string;
+    if (!isCompleted) {
+      confirmMsg = `Delete this ${targetMatch.matchFormat} match? This cannot be undone.`;
+    } else if (isChampionship) {
+      confirmMsg = `Delete this completed CHAMPIONSHIP match? Player stats AND championship history will be rolled back. This cannot be undone.`;
+    } else if (isTournament) {
+      confirmMsg = `Delete this completed TOURNAMENT match? Player stats AND tournament progression will be rolled back. This cannot be undone.`;
+    } else {
+      confirmMsg = `Delete this completed ${targetMatch.matchFormat} match? Player stats (wins/losses/draws) will be rolled back. This cannot be undone.`;
+    }
 
     const confirmed = window.confirm(confirmMsg);
     if (!confirmed) return;
@@ -618,8 +628,6 @@ export default function RecordResult() {
                 const matchWinners = match.winners || [];
                 const matchLosers = match.losers || [];
                 const wasDraw = match.isDraw === true;
-                const isChampionshipOrTournament = (match.isChampionship && match.championshipId) || match.tournamentId;
-
                 return (
                   <div key={match.matchId} className="completed-match-item">
                     <div className="completed-match-header">
@@ -671,19 +679,13 @@ export default function RecordResult() {
                     )}
 
                     <div className="completed-match-actions">
-                      {isChampionshipOrTournament ? (
-                        <span className="completed-match-locked">
-                          {match.isChampionship ? 'Championship' : 'Tournament'} matches cannot be deleted
-                        </span>
-                      ) : (
-                        <button
-                          className="delete-match-btn"
-                          onClick={() => handleDeleteMatch(match)}
-                          disabled={submitting}
-                        >
-                          Delete Match
-                        </button>
-                      )}
+                      <button
+                        className="delete-match-btn"
+                        onClick={() => handleDeleteMatch(match)}
+                        disabled={submitting}
+                      >
+                        Delete Match
+                      </button>
                     </div>
                   </div>
                 );
