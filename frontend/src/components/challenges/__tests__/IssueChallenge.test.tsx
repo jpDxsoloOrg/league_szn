@@ -36,6 +36,8 @@ vi.mock('react-i18next', () => ({
         'challenges.issue.championshipMatch': 'Championship Match',
         'challenges.issue.message': 'Message',
         'challenges.issue.messagePlaceholder': 'Say something...',
+        'challenges.issue.challengeNote': 'Optional note',
+        'challenges.issue.challengeNotePlaceholder': 'Add a short note (optional)',
         'challenges.issue.showPreview': 'Show Preview',
         'challenges.issue.hidePreview': 'Hide Preview',
         'challenges.issue.preview': 'Preview',
@@ -103,17 +105,17 @@ describe('IssueChallenge', () => {
     ]);
   });
 
-  it('renders the form with opponent, match type, stipulation, and message fields', async () => {
+  it('renders the form with opponent, match type, stipulation, and note fields', async () => {
     renderIssue();
 
     await waitFor(() => {
       expect(screen.getByText('Issue a Challenge')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Select Opponent')).toBeInTheDocument();
+    expect(screen.getByText(/Select Opponent/)).toBeInTheDocument();
     expect(screen.getByText('Match Type')).toBeInTheDocument();
     expect(screen.getByText('Stipulation')).toBeInTheDocument();
-    expect(screen.getByText('Message')).toBeInTheDocument();
+    expect(screen.getByText('Optional note')).toBeInTheDocument();
     expect(screen.getByText('Submit Challenge')).toBeInTheDocument();
   });
 
@@ -124,17 +126,10 @@ describe('IssueChallenge', () => {
       expect(screen.getByText('Issue a Challenge')).toBeInTheDocument();
     });
 
-    // The opponent dropdown should contain "The Rock (Jane)" but NOT self or unlinked
-    const opponentSelect = screen.getAllByRole('combobox')[0]!;
-    const options = Array.from(opponentSelect.querySelectorAll('option'));
-    const optionTexts = options.map((o) => o.textContent);
-
-    // Should have placeholder + Jane (linked, not self)
-    expect(optionTexts).toContain('The Rock (Jane)');
-    // Should NOT have self
-    expect(optionTexts).not.toContain('Stone Cold (John)');
-    // Should NOT have unlinked player
-    expect(optionTexts).not.toContain('Unlinked Guy (NoLink)');
+    // The opponent multi-select should contain "The Rock (Jane)" but NOT self or unlinked
+    expect(screen.getByText('The Rock (Jane)')).toBeInTheDocument();
+    expect(screen.queryByText('Stone Cold (John)')).not.toBeInTheDocument();
+    expect(screen.queryByText('Unlinked Guy (NoLink)')).not.toBeInTheDocument();
   });
 
   it('populates match type and stipulation dropdowns from API', async () => {
@@ -145,9 +140,10 @@ describe('IssueChallenge', () => {
     });
 
     // Wait for API-driven dropdowns to populate
+    // Now selects are [matchType, stipulation] — opponents is a checkbox group
     await waitFor(() => {
       const selects = screen.getAllByRole('combobox');
-      const matchTypeSelect = selects[1]!;
+      const matchTypeSelect = selects[0]!;
       const matchOptions = Array.from(matchTypeSelect.querySelectorAll('option')).map((o) => o.textContent);
       expect(matchOptions).toContain('Singles');
       expect(matchOptions).toContain('Tag Team');
@@ -155,14 +151,14 @@ describe('IssueChallenge', () => {
     });
 
     const selects = screen.getAllByRole('combobox');
-    const stipSelect = selects[2]!;
+    const stipSelect = selects[1]!;
     const stipOptions = Array.from(stipSelect.querySelectorAll('option')).map((o) => o.textContent);
     expect(stipOptions).toContain('None');
     expect(stipOptions).toContain('Steel Cage');
     expect(stipOptions).toContain('Ladder');
   });
 
-  it('enforces 500 character message limit with counter display', async () => {
+  it('enforces 200 character challenge note limit with counter display', async () => {
     const user = userEvent.setup();
     renderIssue();
 
@@ -170,14 +166,14 @@ describe('IssueChallenge', () => {
       expect(screen.getByText('Issue a Challenge')).toBeInTheDocument();
     });
 
-    const textarea = screen.getByPlaceholderText('Say something...');
-    const longText = 'A'.repeat(500);
+    const textarea = screen.getByPlaceholderText('Add a short note (optional)');
+    const longText = 'A'.repeat(200);
     await user.type(textarea, longText);
 
-    expect(screen.getByText('500/500')).toBeInTheDocument();
+    expect(screen.getByText('200/200')).toBeInTheDocument();
   });
 
-  it('shows preview and submits successfully', async () => {
+  it('submits successfully with opponentIds[]', async () => {
     const user = userEvent.setup();
     mockCreateChallenge.mockResolvedValue({});
 
@@ -187,29 +183,24 @@ describe('IssueChallenge', () => {
       expect(screen.getByText('Issue a Challenge')).toBeInTheDocument();
     });
 
-    // Fill form
+    // Check opponent p-2
+    const opponentCheckbox = screen.getByLabelText('The Rock (Jane)');
+    await user.click(opponentCheckbox);
+
+    // Select match type
     const selects = screen.getAllByRole('combobox');
-    await user.selectOptions(selects[0]!, 'p-2');
-    await user.selectOptions(selects[1]!, 'Singles');
-
-    // Preview toggle should appear when form is valid
-    await waitFor(() => {
-      expect(screen.getByText('Show Preview')).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByText('Show Preview'));
-    expect(screen.getByText('Preview')).toBeInTheDocument();
+    await user.selectOptions(selects[0]!, 'Singles');
 
     // Submit
     await user.click(screen.getByText('Submit Challenge'));
 
     await waitFor(() => {
       expect(mockCreateChallenge).toHaveBeenCalledWith({
-        challengedId: 'p-2',
+        opponentIds: ['p-2'],
         matchType: 'Singles',
         stipulation: undefined,
         championshipId: undefined,
-        message: undefined,
+        challengeNote: undefined,
       });
     });
 
