@@ -183,6 +183,7 @@ export interface DashboardQuickStats {
 export interface DashboardData {
   currentChampions: DashboardChampion[];
   upcomingEvents: DashboardEvent[];
+  inProgressEvents: DashboardEvent[];
   recentResults: DashboardMatch[];
   seasonInfo: DashboardSeason | null;
   quickStats: DashboardQuickStats;

@@ -50,12 +50,14 @@ describe('getDashboard', () => {
     const body = JSON.parse(result!.body);
     expect(body).toHaveProperty('currentChampions');
     expect(body).toHaveProperty('upcomingEvents');
+    expect(body).toHaveProperty('inProgressEvents');
     expect(body).toHaveProperty('recentResults');
     expect(body).toHaveProperty('seasonInfo');
     expect(body).toHaveProperty('quickStats');
     expect(body).toHaveProperty('activeChallengesCount');
     expect(Array.isArray(body.currentChampions)).toBe(true);
     expect(Array.isArray(body.upcomingEvents)).toBe(true);
+    expect(Array.isArray(body.inProgressEvents)).toBe(true);
     expect(Array.isArray(body.recentResults)).toBe(true);
     expect(body.quickStats).toMatchObject({
       totalPlayers: 0,
@@ -154,16 +156,30 @@ describe('getDashboard', () => {
     expect(body.recentResults).toHaveLength(0);
   });
 
-  it('limits recent results to 20 and only includes matches with updatedAt', async () => {
-    const manyMatches = Array.from({ length: 10 }, (_, i) => ({
-      matchId: `m${i}`,
-      date: new Date(2025, 0, i + 1).toISOString(),
-      updatedAt: new Date(2025, 0, 15 - i).toISOString(),
-      status: 'completed',
-      winners: ['p1'],
-      losers: ['p2'],
-      matchFormat: 'singles',
-    }));
+  it('returns recent results from the last 3 days, excluding older matches', async () => {
+    const now = Date.now();
+    const oneHourMs = 60 * 60 * 1000;
+    // 5 recent matches (within 3 days) + 5 old matches (> 3 days ago)
+    const manyMatches = [
+      ...Array.from({ length: 5 }, (_, i) => ({
+        matchId: `recent${i}`,
+        date: new Date(now - (i + 1) * oneHourMs).toISOString(),
+        updatedAt: new Date(now - (i + 1) * oneHourMs).toISOString(),
+        status: 'completed',
+        winners: ['p1'],
+        losers: ['p2'],
+        matchFormat: 'singles',
+      })),
+      ...Array.from({ length: 5 }, (_, i) => ({
+        matchId: `old${i}`,
+        date: new Date(now - (10 + i) * 24 * oneHourMs).toISOString(),
+        updatedAt: new Date(now - (10 + i) * 24 * oneHourMs).toISOString(),
+        status: 'completed',
+        winners: ['p1'],
+        losers: ['p2'],
+        matchFormat: 'singles',
+      })),
+    ];
     mockScanAll
       .mockReset()
       .mockResolvedValueOnce([])
@@ -178,7 +194,8 @@ describe('getDashboard', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    expect(body.recentResults).toHaveLength(10);
+    expect(body.recentResults).toHaveLength(5);
+    expect(body.recentResults.every((m: { matchId: string }) => m.matchId.startsWith('recent'))).toBe(true);
   });
 
   it('returns 500 on DynamoDB error', async () => {

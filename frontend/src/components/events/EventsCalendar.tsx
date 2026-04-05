@@ -196,10 +196,17 @@ export default function EventsCalendar() {
     return map;
   }, [monthEvents]);
 
+  // In-progress events (surfaced at top with live badge)
+  const inProgressEvents = useMemo(() => {
+    return filteredEntries
+      .filter((e) => e.status === 'in-progress')
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [filteredEntries]);
+
   // Upcoming events (from all entries, not just current month)
   const upcomingEvents = useMemo(() => {
     return filteredEntries
-      .filter((e) => e.status === 'upcoming' || e.status === 'in-progress')
+      .filter((e) => e.status === 'upcoming')
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [filteredEntries]);
 
@@ -430,6 +437,21 @@ export default function EventsCalendar() {
           </div>
         </div>
       </div>
+
+      {/* In-Progress Events */}
+      {inProgressEvents.length > 0 && (
+        <div className="in-progress-events-section">
+          <h3 className="in-progress-events-title">
+            <span className="in-progress-live-dot" aria-hidden="true" />
+            {t('events.calendar.inProgress')}
+          </h3>
+          <div className="in-progress-events-list">
+            {inProgressEvents.map((event) => (
+              <EventCard key={event.eventId} event={event} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Upcoming Events */}
       <div className="upcoming-events-section">

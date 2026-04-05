@@ -188,6 +188,8 @@
     "title": "Liga-Überblick",
     "champions": "Aktuelle Champions",
     "upcomingEvents": "Kommende Events",
+    "inProgressEvents": "Laufend",
+    "liveBadge": "Live",
     "recentResults": "Letzte Ergebnisse",
     "seasonProgress": "Saison-Fortschritt",
     "quickStats": "Schnellstatistiken",
@@ -885,6 +887,7 @@
     },
     "calendar": {
       "upcoming": "Bevorstehende Veranstaltungen",
+      "inProgress": "Laufend",
       "noUpcoming": "Keine bevorstehenden Veranstaltungen geplant.",
       "months": {
         "january": "Januar",

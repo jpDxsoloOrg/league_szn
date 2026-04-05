@@ -57,6 +57,7 @@ interface DashboardQuickStats {
 interface DashboardResponse {
   currentChampions: DashboardChampion[];
   upcomingEvents: DashboardEvent[];
+  inProgressEvents: DashboardEvent[];
   recentResults: DashboardMatch[];
   seasonInfo: DashboardSeason | null;
   quickStats: DashboardQuickStats;
@@ -66,7 +67,7 @@ interface DashboardResponse {
 export const handler: APIGatewayProxyHandler = async () => {
   try {
     // Fetch data: championships, players, seasons, matches, stipulations; events and challenges via query
-    const [championships, players, seasons, matches, stipulations, upcomingEventsResult, pendingChallenges] =
+    const [championships, players, seasons, matches, stipulations, upcomingEventsResult, inProgressEventsResult, pendingChallenges] =
       await Promise.all([
         dynamoDb.scanAll({ TableName: TableNames.CHAMPIONSHIPS }),
         dynamoDb.scanAll({ TableName: TableNames.PLAYERS }),
@@ -81,6 +82,14 @@ export const handler: APIGatewayProxyHandler = async () => {
           ExpressionAttributeValues: { ':status': 'upcoming' },
           ScanIndexForward: true,
           Limit: 3,
+        }),
+        dynamoDb.query({
+          TableName: TableNames.EVENTS,
+          IndexName: 'StatusIndex',
+          KeyConditionExpression: '#s = :status',
+          ExpressionAttributeNames: { '#s': 'status' },
+          ExpressionAttributeValues: { ':status': 'in-progress' },
+          ScanIndexForward: true,
         }),
         dynamoDb.queryAll({
           TableName: TableNames.CHALLENGES,
@@ -160,6 +169,24 @@ export const handler: APIGatewayProxyHandler = async () => {
         matchCount: e.matchCount as number | undefined,
       }));
 
+    // In-progress events
+    const inProgressEvents: DashboardEvent[] = ((inProgressEventsResult.Items || []) as Record<
+      string,
+      unknown
+    >[])
+      .sort(
+        (a, b) =>
+          new Date(a.date as string).getTime() - new Date(b.date as string).getTime()
+      )
+      .map((e) => ({
+        eventId: e.eventId as string,
+        name: (e.name as string) ?? 'Event',
+        date: e.date as string,
+        eventType: (e.eventType as string) ?? 'event',
+        venue: e.venue as string | undefined,
+        matchCount: e.matchCount as number | undefined,
+      }));
+
     // Recent results: only matches with updatedAt (recorded after we added it), sort by updatedAt desc, limit 20 for date grouping
     const completedMatches = (matches as Record<string, unknown>[]).filter(
       (m) =>
@@ -173,7 +200,13 @@ export const handler: APIGatewayProxyHandler = async () => {
         new Date(b.updatedAt as string).getTime() -
         new Date(a.updatedAt as string).getTime()
     );
-    const recentResults: DashboardMatch[] = completedMatches.slice(0, 20).map((m) => {
+    // Limit recent results to matches updated within the last 3 days
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    const recentCompletedMatches = completedMatches.filter(
+      (m) => ((m.updatedAt as string) || (m.date as string)) >= threeDaysAgo
+    );
+    // Safety cap to avoid unbounded responses
+    const recentResults: DashboardMatch[] = recentCompletedMatches.slice(0, 50).map((m) => {
       const winnerIds = m.winners as string[];
       const loserIds = m.losers as string[];
       const winnerName = (winnerIds || [])
@@ -289,6 +322,7 @@ export const handler: APIGatewayProxyHandler = async () => {
     const response: DashboardResponse = {
       currentChampions,
       upcomingEvents,
+      inProgressEvents,
       recentResults,
       seasonInfo,
       quickStats,
