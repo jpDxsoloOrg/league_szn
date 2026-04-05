@@ -36,6 +36,7 @@ function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
     case 'announcement': return 'notifications.typeAnnouncement';
     case 'stable': return 'notifications.typeStable';
     case 'tag_team': return 'notifications.typeTagTeam';
+    case 'transfer': return 'notifications.typeTransfer';
     default: return 'notifications.typeAnnouncement';
   }
 }
@@ -52,6 +53,7 @@ function getNavigationPath(notification: AppNotification, playerId: string | nul
     case 'stable': return '/my-stable';
     case 'tag_team': return '/my-tag-team';
     case 'announcement': return '/';
+    case 'transfer': return '/profile';
     default: return '/';
   }
 }

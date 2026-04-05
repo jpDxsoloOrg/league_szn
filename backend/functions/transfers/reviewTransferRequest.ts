@@ -3,6 +3,7 @@ import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import { createNotification } from '../../lib/notifications';
 
 interface ReviewTransferBody {
   status: 'approved' | 'rejected';
@@ -70,9 +71,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       ReturnValues: 'ALL_NEW',
     });
 
+    const playerId = transferRequest.playerId as string;
+
     // If approved, update the player's divisionId
     if (status === 'approved') {
-      const playerId = transferRequest.playerId as string;
       const toDivisionId = transferRequest.toDivisionId as string;
 
       await dynamoDb.update({
@@ -83,6 +85,28 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           ':divisionId': toDivisionId,
           ':updatedAt': now,
         },
+      });
+    }
+
+    // Look up the player's userId to send a notification
+    const playerResult = await dynamoDb.get({
+      TableName: TableNames.PLAYERS,
+      Key: { playerId },
+    });
+
+    if (playerResult.Item?.userId) {
+      const userId = playerResult.Item.userId as string;
+      const message =
+        status === 'approved'
+          ? 'Your division transfer request has been approved.'
+          : `Your division transfer request was rejected.${reviewNote ? ` Reason: ${reviewNote}` : ''}`;
+
+      await createNotification({
+        userId,
+        type: 'transfer_reviewed',
+        message,
+        sourceId: requestId,
+        sourceType: 'transfer',
       });
     }
 

@@ -1546,7 +1546,8 @@
     "delete": "Delete notification",
     "deleteAllRead": "Delete read",
     "typeStable": "Stable",
-    "typeTagTeam": "Tag Team"
+    "typeTagTeam": "Tag Team",
+    "typeTransfer": "Transfer"
   },
   "overalls": {
     "admin": {

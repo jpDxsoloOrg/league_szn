@@ -1545,7 +1545,8 @@
     "delete": "Benachrichtigung löschen",
     "deleteAllRead": "Gelesene löschen",
     "typeStable": "Stable",
-    "typeTagTeam": "Tag Team"
+    "typeTagTeam": "Tag Team",
+    "typeTransfer": "Transfer"
   },
   "overalls": {
     "admin": {
