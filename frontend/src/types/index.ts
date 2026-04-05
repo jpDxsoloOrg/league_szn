@@ -348,3 +348,24 @@ export interface WrestlerOverallWithPlayer extends WrestlerOverall {
   playerName: string;
   wrestlerName: string;
 }
+
+export type TransferRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface TransferRequest {
+  requestId: string;
+  playerId: string;
+  fromDivisionId: string;
+  toDivisionId: string;
+  reason: string;
+  status: TransferRequestStatus;
+  createdAt: string;
+  updatedAt: string;
+  reviewedBy?: string;
+  reviewNote?: string;
+}
+
+export interface TransferRequestWithDetails extends TransferRequest {
+  playerName: string;
+  fromDivisionName: string;
+  toDivisionName: string;
+}

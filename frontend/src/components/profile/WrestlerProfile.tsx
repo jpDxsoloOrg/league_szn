@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { profileApi, imagesApi, overallsApi } from '../../services/api';
+import { profileApi, imagesApi, overallsApi, transfersApi, divisionsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
@@ -12,7 +12,7 @@ import {
 } from '../../constants/imageFallbacks';
 import { useSiteConfig } from '../../contexts/SiteConfigContext'; 
 import   EmbeddedPlayerStats   from "../statistics/EmbeddedPlayerStats";
-import type { Player, WrestlerOverall } from '../../types';
+import type { Player, WrestlerOverall, TransferRequestWithDetails, Division } from '../../types';
 import './WrestlerProfile.css';
 
 interface SeasonRecord {
@@ -44,6 +44,14 @@ export default function WrestlerProfile() {
   const [overall, setOverall] = useState<WrestlerOverall | null>(null);
   const [overallForm, setOverallForm] = useState({ mainOverall: '', alternateOverall: '' });
 
+  // Transfer state
+  const [transferRequests, setTransferRequests] = useState<TransferRequestWithDetails[]>([]);
+  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [transferForm, setTransferForm] = useState({ toDivisionId: '', reason: '' });
+  const [transferSubmitting, setTransferSubmitting] = useState(false);
+  const [transferError, setTransferError] = useState<string | null>(null);
+  const [transferSuccess, setTransferSuccess] = useState<string | null>(null);
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
@@ -61,6 +69,8 @@ export default function WrestlerProfile() {
   useEffect(() => {
     loadProfile();
     loadOverall();
+    loadTransfers();
+    loadDivisions();
   }, []);
 
   const loadProfile = async () => {
@@ -98,6 +108,45 @@ export default function WrestlerProfile() {
       });
     } catch {
       // 404 means no overall submitted yet — that's fine
+    }
+  };
+
+  const loadTransfers = async () => {
+    try {
+      const data = await transfersApi.getMyRequests();
+      setTransferRequests(data);
+    } catch {
+      // Not a critical failure — silently ignore
+    }
+  };
+
+  const loadDivisions = async () => {
+    try {
+      const data = await divisionsApi.getAll();
+      setDivisions(data);
+    } catch {
+      // Silently ignore
+    }
+  };
+
+  const handleTransferSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!transferForm.toDivisionId || !transferForm.reason.trim()) return;
+    try {
+      setTransferSubmitting(true);
+      setTransferError(null);
+      setTransferSuccess(null);
+      await transfersApi.createRequest({
+        toDivisionId: transferForm.toDivisionId,
+        reason: transferForm.reason.trim(),
+      });
+      setTransferForm({ toDivisionId: '', reason: '' });
+      setTransferSuccess('Transfer request submitted successfully.');
+      await loadTransfers();
+    } catch (err) {
+      setTransferError(err instanceof Error ? err.message : 'Failed to submit transfer request');
+    } finally {
+      setTransferSubmitting(false);
     }
   };
 
@@ -578,6 +627,61 @@ export default function WrestlerProfile() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Division Transfer card */}
+      {player.divisionId && (
+        <div className="stats-section transfer-section">
+          <h3 className="stats-section-title">Division Transfer</h3>
+          {(() => {
+            const pending = transferRequests.find((r) => r.status === 'pending');
+            if (pending) {
+              return (
+                <div className="transfer-status-card">
+                  <p className="transfer-status-msg">
+                    Request pending — moving to <strong>{pending.toDivisionName}</strong>
+                  </p>
+                  <p className="transfer-status-sub">Submitted {new Date(pending.createdAt).toLocaleDateString()}</p>
+                </div>
+              );
+            }
+            const availableDivisions = divisions.filter((d) => d.divisionId !== player.divisionId);
+            return (
+              <form onSubmit={handleTransferSubmit} className="transfer-form">
+                {transferError && <div className="error-message">{transferError}</div>}
+                {transferSuccess && <div className="success-message">{transferSuccess}</div>}
+                <div className="form-group">
+                  <label htmlFor="transfer-division">Request a move to</label>
+                  <select
+                    id="transfer-division"
+                    value={transferForm.toDivisionId}
+                    onChange={(e) => setTransferForm({ ...transferForm, toDivisionId: e.target.value })}
+                    required
+                  >
+                    <option value="">Select a division...</option>
+                    {availableDivisions.map((d) => (
+                      <option key={d.divisionId} value={d.divisionId}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="transfer-reason">Reason</label>
+                  <textarea
+                    id="transfer-reason"
+                    value={transferForm.reason}
+                    onChange={(e) => setTransferForm({ ...transferForm, reason: e.target.value })}
+                    placeholder="Why do you want to transfer divisions?"
+                    required
+                    rows={3}
+                  />
+                </div>
+                <button type="submit" className="save-btn" disabled={transferSubmitting}>
+                  {transferSubmitting ? 'Submitting...' : 'Request Transfer'}
+                </button>
+              </form>
+            );
+          })()}
         </div>
       )}
     </div>

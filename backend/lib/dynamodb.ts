@@ -146,6 +146,7 @@ export const TableNames = {
   ANNOUNCEMENTS: process.env.ANNOUNCEMENTS_TABLE!,
   NOTIFICATIONS: process.env.NOTIFICATIONS_TABLE!,
   WRESTLER_OVERALLS: process.env.WRESTLER_OVERALLS_TABLE!,
+  TRANSFER_REQUESTS: process.env.TRANSFER_REQUESTS_TABLE!,
 };
 
 type DynamoRecord = Record<string, unknown>;

@@ -1,0 +1,190 @@
+.manage-transfers h2 {
+  margin-bottom: 1rem;
+}
+
+.transfer-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border-color, #333);
+  padding-bottom: 0.5rem;
+}
+
+.transfer-tab-btn {
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--text-muted, #999);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+
+.transfer-tab-btn.active {
+  color: var(--primary, #e63946);
+  border-bottom-color: var(--primary, #e63946);
+  font-weight: 600;
+}
+
+.transfer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.transfer-card {
+  border: 1px solid var(--border-color, #333);
+  border-radius: 8px;
+  padding: 1rem;
+  background: var(--card-bg, #1a1a1a);
+}
+
+.transfer-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.transfer-player {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.transfer-date {
+  margin-left: auto;
+  color: var(--text-muted, #999);
+  font-size: 0.85rem;
+}
+
+.transfer-badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.transfer-badge.pending {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.transfer-badge.approved {
+  background: rgba(40, 167, 69, 0.15);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.transfer-badge.rejected {
+  background: rgba(220, 53, 69, 0.15);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.transfer-division-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.transfer-from {
+  color: var(--text-muted, #999);
+}
+
+.transfer-arrow {
+  color: var(--primary, #e63946);
+  font-size: 1.1rem;
+}
+
+.transfer-to {
+  font-weight: 600;
+}
+
+.transfer-reason {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #ccc);
+}
+
+.transfer-review-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.transfer-note-input {
+  flex: 1;
+  min-width: 160px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-color, #333);
+  border-radius: 4px;
+  background: var(--input-bg, #111);
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.approve-btn,
+.reject-btn {
+  padding: 0.4rem 0.9rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.approve-btn {
+  background: #28a745;
+  color: #fff;
+}
+
+.approve-btn:hover:not(:disabled) {
+  background: #218838;
+}
+
+.reject-btn {
+  background: #dc3545;
+  color: #fff;
+}
+
+.reject-btn:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.approve-btn:disabled,
+.reject-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.transfers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.transfers-table th,
+.transfers-table td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color, #333);
+}
+
+.transfers-table th {
+  font-weight: 600;
+  color: var(--text-muted, #999);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.no-data {
+  color: var(--text-muted, #999);
+  font-style: italic;
+  margin-top: 1rem;
+}
