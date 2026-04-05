@@ -323,7 +323,7 @@ export interface Video {
   updatedAt: string;
 }
 
-export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation';
+export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'transfer_reviewed';
 
 export interface AppNotification {
   notificationId: string;
@@ -331,7 +331,7 @@ export interface AppNotification {
   type: NotificationType;
   message: string;
   sourceId: string;
-  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team';
+  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer';
   isRead: boolean;
   createdAt: string;
 }
@@ -347,4 +347,25 @@ export interface WrestlerOverall {
 export interface WrestlerOverallWithPlayer extends WrestlerOverall {
   playerName: string;
   wrestlerName: string;
+}
+
+export type TransferRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface TransferRequest {
+  requestId: string;
+  playerId: string;
+  fromDivisionId: string;
+  toDivisionId: string;
+  reason: string;
+  status: TransferRequestStatus;
+  createdAt: string;
+  updatedAt: string;
+  reviewedBy?: string;
+  reviewNote?: string;
+}
+
+export interface TransferRequestWithDetails extends TransferRequest {
+  playerName: string;
+  fromDivisionName: string;
+  toDivisionName: string;
 }

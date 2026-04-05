@@ -41,6 +41,7 @@ provider:
     ANNOUNCEMENTS_TABLE: ${self:service}-announcements-${self:provider.stage}
     NOTIFICATIONS_TABLE: ${self:service}-notifications-${self:provider.stage}
     WRESTLER_OVERALLS_TABLE: ${self:service}-wrestler-overalls-${self:provider.stage}
+    TRANSFER_REQUESTS_TABLE: ${self:service}-transfer-requests-${self:provider.stage}
     DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT, 'http://localhost:8000'}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
@@ -105,6 +106,8 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.NOTIFICATIONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.NOTIFICATIONS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.WRESTLER_OVERALLS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TRANSFER_REQUESTS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TRANSFER_REQUESTS_TABLE}/index/*
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -315,6 +318,31 @@ functions:
       - http:
           path: admin/overalls
           method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  # Division Transfer Requests
+  transfers:
+    handler: functions/transfers/handler.handler
+    events:
+      - http:
+          path: transfers
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: transfers/me
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/transfers
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/transfers/{requestId}
+          method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
 
@@ -1867,6 +1895,35 @@ resources:
         KeySchema:
           - AttributeName: playerId
             KeyType: HASH
+
+    TransferRequestsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TRANSFER_REQUESTS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: requestId
+            AttributeType: S
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S
+        KeySchema:
+          - AttributeName: requestId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: PlayerTransfersIndex
+            KeySchema:
+              - AttributeName: playerId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+          - IndexName: StatusIndex
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
 
     ImagesBucket:
       Type: AWS::S3::Bucket

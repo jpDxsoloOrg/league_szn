@@ -7,9 +7,10 @@ export type NotificationType =
   | 'match_scheduled'
   | 'announcement'
   | 'stable_invitation'
-  | 'tag_team_invitation';
+  | 'tag_team_invitation'
+  | 'transfer_reviewed';
 
-export type NotificationSourceType = 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team';
+export type NotificationSourceType = 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer';
 
 export interface CreateNotificationParams {
   userId: string;

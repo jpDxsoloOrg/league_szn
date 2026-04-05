@@ -485,6 +485,7 @@
         "tagTeams": "Tag Teams verwalten",
         "announcements": "Ankündigungen",
         "videos": "Videos verwalten",
+        "transfers": "Divisionstransfers",
         "dangerZone": "Gefahrenzone"
       },
       "groups": {
@@ -1544,7 +1545,8 @@
     "delete": "Benachrichtigung löschen",
     "deleteAllRead": "Gelesene löschen",
     "typeStable": "Stable",
-    "typeTagTeam": "Tag Team"
+    "typeTagTeam": "Tag Team",
+    "typeTransfer": "Transfer"
   },
   "overalls": {
     "admin": {
