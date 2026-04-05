@@ -285,3 +285,41 @@ label.file-input-label:hover {
     font-size: 0.8rem;
   }
 }
+
+/* Alignment badges in admin table */
+.alignment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border: 1px solid;
+}
+
+.alignment-badge.face {
+  background: rgba(46, 204, 113, 0.12);
+  border-color: rgba(46, 204, 113, 0.35);
+  color: #2ecc71;
+}
+
+.alignment-badge.heel {
+  background: rgba(231, 76, 60, 0.12);
+  border-color: rgba(231, 76, 60, 0.35);
+  color: #e74c3c;
+}
+
+.alignment-badge.neutral {
+  background: rgba(153, 153, 153, 0.12);
+  border-color: rgba(153, 153, 153, 0.3);
+  color: #999;
+}
+
+.alignment-badge.unset {
+  background: transparent;
+  border-color: transparent;
+  color: #555;
+}

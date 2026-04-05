@@ -24,36 +24,26 @@ export default function DivisionFilter({
   return (
     <div className="division-filter">
       {labelKey != null && (
-        <span className="filter-label">{t(labelKey)}:</span>
+        <label className="filter-label" htmlFor="division-filter-select">
+          {t(labelKey)}:
+        </label>
       )}
-      <div className="filter-buttons">
-        <button
-          type="button"
-          className={`filter-btn ${selectedDivision === 'all' ? 'active' : ''}`}
-          onClick={() => onSelect('all')}
-        >
-          {t('common.all')}
-        </button>
+      <select
+        id="division-filter-select"
+        className="filter-select"
+        value={selectedDivision}
+        onChange={(e) => onSelect(e.target.value)}
+      >
+        <option value="all">{t('common.all')}</option>
         {divisions.map((division) => (
-          <button
-            type="button"
-            key={division.divisionId}
-            className={`filter-btn ${selectedDivision === division.divisionId ? 'active' : ''}`}
-            onClick={() => onSelect(division.divisionId)}
-          >
+          <option key={division.divisionId} value={division.divisionId}>
             {division.name}
-          </button>
+          </option>
         ))}
         {showNoDivision && (
-          <button
-            type="button"
-            className={`filter-btn ${selectedDivision === 'none' ? 'active' : ''}`}
-            onClick={() => onSelect('none')}
-          >
-            {t('standings.noDivision')}
-          </button>
+          <option value="none">{t('standings.noDivision')}</option>
         )}
-      </div>
+      </select>
     </div>
   );
 }

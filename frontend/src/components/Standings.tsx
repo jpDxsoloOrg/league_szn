@@ -23,6 +23,7 @@ export default function Standings() {
   const [standings, setStandings] = useState<StandingsType | null>(null);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [selectedDivision, setSelectedDivision] = useState<string>('all');
+  const [selectedAlignment, setSelectedAlignment] = useState<string>('all');
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -96,16 +97,22 @@ export default function Standings() {
   const filteredPlayers = useMemo((): Player[] => {
     if (!standings) return [];
 
-    if (selectedDivision === 'all') {
-      return standings.players;
-    }
+    let players = standings.players;
 
     if (selectedDivision === 'none') {
-      return standings.players.filter(p => !p.divisionId);
+      players = players.filter(p => !p.divisionId);
+    } else if (selectedDivision !== 'all') {
+      players = players.filter(p => p.divisionId === selectedDivision);
     }
 
-    return standings.players.filter(p => p.divisionId === selectedDivision);
-  }, [standings, selectedDivision]);
+    if (selectedAlignment === 'none') {
+      players = players.filter(p => !p.alignment);
+    } else if (selectedAlignment !== 'all') {
+      players = players.filter(p => p.alignment === selectedAlignment);
+    }
+
+    return players;
+  }, [standings, selectedDivision, selectedAlignment]);
 
   // Memoize player data with calculated win percentages
   const playersWithStats = useMemo(() => {
@@ -197,6 +204,24 @@ export default function Standings() {
         />
       )}
 
+      <div className="alignment-filter">
+        <span className="alignment-filter-label">Alignment:</span>
+        {[
+          { value: 'all', label: 'All' },
+          { value: 'face', label: '😇 Face' },
+          { value: 'neutral', label: '⚖️ Neutral' },
+          { value: 'heel', label: '😈 Heel' },
+        ].map(({ value, label }) => (
+          <button
+            key={value}
+            className={`alignment-filter-btn${selectedAlignment === value ? ' active' : ''}${value !== 'all' ? ` alignment-${value}` : ''}`}
+            onClick={() => setSelectedAlignment(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="standings-table-wrapper">
         <table className="standings-table">
           <thead>
@@ -250,6 +275,13 @@ export default function Standings() {
                       {player.name}
                     </Link>
                   </PlayerHoverCard>
+                  {player.alignment && (
+                    <span className={`alignment-badge alignment-${player.alignment}`} title={player.alignment.charAt(0).toUpperCase() + player.alignment.slice(1)}>
+                      {player.alignment === 'face' && '😇'}
+                      {player.alignment === 'neutral' && '⚖️'}
+                      {player.alignment === 'heel' && '😈'}
+                    </span>
+                  )}
                 </td>
                 <td className="wrestler-name">{player.currentWrestler}</td>
                 <td className="psn-id">{player.psnId || '-'}</td>

@@ -596,3 +596,87 @@ label:focus-visible {
   color: #888;
   margin-bottom: 1.5rem;
 }
+
+/* Alignment */
+.alignment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+
+.alignment-badge.face {
+  background: rgba(46, 204, 113, 0.15);
+  border-color: rgba(46, 204, 113, 0.4);
+  color: #2ecc71;
+}
+
+.alignment-badge.heel {
+  background: rgba(231, 76, 60, 0.15);
+  border-color: rgba(231, 76, 60, 0.4);
+  color: #e74c3c;
+}
+
+.alignment-badge.neutral {
+  background: rgba(153, 153, 153, 0.15);
+  border-color: rgba(153, 153, 153, 0.35);
+  color: #999;
+}
+
+.profile-alignment {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.alignment-toggle-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.alignment-toggle-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: #aaa;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.alignment-toggle-btn.alignment-face.selected {
+  background: rgba(46, 204, 113, 0.2);
+  border-color: rgba(46, 204, 113, 0.5);
+  color: #2ecc71;
+}
+
+.alignment-toggle-btn.alignment-heel.selected {
+  background: rgba(231, 76, 60, 0.2);
+  border-color: rgba(231, 76, 60, 0.5);
+  color: #e74c3c;
+}
+
+.alignment-toggle-btn.alignment-neutral.selected {
+  background: rgba(153, 153, 153, 0.2);
+  border-color: rgba(153, 153, 153, 0.45);
+  color: #ccc;
+}
+
+.alignment-toggle-btn:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.alignment-hint {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: #666;
+}

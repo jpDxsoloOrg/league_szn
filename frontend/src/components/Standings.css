@@ -338,3 +338,72 @@
     padding: 0.15em 0.4em;
   }
 }
+
+/* Alignment badge in standings */
+.alignment-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.4rem;
+  font-size: 0.85rem;
+  vertical-align: middle;
+  cursor: default;
+}
+
+/* Alignment filter */
+.alignment-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.alignment-filter-label {
+  font-size: 0.85rem;
+  color: #888;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.alignment-filter-btn {
+  padding: 0.3rem 0.9rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #888;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.alignment-filter-btn:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ccc;
+}
+
+.alignment-filter-btn.active {
+  border-color: rgba(212, 175, 55, 0.5);
+  background: rgba(212, 175, 55, 0.12);
+  color: #d4af37;
+}
+
+.alignment-filter-btn.alignment-face.active {
+  border-color: rgba(46, 204, 113, 0.5);
+  background: rgba(46, 204, 113, 0.12);
+  color: #2ecc71;
+}
+
+.alignment-filter-btn.alignment-heel.active {
+  border-color: rgba(231, 76, 60, 0.5);
+  background: rgba(231, 76, 60, 0.12);
+  color: #e74c3c;
+}
+
+.alignment-filter-btn.alignment-neutral.active {
+  border-color: rgba(153, 153, 153, 0.4);
+  background: rgba(153, 153, 153, 0.1);
+  color: #bbb;
+}

@@ -4,7 +4,7 @@ import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, requireRole } from '../../lib/auth';
 
-const ALLOWED_FIELDS = ['name', 'currentWrestler', 'alternateWrestler', 'imageUrl', 'psnId'];
+const ALLOWED_FIELDS = ['name', 'currentWrestler', 'alternateWrestler', 'imageUrl', 'psnId', 'alignment'];
 const MAX_NAME_LENGTH = 100;
 const MAX_URL_LENGTH = 2048;
 
@@ -53,6 +53,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           removeExpressions.push(`#${field}`);
           expressionAttributeNames[`#${field}`] = field;
           continue;
+        }
+
+        if (field === 'alignment') {
+          if (value === '') {
+            removeExpressions.push(`#${field}`);
+            expressionAttributeNames[`#${field}`] = field;
+            continue;
+          }
+          if (!['face', 'heel', 'neutral'].includes(value)) {
+            return badRequest('Invalid alignment. Must be face, heel, or neutral');
+          }
         }
 
         if ((field === 'name' || field === 'currentWrestler' || field === 'alternateWrestler') && value.length > MAX_NAME_LENGTH) {

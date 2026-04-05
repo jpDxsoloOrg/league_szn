@@ -48,6 +48,7 @@ export const profileApi = {
     alternateWrestler?: string;
     imageUrl?: string;
     psnId?: string;
+    alignment?: 'face' | 'heel' | 'neutral' | '';
   }): Promise<Player> => {
     return fetchWithAuth(`${API_BASE_URL}/players/me`, {
       method: 'PUT',

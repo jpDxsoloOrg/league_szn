@@ -13,7 +13,7 @@ export const playersApi = {
     });
   },
 
-  update: async (playerId: string, updates: Partial<Player>): Promise<Player> => {
+  update: async (playerId: string, updates: Omit<Partial<Player>, 'alignment'> & { alignment?: 'face' | 'heel' | 'neutral' | '' }): Promise<Player> => {
     return fetchWithAuth(`${API_BASE_URL}/players/${playerId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),

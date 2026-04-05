@@ -45,6 +45,7 @@ export default function WrestlerProfile() {
     alternateWrestler: '',
     imageUrl: '',
     psnId: '',
+    alignment: '' as '' | 'face' | 'heel' | 'neutral',
   });
 
   // Image upload state
@@ -67,6 +68,7 @@ export default function WrestlerProfile() {
         alternateWrestler: profile.alternateWrestler || '',
         imageUrl: profile.imageUrl || '',
         psnId: profile.psnId || '',
+        alignment: profile.alignment || '',
       });
     } catch (err) {
       if (err instanceof Error && err.message.includes('404')) {
@@ -157,6 +159,7 @@ export default function WrestlerProfile() {
         alternateWrestler: player.alternateWrestler || '',
         imageUrl: player.imageUrl || '',
         psnId: player.psnId || '',
+        alignment: player.alignment || '',
       });
       setImagePreview(player.imageUrl || null);
       setSelectedFile(null);
@@ -178,6 +181,7 @@ export default function WrestlerProfile() {
         alternateWrestler: player.alternateWrestler || '',
         imageUrl: player.imageUrl || '',
         psnId: player.psnId || '',
+        alignment: player.alignment || '',
       });
     }
   };
@@ -201,7 +205,7 @@ export default function WrestlerProfile() {
         return;
       }
 
-      const updates: { name?: string; currentWrestler?: string; alternateWrestler?: string; imageUrl?: string; psnId?: string } = {
+      const updates: { name?: string; currentWrestler?: string; alternateWrestler?: string; imageUrl?: string; psnId?: string; alignment?: 'face' | 'heel' | 'neutral' | '' } = {
         name: sanitizedName,
       };
 
@@ -219,6 +223,8 @@ export default function WrestlerProfile() {
       if (formData.psnId.trim()) {
         updates.psnId = formData.psnId.trim();
       }
+
+      updates.alignment = formData.alignment || '';
 
       const updated = await profileApi.updateMyProfile(updates);
       setPlayer(updated);
@@ -304,6 +310,13 @@ export default function WrestlerProfile() {
               PSN: {player.psnId}
             </p>
           )}
+          {player.alignment && (
+            <span className={`alignment-badge profile-alignment alignment-${player.alignment}`}>
+              {player.alignment === 'face' && '😇 Face'}
+              {player.alignment === 'neutral' && '⚖️ Neutral'}
+              {player.alignment === 'heel' && '😈 Heel'}
+            </span>
+          )}
         </div>
         {!editing && (
           <button
@@ -364,6 +377,25 @@ export default function WrestlerProfile() {
                 onChange={(e) => setFormData({ ...formData, psnId: e.target.value })}
                 placeholder="Your PlayStation Network ID"
               />
+            </div>
+
+            <div className="form-group">
+              <label>Alignment</label>
+              <div className="alignment-toggle-group">
+                {(['face', 'neutral', 'heel'] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    className={`alignment-toggle-btn alignment-${option}${formData.alignment === option ? ' selected' : ''}`}
+                    onClick={() => setFormData({ ...formData, alignment: formData.alignment === option ? '' : option })}
+                  >
+                    {option === 'face' && '😇 Face'}
+                    {option === 'neutral' && '⚖️ Neutral'}
+                    {option === 'heel' && '😈 Heel'}
+                  </button>
+                ))}
+              </div>
+              <p className="alignment-hint">Helps GMs with booking and other players with promos. Doesn't affect matchups.</p>
             </div>
 
             <div className="form-group">
