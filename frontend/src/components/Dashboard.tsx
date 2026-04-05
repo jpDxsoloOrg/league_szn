@@ -222,6 +222,25 @@ export default function Dashboard() {
         )}
       </section>
 
+      {data.inProgressEvents && data.inProgressEvents.length > 0 && (
+        <section className="dashboard-section">
+          <h3>{t('dashboard.inProgressEvents')}</h3>
+          <div className="dashboard-events-grid">
+            {data.inProgressEvents.map((e: DashboardEvent) => (
+              <Link
+                key={e.eventId}
+                to={`/events/${e.eventId}`}
+                className="dashboard-event-card dashboard-event-card--live"
+              >
+                <span className="dashboard-event-live-badge">{t('dashboard.liveBadge')}</span>
+                <div className="event-name">{e.name}</div>
+                <div className="event-date">{new Date(e.date).toLocaleDateString(undefined, { dateStyle: 'medium' })}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="dashboard-section">
         <h3>{t('dashboard.upcomingEvents')}</h3>
         {data.upcomingEvents.length === 0 ? (

@@ -188,6 +188,8 @@
     "title": "League Overview",
     "champions": "Current Champions",
     "upcomingEvents": "Upcoming Events",
+    "inProgressEvents": "In Progress",
+    "liveBadge": "Live",
     "recentResults": "Recent Results",
     "seasonProgress": "Season Progress",
     "quickStats": "Quick Stats",
@@ -886,6 +888,7 @@
     },
     "calendar": {
       "upcoming": "Upcoming Events",
+      "inProgress": "In Progress",
       "noUpcoming": "No upcoming events scheduled.",
       "months": {
         "january": "January",

@@ -281,6 +281,47 @@
   flex-shrink: 0;
 }
 
+/* ── In-Progress Events ────────────────────────────────────────────────────── */
+
+.in-progress-events-section {
+  margin-top: 8px;
+  margin-bottom: 24px;
+  padding: 12px;
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  border-radius: 8px;
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.in-progress-events-title {
+  color: white;
+  margin: 0 0 16px 0;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.in-progress-live-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #dc2626;
+  box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+  animation: in-progress-live-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes in-progress-live-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+}
+
+.in-progress-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 /* ── Upcoming Events ───────────────────────────────────────────────────────── */
 
 .upcoming-events-section {

@@ -108,6 +108,31 @@
   color: #d4af37;
 }
 
+.dashboard-event-card--live {
+  position: relative;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.35);
+}
+
+.dashboard-event-live-badge {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  background-color: #dc2626;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  border-radius: 4px;
+  text-transform: uppercase;
+  animation: dashboard-live-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes dashboard-live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
 /* Recent results */
 .dashboard-results-by-date {
   display: flex;

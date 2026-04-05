@@ -49,6 +49,7 @@ import Dashboard from '../Dashboard';
 const emptyDashboard = {
   currentChampions: [],
   upcomingEvents: [],
+  inProgressEvents: [],
   recentResults: [],
   seasonInfo: null,
   quickStats: {
