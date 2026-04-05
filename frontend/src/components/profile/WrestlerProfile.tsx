@@ -129,8 +129,7 @@ export default function WrestlerProfile() {
     }
   };
 
-  const handleTransferSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleTransferSubmit = async () => {
     if (!transferForm.toDivisionId || !transferForm.reason.trim()) return;
     try {
       setTransferSubmitting(true);
@@ -540,6 +539,63 @@ export default function WrestlerProfile() {
               </div>
             </div>
 
+            {player.divisionId && (
+              <div className="form-group transfer-form-group">
+                <label className="form-section-label">Division Transfer</label>
+                {(() => {
+                  const pending = transferRequests.find((r) => r.status === 'pending');
+                  if (pending) {
+                    return (
+                      <div className="transfer-status-card">
+                        <p className="transfer-status-msg">
+                          Request pending — moving to <strong>{pending.toDivisionName}</strong>
+                        </p>
+                        <p className="transfer-status-sub">Submitted {new Date(pending.createdAt).toLocaleDateString()}</p>
+                      </div>
+                    );
+                  }
+                  const availableDivisions = divisions.filter((d) => d.divisionId !== player.divisionId);
+                  return (
+                    <>
+                      {transferError && <div className="error-message">{transferError}</div>}
+                      {transferSuccess && <div className="success-message">{transferSuccess}</div>}
+                      <select
+                        id="transfer-division"
+                        value={transferForm.toDivisionId}
+                        onChange={(e) => setTransferForm({ ...transferForm, toDivisionId: e.target.value })}
+                      >
+                        <option value="">Request a division move...</option>
+                        {availableDivisions.map((d) => (
+                          <option key={d.divisionId} value={d.divisionId}>{d.name}</option>
+                        ))}
+                      </select>
+                      {transferForm.toDivisionId && (
+                        <>
+                          <textarea
+                            id="transfer-reason"
+                            value={transferForm.reason}
+                            onChange={(e) => setTransferForm({ ...transferForm, reason: e.target.value })}
+                            placeholder="Why do you want to transfer divisions?"
+                            rows={3}
+                            style={{ marginTop: '0.5rem' }}
+                          />
+                          <button
+                            type="button"
+                            className="save-btn"
+                            style={{ marginTop: '0.5rem' }}
+                            onClick={handleTransferSubmit}
+                            disabled={transferSubmitting || !transferForm.reason.trim()}
+                          >
+                            {transferSubmitting ? 'Submitting...' : 'Submit Transfer Request'}
+                          </button>
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+
             <div className="form-actions">
               <button
                 type="submit"
@@ -630,60 +686,6 @@ export default function WrestlerProfile() {
         </div>
       )}
 
-      {/* Division Transfer card */}
-      {player.divisionId && (
-        <div className="stats-section transfer-section">
-          <h3 className="stats-section-title">Division Transfer</h3>
-          {(() => {
-            const pending = transferRequests.find((r) => r.status === 'pending');
-            if (pending) {
-              return (
-                <div className="transfer-status-card">
-                  <p className="transfer-status-msg">
-                    Request pending — moving to <strong>{pending.toDivisionName}</strong>
-                  </p>
-                  <p className="transfer-status-sub">Submitted {new Date(pending.createdAt).toLocaleDateString()}</p>
-                </div>
-              );
-            }
-            const availableDivisions = divisions.filter((d) => d.divisionId !== player.divisionId);
-            return (
-              <form onSubmit={handleTransferSubmit} className="transfer-form">
-                {transferError && <div className="error-message">{transferError}</div>}
-                {transferSuccess && <div className="success-message">{transferSuccess}</div>}
-                <div className="form-group">
-                  <label htmlFor="transfer-division">Request a move to</label>
-                  <select
-                    id="transfer-division"
-                    value={transferForm.toDivisionId}
-                    onChange={(e) => setTransferForm({ ...transferForm, toDivisionId: e.target.value })}
-                    required
-                  >
-                    <option value="">Select a division...</option>
-                    {availableDivisions.map((d) => (
-                      <option key={d.divisionId} value={d.divisionId}>{d.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="transfer-reason">Reason</label>
-                  <textarea
-                    id="transfer-reason"
-                    value={transferForm.reason}
-                    onChange={(e) => setTransferForm({ ...transferForm, reason: e.target.value })}
-                    placeholder="Why do you want to transfer divisions?"
-                    required
-                    rows={3}
-                  />
-                </div>
-                <button type="submit" className="save-btn" disabled={transferSubmitting}>
-                  {transferSubmitting ? 'Submitting...' : 'Request Transfer'}
-                </button>
-              </form>
-            );
-          })()}
-        </div>
-      )}
     </div>
   );
 }
