@@ -205,21 +205,18 @@ export default function Standings() {
       )}
 
       <div className="alignment-filter">
-        <span className="alignment-filter-label">Alignment:</span>
-        {[
-          { value: 'all', label: 'All' },
-          { value: 'face', label: '😇 Face' },
-          { value: 'neutral', label: '⚖️ Neutral' },
-          { value: 'heel', label: '😈 Heel' },
-        ].map(({ value, label }) => (
-          <button
-            key={value}
-            className={`alignment-filter-btn${selectedAlignment === value ? ' active' : ''}${value !== 'all' ? ` alignment-${value}` : ''}`}
-            onClick={() => setSelectedAlignment(value)}
-          >
-            {label}
-          </button>
-        ))}
+        <label className="alignment-filter-label" htmlFor="alignment-filter-select">Alignment:</label>
+        <select
+          id="alignment-filter-select"
+          className="alignment-filter-select"
+          value={selectedAlignment}
+          onChange={(e) => setSelectedAlignment(e.target.value)}
+        >
+          <option value="all">All</option>
+          <option value="face">😇 Face</option>
+          <option value="neutral">⚖️ Neutral</option>
+          <option value="heel">😈 Heel</option>
+        </select>
       </div>
 
       <div className="standings-table-wrapper">

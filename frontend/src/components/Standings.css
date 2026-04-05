@@ -354,56 +354,37 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .alignment-filter-label {
+  color: var(--color-text-secondary);
   font-size: 0.85rem;
-  color: #888;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
-.alignment-filter-btn {
-  padding: 0.3rem 0.9rem;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.05);
-  color: #888;
+.alignment-filter-select {
+  padding: 0.35rem 0.75rem;
+  background-color: var(--color-surface, #1a1a1a);
+  border: 1px solid var(--color-border, #333);
+  border-radius: 6px;
+  color: var(--color-text, #e8e8e8);
+  font-size: 0.875rem;
   cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 600;
-  transition: all 0.15s ease;
+  min-width: 140px;
+  appearance: auto;
 }
 
-.alignment-filter-btn:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.08);
-  color: #ccc;
+.alignment-filter-select:focus {
+  outline: 2px solid var(--color-primary, #d4af37);
+  outline-offset: 2px;
 }
 
-.alignment-filter-btn.active {
-  border-color: rgba(212, 175, 55, 0.5);
-  background: rgba(212, 175, 55, 0.12);
-  color: #d4af37;
-}
-
-.alignment-filter-btn.alignment-face.active {
-  border-color: rgba(46, 204, 113, 0.5);
-  background: rgba(46, 204, 113, 0.12);
-  color: #2ecc71;
-}
-
-.alignment-filter-btn.alignment-heel.active {
-  border-color: rgba(231, 76, 60, 0.5);
-  background: rgba(231, 76, 60, 0.12);
-  color: #e74c3c;
-}
-
-.alignment-filter-btn.alignment-neutral.active {
-  border-color: rgba(153, 153, 153, 0.4);
-  background: rgba(153, 153, 153, 0.1);
-  color: #bbb;
+@media (max-width: 768px) {
+  .alignment-filter-select {
+    font-size: 0.8rem;
+  }
 }
