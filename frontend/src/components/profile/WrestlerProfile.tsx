@@ -636,6 +636,25 @@ export default function WrestlerProfile() {
         </div>
       </div>
 
+      {/* Wrestler Overalls */}
+      {overall && (
+        <div className="stats-section">
+          <h3 className="stats-section-title">{t('overalls.profile.title')}</h3>
+          <div className="profile-stats">
+            <div className="stat-card">
+              <span className="stat-label">{t('overalls.admin.mainOverall')}</span>
+              <span className="stat-value">{overall.mainOverall}</span>
+            </div>
+            {overall.alternateOverall !== undefined && (
+              <div className="stat-card">
+                <span className="stat-label">{t('overalls.admin.altOverall')}</span>
+                <span className="stat-value">{overall.alternateOverall}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Season Records */}
       {player.seasonRecords && player.seasonRecords.length > 0 && (
         <div className="stats-section">
@@ -665,25 +684,6 @@ export default function WrestlerProfile() {
 
       {features.statistics && player.playerId && (
         <EmbeddedPlayerStats playerId={player.playerId} />
-      )}
-
-      {/* Current overalls display (view mode only) */}
-      {overall && (
-        <div className="stats-section">
-          <h3 className="stats-section-title">{t('overalls.profile.title')}</h3>
-          <div className="profile-stats">
-            <div className="stat-card">
-              <span className="stat-label">{t('overalls.admin.mainOverall')}</span>
-              <span className="stat-value">{overall.mainOverall}</span>
-            </div>
-            {overall.alternateOverall !== undefined && (
-              <div className="stat-card">
-                <span className="stat-label">{t('overalls.admin.altOverall')}</span>
-                <span className="stat-value">{overall.alternateOverall}</span>
-              </div>
-            )}
-          </div>
-        </div>
       )}
 
     </div>
