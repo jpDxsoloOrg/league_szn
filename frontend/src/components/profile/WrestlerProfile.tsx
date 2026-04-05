@@ -655,6 +655,29 @@ export default function WrestlerProfile() {
         </div>
       )}
 
+      {/* Transfer request history (view mode) */}
+      {transferRequests.length > 0 && (
+        <div className="stats-section">
+          <h3 className="stats-section-title">Division Transfer History</h3>
+          <div className="transfer-history-list">
+            {transferRequests.map((req) => (
+              <div key={req.requestId} className={`transfer-history-item transfer-history-${req.status}`}>
+                <div className="transfer-history-row">
+                  <span className="transfer-history-divisions">
+                    {req.fromDivisionName} → {req.toDivisionName}
+                  </span>
+                  <span className={`transfer-badge ${req.status}`}>{req.status}</span>
+                  <span className="transfer-history-date">{new Date(req.updatedAt).toLocaleDateString()}</span>
+                </div>
+                {req.status === 'rejected' && req.reviewNote && (
+                  <p className="transfer-history-note">Reason: {req.reviewNote}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Season Records */}
       {player.seasonRecords && player.seasonRecords.length > 0 && (
         <div className="stats-section">
@@ -684,29 +707,6 @@ export default function WrestlerProfile() {
 
       {features.statistics && player.playerId && (
         <EmbeddedPlayerStats playerId={player.playerId} />
-      )}
-
-      {/* Transfer request history (view mode) */}
-      {transferRequests.length > 0 && (
-        <div className="stats-section">
-          <h3 className="stats-section-title">Division Transfer History</h3>
-          <div className="transfer-history-list">
-            {transferRequests.map((req) => (
-              <div key={req.requestId} className={`transfer-history-item transfer-history-${req.status}`}>
-                <div className="transfer-history-row">
-                  <span className="transfer-history-divisions">
-                    {req.fromDivisionName} → {req.toDivisionName}
-                  </span>
-                  <span className={`transfer-badge ${req.status}`}>{req.status}</span>
-                  <span className="transfer-history-date">{new Date(req.updatedAt).toLocaleDateString()}</span>
-                </div>
-                {req.status === 'rejected' && req.reviewNote && (
-                  <p className="transfer-history-note">Reason: {req.reviewNote}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
       )}
 
     </div>
