@@ -74,13 +74,13 @@ describe('createChallenge', () => {
     expect(mockPut).toHaveBeenCalledOnce();
   });
 
-  it('includes optional fields (stipulation, championshipId, message) when provided', async () => {
+  it('includes optional fields (stipulation, championshipId, challengeNote) when provided', async () => {
     mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
     mockGet.mockResolvedValue({ Item: { playerId: 'p2' } });
     mockPut.mockResolvedValue({});
 
     const result = await createChallenge(
-      wrestlerEvent({ challengedId: 'p2', matchType: 'Cage', stipulation: 'Steel Cage', championshipId: 'title-1', message: 'You are going down!' }),
+      wrestlerEvent({ challengedId: 'p2', matchType: 'Cage', stipulation: 'Steel Cage', championshipId: 'title-1', challengeNote: 'You are going down!' }),
       ctx, cb,
     );
 
@@ -88,7 +88,7 @@ describe('createChallenge', () => {
     const body = JSON.parse(result!.body);
     expect(body.stipulation).toBe('Steel Cage');
     expect(body.championshipId).toBe('title-1');
-    expect(body.message).toBe('You are going down!');
+    expect(body.challengeNote).toBe('You are going down!');
   });
 
   it('omits optional fields when not provided', async () => {
@@ -100,7 +100,26 @@ describe('createChallenge', () => {
     const body = JSON.parse(result!.body);
     expect(body.stipulation).toBeUndefined();
     expect(body.championshipId).toBeUndefined();
-    expect(body.message).toBeUndefined();
+    expect(body.challengeNote).toBeUndefined();
+  });
+
+  it('accepts opponentIds[] and builds a responses map', async () => {
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Challenger' }] });
+    mockGet.mockImplementation(({ Key }: { Key: { playerId: string } }) => {
+      return Promise.resolve({ Item: { playerId: Key.playerId } });
+    });
+    mockPut.mockResolvedValue({});
+
+    const result = await createChallenge(
+      wrestlerEvent({ opponentIds: ['p2', 'p3'], matchType: 'Triple Threat' }),
+      ctx, cb,
+    );
+    expect(result!.statusCode).toBe(201);
+    const body = JSON.parse(result!.body);
+    expect(body.opponentIds).toEqual(['p2', 'p3']);
+    expect(body.challengedId).toBe('p2');
+    expect(body.responses.p2.status).toBe('pending');
+    expect(body.responses.p3.status).toBe('pending');
   });
 
   it('returns 400 when user does not have Wrestler role', async () => {
@@ -122,11 +141,11 @@ describe('createChallenge', () => {
     expect(JSON.parse(result!.body).message).toBe('Invalid JSON in request body');
   });
 
-  it('returns 400 when challengedId is missing', async () => {
+  it('returns 400 when neither opponentIds nor challengedId is provided', async () => {
     mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
     const result = await createChallenge(wrestlerEvent({ matchType: 'Singles' }), ctx, cb);
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('challengedId is required');
+    expect(JSON.parse(result!.body).message).toBe('opponentIds is required');
   });
 
   it('returns 400 when matchType is missing', async () => {

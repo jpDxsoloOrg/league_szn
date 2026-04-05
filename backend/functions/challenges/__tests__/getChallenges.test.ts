@@ -83,6 +83,7 @@ describe('getChallenges', () => {
   });
 
   it('filters challenges by playerId using both ChallengerIndex and ChallengedIndex', async () => {
+    mockScanAll.mockResolvedValue([]);
     mockQueryAll.mockImplementation(({ IndexName }: any) => {
       if (IndexName === 'ChallengerIndex') return Promise.resolve([mockChallenge1]);
       if (IndexName === 'ChallengedIndex') return Promise.resolve([mockChallenge2]);
@@ -102,6 +103,7 @@ describe('getChallenges', () => {
   });
 
   it('deduplicates challenges when same challenge appears in both indexes', async () => {
+    mockScanAll.mockResolvedValue([]);
     mockQueryAll.mockImplementation(({ IndexName }: any) => {
       if (IndexName === 'ChallengerIndex') return Promise.resolve([mockChallenge1]);
       if (IndexName === 'ChallengedIndex') return Promise.resolve([mockChallenge1]);
@@ -177,6 +179,7 @@ describe('getChallenges', () => {
   });
 
   it('playerId filter takes priority over status filter', async () => {
+    mockScanAll.mockResolvedValue([]);
     mockQueryAll.mockResolvedValue([]);
     mockGet.mockResolvedValue({ Item: undefined });
 
@@ -190,7 +193,7 @@ describe('getChallenges', () => {
     expect(mockQueryAll).toHaveBeenCalledWith(
       expect.objectContaining({ IndexName: 'ChallengerIndex' }),
     );
-    expect(mockScanAll).not.toHaveBeenCalled();
+    // StatusIndex should not be used; scanAll is only used for multi-opponent lookup
   });
 });
 

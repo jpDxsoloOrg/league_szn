@@ -7,15 +7,16 @@ import type { TagTeam } from '../../types/tagTeam';
 import { getInitial } from './challengeUtils';
 import './IssueChallenge.css';
 
-const MAX_MESSAGE_LENGTH = 500;
+const MAX_CHALLENGE_NOTE_LENGTH = 200;
+const MAX_OPPONENTS = 5;
 
 export default function IssueChallenge() {
   const { t } = useTranslation();
-  const [opponentId, setOpponentId] = useState('');
+  const [opponentIds, setOpponentIds] = useState<string[]>([]);
   const [matchType, setMatchType] = useState('');
   const [stipulation, setStipulation] = useState('');
   const [isChampionship, setIsChampionship] = useState(false);
-  const [message, setMessage] = useState('');
+  const [challengeNote, setChallengeNote] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -57,20 +58,30 @@ export default function IssueChallenge() {
   }, []);
 
   const currentPlayer = players.find((p) => p.playerId === currentPlayerId);
-  const opponent = players.find((p) => p.playerId === opponentId);
+  const selectedOpponents = players.filter((p) => opponentIds.includes(p.playerId));
   // Only show players with linked accounts (userId) who can actually respond to challenges
   const availableOpponents = players.filter((p) => p.playerId !== currentPlayerId && p.userId);
 
   const selectedTagTeam = tagTeams.find((tt) => tt.tagTeamId === selectedTagTeamId);
 
   const isFormValid = challengeMode === 'tag_team'
-    ? selectedTagTeamId && matchType && message.length <= MAX_MESSAGE_LENGTH
-    : opponentId && matchType && message.length <= MAX_MESSAGE_LENGTH;
+    ? !!selectedTagTeamId && !!matchType && challengeNote.length <= MAX_CHALLENGE_NOTE_LENGTH
+    : opponentIds.length > 0 && opponentIds.length <= MAX_OPPONENTS && !!matchType && challengeNote.length <= MAX_CHALLENGE_NOTE_LENGTH;
 
-  const handleMessageChange = (value: string) => {
-    if (value.length <= MAX_MESSAGE_LENGTH + 50) {
-      setMessage(value);
+  const handleChallengeNoteChange = (value: string) => {
+    if (value.length <= MAX_CHALLENGE_NOTE_LENGTH + 20) {
+      setChallengeNote(value);
     }
+  };
+
+  const toggleOpponent = (playerId: string) => {
+    setOpponentIds((prev) => {
+      if (prev.includes(playerId)) {
+        return prev.filter((id) => id !== playerId);
+      }
+      if (prev.length >= MAX_OPPONENTS) return prev;
+      return [...prev, playerId];
+    });
   };
 
   const handleSubmit = async () => {
@@ -80,20 +91,19 @@ export default function IssueChallenge() {
     try {
       if (challengeMode === 'tag_team') {
         await challengesApi.create({
-          challengedId: '',
           challengeMode: 'tag_team',
           challengedTagTeamId: selectedTagTeamId,
           matchType,
           stipulation: stipulation || undefined,
-          message: message || undefined,
+          challengeNote: challengeNote || undefined,
         });
       } else {
         await challengesApi.create({
-          challengedId: opponentId,
+          opponentIds,
           matchType,
           stipulation: stipulation || undefined,
           championshipId: isChampionship ? 'championship-match' : undefined,
-          message: message || undefined,
+          challengeNote: challengeNote || undefined,
         });
       }
       setSubmitted(true);
@@ -105,11 +115,11 @@ export default function IssueChallenge() {
   };
 
   const handleReset = () => {
-    setOpponentId('');
+    setOpponentIds([]);
     setMatchType('');
     setStipulation('');
     setIsChampionship(false);
-    setMessage('');
+    setChallengeNote('');
     setShowPreview(false);
     setSubmitted(false);
     setError(null);
@@ -152,7 +162,7 @@ export default function IssueChallenge() {
 
   const canShowPreview = challengeMode === 'tag_team'
     ? isFormValid && playerTagTeam && selectedTagTeam
-    : isFormValid && opponent && currentPlayer;
+    : isFormValid && selectedOpponents.length > 0 && currentPlayer;
 
   return (
     <div className="issue-challenge">
@@ -189,7 +199,7 @@ export default function IssueChallenge() {
                   name="challengeMode"
                   value="tag_team"
                   checked={challengeMode === 'tag_team'}
-                  onChange={() => { setChallengeMode('tag_team'); setOpponentId(''); }}
+                  onChange={() => { setChallengeMode('tag_team'); setOpponentIds([]); }}
                 />
                 {t('challenges.issue.tagTeamChallenge')}
               </label>
@@ -218,15 +228,29 @@ export default function IssueChallenge() {
           </div>
         ) : (
           <div className="issue-form-group">
-            <label>{t('challenges.issue.selectOpponent')}</label>
-            <select value={opponentId} onChange={(e) => setOpponentId(e.target.value)}>
-              <option value="">{t('challenges.issue.selectOpponentPlaceholder')}</option>
-              {availableOpponents.map((p) => (
-                <option key={p.playerId} value={p.playerId}>
-                  {p.currentWrestler} ({p.name})
-                </option>
-              ))}
-            </select>
+            <label>
+              {t('challenges.issue.selectOpponent')} ({opponentIds.length}/{MAX_OPPONENTS})
+            </label>
+            <div className="issue-opponent-multiselect" role="group">
+              {availableOpponents.map((p) => {
+                const checked = opponentIds.includes(p.playerId);
+                const disabled = !checked && opponentIds.length >= MAX_OPPONENTS;
+                return (
+                  <label
+                    key={p.playerId}
+                    className={`issue-opponent-option${checked ? ' selected' : ''}${disabled ? ' disabled' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={disabled}
+                      onChange={() => toggleOpponent(p.playerId)}
+                    />
+                    <span>{p.currentWrestler} ({p.name})</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -266,17 +290,17 @@ export default function IssueChallenge() {
         </div>
 
         <div className="issue-form-group">
-          <label>{t('challenges.issue.message')}</label>
+          <label>{t('challenges.issue.challengeNote', 'Optional note')}</label>
           <textarea
-            value={message}
-            onChange={(e) => handleMessageChange(e.target.value)}
-            placeholder={t('challenges.issue.messagePlaceholder')}
-            rows={4}
+            value={challengeNote}
+            onChange={(e) => handleChallengeNoteChange(e.target.value)}
+            placeholder={t('challenges.issue.challengeNotePlaceholder', 'Add a short note (optional)')}
+            rows={3}
           />
           <div
-            className={`issue-char-count ${message.length > MAX_MESSAGE_LENGTH ? 'over-limit' : ''}`}
+            className={`issue-char-count ${challengeNote.length > MAX_CHALLENGE_NOTE_LENGTH ? 'over-limit' : ''}`}
           >
-            {message.length}/{MAX_MESSAGE_LENGTH}
+            {challengeNote.length}/{MAX_CHALLENGE_NOTE_LENGTH}
           </div>
         </div>
 
@@ -330,15 +354,15 @@ export default function IssueChallenge() {
                     </span>
                   )}
                 </div>
-                {message && (
+                {challengeNote && (
                   <div className="issue-preview-message">
-                    &ldquo;{message}&rdquo;
+                    &ldquo;{challengeNote}&rdquo;
                   </div>
                 )}
               </div>
             )}
 
-            {showPreview && challengeMode === 'singles' && currentPlayer && opponent && (
+            {showPreview && challengeMode === 'singles' && currentPlayer && selectedOpponents.length > 0 && (
               <div className="issue-preview">
                 <h3>{t('challenges.issue.preview')}</h3>
                 <div className="issue-preview-versus">
@@ -352,12 +376,16 @@ export default function IssueChallenge() {
                     <div className="issue-preview-name">{currentPlayer.name}</div>
                   </div>
                   <span className="issue-preview-vs">{t('common.vs').toUpperCase()}</span>
-                  <div className="issue-preview-player">
-                    <div className="issue-preview-avatar">
-                      {getInitial(opponent.currentWrestler)}
-                    </div>
-                    <div className="issue-preview-wrestler">{opponent.currentWrestler}</div>
-                    <div className="issue-preview-name">{opponent.name}</div>
+                  <div className="issue-preview-opponents">
+                    {selectedOpponents.map((op) => (
+                      <div key={op.playerId} className="issue-preview-player">
+                        <div className="issue-preview-avatar">
+                          {getInitial(op.currentWrestler)}
+                        </div>
+                        <div className="issue-preview-wrestler">{op.currentWrestler}</div>
+                        <div className="issue-preview-name">{op.name}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
                 <div className="issue-preview-details">
@@ -371,9 +399,9 @@ export default function IssueChallenge() {
                     </span>
                   )}
                 </div>
-                {message && (
+                {challengeNote && (
                   <div className="issue-preview-message">
-                    &ldquo;{message}&rdquo;
+                    &ldquo;{challengeNote}&rdquo;
                   </div>
                 )}
               </div>

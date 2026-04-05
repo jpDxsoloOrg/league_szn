@@ -33,6 +33,17 @@ export const challengesApi = {
     });
   },
 
+  respondV2: async (
+    challengeId: string,
+    response: 'accepted' | 'declined',
+    declineReason?: string,
+  ): Promise<ChallengeWithPlayers & { matchId?: string; scheduledEventId?: string; matchDate?: string; eventName?: string }> => {
+    return fetchWithAuth(`${API_BASE_URL}/challenges/${challengeId}/respond`, {
+      method: 'POST',
+      body: JSON.stringify({ response, declineReason }),
+    });
+  },
+
   cancel: async (challengeId: string): Promise<ChallengeWithPlayers> => {
     return fetchWithAuth(`${API_BASE_URL}/challenges/${challengeId}/cancel`, {
       method: 'POST',

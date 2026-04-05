@@ -42,9 +42,16 @@ function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
 }
 
 function getNavigationPath(notification: AppNotification, playerId: string | null): string {
+  // Route challenge notifications by type rather than only sourceType
+  if (notification.sourceType === 'challenge') {
+    if (notification.type === 'challenge_received') {
+      return `/challenges/${notification.sourceId}/respond`;
+    }
+    // challenge_accepted, challenge_declined, or generic
+    return `/challenges/${notification.sourceId}`;
+  }
   switch (notification.sourceType) {
     case 'promo': return '/promos';
-    case 'challenge': return '/challenges';
     case 'match': {
       const params = new URLSearchParams({ status: 'scheduled' });
       if (playerId) params.set('playerId', playerId);

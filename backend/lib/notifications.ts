@@ -4,6 +4,9 @@ import { dynamoDb, TableNames } from './dynamodb';
 export type NotificationType =
   | 'promo_mention'
   | 'challenge_received'
+  | 'challenge_accepted'
+  | 'challenge_declined'
+  | 'challenge_scheduled'
   | 'match_scheduled'
   | 'announcement'
   | 'stable_invitation'

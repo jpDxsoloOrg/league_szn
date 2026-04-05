@@ -4,17 +4,27 @@ import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { v4 as uuidv4 } from 'uuid';
-import { createNotification, createNotifications } from '../../lib/notifications';
+import { createNotifications } from '../../lib/notifications';
 
 interface CreateChallengeBody {
-  challengedId: string;
+  challengedId?: string; // Legacy: single opponent id — preferred: opponentIds[]
+  opponentIds?: string[];
   matchType: string;
   stipulation?: string;
   championshipId?: string;
-  message?: string;
+  challengeNote?: string;
+  message?: string; // Legacy alias for challengeNote
   challengeMode?: 'singles' | 'tag_team';
   challengedTagTeamId?: string;
 }
+
+interface ResponseRecord {
+  status: 'pending' | 'accepted' | 'declined';
+  declineReason?: string;
+}
+
+const MAX_CHALLENGE_NOTE_LENGTH = 200;
+const MAX_OPPONENTS = 5;
 
 async function findPlayerActiveTagTeam(playerId: string): Promise<Record<string, unknown> | null> {
   const [player1Result, player2Result] = await Promise.all([
@@ -49,10 +59,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { data: body, error: parseError } = parseBody<CreateChallengeBody>(event);
     if (parseError) return parseError;
-    const { challengedId, matchType, stipulation, championshipId, message, challengeMode, challengedTagTeamId } = body;
+    const { challengedId, opponentIds: inputOpponentIds, matchType, stipulation, championshipId, challengeNote: inputChallengeNote, message, challengeMode, challengedTagTeamId } = body;
 
     if (!matchType) {
       return badRequest('matchType is required');
+    }
+
+    // Prefer challengeNote; fall back to legacy message field
+    const challengeNote = inputChallengeNote ?? message;
+    if (challengeNote && challengeNote.length > MAX_CHALLENGE_NOTE_LENGTH) {
+      return badRequest(`challengeNote must be ${MAX_CHALLENGE_NOTE_LENGTH} characters or less`);
     }
 
     // Find the challenger's player record via their user sub
@@ -114,7 +130,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         matchType,
         stipulation: stipulation || undefined,
         championshipId: championshipId || undefined,
-        message: message || undefined,
+        challengeNote: challengeNote || undefined,
         status: 'pending',
         expiresAt: expiresAt.toISOString(),
         createdAt: now.toISOString(),
@@ -157,33 +173,48 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return created(challenge);
     }
 
-    // --- Singles Challenge Flow (default) ---
-    if (!challengedId) {
-      return badRequest('challengedId is required');
-    }
+    // --- Singles / Multi-opponent Challenge Flow (default) ---
+    // Normalize opponent list: prefer opponentIds[], fall back to legacy challengedId
+    const opponentIds: string[] = (inputOpponentIds && inputOpponentIds.length > 0)
+      ? Array.from(new Set(inputOpponentIds))
+      : (challengedId ? [challengedId] : []);
 
-    if (challengerId === challengedId) {
+    if (opponentIds.length === 0) {
+      return badRequest('opponentIds is required');
+    }
+    if (opponentIds.length > MAX_OPPONENTS) {
+      return badRequest(`A challenge may target at most ${MAX_OPPONENTS} opponents`);
+    }
+    if (opponentIds.includes(challengerId)) {
       return badRequest('You cannot challenge yourself');
     }
 
-    // Verify the challenged player exists
-    const challengedResult = await dynamoDb.get({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId: challengedId },
-    });
-    if (!challengedResult.Item) {
+    // Verify each challenged player exists
+    const opponentLookups = await Promise.all(
+      opponentIds.map((pid) =>
+        dynamoDb.get({ TableName: TableNames.PLAYERS, Key: { playerId: pid } })
+      )
+    );
+    const missing = opponentIds.filter((_, i) => !opponentLookups[i].Item);
+    if (missing.length > 0) {
       return badRequest('Challenged player not found');
     }
+
+    const responses: Record<string, ResponseRecord> = Object.fromEntries(
+      opponentIds.map((pid) => [pid, { status: 'pending' as const }])
+    );
 
     const challenge = {
       challengeId: uuidv4(),
       challengerId,
-      challengedId,
+      challengedId: opponentIds[0], // preserve for legacy GSI queries
+      opponentIds,
+      responses,
       challengeMode: 'singles' as const,
       matchType,
       stipulation: stipulation || undefined,
       championshipId: championshipId || undefined,
-      message: message || undefined,
+      challengeNote: challengeNote || undefined,
       status: 'pending',
       expiresAt: expiresAt.toISOString(),
       createdAt: now.toISOString(),
@@ -195,16 +226,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       Item: challenge,
     });
 
-    // Notify the challenged player if they have a linked user account
-    const challengedPlayer = challengedResult.Item as Record<string, unknown>;
-    if (challengedPlayer.userId) {
-      await createNotification({
-        userId: challengedPlayer.userId as string,
-        type: 'challenge_received',
+    // Notify each challenged player who has a linked user account
+    const notifications = opponentLookups
+      .map((r) => r.Item as Record<string, unknown> | undefined)
+      .filter((p): p is Record<string, unknown> => !!p?.userId)
+      .map((p) => ({
+        userId: p.userId as string,
+        type: 'challenge_received' as const,
         message: `${challengerPlayer.name as string} has challenged you to a match!`,
         sourceId: challenge.challengeId,
-        sourceType: 'challenge',
-      });
+        sourceType: 'challenge' as const,
+      }));
+
+    if (notifications.length > 0) {
+      await createNotifications(notifications);
     }
 
     return created(challenge);

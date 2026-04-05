@@ -271,13 +271,13 @@ export default function ChallengeDetail() {
 
       <div className="challenge-detail-messages">
         <h3>{t('challenges.detail.messages')}</h3>
-        {challenge.message && (
+        {(challenge.challengeNote || challenge.message) && (
           <div className="challenge-message-block from-challenger">
             <div className="challenge-message-sender">
               {challenge.challenger.wrestlerName} ({challenge.challenger.playerName})
             </div>
             <div className="challenge-message-text">
-              &ldquo;{challenge.message}&rdquo;
+              &ldquo;{challenge.challengeNote || challenge.message}&rdquo;
             </div>
           </div>
         )}
@@ -292,6 +292,31 @@ export default function ChallengeDetail() {
           </div>
         )}
       </div>
+
+      {challenge.opponents && challenge.opponents.length > 1 && (
+        <div className="challenge-detail-opponent-responses">
+          <h3>{t('challenges.detail.opponentResponses', 'Opponent Responses')}</h3>
+          <ul>
+            {challenge.opponents.map((op) => {
+              const pid = op.playerId;
+              const resp = pid ? challenge.responses?.[pid] : undefined;
+              const status = resp?.status || 'pending';
+              return (
+                <li key={pid || op.wrestlerName}>
+                  <strong>{op.wrestlerName}</strong>
+                  {' — '}
+                  <span className={`challenge-status-badge ${status}`}>
+                    {t(`challenges.status.${status}`)}
+                  </span>
+                  {resp?.declineReason && (
+                    <div className="challenge-decline-reason">&ldquo;{resp.declineReason}&rdquo;</div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       <div className="challenge-detail-info">
         <div className="challenge-info-item">

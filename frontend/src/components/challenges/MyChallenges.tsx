@@ -173,9 +173,42 @@ export default function MyChallenges() {
           </div>
         </div>
 
-        {challenge.message && (
+        {(challenge.challengeNote || challenge.message) && (
           <div className="my-challenge-message">
-            &ldquo;{challenge.message}&rdquo;
+            &ldquo;{challenge.challengeNote || challenge.message}&rdquo;
+          </div>
+        )}
+
+        {challenge.opponents && challenge.opponents.length > 1 && challenge.responses && (
+          <div className="my-challenge-responses">
+            <strong>{t('challenges.my.opponentResponses', 'Opponent Responses')}:</strong>
+            <ul>
+              {challenge.opponents.map((op) => {
+                const pid = op.playerId;
+                const resp = pid ? challenge.responses?.[pid] : undefined;
+                const status = resp?.status || 'pending';
+                return (
+                  <li key={pid || op.wrestlerName}>
+                    <span>{op.wrestlerName}</span>{' '}
+                    <span className={`challenge-status-badge ${status}`}>{t(`challenges.status.${status}`)}</span>
+                    {resp?.declineReason && (
+                      <div className="my-challenge-decline-reason">&ldquo;{resp.declineReason}&rdquo;</div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {challenge.status === 'auto_scheduled' && challenge.matchId && (
+          <div className="my-challenge-scheduled">
+            <span className="challenge-status-badge auto_scheduled">
+              {t('challenges.status.auto_scheduled', 'Scheduled ✓')}
+            </span>
+            <Link to={`/matches?status=scheduled`} className="my-challenge-scheduled-link">
+              {t('challenges.my.viewScheduledMatch', 'View match')} &rarr;
+            </Link>
           </div>
         )}
 

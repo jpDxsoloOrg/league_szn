@@ -48,10 +48,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }),
       ]);
 
+      // Also scan for multi-opponent challenges where this player is a non-primary opponent
+      const multiOpponentResult =
+        (await dynamoDb.scanAll({
+          TableName: TableNames.CHALLENGES,
+          FilterExpression: 'contains(opponentIds, :pid)',
+          ExpressionAttributeValues: { ':pid': playerId },
+        })) || [];
+
       // Deduplicate by challengeId
       const seen = new Set<string>();
       challenges = [];
-      for (const c of [...sentResult, ...receivedResult]) {
+      for (const c of [...sentResult, ...receivedResult, ...multiOpponentResult]) {
         if (!seen.has(c.challengeId as string)) {
           seen.add(c.challengeId as string);
           challenges.push(c);
@@ -112,7 +120,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const playerIds = new Set<string>();
     for (const c of challenges) {
       playerIds.add(c.challengerId as string);
-      playerIds.add(c.challengedId as string);
+      if (c.challengedId) playerIds.add(c.challengedId as string);
+      const oppIds = c.opponentIds as string[] | undefined;
+      if (oppIds) {
+        for (const id of oppIds) playerIds.add(id);
+      }
     }
 
     const playerMap: Record<string, { name: string; currentWrestler: string; imageUrl?: string }> = {};
@@ -208,8 +220,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const challenger = playerMap[c.challengerId as string];
       const challenged = playerMap[c.challengedId as string];
 
+      const oppIds = (c.opponentIds as string[] | undefined) || (c.challengedId ? [c.challengedId as string] : []);
+      const opponents = oppIds.map((pid) => {
+        const info = playerMap[pid];
+        return info
+          ? { playerId: pid, playerName: info.name, wrestlerName: info.currentWrestler, imageUrl: info.imageUrl }
+          : { playerId: pid, playerName: 'Unknown', wrestlerName: 'Unknown' };
+      });
+
       const base: Record<string, unknown> = {
         ...c,
+        opponentIds: oppIds,
+        opponents,
         challengeMode: (c.challengeMode as string) || 'singles',
         challenger: challenger
           ? { playerName: challenger.name, wrestlerName: challenger.currentWrestler, imageUrl: challenger.imageUrl }

@@ -30,6 +30,7 @@ import ForgotPassword from './components/auth/ForgotPassword';
 import ChallengeDetail from './components/challenges/ChallengeDetail';
 // IssueChallenge kept as a component but route redirects to PromoEditor in call-out mode
 import MyChallenges from './components/challenges/MyChallenges';
+import ChallengeResponse from './components/challenges/ChallengeResponse';
 // Promo components
 import PromoFeed from './components/promos/PromoFeed';
 import PromoThread from './components/promos/PromoThread';
@@ -157,6 +158,13 @@ function AppLayout() {
               <Navigate to="/promos/new?promoType=call-out" replace />
             } />
             <Route path="/challenges/my" element={<Navigate to="/challenges" replace />} />
+            <Route path="/challenges/:challengeId/respond" element={
+              <FeatureRoute feature="challenges">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <ChallengeResponse />
+                </ProtectedRoute>
+              </FeatureRoute>
+            } />
             <Route path="/challenges/:challengeId" element={
               <FeatureRoute feature="challenges">
                 <ProtectedRoute requiredRole="Wrestler">

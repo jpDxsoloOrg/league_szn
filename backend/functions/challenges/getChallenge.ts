@@ -22,7 +22,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Enrich with player names
     const playerIds = new Set<string>();
     playerIds.add(challenge.challengerId as string);
-    playerIds.add(challenge.challengedId as string);
+    if (challenge.challengedId) playerIds.add(challenge.challengedId as string);
+    const oppIds = (challenge.opponentIds as string[] | undefined) || (challenge.challengedId ? [challenge.challengedId as string] : []);
+    for (const id of oppIds) playerIds.add(id);
 
     const playerMap: Record<string, { name: string; currentWrestler: string; imageUrl?: string }> = {};
     for (const pid of playerIds) {
@@ -42,8 +44,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const challenger = playerMap[challenge.challengerId as string];
     const challenged = playerMap[challenge.challengedId as string];
 
+    const opponents = oppIds.map((pid) => {
+      const info = playerMap[pid];
+      return info
+        ? { playerId: pid, playerName: info.name, wrestlerName: info.currentWrestler, imageUrl: info.imageUrl }
+        : { playerId: pid, playerName: 'Unknown', wrestlerName: 'Unknown' };
+    });
+
     const enriched: Record<string, unknown> = {
       ...challenge,
+      opponentIds: oppIds,
+      opponents,
       challengeMode: (challenge.challengeMode as string) || 'singles',
       challenger: challenger
         ? { playerName: challenger.name, wrestlerName: challenger.currentWrestler, imageUrl: challenger.imageUrl }
