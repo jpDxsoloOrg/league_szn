@@ -34,6 +34,7 @@ export { tagTeamsApi } from './tagTeams.api';
 export { videosApi } from './videos.api';
 export { announcementsApi } from './announcements.api';
 export { notificationsApi } from './notifications.api';
+export { overallsApi } from './overalls.api';
 
 // Type/interface re-exports
 export type { SiteFeatures } from './siteConfig.api';

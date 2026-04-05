@@ -229,6 +229,7 @@ export default function Standings() {
               <th className="image-header">{t('standings.table.image')}</th>
               <th>{t('standings.table.player')}</th>
               <th>{t('standings.table.wrestler')}</th>
+              <th title={t('standings.table.overallTitle')}>{t('standings.table.overall')}</th>
               <th>{t('standings.table.psn')}</th>
               {selectedDivision === 'all' && <th>{t('standings.table.division')}</th>}
               <th>{t('standings.table.wins')}</th>
@@ -283,6 +284,11 @@ export default function Standings() {
                   )}
                 </td>
                 <td className="wrestler-name">{player.currentWrestler}</td>
+                <td className="overall-cell">
+                  {player.mainOverall !== undefined ? (
+                    <span className="overall-badge-sm">{player.mainOverall}</span>
+                  ) : '-'}
+                </td>
                 <td className="psn-id">{player.psnId || '-'}</td>
                 {selectedDivision === 'all' && (
                   <td className="division-name">

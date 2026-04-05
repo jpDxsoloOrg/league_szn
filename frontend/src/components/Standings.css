@@ -401,3 +401,19 @@
     font-size: 0.8rem;
   }
 }
+
+.overall-cell {
+  text-align: center;
+}
+
+.overall-badge-sm {
+  display: inline-block;
+  background: var(--gold, #d4a017);
+  color: #000;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 2rem;
+  text-align: center;
+}

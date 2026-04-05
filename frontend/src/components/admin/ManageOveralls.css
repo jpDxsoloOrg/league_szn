@@ -1,0 +1,64 @@
+.manage-overalls {
+  padding: 1rem 0;
+}
+
+.manage-overalls h2 {
+  margin-bottom: 0.5rem;
+}
+
+.overalls-subtitle {
+  color: var(--text-muted, #888);
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.overalls-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.overalls-table th,
+.overalls-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color, #333);
+}
+
+.overalls-table th {
+  font-weight: 600;
+  color: var(--text-muted, #888);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.overall-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.main-overall {
+  background: var(--gold, #d4a017);
+  color: #000;
+}
+
+.alt-overall {
+  background: var(--primary-dark, #444);
+  color: var(--text-primary, #fff);
+}
+
+.no-alt {
+  color: var(--text-muted, #666);
+}
+
+.no-data {
+  color: var(--text-muted, #888);
+  text-align: center;
+  padding: 2rem;
+}

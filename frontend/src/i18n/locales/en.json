@@ -316,6 +316,8 @@
       "image": "Image",
       "player": "Player",
       "wrestler": "Wrestler",
+      "overall": "OVR",
+      "overallTitle": "WWE 2K Overall Rating",
       "psn": "PSN",
       "division": "Division",
       "wins": "Wins",
@@ -1544,5 +1546,27 @@
     "deleteAllRead": "Delete read",
     "typeStable": "Stable",
     "typeTagTeam": "Tag Team"
+  },
+  "overalls": {
+    "admin": {
+      "title": "Wrestler Overalls",
+      "subtitle": "Player-submitted overall ratings for their main and alternate wrestlers. Use these to set division caps.",
+      "player": "Player",
+      "wrestler": "Wrestler",
+      "mainOverall": "Main Overall",
+      "altOverall": "Alt Overall",
+      "submittedAt": "Submitted",
+      "noData": "No overalls submitted yet."
+    },
+    "profile": {
+      "title": "Wrestler Overalls",
+      "subtitle": "Submit your wrestler ratings (60–99, matching WWE 2K). GMs use these to set division caps.",
+      "mainOverall": "Main Wrestler Overall",
+      "altOverall": "Alternate Wrestler Overall (optional)",
+      "save": "Save Overalls",
+      "saving": "Saving...",
+      "saveSuccess": "Overalls saved successfully!",
+      "validation": "Overall must be between 60 and 99"
+    }
   }
 }

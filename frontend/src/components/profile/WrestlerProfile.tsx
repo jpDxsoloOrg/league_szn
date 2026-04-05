@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
-import { profileApi, imagesApi } from '../../services/api';
+import { useTranslation } from 'react-i18next';
+import { profileApi, imagesApi, overallsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
@@ -11,7 +12,7 @@ import {
 } from '../../constants/imageFallbacks';
 import { useSiteConfig } from '../../contexts/SiteConfigContext'; 
 import   EmbeddedPlayerStats   from "../statistics/EmbeddedPlayerStats";
-import type { Player } from '../../types';
+import type { Player, WrestlerOverall } from '../../types';
 import './WrestlerProfile.css';
 
 interface SeasonRecord {
@@ -28,6 +29,7 @@ interface PlayerProfile extends Player {
 }
 
 export default function WrestlerProfile() {
+  const { t } = useTranslation();
   const { refreshProfile } = useAuth();
   const [player, setPlayer] = useState<PlayerProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +39,10 @@ export default function WrestlerProfile() {
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const { features } = useSiteConfig();
+
+  // Overalls state
+  const [overall, setOverall] = useState<WrestlerOverall | null>(null);
+  const [overallForm, setOverallForm] = useState({ mainOverall: '', alternateOverall: '' });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -54,6 +60,7 @@ export default function WrestlerProfile() {
 
   useEffect(() => {
     loadProfile();
+    loadOverall();
   }, []);
 
   const loadProfile = async () => {
@@ -80,6 +87,20 @@ export default function WrestlerProfile() {
       setLoading(false);
     }
   };
+
+  const loadOverall = async () => {
+    try {
+      const data = await overallsApi.getMyOverall();
+      setOverall(data);
+      setOverallForm({
+        mainOverall: String(data.mainOverall),
+        alternateOverall: data.alternateOverall !== undefined ? String(data.alternateOverall) : '',
+      });
+    } catch {
+      // 404 means no overall submitted yet — that's fine
+    }
+  };
+
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -228,6 +249,19 @@ export default function WrestlerProfile() {
 
       const updated = await profileApi.updateMyProfile(updates);
       setPlayer(updated);
+
+      // Save overalls if main overall is provided
+      if (overallForm.mainOverall) {
+        const main = parseInt(overallForm.mainOverall, 10);
+        const alt = overallForm.alternateOverall ? parseInt(overallForm.alternateOverall, 10) : undefined;
+        if (!isNaN(main) && main >= 60 && main <= 99) {
+          if (alt === undefined || (!isNaN(alt) && alt >= 60 && alt <= 99)) {
+            const saved = await overallsApi.submitOverall({ mainOverall: main, alternateOverall: alt });
+            setOverall(saved);
+          }
+        }
+      }
+
       setEditing(false);
       setSelectedFile(null);
       setImagePreview(null);
@@ -404,6 +438,32 @@ export default function WrestlerProfile() {
             </div>
 
             <div className="form-group">
+              <label htmlFor="main-overall">{t('overalls.profile.mainOverall')}</label>
+              <input
+                type="number"
+                id="main-overall"
+                min={60}
+                max={99}
+                value={overallForm.mainOverall}
+                onChange={e => setOverallForm({ ...overallForm, mainOverall: e.target.value })}
+                placeholder="60–99"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="alt-overall">{t('overalls.profile.altOverall')}</label>
+              <input
+                type="number"
+                id="alt-overall"
+                min={60}
+                max={99}
+                value={overallForm.alternateOverall}
+                onChange={e => setOverallForm({ ...overallForm, alternateOverall: e.target.value })}
+                placeholder="60–99"
+              />
+            </div>
+
+            <div className="form-group">
               <label htmlFor="profile-image">Wrestler Image</label>
               <div className="profile-image-upload">
                 {imagePreview ? (
@@ -502,7 +562,24 @@ export default function WrestlerProfile() {
         <EmbeddedPlayerStats playerId={player.playerId} />
       )}
 
-      
+      {/* Current overalls display (view mode only) */}
+      {overall && (
+        <div className="stats-section">
+          <h3 className="stats-section-title">{t('overalls.profile.title')}</h3>
+          <div className="profile-stats">
+            <div className="stat-card">
+              <span className="stat-label">{t('overalls.admin.mainOverall')}</span>
+              <span className="stat-value">{overall.mainOverall}</span>
+            </div>
+            {overall.alternateOverall !== undefined && (
+              <div className="stat-card">
+                <span className="stat-label">{t('overalls.admin.altOverall')}</span>
+                <span className="stat-value">{overall.alternateOverall}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

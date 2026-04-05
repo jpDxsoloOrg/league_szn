@@ -56,12 +56,24 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const seasonId = event.queryStringParameters?.seasonId;
 
-    let completedMatches = await dynamoDb.scanAll({
-      TableName: TableNames.MATCHES,
-      FilterExpression: '#status = :completed',
-      ExpressionAttributeNames: { '#status': 'status' },
-      ExpressionAttributeValues: { ':completed': 'completed' },
-    });
+    // Fetch overalls and matches in parallel
+    const [overallItems, rawMatches] = await Promise.all([
+      dynamoDb.scanAll({ TableName: TableNames.WRESTLER_OVERALLS }),
+      dynamoDb.scanAll({
+        TableName: TableNames.MATCHES,
+        FilterExpression: '#status = :completed',
+        ExpressionAttributeNames: { '#status': 'status' },
+        ExpressionAttributeValues: { ':completed': 'completed' },
+      }),
+    ]);
+
+    const overallsByPlayerId = new Map<string, number>(
+      overallItems
+        .filter(o => o.mainOverall !== undefined)
+        .map(o => [o.playerId as string, o.mainOverall as number])
+    );
+
+    let completedMatches = rawMatches;
 
     // Last 5 and streak: only matches with updatedAt (same as dashboard recent results), sort by updatedAt desc
     completedMatches = completedMatches.filter((m) => m.updatedAt) as typeof completedMatches;
@@ -94,6 +106,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           player.playerId as string,
           completedMatches
         );
+        const mainOverall = overallsByPlayerId.get(player.playerId as string);
         return {
           ...player,
           wins: standing ? ((standing.wins as number) || 0) : 0,
@@ -101,6 +114,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           draws: standing ? ((standing.draws as number) || 0) : 0,
           recentForm,
           currentStreak,
+          ...(mainOverall !== undefined ? { mainOverall } : {}),
         };
       });
 
@@ -145,7 +159,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         player.playerId as string,
         completedMatches
       );
-      return { ...player, recentForm, currentStreak };
+      const mainOverall = overallsByPlayerId.get(player.playerId as string);
+      return { ...player, recentForm, currentStreak, ...(mainOverall !== undefined ? { mainOverall } : {}) };
     });
 
     return success({

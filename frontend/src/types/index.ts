@@ -13,6 +13,7 @@ export interface Player {
   stableId?: string;
   tagTeamId?: string;
   alignment?: 'face' | 'heel' | 'neutral';
+  mainOverall?: number;
   createdAt: string;
   updatedAt: string;
   /** Last 5 match results (newest first): W win, L loss, D draw */
@@ -333,4 +334,17 @@ export interface AppNotification {
   sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team';
   isRead: boolean;
   createdAt: string;
+}
+
+export interface WrestlerOverall {
+  playerId: string;
+  mainOverall: number;
+  alternateOverall?: number;
+  submittedAt: string;
+  updatedAt: string;
+}
+
+export interface WrestlerOverallWithPlayer extends WrestlerOverall {
+  playerName: string;
+  wrestlerName: string;
 }
