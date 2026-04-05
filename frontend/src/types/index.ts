@@ -13,6 +13,7 @@ export interface Player {
   stableId?: string;
   tagTeamId?: string;
   alignment?: 'face' | 'heel' | 'neutral';
+  mainOverall?: number;
   createdAt: string;
   updatedAt: string;
   /** Last 5 match results (newest first): W win, L loss, D draw */

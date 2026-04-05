@@ -316,6 +316,8 @@
       "image": "Image",
       "player": "Player",
       "wrestler": "Wrestler",
+      "overall": "OVR",
+      "overallTitle": "WWE 2K Overall Rating",
       "psn": "PSN",
       "division": "Division",
       "wins": "Wins",
