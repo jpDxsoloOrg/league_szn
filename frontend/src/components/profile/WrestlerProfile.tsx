@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
-import { profileApi, imagesApi } from '../../services/api';
+import { useTranslation } from 'react-i18next';
+import { profileApi, imagesApi, overallsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
@@ -11,7 +12,7 @@ import {
 } from '../../constants/imageFallbacks';
 import { useSiteConfig } from '../../contexts/SiteConfigContext'; 
 import   EmbeddedPlayerStats   from "../statistics/EmbeddedPlayerStats";
-import type { Player } from '../../types';
+import type { Player, WrestlerOverall } from '../../types';
 import './WrestlerProfile.css';
 
 interface SeasonRecord {
@@ -28,6 +29,7 @@ interface PlayerProfile extends Player {
 }
 
 export default function WrestlerProfile() {
+  const { t } = useTranslation();
   const { refreshProfile } = useAuth();
   const [player, setPlayer] = useState<PlayerProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +39,13 @@ export default function WrestlerProfile() {
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const { features } = useSiteConfig();
+
+  // Overalls state
+  const [overall, setOverall] = useState<WrestlerOverall | null>(null);
+  const [overallForm, setOverallForm] = useState({ mainOverall: '', alternateOverall: '' });
+  const [savingOverall, setSavingOverall] = useState(false);
+  const [overallError, setOverallError] = useState<string | null>(null);
+  const [overallSuccess, setOverallSuccess] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -54,6 +63,7 @@ export default function WrestlerProfile() {
 
   useEffect(() => {
     loadProfile();
+    loadOverall();
   }, []);
 
   const loadProfile = async () => {
@@ -78,6 +88,44 @@ export default function WrestlerProfile() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadOverall = async () => {
+    try {
+      const data = await overallsApi.getMyOverall();
+      setOverall(data);
+      setOverallForm({
+        mainOverall: String(data.mainOverall),
+        alternateOverall: data.alternateOverall !== undefined ? String(data.alternateOverall) : '',
+      });
+    } catch {
+      // 404 means no overall submitted yet — that's fine
+    }
+  };
+
+  const handleOverallSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    const main = parseInt(overallForm.mainOverall, 10);
+    if (isNaN(main) || main < 60 || main > 99) {
+      setOverallError(t('overalls.profile.validation'));
+      return;
+    }
+    const alt = overallForm.alternateOverall ? parseInt(overallForm.alternateOverall, 10) : undefined;
+    if (alt !== undefined && (isNaN(alt) || alt < 60 || alt > 99)) {
+      setOverallError(t('overalls.profile.validation'));
+      return;
+    }
+    try {
+      setSavingOverall(true);
+      setOverallError(null);
+      const saved = await overallsApi.submitOverall({ mainOverall: main, alternateOverall: alt });
+      setOverall(saved);
+      setOverallSuccess(t('overalls.profile.saveSuccess'));
+    } catch (err) {
+      setOverallError(err instanceof Error ? err.message : 'Failed to save overalls');
+    } finally {
+      setSavingOverall(false);
     }
   };
 
@@ -502,7 +550,47 @@ export default function WrestlerProfile() {
         <EmbeddedPlayerStats playerId={player.playerId} />
       )}
 
-      
+      {/* Wrestler Overalls */}
+      <div className="stats-section overalls-section">
+        <h3 className="stats-section-title">{t('overalls.profile.title')}</h3>
+        <p className="overalls-profile-subtitle">{t('overalls.profile.subtitle')}</p>
+        {overallError && <div className="error-message">{overallError}</div>}
+        {overallSuccess && <div className="success-message">{overallSuccess}</div>}
+        <form onSubmit={handleOverallSubmit} className="overalls-form">
+          <div className="form-group">
+            <label htmlFor="main-overall">{t('overalls.profile.mainOverall')}</label>
+            <input
+              type="number"
+              id="main-overall"
+              min={60}
+              max={99}
+              value={overallForm.mainOverall}
+              onChange={e => setOverallForm({ ...overallForm, mainOverall: e.target.value })}
+              placeholder="60–99"
+              required
+            />
+            {overall && <span className="current-overall">Current: {overall.mainOverall}</span>}
+          </div>
+          <div className="form-group">
+            <label htmlFor="alt-overall">{t('overalls.profile.altOverall')}</label>
+            <input
+              type="number"
+              id="alt-overall"
+              min={60}
+              max={99}
+              value={overallForm.alternateOverall}
+              onChange={e => setOverallForm({ ...overallForm, alternateOverall: e.target.value })}
+              placeholder="60–99"
+            />
+            {overall?.alternateOverall !== undefined && (
+              <span className="current-overall">Current: {overall.alternateOverall}</span>
+            )}
+          </div>
+          <button type="submit" className="save-btn" disabled={savingOverall}>
+            {savingOverall ? t('overalls.profile.saving') : t('overalls.profile.save')}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

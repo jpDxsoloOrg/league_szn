@@ -334,3 +334,16 @@ export interface AppNotification {
   isRead: boolean;
   createdAt: string;
 }
+
+export interface WrestlerOverall {
+  playerId: string;
+  mainOverall: number;
+  alternateOverall?: number;
+  submittedAt: string;
+  updatedAt: string;
+}
+
+export interface WrestlerOverallWithPlayer extends WrestlerOverall {
+  playerName: string;
+  wrestlerName: string;
+}

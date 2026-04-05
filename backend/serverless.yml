@@ -40,6 +40,7 @@ provider:
     VIDEOS_TABLE: ${self:service}-videos-${self:provider.stage}
     ANNOUNCEMENTS_TABLE: ${self:service}-announcements-${self:provider.stage}
     NOTIFICATIONS_TABLE: ${self:service}-notifications-${self:provider.stage}
+    WRESTLER_OVERALLS_TABLE: ${self:service}-wrestler-overalls-${self:provider.stage}
     DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT, 'http://localhost:8000'}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
@@ -103,6 +104,7 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.ANNOUNCEMENTS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.NOTIFICATIONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.NOTIFICATIONS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.WRESTLER_OVERALLS_TABLE}
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -295,6 +297,26 @@ functions:
           path: players/{playerId}/statistics
           method: get
           cors: *corsConfig
+
+  # Overalls (Wrestler Overalls: submit, get own, admin get all)
+  overalls:
+    handler: functions/overalls/handler.handler
+    events:
+      - http:
+          path: players/me/overall
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: players/me/overall
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/overalls
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
 
   # Matches (Phase 3 consolidated: getMatches, scheduleMatch, recordResult)
   matches:
@@ -1833,6 +1855,18 @@ resources:
         TimeToLiveSpecification:
           AttributeName: ttl
           Enabled: true
+
+    WrestlerOverallsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.WRESTLER_OVERALLS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
 
     ImagesBucket:
       Type: AWS::S3::Bucket

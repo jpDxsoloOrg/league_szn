@@ -1543,5 +1543,27 @@
     "deleteAllRead": "Gelesene löschen",
     "typeStable": "Stable",
     "typeTagTeam": "Tag Team"
+  },
+  "overalls": {
+    "admin": {
+      "title": "Wrestler-Overalls",
+      "subtitle": "Von Spielern eingereichte Gesamtwertungen für ihre Haupt- und Ersatz-Wrestler. Zur Festlegung von Divisionseinschränkungen.",
+      "player": "Spieler",
+      "wrestler": "Wrestler",
+      "mainOverall": "Haupt-Overall",
+      "altOverall": "Alt-Overall",
+      "submittedAt": "Eingereicht",
+      "noData": "Noch keine Overalls eingereicht."
+    },
+    "profile": {
+      "title": "Wrestler-Overalls",
+      "subtitle": "Reiche deine Wrestler-Bewertungen ein (60–99, passend zum WWE 2K-Spiel). GMs nutzen diese für Divisionseinschränkungen.",
+      "mainOverall": "Haupt-Wrestler Overall",
+      "altOverall": "Ersatz-Wrestler Overall (optional)",
+      "save": "Overalls speichern",
+      "saving": "Speichern...",
+      "saveSuccess": "Overalls erfolgreich gespeichert!",
+      "validation": "Overall muss zwischen 60 und 99 liegen"
+    }
   }
 }
