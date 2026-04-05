@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -267,12 +267,12 @@ describe('Standings', () => {
     const seasonSelect = screen.getByLabelText('Season:');
     expect(seasonSelect).toBeInTheDocument();
 
-    // Should have All Time + 2 seasons
-    const options = screen.getAllByRole('option');
-    expect(options).toHaveLength(3);
-    expect(options[0]).toHaveTextContent('All Time');
-    expect(options[1]).toHaveTextContent('Season 1');
-    expect(options[2]).toHaveTextContent('Season 2 (Active)');
+    // Should have All Time + 2 seasons (scoped to season select to avoid DivisionFilter options)
+    const seasonOptions = within(seasonSelect).getAllByRole('option');
+    expect(seasonOptions).toHaveLength(3);
+    expect(seasonOptions[0]).toHaveTextContent('All Time');
+    expect(seasonOptions[1]).toHaveTextContent('Season 1');
+    expect(seasonOptions[2]).toHaveTextContent('Season 2 (Active)');
 
     // Switch to Season 2
     mockGetStandings.mockResolvedValue({

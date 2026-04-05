@@ -106,10 +106,9 @@ describe('WrestlerCosts', () => {
       expect(screen.getByText('The Rock')).toBeInTheDocument();
     });
 
-    // Click SmackDown filter button (not the table cell)
-    const filterButtons = screen.getAllByRole('button');
-    const smackdownBtn = filterButtons.find(btn => btn.textContent === 'SmackDown')!;
-    await user.click(smackdownBtn);
+    // Select SmackDown from the division filter dropdown
+    const divisionSelect = screen.getByRole('combobox');
+    await user.selectOptions(divisionSelect, 'SmackDown');
 
     // Only SmackDown wrestlers visible
     expect(screen.getByText('Triple H')).toBeInTheDocument();
