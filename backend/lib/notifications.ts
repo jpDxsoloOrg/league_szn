@@ -8,9 +8,11 @@ export type NotificationType =
   | 'announcement'
   | 'stable_invitation'
   | 'tag_team_invitation'
-  | 'transfer_reviewed';
+  | 'transfer_reviewed'
+  | 'storyline_request'
+  | 'storyline_request_reviewed';
 
-export type NotificationSourceType = 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer';
+export type NotificationSourceType = 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request';
 
 export interface CreateNotificationParams {
   userId: string;
