@@ -42,6 +42,7 @@ provider:
     NOTIFICATIONS_TABLE: ${self:service}-notifications-${self:provider.stage}
     WRESTLER_OVERALLS_TABLE: ${self:service}-wrestler-overalls-${self:provider.stage}
     TRANSFER_REQUESTS_TABLE: ${self:service}-transfer-requests-${self:provider.stage}
+    STORYLINE_REQUESTS_TABLE: ${self:service}-storyline-requests-${self:provider.stage}
     DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT, 'http://localhost:8000'}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
@@ -108,6 +109,8 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.WRESTLER_OVERALLS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TRANSFER_REQUESTS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TRANSFER_REQUESTS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STORYLINE_REQUESTS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STORYLINE_REQUESTS_TABLE}/index/*
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -342,6 +345,30 @@ functions:
           authorizer: adminAuthorizer
       - http:
           path: admin/transfers/{requestId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  storylineRequests:
+    handler: functions/storylineRequests/handler.handler
+    events:
+      - http:
+          path: storyline-requests
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: storyline-requests/me
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/storyline-requests
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/storyline-requests/{requestId}
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
@@ -1922,6 +1949,41 @@ resources:
             KeySchema:
               - AttributeName: status
                 KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    StorylineRequestsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.STORYLINE_REQUESTS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: requestId
+            AttributeType: S
+          - AttributeName: requesterId
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: requestId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: RequesterIndex
+            KeySchema:
+              - AttributeName: requesterId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: StatusIndex
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
             Projection:
               ProjectionType: ALL
 

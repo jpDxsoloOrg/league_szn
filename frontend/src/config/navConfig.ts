@@ -113,6 +113,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
       { path: '/admin/tag-teams', i18nKey: 'admin.panel.tabs.tagTeams' },
       { path: '/admin/announcements', i18nKey: 'admin.panel.tabs.announcements' },
       { path: '/admin/videos', i18nKey: 'admin.panel.tabs.videos' },
+      { path: '/admin/storyline-requests', i18nKey: 'admin.panel.tabs.storylineRequests' },
     ],
   },
   {
@@ -147,7 +148,7 @@ export function getUserGroupForPath(pathname: string): string | null {
 export function getAdminGroupForPath(pathname: string): string | null {
   const matchOps = ['/admin/schedule', '/admin/results', '/admin/events', '/admin/match-config'];
   const leagueSetup = ['/admin/players', '/admin/divisions', '/admin/transfers', '/admin/seasons', '/admin/season-awards', '/admin/championships', '/admin/tournaments', '/admin/companies', '/admin/shows'];
-  const contentSocial = ['/admin/challenges', '/admin/promos', '/admin/contender-config', '/admin/contender-overrides', '/admin/stables', '/admin/tag-teams', '/admin/announcements', '/admin/videos'];
+  const contentSocial = ['/admin/challenges', '/admin/promos', '/admin/contender-config', '/admin/contender-overrides', '/admin/stables', '/admin/tag-teams', '/admin/announcements', '/admin/videos', '/admin/storyline-requests'];
   const fantasy = ['/admin/fantasy-shows', '/admin/fantasy-config'];
   const system = ['/admin/users', '/admin/features', '/admin/danger'];
   if (matchOps.some((p) => pathname === p)) return 'matchOps';

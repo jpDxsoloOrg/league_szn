@@ -370,3 +370,28 @@ export interface TransferRequestWithDetails extends TransferRequest {
   fromDivisionName: string;
   toDivisionName: string;
 }
+
+export type StorylineRequestType = 'storyline' | 'backstage_attack' | 'rivalry';
+export type StorylineRequestStatus = 'pending' | 'acknowledged' | 'declined';
+
+export interface StorylineRequest {
+  requestId: string;
+  requesterId: string;
+  targetPlayerIds: string[];
+  requestType: StorylineRequestType;
+  description: string;
+  status: StorylineRequestStatus;
+  gmNote?: string;
+  reviewedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MyStorylineRequest extends StorylineRequest {
+  targetPlayerNames: string[];
+}
+
+export interface StorylineRequestWithDetails extends StorylineRequest {
+  requesterName: string;
+  targetPlayerNames: string[];
+}

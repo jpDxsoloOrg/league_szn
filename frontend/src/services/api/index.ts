@@ -36,6 +36,7 @@ export { announcementsApi } from './announcements.api';
 export { notificationsApi } from './notifications.api';
 export { overallsApi } from './overalls.api';
 export { transfersApi } from './transfers.api';
+export { storylineRequestsApi } from './storylineRequests.api';
 
 // Type/interface re-exports
 export type { SiteFeatures } from './siteConfig.api';

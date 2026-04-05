@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { profileApi, imagesApi, overallsApi, transfersApi, divisionsApi } from '../../services/api';
+import { profileApi, imagesApi, overallsApi, transfersApi, divisionsApi, storylineRequestsApi, playersApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
@@ -12,7 +12,7 @@ import {
 } from '../../constants/imageFallbacks';
 import { useSiteConfig } from '../../contexts/SiteConfigContext'; 
 import   EmbeddedPlayerStats   from "../statistics/EmbeddedPlayerStats";
-import type { Player, WrestlerOverall, TransferRequestWithDetails, Division } from '../../types';
+import type { Player, WrestlerOverall, TransferRequestWithDetails, Division, MyStorylineRequest, StorylineRequestType } from '../../types';
 import './WrestlerProfile.css';
 
 interface SeasonRecord {
@@ -52,6 +52,18 @@ export default function WrestlerProfile() {
   const [transferError, setTransferError] = useState<string | null>(null);
   const [transferSuccess, setTransferSuccess] = useState<string | null>(null);
 
+  // Storyline request state
+  const [storylineRequests, setStorylineRequests] = useState<MyStorylineRequest[]>([]);
+  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
+  const [storylineForm, setStorylineForm] = useState<{
+    requestType: StorylineRequestType;
+    targetPlayerIds: string[];
+    description: string;
+  }>({ requestType: 'storyline', targetPlayerIds: [], description: '' });
+  const [storylineSubmitting, setStorylineSubmitting] = useState(false);
+  const [storylineError, setStorylineError] = useState<string | null>(null);
+  const [storylineSuccess, setStorylineSuccess] = useState<string | null>(null);
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
@@ -71,6 +83,8 @@ export default function WrestlerProfile() {
     loadOverall();
     loadTransfers();
     loadDivisions();
+    loadStorylineRequests();
+    loadAllPlayers();
   }, []);
 
   const loadProfile = async () => {
@@ -126,6 +140,50 @@ export default function WrestlerProfile() {
       setDivisions(data);
     } catch {
       // Silently ignore
+    }
+  };
+
+  const loadStorylineRequests = async () => {
+    try {
+      const data = await storylineRequestsApi.getMine();
+      setStorylineRequests(data);
+    } catch {
+      // Silently ignore
+    }
+  };
+
+  const loadAllPlayers = async () => {
+    try {
+      const data = await playersApi.getAll();
+      setAllPlayers(data);
+    } catch {
+      // Silently ignore
+    }
+  };
+
+  const handleStorylineSubmit = async () => {
+    if (
+      storylineForm.targetPlayerIds.length === 0 ||
+      !storylineForm.description.trim()
+    ) {
+      return;
+    }
+    try {
+      setStorylineSubmitting(true);
+      setStorylineError(null);
+      setStorylineSuccess(null);
+      await storylineRequestsApi.create({
+        requestType: storylineForm.requestType,
+        targetPlayerIds: storylineForm.targetPlayerIds,
+        description: storylineForm.description.trim(),
+      });
+      setStorylineForm({ requestType: 'storyline', targetPlayerIds: [], description: '' });
+      setStorylineSuccess('Storyline request submitted successfully.');
+      await loadStorylineRequests();
+    } catch (err) {
+      setStorylineError(err instanceof Error ? err.message : 'Failed to submit storyline request');
+    } finally {
+      setStorylineSubmitting(false);
     }
   };
 
@@ -675,6 +733,122 @@ export default function WrestlerProfile() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Storyline Requests */}
+      {player.playerId && (
+        <div className="stats-section storyline-request-section">
+          <h3 className="stats-section-title">Request a Storyline</h3>
+          <p className="storyline-request-hint">
+            Pitch a storyline, backstage attack, or rivalry idea to the GMs.
+          </p>
+          {storylineError && <div className="error-message">{storylineError}</div>}
+          {storylineSuccess && <div className="success-message">{storylineSuccess}</div>}
+          <div className="storyline-request-form">
+            <div className="storyline-request-field">
+              <label htmlFor="storyline-type">Request type</label>
+              <select
+                id="storyline-type"
+                value={storylineForm.requestType}
+                onChange={(e) =>
+                  setStorylineForm({
+                    ...storylineForm,
+                    requestType: e.target.value as StorylineRequestType,
+                  })
+                }
+              >
+                <option value="storyline">Storyline</option>
+                <option value="backstage_attack">Backstage Attack</option>
+                <option value="rivalry">Rivalry</option>
+              </select>
+            </div>
+            <div className="storyline-request-field">
+              <label htmlFor="storyline-targets">Target player(s)</label>
+              <select
+                id="storyline-targets"
+                multiple
+                value={storylineForm.targetPlayerIds}
+                onChange={(e) => {
+                  const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
+                  setStorylineForm({ ...storylineForm, targetPlayerIds: selected });
+                }}
+                size={Math.min(6, Math.max(3, allPlayers.length))}
+              >
+                {allPlayers
+                  .filter((p) => p.playerId !== player.playerId)
+                  .map((p) => (
+                    <option key={p.playerId} value={p.playerId}>
+                      {p.name} ({p.currentWrestler})
+                    </option>
+                  ))}
+              </select>
+              <small className="storyline-request-hint-inline">Hold Ctrl/Cmd to select multiple</small>
+            </div>
+            <div className="storyline-request-field">
+              <label htmlFor="storyline-description">Description</label>
+              <textarea
+                id="storyline-description"
+                value={storylineForm.description}
+                onChange={(e) =>
+                  setStorylineForm({ ...storylineForm, description: e.target.value })
+                }
+                placeholder="Describe your idea..."
+                rows={4}
+                maxLength={500}
+              />
+              <small className="storyline-request-hint-inline">
+                {storylineForm.description.length}/500
+              </small>
+            </div>
+            <button
+              type="button"
+              className="save-btn"
+              onClick={handleStorylineSubmit}
+              disabled={
+                storylineSubmitting ||
+                storylineForm.targetPlayerIds.length === 0 ||
+                !storylineForm.description.trim()
+              }
+            >
+              {storylineSubmitting ? 'Submitting...' : 'Submit Request'}
+            </button>
+          </div>
+
+          {storylineRequests.length > 0 && (
+            <div className="storyline-request-history">
+              <h4 className="storyline-request-history-title">My Requests</h4>
+              <div className="storyline-request-list">
+                {storylineRequests.map((req) => (
+                  <div
+                    key={req.requestId}
+                    className={`storyline-history-item storyline-history-${req.status}`}
+                  >
+                    <div className="storyline-history-row">
+                      <span className="storyline-history-type">
+                        {req.requestType === 'backstage_attack'
+                          ? 'Backstage Attack'
+                          : req.requestType === 'rivalry'
+                          ? 'Rivalry'
+                          : 'Storyline'}
+                      </span>
+                      <span className={`storyline-badge ${req.status}`}>{req.status}</span>
+                      <span className="storyline-history-date">
+                        {new Date(req.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="storyline-history-targets">
+                      vs. {req.targetPlayerNames.join(', ')}
+                    </div>
+                    <p className="storyline-history-description">{req.description}</p>
+                    {req.status === 'declined' && req.gmNote && (
+                      <p className="storyline-history-note">GM note: {req.gmNote}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
