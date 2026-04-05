@@ -32,6 +32,7 @@ export default function ManagePlayers() {
     imageUrl: '',
     divisionId: '',
     psnId: '',
+    alignment: '' as '' | 'face' | 'heel' | 'neutral',
   });
 
   // Image upload state
@@ -167,6 +168,7 @@ export default function ManagePlayers() {
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || '',
           psnId: formData.psnId.trim() || undefined,
+          alignment: formData.alignment || '',
         });
       } else {
         await playersApi.create({
@@ -176,13 +178,14 @@ export default function ManagePlayers() {
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || undefined,
           psnId: formData.psnId.trim() || undefined,
+          alignment: formData.alignment || undefined,
           wins: 0,
           losses: 0,
           draws: 0,
         });
       }
 
-      setFormData({ name: '', currentWrestler: '', alternateWrestler: '', imageUrl: '', divisionId: '', psnId: '' });
+      setFormData({ name: '', currentWrestler: '', alternateWrestler: '', imageUrl: '', divisionId: '', psnId: '', alignment: '' });
       setSelectedFile(null);
       setImagePreview(null);
       setShowAddForm(false);
@@ -205,6 +208,7 @@ export default function ManagePlayers() {
       imageUrl: player.imageUrl || '',
       divisionId: player.divisionId || '',
       psnId: player.psnId || '',
+      alignment: player.alignment || '',
     });
     setImagePreview(player.imageUrl || null);
     setSelectedFile(null);
@@ -212,7 +216,7 @@ export default function ManagePlayers() {
   };
 
   const handleCancel = () => {
-    setFormData({ name: '', currentWrestler: '', alternateWrestler: '', imageUrl: '', divisionId: '', psnId: '' });
+    setFormData({ name: '', currentWrestler: '', alternateWrestler: '', imageUrl: '', divisionId: '', psnId: '', alignment: '' });
     setSelectedFile(null);
     setImagePreview(null);
     setShowAddForm(false);
@@ -325,6 +329,20 @@ export default function ManagePlayers() {
             </div>
 
             <div className="form-group">
+              <label htmlFor="alignment">Alignment</label>
+              <select
+                id="alignment"
+                value={formData.alignment}
+                onChange={(e) => setFormData({ ...formData, alignment: e.target.value as '' | 'face' | 'heel' | 'neutral' })}
+              >
+                <option value="">Not Set</option>
+                <option value="face">😇 Face</option>
+                <option value="neutral">⚖️ Neutral</option>
+                <option value="heel">😈 Heel</option>
+              </select>
+            </div>
+
+            <div className="form-group">
               <label htmlFor="image">Wrestler Image</label>
               <div className="image-upload-container">
                 {imagePreview ? (
@@ -379,6 +397,7 @@ export default function ManagePlayers() {
                 <th>Alt. Wrestler</th>
                 <th>PSN</th>
                 <th>Division</th>
+                <th>Alignment</th>
                 <th>Record</th>
                 <th>Linked</th>
                 <th>Actions</th>
@@ -400,6 +419,12 @@ export default function ManagePlayers() {
                   <td>{player.alternateWrestler || '-'}</td>
                   <td>{player.psnId || '-'}</td>
                   <td className="division-cell">{getDivisionName(player.divisionId)}</td>
+                  <td className="alignment-cell">
+                    {player.alignment === 'face' && <span className="alignment-badge face">😇 Face</span>}
+                    {player.alignment === 'heel' && <span className="alignment-badge heel">😈 Heel</span>}
+                    {player.alignment === 'neutral' && <span className="alignment-badge neutral">⚖️ Neutral</span>}
+                    {!player.alignment && <span className="alignment-badge unset">-</span>}
+                  </td>
                   <td>
                     <span className="record">
                       {player.wins}W - {player.losses}L - {player.draws}D

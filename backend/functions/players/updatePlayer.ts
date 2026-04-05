@@ -29,6 +29,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     };
     const removeFields: string[] = [];
 
+    if (body.alignment !== undefined) {
+      if (body.alignment === '' || body.alignment === null) {
+        removeFields.push('alignment');
+      } else if (['face', 'heel', 'neutral'].includes(body.alignment as string)) {
+        updateFields.alignment = body.alignment;
+      } else {
+        return badRequest('Invalid alignment. Must be face, heel, or neutral');
+      }
+    }
+
     if (body.alternateWrestler !== undefined) {
       if (body.alternateWrestler === '' || body.alternateWrestler === null) {
         removeFields.push('alternateWrestler');

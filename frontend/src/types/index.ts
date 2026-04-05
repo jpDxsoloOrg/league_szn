@@ -12,6 +12,7 @@ export interface Player {
   divisionId?: string;
   stableId?: string;
   tagTeamId?: string;
+  alignment?: 'face' | 'heel' | 'neutral';
   createdAt: string;
   updatedAt: string;
   /** Last 5 match results (newest first): W win, L loss, D draw */

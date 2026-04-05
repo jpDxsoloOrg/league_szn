@@ -338,3 +338,66 @@
     padding: 0.15em 0.4em;
   }
 }
+
+/* Alignment badge in standings */
+.alignment-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.4rem;
+  font-size: 0.85rem;
+  vertical-align: middle;
+  cursor: default;
+}
+
+/* Filter row — division + alignment on one line */
+.standings-filters {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.standings-filters .division-filter {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Alignment filter */
+.alignment-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.alignment-filter-label {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.alignment-filter-select {
+  padding: 0.35rem 0.75rem;
+  background-color: var(--color-surface, #1a1a1a);
+  border: 1px solid var(--color-border, #333);
+  border-radius: 6px;
+  color: var(--color-text, #e8e8e8);
+  font-size: 0.875rem;
+  cursor: pointer;
+  min-width: 140px;
+  appearance: auto;
+}
+
+.alignment-filter-select:focus {
+  outline: 2px solid var(--color-primary, #d4af37);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .alignment-filter-select {
+    font-size: 0.8rem;
+  }
+}
