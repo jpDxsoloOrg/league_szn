@@ -194,29 +194,31 @@ export default function Standings() {
         </div>
       )}
 
-      {divisions.length > 0 && (
-        <DivisionFilter
-          divisions={divisions}
-          selectedDivision={selectedDivision}
-          onSelect={setSelectedDivision}
-          labelKey="standings.filterByDivision"
-          showNoDivision
-        />
-      )}
+      <div className="standings-filters">
+        {divisions.length > 0 && (
+          <DivisionFilter
+            divisions={divisions}
+            selectedDivision={selectedDivision}
+            onSelect={setSelectedDivision}
+            labelKey="standings.filterByDivision"
+            showNoDivision
+          />
+        )}
 
-      <div className="alignment-filter">
-        <label className="alignment-filter-label" htmlFor="alignment-filter-select">Alignment:</label>
-        <select
-          id="alignment-filter-select"
-          className="alignment-filter-select"
-          value={selectedAlignment}
-          onChange={(e) => setSelectedAlignment(e.target.value)}
-        >
-          <option value="all">All</option>
-          <option value="face">😇 Face</option>
-          <option value="neutral">⚖️ Neutral</option>
-          <option value="heel">😈 Heel</option>
-        </select>
+        <div className="alignment-filter">
+          <label className="alignment-filter-label" htmlFor="alignment-filter-select">Alignment:</label>
+          <select
+            id="alignment-filter-select"
+            className="alignment-filter-select"
+            value={selectedAlignment}
+            onChange={(e) => setSelectedAlignment(e.target.value)}
+          >
+            <option value="all">All</option>
+            <option value="face">😇 Face</option>
+            <option value="neutral">⚖️ Neutral</option>
+            <option value="heel">😈 Heel</option>
+          </select>
+        </div>
       </div>
 
       <div className="standings-table-wrapper">

@@ -349,12 +349,25 @@
   cursor: default;
 }
 
+/* Filter row — division + alignment on one line */
+.standings-filters {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.standings-filters .division-filter {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 /* Alignment filter */
 .alignment-filter {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
 }
 
 .alignment-filter-label {

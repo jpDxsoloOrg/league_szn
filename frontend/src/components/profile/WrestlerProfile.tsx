@@ -381,18 +381,23 @@ export default function WrestlerProfile() {
 
             <div className="form-group">
               <label>Alignment</label>
-              <div className="alignment-toggle-group">
-                {(['face', 'neutral', 'heel'] as const).map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    className={`alignment-toggle-btn alignment-${option}${formData.alignment === option ? ' selected' : ''}`}
-                    onClick={() => setFormData({ ...formData, alignment: formData.alignment === option ? '' : option })}
-                  >
-                    {option === 'face' && '😇 Face'}
-                    {option === 'neutral' && '⚖️ Neutral'}
-                    {option === 'heel' && '😈 Heel'}
-                  </button>
+              <div className="alignment-radio-group">
+                {([
+                  { value: '', label: 'Not Set' },
+                  { value: 'face', label: '😇 Face' },
+                  { value: 'neutral', label: '⚖️ Neutral' },
+                  { value: 'heel', label: '😈 Heel' },
+                ] as const).map(({ value, label }) => (
+                  <label key={value} className={`alignment-radio-label alignment-radio-${value || 'unset'}`}>
+                    <input
+                      type="radio"
+                      name="alignment"
+                      value={value}
+                      checked={formData.alignment === value}
+                      onChange={() => setFormData({ ...formData, alignment: value })}
+                    />
+                    {label}
+                  </label>
                 ))}
               </div>
               <p className="alignment-hint">Helps GMs with booking and other players with promos. Doesn't affect matchups.</p>
