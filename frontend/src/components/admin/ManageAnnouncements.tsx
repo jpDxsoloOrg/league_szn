@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { announcementsApi } from '../../services/api';
 import type { Announcement } from '../../types';
 import Skeleton from '../ui/Skeleton';
+import AnnouncementWizard from './AnnouncementWizard';
 import './ManageAnnouncements.css';
 
 const PRIORITY_LABELS: Record<number, string> = { 1: 'Low', 2: 'Medium', 3: 'High' };
@@ -32,6 +33,7 @@ export default function ManageAnnouncements() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [formData, setFormData] = useState(DEFAULT_FORM);
+  const [showWizard, setShowWizard] = useState(false);
 
   const loadAnnouncements = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -135,13 +137,31 @@ export default function ManageAnnouncements() {
 
   return (
     <div className="manage-announcements">
+      {showWizard && (
+        <AnnouncementWizard
+          onClose={() => setShowWizard(false)}
+          onPublished={() => {
+            setShowWizard(false);
+            void loadAnnouncements();
+          }}
+        />
+      )}
+
       <div className="announcements-header">
         <h2>{t('announcements.title')}</h2>
-        {!showForm && (
-          <button onClick={() => setShowForm(true)}>
-            {t('announcements.create')}
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button
+            onClick={() => setShowWizard(true)}
+            style={{ background: 'linear-gradient(135deg, #c0392b, #8e1a1a)' }}
+          >
+            ⚡ GM Wizard
           </button>
-        )}
+          {!showForm && (
+            <button onClick={() => setShowForm(true)}>
+              {t('announcements.create')}
+            </button>
+          )}
+        </div>
       </div>
 
       {error && <div className="error-message">{error}</div>}
