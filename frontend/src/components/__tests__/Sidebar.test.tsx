@@ -76,14 +76,21 @@ describe('Sidebar', () => {
     mockUseSiteConfig.mockReturnValue({ features: ALL_FEATURES, isLoading: false });
   });
 
-  it('renders public navigation links for unauthenticated users', () => {
+  it('renders public navigation links for unauthenticated users', async () => {
+    const user = userEvent.setup();
     mockUseAuth.mockReturnValue(baseAuth());
     renderSidebar();
 
+    // League group is expanded by default
     expect(screen.getByText('nav.standings')).toBeInTheDocument();
+
+    // Expand Competition group to check its items
+    const competitionToggle = screen.getByText('nav.groups.competition').closest('button')!;
+    await user.click(competitionToggle);
     expect(screen.getByText('nav.championships')).toBeInTheDocument();
     expect(screen.getByText('nav.events')).toBeInTheDocument();
     expect(screen.getByText('nav.tournaments')).toBeInTheDocument();
+
     expect(screen.getByText('nav.help')).toBeInTheDocument();
 
     // Auth section shows Sign In / Sign Up for unauthenticated
