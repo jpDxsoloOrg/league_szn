@@ -1,12 +1,10 @@
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useNavLayout } from '../contexts/navLayoutContext';
 import './TopBar.css';
 
 export default function TopBar() {
   const { t } = useTranslation();
   const location = useLocation();
-  const { mode, setMode } = useNavLayout();
 
   const getPageInfo = (): { title: string; parent?: string } => {
     const path = location.pathname;
@@ -38,19 +36,28 @@ export default function TopBar() {
       };
 
       const tabToGroup: Record<string, string> = {
-        schedule: t('admin.panel.groups.matchOps'),
-        results: t('admin.panel.groups.matchOps'),
-        events: t('admin.panel.groups.matchOps'),
-        'match-config': t('admin.panel.groups.matchOps'),
-        players: t('admin.panel.groups.leagueSetup'),
-        divisions: t('admin.panel.groups.leagueSetup'),
-        seasons: t('admin.panel.groups.leagueSetup'),
-        'season-awards': t('admin.panel.groups.leagueSetup'),
-        championships: t('admin.panel.groups.leagueSetup'),
-        tournaments: t('admin.panel.groups.leagueSetup'),
-        challenges: t('admin.panel.groups.contentSocial'),
-        promos: t('admin.panel.groups.contentSocial'),
-        'contender-config': t('admin.panel.groups.contentSocial'),
+        schedule: t('admin.panel.groups.matchDay'),
+        results: t('admin.panel.groups.matchDay'),
+        events: t('admin.panel.groups.matchDay'),
+        'match-config': t('admin.panel.groups.matchDay'),
+        players: t('admin.panel.groups.rosterSeasons'),
+        divisions: t('admin.panel.groups.rosterSeasons'),
+        transfers: t('admin.panel.groups.rosterSeasons'),
+        seasons: t('admin.panel.groups.rosterSeasons'),
+        'season-awards': t('admin.panel.groups.rosterSeasons'),
+        championships: t('admin.panel.groups.titlesTournaments'),
+        tournaments: t('admin.panel.groups.titlesTournaments'),
+        companies: t('admin.panel.groups.titlesTournaments'),
+        shows: t('admin.panel.groups.titlesTournaments'),
+        'contender-config': t('admin.panel.groups.rankings'),
+        'contender-overrides': t('admin.panel.groups.rankings'),
+        announcements: t('admin.panel.groups.content'),
+        videos: t('admin.panel.groups.content'),
+        'storyline-requests': t('admin.panel.groups.content'),
+        challenges: t('admin.panel.groups.content'),
+        promos: t('admin.panel.groups.content'),
+        stables: t('admin.panel.groups.factions'),
+        'tag-teams': t('admin.panel.groups.factions'),
         'fantasy-shows': t('admin.panel.groups.fantasy'),
         'fantasy-config': t('admin.panel.groups.fantasy'),
         users: t('admin.panel.groups.system'),
@@ -162,17 +169,6 @@ export default function TopBar() {
         </div>
       ) : (
         <span className="top-bar-title">{title}</span>
-      )}
-      {mode === 'sidebar' && (
-        <button
-          type="button"
-          className="top-bar-layout-toggle"
-          onClick={() => setMode('topnav')}
-          aria-label="Switch to top menu"
-          title={t('nav.switchToTopMenu')}
-        >
-          {t('nav.switchToTopMenu')}
-        </button>
       )}
     </div>
   );

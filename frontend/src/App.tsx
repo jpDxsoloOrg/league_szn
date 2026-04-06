@@ -2,14 +2,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
-import { NavLayoutProvider } from './contexts/NavLayoutContext';
-import { useNavLayout } from './contexts/navLayoutContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
 import NotFound from './components/NotFound';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
-import TopNav from './components/TopNav';
 import Dashboard from './components/Dashboard';
 import Standings from './components/Standings';
 import ActivityFeed from './components/ActivityFeed';
@@ -84,9 +81,7 @@ function App() {
         <ScrollToTop />
         <AuthProvider>
           <SiteConfigProvider>
-            <NavLayoutProvider>
-              <AppLayout />
-            </NavLayoutProvider>
+            <AppLayout />
           </SiteConfigProvider>
         </AuthProvider>
       </Router>
@@ -95,17 +90,10 @@ function App() {
 }
 
 function AppLayout() {
-  const { mode } = useNavLayout();
   return (
-    <div className={`App layout-${mode}`}>
-      {mode === 'sidebar' ? (
-        <>
-          <Sidebar />
-          <TopBar />
-        </>
-      ) : (
-        <TopNav />
-      )}
+    <div className="App layout-sidebar">
+      <Sidebar />
+      <TopBar />
       <ProfileCompletionModal />
       <AnnouncementModal />
       <main>

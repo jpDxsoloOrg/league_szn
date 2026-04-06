@@ -6,10 +6,6 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock('../../contexts/navLayoutContext', () => ({
-  useNavLayout: () => ({ mode: 'sidebar', setMode: vi.fn(), toggleMode: vi.fn() }),
-}));
-
 vi.mock('../TopBar.css', () => ({}));
 
 import TopBar from '../TopBar';
@@ -45,8 +41,8 @@ describe('TopBar', () => {
   it('renders breadcrumb with parent (including group) and title for admin sub-routes', () => {
     renderTopBar('/admin/divisions');
 
-    // Parent now includes the group name: "nav.admin / admin.panel.groups.leagueSetup"
-    const parent = screen.getByText('nav.admin / admin.panel.groups.leagueSetup');
+    // Parent now includes the group name: "nav.admin / admin.panel.groups.rosterSeasons"
+    const parent = screen.getByText('nav.admin / admin.panel.groups.rosterSeasons');
     expect(parent).toBeInTheDocument();
     expect(parent).toHaveClass('top-bar-parent');
     expect(screen.getByText('admin.panel.tabs.divisions')).toBeInTheDocument();

@@ -17,9 +17,6 @@ vi.mock('../../contexts/SiteConfigContext', () => ({
   useSiteConfig: mockUseSiteConfig,
 }));
 
-vi.mock('../../contexts/navLayoutContext', () => ({
-  useNavLayout: () => ({ mode: 'sidebar', setMode: vi.fn(), toggleMode: vi.fn() }),
-}));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -109,13 +106,14 @@ describe('Sidebar', () => {
     expect(screen.getByText('nav.admin')).toBeInTheDocument();
 
     // Sub-group headers are always visible when admin is expanded
-    expect(screen.getByText('admin.panel.groups.matchOps')).toBeInTheDocument();
-    expect(screen.getByText('admin.panel.groups.leagueSetup')).toBeInTheDocument();
-    expect(screen.getByText('admin.panel.groups.contentSocial')).toBeInTheDocument();
+    expect(screen.getByText('admin.panel.groups.matchDay')).toBeInTheDocument();
+    expect(screen.getByText('admin.panel.groups.rosterSeasons')).toBeInTheDocument();
+    expect(screen.getByText('admin.panel.groups.titlesTournaments')).toBeInTheDocument();
+    expect(screen.getByText('admin.panel.groups.content')).toBeInTheDocument();
     expect(screen.getByText('admin.panel.groups.fantasy')).toBeInTheDocument();
     expect(screen.getByText('admin.panel.groups.system')).toBeInTheDocument();
 
-    // League Setup auto-expands because route is /admin/players
+    // Roster & Seasons auto-expands because route is /admin/players
     expect(screen.getByText('admin.panel.tabs.managePlayers')).toBeInTheDocument();
     expect(screen.getByText('admin.panel.tabs.divisions')).toBeInTheDocument();
 
@@ -160,16 +158,16 @@ describe('Sidebar', () => {
     renderSidebar('/admin');
 
     // Admin section starts expanded — sub-group headers visible
-    expect(screen.getByText('admin.panel.groups.matchOps')).toBeInTheDocument();
+    expect(screen.getByText('admin.panel.groups.matchDay')).toBeInTheDocument();
 
     // Collapse admin section
     const toggleBtn = screen.getByText('nav.admin').closest('button')!;
     await user.click(toggleBtn);
-    expect(screen.queryByText('admin.panel.groups.matchOps')).not.toBeInTheDocument();
+    expect(screen.queryByText('admin.panel.groups.matchDay')).not.toBeInTheDocument();
 
     // Expand again
     await user.click(toggleBtn);
-    expect(screen.getByText('admin.panel.groups.matchOps')).toBeInTheDocument();
+    expect(screen.getByText('admin.panel.groups.matchDay')).toBeInTheDocument();
   });
 
   it('shows logout button when authenticated and calls signOut', async () => {

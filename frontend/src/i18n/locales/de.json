@@ -503,7 +503,13 @@
       },
       "groups": {
         "matchOps": "Match-Operationen",
+        "matchDay": "Match-Tag",
         "leagueSetup": "Liga-Einrichtung",
+        "rosterSeasons": "Kader & Saisons",
+        "titlesTournaments": "Titel & Turniere",
+        "rankings": "Rankings",
+        "content": "Inhalte",
+        "factions": "Fraktionen",
         "contentSocial": "Inhalte & Soziales",
         "fantasy": "Fantasy",
         "system": "System"

@@ -95,8 +95,8 @@ export const USER_NAV_STANDALONE: (NavItem & { type: 'fantasy' | 'link' })[] = [
 /** Admin nav: sub-groups with items */
 export const ADMIN_NAV_GROUPS: NavGroup[] = [
   {
-    key: 'matchOps',
-    i18nKey: 'admin.panel.groups.matchOps',
+    key: 'matchDay',
+    i18nKey: 'admin.panel.groups.matchDay',
     items: [
       { path: '/admin/schedule', i18nKey: 'admin.panel.tabs.scheduleMatch' },
       { path: '/admin/results', i18nKey: 'admin.panel.tabs.recordResults' },
@@ -105,14 +105,20 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    key: 'leagueSetup',
-    i18nKey: 'admin.panel.groups.leagueSetup',
+    key: 'rosterSeasons',
+    i18nKey: 'admin.panel.groups.rosterSeasons',
     items: [
       { path: '/admin/players', i18nKey: 'admin.panel.tabs.managePlayers' },
       { path: '/admin/divisions', i18nKey: 'admin.panel.tabs.divisions' },
       { path: '/admin/transfers', i18nKey: 'admin.panel.tabs.transfers' },
       { path: '/admin/seasons', i18nKey: 'admin.panel.tabs.seasons' },
       { path: '/admin/season-awards', i18nKey: 'admin.panel.tabs.seasonAwards' },
+    ],
+  },
+  {
+    key: 'titlesTournaments',
+    i18nKey: 'admin.panel.groups.titlesTournaments',
+    items: [
       { path: '/admin/championships', i18nKey: 'admin.panel.tabs.championships' },
       { path: '/admin/tournaments', i18nKey: 'admin.panel.tabs.tournaments' },
       { path: '/admin/companies', i18nKey: 'admin.panel.tabs.companies' },
@@ -120,18 +126,30 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    key: 'contentSocial',
-    i18nKey: 'admin.panel.groups.contentSocial',
+    key: 'adminRankings',
+    i18nKey: 'admin.panel.groups.rankings',
     items: [
-      { path: '/admin/challenges', i18nKey: 'admin.panel.tabs.challenges' },
-      { path: '/admin/promos', i18nKey: 'admin.panel.tabs.promos' },
       { path: '/admin/contender-config', i18nKey: 'admin.panel.tabs.contenderConfig' },
       { path: '/admin/contender-overrides', i18nKey: 'admin.panel.tabs.contenderOverrides' },
-      { path: '/admin/stables', i18nKey: 'admin.panel.tabs.stables' },
-      { path: '/admin/tag-teams', i18nKey: 'admin.panel.tabs.tagTeams' },
+    ],
+  },
+  {
+    key: 'content',
+    i18nKey: 'admin.panel.groups.content',
+    items: [
       { path: '/admin/announcements', i18nKey: 'admin.panel.tabs.announcements' },
       { path: '/admin/videos', i18nKey: 'admin.panel.tabs.videos' },
       { path: '/admin/storyline-requests', i18nKey: 'admin.panel.tabs.storylineRequests' },
+      { path: '/admin/challenges', i18nKey: 'admin.panel.tabs.challenges' },
+      { path: '/admin/promos', i18nKey: 'admin.panel.tabs.promos' },
+    ],
+  },
+  {
+    key: 'adminFactions',
+    i18nKey: 'admin.panel.groups.factions',
+    items: [
+      { path: '/admin/stables', i18nKey: 'admin.panel.tabs.stables' },
+      { path: '/admin/tag-teams', i18nKey: 'admin.panel.tabs.tagTeams' },
     ],
   },
   {
@@ -171,14 +189,20 @@ export function getUserGroupForPath(pathname: string): string | null {
 
 /** Path → admin group key */
 export function getAdminGroupForPath(pathname: string): string | null {
-  const matchOps = ['/admin/schedule', '/admin/results', '/admin/events', '/admin/match-config'];
-  const leagueSetup = ['/admin/players', '/admin/divisions', '/admin/transfers', '/admin/seasons', '/admin/season-awards', '/admin/championships', '/admin/tournaments', '/admin/companies', '/admin/shows'];
-  const contentSocial = ['/admin/challenges', '/admin/promos', '/admin/contender-config', '/admin/contender-overrides', '/admin/stables', '/admin/tag-teams', '/admin/announcements', '/admin/videos', '/admin/storyline-requests'];
+  const matchDay = ['/admin/schedule', '/admin/results', '/admin/events', '/admin/match-config'];
+  const rosterSeasons = ['/admin/players', '/admin/divisions', '/admin/transfers', '/admin/seasons', '/admin/season-awards'];
+  const titlesTournaments = ['/admin/championships', '/admin/tournaments', '/admin/companies', '/admin/shows'];
+  const adminRankings = ['/admin/contender-config', '/admin/contender-overrides'];
+  const content = ['/admin/announcements', '/admin/videos', '/admin/storyline-requests', '/admin/challenges', '/admin/promos'];
+  const adminFactions = ['/admin/stables', '/admin/tag-teams'];
   const fantasy = ['/admin/fantasy-shows', '/admin/fantasy-config'];
   const system = ['/admin/users', '/admin/features', '/admin/danger'];
-  if (matchOps.some((p) => pathname === p)) return 'matchOps';
-  if (leagueSetup.some((p) => pathname === p)) return 'leagueSetup';
-  if (contentSocial.some((p) => pathname === p)) return 'contentSocial';
+  if (matchDay.some((p) => pathname === p)) return 'matchDay';
+  if (rosterSeasons.some((p) => pathname === p)) return 'rosterSeasons';
+  if (titlesTournaments.some((p) => pathname === p)) return 'titlesTournaments';
+  if (adminRankings.some((p) => pathname === p)) return 'adminRankings';
+  if (content.some((p) => pathname === p)) return 'content';
+  if (adminFactions.some((p) => pathname === p)) return 'adminFactions';
   if (fantasy.some((p) => pathname === p)) return 'fantasy';
   if (system.some((p) => pathname === p)) return 'system';
   return null;
