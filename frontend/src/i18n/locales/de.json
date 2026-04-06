@@ -175,7 +175,11 @@
     "profile": "Mein Profil",
     "groups": {
       "core": "Liga",
-      "wrestler": "Wrestler",
+      "league": "Liga",
+      "competition": "Wettbewerb",
+      "rankings": "Rankings & Statistiken",
+      "factions": "Fraktionen",
+      "wrestler": "Wrestler-Zone",
       "extras": "Mehr"
     },
     "switchToTopMenu": "Obere Menüleiste",
@@ -211,7 +215,13 @@
       "minutes": "Min"
     },
     "vs": "gegen",
-    "def": "bes."
+    "def": "bes.",
+    "whatsHappening": "Was passiert",
+    "daysReign": "Tage Regentschaft",
+    "defenses": "Titelverteidigungen",
+    "viewAllChampions": "Alle Champions anzeigen",
+    "noChallenges": "Keine offenen Herausforderungen",
+    "viewChallenges": "Herausforderungen anzeigen"
   },
   "activity": {
     "title": "Aktivität",
@@ -493,7 +503,13 @@
       },
       "groups": {
         "matchOps": "Match-Operationen",
+        "matchDay": "Match-Tag",
         "leagueSetup": "Liga-Einrichtung",
+        "rosterSeasons": "Kader & Saisons",
+        "titlesTournaments": "Titel & Turniere",
+        "rankings": "Rankings",
+        "content": "Inhalte",
+        "factions": "Fraktionen",
         "contentSocial": "Inhalte & Soziales",
         "fantasy": "Fantasy",
         "system": "System"

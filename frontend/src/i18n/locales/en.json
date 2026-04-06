@@ -175,7 +175,11 @@
     "profile": "My Profile",
     "groups": {
       "core": "League",
-      "wrestler": "Wrestler",
+      "league": "League",
+      "competition": "Competition",
+      "rankings": "Rankings & Stats",
+      "factions": "Factions",
+      "wrestler": "Wrestler Zone",
       "extras": "More"
     },
     "switchToTopMenu": "Top menu",
@@ -211,7 +215,13 @@
       "minutes": "m"
     },
     "vs": "vs",
-    "def": "def."
+    "def": "def.",
+    "whatsHappening": "What's Happening",
+    "daysReign": "Day Reign",
+    "defenses": "Defenses",
+    "viewAllChampions": "View All Champions",
+    "noChallenges": "No pending challenges",
+    "viewChallenges": "View Challenges"
   },
   "activity": {
     "title": "Activity",
@@ -493,7 +503,13 @@
       },
       "groups": {
         "matchOps": "Match Operations",
+        "matchDay": "Match Day",
         "leagueSetup": "League Setup",
+        "rosterSeasons": "Roster & Seasons",
+        "titlesTournaments": "Titles & Tournaments",
+        "rankings": "Rankings",
+        "content": "Content",
+        "factions": "Factions",
         "contentSocial": "Content & Social",
         "fantasy": "Fantasy",
         "system": "System"
