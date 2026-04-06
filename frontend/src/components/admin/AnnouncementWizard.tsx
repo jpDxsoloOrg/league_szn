@@ -450,7 +450,7 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
   }
 
   function addMatch() {
-    if (matches.length >= 5) return;
+    if (matches.length >= 8) return;
     setMatches((prev) => [...prev, newMatch()]);
   }
 
@@ -688,8 +688,8 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
             {step === 3 && (
               <div className="wizard-body">
                 <div className="wizard-matches-header">
-                  <h3 className="wizard-section-title">Matches ({matches.length}/5)</h3>
-                  {matches.length < 5 && (
+                  <h3 className="wizard-section-title">Matches ({matches.length}/8)</h3>
+                  {matches.length < 8 && (
                     <button className="wizard-btn-add" onClick={addMatch}>
                       + Add Match
                     </button>
