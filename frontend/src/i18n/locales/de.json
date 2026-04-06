@@ -175,7 +175,11 @@
     "profile": "Mein Profil",
     "groups": {
       "core": "Liga",
-      "wrestler": "Wrestler",
+      "league": "Liga",
+      "competition": "Wettbewerb",
+      "rankings": "Rankings & Statistiken",
+      "factions": "Fraktionen",
+      "wrestler": "Wrestler-Zone",
       "extras": "Mehr"
     },
     "switchToTopMenu": "Obere Menüleiste",

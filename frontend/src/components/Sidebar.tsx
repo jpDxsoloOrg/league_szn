@@ -32,8 +32,20 @@ function isUserItemVisible(
   return { show: true, disabled: false };
 }
 
-function showWrestlerGroup(features: SiteFeatures, isWrestler: boolean): boolean {
-  return isWrestler || features.challenges || features.promos;
+function shouldShowGroup(
+  group: { key: string; items: NavItem[] },
+  features: SiteFeatures,
+  isWrestler: boolean,
+  isFantasy: boolean
+): boolean {
+  if (group.key === 'wrestler') {
+    return isWrestler || features.challenges || features.promos;
+  }
+  // Hide group if every item is feature-gated and none are enabled
+  return group.items.some((item) => {
+    const { show } = isUserItemVisible(item, features, isWrestler, isFantasy);
+    return show;
+  });
 }
 
 export default function Sidebar() {
@@ -42,7 +54,7 @@ export default function Sidebar() {
   const { isAuthenticated, isAdminOrModerator, isSuperAdmin, isWrestler, isFantasy, signOut } = useAuth();
   const { features } = useSiteConfig();
   const [adminExpanded, setAdminExpanded] = useState(true);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ core: true });
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ league: true });
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const toggleGroup = useCallback((groupKey: string) => {
@@ -130,7 +142,7 @@ export default function Sidebar() {
       <nav className="sidebar-nav">
         <div className="nav-section">
           {USER_NAV_GROUPS.map((group) => {
-            if (group.key === 'wrestler' && !showWrestlerGroup(features, isWrestler)) return null;
+            if (!shouldShowGroup(group, features, isWrestler, isFantasy)) return null;
             return (
               <div key={group.key} className="nav-subgroup user-nav-subgroup">
                 <button

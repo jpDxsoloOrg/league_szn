@@ -33,8 +33,19 @@ function isUserItemVisible(
   return { show: true, disabled: false };
 }
 
-function showWrestlerGroup(features: SiteFeatures, isWrestler: boolean): boolean {
-  return isWrestler || features.challenges || features.promos;
+function shouldShowGroup(
+  group: { key: string; items: NavItem[] },
+  features: SiteFeatures,
+  isWrestler: boolean,
+  isFantasy: boolean
+): boolean {
+  if (group.key === 'wrestler') {
+    return isWrestler || features.challenges || features.promos;
+  }
+  return group.items.some((item) => {
+    const { show } = isUserItemVisible(item, features, isWrestler, isFantasy);
+    return show;
+  });
 }
 
 const MOBILE_BREAKPOINT = 768;
@@ -47,7 +58,7 @@ export default function TopNav() {
   const { setMode: setNavLayout } = useNavLayout();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ core: true, admin: true });
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ league: true, admin: true });
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT);
   const navRef = useRef<HTMLDivElement>(null);
 
@@ -159,7 +170,7 @@ export default function TopNav() {
   const sharedNavContent = (
     <>
       {USER_NAV_GROUPS.map((group) => {
-        if (group.key === 'wrestler' && !showWrestlerGroup(features, isWrestler)) return null;
+        if (!shouldShowGroup(group, features, isWrestler, isFantasy)) return null;
         return (
           <div key={group.key} className="topnav-group">
             <button
@@ -276,7 +287,7 @@ export default function TopNav() {
         <h2 className="topnav-title">{t('header.title')}</h2>
         <nav className="topnav-menu" aria-label="Main navigation">
           {USER_NAV_GROUPS.map((group) => {
-            if (group.key === 'wrestler' && !showWrestlerGroup(features, isWrestler)) return null;
+            if (!shouldShowGroup(group, features, isWrestler, isFantasy)) return null;
             const isOpen = openGroup === group.key;
             return (
               <div key={group.key} className="topnav-dropdown-wrap">

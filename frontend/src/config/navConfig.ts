@@ -24,25 +24,43 @@ export type NavGroup = {
   items: NavItem[];
 };
 
-/** Public (user) nav: Core, Wrestler, standalone Fantasy & Help */
+/** Public (user) nav: League, Competition, Rankings, Factions, Wrestler Zone */
 export const USER_NAV_GROUPS: NavGroup[] = [
   {
-    key: 'core',
-    i18nKey: 'nav.groups.core',
+    key: 'league',
+    i18nKey: 'nav.groups.league',
     items: [
       { path: '/', i18nKey: 'nav.dashboard' },
       { path: '/standings', i18nKey: 'nav.standings' },
       { path: '/activity', i18nKey: 'nav.activity' },
+    ],
+  },
+  {
+    key: 'competition',
+    i18nKey: 'nav.groups.competition',
+    items: [
       { path: '/championships', i18nKey: 'nav.championships' },
       { path: '/events', i18nKey: 'nav.events' },
       { path: '/matches', i18nKey: 'nav.matchSearch' },
       { path: '/tournaments', i18nKey: 'nav.tournaments' },
       { path: '/awards', i18nKey: 'nav.seasonAwards' },
+    ],
+  },
+  {
+    key: 'rankings',
+    i18nKey: 'nav.groups.rankings',
+    items: [
       { path: '/contenders', i18nKey: 'nav.contenders', feature: 'contenders' },
       { path: '/stats', i18nKey: 'nav.statistics', feature: 'statistics' },
+      { path: '/highlights', i18nKey: 'nav.highlights' },
+    ],
+  },
+  {
+    key: 'factions',
+    i18nKey: 'nav.groups.factions',
+    items: [
       { path: '/stables', i18nKey: 'nav.stables', feature: 'stables' },
       { path: '/tag-teams', i18nKey: 'nav.tagTeams', feature: 'stables' },
-      { path: '/highlights', i18nKey: 'nav.highlights' },
     ],
   },
   {
@@ -137,9 +155,16 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
 
 /** Path → group key for user nav (for auto-expand) */
 export function getUserGroupForPath(pathname: string): string | null {
-  const core = ['/', '/standings', '/activity', '/championships', '/events', '/matches', '/tournaments', '/awards', '/contenders', '/stats', '/stables', '/tag-teams', '/highlights'];
+  const league = ['/', '/standings', '/activity'];
+  const competition = ['/championships', '/events', '/matches', '/tournaments', '/awards'];
+  const rankings = ['/contenders', '/stats', '/highlights'];
+  const factions = ['/stables', '/tag-teams'];
   const wrestler = ['/profile', '/challenges', '/promos', '/my-stable', '/my-tag-team'];
-  if (core.some((p) => pathname === p) || pathname.startsWith('/events/') || pathname.startsWith('/stats/') || pathname.startsWith('/contenders/') || pathname.startsWith('/stables/') || pathname.startsWith('/tag-teams/')) return 'core';
+
+  if (league.some((p) => pathname === p)) return 'league';
+  if (competition.some((p) => pathname === p || pathname.startsWith(p + '/'))) return 'competition';
+  if (rankings.some((p) => pathname === p || pathname.startsWith(p + '/'))) return 'rankings';
+  if (factions.some((p) => pathname === p || pathname.startsWith(p + '/'))) return 'factions';
   if (wrestler.some((p) => pathname === p || pathname.startsWith(p + '/'))) return 'wrestler';
   return null;
 }
