@@ -40,82 +40,33 @@ function formatCountdown(dateStr: string, currentTime: number, t: (key: string) 
   return parts.join(' ');
 }
 
-function groupResultsByDate(results: DashboardMatch[]): { dateKey: string; dateLabel: string; matches: DashboardMatch[] }[] {
-  const byDate = new Map<string, DashboardMatch[]>();
-  for (const m of results) {
-    const key = m.date.slice(0, 10);
-    if (!byDate.has(key)) byDate.set(key, []);
-    byDate.get(key)!.push(m);
-  }
-  const sortedKeys = [...byDate.keys()].sort((a, b) => b.localeCompare(a));
-  return sortedKeys.map((dateKey) => ({
-    dateKey,
-    dateLabel: new Date(dateKey + 'T12:00:00').toLocaleDateString(undefined, { dateStyle: 'long' }),
-    matches: byDate.get(dateKey)!,
-  }));
+function computeReignDays(wonDate?: string): number | null {
+  if (!wonDate) return null;
+  const diff = Date.now() - new Date(wonDate).getTime();
+  return Math.max(0, Math.floor(diff / 86400000));
 }
 
-function RecentResultsGrouped({
-  results,
-  t,
-  renderStarRating,
-}: {
-  results: DashboardMatch[];
-  t: (key: string) => string;
-  renderStarRating: (rating: number) => string;
-}) {
-  const groups = useMemo(() => groupResultsByDate(results), [results]);
+function SeasonProgressRing({ played, label }: { played: number; label: string }) {
+  const total = 50;
+  const pct = Math.min(100, (played / total) * 100);
+  const r = 54;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (pct / 100) * circ;
   return (
-    <div className="dashboard-results-by-date">
-      {groups.map(({ dateKey, dateLabel, matches }) => (
-        <div key={dateKey} className="dashboard-results-date-group">
-          <div className="dashboard-results-date-separator">{dateLabel}</div>
-          <div className="dashboard-results-list">
-            {matches.map((m) => (
-              <Link
-                key={m.matchId}
-                to={m.eventId ? `/events/${m.eventId}` : '/events'}
-                className="dashboard-result-card"
-              >
-                <div className="dashboard-result-outcome">
-                  <span className="result-winner">{m.winnerName}</span>
-                  <span className="result-vs">{t('dashboard.vs')}</span>
-                  <span className="result-loser">{m.loserName}</span>
-                </div>
-                <div className="dashboard-result-meta">
-                  <span className="result-type">
-                    {m.matchType}
-                    {m.stipulation ? ` – ${m.stipulation}` : ''}
-                  </span>
-                  {m.isChampionship &&
-                    (
-                      <img
-                        src={resolveImageSrc(m.championshipImageUrl, DEFAULT_CHAMPIONSHIP_IMAGE)}
-                        onError={(event) => applyImageFallback(event, DEFAULT_CHAMPIONSHIP_IMAGE)}
-                        alt={m.championshipName ?? ''}
-                        className="result-championship-image"
-                        title={m.championshipName}
-                      />
-                    )}
-                  {(m.starRating != null || m.matchOfTheNight) && (
-                    <div className="dashboard-result-awards">
-                      {m.starRating != null && (
-                        <span className="result-star-rating" title={t('match.starRating')}>
-                          {renderStarRating(m.starRating)}
-                          <span className="result-star-value">{m.starRating}</span>
-                        </span>
-                      )}
-                      {m.matchOfTheNight && (
-                        <span className="result-motn-badge">{t('match.matchOfTheNightBadge')}</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      ))}
+    <div className="season-ring-wrapper">
+      <svg className="season-ring" viewBox="0 0 120 120">
+        <circle className="season-ring-bg" cx="60" cy="60" r={r} />
+        <circle
+          className="season-ring-fill"
+          cx="60" cy="60" r={r}
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <div className="season-ring-text">
+        <span className="season-ring-value">{played}</span>
+        <span className="season-ring-label">{label}</span>
+      </div>
     </div>
   );
 }
@@ -161,16 +112,29 @@ export default function Dashboard() {
     return () => abortController.abort();
   }, []);
 
-  // Update countdown every minute
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 60000);
     return () => clearInterval(interval);
   }, []);
 
+  const featuredChampion = useMemo(() => {
+    if (!data || data.currentChampions.length === 0) return null;
+    const sorted = [...data.currentChampions].sort((a, b) => {
+      const daysA = computeReignDays(a.wonDate) ?? 0;
+      const daysB = computeReignDays(b.wonDate) ?? 0;
+      return daysB - daysA;
+    });
+    return sorted[0];
+  }, [data]);
+
+  const otherChampions = useMemo(() => {
+    if (!data || !featuredChampion) return [];
+    return data.currentChampions.filter(c => c.championshipId !== featuredChampion.championshipId);
+  }, [data, featuredChampion]);
+
   if (loading && !data) {
     return (
-      <div className="dashboard-container dashboard-loading">
-        <h1 className="dashboard-title">{t('dashboard.title')}</h1>
+      <div className="dashboard">
         <Skeleton variant="block" count={4} className="dashboard-skeleton" />
       </div>
     );
@@ -178,8 +142,7 @@ export default function Dashboard() {
 
   if (error && !data) {
     return (
-      <div className="dashboard-container">
-        <h1 className="dashboard-title">{t('dashboard.title')}</h1>
+      <div className="dashboard">
         <div className="dashboard-error">
           <p>{error}</p>
           <button type="button" onClick={loadDashboard}>
@@ -192,148 +155,212 @@ export default function Dashboard() {
 
   if (!data) return null;
 
-  return (
-    <div className="dashboard-container">
-      <h1 className="dashboard-title">{t('dashboard.title')}</h1>
+  const reignDays = featuredChampion ? computeReignDays(featuredChampion.wonDate) : null;
 
-      <section className="dashboard-section">
-        <h3>{t('dashboard.champions')}</h3>
-        {data.currentChampions.length === 0 ? (
-          <div className="dashboard-empty-block">
-            <p className="dashboard-empty">{t('dashboard.noChampions')}</p>
-            <Link className="dashboard-empty-action" to="/championships">
-              {t('dashboard.emptyActions.viewChampionships', 'View championships')}
+  return (
+    <div className="dashboard">
+
+      {/* ROW 1 — Hero: Featured Champion */}
+      {featuredChampion ? (
+        <section className="db-hero">
+          <div className="db-hero-image">
+            <img
+              src={resolveImageSrc(featuredChampion.championImageUrl, DEFAULT_WRESTLER_IMAGE)}
+              onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+              alt={featuredChampion.championName}
+            />
+          </div>
+          <div className="db-hero-content">
+            <span className="db-hero-belt">{featuredChampion.championshipName}</span>
+            <h2 className="db-hero-name">{featuredChampion.championName}</h2>
+            {reignDays !== null && (
+              <div className="db-hero-stats">
+                <span className="db-hero-stat">
+                  <span className="db-hero-stat-value">{reignDays}</span>
+                  <span className="db-hero-stat-label">{t('dashboard.daysReign', 'Day Reign')}</span>
+                </span>
+                {featuredChampion.defenses != null && (
+                  <span className="db-hero-stat">
+                    <span className="db-hero-stat-value">{featuredChampion.defenses}</span>
+                    <span className="db-hero-stat-label">{t('dashboard.defenses', 'Defenses')}</span>
+                  </span>
+                )}
+              </div>
+            )}
+            <Link to="/championships" className="db-hero-link">
+              {t('dashboard.viewAllChampions', 'View All Champions')} &rarr;
             </Link>
           </div>
-        ) : (
-          <div className="dashboard-champions-strip">
-            {data.currentChampions.map((c) => (
-              <div key={c.championshipId} className="dashboard-champion-card">
-                <div className="champ-belt">{c.championshipName}</div>
-                <img
-                  src={resolveImageSrc(c.championImageUrl, DEFAULT_WRESTLER_IMAGE)}
-                  onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-                  alt={c.championName}
-                />
-                <div className="champ-name">{c.championName}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {data.inProgressEvents && data.inProgressEvents.length > 0 && (
-        <section className="dashboard-section">
-          <h3>{t('dashboard.inProgressEvents')}</h3>
-          <div className="dashboard-events-grid">
-            {data.inProgressEvents.map((e: DashboardEvent) => (
-              <Link
-                key={e.eventId}
-                to={`/events/${e.eventId}`}
-                className="dashboard-event-card dashboard-event-card--live"
-              >
-                <span className="dashboard-event-live-badge">{t('dashboard.liveBadge')}</span>
-                <div className="event-name">{e.name}</div>
-                <div className="event-date">{new Date(e.date).toLocaleDateString(undefined, { dateStyle: 'medium' })}</div>
-              </Link>
-            ))}
-          </div>
+          {/* Secondary champions strip */}
+          {otherChampions.length > 0 && (
+            <div className="db-hero-others">
+              {otherChampions.map((c) => (
+                <div key={c.championshipId} className="db-hero-other">
+                  <img
+                    src={resolveImageSrc(c.championImageUrl, DEFAULT_WRESTLER_IMAGE)}
+                    onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+                    alt={c.championName}
+                  />
+                  <div className="db-hero-other-info">
+                    <span className="db-hero-other-belt">{c.championshipName}</span>
+                    <span className="db-hero-other-name">{c.championName}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : (
+        <section className="db-hero db-hero--empty">
+          <p className="db-empty-text">{t('dashboard.noChampions')}</p>
+          <Link className="db-empty-action" to="/championships">
+            {t('dashboard.emptyActions.viewChampionships', 'View championships')}
+          </Link>
         </section>
       )}
 
-      <section className="dashboard-section">
-        <h3>{t('dashboard.upcomingEvents')}</h3>
-        {data.upcomingEvents.length === 0 ? (
-          <div className="dashboard-empty-block">
-            <p className="dashboard-empty">{t('dashboard.noUpcomingEvents')}</p>
-            <Link className="dashboard-empty-action" to="/events">
-              {t('dashboard.emptyActions.viewEvents', 'View events')}
-            </Link>
-          </div>
-        ) : (
-          <div className="dashboard-events-grid">
-            {data.upcomingEvents.map((e: DashboardEvent) => (
-              <Link key={e.eventId} to={`/events/${e.eventId}`} className="dashboard-event-card">
-                <div className="event-name">{e.name}</div>
-                <div className="event-date">{new Date(e.date).toLocaleDateString(undefined, { dateStyle: 'medium' })}</div>
-                <div className="event-countdown">{formatCountdown(e.date, now, t)}</div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
+      {/* ROW 2 — Events + Quick Stats */}
+      <div className="db-row-2">
+        <section className="db-events">
+          <h3 className="db-section-title">{t('dashboard.whatsHappening', "What's Happening")}</h3>
 
-      <section className="dashboard-section">
-        <h3>{t('dashboard.recentResults')}</h3>
+          {data.inProgressEvents && data.inProgressEvents.length > 0 && (
+            <div className="db-live-events">
+              {data.inProgressEvents.map((e: DashboardEvent) => (
+                <Link
+                  key={e.eventId}
+                  to={`/events/${e.eventId}`}
+                  className="db-event-card db-event-card--live"
+                >
+                  <span className="db-live-badge">{t('dashboard.liveBadge')}</span>
+                  <div className="db-event-name">{e.name}</div>
+                  <div className="db-event-date">{new Date(e.date).toLocaleDateString(undefined, { dateStyle: 'medium' })}</div>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {data.upcomingEvents.length === 0 && (!data.inProgressEvents || data.inProgressEvents.length === 0) ? (
+            <div className="db-empty-block">
+              <p className="db-empty-text">{t('dashboard.noUpcomingEvents')}</p>
+              <Link className="db-empty-action" to="/events">
+                {t('dashboard.emptyActions.viewEvents', 'View events')}
+              </Link>
+            </div>
+          ) : (
+            <div className="db-upcoming-list">
+              {data.upcomingEvents.map((e: DashboardEvent) => (
+                <Link key={e.eventId} to={`/events/${e.eventId}`} className="db-event-card">
+                  <div className="db-event-name">{e.name}</div>
+                  <div className="db-event-countdown">{formatCountdown(e.date, now, t)}</div>
+                  <div className="db-event-date">{new Date(e.date).toLocaleDateString(undefined, { dateStyle: 'medium' })}</div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="db-stats">
+          <h3 className="db-section-title">{t('dashboard.quickStats')}</h3>
+          <div className="db-stats-grid">
+            <div className="db-stat-card">
+              <div className="db-stat-value">{data.quickStats.totalPlayers}</div>
+              <div className="db-stat-label">{t('standings.table.player')}</div>
+            </div>
+            <div className="db-stat-card">
+              <div className="db-stat-value">{data.quickStats.totalMatches}</div>
+              <div className="db-stat-label">{t('dashboard.matchesPlayed')}</div>
+            </div>
+            <div className="db-stat-card">
+              <div className="db-stat-value">{data.quickStats.activeChampionships}</div>
+              <div className="db-stat-label">{t('dashboard.champions')}</div>
+            </div>
+            {data.quickStats.mostWinsPlayer && (
+              <div className="db-stat-card">
+                <div className="db-stat-value">{data.quickStats.mostWinsPlayer.wins}</div>
+                <div className="db-stat-label">{t('dashboard.mostWins')}: {data.quickStats.mostWinsPlayer.name}</div>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* ROW 3 — Recent Results (horizontal scroll) */}
+      <section className="db-results">
+        <h3 className="db-section-title">{t('dashboard.recentResults')}</h3>
         {data.recentResults.length === 0 ? (
-          <div className="dashboard-empty-block">
-            <p className="dashboard-empty">{t('dashboard.noRecentResults')}</p>
-            <Link className="dashboard-empty-action" to="/matches">
+          <div className="db-empty-block">
+            <p className="db-empty-text">{t('dashboard.noRecentResults')}</p>
+            <Link className="db-empty-action" to="/matches">
               {t('dashboard.emptyActions.browseMatches', 'Browse matches')}
             </Link>
           </div>
         ) : (
-          <RecentResultsGrouped results={data.recentResults} t={t} renderStarRating={renderStarRating} />
+          <div className="db-results-scroll">
+            {data.recentResults.slice(0, 8).map((m: DashboardMatch) => (
+              <Link
+                key={m.matchId}
+                to={m.eventId ? `/events/${m.eventId}` : '/events'}
+                className="db-result-card"
+              >
+                <div className="db-result-outcome">
+                  <span className="db-result-winner">{m.winnerName}</span>
+                  <span className="db-result-vs">def.</span>
+                  <span className="db-result-loser">{m.loserName}</span>
+                </div>
+                <div className="db-result-type">
+                  {m.matchType}
+                  {m.stipulation ? ` — ${m.stipulation}` : ''}
+                </div>
+                <div className="db-result-footer">
+                  {m.isChampionship && (
+                    <img
+                      src={resolveImageSrc(m.championshipImageUrl, DEFAULT_CHAMPIONSHIP_IMAGE)}
+                      onError={(event) => applyImageFallback(event, DEFAULT_CHAMPIONSHIP_IMAGE)}
+                      alt={m.championshipName ?? ''}
+                      className="db-result-belt"
+                      title={m.championshipName}
+                    />
+                  )}
+                  {m.starRating != null && (
+                    <span className="db-result-stars" title={t('match.starRating')}>
+                      {renderStarRating(m.starRating)}
+                    </span>
+                  )}
+                  {m.matchOfTheNight && (
+                    <span className="db-result-motn">{t('match.matchOfTheNightBadge')}</span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
         )}
       </section>
 
-      <section className="dashboard-section">
-        <h3>{t('dashboard.seasonProgress')}</h3>
+      {/* ROW 4 — Season Progress */}
+      <section className="db-season">
+        <h3 className="db-section-title">{t('dashboard.seasonProgress')}</h3>
         {!data.seasonInfo ? (
-          <div className="dashboard-empty-block">
-            <p className="dashboard-empty">{t('dashboard.noActiveSeason')}</p>
-            <Link className="dashboard-empty-action" to="/guide/wiki/getting-started">
+          <div className="db-empty-block">
+            <p className="db-empty-text">{t('dashboard.noActiveSeason')}</p>
+            <Link className="db-empty-action" to="/guide/wiki/getting-started">
               {t('dashboard.emptyActions.seeGuide', 'See getting started')}
             </Link>
           </div>
         ) : (
-          <div className="dashboard-season-card">
-            <div className="season-name">{data.seasonInfo.name}</div>
-            <div className="season-meta">
-              {t('dashboard.seasonStart')}: {data.seasonInfo.startDate ? new Date(data.seasonInfo.startDate).toLocaleDateString() : '—'}
-              {' · '}
-              {t('dashboard.matchesPlayed')}: {data.seasonInfo.matchesPlayed ?? 0}
-            </div>
-            <div className="season-progress-bar">
-              <div
-                className="season-progress-fill"
-                style={{ width: data.seasonInfo.matchesPlayed ? `${Math.min(100, (data.seasonInfo.matchesPlayed / 50) * 100)}%` : '0%' }}
-              />
+          <div className="db-season-content">
+            <SeasonProgressRing
+              played={data.seasonInfo.matchesPlayed ?? 0}
+              label={t('dashboard.matchesPlayed')}
+            />
+            <div className="db-season-info">
+              <div className="db-season-name">{data.seasonInfo.name}</div>
+              <div className="db-season-meta">
+                {t('dashboard.seasonStart')}: {data.seasonInfo.startDate ? new Date(data.seasonInfo.startDate).toLocaleDateString() : '—'}
+              </div>
             </div>
           </div>
         )}
-      </section>
-
-      <section className="dashboard-section">
-        <h3>{t('dashboard.quickStats')}</h3>
-        <div className="dashboard-quick-stats">
-          <div className="dashboard-stat-card">
-            <div className="stat-value">{data.quickStats.totalPlayers}</div>
-            <div className="stat-label">{t('standings.table.player')}</div>
-          </div>
-          <div className="dashboard-stat-card">
-            <div className="stat-value">{data.quickStats.totalMatches}</div>
-            <div className="stat-label">{t('dashboard.matchesPlayed')}</div>
-          </div>
-          <div className="dashboard-stat-card">
-            <div className="stat-value">{data.quickStats.activeChampionships}</div>
-            <div className="stat-label">{t('dashboard.champions')}</div>
-          </div>
-          {data.quickStats.mostWinsPlayer && (
-            <div className="dashboard-stat-card">
-              <div className="stat-value">{data.quickStats.mostWinsPlayer.wins}</div>
-              <div className="stat-label">{t('dashboard.mostWins')}: {data.quickStats.mostWinsPlayer.name}</div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="dashboard-section">
-        <h3>{t('dashboard.activeChallenges')}</h3>
-        <Link to="/challenges" className="dashboard-challenges-cta">
-          {data.activeChallengesCount > 0 && <span className="badge">{data.activeChallengesCount}</span>}
-          {t('dashboard.viewAll')}
-        </Link>
       </section>
     </div>
   );

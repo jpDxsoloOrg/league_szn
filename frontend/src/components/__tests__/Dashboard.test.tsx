@@ -13,31 +13,41 @@ vi.mock('../../services/api', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => {
+    t: (key: string, fallbackOrOpts?: string | Record<string, unknown>) => {
       const map: Record<string, string> = {
-        'dashboard.title': 'League Overview',
-        'dashboard.champions': 'Current Champions',
+        'nav.dashboard': 'Dashboard',
+        'dashboard.whatsHappening': "What's Happening",
         'dashboard.upcomingEvents': 'Upcoming Events',
         'dashboard.recentResults': 'Recent Results',
         'dashboard.seasonProgress': 'Season Progress',
         'dashboard.quickStats': 'Quick Stats',
         'dashboard.activeChallenges': 'Active Challenges',
-        'dashboard.viewAll': 'View All',
+        'dashboard.viewChallenges': 'View Challenges',
+        'dashboard.viewAllChampions': 'View All Champions',
         'dashboard.noChampions': 'No active champions',
         'dashboard.noUpcomingEvents': 'No upcoming events',
         'dashboard.noRecentResults': 'No recent results',
         'dashboard.noActiveSeason': 'No active season',
+        'dashboard.noChallenges': 'No pending challenges',
         'dashboard.mostWins': 'Most Wins',
         'dashboard.matchesPlayed': 'Matches Played',
         'dashboard.seasonStart': 'Season Start',
+        'dashboard.daysReign': 'Day Reign',
+        'dashboard.defenses': 'Defenses',
         'dashboard.countdown.days': 'd',
         'dashboard.countdown.hours': 'h',
         'dashboard.countdown.minutes': 'm',
         'dashboard.vs': 'vs',
+        'dashboard.liveBadge': 'LIVE',
         'standings.table.player': 'Player',
         'common.retry': 'Retry',
       };
-      return map[key] ?? key;
+      if (map[key]) return map[key];
+      if (typeof fallbackOrOpts === 'string') return fallbackOrOpts;
+      if (fallbackOrOpts && typeof fallbackOrOpts === 'object' && 'defaultValue' in fallbackOrOpts) {
+        return fallbackOrOpts.defaultValue as string;
+      }
+      return key;
     },
   }),
 }));
@@ -82,10 +92,9 @@ describe('Dashboard', () => {
 
     renderDashboard();
 
-    expect(screen.getByText('League Overview')).toBeInTheDocument();
     resolve!(emptyDashboard);
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Current Champions' })).toBeInTheDocument();
+      expect(screen.getByText('No active champions')).toBeInTheDocument();
     });
   });
 
@@ -93,7 +102,7 @@ describe('Dashboard', () => {
     const dataWithContent = {
       ...emptyDashboard,
       currentChampions: [
-        { championshipId: 'c1', championshipName: 'World', championName: 'Alice', playerId: 'p1' },
+        { championshipId: 'c1', championshipName: 'World', championName: 'Alice', playerId: 'p1', wonDate: '2025-01-01' },
       ],
       upcomingEvents: [
         { eventId: 'e1', name: 'WrestleMania', date: '2025-04-01', eventType: 'ppv' },
@@ -114,12 +123,15 @@ describe('Dashboard', () => {
       },
       { timeout: 3000 }
     );
-    expect(screen.getByText('League Overview')).toBeInTheDocument();
-    expect(screen.getAllByText('Alice').length).toBeGreaterThan(0);
+    // Hero champion card
     expect(screen.getByText('World')).toBeInTheDocument();
+    expect(screen.getAllByText('Alice').length).toBeGreaterThan(0);
+    // Recent results
     expect(screen.getByText('Bob')).toBeInTheDocument();
+    // Season
     expect(screen.getByText('Season 1')).toBeInTheDocument();
-    expect(screen.getByText('View All')).toBeInTheDocument();
+    // Quick stats
+    expect(screen.getByText('Quick Stats')).toBeInTheDocument();
   });
 
   it('renders empty states when no data', async () => {
@@ -148,7 +160,7 @@ describe('Dashboard', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByRole('heading', { name: 'Current Champions' })).toBeInTheDocument();
+        expect(screen.getByText('No active champions')).toBeInTheDocument();
       },
       { timeout: 3000 }
     );

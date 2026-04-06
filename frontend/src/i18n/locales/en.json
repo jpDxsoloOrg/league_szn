@@ -215,7 +215,13 @@
       "minutes": "m"
     },
     "vs": "vs",
-    "def": "def."
+    "def": "def.",
+    "whatsHappening": "What's Happening",
+    "daysReign": "Day Reign",
+    "defenses": "Defenses",
+    "viewAllChampions": "View All Champions",
+    "noChallenges": "No pending challenges",
+    "viewChallenges": "View Challenges"
   },
   "activity": {
     "title": "Activity",

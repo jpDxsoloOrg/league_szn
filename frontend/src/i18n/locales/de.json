@@ -215,7 +215,13 @@
       "minutes": "Min"
     },
     "vs": "gegen",
-    "def": "bes."
+    "def": "bes.",
+    "whatsHappening": "Was passiert",
+    "daysReign": "Tage Regentschaft",
+    "defenses": "Titelverteidigungen",
+    "viewAllChampions": "Alle Champions anzeigen",
+    "noChallenges": "Keine offenen Herausforderungen",
+    "viewChallenges": "Herausforderungen anzeigen"
   },
   "activity": {
     "title": "Aktivität",
