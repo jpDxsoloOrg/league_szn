@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
+import type { APIGatewayProxyEvent } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
@@ -30,9 +30,6 @@ vi.mock('../../../lib/dynamodb', () => ({
 import { handler as checkIn } from '../checkIn';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
-
-const ctx = {} as Context;
-const cb: Callback = () => {};
 
 function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent {
   return {
@@ -88,7 +85,7 @@ describe('checkIn', () => {
     });
     mockPut.mockResolvedValue({});
 
-    const result = await checkIn(wrestlerEvent('evt-1', { status: 'available' }), ctx, cb);
+    const result = await checkIn(wrestlerEvent('evt-1', { status: 'available' }));
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
@@ -111,7 +108,7 @@ describe('checkIn', () => {
     });
     mockPut.mockResolvedValue({});
 
-    const result = await checkIn(wrestlerEvent('evt-1', { status: 'tentative' }), ctx, cb);
+    const result = await checkIn(wrestlerEvent('evt-1', { status: 'tentative' }));
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
@@ -128,7 +125,7 @@ describe('checkIn', () => {
       'Fantasy',
     );
 
-    const result = await checkIn(event, ctx, cb);
+    const result = await checkIn(event);
 
     expect(result!.statusCode).toBe(403);
     expect(JSON.parse(result!.body).message).toBe('Only wrestlers can check in to events');
@@ -140,7 +137,7 @@ describe('checkIn', () => {
       Item: { eventId: 'evt-1', status: 'completed', date: '2026-01-01T00:00:00.000Z' },
     });
 
-    const result = await checkIn(wrestlerEvent('evt-1', { status: 'available' }), ctx, cb);
+    const result = await checkIn(wrestlerEvent('evt-1', { status: 'available' }));
 
     expect(result!.statusCode).toBe(400);
     expect(JSON.parse(result!.body).message).toBe(
@@ -153,7 +150,7 @@ describe('checkIn', () => {
     mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
     mockGet.mockResolvedValue({ Item: undefined });
 
-    const result = await checkIn(wrestlerEvent('evt-missing', { status: 'available' }), ctx, cb);
+    const result = await checkIn(wrestlerEvent('evt-missing', { status: 'available' }));
 
     expect(result!.statusCode).toBe(404);
     expect(JSON.parse(result!.body).message).toBe('Event not found');
@@ -163,7 +160,7 @@ describe('checkIn', () => {
   it('returns 400 for missing status in body', async () => {
     mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
 
-    const result = await checkIn(wrestlerEvent('evt-1', {}), ctx, cb);
+    const result = await checkIn(wrestlerEvent('evt-1', {}));
 
     expect(result!.statusCode).toBe(400);
     expect(JSON.parse(result!.body).message).toBe(
@@ -174,7 +171,7 @@ describe('checkIn', () => {
   it('returns 400 for invalid status value', async () => {
     mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
 
-    const result = await checkIn(wrestlerEvent('evt-1', { status: 'maybe' }), ctx, cb);
+    const result = await checkIn(wrestlerEvent('evt-1', { status: 'maybe' }));
 
     expect(result!.statusCode).toBe(400);
     expect(JSON.parse(result!.body).message).toBe(
@@ -185,7 +182,7 @@ describe('checkIn', () => {
   it('returns 400 when caller has no linked player profile', async () => {
     mockQuery.mockResolvedValue({ Items: [] });
 
-    const result = await checkIn(wrestlerEvent('evt-1', { status: 'available' }), ctx, cb);
+    const result = await checkIn(wrestlerEvent('evt-1', { status: 'available' }));
 
     expect(result!.statusCode).toBe(400);
     expect(JSON.parse(result!.body).message).toBe('No player profile linked to your account');

@@ -149,6 +149,9 @@ export const TableNames = {
   WRESTLER_OVERALLS: process.env.WRESTLER_OVERALLS_TABLE!,
   TRANSFER_REQUESTS: process.env.TRANSFER_REQUESTS_TABLE!,
   STORYLINE_REQUESTS: process.env.STORYLINE_REQUESTS_TABLE!,
+  PRESENCE: process.env.PRESENCE_TABLE!,
+  MATCHMAKING_QUEUE: process.env.MATCHMAKING_QUEUE_TABLE!,
+  MATCH_INVITATIONS: process.env.MATCH_INVITATIONS_TABLE!,
 };
 
 type DynamoRecord = Record<string, unknown>;

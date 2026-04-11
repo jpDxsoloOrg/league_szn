@@ -11,6 +11,7 @@ import {
   resolveImageSrc,
 } from '../constants/imageFallbacks';
 import Skeleton from './ui/Skeleton';
+import FindMatchWidget from './matchmaking/FindMatchWidget';
 import './Dashboard.css';
 
 function renderStarRating(rating: number): string {
@@ -284,6 +285,9 @@ export default function Dashboard() {
           </div>
         </section>
       </div>
+
+      {/* Find Match widget — self-gates on wrestler + playerId */}
+      <FindMatchWidget />
 
       {/* ROW 3 — Recent Results (horizontal scroll) */}
       <section className="db-results">

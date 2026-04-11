@@ -1,0 +1,382 @@
+.find-match-page {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+  color: #eee;
+}
+
+.find-match-header {
+  margin-bottom: 1.5rem;
+}
+
+.find-match-header h1 {
+  margin: 0 0 0.25rem;
+  color: #d4af37;
+  font-size: 1.8rem;
+}
+
+.find-match-subtitle {
+  margin: 0;
+  color: #bbb;
+  font-size: 0.95rem;
+}
+
+.find-match-notice {
+  background-color: #2d2d2d;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  color: #bbb;
+}
+
+.find-match-error {
+  background-color: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #f87171;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.find-match-section {
+  background-color: #2d2d2d;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.find-match-section h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  color: #fff;
+}
+
+.find-match-section h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: #d4af37;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-description {
+  margin: 0;
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+.section-hint {
+  margin: 0 0 0.75rem;
+  color: #eab308;
+  font-size: 0.85rem;
+}
+
+.section-notice {
+  margin: 0.5rem 0 0.75rem;
+  color: #bbb;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.section-disabled {
+  opacity: 0.6;
+}
+
+/* Appear-online */
+.appear-online-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.appear-online-control {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.presence-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #6b7280;
+  display: inline-block;
+}
+
+.presence-dot.on {
+  background-color: #4ade80;
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.6);
+}
+
+.presence-dot.off {
+  background-color: #6b7280;
+}
+
+.presence-label {
+  font-size: 0.9rem;
+  color: #ddd;
+}
+
+/* Buttons */
+.btn-presence,
+.btn-primary,
+.btn-secondary,
+.btn-accept,
+.btn-decline {
+  font-weight: 600;
+  padding: 0.55rem 1.1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-presence {
+  background-color: #1a1a1a;
+  color: #d4af37;
+  border-color: #d4af37;
+}
+
+.btn-presence:hover:not(:disabled) {
+  background-color: #d4af37;
+  color: #000;
+}
+
+.btn-primary {
+  background-color: #d4af37;
+  color: #000;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #b8941f;
+}
+
+.btn-secondary {
+  background-color: #1a1a1a;
+  color: #fff;
+  border-color: #444;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+.btn-accept {
+  background-color: #4ade80;
+  color: #0a0a0a;
+}
+
+.btn-accept:hover:not(:disabled) {
+  background-color: #22c55e;
+}
+
+.btn-decline {
+  background-color: #1a1a1a;
+  color: #f87171;
+  border-color: #f87171;
+}
+
+.btn-decline:hover:not(:disabled) {
+  background-color: #f87171;
+  color: #1a1a1a;
+}
+
+.btn-presence:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-accept:disabled,
+.btn-decline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Preferences */
+.preferences-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.preferences-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 180px;
+}
+
+.preferences-field span {
+  font-size: 0.8rem;
+  color: #bbb;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.preferences-field input {
+  background-color: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.preferences-field input:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+/* Queue controls */
+.queue-controls {
+  margin-top: 0.75rem;
+}
+
+.queue-searching,
+.queue-matched {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  color: #eee;
+}
+
+/* Invitations */
+.invitations-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 720px) {
+  .invitations-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.invitations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.invitation-card {
+  background-color: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 0.5rem 1rem;
+}
+
+.invitation-card-player {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.invitation-card-name {
+  font-weight: 600;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.invitation-card-wrestler {
+  font-size: 0.8rem;
+  color: #bbb;
+}
+
+.invitation-card-meta {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+}
+
+.invitation-card-timer {
+  font-size: 0.8rem;
+  color: #eab308;
+}
+
+.invitation-card-timer.expired {
+  color: #6b7280;
+}
+
+.invitation-card-actions {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.invitation-card-waiting {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  font-size: 0.85rem;
+  color: #bbb;
+  font-style: italic;
+}
+
+/* Player lists */
+.player-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.player-row {
+  background-color: #1a1a1a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.player-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.player-name {
+  font-weight: 600;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.player-wrestler {
+  font-size: 0.8rem;
+  color: #bbb;
+}
+
+.badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.25rem 0.6rem;
+  border-radius: 10px;
+}
+
+.badge.in-queue {
+  background-color: rgba(234, 179, 8, 0.2);
+  color: #eab308;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.empty-state {
+  color: #888;
+  font-size: 0.9rem;
+  padding: 0.75rem 0;
+  font-style: italic;
+}

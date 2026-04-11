@@ -44,6 +44,9 @@ provider:
     WRESTLER_OVERALLS_TABLE: ${self:service}-wrestler-overalls-${self:provider.stage}
     TRANSFER_REQUESTS_TABLE: ${self:service}-transfer-requests-${self:provider.stage}
     STORYLINE_REQUESTS_TABLE: ${self:service}-storyline-requests-${self:provider.stage}
+    PRESENCE_TABLE: ${self:service}-presence-${self:provider.stage}
+    MATCHMAKING_QUEUE_TABLE: ${self:service}-matchmaking-queue-${self:provider.stage}
+    MATCH_INVITATIONS_TABLE: ${self:service}-match-invitations-${self:provider.stage}
     DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT, 'http://localhost:8000'}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
@@ -114,6 +117,10 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TRANSFER_REQUESTS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STORYLINE_REQUESTS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STORYLINE_REQUESTS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PRESENCE_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCHMAKING_QUEUE_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_INVITATIONS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_INVITATIONS_TABLE}/index/*
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -882,6 +889,61 @@ functions:
           authorizer: adminAuthorizer
       - http:
           path: challenges/bulk-delete
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  # Matchmaking (consolidated: heartbeat, presence, queue join/leave/list, online, invite, invitations list/accept/decline)
+  matchmaking:
+    handler: functions/matchmaking/handler.handler
+    events:
+      - http:
+          path: matchmaking/heartbeat
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/presence
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/queue/join
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/queue/leave
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/queue
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/online
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/invite
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/invitations
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/invitations/{invitationId}/accept
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/invitations/{invitationId}/decline
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
@@ -2042,6 +2104,74 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
+
+    PresenceTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.PRESENCE_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+
+    MatchmakingQueueTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.MATCHMAKING_QUEUE_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+
+    MatchInvitationsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.MATCH_INVITATIONS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: invitationId
+            AttributeType: S
+          - AttributeName: toPlayerId
+            AttributeType: S
+          - AttributeName: fromPlayerId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: invitationId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ToPlayerIndex
+            KeySchema:
+              - AttributeName: toPlayerId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: FromPlayerIndex
+            KeySchema:
+              - AttributeName: fromPlayerId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
 
     ImagesBucket:
       Type: AWS::S3::Bucket

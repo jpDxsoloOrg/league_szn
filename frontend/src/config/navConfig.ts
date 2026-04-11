@@ -68,6 +68,7 @@ export const USER_NAV_GROUPS: NavGroup[] = [
     i18nKey: 'nav.groups.wrestler',
     items: [
       { path: '/profile', i18nKey: 'nav.profile', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
+      { path: '/find-match', i18nKey: 'nav.findMatch', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
       { path: '/challenges', i18nKey: 'nav.challenges', feature: 'challenges' },
       { path: '/promos', i18nKey: 'nav.promos', feature: 'promos' },
       { path: '/my-stable', i18nKey: 'nav.myStable', feature: 'stables', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
@@ -177,7 +178,7 @@ export function getUserGroupForPath(pathname: string): string | null {
   const competition = ['/championships', '/events', '/matches', '/tournaments', '/awards'];
   const rankings = ['/contenders', '/stats', '/highlights'];
   const factions = ['/stables', '/tag-teams'];
-  const wrestler = ['/profile', '/challenges', '/promos', '/my-stable', '/my-tag-team'];
+  const wrestler = ['/profile', '/find-match', '/challenges', '/promos', '/my-stable', '/my-tag-team'];
 
   if (league.some((p) => pathname === p)) return 'league';
   if (competition.some((p) => pathname === p || pathname.startsWith(p + '/'))) return 'competition';

@@ -166,6 +166,7 @@
     "admin": "Admin",
     "contenders": "Contenders",
     "matchSearch": "Match Search",
+    "findMatch": "Find a Match",
     "seasonAwards": "Season Awards",
     "stables": "Stables",
     "tagTeams": "Tag Teams",
@@ -1598,6 +1599,57 @@
     "typeStable": "Stable",
     "typeTagTeam": "Tag Team",
     "typeTransfer": "Transfer"
+  },
+  "findMatch": {
+    "title": "Find a Match",
+    "subtitle": "Get matched with another wrestler in real time",
+    "appearOnline": {
+      "title": "Appear online",
+      "description": "Other wrestlers can see you and invite you to matches.",
+      "on": "Online",
+      "off": "Offline",
+      "appearFirstHint": "Appear online to use matchmaking."
+    },
+    "queue": {
+      "title": "Looking for a match",
+      "join": "Find me a match",
+      "leave": "Stop searching",
+      "searching": "Searching for an opponent…",
+      "queued": "You're in the queue.",
+      "matched": "You've been matched!",
+      "joinError": "Couldn't join the queue. Try again.",
+      "championshipNotice": "Championship matches are not supported here. Use the Challenges or admin scheduling flow."
+    },
+    "preferences": {
+      "matchFormat": "Match format",
+      "stipulation": "Stipulation",
+      "any": "Any"
+    },
+    "online": {
+      "title": "Online players",
+      "empty": "No other wrestlers are online right now.",
+      "invite": "Invite to a match",
+      "alreadyInvited": "Invitation pending",
+      "inQueue": "Looking for a match"
+    },
+    "invitations": {
+      "title": "Pending invitations",
+      "incoming": "Incoming",
+      "outgoing": "Outgoing",
+      "accept": "Accept",
+      "decline": "Decline",
+      "expiresIn": "Expires in {{seconds}}s",
+      "expired": "Expired",
+      "noneIncoming": "No incoming invitations.",
+      "noneOutgoing": "No outgoing invitations."
+    },
+    "widget": {
+      "title": "Find a Match",
+      "open": "Open Find a Match",
+      "pendingCount": "{{count}} pending invitation",
+      "pendingCount_plural": "{{count}} pending invitations"
+    },
+    "needsWrestler": "You need a wrestler profile to use matchmaking."
   },
   "overalls": {
     "admin": {

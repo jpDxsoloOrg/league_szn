@@ -1,0 +1,118 @@
+/* ===========================
+   FindMatchWidget — compact dashboard card
+   Matches Dashboard's tonal layering conventions
+   =========================== */
+
+.fm-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: linear-gradient(135deg, #1c1b1b 0%, #201f1f 60%, #1c1b1b 100%);
+  border-radius: 8px;
+  padding: 1.25rem 1.25rem 1.1rem;
+  width: 100%;
+}
+
+.fm-widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fm-widget-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #d0c5af;
+}
+
+/* Presence row */
+.fm-widget-presence-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.fm-widget-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fm-widget-status-dot--online {
+  background-color: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.18);
+}
+
+.fm-widget-status-dot--offline {
+  background-color: #5b5b5b;
+}
+
+.fm-widget-status-label {
+  font-size: 0.95rem;
+  color: #eaeaea;
+  font-weight: 600;
+  flex: 1;
+}
+
+.fm-widget-toggle {
+  appearance: none;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  background: transparent;
+  color: #d4af37;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.fm-widget-toggle:hover:not(:disabled) {
+  background-color: rgba(212, 175, 55, 0.12);
+}
+
+.fm-widget-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Pending invitation badge */
+.fm-widget-badge {
+  align-self: flex-start;
+  background-color: rgba(212, 175, 55, 0.14);
+  color: #d4af37;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+}
+
+/* CTA */
+.fm-widget-cta {
+  appearance: none;
+  border: none;
+  background-color: #d4af37;
+  color: #1c1b1b;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.65rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.fm-widget-cta:hover {
+  background-color: #e6c04a;
+}
+
+.fm-widget-cta:active {
+  transform: translateY(1px);
+}

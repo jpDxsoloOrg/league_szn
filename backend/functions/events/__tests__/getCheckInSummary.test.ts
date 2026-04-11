@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
+import type { APIGatewayProxyEvent } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
@@ -26,9 +26,6 @@ vi.mock('../../../lib/dynamodb', () => ({
 import { handler as getCheckInSummary } from '../getCheckInSummary';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
-
-const ctx = {} as Context;
-const cb: Callback = () => {};
 
 function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent {
   return {
@@ -80,7 +77,7 @@ describe('getCheckInSummary', () => {
     });
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'evt-1' } }), 'Wrestler');
-    const result = await getCheckInSummary(event, ctx, cb);
+    const result = await getCheckInSummary(event);
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
@@ -95,7 +92,7 @@ describe('getCheckInSummary', () => {
     mockQuery.mockResolvedValue({ Items: [], LastEvaluatedKey: undefined });
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'evt-1' } }), 'Wrestler');
-    const result = await getCheckInSummary(event, ctx, cb);
+    const result = await getCheckInSummary(event);
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
@@ -126,7 +123,7 @@ describe('getCheckInSummary', () => {
       // Intentionally missing requestContext to force getAuthContext to throw
     } as unknown as APIGatewayProxyEvent;
 
-    const result = await getCheckInSummary(badEvent, ctx, cb);
+    const result = await getCheckInSummary(badEvent);
 
     expect(result!.statusCode).toBe(401);
     expect(mockQuery).not.toHaveBeenCalled();
