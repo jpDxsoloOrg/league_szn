@@ -12,6 +12,16 @@ import { matchmakingApi } from '../services/api/matchmaking.api';
 
 const SESSION_STORAGE_KEY = 'wwe2k.presenceEnabled';
 const HEARTBEAT_INTERVAL_MS = 60_000;
+// Auto-flip presence to offline after this much wall-clock time with no
+// user activity. Protects against tabs left open all day looking online.
+const INACTIVITY_TIMEOUT_MS = 15 * 60_000;
+const ACTIVITY_EVENTS = [
+  'mousemove',
+  'mousedown',
+  'keydown',
+  'touchstart',
+  'scroll',
+] as const;
 
 interface PresenceContextValue {
   presenceEnabled: boolean;
@@ -39,6 +49,7 @@ export const PresenceProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [lastHeartbeatAt, setLastHeartbeatAt] = useState<Date | null>(null);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sendHeartbeat = useCallback(async (): Promise<void> => {
     try {
@@ -79,7 +90,7 @@ export const PresenceProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   }, []);
 
-  // Heartbeat loop + visibility/unload listeners
+  // Heartbeat loop + visibility/unload listeners + inactivity auto-offline
   useEffect(() => {
     if (!presenceEnabled || !isAuthenticated || !isWrestler || !playerId) {
       return;
@@ -92,8 +103,26 @@ export const PresenceProvider: React.FC<{ children: ReactNode }> = ({ children }
       void sendHeartbeat();
     };
 
-    // Immediate heartbeat
+    const goOfflineDueToInactivity = (): void => {
+      if (cancelled) return;
+      console.info('[PresenceContext] inactivity timeout — going offline');
+      void disablePresence();
+    };
+
+    const resetInactivityTimer = (): void => {
+      if (cancelled) return;
+      if (inactivityTimerRef.current !== null) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      inactivityTimerRef.current = setTimeout(
+        goOfflineDueToInactivity,
+        INACTIVITY_TIMEOUT_MS
+      );
+    };
+
+    // Immediate heartbeat + start inactivity countdown
     fireHeartbeat();
+    resetInactivityTimer();
 
     // Recurring heartbeat
     intervalRef.current = setInterval(fireHeartbeat, HEARTBEAT_INTERVAL_MS);
@@ -101,7 +130,12 @@ export const PresenceProvider: React.FC<{ children: ReactNode }> = ({ children }
     const handleVisibilityChange = (): void => {
       if (document.visibilityState === 'visible') {
         fireHeartbeat();
+        resetInactivityTimer();
       }
+    };
+
+    const handleActivity = (): void => {
+      resetInactivityTimer();
     };
 
     const handleBeforeUnload = (): void => {
@@ -116,6 +150,9 @@ export const PresenceProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('beforeunload', handleBeforeUnload);
+    for (const eventName of ACTIVITY_EVENTS) {
+      window.addEventListener(eventName, handleActivity, { passive: true });
+    }
 
     return () => {
       cancelled = true;
@@ -123,10 +160,17 @@ export const PresenceProvider: React.FC<{ children: ReactNode }> = ({ children }
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      if (inactivityTimerRef.current !== null) {
+        clearTimeout(inactivityTimerRef.current);
+        inactivityTimerRef.current = null;
+      }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      for (const eventName of ACTIVITY_EVENTS) {
+        window.removeEventListener(eventName, handleActivity);
+      }
     };
-  }, [presenceEnabled, isAuthenticated, isWrestler, playerId, sendHeartbeat]);
+  }, [presenceEnabled, isAuthenticated, isWrestler, playerId, sendHeartbeat, disablePresence]);
 
   // Auto-disable on sign-out
   useEffect(() => {
