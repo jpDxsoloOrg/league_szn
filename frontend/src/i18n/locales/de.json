@@ -476,7 +476,7 @@
         "stipulations": "Stipulationen",
         "matchConfig": "Match-Konfiguration",
         "scheduleMatch": "Kampf planen",
-        "recordResults": "Ergebnisse eintragen",
+        "standaloneMatches": "Einzelne Matches",
         "championships": "Meisterschaften",
         "tournaments": "Turniere",
         "seasons": "Saisons",
@@ -954,7 +954,12 @@
       "winner": "S",
       "addMatch": "Match hinzufügen",
       "scheduleFirstMatch": "Erstes Match planen",
-      "backToEvent": "← Zurück zu {{name}}"
+      "backToEvent": "← Zurück zu {{name}}",
+      "recordResult": "Ergebnis eintragen",
+      "editMatch": "Bearbeiten",
+      "deleteMatch": "Löschen",
+      "matchTBA": "Match noch offen",
+      "matchNotFound": "Match-Daten sind nicht verfügbar. Bitte Seite neu laden."
     },
     "results": {
       "title": "Veranstaltungsergebnisse",

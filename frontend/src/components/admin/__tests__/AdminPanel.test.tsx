@@ -26,12 +26,10 @@ vi.mock('react-router-dom', async () => {
 vi.mock('../ManagePlayers', () => ({ default: () => <div data-testid="manage-players">ManagePlayers</div> }));
 vi.mock('../ManageDivisions', () => ({ default: () => <div data-testid="manage-divisions">ManageDivisions</div> }));
 vi.mock('../ScheduleMatch', () => ({ default: () => <div data-testid="schedule-match">ScheduleMatch</div> }));
-vi.mock('../RecordResult', () => ({ default: () => <div data-testid="record-result">RecordResult</div> }));
 vi.mock('../ManageChampionships', () => ({ default: () => <div data-testid="manage-championships">ManageChampionships</div> }));
 vi.mock('../CreateTournament', () => ({ default: () => <div data-testid="create-tournament">CreateTournament</div> }));
 vi.mock('../AdminPromos', () => ({ default: () => <div data-testid="admin-promos">AdminPromos</div> }));
 vi.mock('../ManageSeasons', () => ({ default: () => <div data-testid="manage-seasons">ManageSeasons</div> }));
-vi.mock('../CreateEvent', () => ({ default: () => <div data-testid="create-event">CreateEvent</div> }));
 vi.mock('../MatchCardBuilder', () => ({ default: () => <div data-testid="match-card-builder">MatchCardBuilder</div> }));
 vi.mock('../ManageFantasyShows', () => ({ default: () => <div data-testid="fantasy-shows">FantasyShows</div> }));
 vi.mock('../FantasyConfig', () => ({ default: () => <div data-testid="fantasy-config">FantasyConfig</div> }));

@@ -119,6 +119,110 @@
   color: #bbb;
 }
 
+.event-detail-delete-btn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: 1px solid #dc2626;
+  background: transparent;
+  color: #f87171;
+  cursor: pointer;
+}
+
+.event-detail-delete-btn:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.15);
+}
+
+.event-detail-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.event-detail-delete-error {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: rgba(220, 38, 38, 0.15);
+  border: 1px solid #dc2626;
+  color: #f87171;
+  font-size: 0.875rem;
+}
+
+.match-entry-with-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.match-entry-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-wrap: wrap;
+}
+
+.match-action-btn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.match-action-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.match-action-btn-primary {
+  border-color: #4ade80;
+  color: #4ade80;
+}
+
+.match-action-btn-primary:hover:not(:disabled) {
+  background: rgba(74, 222, 128, 0.15);
+}
+
+.match-action-btn-secondary {
+  border-color: #60a5fa;
+  color: #60a5fa;
+}
+
+.match-action-btn-secondary:hover:not(:disabled) {
+  background: rgba(96, 165, 250, 0.15);
+}
+
+.match-action-btn-destructive {
+  border-color: #dc2626;
+  color: #f87171;
+}
+
+.match-action-btn-destructive:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.15);
+}
+
+.inline-form-container {
+  margin: 8px 0 16px 0;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.inline-form-error {
+  color: #f87171;
+  font-size: 0.875rem;
+}
+
 .event-detail-info {
   display: flex;
   flex-direction: column;

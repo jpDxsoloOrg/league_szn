@@ -1,10 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { eventsApi } from '../../services/api';
+import { eventsApi, matchesApi, playersApi, tagTeamsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { MatchDesignation, EventWithMatches } from '../../types/event';
+import type { Match, Player } from '../../types';
+import type { TagTeam } from '../../types/tagTeam';
 import Skeleton from '../ui/Skeleton';
+import MatchResultForm from './MatchResultForm';
+import MatchEditForm from './MatchEditForm';
 import './EventDetail.css';
 
 const eventTypeColors: Record<string, string> = {
@@ -37,6 +41,8 @@ const designationColors: Record<MatchDesignation, string> = {
   'main-event': '#d4af37',
 };
 
+type HydratedTagTeam = TagTeam & { player1Name?: string; player2Name?: string };
+
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const { t } = useTranslation();
@@ -46,6 +52,56 @@ export default function EventDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Admin-only data for inline record/edit/delete flows
+  const [scheduledMatches, setScheduledMatches] = useState<Match[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [tagTeams, setTagTeams] = useState<HydratedTagTeam[]>([]);
+  const [recordingMatchId, setRecordingMatchId] = useState<string | null>(null);
+  const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
+  const [matchActionError, setMatchActionError] = useState<string | null>(null);
+  const [deletingMatchId, setDeletingMatchId] = useState<string | null>(null);
+
+  const loadEvent = useCallback(async (signal?: AbortSignal) => {
+    if (!eventId) return;
+    try {
+      setLoading(true);
+      const data = await eventsApi.getById(eventId, signal);
+      setEventData(data);
+      setError(null);
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        setError(err instanceof Error ? err.message : 'Failed to load event');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [eventId]);
+
+  const loadAdminData = useCallback(async () => {
+    if (!isAdminOrModerator) return;
+    try {
+      const [scheduled, playersData, tagTeamsData] = await Promise.all([
+        matchesApi.getAll({ status: 'scheduled' }),
+        playersApi.getAll(),
+        tagTeamsApi.getAll({ status: 'active' }).catch(() => [] as TagTeam[]),
+      ]);
+      setScheduledMatches(scheduled);
+      setPlayers(playersData);
+      setTagTeams(tagTeamsData as HydratedTagTeam[]);
+    } catch (err) {
+      console.error('Failed to load admin data for event:', err);
+    }
+  }, [isAdminOrModerator]);
+
+  const refreshAfterMutation = useCallback(async () => {
+    await Promise.all([loadEvent(), loadAdminData()]);
+    setRecordingMatchId(null);
+    setEditingMatchId(null);
+    setMatchActionError(null);
+  }, [loadEvent, loadAdminData]);
 
   const handleStatusChange = async (newStatus: string) => {
     if (!eventData || !eventId || newStatus === eventData.status) return;
@@ -60,26 +116,75 @@ export default function EventDetail() {
     }
   };
 
+  const handleDeleteEvent = async () => {
+    if (!eventData || !eventId || deleting) return;
+    const confirmMsg = t('events.admin.confirmDeleteEvent', { name: eventData.name });
+    if (!window.confirm(confirmMsg)) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await eventsApi.delete(eventId);
+      navigate('/events');
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : t('events.admin.deleteEventError'));
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteMatch = async (matchId: string) => {
+    const targetMatch = scheduledMatches.find(m => m.matchId === matchId)
+      ?? eventData?.enrichedMatches.find(em => em.matchId === matchId)?.matchData;
+    if (!targetMatch) return;
+
+    const isCompleted = (targetMatch as { status?: string }).status === 'completed';
+    const isChampionship = 'isChampionship' in targetMatch && targetMatch.isChampionship && 'championshipId' in targetMatch && targetMatch.championshipId;
+    const isTournament = 'tournamentId' in targetMatch && !!(targetMatch as { tournamentId?: string }).tournamentId;
+    const matchFormat = 'matchFormat' in targetMatch ? (targetMatch as { matchFormat: string }).matchFormat : 'match';
+
+    let confirmMsg: string;
+    if (!isCompleted) {
+      confirmMsg = `Delete this ${matchFormat} match? This cannot be undone.`;
+    } else if (isChampionship) {
+      confirmMsg = `Delete this completed CHAMPIONSHIP match? Player stats AND championship history will be rolled back. This cannot be undone.`;
+    } else if (isTournament) {
+      confirmMsg = `Delete this completed TOURNAMENT match? Player stats AND tournament progression will be rolled back. This cannot be undone.`;
+    } else {
+      confirmMsg = `Delete this completed ${matchFormat} match? Player stats (wins/losses/draws) will be rolled back. This cannot be undone.`;
+    }
+
+    if (!window.confirm(confirmMsg)) return;
+
+    setDeletingMatchId(matchId);
+    setMatchActionError(null);
+    try {
+      await matchesApi.delete(matchId);
+      await refreshAfterMutation();
+    } catch (err) {
+      setMatchActionError(err instanceof Error ? err.message : 'Failed to delete match');
+    } finally {
+      setDeletingMatchId(null);
+    }
+  };
+
   useEffect(() => {
     if (!eventId) return;
     const controller = new AbortController();
-    const loadEvent = async () => {
-      try {
-        setLoading(true);
-        const data = await eventsApi.getById(eventId, controller.signal);
-        setEventData(data);
-        setError(null);
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          setError(err instanceof Error ? err.message : 'Failed to load event');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadEvent();
+    loadEvent(controller.signal);
     return () => controller.abort();
-  }, [eventId]);
+  }, [eventId, loadEvent]);
+
+  useEffect(() => {
+    if (!isAdminOrModerator) return;
+    loadAdminData();
+  }, [isAdminOrModerator, loadAdminData]);
+
+  const scheduledMatchesById = useMemo(() => {
+    const map = new Map<string, Match>();
+    for (const m of scheduledMatches) {
+      map.set(m.matchId, m);
+    }
+    return map;
+  }, [scheduledMatches]);
 
   if (loading) {
     return (
@@ -133,6 +238,86 @@ export default function EventDetail() {
     return stars.join('');
   };
 
+  const handleRecordResult = (matchId: string) => {
+    setRecordingMatchId(matchId);
+    setEditingMatchId(null);
+    setMatchActionError(null);
+  };
+
+  const handleEditMatch = (matchId: string) => {
+    setEditingMatchId(matchId);
+    setRecordingMatchId(null);
+    setMatchActionError(null);
+  };
+
+  const handleCancelInlineForm = () => {
+    setRecordingMatchId(null);
+    setEditingMatchId(null);
+    setMatchActionError(null);
+  };
+
+  const renderMatchEntry = (
+    match: typeof enrichedMatches[number],
+  ) => {
+    const isRecording = recordingMatchId === match.matchId;
+    const isEditing = editingMatchId === match.matchId;
+    const rawMatch = scheduledMatchesById.get(match.matchId);
+
+    return (
+      <div key={match.matchId} className="match-entry-with-actions">
+        <MatchEntry
+          match={match}
+          isCompleted={match.matchData?.status === 'completed'}
+          isAdmin={isAdminOrModerator}
+          isDeleting={deletingMatchId === match.matchId}
+          onRecordResult={
+            isAdminOrModerator && match.matchData?.status === 'scheduled'
+              ? () => handleRecordResult(match.matchId)
+              : undefined
+          }
+          onEdit={
+            isAdminOrModerator && match.matchData?.status === 'scheduled'
+              ? () => handleEditMatch(match.matchId)
+              : undefined
+          }
+          onDelete={
+            isAdminOrModerator
+              ? () => handleDeleteMatch(match.matchId)
+              : undefined
+          }
+        />
+        {isRecording && rawMatch && (
+          <div className="inline-form-container">
+            <MatchResultForm
+              match={rawMatch}
+              players={players}
+              tagTeams={tagTeams}
+              onSuccess={refreshAfterMutation}
+              onCancel={handleCancelInlineForm}
+            />
+          </div>
+        )}
+        {isRecording && !rawMatch && (
+          <div className="inline-form-container">
+            <div className="inline-form-error">
+              {t('events.detail.matchNotFound', 'Match data is not available. Try refreshing the page.')}
+            </div>
+          </div>
+        )}
+        {isEditing && (
+          <div className="inline-form-container">
+            <MatchEditForm
+              matchId={match.matchId}
+              lockedEventId={eventData.eventId}
+              onSuccess={refreshAfterMutation}
+              onCancel={handleCancelInlineForm}
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="event-detail-page">
       <Link to="/events" className="back-link">
@@ -164,18 +349,30 @@ export default function EventDetail() {
               {t(`events.types.${eventData.eventType}`)}
             </span>
             {isAdminOrModerator ? (
-              <select
-                className="event-status-select"
-                value={eventData.status}
-                onChange={(e) => handleStatusChange(e.target.value)}
-                disabled={updatingStatus}
-                style={{ color: statusColor, borderColor: statusColor }}
-              >
-                <option value="upcoming">{t('events.status.upcoming')}</option>
-                <option value="in-progress">{t('events.status.in-progress')}</option>
-                <option value="completed">{t('events.status.completed')}</option>
-                <option value="cancelled">{t('events.status.cancelled')}</option>
-              </select>
+              <>
+                <select
+                  className="event-status-select"
+                  value={eventData.status}
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  disabled={updatingStatus}
+                  style={{ color: statusColor, borderColor: statusColor }}
+                >
+                  <option value="upcoming">{t('events.status.upcoming')}</option>
+                  <option value="in-progress">{t('events.status.in-progress')}</option>
+                  <option value="completed">{t('events.status.completed')}</option>
+                  <option value="cancelled">{t('events.status.cancelled')}</option>
+                </select>
+                <button
+                  type="button"
+                  className="event-detail-delete-btn"
+                  onClick={handleDeleteEvent}
+                  disabled={deleting}
+                  title={t('events.admin.deleteEvent')}
+                  aria-label={t('events.admin.deleteEvent')}
+                >
+                  {deleting ? t('common.saving') : t('events.admin.deleteEvent')}
+                </button>
+              </>
             ) : (
               <span
                 className="event-detail-status-badge"
@@ -186,6 +383,11 @@ export default function EventDetail() {
             )}
           </div>
         </div>
+        {deleteError && (
+          <div className="event-detail-delete-error" role="alert">
+            {deleteError}
+          </div>
+        )}
 
         <div className="event-detail-info">
           <div className="event-detail-info-item">
@@ -244,6 +446,12 @@ export default function EventDetail() {
           )}
         </div>
 
+        {matchActionError && (
+          <div className="event-detail-delete-error" role="alert">
+            {matchActionError}
+          </div>
+        )}
+
         {enrichedMatches.length === 0 ? (
           <div className="no-matches-block">
             <p className="no-matches-message">{t('events.detail.noMatches')}</p>
@@ -267,14 +475,7 @@ export default function EventDetail() {
                   <span>{t('events.detail.preShow')}</span>
                 </div>
                 <div className="match-list">
-                  {preShowMatches.map((match) => (
-                    <MatchEntry
-                      key={match.matchId}
-                      match={match}
-                      isCompleted={match.matchData?.status === 'completed'}
-
-                    />
-                  ))}
+                  {preShowMatches.map(renderMatchEntry)}
                 </div>
               </div>
             )}
@@ -288,14 +489,7 @@ export default function EventDetail() {
                   </div>
                 )}
                 <div className="match-list">
-                  {mainCardMatches.map((match) => (
-                    <MatchEntry
-                      key={match.matchId}
-                      match={match}
-                      isCompleted={match.matchData?.status === 'completed'}
-
-                    />
-                  ))}
+                  {mainCardMatches.map(renderMatchEntry)}
                 </div>
               </div>
             )}
@@ -332,6 +526,11 @@ interface MatchEntryProps {
     } | null;
   };
   isCompleted: boolean;
+  isAdmin?: boolean;
+  isDeleting?: boolean;
+  onRecordResult?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 function matchStarsDisplay(rating: number): string {
@@ -342,7 +541,15 @@ function matchStarsDisplay(rating: number): string {
   return stars.join('');
 }
 
-function MatchEntry({ match, isCompleted }: MatchEntryProps) {
+function MatchEntry({
+  match,
+  isCompleted,
+  isAdmin = false,
+  isDeleting = false,
+  onRecordResult,
+  onEdit,
+  onDelete,
+}: MatchEntryProps) {
   const { t } = useTranslation();
   const { designation, matchData } = match;
   const desColor = designationColors[designation];
@@ -416,6 +623,41 @@ function MatchEntry({ match, isCompleted }: MatchEntryProps) {
 
       {match.notes && (
         <div className="match-notes">{match.notes}</div>
+      )}
+
+      {isAdmin && (onRecordResult || onEdit || onDelete) && (
+        <div className="match-entry-actions">
+          {onRecordResult && (
+            <button
+              type="button"
+              className="match-action-btn match-action-btn-primary"
+              onClick={onRecordResult}
+              disabled={isDeleting}
+            >
+              {t('events.detail.recordResult', 'Record Result')}
+            </button>
+          )}
+          {onEdit && (
+            <button
+              type="button"
+              className="match-action-btn match-action-btn-secondary"
+              onClick={onEdit}
+              disabled={isDeleting}
+            >
+              {t('events.detail.editMatch', 'Edit')}
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              className="match-action-btn match-action-btn-destructive"
+              onClick={onDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? t('common.saving') : t('events.detail.deleteMatch', 'Delete')}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

@@ -1,0 +1,308 @@
+.match-result-form {
+  width: 100%;
+}
+
+.match-result-form .match-details {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #0f0f0f;
+  border-radius: 4px;
+}
+
+.match-result-form .detail-row {
+  margin-bottom: 0.5rem;
+}
+
+.match-result-form .detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.match-result-form .detail-row strong {
+  color: #d4af37;
+  margin-right: 0.5rem;
+}
+
+.match-result-form .participants-selection h4 {
+  margin-bottom: 1rem;
+  color: #d4af37;
+}
+
+.match-result-form .participants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.match-result-form .participant-option {
+  background-color: #0f0f0f;
+  border: 2px solid #333;
+  border-radius: 4px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.match-result-form .participant-option:hover {
+  border-color: #4ade80;
+}
+
+.match-result-form .participant-option.winner {
+  border-color: #4ade80;
+  background-color: #14532d;
+}
+
+.match-result-form .winner-badge {
+  background-color: #4ade80;
+  color: #000;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+
+/* Draw toggle */
+.match-result-form .draw-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: #0f0f0f;
+  border: 1px solid #333;
+  border-radius: 4px;
+}
+
+.match-result-form .draw-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: #e5e5e5;
+}
+
+.match-result-form .draw-toggle-checkbox {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #f59e0b;
+  cursor: pointer;
+}
+
+.match-result-form .draw-toggle-text {
+  user-select: none;
+}
+
+.match-result-form .draw-hint {
+  color: #f59e0b;
+  font-size: 0.85rem;
+}
+
+.match-result-form .draw-participants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.match-result-form .participant-option.draw {
+  border-color: #f59e0b;
+  background-color: #422006;
+}
+
+.match-result-form .draw-badge {
+  background-color: #f59e0b;
+  color: #000;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+
+/* Star rating & Match of the Night */
+.match-result-form .rating-awards-block {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.match-result-form .star-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.match-result-form .star-rating-label {
+  font-weight: 600;
+  color: #d4af37;
+  min-width: 6rem;
+}
+
+.match-result-form .star-rating-stars {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.match-result-form .star-btn {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: #555;
+  transition: color 0.15s ease, transform 0.1s ease;
+}
+
+.match-result-form .star-btn:hover {
+  color: #b8860b;
+  transform: scale(1.1);
+}
+
+.match-result-form .star-btn.filled,
+.match-result-form .star-btn[aria-pressed="true"] {
+  color: #d4af37;
+}
+
+.match-result-form .star-rating-clear {
+  background: none;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #888;
+  text-decoration: underline;
+  margin-left: 0.25rem;
+}
+
+.match-result-form .star-rating-clear:hover {
+  color: #ccc;
+}
+
+.match-result-form .motn-row {
+  display: flex;
+  align-items: center;
+}
+
+.match-result-form .motn-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  color: #e5e5e5;
+}
+
+.match-result-form .motn-checkbox {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #d4af37;
+  cursor: pointer;
+}
+
+.match-result-form .motn-text {
+  user-select: none;
+}
+
+.match-result-form .result-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.match-result-form .result-actions button {
+  flex: 1;
+}
+
+.match-result-form .cancel-btn {
+  background-color: #333 !important;
+}
+
+.match-result-form .cancel-btn:hover {
+  background-color: #444 !important;
+}
+
+/* Tag Team Selection Styles */
+.match-result-form .teams-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.match-result-form .team-option {
+  background-color: #0f0f0f;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.match-result-form .team-option:hover {
+  border-color: #4ade80;
+}
+
+.match-result-form .team-option.winner {
+  border-color: #4ade80;
+  background-color: #14532d;
+}
+
+.match-result-form .team-info {
+  flex: 1;
+}
+
+.match-result-form .team-label {
+  font-weight: bold;
+  color: #d4af37;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.match-result-form .team-members-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.match-result-form .team-member-name {
+  background-color: #1a1a1a;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #fff;
+}
+
+.match-result-form .team-option.winner .team-member-name {
+  background-color: #166534;
+}
+
+.match-result-form .error-message {
+  background-color: #7f1d1d;
+  color: #fecaca;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.match-result-form .success-message {
+  background-color: #14532d;
+  color: #bbf7d0;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .match-result-form .result-actions {
+    flex-direction: column;
+  }
+}
