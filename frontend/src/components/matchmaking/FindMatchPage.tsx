@@ -159,17 +159,16 @@ export default function FindMatchPage() {
     async (targetPlayerId: string): Promise<void> => {
       setError(null);
       try {
-        const invitation = await matchmakingApi.createInvitation(
-          targetPlayerId,
-          preferences
-        );
-        setOutgoingInvitations((prev) => [...prev, invitation]);
+        await matchmakingApi.createInvitation(targetPlayerId, preferences);
+        // Refetch so we get the hydrated invitation (with from/to player
+        // summaries) rather than the raw row returned by the create endpoint.
+        void fetchAll();
       } catch (err) {
         console.error('[FindMatchPage] createInvitation failed', err);
         setError(err instanceof Error ? err.message : String(err));
       }
     },
-    [preferences]
+    [preferences, fetchAll]
   );
 
   const handleAccept = useCallback(

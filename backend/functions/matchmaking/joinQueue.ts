@@ -227,15 +227,18 @@ export const handler = async (
       }
     }
 
-    // No candidate (or race lost) — queue the caller (idempotent overwrite)
+    // No candidate (or race lost) — queue the caller (idempotent overwrite).
+    // DocumentClient is configured without removeUndefinedValues, so only
+    // include preferences fields that are actually set.
+    const preferences: QueuePreferences = {};
+    if (matchFormat !== undefined) preferences.matchFormat = matchFormat;
+    if (stipulationId !== undefined) preferences.stipulationId = stipulationId;
+
     const queueRow: QueueRow = {
       playerId: callerPlayerId,
       joinedAt: new Date().toISOString(),
-      preferences: {
-        matchFormat,
-        stipulationId,
-      },
       ttl: nowSeconds + expiresInMinutes * 60,
+      ...(Object.keys(preferences).length > 0 ? { preferences } : {}),
     };
 
     await dynamoDb.put({
