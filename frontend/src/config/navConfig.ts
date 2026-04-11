@@ -99,8 +99,8 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     i18nKey: 'admin.panel.groups.matchDay',
     items: [
       { path: '/admin/schedule', i18nKey: 'admin.panel.tabs.scheduleMatch' },
-      { path: '/admin/results', i18nKey: 'admin.panel.tabs.recordResults' },
       { path: '/admin/events', i18nKey: 'admin.panel.tabs.events' },
+      { path: '/admin/standalone-matches', i18nKey: 'admin.panel.tabs.standaloneMatches' },
       { path: '/admin/match-config', i18nKey: 'admin.panel.tabs.matchConfig' },
     ],
   },
@@ -189,7 +189,7 @@ export function getUserGroupForPath(pathname: string): string | null {
 
 /** Path → admin group key */
 export function getAdminGroupForPath(pathname: string): string | null {
-  const matchDay = ['/admin/schedule', '/admin/results', '/admin/events', '/admin/match-config'];
+  const matchDay = ['/admin/schedule', '/admin/events', '/admin/standalone-matches', '/admin/match-config'];
   const rosterSeasons = ['/admin/players', '/admin/divisions', '/admin/transfers', '/admin/seasons', '/admin/season-awards'];
   const titlesTournaments = ['/admin/championships', '/admin/tournaments', '/admin/companies', '/admin/shows'];
   const adminRankings = ['/admin/contender-config', '/admin/contender-overrides'];

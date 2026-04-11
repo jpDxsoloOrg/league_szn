@@ -476,7 +476,7 @@
         "stipulations": "Stipulations",
         "matchConfig": "Match Config",
         "scheduleMatch": "Schedule Match",
-        "recordResults": "Record Results",
+        "standaloneMatches": "Standalone Matches",
         "championships": "Championships",
         "tournaments": "Tournaments",
         "seasons": "Seasons",
@@ -955,7 +955,12 @@
       "winner": "W",
       "addMatch": "Add Match",
       "scheduleFirstMatch": "Schedule First Match",
-      "backToEvent": "← Back to {{name}}"
+      "backToEvent": "← Back to {{name}}",
+      "recordResult": "Record Result",
+      "editMatch": "Edit",
+      "deleteMatch": "Delete",
+      "matchTBA": "Match TBA",
+      "matchNotFound": "Match data is not available. Try refreshing the page."
     },
     "results": {
       "title": "Event Results",

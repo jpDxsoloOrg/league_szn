@@ -16,8 +16,8 @@ export default function TopBar() {
 
       const adminTabMap: Record<string, string> = {
         schedule: t('admin.panel.tabs.scheduleMatch'),
-        results: t('admin.panel.tabs.recordResults'),
         events: t('admin.panel.tabs.events'),
+        'standalone-matches': t('admin.panel.tabs.standaloneMatches'),
         'match-config': t('admin.panel.tabs.matchConfig'),
         seasons: t('admin.panel.tabs.seasons'),
         'season-awards': t('admin.panel.tabs.seasonAwards'),
@@ -37,8 +37,8 @@ export default function TopBar() {
 
       const tabToGroup: Record<string, string> = {
         schedule: t('admin.panel.groups.matchDay'),
-        results: t('admin.panel.groups.matchDay'),
         events: t('admin.panel.groups.matchDay'),
+        'standalone-matches': t('admin.panel.groups.matchDay'),
         'match-config': t('admin.panel.groups.matchDay'),
         players: t('admin.panel.groups.rosterSeasons'),
         divisions: t('admin.panel.groups.rosterSeasons'),
