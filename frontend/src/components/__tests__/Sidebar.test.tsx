@@ -185,7 +185,7 @@ describe('Sidebar', () => {
     expect(mockSignOut).toHaveBeenCalledTimes(1);
   });
 
-  it('shows wrestler-specific links (profile, challenges, promos) for wrestler role', async () => {
+  it('shows wrestler-specific links (profile, find-match, promos) for wrestler role', async () => {
     const user = userEvent.setup();
     mockUseAuth.mockReturnValue(baseAuth({
       isAuthenticated: true,
@@ -202,8 +202,11 @@ describe('Sidebar', () => {
     expect(profileLink.tagName).not.toBe('SPAN');
     expect(profileLink.closest('a')).toHaveAttribute('href', '/profile');
 
-    // Feature-gated links visible when features enabled
-    expect(screen.getByText('nav.challenges')).toBeInTheDocument();
+    // Find-a-Match is the wrestler matchmaking entry; promos still visible
+    expect(screen.getByText('nav.findMatch')).toBeInTheDocument();
     expect(screen.getByText('nav.promos')).toBeInTheDocument();
+
+    // Challenges entry is hidden — UI removed
+    expect(screen.queryByText('nav.challenges')).not.toBeInTheDocument();
   });
 });
