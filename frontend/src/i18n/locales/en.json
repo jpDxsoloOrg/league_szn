@@ -1006,6 +1006,31 @@
       "removeMatch": "Remove Match",
       "selectMatch": "Select a match to add...",
       "addMatch": "Add Match"
+    },
+    "checkIn": {
+      "title": "Will you be there?",
+      "available": "Available",
+      "tentative": "Tentative",
+      "unavailable": "Unavailable",
+      "clearResponse": "Clear my response",
+      "summary": "{{available}} available · {{tentative}} tentative · {{unavailable}} unavailable",
+      "lockedAfterStart": "Check-ins are locked once the event has started or ended.",
+      "error": "Couldn't update your response. Please try again.",
+      "success": "Response saved.",
+      "noPlayerProfile": "Link a player profile to RSVP.",
+      "roster": {
+        "title": "Check-In Roster",
+        "available": "Available",
+        "tentative": "Tentative",
+        "unavailable": "Unavailable",
+        "noResponse": "No Response",
+        "copy": "Copy as text",
+        "refresh": "Refresh",
+        "copySuccess": "Copied!",
+        "empty": "No check-ins yet for this event.",
+        "loading": "Loading roster…",
+        "error": "Couldn't load the roster."
+      }
     }
   },
   "fantasy": {

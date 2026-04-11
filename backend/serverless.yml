@@ -19,6 +19,7 @@ provider:
     SEASON_STANDINGS_TABLE: ${self:service}-season-standings-${self:provider.stage}
     DIVISIONS_TABLE: ${self:service}-divisions-${self:provider.stage}
     EVENTS_TABLE: ${self:service}-events-${self:provider.stage}
+    EVENT_CHECK_INS_TABLE: ${self:service}-event-check-ins-${self:provider.stage}
     CONTENDER_RANKINGS_TABLE: ${self:service}-contender-rankings-${self:provider.stage}
     RANKING_HISTORY_TABLE: ${self:service}-ranking-history-${self:provider.stage}
     CONTENDER_OVERRIDES_TABLE: ${self:service}-contender-overrides-${self:provider.stage}
@@ -73,6 +74,8 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DIVISIONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EVENTS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EVENTS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EVENT_CHECK_INS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EVENT_CHECK_INS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONTENDER_RANKINGS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONTENDER_RANKINGS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RANKING_HISTORY_TABLE}
@@ -677,6 +680,31 @@ functions:
       - http:
           path: events/{eventId}
           method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: events/{eventId}/check-in
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: events/{eventId}/check-in/me
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: events/{eventId}/check-in
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: events/{eventId}/check-ins/summary
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: events/{eventId}/check-ins
+          method: get
           cors: *corsConfig
           authorizer: adminAuthorizer
 
@@ -1422,6 +1450,34 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
+
+    EventCheckInsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.EVENT_CHECK_INS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: eventId
+            AttributeType: S
+          - AttributeName: playerId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: eventId
+            KeyType: HASH
+          - AttributeName: playerId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: PlayerEventIndex
+            KeySchema:
+              - AttributeName: playerId
+                KeyType: HASH
+              - AttributeName: eventId
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
 
     ContenderRankingsTable:
       Type: AWS::DynamoDB::Table

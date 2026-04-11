@@ -4,6 +4,7 @@ import type { MatchDesignation, MatchCardEntry, LeagueEvent } from '../../types/
 import type { Player } from '../../types';
 import { matchesApi, playersApi, eventsApi } from '../../services/api';
 import SearchableSelect from './SearchableSelect';
+import EventCheckInRosterPanel from '../events/EventCheckInRosterPanel';
 import './MatchCardBuilder.css';
 
 const designationOptions: { value: MatchDesignation; labelKey: string }[] = [
@@ -225,7 +226,8 @@ export default function MatchCardBuilder() {
       {!selectedEventId ? (
         <p className="builder-empty">{t('events.admin.selectEventFirst', 'Select an event above to manage its match card.')}</p>
       ) : (
-        <>
+        <div className="builder-layout">
+          <div className="builder-main">
           {cardMatches.length === 0 ? (
             <p className="builder-empty">{t('events.admin.noMatchesOnCard')}</p>
           ) : (
@@ -350,7 +352,11 @@ export default function MatchCardBuilder() {
               {message.text}
             </div>
           )}
-        </>
+          </div>
+          <aside className="builder-sidebar">
+            <EventCheckInRosterPanel eventId={selectedEventId} compact />
+          </aside>
+        </div>
       )}
     </div>
   );
