@@ -474,17 +474,30 @@ export default function FindMatchPage() {
           <div className="empty-state">{t('findMatch.online.empty')}</div>
         ) : (
           <ul className="player-list">
-            {visibleQueueEntries.map((entry) => (
-              <li key={entry.playerId} className="player-row">
-                <div className="player-info">
-                  <div className="player-name">{entry.name}</div>
-                  <div className="player-wrestler">{entry.currentWrestler}</div>
-                </div>
-                <span className="badge in-queue">
-                  {t('findMatch.online.inQueue')}
-                </span>
-              </li>
-            ))}
+            {visibleQueueEntries.map((entry) => {
+              const fmt = entry.preferences?.matchFormat;
+              const stipId = entry.preferences?.stipulationId;
+              const stipName = stipId
+                ? stipulations.find((s) => s.stipulationId === stipId)?.name
+                : undefined;
+              return (
+                <li key={entry.playerId} className="player-row">
+                  <div className="player-info">
+                    <div className="player-name">{entry.name}</div>
+                    <div className="player-wrestler">{entry.currentWrestler}</div>
+                    {(fmt || stipName) && (
+                      <div className="player-prefs">
+                        {fmt && <span className="badge pref-badge">{fmt}</span>}
+                        {stipName && <span className="badge pref-badge">{stipName}</span>}
+                      </div>
+                    )}
+                  </div>
+                  <span className="badge in-queue">
+                    {t('findMatch.online.inQueue')}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
