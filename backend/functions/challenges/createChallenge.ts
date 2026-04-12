@@ -4,7 +4,7 @@ import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { v4 as uuidv4 } from 'uuid';
-import { createNotification, createNotifications } from '../../lib/notifications';
+// Notifications intentionally not dispatched here while the challenge UI is hidden.
 
 interface CreateChallengeBody {
   challengedId: string;
@@ -126,34 +126,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         Item: challenge,
       });
 
-      // Notify both members of the challenged tag team
-      const challengedPlayerIds = [
-        challengedTeam.player1Id as string,
-        challengedTeam.player2Id as string,
-      ];
-
-      const playerResults = await Promise.all(
-        challengedPlayerIds.map((pid) =>
-          dynamoDb.get({ TableName: TableNames.PLAYERS, Key: { playerId: pid } })
-        )
-      );
-
-      const challengerTagTeamName = challengerTagTeam.name as string;
-      const notifications = playerResults
-        .map((result) => result.Item as Record<string, unknown> | undefined)
-        .filter((player): player is Record<string, unknown> => !!player?.userId)
-        .map((player) => ({
-          userId: player.userId as string,
-          type: 'challenge_received' as const,
-          message: `${challengerTagTeamName} has challenged your tag team to a match!`,
-          sourceId: challenge.challengeId,
-          sourceType: 'challenge' as const,
-        }));
-
-      if (notifications.length > 0) {
-        await createNotifications(notifications);
-      }
-
+      // Notification dispatch intentionally disabled while the challenge UI is hidden.
+      // The challenge row is still persisted so direct API calls keep working.
       return created(challenge);
     }
 
@@ -195,18 +169,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       Item: challenge,
     });
 
-    // Notify the challenged player if they have a linked user account
-    const challengedPlayer = challengedResult.Item as Record<string, unknown>;
-    if (challengedPlayer.userId) {
-      await createNotification({
-        userId: challengedPlayer.userId as string,
-        type: 'challenge_received',
-        message: `${challengerPlayer.name as string} has challenged you to a match!`,
-        sourceId: challenge.challengeId,
-        sourceType: 'challenge',
-      });
-    }
-
+    // Notification dispatch intentionally disabled while the challenge UI is hidden.
     return created(challenge);
   } catch (err) {
     console.error('Error creating challenge:', err);

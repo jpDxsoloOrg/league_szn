@@ -19,6 +19,7 @@ provider:
     SEASON_STANDINGS_TABLE: ${self:service}-season-standings-${self:provider.stage}
     DIVISIONS_TABLE: ${self:service}-divisions-${self:provider.stage}
     EVENTS_TABLE: ${self:service}-events-${self:provider.stage}
+    EVENT_CHECK_INS_TABLE: ${self:service}-event-check-ins-${self:provider.stage}
     CONTENDER_RANKINGS_TABLE: ${self:service}-contender-rankings-${self:provider.stage}
     RANKING_HISTORY_TABLE: ${self:service}-ranking-history-${self:provider.stage}
     CONTENDER_OVERRIDES_TABLE: ${self:service}-contender-overrides-${self:provider.stage}
@@ -43,6 +44,9 @@ provider:
     WRESTLER_OVERALLS_TABLE: ${self:service}-wrestler-overalls-${self:provider.stage}
     TRANSFER_REQUESTS_TABLE: ${self:service}-transfer-requests-${self:provider.stage}
     STORYLINE_REQUESTS_TABLE: ${self:service}-storyline-requests-${self:provider.stage}
+    PRESENCE_TABLE: ${self:service}-presence-${self:provider.stage}
+    MATCHMAKING_QUEUE_TABLE: ${self:service}-matchmaking-queue-${self:provider.stage}
+    MATCH_INVITATIONS_TABLE: ${self:service}-match-invitations-${self:provider.stage}
     DYNAMODB_ENDPOINT: ${env:DYNAMODB_ENDPOINT, 'http://localhost:8000'}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
@@ -73,6 +77,8 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DIVISIONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EVENTS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EVENTS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EVENT_CHECK_INS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EVENT_CHECK_INS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONTENDER_RANKINGS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CONTENDER_RANKINGS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RANKING_HISTORY_TABLE}
@@ -111,6 +117,10 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TRANSFER_REQUESTS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STORYLINE_REQUESTS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STORYLINE_REQUESTS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PRESENCE_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCHMAKING_QUEUE_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_INVITATIONS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_INVITATIONS_TABLE}/index/*
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -679,6 +689,31 @@ functions:
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
+      - http:
+          path: events/{eventId}/check-in
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: events/{eventId}/check-in/me
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: events/{eventId}/check-in
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: events/{eventId}/check-ins/summary
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: events/{eventId}/check-ins
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
 
   # Contenders (Phase 3 consolidated: getContenders, calculateRankings)
   contenders:
@@ -854,6 +889,61 @@ functions:
           authorizer: adminAuthorizer
       - http:
           path: challenges/bulk-delete
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  # Matchmaking (consolidated: heartbeat, presence, queue join/leave/list, online, invite, invitations list/accept/decline)
+  matchmaking:
+    handler: functions/matchmaking/handler.handler
+    events:
+      - http:
+          path: matchmaking/heartbeat
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/presence
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/queue/join
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/queue/leave
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/queue
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/online
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/invite
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/invitations
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/invitations/{invitationId}/accept
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: matchmaking/invitations/{invitationId}/decline
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
@@ -1423,6 +1513,34 @@ resources:
             Projection:
               ProjectionType: ALL
 
+    EventCheckInsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.EVENT_CHECK_INS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: eventId
+            AttributeType: S
+          - AttributeName: playerId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: eventId
+            KeyType: HASH
+          - AttributeName: playerId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: PlayerEventIndex
+            KeySchema:
+              - AttributeName: playerId
+                KeyType: HASH
+              - AttributeName: eventId
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+
     ContenderRankingsTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -1986,6 +2104,74 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
+
+    PresenceTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.PRESENCE_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+
+    MatchmakingQueueTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.MATCHMAKING_QUEUE_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+
+    MatchInvitationsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.MATCH_INVITATIONS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: invitationId
+            AttributeType: S
+          - AttributeName: toPlayerId
+            AttributeType: S
+          - AttributeName: fromPlayerId
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: invitationId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ToPlayerIndex
+            KeySchema:
+              - AttributeName: toPlayerId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: FromPlayerIndex
+            KeySchema:
+              - AttributeName: fromPlayerId
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
 
     ImagesBucket:
       Type: AWS::S3::Bucket

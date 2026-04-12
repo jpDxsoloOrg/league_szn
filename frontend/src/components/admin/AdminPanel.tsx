@@ -14,7 +14,6 @@ import ManageSeasons from './ManageSeasons';
 import MatchCardBuilder from './MatchCardBuilder';
 import ManageFantasyShows from './ManageFantasyShows';
 import FantasyConfig from './FantasyConfig';
-import AdminChallenges from './AdminChallenges';
 import ClearAllData from './ClearAllData';
 import ManageUsers from './ManageUsers';
 import ManageFeatures from './ManageFeatures';
@@ -33,9 +32,9 @@ import ManageOveralls from './ManageOveralls';
 import ManageTransfers from './ManageTransfers';
 import ManageStorylineRequests from './ManageStorylineRequests';
 
-type AdminTab = 'players' | 'divisions' | 'match-config' | 'schedule' | 'championships' | 'tournaments' | 'challenges' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'contender-overrides' | 'companies' | 'shows' | 'stables' | 'tag-teams' | 'announcements' | 'videos' | 'overalls' | 'transfers' | 'storyline-requests' | 'danger' | 'users' | 'features';
+type AdminTab = 'players' | 'divisions' | 'match-config' | 'schedule' | 'championships' | 'tournaments' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'contender-overrides' | 'companies' | 'shows' | 'stables' | 'tag-teams' | 'announcements' | 'videos' | 'overalls' | 'transfers' | 'storyline-requests' | 'danger' | 'users' | 'features';
 
-const VALID_TABS: AdminTab[] = ['players', 'divisions', 'match-config', 'schedule', 'championships', 'tournaments', 'challenges', 'promos', 'seasons', 'season-awards', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'contender-overrides', 'companies', 'shows', 'stables', 'tag-teams', 'announcements', 'videos', 'overalls', 'transfers', 'storyline-requests', 'danger', 'users', 'features'];
+const VALID_TABS: AdminTab[] = ['players', 'divisions', 'match-config', 'schedule', 'championships', 'tournaments', 'promos', 'seasons', 'season-awards', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'contender-overrides', 'companies', 'shows', 'stables', 'tag-teams', 'announcements', 'videos', 'overalls', 'transfers', 'storyline-requests', 'danger', 'users', 'features'];
 
 
 export default function AdminPanel() {
@@ -80,7 +79,6 @@ export default function AdminPanel() {
     schedule: <ScheduleMatch />,
     championships: <ManageChampionships />,
     tournaments: <CreateTournament />,
-    challenges: <AdminChallenges />,
     promos: <AdminPromos />,
     seasons: <ManageSeasons />,
     'season-awards': <ManageSeasonAwards />,

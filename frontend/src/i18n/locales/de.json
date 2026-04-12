@@ -166,6 +166,7 @@
     "admin": "Admin",
     "contenders": "Herausforderer",
     "matchSearch": "Kampf-Suche",
+    "findMatch": "Match suchen",
     "seasonAwards": "Saison-Auszeichnungen",
     "stables": "Stables",
     "tagTeams": "Tag Teams",
@@ -1005,6 +1006,31 @@
       "removeMatch": "Kampf entfernen",
       "selectMatch": "Kampf zum Hinzufügen auswählen...",
       "addMatch": "Kampf hinzufügen"
+    },
+    "checkIn": {
+      "title": "Bist du dabei?",
+      "available": "Verfügbar",
+      "tentative": "Vielleicht",
+      "unavailable": "Nicht verfügbar",
+      "clearResponse": "Antwort zurücksetzen",
+      "summary": "{{available}} verfügbar · {{tentative}} vielleicht · {{unavailable}} nicht verfügbar",
+      "lockedAfterStart": "Anmeldungen sind gesperrt, sobald das Event begonnen hat oder beendet ist.",
+      "error": "Antwort konnte nicht aktualisiert werden. Bitte versuche es erneut.",
+      "success": "Antwort gespeichert.",
+      "noPlayerProfile": "Verknüpfe ein Spielerprofil, um zuzusagen.",
+      "roster": {
+        "title": "Anmeldeliste",
+        "available": "Verfügbar",
+        "tentative": "Vielleicht",
+        "unavailable": "Nicht verfügbar",
+        "noResponse": "Keine Antwort",
+        "copy": "Als Text kopieren",
+        "refresh": "Aktualisieren",
+        "copySuccess": "Kopiert!",
+        "empty": "Noch keine Anmeldungen für dieses Event.",
+        "loading": "Liste wird geladen…",
+        "error": "Liste konnte nicht geladen werden."
+      }
     }
   },
   "fantasy": {
@@ -1572,6 +1598,58 @@
     "typeStable": "Stable",
     "typeTagTeam": "Tag Team",
     "typeTransfer": "Transfer"
+  },
+  "findMatch": {
+    "title": "Match finden",
+    "subtitle": "Werde in Echtzeit mit einem anderen Wrestler gematcht",
+    "appearOnline": {
+      "title": "Online erscheinen",
+      "description": "Andere Wrestler können dich sehen und zu Matches einladen.",
+      "on": "Online",
+      "off": "Offline",
+      "appearFirstHint": "Werde online, um das Matchmaking zu nutzen."
+    },
+    "queue": {
+      "title": "Auf der Suche nach einem Match",
+      "join": "Match finden",
+      "leave": "Suche stoppen",
+      "searching": "Suche nach einem Gegner…",
+      "queued": "Du bist in der Warteschlange.",
+      "you": "Du",
+      "matched": "Du wurdest gematcht!",
+      "joinError": "Beitritt zur Warteschlange fehlgeschlagen. Versuche es erneut.",
+      "championshipNotice": "Titelmatches werden hier nicht unterstützt. Nutze die Challenges- oder Admin-Planung."
+    },
+    "preferences": {
+      "matchFormat": "Match-Format",
+      "stipulation": "Stipulation",
+      "any": "Beliebig"
+    },
+    "online": {
+      "title": "Online-Spieler",
+      "empty": "Aktuell sind keine anderen Wrestler online.",
+      "invite": "Zu Match einladen",
+      "alreadyInvited": "Einladung ausstehend",
+      "inQueue": "Sucht ein Match"
+    },
+    "invitations": {
+      "title": "Offene Einladungen",
+      "incoming": "Eingehend",
+      "outgoing": "Ausgehend",
+      "accept": "Annehmen",
+      "decline": "Ablehnen",
+      "expiresIn": "Läuft in {{seconds}}s ab",
+      "expired": "Abgelaufen",
+      "noneIncoming": "Keine eingehenden Einladungen.",
+      "noneOutgoing": "Keine ausgehenden Einladungen."
+    },
+    "widget": {
+      "title": "Match finden",
+      "open": "Match finden öffnen",
+      "pendingCount": "{{count}} offene Einladung",
+      "pendingCount_plural": "{{count}} offene Einladungen"
+    },
+    "needsWrestler": "Du brauchst ein Wrestler-Profil, um das Matchmaking zu nutzen."
   },
   "overalls": {
     "admin": {

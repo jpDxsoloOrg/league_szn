@@ -31,7 +31,6 @@ function formatRelativeTime(dateStr: string, t: (key: string, opts?: Record<stri
 function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
   switch (sourceType) {
     case 'promo': return 'notifications.typePromo';
-    case 'challenge': return 'notifications.typeChallenge';
     case 'match': return 'notifications.typeMatch';
     case 'announcement': return 'notifications.typeAnnouncement';
     case 'stable': return 'notifications.typeStable';
@@ -44,7 +43,6 @@ function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
 function getNavigationPath(notification: AppNotification, playerId: string | null): string {
   switch (notification.sourceType) {
     case 'promo': return '/promos';
-    case 'challenge': return '/challenges';
     case 'match': {
       const params = new URLSearchParams({ status: 'scheduled' });
       if (playerId) params.set('playerId', playerId);
@@ -52,6 +50,8 @@ function getNavigationPath(notification: AppNotification, playerId: string | nul
     }
     case 'stable': return '/my-stable';
     case 'tag_team': return '/my-tag-team';
+    case 'match_invitation': return '/find-match';
+    case 'match_invitation_declined': return '/find-match';
     case 'announcement': return '/';
     case 'transfer': return '/profile';
     default: return '/';

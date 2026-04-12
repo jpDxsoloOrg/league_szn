@@ -37,6 +37,7 @@ export { notificationsApi } from './notifications.api';
 export { overallsApi } from './overalls.api';
 export { transfersApi } from './transfers.api';
 export { storylineRequestsApi } from './storylineRequests.api';
+export { matchmakingApi } from './matchmaking.api';
 
 // Type/interface re-exports
 export type { SiteFeatures } from './siteConfig.api';

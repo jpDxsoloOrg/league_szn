@@ -68,7 +68,7 @@ export const USER_NAV_GROUPS: NavGroup[] = [
     i18nKey: 'nav.groups.wrestler',
     items: [
       { path: '/profile', i18nKey: 'nav.profile', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
-      { path: '/challenges', i18nKey: 'nav.challenges', feature: 'challenges' },
+      { path: '/find-match', i18nKey: 'nav.findMatch', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
       { path: '/promos', i18nKey: 'nav.promos', feature: 'promos' },
       { path: '/my-stable', i18nKey: 'nav.myStable', feature: 'stables', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
       { path: '/my-tag-team', i18nKey: 'nav.myTagTeam', feature: 'stables', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
@@ -140,7 +140,6 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
       { path: '/admin/announcements', i18nKey: 'admin.panel.tabs.announcements' },
       { path: '/admin/videos', i18nKey: 'admin.panel.tabs.videos' },
       { path: '/admin/storyline-requests', i18nKey: 'admin.panel.tabs.storylineRequests' },
-      { path: '/admin/challenges', i18nKey: 'admin.panel.tabs.challenges' },
       { path: '/admin/promos', i18nKey: 'admin.panel.tabs.promos' },
     ],
   },
@@ -177,7 +176,7 @@ export function getUserGroupForPath(pathname: string): string | null {
   const competition = ['/championships', '/events', '/matches', '/tournaments', '/awards'];
   const rankings = ['/contenders', '/stats', '/highlights'];
   const factions = ['/stables', '/tag-teams'];
-  const wrestler = ['/profile', '/challenges', '/promos', '/my-stable', '/my-tag-team'];
+  const wrestler = ['/profile', '/find-match', '/promos', '/my-stable', '/my-tag-team'];
 
   if (league.some((p) => pathname === p)) return 'league';
   if (competition.some((p) => pathname === p || pathname.startsWith(p + '/'))) return 'competition';
@@ -193,7 +192,7 @@ export function getAdminGroupForPath(pathname: string): string | null {
   const rosterSeasons = ['/admin/players', '/admin/divisions', '/admin/transfers', '/admin/seasons', '/admin/season-awards'];
   const titlesTournaments = ['/admin/championships', '/admin/tournaments', '/admin/companies', '/admin/shows'];
   const adminRankings = ['/admin/contender-config', '/admin/contender-overrides'];
-  const content = ['/admin/announcements', '/admin/videos', '/admin/storyline-requests', '/admin/challenges', '/admin/promos'];
+  const content = ['/admin/announcements', '/admin/videos', '/admin/storyline-requests', '/admin/promos'];
   const adminFactions = ['/admin/stables', '/admin/tag-teams'];
   const fantasy = ['/admin/fantasy-shows', '/admin/fantasy-config'];
   const system = ['/admin/users', '/admin/features', '/admin/danger'];

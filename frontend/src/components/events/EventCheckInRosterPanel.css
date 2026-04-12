@@ -1,0 +1,165 @@
+.checkin-roster-panel {
+  background: #1b1b1f;
+  border: 1px solid #2e2e36;
+  border-radius: 8px;
+  padding: 16px;
+  color: #e6e6e6;
+}
+
+.checkin-roster-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.checkin-roster-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.checkin-roster-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkin-roster-button {
+  background: #2a2a33;
+  color: #e6e6e6;
+  border: 1px solid #3a3a44;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.checkin-roster-button:hover:not(:disabled) {
+  background: #34343f;
+}
+
+.checkin-roster-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.checkin-roster-copied {
+  font-size: 0.85rem;
+  color: #4ade80;
+}
+
+.checkin-roster-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .checkin-roster-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .checkin-roster-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.checkin-roster-column {
+  background: #15151a;
+  border: 1px solid #26262d;
+  border-radius: 6px;
+  padding: 10px;
+  min-height: 120px;
+}
+
+.checkin-roster-column-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #cfcfd6;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.checkin-roster-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.checkin-roster-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  background: #1f1f26;
+  border-radius: 6px;
+}
+
+.checkin-roster-chip-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #2a2a33;
+}
+
+.checkin-roster-chip-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.checkin-roster-chip-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #e6e6e6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkin-roster-chip-wrestler {
+  font-size: 0.75rem;
+  color: #9a9aa3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkin-roster-empty,
+.checkin-roster-loading,
+.checkin-roster-error {
+  font-size: 0.9rem;
+  color: #9a9aa3;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.checkin-roster-error {
+  color: #f87171;
+}
+
+/* Compact mode */
+.checkin-roster-panel--compact {
+  padding: 12px;
+}
+
+.checkin-roster-compact-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #cfcfd6;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

@@ -3,12 +3,20 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { eventsApi, matchesApi, playersApi, tagTeamsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import type { MatchDesignation, EventWithMatches } from '../../types/event';
+import type {
+  MatchDesignation,
+  EventWithMatches,
+  EventCheckIn as EventCheckInRow,
+  EventCheckInStatus,
+  EventCheckInSummary,
+} from '../../types/event';
 import type { Match, Player } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
 import Skeleton from '../ui/Skeleton';
 import MatchResultForm from './MatchResultForm';
 import MatchEditForm from './MatchEditForm';
+import EventCheckIn from './EventCheckIn';
+import EventCheckInRosterPanel from './EventCheckInRosterPanel';
 import './EventDetail.css';
 
 const eventTypeColors: Record<string, string> = {
@@ -47,7 +55,7 @@ export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isAdminOrModerator } = useAuth();
+  const { isAdminOrModerator, isAuthenticated, isWrestler, playerId } = useAuth();
   const [eventData, setEventData] = useState<EventWithMatches | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +71,11 @@ export default function EventDetail() {
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
   const [matchActionError, setMatchActionError] = useState<string | null>(null);
   const [deletingMatchId, setDeletingMatchId] = useState<string | null>(null);
+
+  // Check-in state
+  const [myCheckIn, setMyCheckIn] = useState<EventCheckInRow | null>(null);
+  const [checkInSummary, setCheckInSummary] = useState<EventCheckInSummary | null>(null);
+  const [checkInError, setCheckInError] = useState<string | null>(null);
 
   const loadEvent = useCallback(async (signal?: AbortSignal) => {
     if (!eventId) return;
@@ -177,6 +190,79 @@ export default function EventDetail() {
     if (!isAdminOrModerator) return;
     loadAdminData();
   }, [isAdminOrModerator, loadAdminData]);
+
+  useEffect(() => {
+    if (!eventId || !isAuthenticated || !isWrestler || !playerId) {
+      setMyCheckIn(null);
+      setCheckInSummary(null);
+      return;
+    }
+    let ignore = false;
+    (async () => {
+      try {
+        const [mine, summary] = await Promise.all([
+          eventsApi.getMyCheckIn(eventId),
+          eventsApi.getCheckInSummary(eventId),
+        ]);
+        if (ignore) return;
+        setMyCheckIn(mine);
+        setCheckInSummary(summary);
+        setCheckInError(null);
+      } catch (err) {
+        if (ignore) return;
+        setCheckInError(err instanceof Error ? err.message : 'events.checkIn.error');
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, [eventId, isAuthenticated, isWrestler, playerId]);
+
+  const handleCheckInChange = useCallback(
+    async (status: EventCheckInStatus | null) => {
+      if (!eventId) return;
+      const prevStatus: EventCheckInStatus | null = myCheckIn?.status ?? null;
+      const prevSummary = checkInSummary;
+      const prevCheckIn = myCheckIn;
+
+      // Optimistic update
+      if (prevSummary) {
+        const nextSummary: EventCheckInSummary = { ...prevSummary };
+        if (prevStatus) {
+          nextSummary[prevStatus] = Math.max(0, nextSummary[prevStatus] - 1);
+        }
+        if (status) {
+          nextSummary[status] = nextSummary[status] + 1;
+        }
+        // Total: if we previously had no response and now set one, +1.
+        // If we previously had a response and now clear it, -1.
+        // Otherwise (transitioning between buckets), unchanged.
+        if (!prevStatus && status) {
+          nextSummary.total = nextSummary.total + 1;
+        } else if (prevStatus && !status) {
+          nextSummary.total = Math.max(0, nextSummary.total - 1);
+        }
+        setCheckInSummary(nextSummary);
+      }
+      setCheckInError(null);
+
+      try {
+        if (status === null) {
+          await eventsApi.deleteCheckIn(eventId);
+          setMyCheckIn(null);
+        } else {
+          const row = await eventsApi.checkIn(eventId, status);
+          setMyCheckIn(row);
+        }
+      } catch {
+        // Revert
+        setMyCheckIn(prevCheckIn);
+        setCheckInSummary(prevSummary);
+        setCheckInError('events.checkIn.error');
+      }
+    },
+    [eventId, myCheckIn, checkInSummary]
+  );
 
   const scheduledMatchesById = useMemo(() => {
     const map = new Map<string, Match>();
@@ -420,6 +506,22 @@ export default function EventDetail() {
           <p className="event-detail-description">{eventData.description}</p>
         )}
 
+        {isAuthenticated && isWrestler && playerId && checkInSummary && (
+          <>
+            <EventCheckIn
+              eventStatus={eventData.status}
+              currentStatus={myCheckIn?.status ?? null}
+              summary={checkInSummary}
+              onChange={handleCheckInChange}
+            />
+            {checkInError && (
+              <div className="event-checkin-error" role="alert">
+                {t(checkInError, { defaultValue: 'Failed to update check-in.' })}
+              </div>
+            )}
+          </>
+        )}
+
         {enrichedMatches.some(m => m.matchData?.status === 'completed') && (
           <Link
             to={`/events/${eventData.eventId}/results`}
@@ -496,6 +598,10 @@ export default function EventDetail() {
           </>
         )}
       </div>
+
+      {isAdminOrModerator && eventId && (
+        <EventCheckInRosterPanel eventId={eventId} />
+      )}
     </div>
   );
 }

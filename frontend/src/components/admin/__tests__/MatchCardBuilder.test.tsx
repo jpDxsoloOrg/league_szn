@@ -62,6 +62,12 @@ vi.mock('react-i18next', () => ({
 vi.mock('../MatchCardBuilder.css', () => ({}));
 vi.mock('../SearchableSelect.css', () => ({}));
 
+vi.mock('../../events/EventCheckInRosterPanel', () => ({
+  default: ({ eventId }: { eventId: string }) => (
+    <div data-testid="checkin-roster-panel">roster:{eventId}</div>
+  ),
+}));
+
 import MatchCardBuilder from '../MatchCardBuilder';
 
 // --- Test data ---

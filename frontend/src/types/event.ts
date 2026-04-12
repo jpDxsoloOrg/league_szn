@@ -101,3 +101,36 @@ export interface UpdateEventInput extends Partial<CreateEventInput> {
   fantasyBudget?: number;
   fantasyPicksPerDivision?: number;
 }
+
+export type EventCheckInStatus = 'available' | 'tentative' | 'unavailable';
+
+export interface EventCheckIn {
+  eventId: string;
+  playerId: string;
+  status: EventCheckInStatus;
+  checkedInAt: string;
+  ttl?: number;
+}
+
+export interface EventCheckInSummary {
+  eventId: string;
+  available: number;
+  tentative: number;
+  unavailable: number;
+  total: number;
+}
+
+export interface EventCheckInPlayerSummary {
+  playerId: string;
+  name: string;
+  currentWrestler: string;
+  imageUrl?: string;
+  divisionId?: string;
+}
+
+export interface EventCheckInRoster {
+  available: EventCheckInPlayerSummary[];
+  tentative: EventCheckInPlayerSummary[];
+  unavailable: EventCheckInPlayerSummary[];
+  noResponse: EventCheckInPlayerSummary[];
+}

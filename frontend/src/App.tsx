@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
+import { PresenceProvider } from './contexts/PresenceContext';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
@@ -66,6 +67,8 @@ import MyTagTeam from './components/tagTeams/MyTagTeam';
 // Profile components
 import WrestlerProfile from './components/profile/WrestlerProfile';
 import PublicProfile from './components/profile/PublicProfile';
+// Matchmaking components
+import FindMatchPage from './components/matchmaking/FindMatchPage';
 // Route guard
 import ProtectedRoute from './components/ProtectedRoute';
 import FeatureRoute from './components/FeatureRoute';
@@ -80,9 +83,11 @@ function App() {
       <Router>
         <ScrollToTop />
         <AuthProvider>
-          <SiteConfigProvider>
-            <AppLayout />
-          </SiteConfigProvider>
+          <PresenceProvider>
+            <SiteConfigProvider>
+              <AppLayout />
+            </SiteConfigProvider>
+          </PresenceProvider>
         </AuthProvider>
       </Router>
     </ErrorBoundary>
@@ -130,6 +135,13 @@ function AppLayout() {
             <Route path="/profile" element={
               <ProtectedRoute requiredRole="Wrestler">
                 <WrestlerProfile />
+              </ProtectedRoute>
+            } />
+
+            {/* Find Match - Wrestler only */}
+            <Route path="/find-match" element={
+              <ProtectedRoute requiredRole="Wrestler">
+                <FindMatchPage />
               </ProtectedRoute>
             } />
 

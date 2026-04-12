@@ -54,6 +54,10 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../Dashboard.css', () => ({}));
 
+vi.mock('../matchmaking/FindMatchWidget', () => ({
+  default: () => null,
+}));
+
 import Dashboard from '../Dashboard';
 
 const emptyDashboard = {
