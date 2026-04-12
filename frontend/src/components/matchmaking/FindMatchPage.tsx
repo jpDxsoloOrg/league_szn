@@ -4,6 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePresence } from '../../contexts/PresenceContext';
 import { matchmakingApi } from '../../services/api/matchmaking.api';
+import { matchTypesApi } from '../../services/api/matchTypes.api';
+import { stipulationsApi } from '../../services/api/stipulations.api';
+import type { MatchType, Stipulation } from '../../types';
 import type {
   MatchInvitation,
   MatchmakingPreferences,
@@ -33,6 +36,22 @@ export default function FindMatchPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [presenceBusy, setPresenceBusy] = useState<boolean>(false);
+  const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
+  const [stipulations, setStipulations] = useState<Stipulation[]>([]);
+  const [justQueued, setJustQueued] = useState<boolean>(false);
+
+  // Fetch available match types and stipulations for the preference dropdowns.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([matchTypesApi.getAll(), stipulationsApi.getAll()])
+      .then(([mt, st]) => {
+        if (cancelled) return;
+        setMatchTypes(mt);
+        setStipulations(st);
+      })
+      .catch((err) => console.error('[FindMatchPage] failed to load match config', err));
+    return () => { cancelled = true; };
+  }, []);
 
   // Ref so the poller always sees current status without resubscribing.
   const queueStatusRef = useRef<QueueStatus>(queueStatus);
@@ -129,6 +148,8 @@ export default function FindMatchPage() {
         setMatchedMatchId(result.matchId);
       } else {
         setQueueStatus('queued');
+        setJustQueued(true);
+        setTimeout(() => setJustQueued(false), 4000);
       }
       // Refresh so the new queue state is reflected immediately.
       void fetchAll();
@@ -299,33 +320,43 @@ export default function FindMatchPage() {
         <div className="preferences-row">
           <label className="preferences-field">
             <span>{t('findMatch.preferences.matchFormat')}</span>
-            <input
-              type="text"
+            <select
               value={preferences.matchFormat ?? ''}
-              placeholder={t('findMatch.preferences.any')}
-              disabled={disabledByPresence}
+              disabled={disabledByPresence || queueStatus === 'queued'}
               onChange={(e) =>
                 setPreferences((prev) => ({
                   ...prev,
                   matchFormat: e.target.value || undefined,
                 }))
               }
-            />
+            >
+              <option value="">{t('findMatch.preferences.any')}</option>
+              {matchTypes.map((mt) => (
+                <option key={mt.matchTypeId} value={mt.name}>
+                  {mt.name}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="preferences-field">
             <span>{t('findMatch.preferences.stipulation')}</span>
-            <input
-              type="text"
+            <select
               value={preferences.stipulationId ?? ''}
-              placeholder={t('findMatch.preferences.any')}
-              disabled={disabledByPresence}
+              disabled={disabledByPresence || queueStatus === 'queued'}
               onChange={(e) =>
                 setPreferences((prev) => ({
                   ...prev,
                   stipulationId: e.target.value || undefined,
                 }))
               }
-            />
+            >
+              <option value="">{t('findMatch.preferences.any')}</option>
+              {stipulations.map((s) => (
+                <option key={s.stipulationId} value={s.stipulationId}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
 
@@ -344,6 +375,11 @@ export default function FindMatchPage() {
           )}
           {queueStatus === 'queued' && (
             <div className="queue-searching">
+              {justQueued && (
+                <div className="queue-joined-banner">
+                  {t('findMatch.queue.queued')}
+                </div>
+              )}
               <span>{t('findMatch.queue.searching')}</span>
               <button
                 type="button"
