@@ -1615,6 +1615,7 @@
       "leave": "Suche stoppen",
       "searching": "Suche nach einem Gegner…",
       "queued": "Du bist in der Warteschlange.",
+      "you": "Du",
       "matched": "Du wurdest gematcht!",
       "joinError": "Beitritt zur Warteschlange fehlgeschlagen. Versuche es erneut.",
       "championshipNotice": "Titelmatches werden hier nicht unterstützt. Nutze die Challenges- oder Admin-Planung."

@@ -51,7 +51,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('No player profile linked to your account');
     }
 
-    const callerId = callerPlayer.playerId as string;
 
     // Fetch all queue rows
     const queueItems = await dynamoDb.scanAll({
@@ -64,7 +63,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     for (const item of queueItems) {
       const row = item as unknown as QueueRow;
       if (!row.playerId) continue;
-      if (row.playerId === callerId) continue;
       if (typeof row.ttl === 'number' && row.ttl < nowSeconds) continue;
       activeRows.push(row);
     }

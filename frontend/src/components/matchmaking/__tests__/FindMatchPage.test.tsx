@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { MatchType, Stipulation } from '../../../types';
 import type {
   InvitationListResponse,
   JoinQueueResponse,
@@ -26,6 +27,8 @@ const {
   mockGetInvitations,
   mockAcceptInvitation,
   mockDeclineInvitation,
+  mockGetMatchTypes,
+  mockGetStipulations,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockEnablePresence: vi.fn(),
@@ -47,6 +50,8 @@ const {
   mockGetInvitations: vi.fn(),
   mockAcceptInvitation: vi.fn(),
   mockDeclineInvitation: vi.fn(),
+  mockGetMatchTypes: vi.fn(),
+  mockGetStipulations: vi.fn(),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -95,6 +100,16 @@ vi.mock('../../../services/api/matchmaking.api', () => ({
     declineInvitation: mockDeclineInvitation,
   },
 }));
+vi.mock('../../../services/api/matchTypes.api', () => ({
+  matchTypesApi: {
+    getAll: mockGetMatchTypes,
+  },
+}));
+vi.mock('../../../services/api/stipulations.api', () => ({
+  stipulationsApi: {
+    getAll: mockGetStipulations,
+  },
+}));
 
 vi.mock('../FindMatchPage.css', () => ({}));
 
@@ -116,6 +131,8 @@ const makeInvitation = (id: string, fromId: string, toId: string): MatchInvitati
 const emptyInvitations: InvitationListResponse = { incoming: [], outgoing: [] };
 const emptyQueue: QueueEntry[] = [];
 const emptyOnline: OnlinePlayer[] = [];
+const emptyMatchTypes: MatchType[] = [];
+const emptyStipulations: Stipulation[] = [];
 
 const onlinePlayer: OnlinePlayer = {
   playerId: 'target-1',
@@ -134,6 +151,56 @@ describe('FindMatchPage', () => {
     mockGetQueue.mockResolvedValue(emptyQueue);
     mockGetOnline.mockResolvedValue(emptyOnline);
     mockGetInvitations.mockResolvedValue(emptyInvitations);
+    mockGetMatchTypes.mockResolvedValue(emptyMatchTypes);
+    mockGetStipulations.mockResolvedValue(emptyStipulations);
+  });
+
+  it('shows self in queue and displays queued match preferences', async () => {
+    presenceState.presenceEnabled = true;
+    mockGetQueue.mockResolvedValue([
+      {
+        playerId: 'me',
+        name: 'Me',
+        currentWrestler: 'My Wrestler',
+        preferences: {
+          matchFormat: 'Triple Threat',
+          stipulationId: 'stip-1',
+        },
+        joinedAt: new Date().toISOString(),
+      },
+      {
+        playerId: 'target-1',
+        name: 'Target One',
+        currentWrestler: 'The Target',
+        preferences: {
+          matchFormat: 'Triple Threat',
+          stipulationId: 'stip-1',
+        },
+        joinedAt: new Date().toISOString(),
+      },
+    ] satisfies QueueEntry[]);
+    mockGetOnline.mockResolvedValue([
+      {
+        ...onlinePlayer,
+        inQueue: true,
+      },
+    ] satisfies OnlinePlayer[]);
+    mockGetStipulations.mockResolvedValue([
+      {
+        stipulationId: 'stip-1',
+        name: 'No DQ',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ] satisfies Stipulation[]);
+
+    render(<FindMatchPage />);
+
+    await screen.findByText('findMatch.queue.you');
+    expect(screen.getByText('Me')).toBeInTheDocument();
+    expect(screen.getByText('findMatch.queue.you')).toBeInTheDocument();
+    expect(screen.getAllByText('Triple Threat').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('No DQ').length).toBeGreaterThan(0);
   });
 
   it('renders wrestler-only notice when isWrestler is false', () => {

@@ -238,6 +238,22 @@ export default function FindMatchPage() {
     () => new Set(outgoingInvitations.map((i) => i.toPlayerId)),
     [outgoingInvitations]
   );
+  const stipulationNameById = useMemo(
+    () => new Map(stipulations.map((s) => [s.stipulationId, s.name])),
+    [stipulations]
+  );
+  const queueEntryByPlayerId = useMemo(
+    () => new Map(queueEntries.map((entry) => [entry.playerId, entry])),
+    [queueEntries]
+  );
+  const visibleQueueEntries = useMemo(() => {
+    if (!playerId) return queueEntries;
+    return [...queueEntries].sort((a, b) => {
+      if (a.playerId === playerId) return -1;
+      if (b.playerId === playerId) return 1;
+      return a.joinedAt.localeCompare(b.joinedAt);
+    });
+  }, [queueEntries, playerId]);
 
   // Gate: must be a wrestler with a profile
   if (!isWrestler || !playerId) {
@@ -253,9 +269,6 @@ export default function FindMatchPage() {
   }
 
   const disabledByPresence = !presenceEnabled;
-  const visibleQueueEntries = queueEntries.filter(
-    (q) => q.playerId !== playerId
-  );
   const visibleOnlinePlayers = onlinePlayers.filter(
     (p) => p.playerId !== playerId
   );
@@ -475,15 +488,26 @@ export default function FindMatchPage() {
         ) : (
           <ul className="player-list">
             {visibleQueueEntries.map((entry) => {
+              const isCurrentPlayer = entry.playerId === playerId;
               const fmt = entry.preferences?.matchFormat;
               const stipId = entry.preferences?.stipulationId;
               const stipName = stipId
-                ? stipulations.find((s) => s.stipulationId === stipId)?.name
+                ? stipulationNameById.get(stipId)
                 : undefined;
               return (
-                <li key={entry.playerId} className="player-row">
+                <li
+                  key={entry.playerId}
+                  className={`player-row ${isCurrentPlayer ? 'is-self' : ''}`}
+                >
                   <div className="player-info">
-                    <div className="player-name">{entry.name}</div>
+                    <div className="player-name-row">
+                      <div className="player-name">{entry.name}</div>
+                      {isCurrentPlayer && (
+                        <span className="badge self-badge">
+                          {t('findMatch.queue.you')}
+                        </span>
+                      )}
+                    </div>
                     <div className="player-wrestler">{entry.currentWrestler}</div>
                     {(fmt || stipName) && (
                       <div className="player-prefs">
@@ -515,6 +539,12 @@ export default function FindMatchPage() {
           <ul className="player-list">
             {visibleOnlinePlayers.map((player) => {
               const alreadyInvited = outgoingTargetIds.has(player.playerId);
+              const queueEntry = queueEntryByPlayerId.get(player.playerId);
+              const fmt = queueEntry?.preferences?.matchFormat;
+              const stipId = queueEntry?.preferences?.stipulationId;
+              const stipName = stipId
+                ? stipulationNameById.get(stipId)
+                : undefined;
               return (
                 <li key={player.playerId} className="player-row">
                   <div className="player-info">
@@ -522,6 +552,12 @@ export default function FindMatchPage() {
                     <div className="player-wrestler">
                       {player.currentWrestler}
                     </div>
+                    {player.inQueue && (fmt || stipName) && (
+                      <div className="player-prefs">
+                        {fmt && <span className="badge pref-badge">{fmt}</span>}
+                        {stipName && <span className="badge pref-badge">{stipName}</span>}
+                      </div>
+                    )}
                   </div>
                   {player.inQueue && (
                     <span className="badge in-queue">

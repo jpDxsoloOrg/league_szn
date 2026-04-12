@@ -1616,6 +1616,7 @@
       "leave": "Stop searching",
       "searching": "Searching for an opponent…",
       "queued": "You're in the queue.",
+      "you": "You",
       "matched": "You've been matched!",
       "joinError": "Couldn't join the queue. Try again.",
       "championshipNotice": "Championship matches are not supported here. Use the Challenges or admin scheduling flow."

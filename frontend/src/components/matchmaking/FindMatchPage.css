@@ -92,6 +92,10 @@
   flex-wrap: wrap;
   gap: 1rem;
 }
+.player-row.is-self {
+  border-color: rgba(76, 175, 80, 0.55);
+  box-shadow: 0 0 0 1px rgba(76, 175, 80, 0.2) inset;
+}
 
 .appear-online-control {
   display: flex;
@@ -370,6 +374,12 @@
   flex: 1;
   min-width: 0;
 }
+.player-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
 
 .player-name {
   font-weight: 600;
@@ -395,6 +405,11 @@
   background-color: rgba(234, 179, 8, 0.2);
   color: #eab308;
   border: 1px solid rgba(234, 179, 8, 0.3);
+}
+.badge.self-badge {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: #81c784;
+  border: 1px solid rgba(76, 175, 80, 0.35);
 }
 
 .badge.pref-badge {
