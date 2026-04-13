@@ -1647,7 +1647,27 @@
       "title": "Match finden",
       "open": "Match finden öffnen",
       "pendingCount": "{{count}} offene Einladung",
-      "pendingCount_plural": "{{count}} offene Einladungen"
+      "pendingCount_plural": "{{count}} offene Einladungen",
+      "incomingHeader": "Eingehende Herausforderungen",
+      "lookingHeader": "Sucht nach einem Match",
+      "lookingCount": "{{count}} suchen",
+      "challenge": "Herausfordern",
+      "challenging": "Sende…",
+      "challenged": "Eingeladen",
+      "joinedAgo": "beigetreten {{ago}}",
+      "joinQueue": "Warteschlange beitreten",
+      "joinQueueSubtitle": "Werde mit dem nächsten verfügbaren Wrestler gematcht",
+      "leaveQueue": "Warteschlange verlassen",
+      "inQueueLabel": "Du bist in der Warteschlange",
+      "empty": "Aktuell sind keine Wrestler in der Warteschlange",
+      "emptyHint": "Sei der Erste — tritt der Warteschlange bei",
+      "you": "Du",
+      "loadFailed": "Warteschlange konnte nicht geladen werden. Erneuter Versuch…",
+      "ago": {
+        "justNow": "gerade eben",
+        "minutes": "vor {{count}} Min.",
+        "hours": "vor {{count}} Std."
+      }
     },
     "needsWrestler": "Du brauchst ein Wrestler-Profil, um das Matchmaking zu nutzen."
   },

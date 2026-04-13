@@ -1648,7 +1648,27 @@
       "title": "Find a Match",
       "open": "Open Find a Match",
       "pendingCount": "{{count}} pending invitation",
-      "pendingCount_plural": "{{count}} pending invitations"
+      "pendingCount_plural": "{{count}} pending invitations",
+      "incomingHeader": "Incoming challenges",
+      "lookingHeader": "Looking for a match",
+      "lookingCount": "{{count}} looking",
+      "challenge": "Challenge",
+      "challenging": "Sending…",
+      "challenged": "Invited",
+      "joinedAgo": "joined {{ago}}",
+      "joinQueue": "Join the queue",
+      "joinQueueSubtitle": "Get matched with the next available wrestler",
+      "leaveQueue": "Leave queue",
+      "inQueueLabel": "You're in the queue",
+      "empty": "No wrestlers in the queue right now",
+      "emptyHint": "Be the first — join the queue",
+      "you": "You",
+      "loadFailed": "Couldn't load the queue. Retrying…",
+      "ago": {
+        "justNow": "just now",
+        "minutes": "{{count}}m ago",
+        "hours": "{{count}}h ago"
+      }
     },
     "needsWrestler": "You need a wrestler profile to use matchmaking."
   },

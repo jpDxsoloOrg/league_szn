@@ -3,22 +3,10 @@ import type { APIGatewayProxyEvent } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const {
-  mockGet,
-  mockPut,
-  mockQuery,
-  mockDelete,
-  mockScanAll,
-  mockCreateNotifications,
-  mockScheduleMatchInternal,
-} = vi.hoisted(() => ({
+const { mockGet, mockPut, mockQuery } = vi.hoisted(() => ({
   mockGet: vi.fn(),
   mockPut: vi.fn(),
   mockQuery: vi.fn(),
-  mockDelete: vi.fn(),
-  mockScanAll: vi.fn(),
-  mockCreateNotifications: vi.fn(),
-  mockScheduleMatchInternal: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
@@ -28,8 +16,8 @@ vi.mock('../../../lib/dynamodb', () => ({
     query: mockQuery,
     scan: vi.fn(),
     update: vi.fn(),
-    delete: mockDelete,
-    scanAll: mockScanAll,
+    delete: vi.fn(),
+    scanAll: vi.fn(),
     queryAll: vi.fn(),
   },
   TableNames: {
@@ -38,26 +26,6 @@ vi.mock('../../../lib/dynamodb', () => ({
     MATCHMAKING_QUEUE: 'MatchmakingQueue',
   },
 }));
-
-vi.mock('../../../lib/notifications', () => ({
-  createNotification: vi.fn(),
-  createNotifications: mockCreateNotifications,
-}));
-
-vi.mock('../../matches/scheduleMatch', () => {
-  class FakeScheduleMatchError extends Error {
-    statusCode: number;
-    constructor(statusCode: number, message: string) {
-      super(message);
-      this.name = 'ScheduleMatchError';
-      this.statusCode = statusCode;
-    }
-  }
-  return {
-    scheduleMatchInternal: mockScheduleMatchInternal,
-    ScheduleMatchError: FakeScheduleMatchError,
-  };
-});
 
 import { handler as joinQueue } from '../joinQueue';
 
@@ -93,19 +61,17 @@ function wrestlerEvent(body: object | null, sub = 'user-sub-1'): APIGatewayProxy
 }
 
 const futureTtl = Math.floor(Date.now() / 1000) + 300;
-const pastTtl = Math.floor(Date.now() / 1000) - 60;
 
 // ─── Tests ───────────────────────────────────────────────────────────
 
 describe('matchmaking/joinQueue', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('queues caller when queue is empty and presence row exists', async () => {
+  it('queues caller when presence row exists', async () => {
     mockQuery.mockResolvedValueOnce({
       Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller' }],
     });
     mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', ttl: futureTtl } });
-    mockScanAll.mockResolvedValueOnce([]);
     mockPut.mockResolvedValue({});
 
     const result = await joinQueue(wrestlerEvent({}));
@@ -118,58 +84,43 @@ describe('matchmaking/joinQueue', () => {
     expect(putArg.TableName).toBe('MatchmakingQueue');
     expect(putArg.Item.playerId).toBe('p1');
     expect(typeof putArg.Item.ttl).toBe('number');
-    expect(mockScheduleMatchInternal).not.toHaveBeenCalled();
   });
 
-  it('matches with a compatible online queued opponent and notifies both players', async () => {
-    mockQuery.mockResolvedValueOnce({
-      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller' }],
-    });
-    // caller presence
-    mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', ttl: futureTtl } });
-    // queue scan returns one compatible candidate
-    mockScanAll.mockResolvedValueOnce([
-      { playerId: 'p2', joinedAt: 'x', ttl: futureTtl, preferences: {} },
-    ]);
-    // candidate presence
-    mockGet.mockResolvedValueOnce({ Item: { playerId: 'p2', ttl: futureTtl } });
-    // candidate player record
-    mockGet.mockResolvedValueOnce({
-      Item: { playerId: 'p2', userId: 'user-sub-2', name: 'Opponent' },
-    });
-    mockDelete.mockResolvedValue({});
-    mockScheduleMatchInternal.mockResolvedValue({ matchId: 'match-xyz' });
-    mockCreateNotifications.mockResolvedValue(undefined);
-
-    const result = await joinQueue(wrestlerEvent({}));
-
-    expect(result.statusCode).toBe(200);
-    const body = JSON.parse(result.body);
-    expect(body.status).toBe('matched');
-    expect(body.matchId).toBe('match-xyz');
-    expect(mockScheduleMatchInternal).toHaveBeenCalledOnce();
-    expect(mockCreateNotifications).toHaveBeenCalledOnce();
-    const notifs = mockCreateNotifications.mock.calls[0][0];
-    expect(Array.isArray(notifs)).toBe(true);
-    expect(notifs).toHaveLength(2);
-  });
-
-  it('ignores expired candidate rows and queues caller instead', async () => {
+  it('queues caller even when other wrestlers are already in the queue', async () => {
+    // Auto-match has been removed: even if compatible opponents exist, the
+    // caller should just be added to the queue. Manual challenges (invitations)
+    // are the only way to start a match from matchmaking now.
     mockQuery.mockResolvedValueOnce({
       Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller' }],
     });
     mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', ttl: futureTtl } });
-    mockScanAll.mockResolvedValueOnce([
-      { playerId: 'p2', joinedAt: 'x', ttl: pastTtl, preferences: {} },
-    ]);
     mockPut.mockResolvedValue({});
 
     const result = await joinQueue(wrestlerEvent({}));
 
     expect(result.statusCode).toBe(200);
-    expect(JSON.parse(result.body).status).toBe('queued');
-    expect(mockScheduleMatchInternal).not.toHaveBeenCalled();
-    expect(mockPut).toHaveBeenCalledOnce();
+    const body = JSON.parse(result.body);
+    expect(body.status).toBe('queued');
+    expect(body.matchId).toBeUndefined();
+  });
+
+  it('persists matchFormat and stipulationId preferences', async () => {
+    mockQuery.mockResolvedValueOnce({
+      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller' }],
+    });
+    mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', ttl: futureTtl } });
+    mockPut.mockResolvedValue({});
+
+    const result = await joinQueue(
+      wrestlerEvent({ matchFormat: 'singles', stipulationId: 'stip-1' })
+    );
+
+    expect(result.statusCode).toBe(200);
+    const putArg = mockPut.mock.calls[0][0];
+    expect(putArg.Item.preferences).toEqual({
+      matchFormat: 'singles',
+      stipulationId: 'stip-1',
+    });
   });
 
   it('returns 400 when caller has no presence row', async () => {
@@ -198,32 +149,25 @@ describe('matchmaking/joinQueue', () => {
   });
 
   it('replaces the caller queue row idempotently on repeat join', async () => {
-    // First call
     mockQuery.mockResolvedValueOnce({
       Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller' }],
     });
     mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', ttl: futureTtl } });
-    mockScanAll.mockResolvedValueOnce([]);
     mockPut.mockResolvedValue({});
 
     const first = await joinQueue(wrestlerEvent({}));
     expect(first.statusCode).toBe(200);
     expect(JSON.parse(first.body).status).toBe('queued');
 
-    // Second call — only other row in queue is the caller's own, which is skipped
     mockQuery.mockResolvedValueOnce({
       Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Caller' }],
     });
     mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', ttl: futureTtl } });
-    mockScanAll.mockResolvedValueOnce([
-      { playerId: 'p1', joinedAt: 'x', ttl: futureTtl, preferences: {} },
-    ]);
 
     const second = await joinQueue(wrestlerEvent({}));
     expect(second.statusCode).toBe(200);
     expect(JSON.parse(second.body).status).toBe('queued');
 
-    // Put called twice — idempotent overwrite of the same row
     expect(mockPut).toHaveBeenCalledTimes(2);
     expect(mockPut.mock.calls[0][0].Item.playerId).toBe('p1');
     expect(mockPut.mock.calls[1][0].Item.playerId).toBe('p1');

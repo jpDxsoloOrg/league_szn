@@ -1,43 +1,50 @@
 /* ===========================
-   FindMatchWidget — compact dashboard card
-   Matches Dashboard's tonal layering conventions
+   FindMatchWidget — Prestige Brutalism
+   Tonal layering, no borders, gold accents
    =========================== */
 
 .fm-widget {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
-  background: linear-gradient(135deg, #1c1b1b 0%, #201f1f 60%, #1c1b1b 100%);
-  border-radius: 8px;
+  background: #1c1b1b;
+  border-radius: 4px;
   padding: 1.25rem 1.25rem 1.1rem;
   width: 100%;
 }
 
+/* — Header — */
 .fm-widget-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .fm-widget-title {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: #d0c5af;
 }
 
-/* Presence row */
-.fm-widget-presence-row {
-  display: flex;
+.fm-widget-online-count {
+  display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #d0c5af;
 }
 
+/* — Status dots — */
 .fm-widget-status-dot {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -51,68 +58,359 @@
   background-color: #5b5b5b;
 }
 
-.fm-widget-status-label {
-  font-size: 0.95rem;
-  color: #eaeaea;
-  font-weight: 600;
-  flex: 1;
+/* — Incoming challenges — */
+.fm-widget-invite-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
-.fm-widget-toggle {
+.fm-widget-invite-card {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  background: #2a2a2a;
+  border-radius: 4px;
+  padding: 0.7rem 0.8rem;
+  box-shadow: inset 2px 0 0 0 #f2ca50;
+}
+
+.fm-widget-invite-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.fm-widget-accept {
   appearance: none;
-  border: 1px solid rgba(212, 175, 55, 0.35);
+  border: none;
+  background: linear-gradient(135deg, #f2ca50 0%, #d4af37 100%);
+  color: #3c2f00;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.fm-widget-accept:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.fm-widget-accept:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fm-widget-decline {
+  appearance: none;
   background: transparent;
-  color: #d4af37;
-  font-size: 0.78rem;
+  color: #99907c;
+  border: 1px solid rgba(153, 144, 124, 0.35);
+  font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 0.35rem 0.75rem;
+  padding: 0.32rem 0.6rem;
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.fm-widget-toggle:hover:not(:disabled) {
-  background-color: rgba(212, 175, 55, 0.12);
+.fm-widget-decline:hover:not(:disabled) {
+  background-color: rgba(153, 144, 124, 0.08);
+  color: #d0c5af;
 }
 
-.fm-widget-toggle:disabled {
+.fm-widget-decline:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Pending invitation badge */
-.fm-widget-badge {
-  align-self: flex-start;
-  background-color: rgba(212, 175, 55, 0.14);
-  color: #d4af37;
+.fm-widget-section-count--hot {
+  background: rgba(242, 202, 80, 0.18);
+  color: #f2ca50;
+}
+
+/* — Section label — */
+.fm-widget-section-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #99907c;
+}
+
+.fm-widget-section-count {
+  background: #2a2a2a;
+  color: #d0c5af;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.7rem;
+}
+
+/* — Error — */
+.fm-widget-error {
+  color: #ffb4ab;
   font-size: 0.82rem;
+  padding: 0.5rem 0.7rem;
+  background: rgba(147, 0, 10, 0.18);
+  border-radius: 4px;
+}
+
+/* — Skeleton — */
+.fm-widget-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.fm-widget-skeleton-row {
+  height: 64px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    #2a2a2a 0%,
+    #353534 50%,
+    #2a2a2a 100%
+  );
+  background-size: 200% 100%;
+  animation: fm-widget-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes fm-widget-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* — Empty state — */
+.fm-widget-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.5rem 0.5rem 1.25rem;
+  background: #2a2a2a;
+  border-radius: 4px;
+}
+
+.fm-widget-empty-text {
+  margin: 0 0 0.35rem 0;
+  font-size: 0.9rem;
   font-weight: 600;
-  padding: 0.35rem 0.7rem;
+  color: #e5e2e1;
+}
+
+.fm-widget-empty-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #99907c;
+}
+
+/* — Queue list — */
+.fm-widget-queue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.fm-widget-queue-card {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  background: #2a2a2a;
+  border-radius: 4px;
+  padding: 0.7rem 0.8rem;
+  transition: background-color 0.15s ease;
+}
+
+.fm-widget-queue-card:hover {
+  background: #353534;
+}
+
+.fm-widget-queue-card--self {
+  background: #353534;
+  box-shadow: inset 2px 0 0 0 #f2ca50;
+}
+
+.fm-widget-queue-card--self:hover {
+  background: #3a3939;
+}
+
+.fm-widget-self-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  background: rgba(242, 202, 80, 0.14);
+  color: #f2ca50;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+/* Avatar */
+.fm-widget-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #353534;
+  color: #f2ca50;
+  font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.fm-widget-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Card meta */
+.fm-widget-queue-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.fm-widget-wrestler-name {
+  font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #e5e2e1;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fm-widget-player-name {
+  font-size: 0.74rem;
+  color: #99907c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fm-widget-prefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+}
+
+.fm-widget-pref-chip {
+  background: #353534;
+  color: #d0c5af;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.18rem 0.45rem;
   border-radius: 999px;
 }
 
-/* CTA */
-.fm-widget-cta {
+/* Card action */
+.fm-widget-queue-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.fm-widget-challenge {
   appearance: none;
   border: none;
-  background-color: #d4af37;
-  color: #1c1b1b;
-  font-size: 0.88rem;
+  background: #f2ca50;
+  color: #3c2f00;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 0.65rem 1rem;
-  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition: background-color 0.15s ease;
 }
 
-.fm-widget-cta:hover {
-  background-color: #e6c04a;
+.fm-widget-challenge:hover:not(:disabled) {
+  background: #ffe088;
+}
+
+.fm-widget-challenge:disabled {
+  background: #353534;
+  color: #99907c;
+  cursor: not-allowed;
+}
+
+.fm-widget-joined-ago {
+  font-size: 0.65rem;
+  color: #99907c;
+  white-space: nowrap;
+}
+
+/* — CTA — */
+.fm-widget-cta {
+  appearance: none;
+  border: none;
+  background: linear-gradient(135deg, #f2ca50 0%, #d4af37 100%);
+  color: #3c2f00;
+  font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.1s ease;
+  margin-top: 0.4rem;
+}
+
+.fm-widget-cta:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 
 .fm-widget-cta:active {
   transform: translateY(1px);
+}
+
+.fm-widget-cta:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fm-widget-cta-subtitle {
+  margin: 0;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #99907c;
 }
