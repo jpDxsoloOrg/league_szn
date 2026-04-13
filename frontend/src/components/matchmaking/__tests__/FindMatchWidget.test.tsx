@@ -235,16 +235,21 @@ describe('FindMatchWidget', () => {
     expect(mockCreateInvitation).toHaveBeenCalledWith('p1', {});
   });
 
-  it('CTA navigates to /find-match when presence is off', async () => {
+  it('CTA auto-enables presence and joins queue when presence is off', async () => {
     const user = userEvent.setup();
     presenceState.presenceEnabled = false;
+    mockEnablePresence.mockResolvedValue(undefined);
+    mockJoinQueue.mockResolvedValue({ status: 'queued' });
+
     render(<FindMatchWidget />);
 
     const cta = await screen.findByRole('button', {
       name: 'findMatch.widget.joinQueue',
     });
     await user.click(cta);
-    expect(mockNavigate).toHaveBeenCalledWith('/find-match');
+    expect(mockEnablePresence).toHaveBeenCalledTimes(1);
+    expect(mockJoinQueue).toHaveBeenCalledWith({});
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('CTA calls joinQueue when presence is on and user is not in queue', async () => {

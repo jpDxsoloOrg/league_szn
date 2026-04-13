@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePresence } from '../../contexts/PresenceContext';
 import { matchmakingApi } from '../../services/api/matchmaking.api';
@@ -29,7 +28,6 @@ const getInitials = (name: string): string => {
 
 const FindMatchWidget: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { isWrestler, playerId } = useAuth();
   const { presenceEnabled, enablePresence, disablePresence } = usePresence();
 
@@ -163,20 +161,15 @@ const FindMatchWidget: React.FC = () => {
 
   const handleJoinOrLeaveQueue = useCallback(async (): Promise<void> => {
     if (joiningQueue) return;
-    if (!presenceEnabled) {
-      navigate('/find-match');
-      return;
-    }
     setJoiningQueue(true);
     try {
       if (isSelfInQueue) {
         await matchmakingApi.leaveQueue();
       } else {
-        const result = await matchmakingApi.joinQueue({});
-        if (result.status === 'matched') {
-          navigate('/find-match');
-          return;
+        if (!presenceEnabled) {
+          await enablePresence();
         }
+        await matchmakingApi.joinQueue({});
       }
       await fetchData();
     } catch (err) {
@@ -184,7 +177,7 @@ const FindMatchWidget: React.FC = () => {
     } finally {
       setJoiningQueue(false);
     }
-  }, [joiningQueue, isSelfInQueue, presenceEnabled, navigate, fetchData]);
+  }, [joiningQueue, isSelfInQueue, presenceEnabled, enablePresence, fetchData]);
 
   const visibleQueue = useMemo(
     () => queue.filter((entry) => entry.playerId !== playerId),
