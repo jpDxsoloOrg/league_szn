@@ -29,7 +29,7 @@ const getInitials = (name: string): string => {
 const FindMatchWidget: React.FC = () => {
   const { t } = useTranslation();
   const { isWrestler, playerId } = useAuth();
-  const { presenceEnabled, enablePresence, disablePresence } = usePresence();
+  const { presenceEnabled, enablePresence } = usePresence();
 
   const [queue, setQueue] = useState<QueueEntry[]>([]);
   const [stipulationNameById, setStipulationNameById] = useState<Map<string, string>>(
@@ -41,7 +41,6 @@ const FindMatchWidget: React.FC = () => {
   const [joiningQueue, setJoiningQueue] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [toggling, setToggling] = useState<boolean>(false);
 
   // Tick state to refresh "joined Xm ago" timestamps without refetching.
   const [, setNowTick] = useState<number>(0);
@@ -118,22 +117,6 @@ const FindMatchWidget: React.FC = () => {
     };
   }, [isWrestler, playerId]);
 
-  const handleTogglePresence = useCallback(async (): Promise<void> => {
-    if (toggling) return;
-    setToggling(true);
-    try {
-      if (presenceEnabled) {
-        await disablePresence();
-      } else {
-        await enablePresence();
-      }
-    } catch (err) {
-      console.error('[FindMatchWidget] presence toggle failed', err);
-    } finally {
-      setToggling(false);
-    }
-  }, [presenceEnabled, enablePresence, disablePresence, toggling]);
-
   const handleChallenge = useCallback(
     async (targetId: string): Promise<void> => {
       if (challengingId) return;
@@ -179,10 +162,14 @@ const FindMatchWidget: React.FC = () => {
     }
   }, [joiningQueue, isSelfInQueue, presenceEnabled, enablePresence, fetchData]);
 
-  const visibleQueue = useMemo(
-    () => queue.filter((entry) => entry.playerId !== playerId),
-    [queue, playerId]
-  );
+  // Sort queue entries with self on top so the user sees themselves immediately.
+  const sortedQueue = useMemo(() => {
+    return [...queue].sort((a, b) => {
+      if (a.playerId === playerId) return -1;
+      if (b.playerId === playerId) return 1;
+      return a.joinedAt.localeCompare(b.joinedAt);
+    });
+  }, [queue, playerId]);
 
   if (!isWrestler || !playerId) {
     return null;
@@ -207,34 +194,6 @@ const FindMatchWidget: React.FC = () => {
         </div>
       </header>
 
-      <div className="fm-widget-presence-row">
-        <span
-          className={`fm-widget-status-dot ${
-            presenceEnabled
-              ? 'fm-widget-status-dot--online'
-              : 'fm-widget-status-dot--offline'
-          }`}
-          aria-hidden="true"
-        />
-        <span className="fm-widget-status-label">
-          {presenceEnabled
-            ? t('findMatch.appearOnline.on')
-            : t('findMatch.appearOnline.off')}
-        </span>
-        <button
-          type="button"
-          className="fm-widget-toggle"
-          onClick={() => {
-            void handleTogglePresence();
-          }}
-          disabled={toggling}
-        >
-          {presenceEnabled
-            ? t('findMatch.appearOnline.off')
-            : t('findMatch.appearOnline.on')}
-        </button>
-      </div>
-
       {pendingInvitations > 0 && (
         <div className="fm-widget-badge" role="status">
           {t('findMatch.widget.pendingCount', { count: pendingInvitations })}
@@ -243,7 +202,7 @@ const FindMatchWidget: React.FC = () => {
 
       <div className="fm-widget-section-label">
         <span>{t('findMatch.widget.lookingHeader')}</span>
-        <span className="fm-widget-section-count">{visibleQueue.length}</span>
+        <span className="fm-widget-section-count">{sortedQueue.length}</span>
       </div>
 
       {error && !loading && (
@@ -256,14 +215,15 @@ const FindMatchWidget: React.FC = () => {
           <div className="fm-widget-skeleton-row" />
           <div className="fm-widget-skeleton-row" />
         </div>
-      ) : visibleQueue.length === 0 ? (
+      ) : sortedQueue.length === 0 ? (
         <div className="fm-widget-empty">
           <p className="fm-widget-empty-text">{t('findMatch.widget.empty')}</p>
           <p className="fm-widget-empty-hint">{t('findMatch.widget.emptyHint')}</p>
         </div>
       ) : (
         <ul className="fm-widget-queue-list">
-          {visibleQueue.map((entry) => {
+          {sortedQueue.map((entry) => {
+            const isSelf = entry.playerId === playerId;
             const fmt = entry.preferences?.matchFormat;
             const stipName = entry.preferences?.stipulationId
               ? stipulationNameById.get(entry.preferences.stipulationId)
@@ -271,7 +231,12 @@ const FindMatchWidget: React.FC = () => {
             const invited = invitedIds.has(entry.playerId);
             const sending = challengingId === entry.playerId;
             return (
-              <li key={entry.playerId} className="fm-widget-queue-card">
+              <li
+                key={entry.playerId}
+                className={`fm-widget-queue-card ${
+                  isSelf ? 'fm-widget-queue-card--self' : ''
+                }`}
+              >
                 <div className="fm-widget-avatar" aria-hidden="true">
                   {entry.imageUrl ? (
                     <img src={entry.imageUrl} alt="" />
@@ -282,6 +247,11 @@ const FindMatchWidget: React.FC = () => {
                 <div className="fm-widget-queue-meta">
                   <div className="fm-widget-wrestler-name">
                     {entry.currentWrestler}
+                    {isSelf && (
+                      <span className="fm-widget-self-badge">
+                        {t('findMatch.widget.you')}
+                      </span>
+                    )}
                   </div>
                   <div className="fm-widget-player-name">{entry.name}</div>
                   {(fmt || stipName) && (
@@ -294,25 +264,35 @@ const FindMatchWidget: React.FC = () => {
                   )}
                 </div>
                 <div className="fm-widget-queue-action">
-                  <button
-                    type="button"
-                    className="fm-widget-challenge"
-                    onClick={() => {
-                      void handleChallenge(entry.playerId);
-                    }}
-                    disabled={invited || sending}
-                  >
-                    {invited
-                      ? t('findMatch.widget.challenged')
-                      : sending
-                        ? t('findMatch.widget.challenging')
-                        : t('findMatch.widget.challenge')}
-                  </button>
-                  <span className="fm-widget-joined-ago">
-                    {t('findMatch.widget.joinedAgo', {
-                      ago: formatJoinedAgo(entry.joinedAt, t),
-                    })}
-                  </span>
+                  {isSelf ? (
+                    <span className="fm-widget-joined-ago">
+                      {t('findMatch.widget.joinedAgo', {
+                        ago: formatJoinedAgo(entry.joinedAt, t),
+                      })}
+                    </span>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="fm-widget-challenge"
+                        onClick={() => {
+                          void handleChallenge(entry.playerId);
+                        }}
+                        disabled={invited || sending}
+                      >
+                        {invited
+                          ? t('findMatch.widget.challenged')
+                          : sending
+                            ? t('findMatch.widget.challenging')
+                            : t('findMatch.widget.challenge')}
+                      </button>
+                      <span className="fm-widget-joined-ago">
+                        {t('findMatch.widget.joinedAgo', {
+                          ago: formatJoinedAgo(entry.joinedAt, t),
+                        })}
+                      </span>
+                    </>
+                  )}
                 </div>
               </li>
             );
@@ -332,16 +312,11 @@ const FindMatchWidget: React.FC = () => {
           ? t('findMatch.widget.leaveQueue')
           : t('findMatch.widget.joinQueue')}
       </button>
-      {!isSelfInQueue && (
-        <p className="fm-widget-cta-subtitle">
-          {t('findMatch.widget.joinQueueSubtitle')}
-        </p>
-      )}
-      {isSelfInQueue && (
-        <p className="fm-widget-cta-subtitle">
-          {t('findMatch.widget.inQueueLabel')}
-        </p>
-      )}
+      <p className="fm-widget-cta-subtitle">
+        {isSelfInQueue
+          ? t('findMatch.widget.inQueueLabel')
+          : t('findMatch.widget.joinQueueSubtitle')}
+      </p>
     </section>
   );
 };

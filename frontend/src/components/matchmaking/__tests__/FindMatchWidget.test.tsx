@@ -146,37 +146,17 @@ describe('FindMatchWidget', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('shows offline label and toggle calls enablePresence when off', async () => {
-    const user = userEvent.setup();
-    mockEnablePresence.mockResolvedValue(undefined);
+  it('does not render a presence toggle (join queue handles presence)', async () => {
     render(<FindMatchWidget />);
-
-    expect(
-      screen.getAllByText('findMatch.appearOnline.off').length
-    ).toBeGreaterThan(0);
-
-    const toggle = screen.getByRole('button', {
-      name: 'findMatch.appearOnline.on',
+    await waitFor(() => {
+      expect(screen.getByText('findMatch.widget.empty')).toBeInTheDocument();
     });
-    await user.click(toggle);
-    expect(mockEnablePresence).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows online label and toggle calls disablePresence when on', async () => {
-    const user = userEvent.setup();
-    presenceState.presenceEnabled = true;
-    mockDisablePresence.mockResolvedValue(undefined);
-    render(<FindMatchWidget />);
-
     expect(
-      screen.getAllByText('findMatch.appearOnline.on').length
-    ).toBeGreaterThan(0);
-
-    const toggle = screen.getByRole('button', {
-      name: 'findMatch.appearOnline.off',
-    });
-    await user.click(toggle);
-    expect(mockDisablePresence).toHaveBeenCalledTimes(1);
+      screen.queryByRole('button', { name: 'findMatch.appearOnline.on' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'findMatch.appearOnline.off' })
+    ).not.toBeInTheDocument();
   });
 
   it('shows pending invitation badge after getInvitations resolves', async () => {
@@ -202,7 +182,7 @@ describe('FindMatchWidget', () => {
     expect(screen.getByText('findMatch.widget.emptyHint')).toBeInTheDocument();
   });
 
-  it('renders queue entries from other players and filters out self', async () => {
+  it('renders all queue entries including self with a You badge and no challenge button', async () => {
     mockGetQueue.mockResolvedValue([
       makeQueueEntry('me', 'Me', 'My-Wrestler'),
       makeQueueEntry('p1', 'Mike R.', 'STONE COLD STEVE AUSTIN'),
@@ -215,7 +195,14 @@ describe('FindMatchWidget', () => {
       expect(screen.getByText('STONE COLD STEVE AUSTIN')).toBeInTheDocument();
     });
     expect(screen.getByText('THE UNDERTAKER')).toBeInTheDocument();
-    expect(screen.queryByText('My-Wrestler')).not.toBeInTheDocument();
+    // Self is now shown in the queue
+    expect(screen.getByText('My-Wrestler')).toBeInTheDocument();
+    expect(screen.getByText('findMatch.widget.you')).toBeInTheDocument();
+    // Only the two other players should have a Challenge button (self doesn't)
+    const challengeButtons = screen.getAllByRole('button', {
+      name: 'findMatch.widget.challenge',
+    });
+    expect(challengeButtons).toHaveLength(2);
   });
 
   it('challenge button calls createInvitation with the target player id', async () => {

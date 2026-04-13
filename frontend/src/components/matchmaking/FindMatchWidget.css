@@ -58,47 +58,6 @@
   background-color: #5b5b5b;
 }
 
-/* — Presence row (current user) — */
-.fm-widget-presence-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: #2a2a2a;
-  border-radius: 4px;
-  padding: 0.65rem 0.85rem;
-}
-
-.fm-widget-status-label {
-  font-size: 0.9rem;
-  color: #e5e2e1;
-  font-weight: 600;
-  flex: 1;
-}
-
-.fm-widget-toggle {
-  appearance: none;
-  border: 1px solid rgba(212, 175, 55, 0.35);
-  background: transparent;
-  color: #f2ca50;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 0.4rem 0.75rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.fm-widget-toggle:hover:not(:disabled) {
-  background-color: rgba(212, 175, 55, 0.12);
-}
-
-.fm-widget-toggle:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 /* — Pending invitation badge — */
 .fm-widget-badge {
   align-self: flex-start;
@@ -216,6 +175,29 @@
 
 .fm-widget-queue-card:hover {
   background: #353534;
+}
+
+.fm-widget-queue-card--self {
+  background: #353534;
+  box-shadow: inset 2px 0 0 0 #f2ca50;
+}
+
+.fm-widget-queue-card--self:hover {
+  background: #3a3939;
+}
+
+.fm-widget-self-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  background: rgba(242, 202, 80, 0.14);
+  color: #f2ca50;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  vertical-align: middle;
 }
 
 /* Avatar */
