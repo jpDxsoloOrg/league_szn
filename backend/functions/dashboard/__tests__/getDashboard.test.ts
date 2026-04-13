@@ -15,6 +15,7 @@ vi.mock('../../../lib/dynamodb', () => ({
   },
   TableNames: {
     CHAMPIONSHIPS: 'Championships',
+    CHAMPIONSHIP_HISTORY: 'ChampionshipHistory',
     PLAYERS: 'Players',
     SEASONS: 'Seasons',
     MATCHES: 'Matches',
@@ -102,6 +103,87 @@ describe('getDashboard', () => {
     expect(body.currentChampions).toHaveLength(1);
     expect(body.currentChampions[0].championshipName).toBe('World Title');
     expect(body.currentChampions[0].championName).toBe('Stone Cold');
+  });
+
+  it('reads champion wonDate from ChampionshipHistory (open reign), not from Championships.updatedAt', async () => {
+    // Championship.updatedAt was bumped by a recent image upload and is NOT
+    // the real won date. The real won date lives on the open reign row in
+    // ChampionshipHistory (the row with no lostDate).
+    const realWonDate = '2025-11-01T12:00:00Z';
+    const bogusUpdatedAt = '2026-04-10T09:00:00Z';
+
+    mockScanAll
+      .mockReset()
+      .mockResolvedValueOnce([
+        {
+          championshipId: 'c1',
+          name: 'World Title',
+          isActive: true,
+          currentChampion: 'p1',
+          updatedAt: bogusUpdatedAt,
+        },
+      ])
+      .mockResolvedValueOnce([
+        { playerId: 'p1', name: 'Alice', currentWrestler: 'Stone Cold' },
+      ])
+      .mockResolvedValueOnce([]) // seasons
+      .mockResolvedValueOnce([]) // matches
+      .mockResolvedValueOnce([]); // stipulations
+
+    mockQuery.mockReset().mockImplementation((params: { TableName: string }) => {
+      if (params.TableName === 'ChampionshipHistory') {
+        return Promise.resolve({
+          Items: [
+            {
+              championshipId: 'c1',
+              wonDate: realWonDate,
+              champion: 'p1',
+              defenses: 3,
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ Items: [] });
+    });
+    mockQueryAll.mockReset().mockResolvedValue([]);
+
+    const result = await getDashboard({} as never, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.currentChampions).toHaveLength(1);
+    expect(body.currentChampions[0].wonDate).toBe(realWonDate);
+    expect(body.currentChampions[0].wonDate).not.toBe(bogusUpdatedAt);
+    expect(body.currentChampions[0].defenses).toBe(3);
+  });
+
+  it('falls back to undefined wonDate when ChampionshipHistory has no open reign row', async () => {
+    mockScanAll
+      .mockReset()
+      .mockResolvedValueOnce([
+        {
+          championshipId: 'c1',
+          name: 'World Title',
+          isActive: true,
+          currentChampion: 'p1',
+          updatedAt: '2026-04-10T09:00:00Z',
+        },
+      ])
+      .mockResolvedValueOnce([
+        { playerId: 'p1', name: 'Alice', currentWrestler: 'Stone Cold' },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    mockQuery.mockReset().mockResolvedValue({ Items: [] });
+    mockQueryAll.mockReset().mockResolvedValue([]);
+
+    const result = await getDashboard({} as never, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.currentChampions).toHaveLength(1);
+    expect(body.currentChampions[0].wonDate).toBeUndefined();
   });
 
   it('limits upcoming events to 3', async () => {
