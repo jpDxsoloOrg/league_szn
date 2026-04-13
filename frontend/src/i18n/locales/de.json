@@ -1648,6 +1648,7 @@
       "open": "Match finden öffnen",
       "pendingCount": "{{count}} offene Einladung",
       "pendingCount_plural": "{{count}} offene Einladungen",
+      "incomingHeader": "Eingehende Herausforderungen",
       "lookingHeader": "Sucht nach einem Match",
       "lookingCount": "{{count}} suchen",
       "challenge": "Herausfordern",

@@ -1649,6 +1649,7 @@
       "open": "Open Find a Match",
       "pendingCount": "{{count}} pending invitation",
       "pendingCount_plural": "{{count}} pending invitations",
+      "incomingHeader": "Incoming challenges",
       "lookingHeader": "Looking for a match",
       "lookingCount": "{{count}} looking",
       "challenge": "Challenge",

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePresence } from '../../contexts/PresenceContext';
 import { matchmakingApi } from '../../services/api/matchmaking.api';
 import { stipulationsApi } from '../../services/api/stipulations.api';
-import type { QueueEntry } from '../../types/matchmaking';
+import type { MatchInvitation, QueueEntry } from '../../types/matchmaking';
 import './FindMatchWidget.css';
 
 const POLL_INTERVAL_MS = 15_000;
@@ -28,6 +29,7 @@ const getInitials = (name: string): string => {
 
 const FindMatchWidget: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { isWrestler, playerId } = useAuth();
   const { presenceEnabled, enablePresence } = usePresence();
 
@@ -35,9 +37,10 @@ const FindMatchWidget: React.FC = () => {
   const [stipulationNameById, setStipulationNameById] = useState<Map<string, string>>(
     new Map()
   );
-  const [pendingInvitations, setPendingInvitations] = useState<number>(0);
+  const [incomingInvitations, setIncomingInvitations] = useState<MatchInvitation[]>([]);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [challengingId, setChallengingId] = useState<string | null>(null);
+  const [respondingId, setRespondingId] = useState<string | null>(null);
   const [joiningQueue, setJoiningQueue] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,8 +76,11 @@ const FindMatchWidget: React.FC = () => {
         matchmakingApi.getInvitations(),
       ]);
       setQueue(queueData);
-      setPendingInvitations(
-        invitationsData.incoming.filter((inv) => inv.status === 'pending').length
+      const nowIso = new Date().toISOString();
+      setIncomingInvitations(
+        invitationsData.incoming.filter(
+          (inv) => inv.status === 'pending' && inv.expiresAt > nowIso
+        )
       );
       setInvitedIds(
         new Set(
@@ -137,6 +143,43 @@ const FindMatchWidget: React.FC = () => {
     [challengingId]
   );
 
+  const handleAcceptInvitation = useCallback(
+    async (invitationId: string): Promise<void> => {
+      if (respondingId) return;
+      setRespondingId(invitationId);
+      try {
+        const result = await matchmakingApi.acceptInvitation(invitationId);
+        setIncomingInvitations((prev) =>
+          prev.filter((inv) => inv.invitationId !== invitationId)
+        );
+        navigate('/matches', { state: { matchId: result.matchId } });
+      } catch (err) {
+        console.error('[FindMatchWidget] acceptInvitation failed', err);
+      } finally {
+        setRespondingId(null);
+      }
+    },
+    [respondingId, navigate]
+  );
+
+  const handleDeclineInvitation = useCallback(
+    async (invitationId: string): Promise<void> => {
+      if (respondingId) return;
+      setRespondingId(invitationId);
+      try {
+        await matchmakingApi.declineInvitation(invitationId);
+        setIncomingInvitations((prev) =>
+          prev.filter((inv) => inv.invitationId !== invitationId)
+        );
+      } catch (err) {
+        console.error('[FindMatchWidget] declineInvitation failed', err);
+      } finally {
+        setRespondingId(null);
+      }
+    },
+    [respondingId]
+  );
+
   const isSelfInQueue = useMemo(
     () => queue.some((entry) => entry.playerId === playerId),
     [queue, playerId]
@@ -194,10 +237,61 @@ const FindMatchWidget: React.FC = () => {
         </div>
       </header>
 
-      {pendingInvitations > 0 && (
-        <div className="fm-widget-badge" role="status">
-          {t('findMatch.widget.pendingCount', { count: pendingInvitations })}
-        </div>
+      {incomingInvitations.length > 0 && (
+        <>
+          <div className="fm-widget-section-label">
+            <span>{t('findMatch.widget.incomingHeader')}</span>
+            <span className="fm-widget-section-count fm-widget-section-count--hot">
+              {incomingInvitations.length}
+            </span>
+          </div>
+          <ul className="fm-widget-invite-list">
+            {incomingInvitations.map((inv) => {
+              const responding = respondingId === inv.invitationId;
+              return (
+                <li key={inv.invitationId} className="fm-widget-invite-card">
+                  <div className="fm-widget-avatar" aria-hidden="true">
+                    {inv.from.imageUrl ? (
+                      <img src={inv.from.imageUrl} alt="" />
+                    ) : (
+                      <span>
+                        {getInitials(inv.from.currentWrestler || inv.from.name)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="fm-widget-queue-meta">
+                    <div className="fm-widget-wrestler-name">
+                      {inv.from.currentWrestler}
+                    </div>
+                    <div className="fm-widget-player-name">{inv.from.name}</div>
+                  </div>
+                  <div className="fm-widget-invite-actions">
+                    <button
+                      type="button"
+                      className="fm-widget-accept"
+                      disabled={responding}
+                      onClick={() => {
+                        void handleAcceptInvitation(inv.invitationId);
+                      }}
+                    >
+                      {t('findMatch.invitations.accept')}
+                    </button>
+                    <button
+                      type="button"
+                      className="fm-widget-decline"
+                      disabled={responding}
+                      onClick={() => {
+                        void handleDeclineInvitation(inv.invitationId);
+                      }}
+                    >
+                      {t('findMatch.invitations.decline')}
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
 
       <div className="fm-widget-section-label">

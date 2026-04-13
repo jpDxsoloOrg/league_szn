@@ -20,6 +20,8 @@ const {
   mockJoinQueue,
   mockLeaveQueue,
   mockGetStipulations,
+  mockAcceptInvitation,
+  mockDeclineInvitation,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockEnablePresence: vi.fn(),
@@ -37,6 +39,8 @@ const {
   mockJoinQueue: vi.fn(),
   mockLeaveQueue: vi.fn(),
   mockGetStipulations: vi.fn(),
+  mockAcceptInvitation: vi.fn(),
+  mockDeclineInvitation: vi.fn(),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -81,8 +85,8 @@ vi.mock('../../../services/api/matchmaking.api', () => ({
     getOnline: vi.fn(),
     createInvitation: mockCreateInvitation,
     getInvitations: mockGetInvitations,
-    acceptInvitation: vi.fn(),
-    declineInvitation: vi.fn(),
+    acceptInvitation: mockAcceptInvitation,
+    declineInvitation: mockDeclineInvitation,
   },
 }));
 
@@ -159,18 +163,86 @@ describe('FindMatchWidget', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('shows pending invitation badge after getInvitations resolves', async () => {
+  it('renders incoming challenge cards with Accept and Decline buttons', async () => {
     mockGetInvitations.mockResolvedValue({
-      incoming: [makeInvitation('a'), makeInvitation('b'), makeInvitation('c')],
+      incoming: [makeInvitation('inv-1')],
       outgoing: [],
     });
     render(<FindMatchWidget />);
 
     await waitFor(() => {
       expect(
-        screen.getByText('findMatch.widget.pendingCount:3')
+        screen.getByText('findMatch.widget.incomingHeader')
       ).toBeInTheDocument();
     });
+    expect(
+      screen.getByRole('button', { name: 'findMatch.invitations.accept' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'findMatch.invitations.decline' })
+    ).toBeInTheDocument();
+  });
+
+  it('accept button calls acceptInvitation and navigates to /matches', async () => {
+    const user = userEvent.setup();
+    mockGetInvitations.mockResolvedValue({
+      incoming: [makeInvitation('inv-1')],
+      outgoing: [],
+    });
+    mockAcceptInvitation.mockResolvedValue({
+      matchId: 'match-42',
+      invitation: makeInvitation('inv-1'),
+    });
+    render(<FindMatchWidget />);
+
+    const acceptBtn = await screen.findByRole('button', {
+      name: 'findMatch.invitations.accept',
+    });
+    await user.click(acceptBtn);
+    expect(mockAcceptInvitation).toHaveBeenCalledWith('inv-1');
+    expect(mockNavigate).toHaveBeenCalledWith('/matches', {
+      state: { matchId: 'match-42' },
+    });
+  });
+
+  it('decline button calls declineInvitation and removes the card', async () => {
+    const user = userEvent.setup();
+    mockGetInvitations.mockResolvedValue({
+      incoming: [makeInvitation('inv-1')],
+      outgoing: [],
+    });
+    mockDeclineInvitation.mockResolvedValue(undefined);
+    render(<FindMatchWidget />);
+
+    const declineBtn = await screen.findByRole('button', {
+      name: 'findMatch.invitations.decline',
+    });
+    await user.click(declineBtn);
+    expect(mockDeclineInvitation).toHaveBeenCalledWith('inv-1');
+    await waitFor(() => {
+      expect(
+        screen.queryByText('findMatch.widget.incomingHeader')
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it('filters out expired incoming invitations', async () => {
+    const expiredInv: MatchInvitation = {
+      ...makeInvitation('inv-expired'),
+      expiresAt: new Date(Date.now() - 1000).toISOString(),
+    };
+    mockGetInvitations.mockResolvedValue({
+      incoming: [expiredInv],
+      outgoing: [],
+    });
+    render(<FindMatchWidget />);
+
+    await waitFor(() => {
+      expect(screen.getByText('findMatch.widget.empty')).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByText('findMatch.widget.incomingHeader')
+    ).not.toBeInTheDocument();
   });
 
   it('renders empty state when the queue is empty', async () => {
