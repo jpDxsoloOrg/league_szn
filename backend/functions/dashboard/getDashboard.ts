@@ -121,8 +121,18 @@ export const handler: APIGatewayProxyHandler = async () => {
       if (id && s.name) stipulationMap.set(id, s.name as string);
     }
 
-    // Current champions: active championships with currentChampion
-    const currentChampions: DashboardChampion[] = [];
+    // Current champions: active championships with currentChampion.
+    // wonDate is read from the open reign in ChampionshipHistory (the row
+    // where lostDate is absent), NOT from Championships.updatedAt — that
+    // field bumps on any championship edit (e.g. image upload) and is not
+    // a reliable source of reign length.
+    interface ChampionCandidate {
+      championship: Record<string, unknown>;
+      playerIds: string[];
+      names: string[];
+      imageUrl?: string;
+    }
+    const championCandidates: ChampionCandidate[] = [];
     for (const c of championships as Record<string, unknown>[]) {
       if (c.isActive === false) continue;
       const champ = c.currentChampion;
@@ -138,17 +148,43 @@ export const handler: APIGatewayProxyHandler = async () => {
         }
       }
       if (names.length > 0) {
-        currentChampions.push({
-          championshipId: c.championshipId as string,
-          championshipName: c.name as string,
-          championName: names.join(' & '),
-          championImageUrl: imageUrl,
-          playerId: (playerIds[0] as string) ?? '',
-          wonDate: c.updatedAt as string,
-          defenses: c.defenses as number | undefined,
-        });
+        championCandidates.push({ championship: c, playerIds, names, imageUrl });
       }
     }
+
+    const currentReigns = await Promise.all(
+      championCandidates.map((cand) =>
+        dynamoDb.query({
+          TableName: TableNames.CHAMPIONSHIP_HISTORY,
+          KeyConditionExpression: 'championshipId = :cid',
+          FilterExpression: 'attribute_not_exists(lostDate)',
+          ExpressionAttributeValues: {
+            ':cid': cand.championship.championshipId as string,
+          },
+          ScanIndexForward: false,
+          Limit: 1,
+        })
+      )
+    );
+
+    const currentChampions: DashboardChampion[] = championCandidates.map(
+      (cand, i) => {
+        const reign = currentReigns[i]?.Items?.[0] as
+          | Record<string, unknown>
+          | undefined;
+        return {
+          championshipId: cand.championship.championshipId as string,
+          championshipName: cand.championship.name as string,
+          championName: cand.names.join(' & '),
+          championImageUrl: cand.imageUrl,
+          playerId: (cand.playerIds[0] as string) ?? '',
+          wonDate: (reign?.wonDate as string | undefined) ?? undefined,
+          defenses:
+            (reign?.defenses as number | undefined) ??
+            (cand.championship.defenses as number | undefined),
+        };
+      }
+    );
 
     // Upcoming events (already limited to 3 by query)
     const upcomingEvents: DashboardEvent[] = ((upcomingEventsResult.Items || []) as Record<
