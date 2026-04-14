@@ -47,9 +47,16 @@ function computeReignDays(wonDate?: string): number | null {
   return Math.max(0, Math.floor(diff / 86400000));
 }
 
-function SeasonProgressRing({ played, label }: { played: number; label: string }) {
-  const total = 50;
-  const pct = Math.min(100, (played / total) * 100);
+function SeasonProgressRing({ startDate, endDate, label }: { startDate?: string; endDate?: string; label: string }) {
+  const now = Date.now();
+  let pct = 0;
+  if (startDate && endDate) {
+    const start = new Date(startDate).getTime();
+    const end = new Date(endDate).getTime();
+    if (end > start) {
+      pct = Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100));
+    }
+  }
   const r = 54;
   const circ = 2 * Math.PI * r;
   const offset = circ - (pct / 100) * circ;
@@ -65,7 +72,7 @@ function SeasonProgressRing({ played, label }: { played: number; label: string }
         />
       </svg>
       <div className="season-ring-text">
-        <span className="season-ring-value">{played}</span>
+        <span className="season-ring-value">{Math.round(pct)}%</span>
         <span className="season-ring-label">{label}</span>
       </div>
     </div>
@@ -120,6 +127,10 @@ export default function Dashboard() {
 
   const featuredChampion = useMemo(() => {
     if (!data || data.currentChampions.length === 0) return null;
+    const worldHeavyweight = data.currentChampions.find(c =>
+      c.championshipName.toLowerCase().includes('world heavyweight')
+    );
+    if (worldHeavyweight) return worldHeavyweight;
     const sorted = [...data.currentChampions].sort((a, b) => {
       const daysA = computeReignDays(a.wonDate) ?? 0;
       const daysB = computeReignDays(b.wonDate) ?? 0;
@@ -354,8 +365,9 @@ export default function Dashboard() {
         ) : (
           <div className="db-season-content">
             <SeasonProgressRing
-              played={data.seasonInfo.matchesPlayed ?? 0}
-              label={t('dashboard.matchesPlayed')}
+              startDate={data.seasonInfo.startDate}
+              endDate={data.seasonInfo.endDate}
+              label={t('dashboard.seasonProgress')}
             />
             <div className="db-season-info">
               <div className="db-season-name">{data.seasonInfo.name}</div>
