@@ -8,12 +8,11 @@ import { usePromoReadState } from '../../hooks/usePromoReadState';
 import PromoCard from './PromoCard';
 import './PromoFeed.css';
 
-type FeedFilter = 'all' | 'call-out' | 'response' | 'championship' | 'match' | 'mentions';
+type FeedFilter = 'all' | 'call-out' | 'championship' | 'match' | 'mentions';
 
 const FILTER_TABS: { key: FeedFilter; labelKey: string; fallback: string }[] = [
   { key: 'all', labelKey: 'promos.feed.filterAll', fallback: 'All' },
   { key: 'call-out', labelKey: 'promos.feed.filterCallOuts', fallback: 'Call-Outs' },
-  { key: 'response', labelKey: 'promos.feed.filterResponses', fallback: 'Responses' },
   { key: 'championship', labelKey: 'promos.feed.filterChampionship', fallback: 'Championship' },
   { key: 'match', labelKey: 'promos.feed.filterMatch', fallback: 'Pre/Post Match' },
   { key: 'mentions', labelKey: 'promos.feed.filterMentions', fallback: 'Mentions' },
@@ -40,8 +39,6 @@ function matchesFilter(promo: PromoWithContext, filter: FeedFilter, currentPlaye
       return true;
     case 'call-out':
       return promo.promoType === 'call-out';
-    case 'response':
-      return promo.promoType === 'response';
     case 'championship':
       return promo.promoType === 'championship';
     case 'match':
@@ -67,7 +64,7 @@ export default function PromoFeed() {
     const controller = new AbortController();
     setLoading(true);
     promosApi
-      .getAll(undefined, controller.signal)
+      .getAll({ excludeResponses: true }, controller.signal)
       .then((data) => {
         setPromos(data);
         setError(null);
@@ -93,7 +90,7 @@ export default function PromoFeed() {
     } catch { /* silent fail for reactions */ }
   }, []);
 
-  const pinnedPromos = useMemo(() => promos.filter((p) => p.isPinned), [promos]);
+  const pinnedPromos = useMemo(() => promos.filter((p) => p.isPinned && !p.targetPromoId), [promos]);
 
   const mentionCount = useMemo(() => {
     if (!playerId) return 0;
@@ -101,7 +98,7 @@ export default function PromoFeed() {
   }, [promos, playerId, isRead]);
 
   const filteredPromos = useMemo(() => {
-    let result = promos.filter((p) => !p.isPinned);
+    let result = promos.filter((p) => !p.isPinned && !p.targetPromoId);
     if (activeFilter !== 'all') {
       result = result.filter((p) => matchesFilter(p, activeFilter, playerId));
     }

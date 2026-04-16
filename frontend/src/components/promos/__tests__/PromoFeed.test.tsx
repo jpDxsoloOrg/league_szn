@@ -25,9 +25,9 @@ vi.mock('react-i18next', () => ({
         'promos.feed.cutPromo': 'Cut a Promo',
         'promos.feed.filterAll': 'All',
         'promos.feed.filterCallOuts': 'Call-Outs',
-        'promos.feed.filterResponses': 'Responses',
         'promos.feed.filterChampionship': 'Championship',
         'promos.feed.filterMatch': 'Pre/Post Match',
+        'promos.feed.filterMentions': 'Mentions',
         'promos.feed.pinnedPromos': 'Pinned',
         'promos.feed.noPromos': 'No promos found. Be the first to cut a promo!',
         'promos.types.open-mic': 'Open Mic',
@@ -117,9 +117,17 @@ describe('PromoFeed', () => {
     // Filter tabs
     expect(screen.getByText('All')).toBeInTheDocument();
     expect(screen.getByText('Call-Outs')).toBeInTheDocument();
-    expect(screen.getByText('Responses')).toBeInTheDocument();
     expect(screen.getByText('Championship')).toBeInTheDocument();
     expect(screen.getByText('Pre/Post Match')).toBeInTheDocument();
+    expect(screen.getByText('Mentions')).toBeInTheDocument();
+    // "Responses" tab has been removed
+    expect(screen.queryByText('Responses')).not.toBeInTheDocument();
+
+    // Feed fetched with excludeResponses and an AbortSignal
+    expect(mockGetAllPromos).toHaveBeenCalledWith(
+      { excludeResponses: true },
+      expect.any(AbortSignal)
+    );
 
     // Promo content rendered
     expect(screen.getByText('Undertaker')).toBeInTheDocument();
@@ -191,5 +199,36 @@ describe('PromoFeed', () => {
     // "Cut a Promo" link available
     const cutLinks = screen.getAllByText('Cut a Promo');
     expect(cutLinks.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('does not render response promos in the feed (defensive filter)', async () => {
+    const parent = makePromo({
+      promoId: 'promo-parent',
+      promoType: 'call-out',
+      content: 'You are going down!',
+      wrestlerName: 'Undertaker',
+      playerName: 'Mark',
+    });
+    const response = makePromo({
+      promoId: 'promo-response',
+      promoType: 'response',
+      targetPromoId: 'promo-parent',
+      content: 'Bring it on!',
+      wrestlerName: 'The Rock',
+      playerName: 'Jane',
+    });
+    mockGetAllPromos.mockResolvedValue([parent, response]);
+
+    renderFeed();
+
+    await waitFor(() => {
+      expect(screen.getByText('Wrestler Promos')).toBeInTheDocument();
+    });
+
+    // Parent promo's card is visible
+    expect(screen.getByText('Undertaker')).toBeInTheDocument();
+    // Response promo's card is filtered out client-side
+    expect(screen.queryByText('The Rock')).not.toBeInTheDocument();
+    expect(screen.queryByText('Bring it on!')).not.toBeInTheDocument();
   });
 });

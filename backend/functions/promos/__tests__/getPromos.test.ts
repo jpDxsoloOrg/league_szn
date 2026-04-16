@@ -175,6 +175,43 @@ describe('getPromos', () => {
     expect(responsePromo.targetPromo.content).toBe('');
   });
 
+  it('excludes response promos when excludeResponses=true is set', async () => {
+    mockScanAll.mockResolvedValue([
+      { promoId: 'p1', playerId: 'pl1', promoType: 'open-mic', isHidden: false, createdAt: '2024-01-01T00:00:00Z' },
+      { promoId: 'p2', playerId: 'pl1', promoType: 'response', targetPromoId: 'p1', isHidden: false, createdAt: '2024-01-02T00:00:00Z' },
+    ]);
+    mockGet.mockResolvedValue({
+      Item: { playerId: 'pl1', name: 'John', currentWrestler: 'The Rock' },
+    });
+
+    const event = makeEvent({ queryStringParameters: { excludeResponses: 'true' } });
+    const result = await getPromos(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const data = body(result);
+    expect(data).toHaveLength(1);
+    expect(data.find((p: any) => p.promoId === 'p2')).toBeUndefined();
+    const parent = data.find((p: any) => p.promoId === 'p1');
+    expect(parent.responseCount).toBe(1);
+  });
+
+  it('includes response promos by default (no excludeResponses param)', async () => {
+    mockScanAll.mockResolvedValue([
+      { promoId: 'p1', playerId: 'pl1', promoType: 'open-mic', isHidden: false, createdAt: '2024-01-01T00:00:00Z' },
+      { promoId: 'p2', playerId: 'pl1', promoType: 'response', targetPromoId: 'p1', isHidden: false, createdAt: '2024-01-02T00:00:00Z' },
+    ]);
+    mockGet.mockResolvedValue({
+      Item: { playerId: 'pl1', name: 'John', currentWrestler: 'The Rock' },
+    });
+
+    const result = await getPromos(makeEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const data = body(result);
+    expect(data).toHaveLength(2);
+    expect(data.find((p: any) => p.promoId === 'p2')).toBeDefined();
+  });
+
   it('returns 500 when scanAll throws an error', async () => {
     mockScanAll.mockRejectedValue(new Error('DynamoDB failure'));
 

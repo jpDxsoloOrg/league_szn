@@ -6,7 +6,7 @@ Cut promos to build storylines, call out opponents, or respond to other wrestler
 
 ## Promo feed
 
-Open **Promos** from the navigation menu to see the promo feed. Pinned promos appear at the top. Scroll to read open-mic promos, call-outs, and responses.
+Open **Promos** from the navigation menu to see the promo feed. Pinned promos appear at the top. Scroll to read open-mic promos and call-outs. To read responses to a promo, open that promo — its thread view shows the original plus every reply.
 
 ## Creating a promo
 
