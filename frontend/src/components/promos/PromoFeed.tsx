@@ -90,7 +90,10 @@ export default function PromoFeed() {
     } catch { /* silent fail for reactions */ }
   }, []);
 
-  const pinnedPromos = useMemo(() => promos.filter((p) => p.isPinned && !p.targetPromoId), [promos]);
+  const pinnedPromos = useMemo(
+    () => promos.filter((p) => p.isPinned && !p.targetPromoId && p.promoType !== 'response'),
+    [promos]
+  );
 
   const mentionCount = useMemo(() => {
     if (!playerId) return 0;
@@ -98,7 +101,7 @@ export default function PromoFeed() {
   }, [promos, playerId, isRead]);
 
   const filteredPromos = useMemo(() => {
-    let result = promos.filter((p) => !p.isPinned && !p.targetPromoId);
+    let result = promos.filter((p) => !p.isPinned && !p.targetPromoId && p.promoType !== 'response');
     if (activeFilter !== 'all') {
       result = result.filter((p) => matchesFilter(p, activeFilter, playerId));
     }

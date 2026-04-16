@@ -195,6 +195,24 @@ describe('getPromos', () => {
     expect(parent.responseCount).toBe(1);
   });
 
+  it('excludes orphan response promos (promoType=response with no targetPromoId) when excludeResponses=true', async () => {
+    mockScanAll.mockResolvedValue([
+      { promoId: 'p1', playerId: 'pl1', promoType: 'open-mic', isHidden: false, createdAt: '2024-01-01T00:00:00Z' },
+      { promoId: 'orphan', playerId: 'pl1', promoType: 'response', isHidden: false, createdAt: '2024-01-03T00:00:00Z' },
+    ]);
+    mockGet.mockResolvedValue({
+      Item: { playerId: 'pl1', name: 'John', currentWrestler: 'The Rock' },
+    });
+
+    const event = makeEvent({ queryStringParameters: { excludeResponses: 'true' } });
+    const result = await getPromos(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const data = body(result);
+    expect(data).toHaveLength(1);
+    expect(data.find((p: any) => p.promoId === 'orphan')).toBeUndefined();
+  });
+
   it('includes response promos by default (no excludeResponses param)', async () => {
     mockScanAll.mockResolvedValue([
       { promoId: 'p1', playerId: 'pl1', promoType: 'open-mic', isHidden: false, createdAt: '2024-01-01T00:00:00Z' },

@@ -1354,6 +1354,8 @@
       "selectPlayer": "-- Wrestler auswählen --",
       "targetPromo": "Antwort auf Promo",
       "selectPromo": "-- Promo auswählen --",
+      "selectPlayerFirst": "Wähle oben einen Ziel-Wrestler, um dessen Promos zu sehen.",
+      "noTargetPromos": "Dieser Wrestler hat noch keine Promos. Wähle einen anderen Wrestler oder einen anderen Promo-Typ.",
       "match": "Kampf",
       "selectMatch": "-- Kampf auswählen --",
       "championship": "Meisterschaft",

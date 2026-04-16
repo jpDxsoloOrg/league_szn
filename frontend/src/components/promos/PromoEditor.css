@@ -66,6 +66,19 @@
   font-size: 0.8rem;
 }
 
+.form-required {
+  color: #ef4444;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.form-hint {
+  color: #aaa;
+  font-size: 0.85rem;
+  margin: 6px 0 0;
+  font-style: italic;
+}
+
 /* Type Selector Grid */
 .promo-type-grid {
   display: grid;

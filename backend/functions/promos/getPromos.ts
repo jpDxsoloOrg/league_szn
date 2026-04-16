@@ -63,7 +63,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Enrich with player context
     const enriched = promos
-      .filter((p) => (includeHidden === 'true' || !(p.isHidden as boolean)) && !(excludeResponses === 'true' && p.targetPromoId))
+      .filter((p) => (includeHidden === 'true' || !(p.isHidden as boolean)) && !(excludeResponses === 'true' && (p.targetPromoId || p.promoType === 'response')))
       .map((p) => {
         const author = playerMap[p.playerId as string];
         const target = p.targetPlayerId ? playerMap[p.targetPlayerId as string] : undefined;
