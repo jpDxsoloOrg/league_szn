@@ -6,7 +6,7 @@ Schneiden Sie Promos, um Storylines aufzubauen, Gegner herauszufordern oder ande
 
 ## Promo-Feed
 
-Öffnen Sie **Promos** im Menü für den Feed. Angepinnte Promos stehen oben. Scrollen Sie für Open-Mic-Promos, Call-Outs und Antworten.
+Öffnen Sie **Promos** im Menü für den Feed. Angepinnte Promos stehen oben. Scrollen Sie für Open-Mic-Promos und Call-Outs. Um Antworten auf eine Promo zu lesen, öffnen Sie die Promo — die Thread-Ansicht zeigt das Original und alle Antworten.
 
 ## Eine Promo erstellen
 
