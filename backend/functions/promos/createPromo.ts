@@ -41,6 +41,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (content.length > 2000) {
       return badRequest('Content must be at most 2000 characters');
     }
+    if (promoType === 'response' && !targetPromoId) {
+      return badRequest('Response promos must reference an existing promo (targetPromoId)');
+    }
 
     // Find the player via user sub
     const playerResult = await dynamoDb.query({

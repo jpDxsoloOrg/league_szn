@@ -180,6 +180,40 @@ describe('createPromo', () => {
     expect(body(result).message).toBe('Content must be at least 50 characters');
   });
 
+  it('returns 400 when a response promo is submitted without targetPromoId', async () => {
+    const event = withAuth(
+      makeEvent({ body: JSON.stringify({ promoType: 'response', content: VALID_CONTENT }) }),
+      'Wrestler',
+    );
+    const result = await createPromo(event, ctx, cb);
+    expect(result!.statusCode).toBe(400);
+    expect(body(result).message).toBe(
+      'Response promos must reference an existing promo (targetPromoId)'
+    );
+    expect(mockPut).not.toHaveBeenCalled();
+  });
+
+  it('accepts a response promo when targetPromoId is provided', async () => {
+    mockQuery.mockResolvedValue({
+      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+    });
+    mockPut.mockResolvedValue({});
+
+    const event = withAuth(
+      makeEvent({
+        body: JSON.stringify({
+          promoType: 'response',
+          content: VALID_CONTENT,
+          targetPromoId: 'parent-promo-id',
+        }),
+      }),
+      'Wrestler',
+    );
+    const result = await createPromo(event, ctx, cb);
+    expect(result!.statusCode).toBe(201);
+    expect(body(result).targetPromoId).toBe('parent-promo-id');
+  });
+
   it('returns 400 when no player profile is linked to the user', async () => {
     mockQuery.mockResolvedValue({ Items: [] });
     const event = withAuth(
@@ -197,8 +231,11 @@ describe('createPromo', () => {
       vi.clearAllMocks();
       mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
       mockPut.mockResolvedValue({});
+      const payload: Record<string, string> = { promoType, content: VALID_CONTENT };
+      // Response promos require a target promo reference.
+      if (promoType === 'response') payload.targetPromoId = 'parent-promo-id';
       const event = withAuth(
-        makeEvent({ body: JSON.stringify({ promoType, content: VALID_CONTENT }) }), 'Wrestler',
+        makeEvent({ body: JSON.stringify(payload) }), 'Wrestler',
       );
       const result = await createPromo(event, ctx, cb);
       expect(result!.statusCode).toBe(201);

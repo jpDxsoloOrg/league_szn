@@ -195,7 +195,9 @@ export default function PromoEditor() {
 
   const contentLength = content.length;
   const isContentValid = contentLength >= MIN_CONTENT && contentLength <= MAX_CONTENT;
-  const canSubmit = isContentValid && promoType && !submitting;
+  const needsTargetPromo = promoType === 'response';
+  const hasTargetPromo = !!targetPromoId;
+  const canSubmit = isContentValid && promoType && !submitting && (!needsTargetPromo || hasTargetPromo);
 
   const previewPromo = useMemo((): PromoWithContext => {
     const targetPlayer = players.find((p) => p.playerId === targetPlayerId);
@@ -539,26 +541,38 @@ export default function PromoEditor() {
         )}
 
         {/* Target Promo */}
-        {showTargetPromo && targetPlayerId && (
+        {showTargetPromo && (
           <div className="form-group">
             <label className="form-label" htmlFor="target-promo">
               {t('promos.editor.targetPromo', 'Responding to Promo')}
+              <span className="form-required" aria-label="required"> *</span>
             </label>
-            <select
-              id="target-promo"
-              className="form-select"
-              value={targetPromoId}
-              onChange={(e) => setTargetPromoId(e.target.value)}
-            >
-              <option value="">
-                {t('promos.editor.selectPromo', '-- Select a promo --')}
-              </option>
-              {targetPromos.map((promo) => (
-                <option key={promo.promoId} value={promo.promoId}>
-                  {promo.title || promo.content.slice(0, 60) + '...'}
+            {!targetPlayerId ? (
+              <p className="form-hint">
+                {t('promos.editor.selectPlayerFirst', 'Select a target wrestler above to see their promos.')}
+              </p>
+            ) : targetPromos.length === 0 ? (
+              <p className="form-hint">
+                {t('promos.editor.noTargetPromos', 'This wrestler has no promos yet. Pick a different wrestler or a different promo type.')}
+              </p>
+            ) : (
+              <select
+                id="target-promo"
+                className="form-select"
+                value={targetPromoId}
+                onChange={(e) => setTargetPromoId(e.target.value)}
+                required
+              >
+                <option value="">
+                  {t('promos.editor.selectPromo', '-- Select a promo --')}
                 </option>
-              ))}
-            </select>
+                {targetPromos.map((promo) => (
+                  <option key={promo.promoId} value={promo.promoId}>
+                    {promo.title || promo.content.slice(0, 60) + '...'}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         )}
 
