@@ -1,14 +1,11 @@
+import { createHandlerFactory } from '../../lib/handlers';
+import { getRepositories } from '../../lib/repositories';
+import type { MatchTypeCreateInput } from '../../lib/repositories/MatchTypesRepository';
+import type { MatchType } from '../../lib/repositories/types';
 
-
-
-import { TableNames } from '../../lib/dynamodb';
-import { handlerFactory } from '../../lib/handlers';
-
-export const handler = handlerFactory({
-  tableName: TableNames.MATCH_TYPES,
-  idField: 'matchTypeId',
-  entityName: 'matchType',
+export const handler = createHandlerFactory<MatchTypeCreateInput, MatchType>({
+  repo: () => getRepositories().matchTypes,
+  entityName: 'match type',
   requiredFields: ['name'],
   optionalFields: ['description'],
 });
-
