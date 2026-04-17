@@ -6,6 +6,27 @@
 > makes the data source swappable so *any* future migration is a new implementation of
 > the interface, not a rewrite of every handler.
 
+## Progress (branch `feat/db-interface-layer`)
+
+| Wave | Status | Commit |
+|---|---|---|
+| 1 — Foundation (types, errors, UoW interface, driver-selection factory) | ✅ Done | `2c71896` |
+| 2 — Divisions/Stipulations/MatchTypes + generalized CRUD factory | ✅ Done | `9357c0e` |
+| 3 — Read-heavy leaves (Seasons, Announcements, Videos, Companies, Shows, Notifications, Overalls, SiteConfig, SeasonAwards) | ⏳ Next | — |
+| 4 — Medium-complexity aggregates with GSIs (Players, Challenges, TagTeams, Stables, Transfers, StorylineRequests, Events, Promos) | ⏳ | — |
+| 5 — Cross-aggregate reads (Standings, Dashboard, Rivalries, Statistics, Activity) | ⏳ | — |
+| 6 — Contenders & Fantasy (batched writes) | ⏳ | — |
+| 7 — Transactional writes + `runInTransaction` + `recordResult.ts` | ⏳ | — |
+| 8 — Admin and seed scripts | ⏳ | — |
+| 9 — Clean up (delete `dynamodbUtils.ts`, shrink `dynamodb.ts`, remove deprecated `handlerFactory`) | ⏳ | — |
+
+**Baseline after Wave 2**: 953 tests passing, 17 pre-existing failures (unrelated
+mock-shape drift, tracked separately in `TO-DOS.md`). Typecheck and lint clean.
+
+**Where to resume**: open Wave 3 (pick one domain, follow the Wave 2 shape —
+interface → Dynamo driver → in-memory driver → migrate handlers → rewrite tests).
+The smallest domain to start with is `SiteConfig` (one entity, no relationships).
+
 ## Context
 
 Every Lambda handler currently imports `dynamoDb` and `TableNames` directly from
