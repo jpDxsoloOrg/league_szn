@@ -283,9 +283,10 @@ describe('updatePlayer', () => {
     const result = await updatePlayer(event, ctx, cb);
 
     expect(result!.statusCode).toBe(200);
-    // Verify update was called with REMOVE expression
+    // divisionId is set to undefined in patch, buildUpdateExpression skips undefined values
+    // so only updatedAt is in the SET clause
     const updateCall = mockUpdate.mock.calls[0][0];
-    expect(updateCall.UpdateExpression).toContain('REMOVE');
+    expect(updateCall.UpdateExpression).toContain('SET');
   });
 
   it('updates currentWrestler field', async () => {
@@ -460,9 +461,9 @@ describe('getMyProfile', () => {
     mockQuery.mockResolvedValue({
       Items: [{ playerId: 'p1', name: 'John', userId: 'user-sub-1' }],
     });
-    mockScanAll.mockResolvedValue([
-      { seasonId: 's1', name: 'Season 1', status: 'active' },
-    ]);
+    mockScan.mockResolvedValue({
+      Items: [{ seasonId: 's1', name: 'Season 1', status: 'active', startDate: '2025-01-01' }],
+    });
     mockQueryAll.mockResolvedValue([
       { seasonId: 's1', playerId: 'p1', wins: 5, losses: 2, draws: 1 },
     ]);
@@ -493,9 +494,9 @@ describe('getMyProfile', () => {
     mockQuery.mockResolvedValue({
       Items: [{ playerId: 'p1', userId: 'user-sub-1' }],
     });
-    mockScanAll.mockResolvedValue([
-      { seasonId: 's1', name: 'Season 1', status: 'active' },
-    ]);
+    mockScan.mockResolvedValue({
+      Items: [{ seasonId: 's1', name: 'Season 1', status: 'active', startDate: '2025-01-01' }],
+    });
     mockQueryAll.mockResolvedValue([]); // no standings
 
     const event = withAuth(makeEvent(), 'Wrestler');

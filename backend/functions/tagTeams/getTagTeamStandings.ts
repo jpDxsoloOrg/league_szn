@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import {
   TagTeamRecord,
@@ -8,11 +8,6 @@ import {
   buildTagTeamMatchMap,
   computeFormAndStreak,
 } from './computeTagTeamStats';
-
-interface PlayerRecord {
-  playerId: string;
-  name: string;
-}
 
 interface TagTeamStanding {
   tagTeamId: string;
@@ -30,16 +25,10 @@ interface TagTeamStanding {
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    // Get all active tag teams via StatusIndex GSI
-    const tagTeamItems = await dynamoDb.queryAll({
-      TableName: TableNames.TAG_TEAMS,
-      IndexName: 'StatusIndex',
-      KeyConditionExpression: '#status = :status',
-      ExpressionAttributeNames: { '#status': 'status' },
-      ExpressionAttributeValues: { ':status': 'active' },
-    });
+    const { tagTeams: tagTeamsRepo, players: playersRepo } = getRepositories();
 
-    const tagTeams = tagTeamItems as unknown as TagTeamRecord[];
+    // Get all active tag teams via repo
+    const tagTeams = await tagTeamsRepo.listByStatus('active');
 
     if (tagTeams.length === 0) {
       return success([]);
@@ -53,31 +42,25 @@ export const handler: APIGatewayProxyHandler = async () => {
     }
 
     // Fetch player names and completed matches in parallel
-    const playerPromises = Array.from(playerIds).map((playerId) =>
-      dynamoDb.get({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId },
-        ProjectionExpression: 'playerId, #name',
-        ExpressionAttributeNames: { '#name': 'name' },
-      })
-    );
-
+    // Note: completedMatches uses dynamoDb directly — matches migration deferred to Wave 5+
     const [playerResults, completedMatches] = await Promise.all([
-      Promise.all(playerPromises),
+      Promise.all(Array.from(playerIds).map((playerId) => playersRepo.findById(playerId))),
       fetchCompletedMatches(),
     ]);
 
     // Build player name map
     const playerMap = new Map<string, string>();
-    for (const playerResult of playerResults) {
-      if (playerResult.Item) {
-        const player = playerResult.Item as PlayerRecord;
+    for (const player of playerResults) {
+      if (player) {
         playerMap.set(player.playerId, player.name);
       }
     }
 
+    // Cast to TagTeamRecord for computeTagTeamStats utilities
+    const tagTeamRecords = tagTeams as unknown as TagTeamRecord[];
+
     // Build match results map for all tag teams in one pass
-    const matchMap = buildTagTeamMatchMap(tagTeams, completedMatches);
+    const matchMap = buildTagTeamMatchMap(tagTeamRecords, completedMatches);
 
     // Build standings with recentForm and currentStreak
     const standings: TagTeamStanding[] = tagTeams.map((team) => {

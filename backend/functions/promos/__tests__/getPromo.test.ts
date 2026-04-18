@@ -67,12 +67,13 @@ describe('getPromo', () => {
     };
 
     mockGet.mockImplementation(async (params: any) => {
-      if (params.Key.promoId) return { Item: promo };
+      if (params.Key.promoId === 'p1') return { Item: promo };
       if (params.Key.playerId === 'pl1') return { Item: { playerId: 'pl1', name: 'John', currentWrestler: 'The Rock', imageUrl: 'img1.jpg' } };
       if (params.Key.playerId === 'pl2') return { Item: { playerId: 'pl2', name: 'Jane', currentWrestler: 'Bianca', imageUrl: 'img2.jpg' } };
       return { Item: undefined };
     });
-    mockScanAll.mockResolvedValue([promo, responsePromo]);
+    // listResponsesTo scans with FilterExpression for targetPromoId
+    mockScanAll.mockResolvedValue([responsePromo]);
 
     const result = await getPromo(makeEvent({ pathParameters: { promoId: 'p1' } }), ctx, cb);
 
@@ -97,7 +98,7 @@ describe('getPromo', () => {
       if (params.Key.promoId) return { Item: promo };
       return { Item: undefined };
     });
-    mockScanAll.mockResolvedValue([promo]);
+    mockScanAll.mockResolvedValue([]);
 
     const result = await getPromo(makeEvent({ pathParameters: { promoId: 'p1' } }), ctx, cb);
 
@@ -125,7 +126,8 @@ describe('getPromo', () => {
       if (params.Key.promoId) return { Item: promo };
       return { Item: { playerId: 'pl1', name: 'John', currentWrestler: 'The Rock' } };
     });
-    mockScanAll.mockResolvedValue([promo, visible, hidden]);
+    // listResponsesTo returns items with targetPromoId matching - mock returns both visible and hidden
+    mockScanAll.mockResolvedValue([visible, hidden]);
 
     const result = await getPromo(makeEvent({ pathParameters: { promoId: 'p1' } }), ctx, cb);
 
@@ -148,12 +150,14 @@ describe('getPromo', () => {
     };
 
     mockGet.mockImplementation(async (params: any) => {
-      if (params.Key.promoId) return { Item: resp };
+      if (params.Key.promoId === 'resp-1') return { Item: resp };
+      if (params.Key.promoId === 'parent-1') return { Item: parent };
       if (params.Key.playerId === 'pl1') return { Item: { playerId: 'pl1', name: 'John', currentWrestler: 'The Rock' } };
       if (params.Key.playerId === 'pl2') return { Item: { playerId: 'pl2', name: 'Jane', currentWrestler: 'Bianca' } };
       return { Item: undefined };
     });
-    mockScanAll.mockResolvedValue([parent, resp]);
+    // listResponsesTo('resp-1') - no responses to the response promo
+    mockScanAll.mockResolvedValue([]);
 
     const result = await getPromo(makeEvent({ pathParameters: { promoId: 'resp-1' } }), ctx, cb);
 
@@ -177,7 +181,8 @@ describe('getPromo', () => {
       if (params.Key.promoId) return { Item: promo };
       return { Item: { playerId: 'pl1', name: 'John', currentWrestler: 'The Rock' } };
     });
-    mockScanAll.mockResolvedValue([promo, r1, r2]);
+    // listResponsesTo returns items with targetPromoId = 'p1'
+    mockScanAll.mockResolvedValue([r1, r2]);
 
     const result = await getPromo(makeEvent({ pathParameters: { promoId: 'p1' } }), ctx, cb);
 
@@ -206,7 +211,8 @@ describe('getPromo', () => {
       if (params.Key.playerId === 'pl2') return { Item: { playerId: 'pl2', name: 'Jane', currentWrestler: 'Bianca', imageUrl: 'img2.jpg' } };
       return { Item: undefined };
     });
-    mockScanAll.mockResolvedValue([promo]);
+    // listResponsesTo returns items with targetPromoId = 'p1' - no responses
+    mockScanAll.mockResolvedValue([]);
 
     const result = await getPromo(makeEvent({ pathParameters: { promoId: 'p1' } }), ctx, cb);
 
@@ -235,7 +241,8 @@ describe('getPromo', () => {
       if (params.Key.playerId === 'pl3') return { Item: { playerId: 'pl3', name: 'Mike', currentWrestler: 'Roman Reigns', imageUrl: 'img3.jpg' } };
       return { Item: undefined };
     });
-    mockScanAll.mockResolvedValue([promo, responsePromo]);
+    // listResponsesTo returns only items with targetPromoId = 'p1'
+    mockScanAll.mockResolvedValue([responsePromo]);
 
     const result = await getPromo(makeEvent({ pathParameters: { promoId: 'p1' } }), ctx, cb);
 
@@ -265,7 +272,8 @@ describe('getPromo', () => {
       if (params.Key.playerId === 'deleted-pl') return { Item: undefined };
       return { Item: undefined };
     });
-    mockScanAll.mockResolvedValue([promo, responsePromo]);
+    // listResponsesTo returns only items with targetPromoId = 'p1'
+    mockScanAll.mockResolvedValue([responsePromo]);
 
     const result = await getPromo(makeEvent({ pathParameters: { promoId: 'p1' } }), ctx, cb);
 

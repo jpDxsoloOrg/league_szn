@@ -11,6 +11,14 @@ import { InMemoryNotificationsRepository } from './NotificationsRepository';
 import { InMemoryOverallsRepository } from './OverallsRepository';
 import { InMemorySeasonsRepository } from './SeasonsRepository';
 import { InMemorySeasonAwardsRepository } from './SeasonAwardsRepository';
+import { InMemoryPlayersRepository } from './PlayersRepository';
+import { InMemoryChallengesRepository } from './ChallengesRepository';
+import { InMemoryTagTeamsRepository } from './TagTeamsRepository';
+import { InMemoryStablesRepository } from './StablesRepository';
+import { InMemoryTransfersRepository } from './TransfersRepository';
+import { InMemoryStorylineRequestsRepository } from './StorylineRequestsRepository';
+import { InMemoryEventsRepository } from './EventsRepository';
+import { InMemoryPromosRepository } from './PromosRepository';
 
 export function buildInMemoryRepositories(): Repositories {
   return {
@@ -26,6 +34,14 @@ export function buildInMemoryRepositories(): Repositories {
     overalls: new InMemoryOverallsRepository(),
     seasons: new InMemorySeasonsRepository(),
     seasonAwards: new InMemorySeasonAwardsRepository(),
+    players: new InMemoryPlayersRepository(),
+    challenges: new InMemoryChallengesRepository(),
+    tagTeams: new InMemoryTagTeamsRepository(),
+    stables: new InMemoryStablesRepository(),
+    transfers: new InMemoryTransfersRepository(),
+    storylineRequests: new InMemoryStorylineRequestsRepository(),
+    events: new InMemoryEventsRepository(),
+    promos: new InMemoryPromosRepository(),
     runInTransaction: async () => {
       throw new Error('runInTransaction is not implemented in the in-memory driver yet (scheduled for Wave 7)');
     },
@@ -46,3 +62,11 @@ export { InMemoryNotificationsRepository } from './NotificationsRepository';
 export { InMemoryOverallsRepository } from './OverallsRepository';
 export { InMemorySeasonsRepository } from './SeasonsRepository';
 export { InMemorySeasonAwardsRepository } from './SeasonAwardsRepository';
+export { InMemoryPlayersRepository } from './PlayersRepository';
+export { InMemoryChallengesRepository } from './ChallengesRepository';
+export { InMemoryTagTeamsRepository } from './TagTeamsRepository';
+export { InMemoryStablesRepository } from './StablesRepository';
+export { InMemoryTransfersRepository } from './TransfersRepository';
+export { InMemoryStorylineRequestsRepository } from './StorylineRequestsRepository';
+export { InMemoryEventsRepository } from './EventsRepository';
+export { InMemoryPromosRepository } from './PromosRepository';

@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { requireRole } from '../../lib/auth';
@@ -19,19 +19,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('isHidden boolean is required (e.g. { "isHidden": true } to delete hidden promos)');
     }
 
-    const allPromos = await dynamoDb.scanAll({
-      TableName: TableNames.PROMOS,
-    });
-    const toDelete = allPromos.filter((p) => (p.isHidden as boolean) === isHidden).slice(0, MAX_BULK_DELETE);
+    const { promos } = getRepositories();
+
+    const allPromos = await promos.list();
+    const toDelete = allPromos.filter((p) => p.isHidden === isHidden).slice(0, MAX_BULK_DELETE);
     let deleted = 0;
 
     for (const p of toDelete) {
-      const promoId = p.promoId as string;
-      if (!promoId) continue;
-      await dynamoDb.delete({
-        TableName: TableNames.PROMOS,
-        Key: { promoId },
-      });
+      if (!p.promoId) continue;
+      await promos.delete(p.promoId);
       deleted += 1;
     }
 

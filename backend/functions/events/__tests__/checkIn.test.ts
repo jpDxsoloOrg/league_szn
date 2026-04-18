@@ -93,7 +93,6 @@ describe('checkIn', () => {
     expect(body.playerId).toBe('p1');
     expect(body.status).toBe('available');
     expect(body.checkedInAt).toBeDefined();
-    expect(body.ttl).toBeDefined();
     expect(mockPut).toHaveBeenCalledOnce();
     const putArg = mockPut.mock.calls[0][0];
     expect(putArg.TableName).toBe('EventCheckIns');

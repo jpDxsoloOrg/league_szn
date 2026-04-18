@@ -1,5 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError, forbidden } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { v4 as uuidv4 } from 'uuid';
@@ -41,12 +42,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('action must be accept, decline, or counter');
     }
 
-    // Get the challenge
-    const result = await dynamoDb.get({
-      TableName: TableNames.CHALLENGES,
-      Key: { challengeId },
-    });
-    const challenge = result.Item;
+    const { challenges, players, tagTeams } = getRepositories();
+
+    // Get the challenge via repo
+    const challenge = await challenges.findById(challengeId);
     if (!challenge) {
       return notFound('Challenge not found');
     }
@@ -56,24 +55,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Verify the responder is allowed to respond
-    const playerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
-    const responderPlayer = playerResult.Items?.[0];
+    const responderPlayer = await players.findByUserId(auth.sub);
     if (!responderPlayer) {
       return forbidden('Only the challenged player can respond');
     }
 
     if (challenge.challengeMode === 'tag_team') {
       // Tag team challenge: either member of the challenged tag team can respond
-      const tagTeamResult = await dynamoDb.get({
-        TableName: TableNames.TAG_TEAMS,
-        Key: { tagTeamId: challenge.challengedTagTeamId as string },
-      });
-      const tagTeam = tagTeamResult.Item;
+      const tagTeam = challenge.challengedTagTeamId
+        ? await tagTeams.findById(challenge.challengedTagTeamId)
+        : null;
       if (!tagTeam || tagTeam.status !== 'active') {
         return badRequest('The challenged tag team has been dissolved');
       }
@@ -100,6 +91,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       };
       if (responseMessage) expressionValues[':rm'] = responseMessage;
 
+      // Keep direct dynamoDb call for update (could use repo, but keeping consistency with transactWrite below)
       await dynamoDb.update({
         TableName: TableNames.CHALLENGES,
         Key: { challengeId },
@@ -122,8 +114,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const counterChallenge: Record<string, unknown> = {
       challengeId: counterChallengeId,
-      challengerId: responderPlayer.playerId as string,
-      challengedId: challenge.challengerId as string,
+      challengerId: responderPlayer.playerId,
+      challengedId: challenge.challengerId,
       matchType: counterMatchType,
       status: 'pending',
       expiresAt: expiresAt.toISOString(),
@@ -138,7 +130,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (counterStipulation) counterChallenge.stipulation = counterStipulation;
     if (counterMessage) counterChallenge.message = counterMessage;
 
-    // Update original + create counter in transaction
+    // Update original + create counter in transaction — keep transactWrite as direct dynamoDb call (Wave 7)
     const counterUpdateExpr = responseMessage
       ? 'SET #s = :status, responseMessage = :rm, counteredChallengeId = :ccid, updatedAt = :now'
       : 'SET #s = :status, counteredChallengeId = :ccid, updatedAt = :now';

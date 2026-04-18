@@ -86,7 +86,6 @@ describe('getChallenges', () => {
     mockQueryAll.mockImplementation(({ IndexName }: any) => {
       if (IndexName === 'ChallengerIndex') return Promise.resolve([mockChallenge1]);
       if (IndexName === 'ChallengedIndex') return Promise.resolve([mockChallenge2]);
-      // Player1Index / Player2Index for tag team lookup return empty (no tag team)
       return Promise.resolve([]);
     });
     mockPlayerLookup();
@@ -97,8 +96,8 @@ describe('getChallenges', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body).toHaveLength(2);
-    // 2 challenge queries + 2 tag team lookups (Player1Index, Player2Index)
-    expect(mockQueryAll).toHaveBeenCalledTimes(4);
+    // 2 challenge queries via repo's listByPlayer (ChallengerIndex + ChallengedIndex)
+    expect(mockQueryAll).toHaveBeenCalledTimes(2);
   });
 
   it('deduplicates challenges when same challenge appears in both indexes', async () => {

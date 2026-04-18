@@ -104,7 +104,7 @@ describe('adminUpdatePromo', () => {
   it('updates isPinned flag and returns updated promo', async () => {
     const existing = { promoId: 'promo-1', isPinned: false, isHidden: false, content: 'test' };
     mockGet.mockResolvedValue({ Item: existing });
-    mockUpdate.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({ Attributes: { ...existing, isPinned: true, updatedAt: '2026-01-01T00:00:00.000Z' } });
 
     const event = withAuth(
       makeEvent({ pathParameters: { promoId: 'promo-1' }, body: JSON.stringify({ isPinned: true }) }),
@@ -121,7 +121,7 @@ describe('adminUpdatePromo', () => {
 
   it('updates isHidden flag and returns updated promo', async () => {
     mockGet.mockResolvedValue({ Item: { promoId: 'promo-1', isPinned: false, isHidden: false } });
-    mockUpdate.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({ Attributes: { promoId: 'promo-1', isPinned: false, isHidden: true, updatedAt: '2026-01-01T00:00:00.000Z' } });
 
     const event = withAuth(
       makeEvent({ pathParameters: { promoId: 'promo-1' }, body: JSON.stringify({ isHidden: true }) }),
@@ -135,7 +135,7 @@ describe('adminUpdatePromo', () => {
 
   it('updates both isPinned and isHidden in a single call', async () => {
     mockGet.mockResolvedValue({ Item: { promoId: 'promo-1', isPinned: false, isHidden: false } });
-    mockUpdate.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({ Attributes: { promoId: 'promo-1', isPinned: true, isHidden: true, updatedAt: '2026-01-01T00:00:00.000Z' } });
 
     const event = withAuth(
       makeEvent({
@@ -154,7 +154,7 @@ describe('adminUpdatePromo', () => {
 
   it('allows Moderator to update promos', async () => {
     mockGet.mockResolvedValue({ Item: { promoId: 'promo-1', isPinned: false, isHidden: false } });
-    mockUpdate.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({ Attributes: { promoId: 'promo-1', isPinned: true, updatedAt: '2026-01-01T00:00:00.000Z' } });
 
     const event = withAuth(
       makeEvent({ pathParameters: { promoId: 'promo-1' }, body: JSON.stringify({ isPinned: true }) }),

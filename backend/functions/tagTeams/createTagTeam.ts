@@ -1,22 +1,14 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
-import { v4 as uuidv4 } from 'uuid';
 
 interface CreateTagTeamBody {
   name: string;
   partnerId: string;
   imageUrl?: string;
-}
-
-interface PlayerRecord {
-  playerId: string;
-  name: string;
-  tagTeamId?: string;
-  userId?: string;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -34,15 +26,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('name and partnerId are required');
     }
 
-    // Find the caller's player record via their user sub
-    const callerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
+    const { players: playersRepo, tagTeams: tagTeamsRepo } = getRepositories();
 
-    const callerPlayer = callerResult.Items?.[0] as PlayerRecord | undefined;
+    // Find the caller's player record via their user sub
+    const callerPlayer = await playersRepo.findByUserId(auth.sub);
     if (!callerPlayer) {
       return badRequest('No player profile linked to your account');
     }
@@ -58,12 +45,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Verify partner exists
-    const partnerResult = await dynamoDb.get({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId: partnerId },
-    });
-
-    const partnerPlayer = partnerResult.Item as PlayerRecord | undefined;
+    const partnerPlayer = await playersRepo.findById(partnerId);
     if (!partnerPlayer) {
       return badRequest('Partner player not found');
     }
@@ -73,30 +55,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Partner is already in a tag team');
     }
 
-    const now = new Date().toISOString();
-    const tagTeam = {
-      tagTeamId: uuidv4(),
+    const tagTeam = await tagTeamsRepo.create({
       name,
       player1Id: callerPlayer.playerId,
       player2Id: partnerId,
       imageUrl: imageUrl || undefined,
       status: 'pending_partner',
-      wins: 0,
-      losses: 0,
-      draws: 0,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await dynamoDb.put({
-      TableName: TableNames.TAG_TEAMS,
-      Item: tagTeam,
     });
 
     // Notify the partner about the tag team invitation
     if (partnerPlayer.userId) {
       await createNotification({
-        userId: partnerPlayer.userId as string,
+        userId: partnerPlayer.userId,
         type: 'tag_team_invitation',
         message: `${callerPlayer.name} wants to form a tag team: ${name}`,
         sourceId: tagTeam.tagTeamId,

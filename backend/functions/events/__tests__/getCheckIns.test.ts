@@ -3,9 +3,9 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockQueryAll, mockScanAll } = vi.hoisted(() => ({
+const { mockQueryAll, mockScan } = vi.hoisted(() => ({
   mockQueryAll: vi.fn(),
-  mockScanAll: vi.fn(),
+  mockScan: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
@@ -13,11 +13,11 @@ vi.mock('../../../lib/dynamodb', () => ({
     get: vi.fn(),
     put: vi.fn(),
     query: vi.fn(),
-    scan: vi.fn(),
+    scan: mockScan,
     update: vi.fn(),
     delete: vi.fn(),
     queryAll: mockQueryAll,
-    scanAll: mockScanAll,
+    scanAll: vi.fn(),
   },
   TableNames: {
     EVENT_CHECK_INS: 'EventCheckIns',
@@ -84,7 +84,7 @@ describe('getCheckIns', () => {
       { eventId: 'evt-1', playerId: 'p2', status: 'tentative' },
       { eventId: 'evt-1', playerId: 'p3', status: 'unavailable' },
     ]);
-    mockScanAll.mockResolvedValue(roster);
+    mockScan.mockResolvedValue({ Items: roster });
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'evt-1' } }), 'Admin');
     const result = await getCheckIns(event, ctx, cb);
@@ -114,7 +114,7 @@ describe('getCheckIns', () => {
 
   it('returns all wrestlers in noResponse when the event has no check-ins', async () => {
     mockQueryAll.mockResolvedValue([]);
-    mockScanAll.mockResolvedValue(roster);
+    mockScan.mockResolvedValue({ Items: roster });
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'evt-1' } }), 'Admin');
     const result = await getCheckIns(event, ctx, cb);

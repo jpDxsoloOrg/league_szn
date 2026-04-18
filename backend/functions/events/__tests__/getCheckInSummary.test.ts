@@ -3,19 +3,19 @@ import type { APIGatewayProxyEvent } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockQuery } = vi.hoisted(() => ({
-  mockQuery: vi.fn(),
+const { mockQueryAll } = vi.hoisted(() => ({
+  mockQueryAll: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
   dynamoDb: {
     get: vi.fn(),
     put: vi.fn(),
-    query: mockQuery,
+    query: vi.fn(),
     scan: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    queryAll: vi.fn(),
+    queryAll: mockQueryAll,
     scanAll: vi.fn(),
   },
   TableNames: {
@@ -65,16 +65,13 @@ describe('getCheckInSummary', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns correct counts for a mix of statuses', async () => {
-    mockQuery.mockResolvedValue({
-      Items: [
-        { eventId: 'evt-1', playerId: 'p1', status: 'available' },
-        { eventId: 'evt-1', playerId: 'p2', status: 'available' },
-        { eventId: 'evt-1', playerId: 'p3', status: 'tentative' },
-        { eventId: 'evt-1', playerId: 'p4', status: 'unavailable' },
-        { eventId: 'evt-1', playerId: 'p5', status: 'unavailable' },
-      ],
-      LastEvaluatedKey: undefined,
-    });
+    mockQueryAll.mockResolvedValue([
+      { eventId: 'evt-1', playerId: 'p1', status: 'available' },
+      { eventId: 'evt-1', playerId: 'p2', status: 'available' },
+      { eventId: 'evt-1', playerId: 'p3', status: 'tentative' },
+      { eventId: 'evt-1', playerId: 'p4', status: 'unavailable' },
+      { eventId: 'evt-1', playerId: 'p5', status: 'unavailable' },
+    ]);
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'evt-1' } }), 'Wrestler');
     const result = await getCheckInSummary(event);
@@ -89,7 +86,7 @@ describe('getCheckInSummary', () => {
   });
 
   it('returns all-zero counts when there are no check-ins', async () => {
-    mockQuery.mockResolvedValue({ Items: [], LastEvaluatedKey: undefined });
+    mockQueryAll.mockResolvedValue([]);
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'evt-1' } }), 'Wrestler');
     const result = await getCheckInSummary(event);
@@ -126,6 +123,6 @@ describe('getCheckInSummary', () => {
     const result = await getCheckInSummary(badEvent);
 
     expect(result!.statusCode).toBe(401);
-    expect(mockQuery).not.toHaveBeenCalled();
+    expect(mockQueryAll).not.toHaveBeenCalled();
   });
 });

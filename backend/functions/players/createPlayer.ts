@@ -1,25 +1,18 @@
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { notFound } from '../../lib/response';
-import { handlerFactory } from '../../lib/handlers';
+import { createHandlerFactory } from '../../lib/handlers';
+import type { PlayerCreateInput } from '../../lib/repositories';
+import type { Player } from '../../lib/repositories/types';
 
-export const handler = handlerFactory({
-  tableName: TableNames.PLAYERS,
-  idField: 'playerId',
+export const handler = createHandlerFactory<PlayerCreateInput, Player>({
+  repo: () => getRepositories().players,
   entityName: 'player',
   requiredFields: ['name', 'currentWrestler'],
   optionalFields: ['imageUrl', 'divisionId', 'psnId'],
-  defaults: {
-    wins: 0,
-    losses: 0,
-    draws: 0,
-  },
-  validate: async (body, _event) => {
+  validate: async (body) => {
     if (body.divisionId) {
-      const divisionResult = await dynamoDb.get({
-        TableName: TableNames.DIVISIONS,
-        Key: { divisionId: body.divisionId },
-      });
-      if (!divisionResult.Item) {
+      const division = await getRepositories().divisions.findById(body.divisionId as string);
+      if (!division) {
         return notFound(`Division ${body.divisionId} not found`);
       }
     }

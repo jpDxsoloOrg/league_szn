@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, notFound, badRequest, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -9,56 +9,45 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('promoId is required');
     }
 
-    const result = await dynamoDb.get({
-      TableName: TableNames.PROMOS,
-      Key: { promoId },
-    });
+    const { promos, players } = getRepositories();
 
-    const promo = result.Item;
+    const promo = await promos.findById(promoId);
     if (!promo) {
       return notFound('Promo not found');
     }
 
-    // Get all promos to find responses
-    const allPromos = await dynamoDb.scanAll({
-      TableName: TableNames.PROMOS,
-    });
-
-    const responses = allPromos.filter(
-      (p) => p.targetPromoId === promoId && !(p.isHidden as boolean)
-    );
+    // Get responses to this promo
+    const responses = (await promos.listResponsesTo(promoId))
+      .filter((p) => !p.isHidden);
 
     // Collect player IDs
     const playerIds = new Set<string>();
-    playerIds.add(promo.playerId as string);
-    if (promo.targetPlayerId) playerIds.add(promo.targetPlayerId as string);
+    playerIds.add(promo.playerId);
+    if (promo.targetPlayerId) playerIds.add(promo.targetPlayerId);
     for (const r of responses) {
-      playerIds.add(r.playerId as string);
-      if (r.targetPlayerId) playerIds.add(r.targetPlayerId as string);
+      playerIds.add(r.playerId);
+      if (r.targetPlayerId) playerIds.add(r.targetPlayerId);
     }
 
     const playerMap: Record<string, { name: string; currentWrestler: string; imageUrl?: string }> = {};
     for (const pid of playerIds) {
-      const res = await dynamoDb.get({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId: pid },
-      });
-      if (res.Item) {
+      const player = await players.findById(pid);
+      if (player) {
         playerMap[pid] = {
-          name: res.Item.name as string,
-          currentWrestler: res.Item.currentWrestler as string,
-          imageUrl: res.Item.imageUrl as string | undefined,
+          name: player.name,
+          currentWrestler: player.currentWrestler,
+          imageUrl: player.imageUrl,
         };
       }
     }
 
-    const author = playerMap[promo.playerId as string];
-    const target = promo.targetPlayerId ? playerMap[promo.targetPlayerId as string] : undefined;
+    const author = playerMap[promo.playerId];
+    const target = promo.targetPlayerId ? playerMap[promo.targetPlayerId] : undefined;
 
     // Find target promo if response
     let targetPromo: Record<string, unknown> | undefined;
     if (promo.targetPromoId) {
-      const tp = allPromos.find((p) => p.promoId === promo.targetPromoId);
+      const tp = await promos.findById(promo.targetPromoId);
       if (tp) {
         targetPromo = {
           promoId: tp.promoId,
@@ -78,8 +67,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const enrichedResponses = responses
       .map((r) => {
-        const rAuthor = playerMap[r.playerId as string];
-        const rTarget = r.targetPlayerId ? playerMap[r.targetPlayerId as string] : undefined;
+        const rAuthor = playerMap[r.playerId];
+        const rTarget = r.targetPlayerId ? playerMap[r.targetPlayerId] : undefined;
         return {
           ...r,
           playerName: rAuthor?.name || 'Unknown',
@@ -90,7 +79,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           responseCount: 0,
         };
       })
-      .sort((a: any, b: any) => new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime());
+      .sort((a, b) => new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime());
 
     return success({
       promo: {

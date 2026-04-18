@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
@@ -22,16 +22,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('requestId path parameter is required');
     }
 
-    const requestResult = await dynamoDb.get({
-      TableName: TableNames.STORYLINE_REQUESTS,
-      Key: { requestId },
-    });
+    const { storylineRequests, players } = getRepositories();
 
-    if (!requestResult.Item) {
+    const storylineRequest = await storylineRequests.findById(requestId);
+    if (!storylineRequest) {
       return notFound('Storyline request not found');
     }
-
-    const storylineRequest = requestResult.Item;
 
     if (storylineRequest.status !== 'pending') {
       return badRequest('Only pending storyline requests can be reviewed');
@@ -49,39 +45,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('gmNote is required when declining a storyline request');
     }
 
-    const now = new Date().toISOString();
-
-    const updateExpr: string[] = ['#status = :status', 'updatedAt = :updatedAt', 'reviewedBy = :reviewedBy'];
-    const attrNames: Record<string, string> = { '#status': 'status' };
-    const attrValues: Record<string, unknown> = {
-      ':status': status,
-      ':updatedAt': now,
-      ':reviewedBy': username,
-    };
-
-    if (gmNote && gmNote.trim().length > 0) {
-      updateExpr.push('gmNote = :gmNote');
-      attrValues[':gmNote'] = gmNote.trim();
-    }
-
-    await dynamoDb.update({
-      TableName: TableNames.STORYLINE_REQUESTS,
-      Key: { requestId },
-      UpdateExpression: `SET ${updateExpr.join(', ')}`,
-      ExpressionAttributeNames: attrNames,
-      ExpressionAttributeValues: attrValues,
-      ReturnValues: 'ALL_NEW',
+    const reviewed = await storylineRequests.review(requestId, {
+      status,
+      reviewedBy: username,
+      gmNote: gmNote?.trim(),
     });
 
     // Notify requester
-    const requesterId = storylineRequest.requesterId as string;
-    const playerResult = await dynamoDb.get({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId: requesterId },
-    });
+    const requesterId = storylineRequest.requesterId;
+    const requesterPlayer = await players.findById(requesterId);
 
-    if (playerResult.Item?.userId) {
-      const userId = playerResult.Item.userId as string;
+    if (requesterPlayer?.userId) {
+      const userId = requesterPlayer.userId;
       const message =
         status === 'acknowledged'
           ? 'Your storyline request has been acknowledged by a GM.'
@@ -96,7 +71,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       });
     }
 
-    return success({ requestId, status, reviewedBy: username, updatedAt: now, gmNote: gmNote?.trim() });
+    return success({ requestId: reviewed.requestId, status: reviewed.status, reviewedBy: reviewed.reviewedBy, updatedAt: reviewed.updatedAt, gmNote: reviewed.gmNote });
   } catch (err) {
     console.error('Error reviewing storyline request:', err);
     return serverError('Failed to review storyline request');

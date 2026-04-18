@@ -216,9 +216,9 @@ describe('reactToPromo', () => {
     }
   });
 
-  it('handles promo with null/undefined reactions gracefully', async () => {
+  it('handles promo with empty reactions gracefully', async () => {
     mockGet.mockResolvedValue({
-      Item: { promoId: 'p1', reactions: null, reactionCounts: null },
+      Item: { promoId: 'p1', reactions: {}, reactionCounts: { fire: 0, mic: 0, trash: 0, 'mind-blown': 0, clap: 0 } },
     });
     mockUpdate.mockResolvedValue({});
 

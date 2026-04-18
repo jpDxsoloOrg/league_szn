@@ -11,6 +11,14 @@ import { DynamoNotificationsRepository } from './NotificationsRepository';
 import { DynamoOverallsRepository } from './OverallsRepository';
 import { DynamoSeasonsRepository } from './SeasonsRepository';
 import { DynamoSeasonAwardsRepository } from './SeasonAwardsRepository';
+import { DynamoPlayersRepository } from './PlayersRepository';
+import { DynamoChallengesRepository } from './ChallengesRepository';
+import { DynamoTagTeamsRepository } from './TagTeamsRepository';
+import { DynamoStablesRepository } from './StablesRepository';
+import { DynamoTransfersRepository } from './TransfersRepository';
+import { DynamoStorylineRequestsRepository } from './StorylineRequestsRepository';
+import { DynamoEventsRepository } from './EventsRepository';
+import { DynamoPromosRepository } from './PromosRepository';
 
 registerDriver('dynamo', (): Repositories => ({
   divisions: new DynamoDivisionsRepository(),
@@ -25,6 +33,14 @@ registerDriver('dynamo', (): Repositories => ({
   overalls: new DynamoOverallsRepository(),
   seasons: new DynamoSeasonsRepository(),
   seasonAwards: new DynamoSeasonAwardsRepository(),
+  players: new DynamoPlayersRepository(),
+  challenges: new DynamoChallengesRepository(),
+  tagTeams: new DynamoTagTeamsRepository(),
+  stables: new DynamoStablesRepository(),
+  transfers: new DynamoTransfersRepository(),
+  storylineRequests: new DynamoStorylineRequestsRepository(),
+  events: new DynamoEventsRepository(),
+  promos: new DynamoPromosRepository(),
   runInTransaction: async () => {
     throw new Error('runInTransaction is not implemented in the dynamo driver yet (scheduled for Wave 7)');
   },

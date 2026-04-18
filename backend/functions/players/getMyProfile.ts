@@ -1,5 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, notFound, serverError } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
 
@@ -10,28 +11,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { sub } = getAuthContext(event);
 
-    const result = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :userId',
-      ExpressionAttributeValues: {
-        ':userId': sub,
-      },
-    });
+    const player = await getRepositories().players.findByUserId(sub);
 
-    if (!result.Items || result.Items.length === 0) {
+    if (!player) {
       return notFound('No player profile found for this user');
     }
 
-    const player = result.Items[0];
-    const playerId = player.playerId as string;
+    const playerId = player.playerId;
 
     // Fetch all seasons
-    const seasons = await dynamoDb.scanAll({
-      TableName: TableNames.SEASONS,
-    });
+    const seasons = await getRepositories().seasons.list();
 
     // Fetch season standings for this player via PlayerIndex GSI
+    // Note: SeasonStandings repo not yet migrated
     const seasonStandings = await dynamoDb.queryAll({
       TableName: TableNames.SEASON_STANDINGS,
       IndexName: 'PlayerIndex',

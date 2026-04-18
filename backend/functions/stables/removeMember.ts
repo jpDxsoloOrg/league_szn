@@ -1,19 +1,12 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames, getOrNotFound } from '../../lib/dynamodb';
-import { success, badRequest, serverError } from '../../lib/response';
+import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole, isSuperAdmin } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 
 interface RemoveMemberBody {
   playerId: string;
-}
-
-interface StableRecord {
-  [key: string]: unknown;
-  stableId: string;
-  leaderId: string;
-  memberIds: string[];
-  status: string;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -37,28 +30,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('playerId is required');
     }
 
-    const result = await getOrNotFound<StableRecord>(
-      TableNames.STABLES,
-      { stableId },
-      'Stable not found'
-    );
+    const { stables: stablesRepo, players: playersRepo } = getRepositories();
 
-    if ('notFoundResponse' in result) {
-      return result.notFoundResponse;
+    const stable = await stablesRepo.findById(stableId);
+    if (!stable) {
+      return notFound('Stable not found');
     }
-
-    const stable = result.item;
 
     // Only leader or Admin can remove members
     if (!isSuperAdmin(auth)) {
-      const callerResult = await dynamoDb.query({
-        TableName: TableNames.PLAYERS,
-        IndexName: 'UserIdIndex',
-        KeyConditionExpression: 'userId = :uid',
-        ExpressionAttributeValues: { ':uid': auth.sub },
-      });
-
-      const callerPlayer = callerResult.Items?.[0];
+      const callerPlayer = await playersRepo.findByUserId(auth.sub);
       if (!callerPlayer || callerPlayer.playerId !== stable.leaderId) {
         return badRequest('Only the stable leader or an admin can remove members');
       }
@@ -78,6 +59,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const updatedMemberIds = stable.memberIds.filter((id) => id !== playerId);
 
     // Clear the player's stableId
+    // Note: using dynamoDb directly for REMOVE expression on player records (Wave 7)
     await dynamoDb.update({
       TableName: TableNames.PLAYERS,
       Key: { playerId },
@@ -93,23 +75,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // If only 1 member left (the leader), auto-disband
     if (updatedMemberIds.length <= 1) {
-      await dynamoDb.update({
-        TableName: TableNames.STABLES,
-        Key: { stableId },
-        UpdateExpression:
-          'SET #memberIds = :memberIds, #status = :status, #disbandedAt = :disbandedAt, #updatedAt = :updatedAt',
-        ExpressionAttributeNames: {
-          '#memberIds': 'memberIds',
-          '#status': 'status',
-          '#disbandedAt': 'disbandedAt',
-          '#updatedAt': 'updatedAt',
-        },
-        ExpressionAttributeValues: {
-          ':memberIds': updatedMemberIds,
-          ':status': 'disbanded',
-          ':disbandedAt': now,
-          ':updatedAt': now,
-        },
+      await stablesRepo.update(stableId, {
+        memberIds: updatedMemberIds,
+        status: 'disbanded',
+        disbandedAt: now,
       });
 
       // Clear the leader's stableId too
@@ -136,18 +105,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Update stable memberIds
-    await dynamoDb.update({
-      TableName: TableNames.STABLES,
-      Key: { stableId },
-      UpdateExpression: 'SET #memberIds = :memberIds, #updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#memberIds': 'memberIds',
-        '#updatedAt': 'updatedAt',
-      },
-      ExpressionAttributeValues: {
-        ':memberIds': updatedMemberIds,
-        ':updatedAt': now,
-      },
+    await stablesRepo.update(stableId, {
+      memberIds: updatedMemberIds,
     });
 
     return success({

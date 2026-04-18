@@ -13,7 +13,7 @@
 | 1 — Foundation (types, errors, UoW interface, driver-selection factory) | ✅ Done | `2c71896` |
 | 2 — Divisions/Stipulations/MatchTypes + generalized CRUD factory | ✅ Done | `9357c0e` |
 | 3 — Read-heavy leaves (Seasons, Announcements, Videos, Companies, Shows, Notifications, Overalls, SiteConfig, SeasonAwards) | ✅ Done | — |
-| 4 — Medium-complexity aggregates with GSIs (Players, Challenges, TagTeams, Stables, Transfers, StorylineRequests, Events, Promos) | ⏳ | — |
+| 4 — Medium-complexity aggregates with GSIs (Players, Challenges, TagTeams, Stables, Transfers, StorylineRequests, Events, Promos) | ✅ Done | — |
 | 5 — Cross-aggregate reads (Standings, Dashboard, Rivalries, Statistics, Activity) | ⏳ | — |
 | 6 — Contenders & Fantasy (batched writes) | ⏳ | — |
 | 7 — Transactional writes + `runInTransaction` + `recordResult.ts` | ⏳ | — |
@@ -29,9 +29,17 @@ Companies, Shows, Notifications, Overalls, Seasons, SeasonAwards. Handlers that
 reference Wave 4+ domains (Players, Events, Matches, Championships) still use
 `dynamoDb` directly for those cross-domain reads — annotated with `// Note:` comments.
 
-**Where to resume**: open Wave 3 (pick one domain, follow the Wave 2 shape —
-interface → Dynamo driver → in-memory driver → migrate handlers → rewrite tests).
-The smallest domain to start with is `SiteConfig` (one entity, no relationships).
+**After Wave 4**: 967 tests passing, 0 failures (fixed all 17 pre-existing
+mock-shape failures as part of test updates). Typecheck and lint clean. 8 GSI-heavy
+domains migrated: Players, Challenges, TagTeams, Stables, Transfers,
+StorylineRequests, Events, Promos. Transactional handlers (approveTagTeam,
+dissolveTagTeam, deleteTagTeam, respondToChallenge) retain `dynamoDb.transactWrite`
+calls pending Wave 7 UoW implementation. Cross-domain reads to Matches/Championships
+(Wave 5+) remain on direct dynamoDb.
+
+**Where to resume**: Wave 5 — cross-aggregate read handlers (Standings, Dashboard,
+Rivalries, Statistics, Activity). These compose reads from multiple repos without
+writes, validating the multi-repo composition story.
 
 ## Context
 

@@ -1,16 +1,15 @@
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { handlerFactory } from '../../lib/handlers';
+import { createHandlerFactory } from '../../lib/handlers';
+import { getRepositories } from '../../lib/repositories';
 import { badRequest, notFound } from '../../lib/response';
+import type { EventCreateInput } from '../../lib/repositories/EventsRepository';
+import type { LeagueEvent } from '../../lib/repositories/types';
 
-export const handler = handlerFactory({
-  tableName: TableNames.EVENTS,
-  idField: 'eventId',
+export const handler = createHandlerFactory<EventCreateInput, LeagueEvent>({
+  repo: () => getRepositories().events,
   entityName: 'event',
   requiredFields: ['name', 'eventType', 'date'],
-  optionalFields: ['companyIds', 'showId', 'seasonId'],
-  nullableFields: ['venue', 'description', 'imageUrl', 'themeColor', 'fantasyBudget', 'fantasyPicksPerDivision'],
-  defaults: { status: 'upcoming', matchCards: [], attendance: null, rating: null, fantasyEnabled: true },
-  validate: async (body, _event) => {
+  optionalFields: ['companyIds', 'showId', 'seasonId', 'venue', 'description', 'imageUrl', 'themeColor', 'fantasyBudget', 'fantasyPicksPerDivision', 'fantasyEnabled'],
+  validate: async (body) => {
     if (body.eventType !== 'ppv' && body.eventType !== 'weekly' && body.eventType !== 'special' && body.eventType !== 'house') {
       return badRequest('eventType must be one of ppv, weekly, special, or house');
     }
@@ -18,12 +17,10 @@ export const handler = handlerFactory({
       if (!Array.isArray(body.companyIds)) {
         return badRequest('companyIds must be an array of company IDs');
       }
+      const { companies } = getRepositories();
       for (const companyId of body.companyIds as string[]) {
-        const companyResult = await dynamoDb.get({
-          TableName: TableNames.COMPANIES,
-          Key: { companyId },
-        });
-        if (!companyResult.Item) {
+        const company = await companies.findById(companyId);
+        if (!company) {
           return notFound(`Company ${companyId} not found`);
         }
       }

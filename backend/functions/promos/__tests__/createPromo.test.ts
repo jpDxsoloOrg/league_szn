@@ -3,17 +3,18 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Hoisted mocks ──────────────────────────────────────────────────
 
-const { mockPut, mockQuery } = vi.hoisted(() => ({
+const { mockPut, mockQuery, mockGet } = vi.hoisted(() => ({
   mockPut: vi.fn(),
   mockQuery: vi.fn(),
+  mockGet: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
   dynamoDb: {
-    get: vi.fn(), put: mockPut, update: vi.fn(), query: mockQuery,
+    get: mockGet, put: mockPut, update: vi.fn(), query: mockQuery,
     scan: vi.fn(), delete: vi.fn(), scanAll: vi.fn(), queryAll: vi.fn(),
   },
-  TableNames: { PROMOS: 'Promos', PLAYERS: 'Players' },
+  TableNames: { PROMOS: 'Promos', PLAYERS: 'Players', NOTIFICATIONS: 'Notifications' },
 }));
 
 vi.mock('uuid', () => ({ v4: () => 'test-promo-uuid' }));
@@ -83,7 +84,9 @@ describe('createPromo', () => {
   });
 
   it('includes optional fields when provided', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'player-1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }] });
+    // mockGet is called for players.findById(targetPlayerId) during notification check
+    mockGet.mockResolvedValue({ Item: { playerId: 'player-2', name: 'Target Player', userId: 'user-sub-2' } });
     mockPut.mockResolvedValue({});
 
     const event = withAuth(

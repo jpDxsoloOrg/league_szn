@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, forbidden, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 
@@ -17,31 +17,23 @@ export const handler = async (
       return badRequest('eventId is required');
     }
 
-    // Find the caller's player record via their user sub
-    const playerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
+    const { events, players } = getRepositories();
 
-    const callerPlayer = playerResult.Items?.[0];
+    // Find the caller's player record via their user sub
+    const callerPlayer = await players.findByUserId(auth.sub);
     if (!callerPlayer) {
       return badRequest('No player profile linked to your account');
     }
 
-    const playerId = callerPlayer.playerId as string;
+    const playerId = callerPlayer.playerId;
 
-    const checkInResult = await dynamoDb.get({
-      TableName: TableNames.EVENT_CHECK_INS,
-      Key: { eventId, playerId },
-    });
+    const checkIn = await events.getCheckIn(eventId, playerId);
 
-    if (!checkInResult.Item) {
+    if (!checkIn) {
       return notFound('No check-in found for this event');
     }
 
-    return success(checkInResult.Item);
+    return success(checkIn);
   } catch (err) {
     console.error('Error fetching event check-in:', err);
     return serverError('Failed to fetch event check-in');

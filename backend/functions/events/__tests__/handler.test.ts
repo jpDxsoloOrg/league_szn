@@ -8,6 +8,8 @@ const {
   mockQuery,
   mockUpdate,
   mockDelete,
+  mockScanAll,
+  mockQueryAll,
 } = vi.hoisted(() => ({
   mockGet: vi.fn(),
   mockPut: vi.fn(),
@@ -15,6 +17,8 @@ const {
   mockQuery: vi.fn(),
   mockUpdate: vi.fn(),
   mockDelete: vi.fn(),
+  mockScanAll: vi.fn(),
+  mockQueryAll: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
@@ -25,8 +29,10 @@ vi.mock('../../../lib/dynamodb', () => ({
     query: mockQuery,
     update: mockUpdate,
     delete: mockDelete,
+    scanAll: mockScanAll,
+    queryAll: mockQueryAll,
   },
-  TableNames: { EVENTS: 'Events' },
+  TableNames: { EVENTS: 'Events', MATCHES: 'Matches', CHAMPIONSHIPS: 'Championships', PLAYERS: 'Players', STIPULATIONS: 'Stipulations', COMPANIES: 'Companies' },
 }));
 
 vi.mock('uuid', () => ({ v4: () => 'test-uuid-1234' }));
@@ -62,7 +68,7 @@ describe('events router', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('GET /events routes to getEvents and returns 200', async () => {
-    mockScan.mockResolvedValue({ Items: [{ eventId: 'e1', name: 'WrestleMania', date: '2025-04-01' }] });
+    mockScanAll.mockResolvedValue([{ eventId: 'e1', name: 'WrestleMania', date: '2025-04-01' }]);
     const event = makeEvent({ httpMethod: 'GET', resource: '/events', pathParameters: null });
     const result = await handler(event, ctx, cb);
     expect(result!.statusCode).toBe(200);
@@ -96,7 +102,7 @@ describe('events router', () => {
 
   it('PUT /events/{eventId} routes to updateEvent', async () => {
     mockGet.mockResolvedValue({ Item: { eventId: 'e1', name: 'Old' } });
-    mockUpdate.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({ Attributes: { eventId: 'e1', name: 'Updated' } });
     const event = makeEvent({
       httpMethod: 'PUT',
       resource: '/events/{eventId}',

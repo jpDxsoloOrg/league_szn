@@ -222,7 +222,7 @@ describe('generateUploadUrl — auth & validation', () => {
     const result = await generateUploadUrl(event, ctx, cb);
 
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('folder must be "wrestlers", "championships", or "shows"');
+    expect(JSON.parse(result!.body).message).toBe('folder must be "wrestlers", "championships", "shows", or "videos"');
   });
 
   it('accepts "wrestlers" as a valid folder', async () => {

@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { badRequest, notFound, forbidden, serverError, noContent } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 
@@ -17,43 +17,29 @@ export const handler = async (
       return badRequest('Event ID is required');
     }
 
-    // Find the caller's player record via their user sub
-    const playerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
+    const { events, players } = getRepositories();
 
-    const callerPlayer = playerResult.Items?.[0];
+    // Find the caller's player record via their user sub
+    const callerPlayer = await players.findByUserId(auth.sub);
     if (!callerPlayer) {
       return badRequest('No player profile linked to your account');
     }
 
-    const playerId = callerPlayer.playerId as string;
+    const playerId = callerPlayer.playerId;
 
     // Fetch the event
-    const eventResult = await dynamoDb.get({
-      TableName: TableNames.EVENTS,
-      Key: { eventId },
-    });
+    const eventItem = await events.findById(eventId);
 
-    if (!eventResult.Item) {
+    if (!eventItem) {
       return notFound('Event not found');
     }
 
-    const eventItem = eventResult.Item as Record<string, unknown>;
-    const eventStatus = eventItem.status as string | undefined;
-
-    if (eventStatus !== 'upcoming' && eventStatus !== 'in-progress') {
+    if (eventItem.status !== 'upcoming' && eventItem.status !== 'in-progress') {
       return badRequest('Check-in can only be cleared for upcoming or in-progress events');
     }
 
-    // Idempotent delete — does not error if the row does not exist
-    await dynamoDb.delete({
-      TableName: TableNames.EVENT_CHECK_INS,
-      Key: { eventId, playerId },
-    });
+    // Idempotent delete -- does not error if the row does not exist
+    await events.deleteCheckIn(eventId, playerId);
 
     return noContent();
   } catch (err) {
