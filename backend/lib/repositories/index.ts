@@ -32,3 +32,7 @@ export type { TransfersRepository, TransferCreateInput, TransferReviewInput } fr
 export type { StorylineRequestsRepository, StorylineRequestCreateInput, StorylineRequestReviewInput } from './StorylineRequestsRepository';
 export type { EventsRepository, EventCreateInput, EventPatch } from './EventsRepository';
 export type { PromosRepository, PromoCreateInput } from './PromosRepository';
+export type { MatchesRepository } from './MatchesRepository';
+export type { ChampionshipsRepository } from './ChampionshipsRepository';
+export type { TournamentsRepository } from './TournamentsRepository';
+export type { SeasonStandingsRepository } from './SeasonStandingsRepository';

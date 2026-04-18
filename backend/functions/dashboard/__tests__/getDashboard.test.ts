@@ -1,29 +1,39 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Context, Callback } from 'aws-lambda';
 
-const { mockScanAll, mockQuery, mockQueryAll } = vi.hoisted(() => ({
-  mockScanAll: vi.fn(),
-  mockQuery: vi.fn(),
-  mockQueryAll: vi.fn(),
+const {
+  mockChampionshipsList,
+  mockPlayersList,
+  mockSeasonsList,
+  mockMatchesList,
+  mockStipulationsList,
+  mockEventsListByStatus,
+  mockChallengesListByStatus,
+  mockChampionshipsFindCurrentReign,
+  mockSeasonStandingsListBySeason,
+} = vi.hoisted(() => ({
+  mockChampionshipsList: vi.fn(),
+  mockPlayersList: vi.fn(),
+  mockSeasonsList: vi.fn(),
+  mockMatchesList: vi.fn(),
+  mockStipulationsList: vi.fn(),
+  mockEventsListByStatus: vi.fn(),
+  mockChallengesListByStatus: vi.fn(),
+  mockChampionshipsFindCurrentReign: vi.fn(),
+  mockSeasonStandingsListBySeason: vi.fn(),
 }));
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    scanAll: mockScanAll,
-    query: mockQuery,
-    queryAll: mockQueryAll,
-  },
-  TableNames: {
-    CHAMPIONSHIPS: 'Championships',
-    CHAMPIONSHIP_HISTORY: 'ChampionshipHistory',
-    PLAYERS: 'Players',
-    SEASONS: 'Seasons',
-    MATCHES: 'Matches',
-    STIPULATIONS: 'Stipulations',
-    EVENTS: 'Events',
-    CHALLENGES: 'Challenges',
-    SEASON_STANDINGS: 'SeasonStandings',
-  },
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    championships: { list: mockChampionshipsList, findCurrentReign: mockChampionshipsFindCurrentReign },
+    players: { list: mockPlayersList },
+    seasons: { list: mockSeasonsList },
+    matches: { list: mockMatchesList },
+    stipulations: { list: mockStipulationsList },
+    events: { listByStatus: mockEventsListByStatus },
+    challenges: { listByStatus: mockChallengesListByStatus },
+    seasonStandings: { listBySeason: mockSeasonStandingsListBySeason },
+  }),
 }));
 
 import { handler as getDashboard } from '../getDashboard';
@@ -34,14 +44,15 @@ const cb: Callback = () => {};
 describe('getDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockScanAll
-      .mockResolvedValueOnce([]) // championships
-      .mockResolvedValueOnce([]) // players
-      .mockResolvedValueOnce([]) // seasons
-      .mockResolvedValueOnce([]) // matches
-      .mockResolvedValueOnce([]); // stipulations
-    mockQuery.mockResolvedValue({ Items: [] });
-    mockQueryAll.mockResolvedValue([]);
+    mockChampionshipsList.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([]);
+    mockSeasonsList.mockResolvedValue([]);
+    mockMatchesList.mockResolvedValue([]);
+    mockStipulationsList.mockResolvedValue([]);
+    mockEventsListByStatus.mockResolvedValue([]);
+    mockChallengesListByStatus.mockResolvedValue([]);
+    mockChampionshipsFindCurrentReign.mockResolvedValue(null);
+    mockSeasonStandingsListBySeason.mockResolvedValue([]);
   });
 
   it('returns 200 with all dashboard sections', async () => {
@@ -80,21 +91,15 @@ describe('getDashboard', () => {
   });
 
   it('returns correct current champions (only active with champion)', async () => {
-    mockScanAll
-      .mockReset()
-      .mockResolvedValueOnce([
-        { championshipId: 'c1', name: 'World Title', isActive: true, currentChampion: 'p1' },
-        { championshipId: 'c2', name: 'Tag Titles', isActive: false, currentChampion: 'p2' },
-        { championshipId: 'c3', name: 'Midcard', isActive: true },
-      ])
-      .mockResolvedValueOnce([
-        { playerId: 'p1', name: 'Alice', currentWrestler: 'Stone Cold' },
-      ])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]); // stipulations
-    mockQuery.mockReset().mockResolvedValue({ Items: [] });
-    mockQueryAll.mockReset().mockResolvedValue([]);
+    mockChampionshipsList.mockResolvedValue([
+      { championshipId: 'c1', name: 'World Title', isActive: true, currentChampion: 'p1' },
+      { championshipId: 'c2', name: 'Tag Titles', isActive: false, currentChampion: 'p2' },
+      { championshipId: 'c3', name: 'Midcard', isActive: true },
+    ]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Alice', currentWrestler: 'Stone Cold' },
+    ]);
+    mockChampionshipsFindCurrentReign.mockResolvedValue(null);
 
     const result = await getDashboard({} as never, ctx, cb);
 
@@ -106,46 +111,27 @@ describe('getDashboard', () => {
   });
 
   it('reads champion wonDate from ChampionshipHistory (open reign), not from Championships.updatedAt', async () => {
-    // Championship.updatedAt was bumped by a recent image upload and is NOT
-    // the real won date. The real won date lives on the open reign row in
-    // ChampionshipHistory (the row with no lostDate).
     const realWonDate = '2025-11-01T12:00:00Z';
     const bogusUpdatedAt = '2026-04-10T09:00:00Z';
 
-    mockScanAll
-      .mockReset()
-      .mockResolvedValueOnce([
-        {
-          championshipId: 'c1',
-          name: 'World Title',
-          isActive: true,
-          currentChampion: 'p1',
-          updatedAt: bogusUpdatedAt,
-        },
-      ])
-      .mockResolvedValueOnce([
-        { playerId: 'p1', name: 'Alice', currentWrestler: 'Stone Cold' },
-      ])
-      .mockResolvedValueOnce([]) // seasons
-      .mockResolvedValueOnce([]) // matches
-      .mockResolvedValueOnce([]); // stipulations
-
-    mockQuery.mockReset().mockImplementation((params: { TableName: string }) => {
-      if (params.TableName === 'ChampionshipHistory') {
-        return Promise.resolve({
-          Items: [
-            {
-              championshipId: 'c1',
-              wonDate: realWonDate,
-              champion: 'p1',
-              defenses: 3,
-            },
-          ],
-        });
-      }
-      return Promise.resolve({ Items: [] });
+    mockChampionshipsList.mockResolvedValue([
+      {
+        championshipId: 'c1',
+        name: 'World Title',
+        isActive: true,
+        currentChampion: 'p1',
+        updatedAt: bogusUpdatedAt,
+      },
+    ]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Alice', currentWrestler: 'Stone Cold' },
+    ]);
+    mockChampionshipsFindCurrentReign.mockResolvedValue({
+      championshipId: 'c1',
+      wonDate: realWonDate,
+      champion: 'p1',
+      defenses: 3,
     });
-    mockQueryAll.mockReset().mockResolvedValue([]);
 
     const result = await getDashboard({} as never, ctx, cb);
 
@@ -158,25 +144,19 @@ describe('getDashboard', () => {
   });
 
   it('falls back to undefined wonDate when ChampionshipHistory has no open reign row', async () => {
-    mockScanAll
-      .mockReset()
-      .mockResolvedValueOnce([
-        {
-          championshipId: 'c1',
-          name: 'World Title',
-          isActive: true,
-          currentChampion: 'p1',
-          updatedAt: '2026-04-10T09:00:00Z',
-        },
-      ])
-      .mockResolvedValueOnce([
-        { playerId: 'p1', name: 'Alice', currentWrestler: 'Stone Cold' },
-      ])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
-    mockQuery.mockReset().mockResolvedValue({ Items: [] });
-    mockQueryAll.mockReset().mockResolvedValue([]);
+    mockChampionshipsList.mockResolvedValue([
+      {
+        championshipId: 'c1',
+        name: 'World Title',
+        isActive: true,
+        currentChampion: 'p1',
+        updatedAt: '2026-04-10T09:00:00Z',
+      },
+    ]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Alice', currentWrestler: 'Stone Cold' },
+    ]);
+    mockChampionshipsFindCurrentReign.mockResolvedValue(null);
 
     const result = await getDashboard({} as never, ctx, cb);
 
@@ -187,21 +167,16 @@ describe('getDashboard', () => {
   });
 
   it('limits upcoming events to 3', async () => {
-    vi.clearAllMocks();
-    mockScanAll
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]); // stipulations
-    mockQuery.mockResolvedValue({
-      Items: [
-        { eventId: 'e1', name: 'Event 1', date: '2025-03-01', eventType: 'ppv' },
-        { eventId: 'e2', name: 'Event 2', date: '2025-03-02', eventType: 'ppv' },
-        { eventId: 'e3', name: 'Event 3', date: '2025-03-03', eventType: 'ppv' },
-      ],
+    mockEventsListByStatus.mockImplementation((status: string) => {
+      if (status === 'upcoming') {
+        return Promise.resolve([
+          { eventId: 'e1', name: 'Event 1', date: '2025-03-01', eventType: 'ppv' },
+          { eventId: 'e2', name: 'Event 2', date: '2025-03-02', eventType: 'ppv' },
+          { eventId: 'e3', name: 'Event 3', date: '2025-03-03', eventType: 'ppv' },
+        ]);
+      }
+      return Promise.resolve([]);
     });
-    mockQueryAll.mockResolvedValue([]);
 
     const result = await getDashboard({} as never, ctx, cb);
 
@@ -211,7 +186,7 @@ describe('getDashboard', () => {
   });
 
   it('excludes completed matches without updatedAt from recent results', async () => {
-    const completedNoUpdatedAt = [
+    mockMatchesList.mockResolvedValue([
       {
         matchId: 'm1',
         date: '2025-01-10T00:00:00Z',
@@ -220,16 +195,11 @@ describe('getDashboard', () => {
         losers: ['p2'],
         matchFormat: 'singles',
       },
-    ];
-    mockScanAll
-      .mockReset()
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([{ playerId: 'p1', currentWrestler: 'A' }, { playerId: 'p2', currentWrestler: 'B' }])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce(completedNoUpdatedAt)
-      .mockResolvedValueOnce([]);
-    mockQuery.mockReset().mockResolvedValue({ Items: [] });
-    mockQueryAll.mockReset().mockResolvedValue([]);
+    ]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', currentWrestler: 'A' },
+      { playerId: 'p2', currentWrestler: 'B' },
+    ]);
 
     const result = await getDashboard({} as never, ctx, cb);
 
@@ -262,15 +232,11 @@ describe('getDashboard', () => {
         matchFormat: 'singles',
       })),
     ];
-    mockScanAll
-      .mockReset()
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([{ playerId: 'p1', currentWrestler: 'A' }, { playerId: 'p2', currentWrestler: 'B' }])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce(manyMatches)
-      .mockResolvedValueOnce([]); // stipulations
-    mockQuery.mockReset().mockResolvedValue({ Items: [] });
-    mockQueryAll.mockReset().mockResolvedValue([]);
+    mockMatchesList.mockResolvedValue(manyMatches);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', currentWrestler: 'A' },
+      { playerId: 'p2', currentWrestler: 'B' },
+    ]);
 
     const result = await getDashboard({} as never, ctx, cb);
 
@@ -280,10 +246,8 @@ describe('getDashboard', () => {
     expect(body.recentResults.every((m: { matchId: string }) => m.matchId.startsWith('recent'))).toBe(true);
   });
 
-  it('returns 500 on DynamoDB error', async () => {
-    mockScanAll.mockReset().mockRejectedValue(new Error('DynamoDB connection failed'));
-    mockQuery.mockReset().mockResolvedValue({ Items: [] });
-    mockQueryAll.mockReset().mockResolvedValue([]);
+  it('returns 500 on repository error', async () => {
+    mockChampionshipsList.mockRejectedValue(new Error('DynamoDB connection failed'));
 
     const result = await getDashboard({} as never, ctx, cb);
 

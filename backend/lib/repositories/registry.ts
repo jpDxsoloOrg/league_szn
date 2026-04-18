@@ -18,6 +18,10 @@ import type { TransfersRepository } from './TransfersRepository';
 import type { StorylineRequestsRepository } from './StorylineRequestsRepository';
 import type { EventsRepository } from './EventsRepository';
 import type { PromosRepository } from './PromosRepository';
+import type { MatchesRepository } from './MatchesRepository';
+import type { ChampionshipsRepository } from './ChampionshipsRepository';
+import type { TournamentsRepository } from './TournamentsRepository';
+import type { SeasonStandingsRepository } from './SeasonStandingsRepository';
 import type { UnitOfWorkFactory } from './unitOfWork';
 
 export interface Repositories {
@@ -41,6 +45,10 @@ export interface Repositories {
   storylineRequests: StorylineRequestsRepository;
   events: EventsRepository;
   promos: PromosRepository;
+  matches: MatchesRepository;
+  championships: ChampionshipsRepository;
+  tournaments: TournamentsRepository;
+  seasonStandings: SeasonStandingsRepository;
   runInTransaction: UnitOfWorkFactory;
 }
 

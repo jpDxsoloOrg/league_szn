@@ -3,27 +3,23 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockScanAll } = vi.hoisted(() => ({
-  mockScanAll: vi.fn(),
+const { mockPlayersList, mockMatchesList, mockChampionshipsListAllHistory, mockChampionshipsList, mockMatchTypesList, mockStipulationsList } = vi.hoisted(() => ({
+  mockPlayersList: vi.fn(),
+  mockMatchesList: vi.fn(),
+  mockChampionshipsListAllHistory: vi.fn(),
+  mockChampionshipsList: vi.fn(),
+  mockMatchTypesList: vi.fn(),
+  mockStipulationsList: vi.fn(),
 }));
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: vi.fn(),
-    put: vi.fn(),
-    scan: vi.fn(),
-    query: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    scanAll: mockScanAll,
-    queryAll: vi.fn(),
-  },
-  TableNames: {
-    PLAYERS: 'Players',
-    MATCHES: 'Matches',
-    CHAMPIONSHIPS: 'Championships',
-    CHAMPIONSHIP_HISTORY: 'ChampionshipHistory',
-  },
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    players: { list: mockPlayersList },
+    matches: { list: mockMatchesList },
+    championships: { listAllHistory: mockChampionshipsListAllHistory, list: mockChampionshipsList },
+    matchTypes: { list: mockMatchTypesList },
+    stipulations: { list: mockStipulationsList },
+  }),
 }));
 
 import { handler } from '../getStatistics';
@@ -46,7 +42,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '',
-    requestContext: {} as any,
+    requestContext: {} as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
@@ -81,15 +77,22 @@ function makeMatch(overrides: Record<string, unknown> = {}) {
 const player1 = makePlayer('p1', 'Player One', 'Wrestler A');
 const player2 = makePlayer('p2', 'Player Two', 'Wrestler B');
 
+function setupDefaultMocks(players: unknown[] = [], matches: unknown[] = [], champHistory: unknown[] = [], championships: unknown[] = []) {
+  mockPlayersList.mockResolvedValue(players);
+  mockMatchesList.mockResolvedValue(matches);
+  mockChampionshipsListAllHistory.mockResolvedValue(champHistory);
+  mockChampionshipsList.mockResolvedValue(championships);
+  mockMatchTypesList.mockResolvedValue([]);
+  mockStipulationsList.mockResolvedValue([]);
+}
+
 // ─── Achievements Section ────────────────────────────────────────────
 
 describe('getStatistics - achievements', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns all 18 achievement definitions and player list when no playerId specified', async () => {
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce([]);                  // MATCHES
+    setupDefaultMocks([player1, player2], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'achievements' },
@@ -104,7 +107,7 @@ describe('getStatistics - achievements', () => {
     expect(body.achievements).toBeUndefined();
 
     // Verify achievement types are correct
-    const types = new Set(body.allAchievements.map((a: any) => a.achievementType));
+    const types = new Set(body.allAchievements.map((a: Record<string, unknown>) => a.achievementType));
     expect(types).toContain('milestone');
     expect(types).toContain('record');
     expect(types).toContain('special');
@@ -122,11 +125,7 @@ describe('getStatistics - achievements', () => {
       })
     );
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'achievements', playerId: 'p1' },
@@ -136,7 +135,7 @@ describe('getStatistics - achievements', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const ids = body.achievements.map((a: any) => a.achievementId);
+    const ids = body.achievements.map((a: Record<string, unknown>) => a.achievementId);
 
     expect(ids).toContain('a1'); // First Victory (1+ wins)
     expect(ids).toContain('a2'); // Double Digits (10+ wins)
@@ -164,11 +163,7 @@ describe('getStatistics - achievements', () => {
       })
     );
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])            // PLAYERS
-      .mockResolvedValueOnce([...winMatches, ...lossMatches]) // MATCHES
-      .mockResolvedValueOnce([])                             // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                            // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], [...winMatches, ...lossMatches], [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'achievements', playerId: 'p1' },
@@ -178,7 +173,7 @@ describe('getStatistics - achievements', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const ids = body.achievements.map((a: any) => a.achievementId);
+    const ids = body.achievements.map((a: Record<string, unknown>) => a.achievementId);
 
     expect(ids).toContain('a4'); // Century Mark
     expect(ids).toContain('a5'); // Iron Man
@@ -196,11 +191,7 @@ describe('getStatistics - achievements', () => {
       })
     );
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'achievements', playerId: 'p1' },
@@ -210,14 +201,14 @@ describe('getStatistics - achievements', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const ids = body.achievements.map((a: any) => a.achievementId);
+    const ids = body.achievements.map((a: Record<string, unknown>) => a.achievementId);
 
     expect(ids).toContain('a18'); // Best in the World (10+ streak)
     expect(ids).toContain('a6');  // Unstoppable Force (15+ streak)
 
     // Verify metadata on a18
-    const bestInWorld = body.achievements.find((a: any) => a.achievementId === 'a18');
-    expect(bestInWorld.metadata.streakLength).toBe(15);
+    const bestInWorld = body.achievements.find((a: Record<string, unknown>) => a.achievementId === 'a18');
+    expect((bestInWorld.metadata as Record<string, unknown>).streakLength).toBe(15);
   });
 
   it('awards Dominant Champion (a7) for 180+ day reign', async () => {
@@ -233,11 +224,7 @@ describe('getStatistics - achievements', () => {
       { championshipId: 'c1', name: 'World Title', type: 'singles' },
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce(champHistory)         // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce(championships);       // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, champHistory, championships);
 
     const event = makeEvent({
       queryStringParameters: { section: 'achievements', playerId: 'p1' },
@@ -247,7 +234,7 @@ describe('getStatistics - achievements', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const ids = body.achievements.map((a: any) => a.achievementId);
+    const ids = body.achievements.map((a: Record<string, unknown>) => a.achievementId);
 
     expect(ids).toContain('a7'); // Dominant Champion
   });
@@ -264,11 +251,7 @@ describe('getStatistics - achievements', () => {
       })
     );
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'achievements', playerId: 'p1' },
@@ -278,7 +261,7 @@ describe('getStatistics - achievements', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const ids = body.achievements.map((a: any) => a.achievementId);
+    const ids = body.achievements.map((a: Record<string, unknown>) => a.achievementId);
 
     expect(ids).toContain('a8'); // Title Collector
   });
@@ -298,11 +281,7 @@ describe('getStatistics - achievements', () => {
       { championshipId: 'c2', name: 'IC Title', type: 'singles' },
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce(champHistory)         // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce(championships);       // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, champHistory, championships);
 
     const event = makeEvent({
       queryStringParameters: { section: 'achievements', playerId: 'p1' },
@@ -312,7 +291,7 @@ describe('getStatistics - achievements', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const ids = body.achievements.map((a: any) => a.achievementId);
+    const ids = body.achievements.map((a: Record<string, unknown>) => a.achievementId);
 
     expect(ids).toContain('a9'); // Grand Slam
   });
@@ -332,11 +311,7 @@ describe('getStatistics - achievements', () => {
       { championshipId: 'c2', name: 'IC Title', type: 'singles' },
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce(champHistory)         // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce(championships);       // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, champHistory, championships);
 
     const event = makeEvent({
       queryStringParameters: { section: 'achievements', playerId: 'p1' },
@@ -346,7 +321,7 @@ describe('getStatistics - achievements', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const ids = body.achievements.map((a: any) => a.achievementId);
+    const ids = body.achievements.map((a: Record<string, unknown>) => a.achievementId);
 
     expect(ids).not.toContain('a9');
   });
@@ -365,11 +340,7 @@ describe('getStatistics - achievements', () => {
       })
     );
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'achievements', playerId: 'p1' },
@@ -379,7 +350,7 @@ describe('getStatistics - achievements', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const ids = body.achievements.map((a: any) => a.achievementId);
+    const ids = body.achievements.map((a: Record<string, unknown>) => a.achievementId);
 
     // Cage Master cannot be earned since no matches categorize as 'cage' anymore
     expect(ids).not.toContain('a12');
@@ -395,11 +366,7 @@ describe('getStatistics - achievements', () => {
       makeMatch({ matchId: 'w1', date: '2024-05-01', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'achievements', playerId: 'p1' },
@@ -409,7 +376,7 @@ describe('getStatistics - achievements', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const ids = body.achievements.map((a: any) => a.achievementId);
+    const ids = body.achievements.map((a: Record<string, unknown>) => a.achievementId);
 
     expect(ids).toContain('a13'); // Deadman Walking
   });
@@ -423,11 +390,7 @@ describe('getStatistics - achievements', () => {
       makeMatch({ matchId: 'w1', date: '2024-04-01', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'achievements', playerId: 'p1' },
@@ -437,7 +400,7 @@ describe('getStatistics - achievements', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const ids = body.achievements.map((a: any) => a.achievementId);
+    const ids = body.achievements.map((a: Record<string, unknown>) => a.achievementId);
 
     expect(ids).not.toContain('a13');
   });
@@ -459,11 +422,7 @@ describe('getStatistics - achievements', () => {
       { championshipId: 'c3', name: 'US Title', type: 'singles' },
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce(champHistory)         // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce(championships);       // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, champHistory, championships);
 
     const event = makeEvent({
       queryStringParameters: { section: 'achievements', playerId: 'p1' },
@@ -473,7 +432,7 @@ describe('getStatistics - achievements', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const ids = body.achievements.map((a: any) => a.achievementId);
+    const ids = body.achievements.map((a: Record<string, unknown>) => a.achievementId);
 
     expect(ids).toContain('a15'); // Peoples Champion
   });
@@ -491,11 +450,7 @@ describe('getStatistics - helper functions', () => {
       makeMatch({ matchId: 'm1', matchFormat: 'Singles', stipulationId: 'stip-ladder-1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1])   // PLAYERS
-      .mockResolvedValueOnce(matches)     // MATCHES
-      .mockResolvedValueOnce([])          // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);         // CHAMPIONSHIPS
+    setupDefaultMocks([player1], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: 'p1' },
@@ -506,10 +461,10 @@ describe('getStatistics - helper functions', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     // Should count in singles, not ladder
-    const singlesStats = body.statistics.find((s: any) => s.statType === 'singles');
+    const singlesStats = body.statistics.find((s: Record<string, unknown>) => s.statType === 'singles');
     expect(singlesStats.wins).toBe(1);
     expect(singlesStats.matchesPlayed).toBe(1);
-    const ladderStats = body.statistics.find((s: any) => s.statType === 'ladder');
+    const ladderStats = body.statistics.find((s: Record<string, unknown>) => s.statType === 'ladder');
     expect(ladderStats.wins).toBe(0);
     expect(ladderStats.matchesPlayed).toBe(0);
   });
@@ -523,11 +478,7 @@ describe('getStatistics - helper functions', () => {
       makeMatch({ matchId: 'm3', matchFormat: 'Singles', stipulationId: 'stip-hiac-2', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: 'p1' },
@@ -538,10 +489,10 @@ describe('getStatistics - helper functions', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     // Should count in singles, not cage
-    const singlesStats = body.statistics.find((s: any) => s.statType === 'singles');
+    const singlesStats = body.statistics.find((s: Record<string, unknown>) => s.statType === 'singles');
     expect(singlesStats.wins).toBe(3);
     expect(singlesStats.matchesPlayed).toBe(3);
-    const cageStats = body.statistics.find((s: any) => s.statType === 'cage');
+    const cageStats = body.statistics.find((s: Record<string, unknown>) => s.statType === 'cage');
     expect(cageStats.wins).toBe(0);
     expect(cageStats.matchesPlayed).toBe(0);
   });
@@ -552,11 +503,7 @@ describe('getStatistics - helper functions', () => {
       makeMatch({ matchId: 'm2', matchFormat: '6-Man Tag', participants: ['p1', 'p2', 'p3'], winners: ['p1'], losers: ['p2'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: 'p1' },
@@ -566,7 +513,7 @@ describe('getStatistics - helper functions', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const tagStats = body.statistics.find((s: any) => s.statType === 'tag');
+    const tagStats = body.statistics.find((s: Record<string, unknown>) => s.statType === 'tag');
     expect(tagStats.wins).toBe(2);
     expect(tagStats.matchesPlayed).toBe(2);
   });
@@ -582,11 +529,7 @@ describe('getStatistics - helper functions', () => {
       makeMatch({ matchId: 'm6', date: '2024-06-01', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: 'p1' },
@@ -596,7 +539,7 @@ describe('getStatistics - helper functions', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const overall = body.statistics.find((s: any) => s.statType === 'overall');
+    const overall = body.statistics.find((s: Record<string, unknown>) => s.statType === 'overall');
 
     expect(overall.longestWinStreak).toBe(3);
     expect(overall.currentWinStreak).toBe(2);
@@ -616,11 +559,7 @@ describe('getStatistics - helper functions', () => {
       makeMatch({ matchId: 'm6', date: '2024-10-15', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'], status: 'pending' }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: 'p1' },
@@ -630,7 +569,7 @@ describe('getStatistics - helper functions', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    const overall = body.statistics.find((s: any) => s.statType === 'overall');
+    const overall = body.statistics.find((s: Record<string, unknown>) => s.statType === 'overall');
 
     expect(overall.wins).toBe(3);
     expect(overall.losses).toBe(1);

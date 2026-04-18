@@ -309,3 +309,73 @@ export interface Promo {
   createdAt: string;
   updatedAt: string;
 }
+
+// ─── Wave 5 types ──────────────────────────────────────────────────
+
+export interface Match {
+  matchId: string;
+  date: string;
+  matchFormat?: string;
+  matchType?: string; // legacy field name
+  stipulationId?: string;
+  participants: string[];
+  teams?: string[][];
+  winners?: string[];
+  losers?: string[];
+  isDraw?: boolean;
+  isChampionship?: boolean;
+  championshipId?: string;
+  tournamentId?: string;
+  seasonId?: string;
+  eventId?: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  starRating?: number;
+  matchOfTheNight?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface Championship {
+  championshipId: string;
+  name: string;
+  type: 'singles' | 'tag';
+  currentChampion?: string | string[];
+  imageUrl?: string;
+  isActive?: boolean;
+  defenses?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChampionshipHistoryEntry {
+  championshipId: string;
+  wonDate: string;
+  champion: string | string[];
+  lostDate?: string;
+  daysHeld?: number;
+  defenses?: number;
+  matchId?: string;
+  updatedAt?: string;
+}
+
+export interface Tournament {
+  tournamentId: string;
+  name: string;
+  type: 'single-elimination' | 'round-robin';
+  status: string;
+  participants?: string[];
+  brackets?: unknown;
+  standings?: unknown;
+  winner?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface SeasonStanding {
+  seasonId: string;
+  playerId: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  updatedAt: string;
+}

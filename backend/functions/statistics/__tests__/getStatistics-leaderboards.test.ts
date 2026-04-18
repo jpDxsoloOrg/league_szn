@@ -3,27 +3,23 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockScanAll } = vi.hoisted(() => ({
-  mockScanAll: vi.fn(),
+const { mockPlayersList, mockMatchesList, mockChampionshipsListAllHistory, mockChampionshipsList, mockMatchTypesList, mockStipulationsList } = vi.hoisted(() => ({
+  mockPlayersList: vi.fn(),
+  mockMatchesList: vi.fn(),
+  mockChampionshipsListAllHistory: vi.fn(),
+  mockChampionshipsList: vi.fn(),
+  mockMatchTypesList: vi.fn(),
+  mockStipulationsList: vi.fn(),
 }));
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: vi.fn(),
-    put: vi.fn(),
-    scan: vi.fn(),
-    query: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    scanAll: mockScanAll,
-    queryAll: vi.fn(),
-  },
-  TableNames: {
-    PLAYERS: 'Players',
-    MATCHES: 'Matches',
-    CHAMPIONSHIPS: 'Championships',
-    CHAMPIONSHIP_HISTORY: 'ChampionshipHistory',
-  },
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    players: { list: mockPlayersList },
+    matches: { list: mockMatchesList },
+    championships: { listAllHistory: mockChampionshipsListAllHistory, list: mockChampionshipsList },
+    matchTypes: { list: mockMatchTypesList },
+    stipulations: { list: mockStipulationsList },
+  }),
 }));
 
 import { handler } from '../getStatistics';
@@ -46,7 +42,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '',
-    requestContext: {} as any,
+    requestContext: {} as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
@@ -82,6 +78,15 @@ const player1 = makePlayer('p1', 'Alpha', 'Wrestler A');
 const player2 = makePlayer('p2', 'Beta', 'Wrestler B');
 const player3 = makePlayer('p3', 'Gamma', 'Wrestler C');
 
+function setupDefaultMocks(players: unknown[] = [], matches: unknown[] = [], champHistory: unknown[] = []) {
+  mockPlayersList.mockResolvedValue(players);
+  mockMatchesList.mockResolvedValue(matches);
+  mockChampionshipsListAllHistory.mockResolvedValue(champHistory);
+  mockChampionshipsList.mockResolvedValue([]);
+  mockMatchTypesList.mockResolvedValue([]);
+  mockStipulationsList.mockResolvedValue([]);
+}
+
 // ─── Leaderboards Section ────────────────────────────────────────────
 
 describe('getStatistics - leaderboards', () => {
@@ -96,10 +101,7 @@ describe('getStatistics - leaderboards', () => {
       makeMatch({ matchId: 'm4', participants: ['p2', 'p3'], winners: ['p2'], losers: ['p3'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2, player3])  // PLAYERS
-      .mockResolvedValueOnce(matches)                       // MATCHES
-      .mockResolvedValueOnce([]);                           // CHAMPIONSHIP_HISTORY
+    setupDefaultMocks([player1, player2, player3], matches, []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'leaderboards' },
@@ -129,10 +131,7 @@ describe('getStatistics - leaderboards', () => {
       makeMatch({ matchId: 'm3', participants: ['p1', 'p2'], winners: ['p2'], losers: ['p1'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2, player3])  // PLAYERS
-      .mockResolvedValueOnce(matches)                       // MATCHES
-      .mockResolvedValueOnce([]);                           // CHAMPIONSHIP_HISTORY
+    setupDefaultMocks([player1, player2, player3], matches, []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'leaderboards' },
@@ -144,11 +143,7 @@ describe('getStatistics - leaderboards', () => {
     const body = JSON.parse(result!.body);
     const bestWinPct = body.leaderboards.bestWinPercentage;
 
-    // p3 has 0 matches and 1 loss, so p3 has 1 match actually (loss in m2)
     // p2: 1W 1L = 50%, p1: 2W 1L = 66.7%, p3: 0W 1L = 0%
-    // Wait, let me reconsider: p2 participates in m1 (loss) and m3 (win) = 1W 1L = 50%
-    // p3 participates in m2 (loss) = 0W 1L = 0%
-    // p1: 2W 1L = 66.7%
     // Sorted: p1 (66.7%), p2 (50%), p3 (0%)
     expect(bestWinPct[0].playerName).toBe('Alpha');
     expect(bestWinPct[0].value).toBe(66.7);
@@ -165,10 +160,7 @@ describe('getStatistics - leaderboards', () => {
       makeMatch({ matchId: 'm4', date: '2024-04-01', participants: ['p2', 'p3'], winners: ['p2'], losers: ['p3'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2, player3])  // PLAYERS
-      .mockResolvedValueOnce(matches)                       // MATCHES
-      .mockResolvedValueOnce([]);                           // CHAMPIONSHIP_HISTORY
+    setupDefaultMocks([player1, player2, player3], matches, []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'leaderboards' },
@@ -193,10 +185,7 @@ describe('getStatistics - leaderboards', () => {
       makeMatch({ matchId: 'm3', participants: ['p2', 'p3'], winners: ['p2'], losers: ['p3'], isChampionship: true }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2, player3])  // PLAYERS
-      .mockResolvedValueOnce(matches)                       // MATCHES
-      .mockResolvedValueOnce([]);                           // CHAMPIONSHIP_HISTORY
+    setupDefaultMocks([player1, player2, player3], matches, []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'leaderboards' },
@@ -221,10 +210,7 @@ describe('getStatistics - leaderboards', () => {
       { championshipId: 'c2', champion: 'p3', wonDate: '2024-01-01', lostDate: '2024-02-01', daysHeld: 31 },
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2, player3])  // PLAYERS
-      .mockResolvedValueOnce([])                            // MATCHES
-      .mockResolvedValueOnce(champHistory);                 // CHAMPIONSHIP_HISTORY
+    setupDefaultMocks([player1, player2, player3], [], champHistory);
 
     const event = makeEvent({
       queryStringParameters: { section: 'leaderboards' },
@@ -272,10 +258,7 @@ describe('getStatistics - records', () => {
       matches.push(makeMatch({ matchId: `d${i}`, date: `2024-04-${String(i + 1).padStart(2, '0')}`, participants: ['p2', 'p3'], winners: ['p2'], losers: ['p3'] }));
     }
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2, player3])  // PLAYERS
-      .mockResolvedValueOnce(matches)                       // MATCHES
-      .mockResolvedValueOnce([]);                           // CHAMPIONSHIP_HISTORY
+    setupDefaultMocks([player1, player2, player3], matches, []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'records' },
@@ -321,10 +304,7 @@ describe('getStatistics - records', () => {
       { championshipId: 'c1', champion: 'p2', wonDate: '2024-07-01', lostDate: '2024-08-01', daysHeld: 31, defenses: 1 },
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2, player3])  // PLAYERS
-      .mockResolvedValueOnce(matches)                       // MATCHES
-      .mockResolvedValueOnce(champHistory);                 // CHAMPIONSHIP_HISTORY
+    setupDefaultMocks([player1, player2, player3], matches, champHistory);
 
     const event = makeEvent({
       queryStringParameters: { section: 'records' },
@@ -339,17 +319,17 @@ describe('getStatistics - records', () => {
     expect(champRecords).toHaveLength(4);
 
     // Longest Single Reign: p1 with 182 days
-    const longestReign = champRecords.find((r: any) => r.recordName === 'Longest Single Reign');
+    const longestReign = champRecords.find((r: Record<string, unknown>) => r.recordName === 'Longest Single Reign');
     expect(longestReign.holderName).toBe('Alpha');
     expect(longestReign.value).toBe('182 days');
 
     // Most Title Defenses: p1 with 5
-    const mostDefenses = champRecords.find((r: any) => r.recordName === 'Most Title Defenses');
+    const mostDefenses = champRecords.find((r: Record<string, unknown>) => r.recordName === 'Most Title Defenses');
     expect(mostDefenses.holderName).toBe('Alpha');
     expect(mostDefenses.value).toBe(5);
 
     // Most Defenses in Single Reign: p1 with 5
-    const mostDefSingleReign = champRecords.find((r: any) => r.recordName === 'Most Defenses in Single Reign');
+    const mostDefSingleReign = champRecords.find((r: Record<string, unknown>) => r.recordName === 'Most Defenses in Single Reign');
     expect(mostDefSingleReign.value).toBe(5);
   });
 
@@ -365,10 +345,7 @@ describe('getStatistics - records', () => {
       makeMatch({ matchId: 'm6', date: '2024-06-01', participants: ['p2', 'p3'], winners: ['p2'], losers: ['p3'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2, player3])  // PLAYERS
-      .mockResolvedValueOnce(matches)                       // MATCHES
-      .mockResolvedValueOnce([]);                           // CHAMPIONSHIP_HISTORY
+    setupDefaultMocks([player1, player2, player3], matches, []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'records' },
@@ -383,13 +360,12 @@ describe('getStatistics - records', () => {
     expect(streakRecords).toHaveLength(4);
 
     // Longest Win Streak: p1 with 4
-    const longestWin = streakRecords.find((r: any) => r.recordName === 'Longest Win Streak');
+    const longestWin = streakRecords.find((r: Record<string, unknown>) => r.recordName === 'Longest Win Streak');
     expect(longestWin.holderName).toBe('Alpha');
     expect(longestWin.value).toBe(4);
 
-    // Longest Loss Streak: p2 with 3 (lost m1, m3, m4 - but m1 and m3 are not consecutive for p2)
-    // Actually p2: m1 loss, m3 loss, m4 loss, m5 win, m6 win => streak of 3
-    const longestLoss = streakRecords.find((r: any) => r.recordName === 'Longest Loss Streak');
+    // Longest Loss Streak: p2 with 3
+    const longestLoss = streakRecords.find((r: Record<string, unknown>) => r.recordName === 'Longest Loss Streak');
     expect(longestLoss.value).toBe(3);
   });
 
@@ -412,10 +388,7 @@ describe('getStatistics - records', () => {
       makeMatch({ matchId: 'l2', matchFormat: 'Singles', stipulationId: 'stip-ladder-1', participants: ['p2', 'p3'], winners: ['p3'], losers: ['p2'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2, player3])  // PLAYERS
-      .mockResolvedValueOnce(matches)                       // MATCHES
-      .mockResolvedValueOnce([]);                           // CHAMPIONSHIP_HISTORY
+    setupDefaultMocks([player1, player2, player3], matches, []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'records' },
@@ -430,24 +403,21 @@ describe('getStatistics - records', () => {
     expect(matchTypeRecords).toHaveLength(4);
 
     // All Singles-format matches (including those with cage/ladder stipulationId) are now singles
-    // p1: s1(W), s2(W), c1(W), c2(W), c3(W), l1(L) = 5 wins, 1 loss in singles
-    // p2: s3(W), c1(L), c2(L), c3(L), l2(L) = 1 win, 4 losses in singles
-    // p3: s2(L), s3(L), l1(W), l2(W) = 2 wins, 2 losses in singles
-    const singlesRecord = matchTypeRecords.find((r: any) => r.recordName === 'Most Singles Wins');
+    const singlesRecord = matchTypeRecords.find((r: Record<string, unknown>) => r.recordName === 'Most Singles Wins');
     expect(singlesRecord.holderName).toBe('Alpha');
     expect(singlesRecord.value).toBe(5);
 
-    const tagRecord = matchTypeRecords.find((r: any) => r.recordName === 'Most Tag Team Wins');
+    const tagRecord = matchTypeRecords.find((r: Record<string, unknown>) => r.recordName === 'Most Tag Team Wins');
     expect(tagRecord.holderName).toBe('Beta');
     expect(tagRecord.value).toBe(2);
 
     // No matches categorize as cage or ladder anymore (format-only categorization)
-    const cageRecord = matchTypeRecords.find((r: any) => r.recordName === 'Best Cage Match Record');
+    const cageRecord = matchTypeRecords.find((r: Record<string, unknown>) => r.recordName === 'Best Cage Match Record');
     expect(cageRecord.holderName).toBe('N/A');
     expect(cageRecord.value).toBe('0%');
 
     // mostLadderWins returns first player with 0 wins (all tied at 0)
-    const ladderRecord = matchTypeRecords.find((r: any) => r.recordName === 'Most Ladder Match Wins');
+    const ladderRecord = matchTypeRecords.find((r: Record<string, unknown>) => r.recordName === 'Most Ladder Match Wins');
     expect(ladderRecord.value).toBe(0);
   });
 
@@ -465,10 +435,7 @@ describe('getStatistics - records', () => {
       makeMatch({ matchId: 'm9', date: '2024-09-01', participants: ['p2', 'p3'], winners: ['p2'], losers: ['p3'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2, player3])  // PLAYERS
-      .mockResolvedValueOnce(matches)                       // MATCHES
-      .mockResolvedValueOnce([]);                           // CHAMPIONSHIP_HISTORY
+    setupDefaultMocks([player1, player2, player3], matches, []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'records' },
@@ -483,14 +450,14 @@ describe('getStatistics - records', () => {
     expect(Array.isArray(body.activeThreats)).toBe(true);
 
     // Should have at least "Most Career Wins" threat
-    const winsThread = body.activeThreats.find((t: any) => t.recordName === 'Most Career Wins');
+    const winsThread = body.activeThreats.find((t: Record<string, unknown>) => t.recordName === 'Most Career Wins');
     expect(winsThread).toBeDefined();
     expect(winsThread.currentValue).toBe(5);
     expect(winsThread.threatValue).toBe(4);
     expect(winsThread.gapDescription).toBe('1 wins behind');
 
     // Should have "Longest Win Streak" threat since p2 has active streak of 4
-    const streakThreat = body.activeThreats.find((t: any) => t.recordName === 'Longest Win Streak');
+    const streakThreat = body.activeThreats.find((t: Record<string, unknown>) => t.recordName === 'Longest Win Streak');
     expect(streakThreat).toBeDefined();
     expect(streakThreat.threatValue).toBe('5 active');
   });

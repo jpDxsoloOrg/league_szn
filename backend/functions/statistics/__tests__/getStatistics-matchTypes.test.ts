@@ -3,32 +3,23 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockScanAll } = vi.hoisted(() => ({
-  mockScanAll: vi.fn(),
+const { mockPlayersList, mockMatchesList, mockChampionshipsListAllHistory, mockChampionshipsList, mockMatchTypesList, mockStipulationsList } = vi.hoisted(() => ({
+  mockPlayersList: vi.fn(),
+  mockMatchesList: vi.fn(),
+  mockChampionshipsListAllHistory: vi.fn(),
+  mockChampionshipsList: vi.fn(),
+  mockMatchTypesList: vi.fn(),
+  mockStipulationsList: vi.fn(),
 }));
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: vi.fn(),
-    put: vi.fn(),
-    scan: vi.fn(),
-    query: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    scanAll: mockScanAll,
-    queryAll: vi.fn(),
-  },
-  TableNames: {
-    PLAYERS: 'Players',
-    MATCHES: 'Matches',
-    CHAMPIONSHIPS: 'Championships',
-    CHAMPIONSHIP_HISTORY: 'ChampionshipHistory',
-    MATCH_TYPES: 'MatchTypes',
-    STIPULATIONS: 'Stipulations',
-    STABLES: 'Stables',
-    TAG_TEAMS: 'TagTeams',
-    STABLE_INVITATIONS: 'StableInvitations',
-  },
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    players: { list: mockPlayersList },
+    matches: { list: mockMatchesList },
+    championships: { listAllHistory: mockChampionshipsListAllHistory, list: mockChampionshipsList },
+    matchTypes: { list: mockMatchTypesList },
+    stipulations: { list: mockStipulationsList },
+  }),
 }));
 
 import { handler } from '../getStatistics';
@@ -86,6 +77,15 @@ function makeMatch(overrides: Record<string, unknown> = {}) {
 const player1 = makePlayer('p1', 'Player One', 'Wrestler A');
 const player2 = makePlayer('p2', 'Player Two', 'Wrestler B');
 
+function setupDefaultMocks(players: unknown[] = [], matches: unknown[] = [], matchTypes: unknown[] = [], stipulations: unknown[] = []) {
+  mockPlayersList.mockResolvedValue(players);
+  mockMatchesList.mockResolvedValue(matches);
+  mockChampionshipsListAllHistory.mockResolvedValue([]);
+  mockChampionshipsList.mockResolvedValue([]);
+  mockMatchTypesList.mockResolvedValue(matchTypes);
+  mockStipulationsList.mockResolvedValue(stipulations);
+}
+
 // ─── Tests ───────────────────────────────────────────────────────────
 
 describe('getStatistics - match-types section', () => {
@@ -94,19 +94,16 @@ describe('getStatistics - match-types section', () => {
   });
 
   it('returns leaderboard for all matches when no filter applied', async () => {
-    mockScanAll.mockImplementation(({ TableName }: { TableName: string }) => {
-      if (TableName === 'Players') return Promise.resolve([player1, player2]);
-      if (TableName === 'Matches') {
-        return Promise.resolve([
-          makeMatch({ matchFormat: 'Singles', winners: ['p1'], losers: ['p2'] }),
-          makeMatch({ matchFormat: 'Singles', winners: ['p1'], losers: ['p2'] }),
-          makeMatch({ matchFormat: 'Singles', winners: ['p2'], losers: ['p1'] }),
-        ]);
-      }
-      if (TableName === 'MatchTypes') return Promise.resolve([]);
-      if (TableName === 'Stipulations') return Promise.resolve([]);
-      return Promise.resolve([]);
-    });
+    setupDefaultMocks(
+      [player1, player2],
+      [
+        makeMatch({ matchFormat: 'Singles', winners: ['p1'], losers: ['p2'] }),
+        makeMatch({ matchFormat: 'Singles', winners: ['p1'], losers: ['p2'] }),
+        makeMatch({ matchFormat: 'Singles', winners: ['p2'], losers: ['p1'] }),
+      ],
+      [],
+      [],
+    );
 
     const event = makeEvent();
     const result = await handler(event, ctx, cb);
@@ -127,17 +124,14 @@ describe('getStatistics - match-types section', () => {
 
   it('only includes players with matches played', async () => {
     const player3 = makePlayer('p3', 'Player Three', 'Wrestler C');
-    mockScanAll.mockImplementation(({ TableName }: { TableName: string }) => {
-      if (TableName === 'Players') return Promise.resolve([player1, player2, player3]);
-      if (TableName === 'Matches') {
-        return Promise.resolve([
-          makeMatch({ matchFormat: 'Singles', winners: ['p1'], losers: ['p2'] }),
-        ]);
-      }
-      if (TableName === 'MatchTypes') return Promise.resolve([]);
-      if (TableName === 'Stipulations') return Promise.resolve([]);
-      return Promise.resolve([]);
-    });
+    setupDefaultMocks(
+      [player1, player2, player3],
+      [
+        makeMatch({ matchFormat: 'Singles', winners: ['p1'], losers: ['p2'] }),
+      ],
+      [],
+      [],
+    );
 
     const event = makeEvent();
     const result = await handler(event, ctx, cb);
@@ -149,18 +143,15 @@ describe('getStatistics - match-types section', () => {
   });
 
   it('filters by seasonId when provided', async () => {
-    mockScanAll.mockImplementation(({ TableName }: { TableName: string }) => {
-      if (TableName === 'Players') return Promise.resolve([player1, player2]);
-      if (TableName === 'Matches') {
-        return Promise.resolve([
-          makeMatch({ matchFormat: 'Singles', seasonId: 's1', winners: ['p1'], losers: ['p2'] }),
-          makeMatch({ matchFormat: 'Singles', seasonId: 's2', winners: ['p2'], losers: ['p1'] }),
-        ]);
-      }
-      if (TableName === 'MatchTypes') return Promise.resolve([]);
-      if (TableName === 'Stipulations') return Promise.resolve([]);
-      return Promise.resolve([]);
-    });
+    setupDefaultMocks(
+      [player1, player2],
+      [
+        makeMatch({ matchFormat: 'Singles', seasonId: 's1', winners: ['p1'], losers: ['p2'] }),
+        makeMatch({ matchFormat: 'Singles', seasonId: 's2', winners: ['p2'], losers: ['p1'] }),
+      ],
+      [],
+      [],
+    );
 
     const event = makeEvent({
       queryStringParameters: { section: 'match-types', seasonId: 's1' },
@@ -175,7 +166,8 @@ describe('getStatistics - match-types section', () => {
   });
 
   it('returns 500 on error', async () => {
-    mockScanAll.mockRejectedValue(new Error('DynamoDB error'));
+    mockPlayersList.mockRejectedValue(new Error('DynamoDB error'));
+    mockMatchesList.mockResolvedValue([]);
 
     const event = makeEvent();
     const result = await handler(event, ctx, cb);

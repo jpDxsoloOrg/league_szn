@@ -1,5 +1,6 @@
 import type { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import type { Player, Championship, ChampionshipHistoryEntry } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 
 interface DashboardChampion {
@@ -66,59 +67,37 @@ interface DashboardResponse {
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
+    const { championships, players, seasons, matches, stipulations, events, challenges, seasonStandings } = getRepositories();
+
     // Fetch data: championships, players, seasons, matches, stipulations; events and challenges via query
-    const [championships, players, seasons, matches, stipulations, upcomingEventsResult, inProgressEventsResult, pendingChallenges] =
+    const [championshipList, playerList, seasonList, matchList, stipulationList, upcomingEventsList, inProgressEventsList, pendingChallengeList] =
       await Promise.all([
-        dynamoDb.scanAll({ TableName: TableNames.CHAMPIONSHIPS }),
-        dynamoDb.scanAll({ TableName: TableNames.PLAYERS }),
-        dynamoDb.scanAll({ TableName: TableNames.SEASONS }),
-        dynamoDb.scanAll({ TableName: TableNames.MATCHES }),
-        dynamoDb.scanAll({ TableName: TableNames.STIPULATIONS }),
-        dynamoDb.query({
-          TableName: TableNames.EVENTS,
-          IndexName: 'StatusIndex',
-          KeyConditionExpression: '#s = :status',
-          ExpressionAttributeNames: { '#s': 'status' },
-          ExpressionAttributeValues: { ':status': 'upcoming' },
-          ScanIndexForward: true,
-          Limit: 3,
-        }),
-        dynamoDb.query({
-          TableName: TableNames.EVENTS,
-          IndexName: 'StatusIndex',
-          KeyConditionExpression: '#s = :status',
-          ExpressionAttributeNames: { '#s': 'status' },
-          ExpressionAttributeValues: { ':status': 'in-progress' },
-          ScanIndexForward: true,
-        }),
-        dynamoDb.queryAll({
-          TableName: TableNames.CHALLENGES,
-          IndexName: 'StatusIndex',
-          KeyConditionExpression: '#s = :status',
-          ExpressionAttributeNames: { '#s': 'status' },
-          ExpressionAttributeValues: { ':status': 'pending' },
-        }),
+        championships.list(),
+        players.list(),
+        seasons.list(),
+        matches.list(),
+        stipulations.list(),
+        events.listByStatus('upcoming'),
+        events.listByStatus('in-progress'),
+        challenges.listByStatus('pending'),
       ]);
 
     // Only include players who have a wrestler assigned (exclude Fantasy-only users)
-    const wrestlerPlayers = (players as Record<string, unknown>[]).filter((p) => p.currentWrestler);
+    const wrestlerPlayers = playerList.filter((p) => p.currentWrestler);
 
-    const playerMap = new Map<string, Record<string, unknown>>();
+    const playerMap = new Map<string, Player>();
     for (const p of wrestlerPlayers) {
-      const id = p.playerId as string;
-      if (id) playerMap.set(id, p);
+      if (p.playerId) playerMap.set(p.playerId, p);
     }
 
-    const championshipMap = new Map<string, Record<string, unknown>>();
-    for (const c of championships as Record<string, unknown>[]) {
-      const id = c.championshipId as string;
-      if (id) championshipMap.set(id, c);
+    const championshipMap = new Map<string, Championship>();
+    for (const c of championshipList) {
+      if (c.championshipId) championshipMap.set(c.championshipId, c);
     }
 
     const stipulationMap = new Map<string, string>();
-    for (const s of (stipulations as Record<string, unknown>[]) ?? []) {
-      const id = s.stipulationId as string;
-      if (id && s.name) stipulationMap.set(id, s.name as string);
+    for (const s of stipulationList ?? []) {
+      if (s.stipulationId && s.name) stipulationMap.set(s.stipulationId, s.name);
     }
 
     // Current champions: active championships with currentChampion.
@@ -127,13 +106,13 @@ export const handler: APIGatewayProxyHandler = async () => {
     // field bumps on any championship edit (e.g. image upload) and is not
     // a reliable source of reign length.
     interface ChampionCandidate {
-      championship: Record<string, unknown>;
+      championship: Championship;
       playerIds: string[];
       names: string[];
       imageUrl?: string;
     }
     const championCandidates: ChampionCandidate[] = [];
-    for (const c of championships as Record<string, unknown>[]) {
+    for (const c of championshipList) {
       if (c.isActive === false) continue;
       const champ = c.currentChampion;
       if (!champ) continue;
@@ -141,10 +120,10 @@ export const handler: APIGatewayProxyHandler = async () => {
       const names: string[] = [];
       let imageUrl: string | undefined;
       for (const pid of playerIds) {
-        const player = playerMap.get(pid as string);
+        const player = playerMap.get(pid);
         if (player) {
-          names.push((player.currentWrestler as string) || (player.name as string));
-          if (player.imageUrl) imageUrl = player.imageUrl as string;
+          names.push(player.currentWrestler || player.name);
+          if (player.imageUrl) imageUrl = player.imageUrl;
         }
       }
       if (names.length > 0) {
@@ -152,103 +131,84 @@ export const handler: APIGatewayProxyHandler = async () => {
       }
     }
 
-    const currentReigns = await Promise.all(
+    const currentReigns: (ChampionshipHistoryEntry | null)[] = await Promise.all(
       championCandidates.map((cand) =>
-        dynamoDb.query({
-          TableName: TableNames.CHAMPIONSHIP_HISTORY,
-          KeyConditionExpression: 'championshipId = :cid',
-          FilterExpression: 'attribute_not_exists(lostDate)',
-          ExpressionAttributeValues: {
-            ':cid': cand.championship.championshipId as string,
-          },
-          ScanIndexForward: false,
-          Limit: 1,
-        })
+        championships.findCurrentReign(cand.championship.championshipId)
       )
     );
 
     const currentChampions: DashboardChampion[] = championCandidates.map(
       (cand, i) => {
-        const reign = currentReigns[i]?.Items?.[0] as
-          | Record<string, unknown>
-          | undefined;
+        const reign = currentReigns[i];
         return {
-          championshipId: cand.championship.championshipId as string,
-          championshipName: cand.championship.name as string,
+          championshipId: cand.championship.championshipId,
+          championshipName: cand.championship.name,
           championName: cand.names.join(' & '),
           championImageUrl: cand.imageUrl,
-          playerId: (cand.playerIds[0] as string) ?? '',
-          wonDate: (reign?.wonDate as string | undefined) ?? undefined,
-          defenses:
-            (reign?.defenses as number | undefined) ??
-            (cand.championship.defenses as number | undefined),
+          playerId: cand.playerIds[0] ?? '',
+          wonDate: reign?.wonDate ?? undefined,
+          defenses: reign?.defenses ?? cand.championship.defenses,
         };
       }
     );
 
-    // Upcoming events (already limited to 3 by query)
-    const upcomingEvents: DashboardEvent[] = ((upcomingEventsResult.Items || []) as Record<
-      string,
-      unknown
-   >[])
+    // Upcoming events (slice to 3 client-side)
+    const upcomingEvents: DashboardEvent[] = upcomingEventsList
       .sort(
         (a, b) =>
-          new Date(a.date as string).getTime() - new Date(b.date as string).getTime()
+          new Date(a.date).getTime() - new Date(b.date).getTime()
       )
       .slice(0, 3)
       .map((e) => ({
-        eventId: e.eventId as string,
-        name: (e.name as string) ?? 'Event',
-        date: e.date as string,
-        eventType: (e.eventType as string) ?? 'event',
-        venue: e.venue as string | undefined,
-        matchCount: e.matchCount as number | undefined,
+        eventId: e.eventId,
+        name: e.name ?? 'Event',
+        date: e.date,
+        eventType: e.eventType ?? 'event',
+        venue: e.venue,
+        matchCount: e.matchCards?.length,
       }));
 
     // In-progress events
-    const inProgressEvents: DashboardEvent[] = ((inProgressEventsResult.Items || []) as Record<
-      string,
-      unknown
-    >[])
+    const inProgressEvents: DashboardEvent[] = inProgressEventsList
       .sort(
         (a, b) =>
-          new Date(a.date as string).getTime() - new Date(b.date as string).getTime()
+          new Date(a.date).getTime() - new Date(b.date).getTime()
       )
       .map((e) => ({
-        eventId: e.eventId as string,
-        name: (e.name as string) ?? 'Event',
-        date: e.date as string,
-        eventType: (e.eventType as string) ?? 'event',
-        venue: e.venue as string | undefined,
-        matchCount: e.matchCount as number | undefined,
+        eventId: e.eventId,
+        name: e.name ?? 'Event',
+        date: e.date,
+        eventType: e.eventType ?? 'event',
+        venue: e.venue,
+        matchCount: e.matchCards?.length,
       }));
 
     // Recent results: only matches with updatedAt (recorded after we added it), sort by updatedAt desc, limit 20 for date grouping
-    const completedMatches = (matches as Record<string, unknown>[]).filter(
+    const completedMatches = matchList.filter(
       (m) =>
         m.status === 'completed' &&
         m.winners &&
         m.losers &&
-        (m.updatedAt as string)
+        m.updatedAt
     );
     completedMatches.sort(
       (a, b) =>
-        new Date(b.updatedAt as string).getTime() -
-        new Date(a.updatedAt as string).getTime()
+        new Date(b.updatedAt!).getTime() -
+        new Date(a.updatedAt!).getTime()
     );
     // Limit recent results to matches updated within the last 3 days
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
     const recentCompletedMatches = completedMatches.filter(
-      (m) => ((m.updatedAt as string) || (m.date as string)) >= threeDaysAgo
+      (m) => (m.updatedAt || m.date) >= threeDaysAgo
     );
     // Safety cap to avoid unbounded responses
     const recentResults: DashboardMatch[] = recentCompletedMatches.slice(0, 50).map((m) => {
-      const winnerIds = m.winners as string[];
-      const loserIds = m.losers as string[];
+      const winnerIds = m.winners!;
+      const loserIds = m.losers!;
       const winnerName = (winnerIds || [])
         .map((id) => {
           const p = playerMap.get(id);
-          return p ? (p.currentWrestler as string) || (p.name as string) : '';
+          return p ? p.currentWrestler || p.name : '';
         })
         .filter(Boolean)
         .join(' & ');
@@ -256,78 +216,74 @@ export const handler: APIGatewayProxyHandler = async () => {
       const loserName = (loserIds || [])
         .map((id) => {
           const p = playerMap.get(id);
-          return p ? (p.currentWrestler as string) || (p.name as string) : '';
+          return p ? p.currentWrestler || p.name : '';
         })
         .filter(Boolean)
         .join(' vs ');
       const firstWinner = winnerIds?.[0];
       const firstLoser = loserIds?.[0];
-      const champId = m.championshipId as string | undefined;
+      const champId = m.championshipId;
       const champ = champId ? championshipMap.get(champId) : undefined;
-      const stipulationId = m.stipulationId as string | undefined;
+      const stipulationId = m.stipulationId;
       const stipulationName = stipulationId ? stipulationMap.get(stipulationId) : undefined;
-      const matchType = (m.matchFormat as string) ?? (m.matchType as string) ?? 'singles';
+      const matchType = m.matchFormat ?? m.matchType ?? 'singles';
       const isChampionship = Boolean(m.isChampionship && champId);
       return {
-        matchId: m.matchId as string,
-        date: m.date as string,
+        matchId: m.matchId,
+        date: m.date,
         matchType,
         stipulation: stipulationName,
         isChampionship,
-        championshipName: champ ? (champ.name as string) : undefined,
-        championshipImageUrl: champ?.imageUrl as string | undefined,
-        starRating: m.starRating as number | undefined,
+        championshipName: champ ? champ.name : undefined,
+        championshipImageUrl: champ?.imageUrl,
+        starRating: m.starRating,
         matchOfTheNight: Boolean(m.matchOfTheNight),
-        winnerName: winnerName || '—',
+        winnerName: winnerName || '\u2014',
         winnerImageUrl: firstWinner
-          ? (playerMap.get(firstWinner)?.imageUrl as string | undefined)
+          ? playerMap.get(firstWinner)?.imageUrl
           : undefined,
-        loserName: loserName || '—',
+        loserName: loserName || '\u2014',
         loserImageUrl: firstLoser
-          ? (playerMap.get(firstLoser)?.imageUrl as string | undefined)
+          ? playerMap.get(firstLoser)?.imageUrl
           : undefined,
-        eventId: m.eventId as string | undefined,
+        eventId: m.eventId,
       };
     });
 
     // Active season
-    const activeSeason = (seasons as Record<string, unknown>[]).find(
+    const activeSeason = seasonList.find(
       (s) => s.status === 'active'
     );
     let seasonInfo: DashboardSeason | null = null;
     if (activeSeason) {
-      const seasonMatches = (matches as Record<string, unknown>[]).filter(
+      const seasonMatches = matchList.filter(
         (m) => m.seasonId === activeSeason.seasonId && m.status === 'completed'
       );
       seasonInfo = {
-        seasonId: activeSeason.seasonId as string,
-        name: activeSeason.name as string,
-        startDate: activeSeason.startDate as string | undefined,
-        endDate: activeSeason.endDate as string | undefined,
-        status: activeSeason.status as string,
+        seasonId: activeSeason.seasonId,
+        name: activeSeason.name,
+        startDate: activeSeason.startDate,
+        endDate: activeSeason.endDate,
+        status: activeSeason.status,
         matchesPlayed: seasonMatches.length,
       };
     }
 
     // Quick stats
-    const totalMatches = (matches as Record<string, unknown>[]).filter(
+    const totalMatches = matchList.filter(
       (m) => m.status === 'completed'
     ).length;
     let mostWinsPlayer: { name: string; wins: number } | undefined;
     if (activeSeason) {
-      const seasonStandings = await dynamoDb.queryAll({
-        TableName: TableNames.SEASON_STANDINGS,
-        KeyConditionExpression: 'seasonId = :sid',
-        ExpressionAttributeValues: { ':sid': activeSeason.seasonId },
-      });
+      const standings = await seasonStandings.listBySeason(activeSeason.seasonId);
       let maxWins = 0;
-      for (const s of seasonStandings as Record<string, unknown>[]) {
-        const w = (s.wins as number) ?? 0;
+      for (const s of standings) {
+        const w = s.wins ?? 0;
         if (w > maxWins) {
           maxWins = w;
-          const p = playerMap.get(s.playerId as string);
+          const p = playerMap.get(s.playerId);
           mostWinsPlayer = {
-            name: (p?.currentWrestler as string) || (p?.name as string) || '—',
+            name: p?.currentWrestler || p?.name || '\u2014',
             wins: w,
           };
         }
@@ -335,11 +291,11 @@ export const handler: APIGatewayProxyHandler = async () => {
     } else {
       let maxWins = 0;
       for (const p of wrestlerPlayers) {
-        const w = (p.wins as number) ?? 0;
+        const w = p.wins ?? 0;
         if (w > maxWins) {
           maxWins = w;
           mostWinsPlayer = {
-            name: (p.currentWrestler as string) || (p.name as string) || '—',
+            name: p.currentWrestler || p.name || '\u2014',
             wins: w,
           };
         }
@@ -349,7 +305,7 @@ export const handler: APIGatewayProxyHandler = async () => {
     const quickStats: DashboardQuickStats = {
       totalPlayers: wrestlerPlayers.length,
       totalMatches,
-      activeChampionships: (championships as Record<string, unknown>[]).filter(
+      activeChampionships: championshipList.filter(
         (c) => c.isActive !== false
       ).length,
       mostWinsPlayer,
@@ -362,7 +318,7 @@ export const handler: APIGatewayProxyHandler = async () => {
       recentResults,
       seasonInfo,
       quickStats,
-      activeChallengesCount: pendingChallenges.length,
+      activeChallengesCount: pendingChallengeList.length,
     };
 
     return success(response);
