@@ -18,7 +18,7 @@
 | 6 — Contenders & Fantasy (batched writes) | ✅ Done | — |
 | 7 — Transactional writes + `runInTransaction` (steps 23–25) | ✅ Done | — |
 | 7b — `recordResult.ts` migration (step 26–27) | ✅ Done | — |
-| 8 — Admin and seed scripts | ⏳ | — |
+| 8 — Admin and seed scripts | ✅ Done | — |
 | 9 — Clean up (delete `dynamodbUtils.ts`, shrink `dynamodb.ts`, remove deprecated `handlerFactory`) | ⏳ | — |
 
 **Baseline after Wave 2**: 953 tests passing, 17 pre-existing failures (unrelated
@@ -85,9 +85,19 @@ and `tournaments.update`. Event auto-complete uses `events.list` and
 and `contenders.deactivateOverride`. 3 test files (686 lines total) rewritten
 to mock repository methods.
 
-**Where to resume**: Wave 8 — Admin and seed scripts. Migrate
-`seed-data.ts`, `clear-data.ts`, and `admin/*.ts` handlers to use
-`getRepositories()`.
+**After Wave 8**: 965 tests passing, 0 failures. Typecheck and lint clean.
+Admin bulk operations added to Repositories interface: `clearAllData()`,
+`exportAllData()`, `importAllData()`. DynamoDB implementation handles all
+21 tables with proper key structures. InMemory implementation operates on
+in-memory stores. `clearAll.ts`, `exportData.ts`, `seedData.ts` handlers
+migrated to use repository methods. `dataTransferConfig.ts` decoupled from
+`TableNames` (table mapping moved to Dynamo driver's `adminOps.ts`).
+Scripts `seed-data.ts` and `clear-data.ts` now use `getRepositories()`.
+
+**Where to resume**: Wave 9 — Clean up. Confirm no handler/script imports
+`dynamodb.ts` or `dynamodbUtils.ts` directly. Delete `dynamodbUtils.ts`.
+Shrink `dynamodb.ts`. Remove deprecated `handlerFactory` alias. Update
+`CLAUDE.md`.
 
 ## Context
 

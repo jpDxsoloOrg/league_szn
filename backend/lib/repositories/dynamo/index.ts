@@ -26,6 +26,7 @@ import { DynamoSeasonStandingsRepository } from './SeasonStandingsRepository';
 import { DynamoContendersRepository } from './ContendersRepository';
 import { DynamoFantasyRepository } from './FantasyRepository';
 import { createDynamoUnitOfWorkFactory } from './DynamoUnitOfWork';
+import { dynamoClearAllData, dynamoExportAllData, dynamoImportAllData } from './adminOps';
 
 registerDriver('dynamo', (): Repositories => ({
   divisions: new DynamoDivisionsRepository(),
@@ -55,4 +56,7 @@ registerDriver('dynamo', (): Repositories => ({
   contenders: new DynamoContendersRepository(),
   fantasy: new DynamoFantasyRepository(),
   runInTransaction: createDynamoUnitOfWorkFactory(),
+  clearAllData: dynamoClearAllData,
+  exportAllData: dynamoExportAllData,
+  importAllData: dynamoImportAllData,
 }));

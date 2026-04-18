@@ -54,6 +54,11 @@ export interface Repositories {
   contenders: ContendersRepository;
   fantasy: FantasyRepository;
   runInTransaction: UnitOfWorkFactory;
+
+  // Admin bulk operations
+  clearAllData(): Promise<Record<string, { deleted: number; errors: number }>>;
+  exportAllData(): Promise<Record<string, Record<string, unknown>[]>>;
+  importAllData(data: Record<string, Record<string, unknown>[]>): Promise<Record<string, number>>;
 }
 
 type RepositoriesFactory = () => Repositories;

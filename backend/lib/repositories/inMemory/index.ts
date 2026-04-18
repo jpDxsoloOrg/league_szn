@@ -83,6 +83,67 @@ export function buildInMemoryRepositories(): Repositories {
     contenders: new InMemoryContendersRepository(),
     fantasy: new InMemoryFantasyRepository(),
     runInTransaction,
+    clearAllData: async () => {
+      const counts: Record<string, { deleted: number; errors: number }> = {};
+      const stores: [string, Map<unknown, unknown> | unknown[]][] = [
+        ['players', playersRepo.store],
+        ['challenges', challengesRepo.store],
+        ['tagTeams', tagTeamsRepo.store],
+        ['championships', championshipsRepo.store],
+        ['matches', matchesRepo.store],
+      ];
+      for (const [key, store] of stores) {
+        if (store instanceof Map) {
+          counts[key] = { deleted: store.size, errors: 0 };
+          store.clear();
+        } else if (Array.isArray(store)) {
+          counts[key] = { deleted: store.length, errors: 0 };
+          store.length = 0;
+        }
+      }
+      championshipsRepo.historyStore.length = 0;
+      seasonStandingsRepo.store.length = 0;
+      return counts;
+    },
+    exportAllData: async () => {
+      const data: Record<string, Record<string, unknown>[]> = {};
+      data.players = Array.from(playersRepo.store.values()) as unknown as Record<string, unknown>[];
+      data.matches = Array.from(matchesRepo.store.values()) as unknown as Record<string, unknown>[];
+      data.championships = Array.from(championshipsRepo.store.values()) as unknown as Record<string, unknown>[];
+      data.championshipHistory = championshipsRepo.historyStore as unknown as Record<string, unknown>[];
+      data.challenges = Array.from(challengesRepo.store.values()) as unknown as Record<string, unknown>[];
+      data.tagTeams = Array.from(tagTeamsRepo.store.values()) as unknown as Record<string, unknown>[];
+      return data;
+    },
+    importAllData: async (data: Record<string, Record<string, unknown>[]>) => {
+      const counts: Record<string, number> = {};
+      // Clear everything first
+      playersRepo.store.clear();
+      matchesRepo.store.clear();
+      championshipsRepo.store.clear();
+      championshipsRepo.historyStore.length = 0;
+      challengesRepo.store.clear();
+      tagTeamsRepo.store.clear();
+      seasonStandingsRepo.store.length = 0;
+
+      // Import
+      for (const [key, records] of Object.entries(data)) {
+        counts[key] = records.length;
+         
+        if (key === 'players') records.forEach(r => playersRepo.store.set(r.playerId as string, r as any));
+         
+        if (key === 'matches') records.forEach(r => matchesRepo.store.set(r.matchId as string, r as any));
+         
+        if (key === 'championships') records.forEach(r => championshipsRepo.store.set(r.championshipId as string, r as any));
+         
+        if (key === 'championshipHistory') records.forEach(r => championshipsRepo.historyStore.push(r as any));
+         
+        if (key === 'challenges') records.forEach(r => challengesRepo.store.set(r.challengeId as string, r as any));
+         
+        if (key === 'tagTeams') records.forEach(r => tagTeamsRepo.store.set(r.tagTeamId as string, r as any));
+      }
+      return counts;
+    },
   };
 }
 

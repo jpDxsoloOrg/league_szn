@@ -1,11 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { badRequest, success, serverError } from '../../lib/response';
 import { requireSuperAdmin } from '../../lib/auth';
 import { v4 as uuidv4 } from 'uuid';
 import {
   EXPORT_SCHEMA_VERSION,
-  EXPORT_TABLES,
+  EXPORT_DATASET_KEYS,
   type ExportData,
   type SeedImportPayload,
 } from './dataTransferConfig';
@@ -107,22 +107,11 @@ function parseSeedRequest(body: string | null): { value?: ParsedSeedRequest; err
   };
 }
 
-function validateImportRecordKeys(payload: SeedImportPayload): string | null {
-  for (const table of EXPORT_TABLES) {
-    const records = payload.data[table.key];
-    for (let index = 0; index < records.length; index++) {
-      const record = records[index];
-      const pkValue = record[table.partitionKey];
-      if (pkValue === undefined || pkValue === null || pkValue === '') {
-        return `Dataset "${table.key}" record at index ${String(index)} is missing required key "${table.partitionKey}"`;
-      }
-
-      if (table.sortKey) {
-        const skValue = record[table.sortKey];
-        if (skValue === undefined || skValue === null || skValue === '') {
-          return `Dataset "${table.key}" record at index ${String(index)} is missing required key "${table.sortKey}"`;
-        }
-      }
+function validateImportDatasetKeys(payload: SeedImportPayload): string | null {
+  for (const key of EXPORT_DATASET_KEYS) {
+    const records = payload.data[key as keyof ExportData];
+    if (records && !Array.isArray(records)) {
+      return `Dataset "${key}" must be an array`;
     }
   }
   return null;
@@ -160,15 +149,15 @@ function validateImportPayload(payload: unknown): { value?: SeedImportPayload; e
   }
 
   const normalizedData: Partial<ExportData> = {};
-  for (const table of EXPORT_TABLES) {
-    const dataset = data[table.key];
+  for (const key of EXPORT_DATASET_KEYS) {
+    const dataset = data[key];
     if (!Array.isArray(dataset)) {
-      return { error: `Import payload is missing array dataset "${table.key}"` };
+      return { error: `Import payload is missing array dataset "${key}"` };
     }
     if (!dataset.every(isRecord)) {
-      return { error: `Dataset "${table.key}" must contain only objects` };
+      return { error: `Dataset "${key}" must contain only objects` };
     }
-    normalizedData[table.key] = dataset as Record<string, unknown>[];
+    normalizedData[key as keyof ExportData] = dataset as Record<string, unknown>[];
   }
 
   return {
@@ -181,64 +170,14 @@ function validateImportPayload(payload: unknown): { value?: SeedImportPayload; e
   };
 }
 
-async function deleteAllFromTable(
-  tableName: string,
-  partitionKey: string,
-  sortKey?: string
-): Promise<void> {
-  const expressionAttributeNames: Record<string, string> = {
-    '#pk': partitionKey,
-  };
-  let projectionExpression = '#pk';
-
-  if (sortKey) {
-    expressionAttributeNames['#sk'] = sortKey;
-    projectionExpression = `${projectionExpression}, #sk`;
-  }
-
-  const items = await dynamoDb.scanAll({
-    TableName: tableName,
-    ProjectionExpression: projectionExpression,
-    ExpressionAttributeNames: expressionAttributeNames,
-  });
-
-  for (const item of items) {
-    const key: Record<string, unknown> = {
-      [partitionKey]: item[partitionKey],
-    };
-    if (sortKey) {
-      key[sortKey] = item[sortKey];
-    }
-    await dynamoDb.delete({
-      TableName: tableName,
-      Key: key,
-    });
-  }
-}
-
 async function importPayload(payload: SeedImportPayload): Promise<Record<string, number>> {
-  const createdCounts: Record<string, number> = {};
-  const keyValidationError = validateImportRecordKeys(payload);
-  if (keyValidationError) {
-    throw new Error(keyValidationError);
+  const validationError = validateImportDatasetKeys(payload);
+  if (validationError) {
+    throw new Error(validationError);
   }
 
-  for (const table of EXPORT_TABLES) {
-    await deleteAllFromTable(table.tableName, table.partitionKey, table.sortKey);
-  }
-
-  for (const table of EXPORT_TABLES) {
-    const records = payload.data[table.key];
-    for (const record of records) {
-      await dynamoDb.put({
-        TableName: table.tableName,
-        Item: record,
-      });
-    }
-    createdCounts[table.key] = records.length;
-  }
-
-  return createdCounts;
+  const { importAllData } = getRepositories();
+  return importAllData(payload.data as Record<string, Record<string, unknown>[]>);
 }
 
 function isSeedModuleId(moduleId: string): moduleId is SeedModuleId {
@@ -349,7 +288,6 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   }
 
   try {
-    const createdCounts: Record<string, number> = {};
     const now = new Date().toISOString();
 
     // ── Divisions ──────────────────────────────────────────────
@@ -378,11 +316,6 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       },
     ];
 
-    for (const division of divisions) {
-      await dynamoDb.put({ TableName: TableNames.DIVISIONS, Item: division });
-    }
-    createdCounts.divisions = divisions.length;
-
     // ── Players ────────────────────────────────────────────────
     console.log('Creating players...');
     const players = playerNames.map((name, index) => ({
@@ -397,11 +330,6 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       updatedAt: now,
     }));
 
-    for (const player of players) {
-      await dynamoDb.put({ TableName: TableNames.PLAYERS, Item: player });
-    }
-    createdCounts.players = players.length;
-
     // ── Seasons ────────────────────────────────────────────────
     console.log('Creating seasons...');
     const season = {
@@ -413,25 +341,19 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       updatedAt: now,
     };
 
-    await dynamoDb.put({ TableName: TableNames.SEASONS, Item: season });
-    createdCounts.seasons = 1;
-
     // ── Season Standings ───────────────────────────────────────
     console.log('Creating season standings...');
-    let standingsCount = 0;
+    const seasonStandingsItems: Record<string, unknown>[] = [];
     for (const player of players) {
-      const standing = {
+      seasonStandingsItems.push({
         seasonId: season.seasonId,
         playerId: player.playerId,
         wins: Math.floor(Math.random() * 8) + 1,
         losses: Math.floor(Math.random() * 6) + 1,
         draws: Math.floor(Math.random() * 2),
         updatedAt: now,
-      };
-      await dynamoDb.put({ TableName: TableNames.SEASON_STANDINGS, Item: standing });
-      standingsCount++;
+      });
     }
-    createdCounts.seasonStandings = standingsCount;
 
     // ── Championships ──────────────────────────────────────────
     console.log('Creating championships...');
@@ -480,29 +402,19 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       },
     ];
 
-    for (const championship of championships) {
-      await dynamoDb.put({ TableName: TableNames.CHAMPIONSHIPS, Item: championship });
-    }
-    createdCounts.championships = championships.length;
-
     // ── Championship History ───────────────────────────────────
     console.log('Creating championship history...');
-    let historyCount = 0;
+    const championshipHistoryItems: Record<string, unknown>[] = [];
     for (let i = 0; i < championships.length; i++) {
       const wonDate = daysAgo(30 - i * 5);
-      await dynamoDb.put({
-        TableName: TableNames.CHAMPIONSHIP_HISTORY,
-        Item: {
-          championshipId: championships[i].championshipId,
-          wonDate: wonDate.toISOString(),
-          champion: championships[i].currentChampion,
-          matchId: uuidv4(),
-          defenses: Math.floor(Math.random() * 4),
-        },
+      championshipHistoryItems.push({
+        championshipId: championships[i].championshipId,
+        wonDate: wonDate.toISOString(),
+        champion: championships[i].currentChampion,
+        matchId: uuidv4(),
+        defenses: Math.floor(Math.random() * 4),
       });
-      historyCount++;
     }
-    createdCounts.championshipHistory = historyCount;
 
     // ── Matches ────────────────────────────────────────────────
     console.log('Creating matches...');
@@ -569,11 +481,6 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       matches.push(match);
     }
 
-    for (const match of matches) {
-      await dynamoDb.put({ TableName: TableNames.MATCHES, Item: match });
-    }
-    createdCounts.matches = matches.length;
-
     // ── Tournaments ────────────────────────────────────────────
     console.log('Creating tournaments...');
     const tournaments = [
@@ -630,11 +537,6 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         version: 1,
       },
     ];
-
-    for (const tournament of tournaments) {
-      await dynamoDb.put({ TableName: TableNames.TOURNAMENTS, Item: tournament });
-    }
-    createdCounts.tournaments = tournaments.length;
 
     // ── Events ─────────────────────────────────────────────────
     console.log('Creating events...');
@@ -701,11 +603,6 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       },
     ];
 
-    for (const event of events) {
-      await dynamoDb.put({ TableName: TableNames.EVENTS, Item: event });
-    }
-    createdCounts.events = events.length;
-
     // Link matches back to their events
     for (const m of completedMatches.slice(0, 3)) {
       m.eventId = events[1].eventId;
@@ -713,13 +610,10 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     for (const m of scheduledMatches.slice(0, 3)) {
       m.eventId = events[0].eventId;
     }
-    for (const match of [...completedMatches.slice(0, 3), ...scheduledMatches.slice(0, 3)]) {
-      await dynamoDb.put({ TableName: TableNames.MATCHES, Item: match });
-    }
 
     // ── Contender Rankings ─────────────────────────────────────
     console.log('Creating contender rankings...');
-    let rankingsCount = 0;
+    const contenderRankingsItems: Record<string, unknown>[] = [];
 
     // WHC rankings (division-locked to Raw)
     const rawPlayers = players.filter(p => p.divisionId === divisions[0].divisionId);
@@ -749,8 +643,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       if (i <= 1) {
         ranking.previousRank = i === 0 ? 2 : 1;
       }
-      await dynamoDb.put({ TableName: TableNames.CONTENDER_RANKINGS, Item: ranking });
-      rankingsCount++;
+      contenderRankingsItems.push(ranking);
     }
 
     // IC rankings (open, no division lock)
@@ -780,80 +673,61 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       if (i + 1 <= 3) {
         ranking.previousRank = i + 2;
       }
-      await dynamoDb.put({ TableName: TableNames.CONTENDER_RANKINGS, Item: ranking });
-      rankingsCount++;
+      contenderRankingsItems.push(ranking);
     }
-    createdCounts.contenderRankings = rankingsCount;
 
     // ── Ranking History ────────────────────────────────────────
     console.log('Creating ranking history...');
-    let historyEntries = 0;
+    const rankingHistoryItems: Record<string, unknown>[] = [];
     for (let weekOffset = 0; weekOffset < 3; weekOffset++) {
       const weekDate = daysAgo(weekOffset * 7);
       for (let i = 0; i < 3; i++) {
         const contender = icContenders[i];
         const weekKey = getISOWeekKey(championships[1].championshipId, weekDate);
-        await dynamoDb.put({
-          TableName: TableNames.RANKING_HISTORY,
-          Item: {
-            playerId: contender.playerId,
-            weekKey,
-            championshipId: championships[1].championshipId,
-            rank: i + 1 + (weekOffset === 2 ? 1 : 0),
-            rankingScore: 90 - i * 12 - weekOffset * 3,
-            movement: weekOffset === 0 ? (i === 0 ? 1 : -1) : 0,
-            createdAt: weekDate.toISOString(),
-          },
+        rankingHistoryItems.push({
+          playerId: contender.playerId,
+          weekKey,
+          championshipId: championships[1].championshipId,
+          rank: i + 1 + (weekOffset === 2 ? 1 : 0),
+          rankingScore: 90 - i * 12 - weekOffset * 3,
+          movement: weekOffset === 0 ? (i === 0 ? 1 : -1) : 0,
+          createdAt: weekDate.toISOString(),
         });
-        historyEntries++;
       }
     }
-    createdCounts.rankingHistory = historyEntries;
 
     // ── Contender Overrides ─────────────────────────────────────
     console.log('Creating contender overrides...');
-    let overridesCount = 0;
+    const contenderOverridesItems: Record<string, unknown>[] = [];
 
-    // Create an override for the top WHC contender to bump them to top position
     if (whcContenders.length > 0) {
-      await dynamoDb.put({
-        TableName: TableNames.CONTENDER_OVERRIDES,
-        Item: {
-          championshipId: championships[0].championshipId,
-          playerId: whcContenders[0].playerId,
-          overrideType: 'bump_to_top',
-          reason: 'Storyline: upcoming PPV main event angle',
-          createdBy: 'admin',
-          createdAt: now,
-          active: true,
-        },
+      contenderOverridesItems.push({
+        championshipId: championships[0].championshipId,
+        playerId: whcContenders[0].playerId,
+        overrideType: 'bump_to_top',
+        reason: 'Storyline: upcoming PPV main event angle',
+        createdBy: 'admin',
+        createdAt: now,
+        active: true,
       });
-      overridesCount++;
     }
 
-    // Create an override for the top IC contender to temporarily hold their position
     if (icContenders.length > 0) {
-      await dynamoDb.put({
-        TableName: TableNames.CONTENDER_OVERRIDES,
-        Item: {
-          championshipId: championships[1].championshipId,
-          playerId: icContenders[0].playerId,
-          overrideType: 'hold_position',
-          reason: 'Temporary hold to build momentum',
-          createdBy: 'admin',
-          createdAt: now,
-          active: true,
-        },
+      contenderOverridesItems.push({
+        championshipId: championships[1].championshipId,
+        playerId: icContenders[0].playerId,
+        overrideType: 'hold_position',
+        reason: 'Temporary hold to build momentum',
+        createdBy: 'admin',
+        createdAt: now,
+        active: true,
       });
-      overridesCount++;
     }
-    createdCounts.contenderOverrides = overridesCount;
 
     // ── Fantasy Config ─────────────────────────────────────────
     console.log('Creating fantasy config...');
-    await dynamoDb.put({
-      TableName: TableNames.FANTASY_CONFIG,
-      Item: {
+    const fantasyConfigItems: Record<string, unknown>[] = [
+      {
         configKey: 'GLOBAL',
         defaultBudget: 500,
         defaultPicksPerDivision: 2,
@@ -870,12 +744,11 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         streakBonusThreshold: 5,
         streakBonusPoints: 25,
       },
-    });
-    createdCounts.fantasyConfig = 1;
+    ];
 
     // ── Wrestler Costs ─────────────────────────────────────────
     console.log('Creating wrestler costs...');
-    let costsCount = 0;
+    const wrestlerCostsItems: Record<string, unknown>[] = [];
     for (const player of players) {
       const totalMatches = player.wins + player.losses + player.draws;
       const winRate = totalMatches > 0 ? Math.round((player.wins / totalMatches) * 100) : 0;
@@ -883,32 +756,27 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       const costAdjustment = Math.round((winRate - 50) * 1.5);
       const currentCost = Math.max(50, baseCost + costAdjustment);
 
-      await dynamoDb.put({
-        TableName: TableNames.WRESTLER_COSTS,
-        Item: {
-          playerId: player.playerId,
-          baseCost,
-          currentCost,
-          costHistory: [
-            {
-              date: daysAgo(7).toISOString().split('T')[0],
-              cost: baseCost,
-              reason: 'Initial cost set',
-            },
-            {
-              date: new Date().toISOString().split('T')[0],
-              cost: currentCost,
-              reason: 'Performance adjustment',
-            },
-          ],
-          winRate30Days: winRate,
-          recentRecord: `${player.wins}-${player.losses}-${player.draws}`,
-          updatedAt: now,
-        },
+      wrestlerCostsItems.push({
+        playerId: player.playerId,
+        baseCost,
+        currentCost,
+        costHistory: [
+          {
+            date: daysAgo(7).toISOString().split('T')[0],
+            cost: baseCost,
+            reason: 'Initial cost set',
+          },
+          {
+            date: new Date().toISOString().split('T')[0],
+            cost: currentCost,
+            reason: 'Performance adjustment',
+          },
+        ],
+        winRate30Days: winRate,
+        recentRecord: `${player.wins}-${player.losses}-${player.draws}`,
+        updatedAt: now,
       });
-      costsCount++;
     }
-    createdCounts.wrestlerCosts = costsCount;
 
     // ── Challenges ────────────────────────────────────────────
     console.log('Creating challenges...');
@@ -968,59 +836,47 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       },
     ];
 
-    let challengeCount = 0;
+    const challengeItems: Record<string, unknown>[] = [];
     const challengeIds: string[] = [];
     for (const cd of challengeData) {
       const challengeId = uuidv4();
       challengeIds.push(challengeId);
-      await dynamoDb.put({
-        TableName: TableNames.CHALLENGES,
-        Item: {
-          challengeId,
-          challengerId: cd.challengerId,
-          challengedId: cd.challengedId,
-          matchType: cd.matchType,
-          ...(cd.stipulation && { stipulation: cd.stipulation }),
-          ...(cd.championshipId && { championshipId: cd.championshipId }),
-          ...(cd.message && { message: cd.message }),
-          status: cd.status,
-          ...(cd.responseMessage && { responseMessage: cd.responseMessage }),
-          expiresAt: daysFromNow(cd.expiresInDays).toISOString(),
-          createdAt: daysAgo(cd.daysAgoCreated).toISOString(),
-          updatedAt: daysAgo(cd.status === 'pending' ? cd.daysAgoCreated : cd.daysAgoCreated - 1).toISOString(),
-        },
+      challengeItems.push({
+        challengeId,
+        challengerId: cd.challengerId,
+        challengedId: cd.challengedId,
+        matchType: cd.matchType,
+        ...(cd.stipulation && { stipulation: cd.stipulation }),
+        ...(cd.championshipId && { championshipId: cd.championshipId }),
+        ...(cd.message && { message: cd.message }),
+        status: cd.status,
+        ...(cd.responseMessage && { responseMessage: cd.responseMessage }),
+        expiresAt: daysFromNow(cd.expiresInDays).toISOString(),
+        createdAt: daysAgo(cd.daysAgoCreated).toISOString(),
+        updatedAt: daysAgo(cd.status === 'pending' ? cd.daysAgoCreated : cd.daysAgoCreated - 1).toISOString(),
       });
-      challengeCount++;
     }
 
     // Create the counter challenge for Triple H vs Undertaker
     const counterChallengeId = uuidv4();
-    await dynamoDb.put({
-      TableName: TableNames.CHALLENGES,
-      Item: {
-        challengeId: counterChallengeId,
-        challengerId: players[2].playerId, // Undertaker counters
-        challengedId: players[3].playerId, // back to Triple H
-        matchType: 'Singles',
-        stipulation: 'Last Man Standing',
-        message: 'Last Man Standing. No escape. Only one of us walks out.',
-        status: 'pending',
-        expiresAt: daysFromNow(5).toISOString(),
-        createdAt: daysAgo(6).toISOString(),
-        updatedAt: daysAgo(6).toISOString(),
-      },
-    });
-    challengeCount++;
-
-    // Update the countered challenge to link to the counter
-    await dynamoDb.update({
-      TableName: TableNames.CHALLENGES,
-      Key: { challengeId: challengeIds[4] },
-      UpdateExpression: 'SET counteredChallengeId = :ccid',
-      ExpressionAttributeValues: { ':ccid': counterChallengeId },
+    challengeItems.push({
+      challengeId: counterChallengeId,
+      challengerId: players[2].playerId, // Undertaker counters
+      challengedId: players[3].playerId, // back to Triple H
+      matchType: 'Singles',
+      stipulation: 'Last Man Standing',
+      message: 'Last Man Standing. No escape. Only one of us walks out.',
+      status: 'pending',
+      expiresAt: daysFromNow(5).toISOString(),
+      createdAt: daysAgo(6).toISOString(),
+      updatedAt: daysAgo(6).toISOString(),
     });
 
-    createdCounts.challenges = challengeCount;
+    // Link the countered challenge to its counter (was dynamoDb.update, now set directly on the item)
+    const counteredChallenge = challengeItems.find(c => c.challengeId === challengeIds[4]);
+    if (counteredChallenge) {
+      counteredChallenge.counteredChallengeId = counterChallengeId;
+    }
 
     // ── Promos ────────────────────────────────────────────────
     console.log('Creating promos...');
@@ -1090,47 +946,35 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       },
     ];
 
-    let promoCount = 0;
+    const promoItems: Record<string, unknown>[] = [];
     const promoIds: string[] = [];
     for (const pd of promoData) {
       const promoId = uuidv4();
       promoIds.push(promoId);
-      await dynamoDb.put({
-        TableName: TableNames.PROMOS,
-        Item: {
-          promoId,
-          playerId: pd.playerId,
-          promoType: pd.promoType,
-          ...(pd.title && { title: pd.title }),
-          content: pd.content,
-          ...(pd.targetPlayerId && { targetPlayerId: pd.targetPlayerId }),
-          ...(pd.championshipId && { championshipId: pd.championshipId }),
-          reactions: {},
-          reactionCounts: pd.reactionCounts || defaultReactionCounts,
-          isPinned: pd.isPinned || false,
-          isHidden: false,
-          createdAt: daysAgo(pd.daysAgo).toISOString(),
-          updatedAt: daysAgo(pd.daysAgo).toISOString(),
-        },
+      promoItems.push({
+        promoId,
+        playerId: pd.playerId,
+        promoType: pd.promoType,
+        ...(pd.title && { title: pd.title }),
+        content: pd.content,
+        ...(pd.targetPlayerId && { targetPlayerId: pd.targetPlayerId }),
+        ...(pd.championshipId && { championshipId: pd.championshipId }),
+        reactions: {},
+        reactionCounts: pd.reactionCounts || defaultReactionCounts,
+        isPinned: pd.isPinned || false,
+        isHidden: false,
+        createdAt: daysAgo(pd.daysAgo).toISOString(),
+        updatedAt: daysAgo(pd.daysAgo).toISOString(),
       });
-      promoCount++;
     }
 
-    // Link the response promo (index 2) to the call-out promo (index 1)
-    await dynamoDb.update({
-      TableName: TableNames.PROMOS,
-      Key: { promoId: promoIds[2] },
-      UpdateExpression: 'SET targetPromoId = :tpid',
-      ExpressionAttributeValues: { ':tpid': promoIds[1] },
-    });
-
-    createdCounts.promos = promoCount;
+    // Link the response promo (index 2) to the call-out promo (index 1) (was dynamoDb.update, now set directly)
+    promoItems[2].targetPromoId = promoIds[1];
 
     // ── Site Config ────────────────────────────────────────────
     console.log('Creating site config...');
-    await dynamoDb.put({
-      TableName: TableNames.SITE_CONFIG,
-      Item: {
+    const siteConfigItems: Record<string, unknown>[] = [
+      {
         configKey: 'features',
         features: {
           fantasy: true,
@@ -1141,24 +985,46 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         },
         updatedAt: now,
       },
-    });
-    createdCounts.siteConfig = 1;
+    ];
 
     // ── Match Types ─────────────────────────────────────────────
     console.log('Creating match types...');
     const defaultMatchTypes = ['Singles', 'Tag Team', 'Triple Threat', 'Fatal 4-Way', '6-Pack Challenge', 'Battle Royal'];
-    for (const name of defaultMatchTypes) {
-      await dynamoDb.put({
-        TableName: TableNames.MATCH_TYPES,
-        Item: {
-          matchTypeId: uuidv4(),
-          name,
-          createdAt: now,
-          updatedAt: now,
-        },
-      });
-    }
-    createdCounts.matchTypes = defaultMatchTypes.length;
+    const matchTypeItems: Record<string, unknown>[] = defaultMatchTypes.map(name => ({
+      matchTypeId: uuidv4(),
+      name,
+      createdAt: now,
+      updatedAt: now,
+    }));
+
+    // ── Import all data via repository layer ───────────────────
+    console.log('Importing all seed data via repository layer...');
+    const { importAllData } = getRepositories();
+    const seedData: Record<string, Record<string, unknown>[]> = {
+      divisions,
+      players,
+      seasons: [season],
+      seasonStandings: seasonStandingsItems,
+      championships,
+      championshipHistory: championshipHistoryItems,
+      matches,
+      tournaments,
+      events,
+      contenderRankings: contenderRankingsItems,
+      contenderOverrides: contenderOverridesItems,
+      rankingHistory: rankingHistoryItems,
+      fantasyConfig: fantasyConfigItems,
+      wrestlerCosts: wrestlerCostsItems,
+      fantasyPicks: [],
+      siteConfig: siteConfigItems,
+      challenges: challengeItems,
+      promos: promoItems,
+      stipulations: [],
+      matchTypes: matchTypeItems,
+      seasonAwards: [],
+    };
+
+    const createdCounts = await importAllData(seedData);
 
     return success({
       message: 'Sample data seeded successfully!',
