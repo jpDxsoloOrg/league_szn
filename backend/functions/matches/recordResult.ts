@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import type { Match, Championship } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { invokeAsync } from '../../lib/asyncLambda';
 import { parseBody } from '../../lib/parseBody';
@@ -15,101 +15,6 @@ interface RecordResultBody {
   matchOfTheNight?: boolean;
 }
 
-interface TransactWriteItem {
-  Update?: {
-    TableName: string;
-    Key: Record<string, unknown>;
-    UpdateExpression: string;
-    ExpressionAttributeNames?: Record<string, string>;
-    ExpressionAttributeValues?: Record<string, unknown>;
-    ConditionExpression?: string;
-  };
-  Put?: {
-    TableName: string;
-    Item: Record<string, unknown>;
-    ConditionExpression?: string;
-  };
-}
-
-async function autoCompleteEvent(matchId: string): Promise<void> {
-  // Scan events that are upcoming or in-progress to find one containing this match
-  const eventsResult = await dynamoDb.scan({
-    TableName: TableNames.EVENTS,
-    FilterExpression: '#status IN (:upcoming, :inProgress)',
-    ExpressionAttributeNames: { '#status': 'status' },
-    ExpressionAttributeValues: {
-      ':upcoming': 'upcoming',
-      ':inProgress': 'in-progress',
-    },
-    ConsistentRead: true,
-  });
-
-  for (const eventItem of eventsResult.Items || []) {
-    const matchCards = (eventItem as Record<string, any>).matchCards || [];
-    const matchIds = matchCards.map((c: Record<string, any>) => c.matchId).filter(Boolean);
-
-    if (!matchIds.includes(matchId)) continue;
-
-    // This event contains the match — check if ALL matches are completed
-    if (matchIds.length === 0) continue;
-
-    let allCompleted = true;
-    for (const mId of matchIds) {
-      const matchQuery = await dynamoDb.query({
-        TableName: TableNames.MATCHES,
-        KeyConditionExpression: 'matchId = :matchId',
-        ExpressionAttributeValues: { ':matchId': mId },
-        ConsistentRead: true,
-        Limit: 1,
-      });
-      const m = matchQuery.Items?.[0];
-      if (!m || m.status !== 'completed') {
-        allCompleted = false;
-        break;
-      }
-    }
-
-    if (allCompleted) {
-      await dynamoDb.update({
-        TableName: TableNames.EVENTS,
-        Key: { eventId: eventItem.eventId },
-        UpdateExpression: 'SET #status = :completed, updatedAt = :now',
-        ExpressionAttributeNames: { '#status': 'status' },
-        ExpressionAttributeValues: {
-          ':completed': 'completed',
-          ':now': new Date().toISOString(),
-        },
-      });
-      console.log(`Event ${eventItem.eventId} auto-completed: all ${matchIds.length} matches finished`);
-
-      // Calculate fantasy points for all users who made picks for this event
-      // Must await here — if fire-and-forget, Lambda may freeze before scoring completes
-      try {
-        await calculateFantasyPoints(eventItem.eventId as string);
-      } catch (err) {
-        console.warn('Fantasy points calculation failed:', err);
-      }
-    } else {
-      // If at least one match is done but not all, mark as in-progress
-      if (eventItem.status === 'upcoming') {
-        await dynamoDb.update({
-          TableName: TableNames.EVENTS,
-          Key: { eventId: eventItem.eventId },
-          UpdateExpression: 'SET #status = :inProgress, updatedAt = :now',
-          ExpressionAttributeNames: { '#status': 'status' },
-          ExpressionAttributeValues: {
-            ':inProgress': 'in-progress',
-            ':now': new Date().toISOString(),
-          },
-        });
-        console.log(`Event ${eventItem.eventId} marked as in-progress`);
-      }
-    }
-
-    break; // A match should only belong to one event
-  }
-}
-
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const matchId = event.pathParameters?.matchId;
@@ -122,11 +27,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (parseError) return parseError;
 
     if (body.isDraw) {
-      // For draws, winners should contain all draw participants; losers can be empty
       if (!body.winners || body.winners.length === 0) {
         return badRequest('Draw participants are required (send as winners)');
       }
-      // Normalize: losers empty for draws, isDraw flag drives the logic
       body.losers = [];
     } else {
       if (!body.winners || !body.losers || body.winners.length === 0) {
@@ -146,15 +49,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    // Get the match using query (matchId is the partition key)
-    const matchResult = await dynamoDb.query({
-      TableName: TableNames.MATCHES,
-      KeyConditionExpression: 'matchId = :matchId',
-      ExpressionAttributeValues: { ':matchId': matchId },
-      ConsistentRead: true,
-    });
+    const { matches, runInTransaction } = getRepositories();
 
-    const match = matchResult.Items?.[0];
+    // Get the match
+    const match = await matches.findByIdWithDate(matchId);
     if (!match) {
       return notFound('Match not found');
     }
@@ -163,519 +61,84 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Match has already been completed');
     }
 
-    const timestamp = new Date().toISOString();
     const isDraw = body.isDraw === true;
     const allParticipants = isDraw ? [...body.winners] : [...body.winners, ...body.losers];
 
-    // Build transaction items for atomic updates
-    const transactItems: TransactWriteItem[] = [];
-
-    // 1. Update match with results and optimistic locking (+ optional starRating, matchOfTheNight)
-    const matchUpdateValues: Record<string, unknown> = {
-      ':winners': body.winners,
-      ':losers': body.losers,
-      ':status': 'completed',
-      ':zero': 0,
-      ':one': 1,
-      ':pending': 'pending',
-      ':scheduled': 'scheduled',
-      ':now': timestamp,
+    // ── Core transaction: match + player standings + season standings ──
+    const matchPatch: Record<string, unknown> = {
+      winners: body.winners,
+      losers: body.losers,
+      status: 'completed',
     };
-    let matchSetExpr = 'SET winners = :winners, losers = :losers, #status = :status, version = if_not_exists(version, :zero) + :one, updatedAt = :now';
-    if (isDraw) {
-      matchSetExpr += ', isDraw = :isDraw';
-      matchUpdateValues[':isDraw'] = true;
-    }
-    if (body.starRating != null) {
-      matchSetExpr += ', starRating = :starRating';
-      matchUpdateValues[':starRating'] = body.starRating;
-    }
-    if (body.matchOfTheNight != null) {
-      matchSetExpr += ', matchOfTheNight = :matchOfTheNight';
-      matchUpdateValues[':matchOfTheNight'] = body.matchOfTheNight;
-    }
-    transactItems.push({
-      Update: {
-        TableName: TableNames.MATCHES,
-        Key: { matchId: match.matchId, date: match.date },
-        UpdateExpression: matchSetExpr,
-        ExpressionAttributeNames: { '#status': 'status' },
-        ExpressionAttributeValues: matchUpdateValues,
-        ConditionExpression: '#status = :pending OR #status = :scheduled',
-      },
-    });
-
-    // 2. Update player standings (all-time) for winners
-    for (const playerId of body.winners) {
-      transactItems.push({
-        Update: {
-          TableName: TableNames.PLAYERS,
-          Key: { playerId },
-          UpdateExpression: isDraw
-            ? 'SET draws = if_not_exists(draws, :zero) + :one, updatedAt = :timestamp'
-            : 'SET wins = if_not_exists(wins, :zero) + :one, updatedAt = :timestamp',
-          ExpressionAttributeValues: {
-            ':one': 1,
-            ':zero': 0,
-            ':timestamp': timestamp,
-          },
-        },
-      });
-    }
-
-    // 3. Update player standings (all-time) for losers (if not a draw)
-    if (!isDraw) {
-      for (const playerId of body.losers) {
-        transactItems.push({
-          Update: {
-            TableName: TableNames.PLAYERS,
-            Key: { playerId },
-            UpdateExpression: 'SET losses = if_not_exists(losses, :zero) + :one, updatedAt = :timestamp',
-            ExpressionAttributeValues: {
-              ':one': 1,
-              ':zero': 0,
-              ':timestamp': timestamp,
-            },
-          },
-        });
-      }
-    }
-
-    // 4. Update season standings if match belongs to a season
-    if (match.seasonId) {
-      for (const playerId of body.winners) {
-        transactItems.push({
-          Update: {
-            TableName: TableNames.SEASON_STANDINGS,
-            Key: { seasonId: match.seasonId, playerId },
-            UpdateExpression: isDraw
-              ? 'SET draws = if_not_exists(draws, :zero) + :one, wins = if_not_exists(wins, :zero), losses = if_not_exists(losses, :zero), updatedAt = :timestamp'
-              : 'SET wins = if_not_exists(wins, :zero) + :one, losses = if_not_exists(losses, :zero), draws = if_not_exists(draws, :zero), updatedAt = :timestamp',
-            ExpressionAttributeValues: {
-              ':one': 1,
-              ':zero': 0,
-              ':timestamp': timestamp,
-            },
-          },
-        });
-      }
-
-      if (!isDraw) {
-        for (const playerId of body.losers) {
-          transactItems.push({
-            Update: {
-              TableName: TableNames.SEASON_STANDINGS,
-              Key: { seasonId: match.seasonId, playerId },
-              UpdateExpression: 'SET losses = if_not_exists(losses, :zero) + :one, wins = if_not_exists(wins, :zero), draws = if_not_exists(draws, :zero), updatedAt = :timestamp',
-              ExpressionAttributeValues: {
-                ':one': 1,
-                ':zero': 0,
-                ':timestamp': timestamp,
-              },
-            },
-          });
-        }
-      }
-    }
-
-    // Execute the core transaction (match + player standings + season standings)
-    // DynamoDB transactions are limited to 100 items, so we execute the core updates first
-    if (transactItems.length > 100) {
-      return serverError(`Transaction too large: ${transactItems.length} items exceeds DynamoDB limit of 100`);
-    }
+    if (isDraw) matchPatch.isDraw = true;
+    if (body.starRating != null) matchPatch.starRating = body.starRating;
+    if (body.matchOfTheNight != null) matchPatch.matchOfTheNight = body.matchOfTheNight;
 
     try {
-      await dynamoDb.transactWrite({
-        TransactItems: transactItems,
-      } as TransactWriteCommandInput);
+      await runInTransaction(async (tx) => {
+        // 1. Update match with results
+        tx.updateMatch(matchId, match.date, matchPatch);
+
+        // 2. Update player standings (all-time)
+        for (const playerId of body.winners) {
+          tx.incrementPlayerRecord(playerId, isDraw ? { draws: 1 } : { wins: 1 });
+        }
+        if (!isDraw) {
+          for (const playerId of body.losers) {
+            tx.incrementPlayerRecord(playerId, { losses: 1 });
+          }
+        }
+
+        // 3. Update season standings if match belongs to a season
+        if (match.seasonId) {
+          for (const playerId of body.winners) {
+            tx.incrementStanding(match.seasonId, playerId, isDraw ? { draws: 1 } : { wins: 1 });
+          }
+          if (!isDraw) {
+            for (const playerId of body.losers) {
+              tx.incrementStanding(match.seasonId, playerId, { losses: 1 });
+            }
+          }
+        }
+      });
     } catch (transactError: unknown) {
       const error = transactError as { name?: string };
       if (error.name === 'TransactionCanceledException') {
-        // Transaction was cancelled - likely a concurrent modification
         return badRequest('Match result could not be recorded due to a concurrent update. Please try again.');
       }
       throw transactError;
     }
 
-    // Handle championship result (separate transaction to avoid hitting item limits)
+    // ── Championship handling (separate from core transaction) ─────────
     if (match.isChampionship && match.championshipId) {
-      const championship = await dynamoDb.get({
-        TableName: TableNames.CHAMPIONSHIPS,
-        Key: { championshipId: match.championshipId },
-        ConsistentRead: true,
-      });
-
-      if (championship.Item) {
-        const newChampion = body.winners.length === 1 ? body.winners[0] : body.winners;
-        const oldChampion = championship.Item.currentChampion;
-
-        // Determine if this is a title defense (champion retained) vs a title change
-        const isTitleDefense = oldChampion != null && (
-          // Singles: both are strings, compare directly
-          (typeof oldChampion === 'string' && typeof newChampion === 'string' && oldChampion === newChampion) ||
-          // Tag: both are arrays, compare sorted
-          (Array.isArray(oldChampion) && Array.isArray(newChampion) &&
-            oldChampion.length === newChampion.length &&
-            JSON.stringify([...oldChampion].sort()) === JSON.stringify([...newChampion].sort()))
-        );
-
-        // Store isTitleDefense flag on the match record for downstream consumers (e.g. fantasy scoring)
-        await dynamoDb.update({
-          TableName: TableNames.MATCHES,
-          Key: { matchId: match.matchId, date: match.date },
-          UpdateExpression: 'SET isTitleDefense = :itd',
-          ExpressionAttributeValues: { ':itd': isTitleDefense },
-        });
-
-        const championshipTransactItems: TransactWriteItem[] = [];
-
-        if (isTitleDefense) {
-          // Title defense: champion retained — increment defenses on the current reign
-          const historyResult = await dynamoDb.query({
-            TableName: TableNames.CHAMPIONSHIP_HISTORY,
-            KeyConditionExpression: 'championshipId = :championshipId',
-            FilterExpression: 'attribute_not_exists(lostDate)',
-            ExpressionAttributeValues: { ':championshipId': match.championshipId },
-            ScanIndexForward: false,
-            Limit: 1,
-          });
-
-          if (historyResult.Items && historyResult.Items.length > 0) {
-            const currentReign = historyResult.Items[0];
-            const now = new Date().toISOString();
-            championshipTransactItems.push({
-              Update: {
-                TableName: TableNames.CHAMPIONSHIP_HISTORY,
-                Key: {
-                  championshipId: currentReign.championshipId,
-                  wonDate: currentReign.wonDate,
-                },
-                UpdateExpression: 'SET defenses = if_not_exists(defenses, :zero) + :one, updatedAt = :now',
-                ExpressionAttributeValues: {
-                  ':zero': 0,
-                  ':one': 1,
-                  ':now': now,
-                },
-              },
-            });
-          }
-
-          // Championship record stays the same — no need to update currentChampion
-        } else {
-          // Title change: new champion crowned
-
-          // Update championship current champion
-          championshipTransactItems.push({
-            Update: {
-              TableName: TableNames.CHAMPIONSHIPS,
-              Key: { championshipId: match.championshipId },
-              UpdateExpression: 'SET currentChampion = :champion, version = if_not_exists(version, :zero) + :one',
-              ExpressionAttributeValues: {
-                ':champion': newChampion,
-                ':zero': 0,
-                ':one': 1,
-              },
-            },
-          });
-
-          // Close old reign if exists
-          if (oldChampion) {
-            const historyResult = await dynamoDb.query({
-              TableName: TableNames.CHAMPIONSHIP_HISTORY,
-              KeyConditionExpression: 'championshipId = :championshipId',
-              FilterExpression: 'attribute_not_exists(lostDate)',
-              ExpressionAttributeValues: { ':championshipId': match.championshipId },
-              ScanIndexForward: false,
-              Limit: 1,
-            });
-
-            if (historyResult.Items && historyResult.Items.length > 0) {
-              const currentReign = historyResult.Items[0];
-              const wonDate = new Date(currentReign.wonDate);
-              const lostDate = new Date();
-              const daysHeld = Math.floor((lostDate.getTime() - wonDate.getTime()) / (1000 * 60 * 60 * 24));
-              const now = lostDate.toISOString();
-
-              championshipTransactItems.push({
-                Update: {
-                  TableName: TableNames.CHAMPIONSHIP_HISTORY,
-                  Key: {
-                    championshipId: currentReign.championshipId,
-                    wonDate: currentReign.wonDate,
-                  },
-                  UpdateExpression: 'SET lostDate = :lostDate, daysHeld = :daysHeld, updatedAt = :now',
-                  ExpressionAttributeValues: {
-                    ':lostDate': now,
-                    ':daysHeld': daysHeld,
-                    ':now': now,
-                  },
-                },
-              });
-            }
-          }
-
-          // Create new reign
-          const wonDate = new Date().toISOString();
-          championshipTransactItems.push({
-            Put: {
-              TableName: TableNames.CHAMPIONSHIP_HISTORY,
-              Item: {
-                championshipId: match.championshipId,
-                wonDate,
-                champion: newChampion,
-                matchId: match.matchId,
-                defenses: 0,
-                updatedAt: wonDate,
-              },
-            },
-          });
-        }
-
-        if (championshipTransactItems.length > 0) {
-          await dynamoDb.transactWrite({
-            TransactItems: championshipTransactItems,
-          } as TransactWriteCommandInput);
-        }
-
-        // Auto-remove contender override for new champion(s) after a title change
-        if (!isTitleDefense) {
-          const championIds: string[] = Array.isArray(newChampion) ? newChampion : [newChampion];
-          for (const champId of championIds) {
-            try {
-              const existingOverride = await dynamoDb.get({
-                TableName: TableNames.CONTENDER_OVERRIDES,
-                Key: { championshipId: match.championshipId, playerId: champId },
-              });
-              if (existingOverride.Item && existingOverride.Item.active) {
-                await dynamoDb.update({
-                  TableName: TableNames.CONTENDER_OVERRIDES,
-                  Key: { championshipId: match.championshipId, playerId: champId },
-                  UpdateExpression: 'SET active = :false, removedAt = :now, removedReason = :reason',
-                  ExpressionAttributeValues: {
-                    ':false': false,
-                    ':now': new Date().toISOString(),
-                    ':reason': 'auto-removed: player became champion',
-                  },
-                });
-              }
-            } catch (err) {
-              console.warn(`Failed to auto-remove contender override for player ${champId}:`, err);
-            }
-          }
-        }
-      }
+      await handleChampionshipResult(match, body.winners, isDraw);
     }
 
-    // Handle tournament progression
+    // ── Tournament progression ─────────────────────────────────────────
     if (match.tournamentId) {
-      const tournament = await dynamoDb.get({
-        TableName: TableNames.TOURNAMENTS,
-        Key: { tournamentId: match.tournamentId },
-      });
-
-      if (tournament.Item) {
-        if (tournament.Item.type === 'round-robin') {
-          // Update round-robin standings
-          const standings = tournament.Item.standings || {};
-
-          for (const playerId of allParticipants) {
-            if (!standings[playerId]) {
-              standings[playerId] = { wins: 0, losses: 0, draws: 0, points: 0 };
-            }
-          }
-
-          if (isDraw) {
-            for (const playerId of body.winners) {
-              standings[playerId].draws += 1;
-              standings[playerId].points += 1;
-            }
-          } else {
-            for (const playerId of body.winners) {
-              standings[playerId].wins += 1;
-              standings[playerId].points += 2;
-            }
-            for (const playerId of body.losers) {
-              standings[playerId].losses += 1;
-            }
-          }
-
-          // Check if round-robin tournament is complete
-          const numParticipants = tournament.Item.participants.length;
-          const expectedTotalMatches = (numParticipants * (numParticipants - 1)) / 2;
-
-          let totalMatchesPlayed = 0;
-          for (const playerId of Object.keys(standings)) {
-            totalMatchesPlayed += standings[playerId].wins;
-            totalMatchesPlayed += standings[playerId].draws;
-          }
-          totalMatchesPlayed = totalMatchesPlayed / 2;
-
-          const isComplete = totalMatchesPlayed >= expectedTotalMatches;
-
-          if (isComplete) {
-            let winner = '';
-            let maxPoints = -1;
-            for (const [playerId, stats] of Object.entries(standings) as [string, { points: number }][]) {
-              if (stats.points > maxPoints) {
-                maxPoints = stats.points;
-                winner = playerId;
-              }
-            }
-
-            const now = new Date().toISOString();
-            await dynamoDb.update({
-              TableName: TableNames.TOURNAMENTS,
-              Key: { tournamentId: match.tournamentId },
-              UpdateExpression: 'SET standings = :standings, winner = :winner, #status = :status, version = if_not_exists(version, :zero) + :one, updatedAt = :now',
-              ExpressionAttributeNames: { '#status': 'status' },
-              ExpressionAttributeValues: {
-                ':standings': standings,
-                ':winner': winner,
-                ':status': 'completed',
-                ':zero': 0,
-                ':one': 1,
-                ':now': now,
-              },
-            });
-          } else {
-            const newStatus = tournament.Item.status === 'upcoming' ? 'in-progress' : tournament.Item.status;
-            const now = new Date().toISOString();
-
-            await dynamoDb.update({
-              TableName: TableNames.TOURNAMENTS,
-              Key: { tournamentId: match.tournamentId },
-              UpdateExpression: 'SET standings = :standings, #status = :status, version = if_not_exists(version, :zero) + :one, updatedAt = :now',
-              ExpressionAttributeNames: { '#status': 'status' },
-              ExpressionAttributeValues: {
-                ':standings': standings,
-                ':status': newStatus,
-                ':zero': 0,
-                ':one': 1,
-                ':now': now,
-              },
-            });
-          }
-        }
-
-        // Single elimination bracket progression
-        if (tournament.Item.type === 'single-elimination' && tournament.Item.brackets) {
-          const brackets = tournament.Item.brackets;
-          const winner = body.winners[0];
-          const matchParticipants = match.participants;
-
-          let foundRoundIndex = -1;
-          let foundMatchIndex = -1;
-
-          for (let roundIndex = 0; roundIndex < brackets.rounds.length; roundIndex++) {
-            const round = brackets.rounds[roundIndex];
-            if (!round || !round.matches) continue;
-            for (let matchIndex = 0; matchIndex < round.matches.length; matchIndex++) {
-              const bracketMatch = round.matches[matchIndex];
-              if (!bracketMatch) continue;
-              if (
-                bracketMatch.participant1 &&
-                bracketMatch.participant2 &&
-                matchParticipants.includes(bracketMatch.participant1) &&
-                matchParticipants.includes(bracketMatch.participant2) &&
-                !bracketMatch.winner
-              ) {
-                foundRoundIndex = roundIndex;
-                foundMatchIndex = matchIndex;
-                break;
-              }
-            }
-            if (foundRoundIndex !== -1) break;
-          }
-
-          if (foundRoundIndex !== -1 && foundMatchIndex !== -1) {
-            const foundRound = brackets.rounds[foundRoundIndex];
-            const foundMatch = foundRound?.matches?.[foundMatchIndex];
-            if (!foundRound || !foundMatch) {
-              console.warn(`Corrupted bracket data: round ${foundRoundIndex} or match ${foundMatchIndex} is null`);
-            } else {
-              foundMatch.winner = winner;
-              foundMatch.matchId = match.matchId;
-
-              const isLastRound = foundRoundIndex === brackets.rounds.length - 1;
-
-              if (isLastRound) {
-                const now = new Date().toISOString();
-                await dynamoDb.update({
-                  TableName: TableNames.TOURNAMENTS,
-                  Key: { tournamentId: match.tournamentId },
-                  UpdateExpression: 'SET brackets = :brackets, winner = :winner, #status = :status, version = if_not_exists(version, :zero) + :one, updatedAt = :now',
-                  ExpressionAttributeNames: { '#status': 'status' },
-                  ExpressionAttributeValues: {
-                    ':brackets': brackets,
-                    ':winner': winner,
-                    ':status': 'completed',
-                    ':zero': 0,
-                    ':one': 1,
-                    ':now': now,
-                  },
-                });
-              } else {
-                const nextRoundIndex = foundRoundIndex + 1;
-                const nextMatchIndex = Math.floor(foundMatchIndex / 2);
-                const isFirstOfPair = foundMatchIndex % 2 === 0;
-
-                const nextRound = brackets.rounds[nextRoundIndex];
-                const nextMatch = nextRound?.matches?.[nextMatchIndex];
-                if (!nextRound || !nextMatch) {
-                  console.warn(`Corrupted bracket data: next round ${nextRoundIndex} or next match ${nextMatchIndex} is null`);
-                } else {
-                  if (isFirstOfPair) {
-                    nextMatch.participant1 = winner;
-                  } else {
-                    nextMatch.participant2 = winner;
-                  }
-
-                  const newStatus = tournament.Item.status === 'upcoming' ? 'in-progress' : tournament.Item.status;
-                  const now = new Date().toISOString();
-
-                  await dynamoDb.update({
-                    TableName: TableNames.TOURNAMENTS,
-                    Key: { tournamentId: match.tournamentId },
-                    UpdateExpression: 'SET brackets = :brackets, #status = :status, version = if_not_exists(version, :zero) + :one, updatedAt = :now',
-                    ExpressionAttributeNames: { '#status': 'status' },
-                    ExpressionAttributeValues: {
-                      ':brackets': brackets,
-                      ':status': newStatus,
-                      ':zero': 0,
-                      ':one': 1,
-                      ':now': now,
-                    },
-                  });
-                }
-              }
-            }
-          }
-        }
-      }
+      await handleTournamentProgression(match, body.winners, body.losers, isDraw, allParticipants);
     }
 
-    // Auto-complete event if all its matches are now finished
-    // Must await — if fire-and-forget, Lambda may freeze before completion runs
+    // ── Auto-complete event ────────────────────────────────────────────
     try {
       await autoCompleteEvent(matchId);
     } catch (err) {
       console.warn('Event auto-complete failed:', err);
     }
 
-    // Update stable and tag team group stats (non-critical side-effect)
+    // ── Side effects ───────────────────────────────────────────────────
     try {
       await updateGroupStats({
         winners: body.winners,
         losers: body.losers,
         isDraw,
         participants: allParticipants,
-        teams: match.teams as string[][] | undefined,
+        teams: match.teams,
       });
     } catch (err) {
       console.warn('Group stats update failed:', err);
     }
 
-    // Fire-and-forget: trigger ranking and cost recalculation via async Lambda invocation
     try {
       await invokeAsync('contenders', { source: 'recordResult' });
     } catch (err) {
@@ -705,3 +168,286 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return serverError('Failed to record match result');
   }
 };
+
+// ── Championship handling ──────────────────────────────────────────────
+
+async function handleChampionshipResult(
+  match: Match & { date: string },
+  winners: string[],
+  isDraw: boolean,
+): Promise<void> {
+  if (isDraw) return; // Draws don't affect championships
+
+  const { championships, contenders, matches: matchesRepo, runInTransaction } = getRepositories();
+  const championshipId = match.championshipId!;
+
+  const championship = await championships.findById(championshipId);
+  if (!championship) return;
+
+  const newChampion = winners.length === 1 ? winners[0] : winners;
+  const oldChampion = championship.currentChampion;
+
+  const isTitleDefense = oldChampion != null && (
+    (typeof oldChampion === 'string' && typeof newChampion === 'string' && oldChampion === newChampion) ||
+    (Array.isArray(oldChampion) && Array.isArray(newChampion) &&
+      oldChampion.length === newChampion.length &&
+      JSON.stringify([...oldChampion].sort()) === JSON.stringify([...newChampion].sort()))
+  );
+
+  // Store isTitleDefense flag on match for downstream consumers (fantasy scoring)
+  // This is a standalone update, not part of any transaction
+  const matchForUpdate = await matchesRepo.findByIdWithDate(match.matchId);
+  if (matchForUpdate) {
+    // Use a simple UoW for this single update
+    await runInTransaction(async (tx) => {
+      tx.updateMatch(match.matchId, match.date, { isTitleDefense });
+    });
+  }
+
+  if (isTitleDefense) {
+    // Title defense: increment defenses on the current reign
+    const currentReign = await championships.findCurrentReign(championshipId);
+    if (currentReign) {
+      await championships.incrementDefenses(championshipId, currentReign.wonDate);
+    }
+  } else {
+    // Title change: new champion crowned
+    await handleTitleChange(championship, newChampion, match.matchId, oldChampion);
+
+    // Auto-remove contender overrides for new champion(s)
+    const championIds: string[] = Array.isArray(newChampion) ? newChampion : [newChampion];
+    for (const champId of championIds) {
+      try {
+        const existingOverride = await contenders.findOverride(championshipId, champId);
+        if (existingOverride && existingOverride.active) {
+          await contenders.deactivateOverride(championshipId, champId, 'auto-removed: player became champion');
+        }
+      } catch (err) {
+        console.warn(`Failed to auto-remove contender override for player ${champId}:`, err);
+      }
+    }
+  }
+}
+
+async function handleTitleChange(
+  championship: Championship,
+  newChampion: string | string[],
+  matchId: string,
+  oldChampion: string | string[] | undefined,
+): Promise<void> {
+  const { championships, runInTransaction } = getRepositories();
+  const championshipId = championship.championshipId;
+
+  // Find current reign to close it
+  const currentReign = oldChampion ? await championships.findCurrentReign(championshipId) : null;
+
+  const wonDate = new Date().toISOString();
+
+  await runInTransaction(async (tx) => {
+    // Update championship current champion
+    tx.updateChampionship(championshipId, { currentChampion: newChampion });
+
+    // Close old reign if exists
+    if (currentReign) {
+      const reignStartDate = new Date(currentReign.wonDate);
+      const lostDate = new Date();
+      const daysHeld = Math.floor((lostDate.getTime() - reignStartDate.getTime()) / (1000 * 60 * 60 * 24));
+      tx.closeReign(championshipId, currentReign.wonDate, lostDate.toISOString(), daysHeld);
+    }
+
+    // Create new reign
+    tx.startReign({
+      championshipId,
+      wonDate,
+      champion: newChampion,
+      matchId,
+      defenses: 0,
+      updatedAt: wonDate,
+    });
+  });
+}
+
+// ── Tournament progression ─────────────────────────────────────────────
+
+async function handleTournamentProgression(
+  match: Match,
+  winners: string[],
+  losers: string[],
+  isDraw: boolean,
+  allParticipants: string[],
+): Promise<void> {
+  const { tournaments } = getRepositories();
+  const tournamentId = match.tournamentId!;
+
+  const tournament = await tournaments.findById(tournamentId);
+  if (!tournament) return;
+
+  if (tournament.type === 'round-robin') {
+    const standings = (tournament.standings as Record<string, { wins: number; losses: number; draws: number; points: number }>) || {};
+
+    for (const playerId of allParticipants) {
+      if (!standings[playerId]) {
+        standings[playerId] = { wins: 0, losses: 0, draws: 0, points: 0 };
+      }
+    }
+
+    if (isDraw) {
+      for (const playerId of winners) {
+        standings[playerId].draws += 1;
+        standings[playerId].points += 1;
+      }
+    } else {
+      for (const playerId of winners) {
+        standings[playerId].wins += 1;
+        standings[playerId].points += 2;
+      }
+      for (const playerId of losers) {
+        standings[playerId].losses += 1;
+      }
+    }
+
+    // Check if round-robin is complete
+    const participants = (tournament.participants || []) as string[];
+    const expectedTotalMatches = (participants.length * (participants.length - 1)) / 2;
+    let totalMatchesPlayed = 0;
+    for (const playerId of Object.keys(standings)) {
+      totalMatchesPlayed += standings[playerId].wins + standings[playerId].draws;
+    }
+    totalMatchesPlayed = totalMatchesPlayed / 2;
+
+    const isComplete = totalMatchesPlayed >= expectedTotalMatches;
+
+    if (isComplete) {
+      let winner = '';
+      let maxPoints = -1;
+      for (const [playerId, stats] of Object.entries(standings)) {
+        if (stats.points > maxPoints) {
+          maxPoints = stats.points;
+          winner = playerId;
+        }
+      }
+      await tournaments.update(tournamentId, { standings, winner, status: 'completed' } as Partial<typeof tournament>);
+    } else {
+      const newStatus = tournament.status === 'upcoming' ? 'in-progress' : tournament.status;
+      await tournaments.update(tournamentId, { standings, status: newStatus } as Partial<typeof tournament>);
+    }
+  }
+
+  if (tournament.type === 'single-elimination' && tournament.brackets) {
+    const brackets = tournament.brackets as {
+      rounds: Array<{
+        matches: Array<{
+          participant1?: string;
+          participant2?: string;
+          winner?: string;
+          matchId?: string;
+        }>;
+      }>;
+    };
+    const winner = winners[0];
+    const matchParticipants = match.participants;
+
+    let foundRoundIndex = -1;
+    let foundMatchIndex = -1;
+
+    for (let roundIndex = 0; roundIndex < brackets.rounds.length; roundIndex++) {
+      const round = brackets.rounds[roundIndex];
+      if (!round?.matches) continue;
+      for (let matchIndex = 0; matchIndex < round.matches.length; matchIndex++) {
+        const bracketMatch = round.matches[matchIndex];
+        if (!bracketMatch) continue;
+        if (
+          bracketMatch.participant1 &&
+          bracketMatch.participant2 &&
+          matchParticipants.includes(bracketMatch.participant1) &&
+          matchParticipants.includes(bracketMatch.participant2) &&
+          !bracketMatch.winner
+        ) {
+          foundRoundIndex = roundIndex;
+          foundMatchIndex = matchIndex;
+          break;
+        }
+      }
+      if (foundRoundIndex !== -1) break;
+    }
+
+    if (foundRoundIndex !== -1 && foundMatchIndex !== -1) {
+      const foundMatch = brackets.rounds[foundRoundIndex]?.matches?.[foundMatchIndex];
+      if (!foundMatch) {
+        console.warn(`Corrupted bracket data: round ${foundRoundIndex} match ${foundMatchIndex} is null`);
+        return;
+      }
+
+      foundMatch.winner = winner;
+      foundMatch.matchId = match.matchId;
+
+      const isLastRound = foundRoundIndex === brackets.rounds.length - 1;
+
+      if (isLastRound) {
+        await tournaments.update(tournamentId, { brackets, winner, status: 'completed' } as Partial<typeof tournament>);
+      } else {
+        const nextRoundIndex = foundRoundIndex + 1;
+        const nextMatchIndex = Math.floor(foundMatchIndex / 2);
+        const isFirstOfPair = foundMatchIndex % 2 === 0;
+
+        const nextMatch = brackets.rounds[nextRoundIndex]?.matches?.[nextMatchIndex];
+        if (nextMatch) {
+          if (isFirstOfPair) {
+            nextMatch.participant1 = winner;
+          } else {
+            nextMatch.participant2 = winner;
+          }
+        }
+
+        const newStatus = tournament.status === 'upcoming' ? 'in-progress' : tournament.status;
+        await tournaments.update(tournamentId, { brackets, status: newStatus } as Partial<typeof tournament>);
+      }
+    }
+  }
+}
+
+// ── Auto-complete event ────────────────────────────────────────────────
+
+async function autoCompleteEvent(matchId: string): Promise<void> {
+  const { events, matches } = getRepositories();
+
+  // Find events that are upcoming or in-progress
+  const allEvents = await events.list();
+  const activeEvents = allEvents.filter(
+    (e) => e.status === 'upcoming' || e.status === 'in-progress',
+  );
+
+  for (const eventItem of activeEvents) {
+    const matchCards = eventItem.matchCards || [];
+    const matchIds = matchCards.map((c) => c.matchId).filter(Boolean);
+
+    if (!matchIds.includes(matchId)) continue;
+    if (matchIds.length === 0) continue;
+
+    // Check if ALL matches are completed
+    let allCompleted = true;
+    for (const mId of matchIds) {
+      const m = await matches.findById(mId);
+      if (!m || m.status !== 'completed') {
+        allCompleted = false;
+        break;
+      }
+    }
+
+    if (allCompleted) {
+      await events.update(eventItem.eventId, { status: 'completed' });
+      console.log(`Event ${eventItem.eventId} auto-completed: all ${matchIds.length} matches finished`);
+
+      try {
+        await calculateFantasyPoints(eventItem.eventId);
+      } catch (err) {
+        console.warn('Fantasy points calculation failed:', err);
+      }
+    } else if (eventItem.status === 'upcoming') {
+      await events.update(eventItem.eventId, { status: 'in-progress' });
+      console.log(`Event ${eventItem.eventId} marked as in-progress`);
+    }
+
+    break; // A match should only belong to one event
+  }
+}

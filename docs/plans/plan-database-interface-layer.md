@@ -17,7 +17,7 @@
 | 5 — Cross-aggregate reads (Standings, Dashboard, Rivalries, Statistics, Activity) | ✅ Done | — |
 | 6 — Contenders & Fantasy (batched writes) | ✅ Done | — |
 | 7 — Transactional writes + `runInTransaction` (steps 23–25) | ✅ Done | — |
-| 7b — `recordResult.ts` migration (step 26–27) | ⏳ | — |
+| 7b — `recordResult.ts` migration (step 26–27) | ✅ Done | — |
 | 8 — Admin and seed scripts | ⏳ | — |
 | 9 — Clean up (delete `dynamodbUtils.ts`, shrink `dynamodb.ts`, remove deprecated `handlerFactory`) | ⏳ | — |
 
@@ -72,10 +72,22 @@ respondToChallenge, approveTagTeam, dissolveTagTeam, deleteTagTeam,
 deleteMatch. All now use `runInTransaction` for atomic multi-aggregate writes
 instead of direct `dynamoDb.transactWrite`.
 
-**Where to resume**: Wave 7b — `recordResult.ts` migration (step 26–27).
-The 707-line handler is the acid test for the UoW abstraction. Expected to
-drop to ~200 lines with all UpdateExpression / ExpressionAttributeValues
-strings eliminated.
+**After Wave 7b**: 967 tests passing, 0 failures. Typecheck and lint clean.
+`recordResult.ts` migrated from 707 lines to ~310 lines. All DynamoDB
+`UpdateExpression`, `ExpressionAttributeValues`, `TransactWriteCommand`,
+and `TableNames` references eliminated from the handler. Core transaction
+(match + player stats + season standings) uses `runInTransaction`. Championship
+handling (title defense vs title change) uses `championships.findById`,
+`championships.findCurrentReign`, `championships.incrementDefenses`, and a
+second UoW for title changes. Tournament progression uses `tournaments.findById`
+and `tournaments.update`. Event auto-complete uses `events.list` and
+`events.update`. Contender override cleanup uses `contenders.findOverride`
+and `contenders.deactivateOverride`. 3 test files (686 lines total) rewritten
+to mock repository methods.
+
+**Where to resume**: Wave 8 — Admin and seed scripts. Migrate
+`seed-data.ts`, `clear-data.ts`, and `admin/*.ts` handlers to use
+`getRepositories()`.
 
 ## Context
 

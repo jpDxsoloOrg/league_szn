@@ -1,37 +1,87 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
-// ---- Mocks ----------------------------------------------------------------
+// ---- Repository Mocks -----------------------------------------------------
 
-const { mockGet, mockPut, mockScan, mockQuery, mockUpdate, mockDelete, mockTransactWrite } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockPut: vi.fn(),
-  mockScan: vi.fn(),
-  mockQuery: vi.fn(),
-  mockUpdate: vi.fn(),
-  mockDelete: vi.fn(),
-  mockTransactWrite: vi.fn(),
+const mockMatchesRepo = {
+  findById: vi.fn(),
+  findByIdWithDate: vi.fn(),
+  list: vi.fn(),
+  listCompleted: vi.fn(),
+  listByStatus: vi.fn(),
+  listByTournament: vi.fn(),
+  listBySeason: vi.fn(),
+  delete: vi.fn(),
+};
+
+const mockChampionshipsRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+  listActive: vi.fn(),
+  listHistory: vi.fn(),
+  listAllHistory: vi.fn(),
+  findCurrentReign: vi.fn(),
+  update: vi.fn(),
+  removeChampion: vi.fn(),
+  closeReign: vi.fn(),
+  reopenReign: vi.fn(),
+  deleteHistoryEntry: vi.fn(),
+  incrementDefenses: vi.fn(),
+  decrementDefenses: vi.fn(),
+};
+
+const mockTournamentsRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+  update: vi.fn(),
+};
+
+const mockEventsRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+  listByStatus: vi.fn(),
+  listBySeason: vi.fn(),
+  listByEventType: vi.fn(),
+  listByDateRange: vi.fn(),
+  create: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  getCheckIn: vi.fn(),
+  listCheckIns: vi.fn(),
+  upsertCheckIn: vi.fn(),
+  deleteCheckIn: vi.fn(),
+};
+
+const mockContendersRepo = {
+  listByChampionship: vi.fn(),
+  listByChampionshipRanked: vi.fn(),
+  deleteAllForChampionship: vi.fn(),
+  upsertRanking: vi.fn(),
+  findOverride: vi.fn(),
+  listActiveOverrides: vi.fn(),
+  createOverride: vi.fn(),
+  deactivateOverride: vi.fn(),
+  writeHistory: vi.fn(),
+};
+
+const mockRunInTransaction = vi.fn();
+
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    matches: mockMatchesRepo,
+    championships: mockChampionshipsRepo,
+    tournaments: mockTournamentsRepo,
+    events: mockEventsRepo,
+    contenders: mockContendersRepo,
+    runInTransaction: mockRunInTransaction,
+  }),
 }));
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet, put: mockPut, scan: mockScan, query: mockQuery,
-    update: mockUpdate, delete: mockDelete, scanAll: vi.fn(), queryAll: vi.fn(),
-    transactWrite: mockTransactWrite,
-  },
-  TableNames: {
-    MATCHES: 'Matches', PLAYERS: 'Players', CHAMPIONSHIPS: 'Championships',
-    CHAMPIONSHIP_HISTORY: 'ChampionshipHistory', TOURNAMENTS: 'Tournaments',
-    SEASONS: 'Seasons', SEASON_STANDINGS: 'SeasonStandings',
-    EVENTS: 'Events', CONTENDER_RANKINGS: 'ContenderRankings',
-  },
+vi.mock('../../../lib/asyncLambda', () => ({
+  invokeAsync: vi.fn().mockResolvedValue(undefined),
 }));
-
-vi.mock('../../../lib/rankingCalculator', () => ({
-  calculateRankingsForChampionship: vi.fn().mockResolvedValue([]),
-}));
-vi.mock('../../fantasy/recalculateWrestlerCosts', () => ({
-  recalculateCosts: vi.fn().mockResolvedValue(undefined),
+vi.mock('../updateGroupStats', () => ({
+  updateGroupStats: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('../../fantasy/calculateFantasyPoints', () => ({
   calculateFantasyPoints: vi.fn().mockResolvedValue(undefined),
@@ -43,7 +93,7 @@ import { handler as recordResult } from '../recordResult';
 
 const ctx = {} as Context;
 const cb: Callback = () => {};
-const pending: { matchId: string; date: string; status: string; participants: string[]; seasonId?: string } = {
+const pending: Record<string, unknown> = {
   matchId: 'm1',
   date: '2024-06-01',
   status: 'pending',
@@ -55,15 +105,26 @@ function ev(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent
     body: null, headers: {}, multiValueHeaders: {}, httpMethod: 'POST',
     isBase64Encoded: false, path: '/', pathParameters: null,
     queryStringParameters: null, multiValueQueryStringParameters: null,
-    stageVariables: null, resource: '', requestContext: { authorizer: {} } as any,
+    stageVariables: null, resource: '', requestContext: { authorizer: {} } as never,
     ...overrides,
   };
 }
 
 function stubSuccess(match = pending) {
-  mockQuery.mockResolvedValue({ Items: [match] });
-  mockTransactWrite.mockResolvedValue({});
-  mockScan.mockResolvedValue({ Items: [] });
+  mockMatchesRepo.findByIdWithDate.mockResolvedValue(match);
+  mockRunInTransaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
+    const tx = {
+      updateMatch: vi.fn(),
+      incrementPlayerRecord: vi.fn(),
+      incrementStanding: vi.fn(),
+      updateChampionship: vi.fn(),
+      closeReign: vi.fn(),
+      startReign: vi.fn(),
+    };
+    await fn(tx);
+    return tx;
+  });
+  mockEventsRepo.list.mockResolvedValue([]);
 }
 
 // ---- Validation ------------------------------------------------------------
@@ -108,7 +169,7 @@ describe('recordResult — validation', () => {
   });
 
   it('returns 404 when match is not found', async () => {
-    mockQuery.mockResolvedValue({ Items: [] });
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(null);
     const r = await recordResult(ev({
       pathParameters: { matchId: 'x' },
       body: JSON.stringify({ winners: ['p1'], losers: ['p2'] }),
@@ -117,7 +178,7 @@ describe('recordResult — validation', () => {
   });
 
   it('returns 400 when match is already completed', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ ...pending, status: 'completed' }] });
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue({ ...pending, status: 'completed' });
     const r = await recordResult(ev({
       pathParameters: { matchId: 'm1' },
       body: JSON.stringify({ winners: ['p1'], losers: ['p2'] }),
@@ -144,16 +205,36 @@ describe('recordResult — core transaction', () => {
     expect(b.match.winners).toEqual(['p1']);
   });
 
-  it('builds transaction: match update + winner wins + loser losses', async () => {
+  it('calls transaction with match update + winner wins + loser losses', async () => {
     stubSuccess();
     await recordResult(ev({
       pathParameters: { matchId: 'm1' },
       body: JSON.stringify({ winners: ['p1'], losers: ['p2'] }),
     }), ctx, cb);
-    const items = mockTransactWrite.mock.calls[0][0].TransactItems;
-    expect(items).toHaveLength(3);
-    expect(items[0].Update.ConditionExpression).toContain(':pending');
-    expect(items[0].Update.UpdateExpression).toContain('version');
+
+    expect(mockRunInTransaction).toHaveBeenCalled();
+    // Execute the callback to inspect tx calls
+    const txFn = mockRunInTransaction.mock.calls[0][0];
+    const tx = {
+      updateMatch: vi.fn(),
+      incrementPlayerRecord: vi.fn(),
+      incrementStanding: vi.fn(),
+      updateChampionship: vi.fn(),
+      closeReign: vi.fn(),
+      startReign: vi.fn(),
+    };
+    await txFn(tx);
+
+    // Match update
+    expect(tx.updateMatch).toHaveBeenCalledWith('m1', '2024-06-01', expect.objectContaining({
+      status: 'completed',
+      winners: ['p1'],
+      losers: ['p2'],
+    }));
+    // Winner gets +1 win
+    expect(tx.incrementPlayerRecord).toHaveBeenCalledWith('p1', { wins: 1 });
+    // Loser gets +1 loss
+    expect(tx.incrementPlayerRecord).toHaveBeenCalledWith('p2', { losses: 1 });
   });
 
   it('includes season standings updates when match has seasonId', async () => {
@@ -162,10 +243,23 @@ describe('recordResult — core transaction', () => {
       pathParameters: { matchId: 'm1' },
       body: JSON.stringify({ winners: ['p1'], losers: ['p2'] }),
     }), ctx, cb);
-    const items = mockTransactWrite.mock.calls[0][0].TransactItems;
-    expect(items).toHaveLength(5); // match + 2 players + 2 season standings
-    const seasonItems = items.filter((i: any) => i.Update?.TableName === 'SeasonStandings');
-    expect(seasonItems).toHaveLength(2);
+
+    // Re-execute the callback to inspect tx calls
+    const txFn = mockRunInTransaction.mock.calls[0][0];
+    const tx = {
+      updateMatch: vi.fn(),
+      incrementPlayerRecord: vi.fn(),
+      incrementStanding: vi.fn(),
+      updateChampionship: vi.fn(),
+      closeReign: vi.fn(),
+      startReign: vi.fn(),
+    };
+    await txFn(tx);
+
+    // Season standings: winner wins + loser losses
+    expect(tx.incrementStanding).toHaveBeenCalledWith('s1', 'p1', { wins: 1 });
+    expect(tx.incrementStanding).toHaveBeenCalledWith('s1', 'p2', { losses: 1 });
+    expect(tx.incrementStanding).toHaveBeenCalledTimes(2);
   });
 
   // Note: Draw detection (isDraw) requires winners === losers (sorted),
@@ -179,10 +273,11 @@ describe('recordResult — concurrency', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns 400 with retry message on TransactionCanceledException', async () => {
-    mockQuery.mockResolvedValue({ Items: [pending] });
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(pending);
     const err = new Error('cancelled');
-    (err as any).name = 'TransactionCanceledException';
-    mockTransactWrite.mockRejectedValue(err);
+    (err as { name?: string }).name = 'TransactionCanceledException';
+    mockRunInTransaction.mockRejectedValue(err);
+    mockEventsRepo.list.mockResolvedValue([]);
     const r = await recordResult(ev({
       pathParameters: { matchId: 'm1' },
       body: JSON.stringify({ winners: ['p1'], losers: ['p2'] }),
@@ -192,8 +287,8 @@ describe('recordResult — concurrency', () => {
   });
 
   it('returns 500 on non-transaction errors', async () => {
-    mockQuery.mockResolvedValue({ Items: [pending] });
-    mockTransactWrite.mockRejectedValue(new Error('Unknown'));
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(pending);
+    mockRunInTransaction.mockRejectedValue(new Error('Unknown'));
     const r = await recordResult(ev({
       pathParameters: { matchId: 'm1' },
       body: JSON.stringify({ winners: ['p1'], losers: ['p2'] }),
@@ -207,9 +302,9 @@ describe('recordResult — concurrency', () => {
 describe('recordResult — background ops', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('succeeds even if ranking recalculation throws', async () => {
-    const { calculateRankingsForChampionship } = await import('../../../lib/rankingCalculator');
-    vi.mocked(calculateRankingsForChampionship).mockRejectedValue(new Error('fail'));
+  it('succeeds even if invokeAsync for contenders throws', async () => {
+    const { invokeAsync } = await import('../../../lib/asyncLambda');
+    vi.mocked(invokeAsync).mockRejectedValue(new Error('fail'));
     stubSuccess();
     const r = await recordResult(ev({
       pathParameters: { matchId: 'm1' },
@@ -218,9 +313,9 @@ describe('recordResult — background ops', () => {
     expect(r!.statusCode).toBe(200);
   });
 
-  it('succeeds even if cost recalculation throws', async () => {
-    const { recalculateCosts } = await import('../../fantasy/recalculateWrestlerCosts');
-    vi.mocked(recalculateCosts).mockRejectedValue(new Error('fail'));
+  it('succeeds even if updateGroupStats throws', async () => {
+    const { updateGroupStats } = await import('../updateGroupStats');
+    vi.mocked(updateGroupStats).mockRejectedValue(new Error('fail'));
     stubSuccess();
     const r = await recordResult(ev({
       pathParameters: { matchId: 'm1' },
