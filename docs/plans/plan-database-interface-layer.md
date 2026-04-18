@@ -14,7 +14,7 @@
 | 2 — Divisions/Stipulations/MatchTypes + generalized CRUD factory | ✅ Done | `9357c0e` |
 | 3 — Read-heavy leaves (Seasons, Announcements, Videos, Companies, Shows, Notifications, Overalls, SiteConfig, SeasonAwards) | ✅ Done | — |
 | 4 — Medium-complexity aggregates with GSIs (Players, Challenges, TagTeams, Stables, Transfers, StorylineRequests, Events, Promos) | ✅ Done | — |
-| 5 — Cross-aggregate reads (Standings, Dashboard, Rivalries, Statistics, Activity) | ⏳ | — |
+| 5 — Cross-aggregate reads (Standings, Dashboard, Rivalries, Statistics, Activity) | ✅ Done | — |
 | 6 — Contenders & Fantasy (batched writes) | ⏳ | — |
 | 7 — Transactional writes + `runInTransaction` + `recordResult.ts` | ⏳ | — |
 | 8 — Admin and seed scripts | ⏳ | — |
@@ -37,9 +37,19 @@ dissolveTagTeam, deleteTagTeam, respondToChallenge) retain `dynamoDb.transactWri
 calls pending Wave 7 UoW implementation. Cross-domain reads to Matches/Championships
 (Wave 5+) remain on direct dynamoDb.
 
-**Where to resume**: Wave 5 — cross-aggregate read handlers (Standings, Dashboard,
-Rivalries, Statistics, Activity). These compose reads from multiple repos without
-writes, validating the multi-repo composition story.
+**After Wave 5**: 967 tests passing, 0 failures. Typecheck and lint clean.
+5 cross-aggregate read handlers migrated: Standings, Dashboard, Rivalries,
+Statistics, Activity. 4 new repository interfaces created: MatchesRepository,
+ChampionshipsRepository (including history), TournamentsRepository,
+SeasonStandingsRepository. These are read-only interfaces — write methods will
+be added in Wave 7 when transactional handlers are migrated. N+1 pattern in
+getActivity eliminated (individual player/championship lookups replaced with
+batch list calls). All 9 test files updated to mock repository methods instead
+of DynamoDB SDK.
+
+**Where to resume**: Wave 6 — Contenders & Fantasy (batched writes). These write
+many items but don't need strict transactionality (async-invoked, idempotent
+rebuild jobs).
 
 ## Context
 

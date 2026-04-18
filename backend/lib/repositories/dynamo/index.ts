@@ -19,6 +19,10 @@ import { DynamoTransfersRepository } from './TransfersRepository';
 import { DynamoStorylineRequestsRepository } from './StorylineRequestsRepository';
 import { DynamoEventsRepository } from './EventsRepository';
 import { DynamoPromosRepository } from './PromosRepository';
+import { DynamoMatchesRepository } from './MatchesRepository';
+import { DynamoChampionshipsRepository } from './ChampionshipsRepository';
+import { DynamoTournamentsRepository } from './TournamentsRepository';
+import { DynamoSeasonStandingsRepository } from './SeasonStandingsRepository';
 
 registerDriver('dynamo', (): Repositories => ({
   divisions: new DynamoDivisionsRepository(),
@@ -41,6 +45,10 @@ registerDriver('dynamo', (): Repositories => ({
   storylineRequests: new DynamoStorylineRequestsRepository(),
   events: new DynamoEventsRepository(),
   promos: new DynamoPromosRepository(),
+  matches: new DynamoMatchesRepository(),
+  championships: new DynamoChampionshipsRepository(),
+  tournaments: new DynamoTournamentsRepository(),
+  seasonStandings: new DynamoSeasonStandingsRepository(),
   runInTransaction: async () => {
     throw new Error('runInTransaction is not implemented in the dynamo driver yet (scheduled for Wave 7)');
   },

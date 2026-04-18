@@ -1,5 +1,15 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import type {
+  Match,
+  ChampionshipHistoryEntry,
+  Season,
+  Tournament,
+  Challenge,
+  Promo,
+  Player,
+  Championship,
+} from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 
 const ACTIVITY_TYPES = ['match', 'championship', 'challenge', 'promo', 'tournament', 'season'] as const;
@@ -41,30 +51,18 @@ function parseQuery(event: { queryStringParameters?: Record<string, string | und
   return { limit, cursor, typeFilter };
 }
 
-async function fetchPlayerNames(playerIds: Set<string>): Promise<Record<string, string>> {
+function buildPlayerNameMap(allPlayers: Player[]): Record<string, string> {
   const names: Record<string, string> = {};
-  for (const playerId of playerIds) {
-    const result = await dynamoDb.get({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId },
-    });
-    if (result.Item) {
-      names[playerId] = (result.Item.name as string) || (result.Item.currentWrestler as string) || playerId;
-    }
+  for (const player of allPlayers) {
+    names[player.playerId] = player.name || player.currentWrestler || player.playerId;
   }
   return names;
 }
 
-async function fetchChampionshipNames(championshipIds: Set<string>): Promise<Record<string, string>> {
+function buildChampionshipNameMap(allChampionships: Championship[]): Record<string, string> {
   const names: Record<string, string> = {};
-  for (const championshipId of championshipIds) {
-    const result = await dynamoDb.get({
-      TableName: TableNames.CHAMPIONSHIPS,
-      Key: { championshipId },
-    });
-    if (result.Item) {
-      names[championshipId] = (result.Item.name as string) || championshipId;
-    }
+  for (const championship of allChampionships) {
+    names[championship.championshipId] = championship.name || championship.championshipId;
   }
   return names;
 }
@@ -72,6 +70,7 @@ async function fetchChampionshipNames(championshipIds: Set<string>): Promise<Rec
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { limit, cursor, typeFilter } = parseQuery(event);
+    const { matches, championships, seasons, tournaments, challenges, promos, players } = getRepositories();
 
     const includeMatch = !typeFilter || typeFilter === 'match';
     const includeChampionship = !typeFilter || typeFilter === 'championship';
@@ -85,28 +84,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const championshipIds = new Set<string>();
 
     if (includeMatch) {
-      const matches = await dynamoDb.scanAll({
-        TableName: TableNames.MATCHES,
-        FilterExpression: '#s = :status',
-        ExpressionAttributeNames: { '#s': 'status' },
-        ExpressionAttributeValues: { ':status': 'completed' },
-      });
-      for (const m of matches) {
-        const updatedAt = m.updatedAt as string | undefined;
-        if (!updatedAt) continue; // only show matches that have been recorded/updated with updatedAt
-        const date = m.date as string;
-        const participants = (m.participants as string[]) || [];
-        const winners = (m.winners as string[]) || [];
-        const losers = (m.losers as string[]) || [];
-        participants.forEach((p: string) => playerIds.add(p));
+      const completedMatches: Match[] = await matches.listCompleted();
+      for (const m of completedMatches) {
+        if (!m.updatedAt) continue; // only show matches that have been recorded/updated with updatedAt
+        const participants = m.participants || [];
+        const winners = m.winners || [];
+        const losers = m.losers || [];
+        participants.forEach((p) => playerIds.add(p));
         rawItems.push({
           type: 'match_result',
-          timestamp: updatedAt,
-          id: `match-${m.matchId as string}`,
+          timestamp: m.updatedAt,
+          id: `match-${m.matchId}`,
           summary: '', // filled after we have names
           metadata: {
             matchId: m.matchId,
-            date,
+            date: m.date,
             matchFormat: m.matchFormat,
             stipulationId: m.stipulationId,
             participants,
@@ -122,25 +114,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     if (includeChampionship) {
-      const history = await dynamoDb.scanAll({
-        TableName: TableNames.CHAMPIONSHIP_HISTORY,
-      });
+      const history: ChampionshipHistoryEntry[] = await championships.listAllHistory();
       for (const h of history) {
-        const updatedAt = h.updatedAt as string | undefined;
-        if (!updatedAt) continue; // only show championship history with updatedAt
-        const wonDate = h.wonDate as string;
-        championshipIds.add(h.championshipId as string);
+        if (!h.updatedAt) continue; // only show championship history with updatedAt
+        championshipIds.add(h.championshipId);
         const champion = h.champion;
         if (typeof champion === 'string') playerIds.add(champion);
-        else if (Array.isArray(champion)) champion.forEach((c: string) => playerIds.add(c));
+        else if (Array.isArray(champion)) champion.forEach((c) => playerIds.add(c));
         rawItems.push({
           type: 'championship_change',
-          timestamp: updatedAt,
-          id: `championship-${h.championshipId as string}-${wonDate}`,
+          timestamp: h.updatedAt,
+          id: `championship-${h.championshipId}-${h.wonDate}`,
           summary: '',
           metadata: {
             championshipId: h.championshipId,
-            wonDate,
+            wonDate: h.wonDate,
             champion,
             matchId: h.matchId,
             lostDate: h.lostDate,
@@ -151,40 +139,35 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     if (includeSeason) {
-      const seasons = await dynamoDb.scanAll({
-        TableName: TableNames.SEASONS,
-      });
-      for (const s of seasons) {
-        const updatedAt = s.updatedAt as string | undefined;
-        if (!updatedAt) continue; // only show seasons with updatedAt
-        const startDate = s.startDate as string;
-        const status = s.status as string;
+      const allSeasons: Season[] = await seasons.list();
+      for (const s of allSeasons) {
+        if (!s.updatedAt) continue; // only show seasons with updatedAt
         rawItems.push({
           type: 'season_event',
-          timestamp: updatedAt,
-          id: `season-start-${s.seasonId as string}`,
+          timestamp: s.updatedAt,
+          id: `season-start-${s.seasonId}`,
           summary: '',
           metadata: {
             seasonId: s.seasonId,
             name: s.name,
-            startDate,
+            startDate: s.startDate,
             endDate: s.endDate,
-            status,
+            status: s.status,
             event: 'started',
           },
         });
-        if (status === 'completed' && s.endDate) {
+        if (s.status === 'completed' && s.endDate) {
           rawItems.push({
             type: 'season_event',
-            timestamp: updatedAt,
-            id: `season-end-${s.seasonId as string}`,
+            timestamp: s.updatedAt,
+            id: `season-end-${s.seasonId}`,
             summary: '',
             metadata: {
               seasonId: s.seasonId,
               name: s.name,
               startDate: s.startDate,
               endDate: s.endDate,
-              status,
+              status: s.status,
               event: 'ended',
             },
           });
@@ -193,26 +176,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     if (includeTournament) {
-      const tournaments = await dynamoDb.scanAll({
-        TableName: TableNames.TOURNAMENTS,
-      });
-      for (const t of tournaments) {
-        const updatedAt = (t.updatedAt as string | undefined) || (t.createdAt as string | undefined);
+      const allTournaments: Tournament[] = await tournaments.list();
+      for (const t of allTournaments) {
+        const updatedAt = t.updatedAt || t.createdAt;
         if (!updatedAt) continue; // only show tournaments with updatedAt or createdAt
-        const status = t.status as string;
-        const winner = t.winner as string | undefined;
-        if (winner) playerIds.add(winner);
+        if (t.winner) playerIds.add(t.winner);
         rawItems.push({
           type: 'tournament_result',
           timestamp: updatedAt,
-          id: `tournament-${t.tournamentId as string}`,
+          id: `tournament-${t.tournamentId}`,
           summary: '',
           metadata: {
             tournamentId: t.tournamentId,
             name: t.name,
             type: t.type,
-            status,
-            winner,
+            status: t.status,
+            winner: t.winner,
             createdAt: t.createdAt,
           },
         });
@@ -220,18 +199,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     if (includeChallenge) {
-      const challenges = await dynamoDb.scanAll({
-        TableName: TableNames.CHALLENGES,
-      });
-      for (const c of challenges) {
-        const updatedAt = (c.updatedAt as string | undefined) || (c.createdAt as string | undefined);
+      const allChallenges: Challenge[] = await challenges.list();
+      for (const c of allChallenges) {
+        const updatedAt = c.updatedAt || c.createdAt;
         if (!updatedAt) continue; // only show challenges with updatedAt or createdAt
-        playerIds.add(c.challengerId as string);
-        playerIds.add(c.challengedId as string);
+        playerIds.add(c.challengerId);
+        playerIds.add(c.challengedId);
         rawItems.push({
           type: 'challenge_event',
           timestamp: updatedAt,
-          id: `challenge-${c.challengeId as string}`,
+          id: `challenge-${c.challengeId}`,
           summary: '',
           metadata: {
             challengeId: c.challengeId,
@@ -246,17 +223,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     if (includePromo) {
-      const promos = await dynamoDb.scanAll({
-        TableName: TableNames.PROMOS,
-      });
-      for (const p of promos) {
-        const updatedAt = (p.updatedAt as string | undefined) || (p.createdAt as string | undefined);
+      const allPromos: Promo[] = await promos.list();
+      for (const p of allPromos) {
+        const updatedAt = p.updatedAt || p.createdAt;
         if (!updatedAt) continue; // only show promos with updatedAt or createdAt
-        playerIds.add(p.playerId as string);
+        playerIds.add(p.playerId);
         rawItems.push({
           type: 'promo_posted',
           timestamp: updatedAt,
-          id: `promo-${p.promoId as string}`,
+          id: `promo-${p.promoId}`,
           summary: '',
           metadata: {
             promoId: p.promoId,
@@ -269,16 +244,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    const playerNames = await fetchPlayerNames(playerIds);
-    const championshipNames = await fetchChampionshipNames(championshipIds);
+    // Batch-fetch all players and championships to build name maps (eliminates N+1 lookups)
+    const [allPlayers, allChampionships] = await Promise.all([
+      players.list(),
+      championshipIds.size > 0 ? championships.list() : Promise.resolve([]),
+    ]);
+
+    const playerNames = buildPlayerNameMap(allPlayers);
+    const championshipNames = buildChampionshipNameMap(allChampionships);
 
     for (const item of rawItems) {
       if (item.type === 'match_result') {
         const meta = item.metadata;
         const winners = (meta.winners as string[]) || [];
         const losers = (meta.losers as string[]) || [];
-        const winnerNames = winners.map((id: string) => playerNames[id] || id);
-        const loserNames = losers.map((id: string) => playerNames[id] || id);
+        const winnerNames = winners.map((id) => playerNames[id] || id);
+        const loserNames = losers.map((id) => playerNames[id] || id);
         meta.winnerNames = winnerNames;
         meta.loserNames = loserNames;
         item.summary = winnerNames.length && loserNames.length
@@ -288,7 +269,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const meta = item.metadata;
         const champ = meta.champion;
         const champNames = Array.isArray(champ)
-          ? (champ as string[]).map((id: string) => playerNames[id] || id)
+          ? (champ as string[]).map((id) => playerNames[id] || id)
           : [playerNames[champ as string] || (champ as string)];
         meta.championNames = champNames;
         meta.championshipName = championshipNames[meta.championshipId as string] || meta.championshipId;
