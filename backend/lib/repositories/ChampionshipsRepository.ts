@@ -9,11 +9,22 @@ export interface ChampionshipPatch {
   defenses?: number;
 }
 
+export interface ChampionshipCreateInput {
+  name: string;
+  type: 'singles' | 'tag';
+  currentChampion?: string | string[];
+  divisionId?: string;
+  imageUrl?: string;
+  [key: string]: unknown;
+}
+
 export interface ChampionshipsRepository {
   findById(championshipId: string): Promise<Championship | null>;
   list(): Promise<Championship[]>;
   listActive(): Promise<Championship[]>;
+  create(input: ChampionshipCreateInput): Promise<Championship>;
   update(championshipId: string, patch: ChampionshipPatch): Promise<Championship>;
+  delete(championshipId: string): Promise<void>;
   removeChampion(championshipId: string): Promise<Championship>;
 
   // Championship history

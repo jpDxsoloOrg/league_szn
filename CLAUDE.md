@@ -444,6 +444,25 @@ aws cloudformation describe-stacks --stack-name wwe-2k-league-api-devtest \
 - Verify all participant IDs exist in players table
 - Check browser console for API errors
 
+## Repository Pattern (Database Interface Layer)
+
+**New handlers** import from `backend/lib/repositories`, never from `backend/lib/dynamodb` directly. Use `getRepositories()` to access typed repository instances (e.g., `players`, `matches`, `championships`). Pure-CRUD handlers use the factories in `backend/lib/handlers.ts` (`createHandlerFactory`, `getHandlerFactory`, `listHandlerFactory`, `updateHandlerFactory`, `deleteHandlerFactory`).
+
+**For atomic multi-aggregate writes**, use `runInTransaction(async (tx) => { ... })`. The `tx` object provides typed mutation methods (`tx.updateMatch`, `tx.incrementPlayerRecord`, `tx.updateChampionship`, etc.). DynamoDB implementation stages `TransactWriteItems` and flushes in ≤100-item chunks. See `backend/lib/repositories/unitOfWork.ts` for the full interface.
+
+**For tests**, mock `getRepositories` instead of `@aws-sdk/lib-dynamodb`. Example:
+```typescript
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    players: mockPlayersRepo,
+    matches: mockMatchesRepo,
+    // ...
+  }),
+}));
+```
+
+**Migration status**: ~46 handlers under `backend/functions/` still import from `backend/lib/dynamodb` directly (matchmaking, some CRUD handlers). These are targeted for future cleanup but do not block new feature development — new code should always use the repository pattern.
+
 ## Code Style
 
 - Use TypeScript for all new code

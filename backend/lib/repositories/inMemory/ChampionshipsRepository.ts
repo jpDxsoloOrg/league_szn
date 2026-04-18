@@ -1,4 +1,5 @@
-import type { ChampionshipsRepository, ChampionshipPatch } from '../ChampionshipsRepository';
+import { v4 as uuidv4 } from 'uuid';
+import type { ChampionshipsRepository, ChampionshipPatch, ChampionshipCreateInput } from '../ChampionshipsRepository';
 import { NotFoundError } from '../errors';
 import type { Championship, ChampionshipHistoryEntry } from '../types';
 
@@ -16,6 +17,29 @@ export class InMemoryChampionshipsRepository implements ChampionshipsRepository 
 
   async listActive(): Promise<Championship[]> {
     return Array.from(this.store.values()).filter((c) => c.isActive !== false);
+  }
+
+  async create(input: ChampionshipCreateInput): Promise<Championship> {
+    const now = new Date().toISOString();
+    const { name, type, currentChampion, imageUrl, divisionId, ...rest } = input;
+    const item = {
+      championshipId: uuidv4(),
+      name,
+      type,
+      ...(currentChampion !== undefined ? { currentChampion } : {}),
+      ...(imageUrl !== undefined ? { imageUrl } : {}),
+      ...(divisionId !== undefined ? { divisionId } : {}),
+      ...rest,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    } as Championship;
+    this.store.set(item.championshipId, item);
+    return item;
+  }
+
+  async delete(championshipId: string): Promise<void> {
+    this.store.delete(championshipId);
   }
 
   async listHistory(championshipId: string): Promise<ChampionshipHistoryEntry[]> {

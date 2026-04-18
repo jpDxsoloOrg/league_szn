@@ -19,7 +19,8 @@
 | 7 — Transactional writes + `runInTransaction` (steps 23–25) | ✅ Done | — |
 | 7b — `recordResult.ts` migration (step 26–27) | ✅ Done | — |
 | 8 — Admin and seed scripts | ✅ Done | — |
-| 9 — Clean up (delete `dynamodbUtils.ts`, shrink `dynamodb.ts`, remove deprecated `handlerFactory`) | ⏳ | — |
+| 9 — Clean up (partial: remove `handlerFactory` alias, update CLAUDE.md) | ✅ Done | — |
+| 9b — Migrate remaining ~46 handler files from direct `dynamoDb` imports | ⏳ | — |
 
 **Baseline after Wave 2**: 953 tests passing, 17 pre-existing failures (unrelated
 mock-shape drift, tracked separately in `TO-DOS.md`). Typecheck and lint clean.
@@ -94,10 +95,21 @@ migrated to use repository methods. `dataTransferConfig.ts` decoupled from
 `TableNames` (table mapping moved to Dynamo driver's `adminOps.ts`).
 Scripts `seed-data.ts` and `clear-data.ts` now use `getRepositories()`.
 
-**Where to resume**: Wave 9 — Clean up. Confirm no handler/script imports
-`dynamodb.ts` or `dynamodbUtils.ts` directly. Delete `dynamodbUtils.ts`.
-Shrink `dynamodb.ts`. Remove deprecated `handlerFactory` alias. Update
-`CLAUDE.md`.
+**After Wave 9 (partial)**: 954 tests passing, 0 failures. Typecheck and
+lint clean. Deprecated `handlerFactory` alias removed from `handlers.ts`.
+`createChampionship.ts` migrated to use `createHandlerFactory` with repo.
+Legacy `handlerFactory` tests removed (11 tests); 21 repo-backed factory
+tests remain. `CLAUDE.md` updated with repository pattern documentation.
+`handlers.ts` no longer imports from `dynamodb.ts`. ~46 handler files
+under `functions/` still import `dynamodb.ts` directly — these are in
+domains with existing repos but their individual CRUD handlers weren't
+migrated during Waves 3–4. `dynamodbUtils.ts` still has 3 remaining
+importers. Full cleanup deferred to Wave 9b.
+
+**Where to resume**: Wave 9b — Migrate the remaining ~46 handlers across
+15 domains (matchmaking 10, stables 6, matches 5, championships 5,
+players 4, tournaments 3, overalls 3, etc.) to use repository methods.
+Then delete `dynamodbUtils.ts` and shrink `dynamodb.ts`.
 
 ## Context
 

@@ -1,7 +1,8 @@
 import { dynamoDb, TableNames } from '../../dynamodb';
 import { buildUpdateExpression } from './util';
 import { NotFoundError } from '../errors';
-import type { ChampionshipsRepository, ChampionshipPatch } from '../ChampionshipsRepository';
+import { v4 as uuidv4 } from 'uuid';
+import type { ChampionshipsRepository, ChampionshipPatch, ChampionshipCreateInput } from '../ChampionshipsRepository';
 import type { Championship, ChampionshipHistoryEntry } from '../types';
 
 export class DynamoChampionshipsRepository implements ChampionshipsRepository {
@@ -20,6 +21,29 @@ export class DynamoChampionshipsRepository implements ChampionshipsRepository {
   async listActive(): Promise<Championship[]> {
     const all = await this.list();
     return all.filter((c) => c.isActive !== false);
+  }
+
+  async create(input: ChampionshipCreateInput): Promise<Championship> {
+    const now = new Date().toISOString();
+    const { name, type, currentChampion, imageUrl, divisionId, ...rest } = input;
+    const item: Record<string, unknown> = {
+      championshipId: uuidv4(),
+      name,
+      type,
+      ...(currentChampion !== undefined ? { currentChampion } : {}),
+      ...(imageUrl !== undefined ? { imageUrl } : {}),
+      ...(divisionId !== undefined ? { divisionId } : {}),
+      ...rest,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await dynamoDb.put({ TableName: TableNames.CHAMPIONSHIPS, Item: item });
+    return item as unknown as Championship;
+  }
+
+  async delete(championshipId: string): Promise<void> {
+    await dynamoDb.delete({ TableName: TableNames.CHAMPIONSHIPS, Key: { championshipId } });
   }
 
   async listHistory(championshipId: string): Promise<ChampionshipHistoryEntry[]> {
