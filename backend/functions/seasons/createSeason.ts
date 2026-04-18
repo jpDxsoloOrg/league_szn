@@ -1,22 +1,17 @@
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import type { SeasonCreateInput } from '../../lib/repositories';
 import { conflict } from '../../lib/response';
-import { handlerFactory } from '../../lib/handlers';
+import { createHandlerFactory } from '../../lib/handlers';
 
-export const handler = handlerFactory({
-  tableName: TableNames.SEASONS,
-  idField: 'seasonId',
+export const handler = createHandlerFactory<SeasonCreateInput, unknown>({
+  repo: () => getRepositories().seasons,
   entityName: 'season',
   requiredFields: ['name', 'startDate'],
-  nullableFields: ['endDate'],
-  defaults: { status: 'active' },
-  validate: async (_body, _event) => {
-    const existingSeasons = await dynamoDb.scan({
-      TableName: TableNames.SEASONS,
-      FilterExpression: '#status = :active',
-      ExpressionAttributeNames: { '#status': 'status' },
-      ExpressionAttributeValues: { ':active': 'active' },
-    });
-    if (existingSeasons.Items && existingSeasons.Items.length > 0) {
+  optionalFields: ['endDate'],
+  validate: async () => {
+    const { seasons } = getRepositories();
+    const active = await seasons.findActive();
+    if (active) {
       return conflict('There is already an active season. Please end the current season before creating a new one.');
     }
     return null;

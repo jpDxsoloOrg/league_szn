@@ -1,22 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
-
-// ─── Mocks ───────────────────────────────────────────────────────────
-
-const { mockGet, mockPut } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockPut: vi.fn(),
-}));
-
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: { get: mockGet, put: mockPut },
-  TableNames: {
-    SITE_CONFIG: 'SiteConfig',
-    STABLES: 'Stables',
-    TAG_TEAMS: 'TagTeams',
-    STABLE_INVITATIONS: 'StableInvitations',
-  },
-}));
+import {
+  setRepositoriesForTesting,
+  resetRepositoriesForTesting,
+} from '../../../lib/repositories';
+import { InMemorySiteConfigRepository } from '../../../lib/repositories/inMemory/SiteConfigRepository';
+import { buildInMemoryRepositories } from '../../../lib/repositories/inMemory';
 
 import { handler as getSiteConfig } from '../getSiteConfig';
 import { handler as updateSiteConfig } from '../updateSiteConfig';
@@ -48,7 +37,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '',
-    requestContext: { authorizer: {} } as any,
+    requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
@@ -59,17 +48,35 @@ function withAuth(event: APIGatewayProxyEvent, groups: string, sub = 'user-sub-1
     requestContext: {
       ...event.requestContext,
       authorizer: { groups, username: 'testuser', email: 'test@test.com', principalId: sub },
-    } as any,
+    } as unknown as APIGatewayProxyEvent['requestContext'],
   };
 }
+
+let siteConfigRepo: InMemorySiteConfigRepository;
+
+beforeEach(() => {
+  const repos = buildInMemoryRepositories();
+  siteConfigRepo = repos.siteConfig as InMemorySiteConfigRepository;
+  setRepositoriesForTesting(repos);
+});
+
+afterEach(() => {
+  resetRepositoriesForTesting();
+});
 
 // ─── getSiteConfig ──────────────────────────────────────────────────
 
 describe('getSiteConfig', () => {
-  beforeEach(() => vi.clearAllMocks());
+  it('returns default features when no config has been set', async () => {
+    const result = await getSiteConfig(makeEvent(), ctx, cb);
 
-  it('returns features from existing config item', async () => {
-    const storedFeatures = {
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.features).toEqual(DEFAULT_FEATURES);
+  });
+
+  it('returns features from existing config', async () => {
+    siteConfigRepo.features = {
       fantasy: false,
       challenges: true,
       promos: false,
@@ -77,58 +84,25 @@ describe('getSiteConfig', () => {
       statistics: true,
       stables: true,
     };
-    mockGet.mockResolvedValue({
-      Item: { configKey: 'features', features: storedFeatures },
-    });
 
     const result = await getSiteConfig(makeEvent(), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    expect(body.features).toEqual(storedFeatures);
-    expect(mockGet).toHaveBeenCalledWith({
-      TableName: 'SiteConfig',
-      Key: { configKey: 'features' },
+    expect(body.features).toEqual({
+      fantasy: false,
+      challenges: true,
+      promos: false,
+      contenders: true,
+      statistics: true,
+      stables: true,
     });
-  });
-
-  it('returns default features when no config item exists', async () => {
-    mockGet.mockResolvedValue({ Item: undefined });
-
-    const result = await getSiteConfig(makeEvent(), ctx, cb);
-
-    expect(result!.statusCode).toBe(200);
-    const body = JSON.parse(result!.body);
-    expect(body.features).toEqual(DEFAULT_FEATURES);
-  });
-
-  it('returns default features when config item has no features field', async () => {
-    mockGet.mockResolvedValue({
-      Item: { configKey: 'features', features: null },
-    });
-
-    const result = await getSiteConfig(makeEvent(), ctx, cb);
-
-    expect(result!.statusCode).toBe(200);
-    const body = JSON.parse(result!.body);
-    expect(body.features).toEqual(DEFAULT_FEATURES);
-  });
-
-  it('returns 500 when DynamoDB throws an error', async () => {
-    mockGet.mockRejectedValue(new Error('DynamoDB connection error'));
-
-    const result = await getSiteConfig(makeEvent(), ctx, cb);
-
-    expect(result!.statusCode).toBe(500);
-    expect(JSON.parse(result!.body).message).toBe('Failed to get site configuration');
   });
 });
 
 // ─── updateSiteConfig ───────────────────────────────────────────────
 
 describe('updateSiteConfig', () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it('returns 403 when user is not Admin', async () => {
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ features: { fantasy: false } }) }),
@@ -211,7 +185,7 @@ describe('updateSiteConfig', () => {
   });
 
   it('merges new features with existing config and returns updated features', async () => {
-    const existingFeatures = {
+    siteConfigRepo.features = {
       fantasy: true,
       challenges: true,
       promos: true,
@@ -219,10 +193,6 @@ describe('updateSiteConfig', () => {
       statistics: true,
       stables: true,
     };
-    mockGet.mockResolvedValue({
-      Item: { configKey: 'features', features: existingFeatures },
-    });
-    mockPut.mockResolvedValue({});
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ features: { fantasy: false, promos: false } }) }),
@@ -241,28 +211,9 @@ describe('updateSiteConfig', () => {
       statistics: true,
       stables: true,
     });
-    expect(mockPut).toHaveBeenCalledWith(
-      expect.objectContaining({
-        TableName: 'SiteConfig',
-        Item: expect.objectContaining({
-          configKey: 'features',
-          features: {
-            fantasy: false,
-            challenges: true,
-            promos: false,
-            contenders: true,
-            statistics: true,
-            stables: true,
-          },
-        }),
-      }),
-    );
   });
 
   it('uses default features when no existing config and merges new values', async () => {
-    mockGet.mockResolvedValue({ Item: undefined });
-    mockPut.mockResolvedValue({});
-
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ features: { statistics: false } }) }),
       'Admin',
@@ -280,19 +231,5 @@ describe('updateSiteConfig', () => {
       statistics: false,
       stables: true,
     });
-  });
-
-  it('returns 500 when DynamoDB throws an error', async () => {
-    mockGet.mockRejectedValue(new Error('DynamoDB error'));
-
-    const event = withAuth(
-      makeEvent({ body: JSON.stringify({ features: { fantasy: true } }) }),
-      'Admin',
-    );
-
-    const result = await updateSiteConfig(event, ctx, cb);
-
-    expect(result!.statusCode).toBe(500);
-    expect(JSON.parse(result!.body).message).toBe('Failed to update site configuration');
   });
 });

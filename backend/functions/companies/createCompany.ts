@@ -1,9 +1,9 @@
-import { TableNames } from '../../lib/dynamodb';
-import { handlerFactory } from '../../lib/handlers';
+import { getRepositories } from '../../lib/repositories';
+import type { CompanyCreateInput } from '../../lib/repositories';
+import { createHandlerFactory } from '../../lib/handlers';
 
-export const handler = handlerFactory({
-  tableName: TableNames.COMPANIES,
-  idField: 'companyId',
+export const handler = createHandlerFactory<CompanyCreateInput, unknown>({
+  repo: () => getRepositories().companies,
   entityName: 'company',
   requiredFields: ['name'],
   optionalFields: ['abbreviation', 'imageUrl', 'description'],

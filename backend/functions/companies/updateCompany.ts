@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames, buildUpdateExpression, getOrNotFound } from '../../lib/dynamodb';
+import { getRepositories, NotFoundError } from '../../lib/repositories';
 import { success, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
@@ -13,7 +13,6 @@ interface UpdateCompanyBody {
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const companyId = event.pathParameters?.companyId;
-
     if (!companyId) {
       return badRequest('Company ID is required');
     }
@@ -21,33 +20,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<UpdateCompanyBody>(event);
     if (parseError) return parseError;
 
-    const companyResult = await getOrNotFound(TableNames.COMPANIES, { companyId }, 'Company not found');
-    if ('notFoundResponse' in companyResult) {
-      return companyResult.notFoundResponse;
+    const { companies } = getRepositories();
+    const existing = await companies.findById(companyId);
+    if (!existing) {
+      return badRequest('Company not found');
     }
 
-    const updateExpr = buildUpdateExpression({
-      name: body.name,
-      abbreviation: body.abbreviation,
-      imageUrl: body.imageUrl,
-      description: body.description,
-    });
-
-    if (!updateExpr.hasChanges) {
+    const hasChanges = Object.values(body).some((v) => v !== undefined);
+    if (!hasChanges) {
       return badRequest('No valid fields to update');
     }
 
-    const result = await dynamoDb.update({
-      TableName: TableNames.COMPANIES,
-      Key: { companyId },
-      UpdateExpression: updateExpr.UpdateExpression,
-      ExpressionAttributeNames: updateExpr.ExpressionAttributeNames,
-      ExpressionAttributeValues: updateExpr.ExpressionAttributeValues,
-      ReturnValues: 'ALL_NEW',
-    });
-
-    return success(result.Attributes);
+    const updated = await companies.update(companyId, body);
+    return success(updated);
   } catch (err) {
+    if (err instanceof NotFoundError) return badRequest('Company not found');
     console.error('Error updating company:', err);
     return serverError('Failed to update company');
   }

@@ -12,7 +12,7 @@
 |---|---|---|
 | 1 — Foundation (types, errors, UoW interface, driver-selection factory) | ✅ Done | `2c71896` |
 | 2 — Divisions/Stipulations/MatchTypes + generalized CRUD factory | ✅ Done | `9357c0e` |
-| 3 — Read-heavy leaves (Seasons, Announcements, Videos, Companies, Shows, Notifications, Overalls, SiteConfig, SeasonAwards) | ⏳ Next | — |
+| 3 — Read-heavy leaves (Seasons, Announcements, Videos, Companies, Shows, Notifications, Overalls, SiteConfig, SeasonAwards) | ✅ Done | — |
 | 4 — Medium-complexity aggregates with GSIs (Players, Challenges, TagTeams, Stables, Transfers, StorylineRequests, Events, Promos) | ⏳ | — |
 | 5 — Cross-aggregate reads (Standings, Dashboard, Rivalries, Statistics, Activity) | ⏳ | — |
 | 6 — Contenders & Fantasy (batched writes) | ⏳ | — |
@@ -22,6 +22,12 @@
 
 **Baseline after Wave 2**: 953 tests passing, 17 pre-existing failures (unrelated
 mock-shape drift, tracked separately in `TO-DOS.md`). Typecheck and lint clean.
+
+**After Wave 3**: 950 tests passing, 17 pre-existing failures unchanged.
+Typecheck and lint clean. 9 domains migrated: SiteConfig, Videos, Announcements,
+Companies, Shows, Notifications, Overalls, Seasons, SeasonAwards. Handlers that
+reference Wave 4+ domains (Players, Events, Matches, Championships) still use
+`dynamoDb` directly for those cross-domain reads — annotated with `// Note:` comments.
 
 **Where to resume**: open Wave 3 (pick one domain, follow the Wave 2 shape —
 interface → Dynamo driver → in-memory driver → migrate handlers → rewrite tests).

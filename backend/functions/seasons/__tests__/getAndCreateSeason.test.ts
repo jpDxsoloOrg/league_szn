@@ -125,7 +125,7 @@ describe('createSeason', () => {
     expect(body.name).toBe('Season 1');
     expect(body.startDate).toBe('2024-01-01');
     expect(body.status).toBe('active');
-    expect(body.endDate).toBeNull();
+    expect(body.endDate).toBeUndefined();
     expect(body.createdAt).toBeDefined();
     expect(body.updatedAt).toBeDefined();
     expect(mockPut).toHaveBeenCalledOnce();

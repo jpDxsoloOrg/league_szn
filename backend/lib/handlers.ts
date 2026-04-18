@@ -110,6 +110,7 @@ export interface RepoCreateHandlerOptions<TInput extends object, TEntity> {
   entityName: string;
   requiredFields: (keyof TInput & string)[];
   optionalFields?: (keyof TInput & string)[];
+  validate?: (body: Record<string, unknown>, event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult | null>;
 }
 
 export function createHandlerFactory<TInput extends object, TEntity>(
@@ -124,6 +125,11 @@ export function createHandlerFactory<TInput extends object, TEntity>(
       const missing = options.requiredFields.filter((f) => !raw[f]);
       if (missing.length === 1) return badRequest(`${missing[0]} is required`);
       if (missing.length > 0) return badRequest(`${missing.join(', ')} are required`);
+
+      if (options.validate) {
+        const validateError = await options.validate(raw, event);
+        if (validateError) return validateError;
+      }
 
       const input: Record<string, unknown> = {};
       for (const f of options.requiredFields) input[f] = raw[f];
