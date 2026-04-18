@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
@@ -53,41 +52,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('You can only respond to your own invitations');
     }
 
-    const now = new Date().toISOString();
-
     if (action === 'decline') {
       await stablesRepo.updateInvitation(invitationId, { status: 'declined' });
       return success({ message: 'Invitation declined', invitationId });
     }
 
     // action === 'accept'
-    // Verify player still has no stable (use ConditionExpression)
-    // Note: using dynamoDb directly for ConditionExpression on player update (Wave 7)
-    try {
-      await dynamoDb.update({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId: invitation.invitedPlayerId },
-        UpdateExpression: 'SET #stableId = :stableId, #updatedAt = :updatedAt',
-        ConditionExpression: 'attribute_not_exists(#stableId) OR #stableId = :empty',
-        ExpressionAttributeNames: {
-          '#stableId': 'stableId',
-          '#updatedAt': 'updatedAt',
-        },
-        ExpressionAttributeValues: {
-          ':stableId': stableId,
-          ':updatedAt': now,
-          ':empty': '',
-        },
-      });
-    } catch (conditionErr: unknown) {
-      if (
-        conditionErr instanceof Error &&
-        conditionErr.name === 'ConditionalCheckFailedException'
-      ) {
-        return badRequest('You already belong to a stable');
-      }
-      throw conditionErr;
+    // Verify player doesn't already belong to a stable
+    if (callerPlayer.stableId) {
+      return badRequest('You already belong to a stable');
     }
+
+    // Set the player's stableId
+    await playersRepo.update(invitation.invitedPlayerId, { stableId });
 
     // Get stable to update memberIds
     const stable = await stablesRepo.findById(stableId);

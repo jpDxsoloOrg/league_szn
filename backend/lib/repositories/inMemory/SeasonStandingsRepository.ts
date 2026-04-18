@@ -24,4 +24,23 @@ export class InMemorySeasonStandingsRepository implements SeasonStandingsReposit
     if (delta.draws) standing.draws += delta.draws;
     standing.updatedAt = new Date().toISOString();
   }
+
+  async listByPlayer(playerId: string): Promise<SeasonStanding[]> {
+    return this.store.filter((s) => s.playerId === playerId);
+  }
+
+  async delete(seasonId: string, playerId: string): Promise<void> {
+    const index = this.store.findIndex((s) => s.seasonId === seasonId && s.playerId === playerId);
+    if (index !== -1) {
+      this.store.splice(index, 1);
+    }
+  }
+
+  async deleteAllForSeason(seasonId: string): Promise<void> {
+    for (let i = this.store.length - 1; i >= 0; i--) {
+      if (this.store[i].seasonId === seasonId) {
+        this.store.splice(i, 1);
+      }
+    }
+  }
 }

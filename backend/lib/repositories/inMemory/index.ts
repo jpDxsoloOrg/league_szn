@@ -25,6 +25,7 @@ import { InMemoryTournamentsRepository } from './TournamentsRepository';
 import { InMemorySeasonStandingsRepository } from './SeasonStandingsRepository';
 import { InMemoryContendersRepository } from './ContendersRepository';
 import { InMemoryFantasyRepository } from './FantasyRepository';
+import { InMemoryMatchmakingRepository } from './MatchmakingRepository';
 import { InMemoryUnitOfWork } from './InMemoryUnitOfWork';
 
 export function buildInMemoryRepositories(): Repositories {
@@ -82,6 +83,7 @@ export function buildInMemoryRepositories(): Repositories {
     seasonStandings: seasonStandingsRepo,
     contenders: new InMemoryContendersRepository(),
     fantasy: new InMemoryFantasyRepository(),
+    matchmaking: new InMemoryMatchmakingRepository(),
     runInTransaction,
     clearAllData: async () => {
       const counts: Record<string, { deleted: number; errors: number }> = {};
@@ -175,4 +177,5 @@ export { InMemoryTournamentsRepository } from './TournamentsRepository';
 export { InMemorySeasonStandingsRepository } from './SeasonStandingsRepository';
 export { InMemoryContendersRepository } from './ContendersRepository';
 export { InMemoryFantasyRepository } from './FantasyRepository';
+export { InMemoryMatchmakingRepository } from './MatchmakingRepository';
 export { InMemoryUnitOfWork } from './InMemoryUnitOfWork';

@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole, isSuperAdmin } from '../../lib/auth';
@@ -44,20 +43,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
 
     // Remove stableId from ALL member Player records
-    // Note: using dynamoDb directly for REMOVE expression on player records (Wave 7)
     const clearPromises = stable.memberIds.map((playerId) =>
-      dynamoDb.update({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId },
-        UpdateExpression: 'REMOVE #stableId SET #updatedAt = :updatedAt',
-        ExpressionAttributeNames: {
-          '#stableId': 'stableId',
-          '#updatedAt': 'updatedAt',
-        },
-        ExpressionAttributeValues: {
-          ':updatedAt': now,
-        },
-      })
+      playersRepo.update(playerId, { stableId: null })
     );
 
     await Promise.all(clearPromises);

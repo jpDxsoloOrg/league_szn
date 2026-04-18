@@ -24,6 +24,7 @@ import type { TournamentsRepository } from './TournamentsRepository';
 import type { SeasonStandingsRepository } from './SeasonStandingsRepository';
 import type { ContendersRepository } from './ContendersRepository';
 import type { FantasyRepository } from './FantasyRepository';
+import type { MatchmakingRepository } from './MatchmakingRepository';
 import type { UnitOfWorkFactory } from './unitOfWork';
 
 export interface Repositories {
@@ -53,6 +54,7 @@ export interface Repositories {
   seasonStandings: SeasonStandingsRepository;
   contenders: ContendersRepository;
   fantasy: FantasyRepository;
+  matchmaking: MatchmakingRepository;
   runInTransaction: UnitOfWorkFactory;
 
   // Admin bulk operations

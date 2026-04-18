@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import type { MatchDesignation, MatchCardEntry } from '../../lib/repositories/types';
 import { created, badRequest, notFound, serverError, error as errorResponse } from '../../lib/response';
 import { createNotifications } from '../../lib/notifications';
 import { parseBody } from '../../lib/parseBody';
@@ -67,6 +68,8 @@ export class ScheduleMatchError extends Error {
 export async function scheduleMatchInternal(
   input: ScheduleMatchInput,
 ): Promise<ScheduleMatchResult> {
+  const repos = getRepositories();
+
   if (!input.matchFormat || !input.participants || input.participants.length < 2) {
     throw new ScheduleMatchError(400, 'matchFormat and at least 2 participants are required');
   }
@@ -74,12 +77,9 @@ export async function scheduleMatchInternal(
   // Resolve date: use provided date, or event date if eventId given, or today
   let resolvedDate = input.date;
   if (!resolvedDate && input.eventId) {
-    const eventForDate = await dynamoDb.get({
-      TableName: TableNames.EVENTS,
-      Key: { eventId: input.eventId },
-    });
-    if (eventForDate.Item) {
-      resolvedDate = (eventForDate.Item as Record<string, unknown>).date as string;
+    const eventForDate = await repos.events.findById(input.eventId);
+    if (eventForDate) {
+      resolvedDate = (eventForDate as unknown as Record<string, unknown>).date as string;
     }
   }
   if (!resolvedDate) {
@@ -98,11 +98,8 @@ export async function scheduleMatchInternal(
 
   // Validate all participants exist
   const playerValidationPromises = input.participants.map(async (playerId) => {
-    const player = await dynamoDb.get({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId },
-    });
-    return { playerId, exists: !!player.Item, player: player.Item };
+    const player = await repos.players.findById(playerId);
+    return { playerId, exists: !!player, player: player as unknown as Record<string, unknown> | null };
   });
 
   const playerResults = await Promise.all(playerValidationPromises);
@@ -114,20 +111,17 @@ export async function scheduleMatchInternal(
 
   // Validate championship exists if provided
   if (input.championshipId) {
-    const championship = await dynamoDb.get({
-      TableName: TableNames.CHAMPIONSHIPS,
-      Key: { championshipId: input.championshipId },
-    });
+    const championship = await repos.championships.findById(input.championshipId);
 
-    if (!championship.Item) {
+    if (!championship) {
       throw new ScheduleMatchError(404, `Championship not found: ${input.championshipId}`);
     }
 
     // Enforce division restriction: all participants must belong to the championship's division
-    const champDivisionId = championship.Item.divisionId as string | undefined;
+    const champDivisionId = (championship as unknown as Record<string, unknown>).divisionId as string | undefined;
     if (champDivisionId) {
       const wrongDivision = playerResults.filter((p) => {
-        const playerDivision = (p.player as Record<string, unknown>)?.divisionId as string | undefined;
+        const playerDivision = p.player?.divisionId as string | undefined;
         return playerDivision !== champDivisionId;
       });
 
@@ -142,44 +136,35 @@ export async function scheduleMatchInternal(
 
   // Validate tournament exists if provided
   if (input.tournamentId) {
-    const tournament = await dynamoDb.get({
-      TableName: TableNames.TOURNAMENTS,
-      Key: { tournamentId: input.tournamentId },
-    });
+    const tournament = await repos.tournaments.findById(input.tournamentId);
 
-    if (!tournament.Item) {
+    if (!tournament) {
       throw new ScheduleMatchError(404, `Tournament not found: ${input.tournamentId}`);
     }
 
-    if (tournament.Item.status === 'completed') {
+    if (tournament.status === 'completed') {
       throw new ScheduleMatchError(400, 'Cannot schedule match for a completed tournament');
     }
   }
 
   // Validate season exists and is active if provided
   if (input.seasonId) {
-    const season = await dynamoDb.get({
-      TableName: TableNames.SEASONS,
-      Key: { seasonId: input.seasonId },
-    });
+    const season = await repos.seasons.findById(input.seasonId);
 
-    if (!season.Item) {
+    if (!season) {
       throw new ScheduleMatchError(404, `Season not found: ${input.seasonId}`);
     }
 
-    if (season.Item.status !== 'active') {
+    if (season.status !== 'active') {
       throw new ScheduleMatchError(400, 'Cannot schedule match for an inactive season');
     }
   }
 
   // Validate stipulationId exists if provided
   if (input.stipulationId) {
-    const stipulation = await dynamoDb.get({
-      TableName: TableNames.STIPULATIONS,
-      Key: { stipulationId: input.stipulationId },
-    });
+    const stipulation = await repos.stipulations.findById(input.stipulationId);
 
-    if (!stipulation.Item) {
+    if (!stipulation) {
       throw new ScheduleMatchError(404, `Stipulation not found: ${input.stipulationId}`);
     }
   }
@@ -203,77 +188,46 @@ export async function scheduleMatchInternal(
   if (input.challengeId) match.challengeId = input.challengeId;
   if (input.promoId) match.promoId = input.promoId;
 
-  await dynamoDb.put({
-    TableName: TableNames.MATCHES,
-    Item: match,
-  });
+  await repos.matches.create(match);
 
   // If challengeId provided, mark challenge as scheduled and link match
   if (input.challengeId) {
-    const challengeResult = await dynamoDb.get({
-      TableName: TableNames.CHALLENGES,
-      Key: { challengeId: input.challengeId },
-    });
-    const challenge = challengeResult.Item as Record<string, unknown> | undefined;
-    if (challenge && ['pending', 'countered', 'accepted'].includes(challenge.status as string)) {
-      await dynamoDb.update({
-        TableName: TableNames.CHALLENGES,
-        Key: { challengeId: input.challengeId },
-        UpdateExpression: 'SET #s = :status, matchId = :matchId, updatedAt = :now',
-        ExpressionAttributeNames: { '#s': 'status' },
-        ExpressionAttributeValues: {
-          ':status': 'scheduled',
-          ':matchId': match.matchId,
-          ':now': now,
-        },
+    const challenge = await repos.challenges.findById(input.challengeId);
+    if (challenge && ['pending', 'countered', 'accepted'].includes(challenge.status)) {
+      await repos.challenges.update(input.challengeId, {
+        status: 'scheduled',
+        matchId: match.matchId as string,
+        updatedAt: now,
       });
     }
   }
 
   // If promoId provided, hide promo and optionally link match (scheduling from call-out auto-hides it)
   if (input.promoId) {
-    const promoResult = await dynamoDb.get({
-      TableName: TableNames.PROMOS,
-      Key: { promoId: input.promoId },
-    });
-    if (promoResult.Item) {
-      await dynamoDb.update({
-        TableName: TableNames.PROMOS,
-        Key: { promoId: input.promoId },
-        UpdateExpression: 'SET isHidden = :hidden, matchId = :matchId, updatedAt = :now',
-        ExpressionAttributeValues: {
-          ':hidden': true,
-          ':matchId': match.matchId,
-          ':now': now,
-        },
+    const promo = await repos.promos.findById(input.promoId);
+    if (promo) {
+      await repos.promos.update(input.promoId, {
+        isHidden: true,
+        matchId: match.matchId as string,
+        updatedAt: now,
       });
     }
   }
 
   // If an event was specified, auto-add the match to the event's matchCards
   if (input.eventId) {
-    const eventResult = await dynamoDb.get({
-      TableName: TableNames.EVENTS,
-      Key: { eventId: input.eventId },
-    });
+    const eventRecord = await repos.events.findById(input.eventId);
 
-    if (eventResult.Item) {
-      const existingCards = ((eventResult.Item as Record<string, unknown>).matchCards as unknown[] | undefined) || [];
-      const newCard = {
+    if (eventRecord) {
+      const existingCards = ((eventRecord as unknown as Record<string, unknown>).matchCards as MatchCardEntry[] | undefined) || [];
+      const newCard: MatchCardEntry = {
         matchId: match.matchId as string,
         position: existingCards.length + 1,
-        designation: input.designation || 'midcard',
+        designation: (input.designation || 'midcard') as MatchDesignation,
       };
 
-      await dynamoDb.update({
-        TableName: TableNames.EVENTS,
-        Key: { eventId: input.eventId },
-        UpdateExpression: 'SET matchCards = list_append(if_not_exists(matchCards, :empty), :newCard), updatedAt = :now',
-        ExpressionAttributeValues: {
-          ':newCard': [newCard],
-          ':empty': [],
-          ':now': new Date().toISOString(),
-        },
+      await repos.events.update(input.eventId, {
+        matchCards: [...existingCards, newCard],
       });
     }
   }
@@ -281,13 +235,11 @@ export async function scheduleMatchInternal(
   // Notify all participants who have linked user accounts
   const notificationParams = playerResults
     .filter((p) => {
-      const playerRecord = p.player as Record<string, unknown> | undefined;
-      return playerRecord?.userId;
+      return p.player?.userId;
     })
     .map((p) => {
-      const playerRecord = p.player as Record<string, unknown>;
       return {
-        userId: playerRecord.userId as string,
+        userId: p.player!.userId as string,
         type: 'match_scheduled' as const,
         message: `You've been scheduled in a ${input.matchFormat} match`,
         sourceId: match.matchId as string,

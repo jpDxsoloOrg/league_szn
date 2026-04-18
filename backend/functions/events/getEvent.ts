@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 
@@ -11,7 +10,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Event ID is required');
     }
 
-    const { events, players, stipulations } = getRepositories();
+    const { events, players, stipulations, matches, championships } = getRepositories();
 
     // Get the event
     const eventItem = await events.findById(eventId);
@@ -35,15 +34,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           };
         }
 
-        // Note: Matches table not yet migrated to repository layer (Wave 5+)
-        const matchQuery = await dynamoDb.query({
-          TableName: TableNames.MATCHES,
-          KeyConditionExpression: 'matchId = :matchId',
-          ExpressionAttributeValues: { ':matchId': card.matchId },
-          Limit: 1,
-        });
+        const match = await matches.findById(card.matchId);
 
-        if (!matchQuery.Items || matchQuery.Items.length === 0) {
+        if (!match) {
           return {
             position: card.position,
             matchId: card.matchId,
@@ -53,10 +46,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           };
         }
 
-        const match = matchQuery.Items[0] as Record<string, unknown>;
-
         // Fetch participant player data via repository
-        const participants: { playerId: string; playerName: string; wrestlerName: string }[] = [];
+        const participantData: { playerId: string; playerName: string; wrestlerName: string }[] = [];
         if (Array.isArray(match.participants) && match.participants.length > 0) {
           const playerPromises = (match.participants as string[]).map(async (playerId: string) => {
             const player = await players.findById(playerId);
@@ -66,18 +57,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               wrestlerName: player?.currentWrestler || 'Unknown Wrestler',
             };
           });
-          participants.push(...(await Promise.all(playerPromises)));
+          participantData.push(...(await Promise.all(playerPromises)));
         }
 
-        // Note: Championships table not yet migrated to repository layer (Wave 5+)
+        // Fetch championship name via repository
         let championshipName: string | undefined;
         if (match.isChampionship && match.championshipId) {
-          const championshipResult = await dynamoDb.get({
-            TableName: TableNames.CHAMPIONSHIPS,
-            Key: { championshipId: match.championshipId },
-          });
-          const championship = championshipResult.Item as Record<string, unknown> | undefined;
-          championshipName = championship?.name as string | undefined;
+          const championship = await championships.findById(match.championshipId as string);
+          championshipName = championship?.name;
         }
 
         // Fetch stipulation name via repository
@@ -97,7 +84,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             matchFormat: match.matchFormat,
             stipulationId: match.stipulationId,
             stipulationName,
-            participants,
+            participants: participantData,
             winners: match.winners,
             losers: match.losers,
             isChampionship: match.isChampionship || false,

@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { badRequest, forbidden, serverError, noContent } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 
@@ -12,26 +12,18 @@ export const handler = async (
       return forbidden('Only wrestlers can leave the matchmaking queue');
     }
 
-    // Find the caller's player record via their user sub
-    const playerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
+    const { players, matchmaking } = getRepositories();
 
-    const callerPlayer = playerResult.Items?.[0];
+    // Find the caller's player record via their user sub
+    const callerPlayer = await players.findByUserId(auth.sub);
     if (!callerPlayer) {
       return badRequest('No player profile linked to your account');
     }
 
-    const playerId = callerPlayer.playerId as string;
+    const playerId = callerPlayer.playerId;
 
-    // Idempotent delete — does not error if the row does not exist
-    await dynamoDb.delete({
-      TableName: TableNames.MATCHMAKING_QUEUE,
-      Key: { playerId },
-    });
+    // Idempotent delete -- does not error if the row does not exist
+    await matchmaking.deleteQueue(playerId);
 
     return noContent();
   } catch (err) {

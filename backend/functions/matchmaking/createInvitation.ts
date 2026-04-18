@@ -1,40 +1,17 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, forbidden, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
+import type { InvitationRecord } from '../../lib/repositories/MatchmakingRepository';
 
 interface CreateInvitationBody {
   targetPlayerId?: string;
   matchFormat?: string;
   stipulationId?: string;
   championshipId?: string;
-}
-
-interface PlayerRecord {
-  playerId: string;
-  userId?: string;
-  name: string;
-}
-
-interface PresenceRecord {
-  playerId: string;
-  lastSeenAt: string;
-  ttl: number;
-}
-
-interface InvitationRow {
-  invitationId: string;
-  fromPlayerId: string;
-  toPlayerId: string;
-  matchFormat?: string;
-  stipulationId?: string;
-  status: 'pending';
-  createdAt: string;
-  expiresAt: string;
-  ttl: number;
 }
 
 const INVITATION_TTL_SECONDS = 5 * 60;
@@ -46,19 +23,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return forbidden('Only wrestlers can send match invitations');
     }
 
-    // Find the caller's player record via their user sub
-    const callerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
+    const { players, matchmaking } = getRepositories();
 
-    const callerItem = callerResult.Items?.[0];
-    if (!callerItem) {
+    // Find the caller's player record via their user sub
+    const callerPlayer = await players.findByUserId(auth.sub);
+    if (!callerPlayer) {
       return badRequest('No player profile linked to your account');
     }
-    const caller = callerItem as unknown as PlayerRecord;
+    const caller = callerPlayer;
 
     const { data: body, error: parseError } = parseBody<CreateInvitationBody>(event);
     if (parseError) return parseError;
@@ -83,44 +55,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const nowIso = new Date(nowMs).toISOString();
 
     // Caller must have an active presence row
-    const callerPresenceResult = await dynamoDb.get({
-      TableName: TableNames.PRESENCE,
-      Key: { playerId: caller.playerId },
-    });
-    const callerPresence = callerPresenceResult.Item as PresenceRecord | undefined;
+    const callerPresence = await matchmaking.getPresence(caller.playerId);
     if (!callerPresence || callerPresence.ttl <= nowSeconds) {
       return badRequest('You must appear online before inviting');
     }
 
     // Target player must exist
-    const targetResult = await dynamoDb.get({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId: targetPlayerId },
-    });
-    if (!targetResult.Item) {
+    const target = await players.findById(targetPlayerId);
+    if (!target) {
       return notFound('Target player not found');
     }
-    const target = targetResult.Item as unknown as PlayerRecord;
 
     // Target must have an active presence row
-    const targetPresenceResult = await dynamoDb.get({
-      TableName: TableNames.PRESENCE,
-      Key: { playerId: targetPlayerId },
-    });
-    const targetPresence = targetPresenceResult.Item as PresenceRecord | undefined;
+    const targetPresence = await matchmaking.getPresence(targetPlayerId);
     if (!targetPresence || targetPresence.ttl <= nowSeconds) {
       return badRequest('Target player is not online');
     }
 
     // Reject duplicate pending invitations from caller -> target
-    const existingResult = await dynamoDb.query({
-      TableName: TableNames.MATCH_INVITATIONS,
-      IndexName: 'ToPlayerIndex',
-      KeyConditionExpression: 'toPlayerId = :tid',
-      ExpressionAttributeValues: { ':tid': targetPlayerId },
-    });
-
-    const existingItems = (existingResult.Items ?? []) as unknown as InvitationRow[];
+    const existingItems = await matchmaking.listInvitationsByToPlayer(targetPlayerId);
     const hasPending = existingItems.some(
       (inv) =>
         inv.fromPlayerId === caller.playerId &&
@@ -136,7 +89,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const expiresAt = new Date(nowMs + INVITATION_TTL_SECONDS * 1000).toISOString();
     const ttl = nowSeconds + INVITATION_TTL_SECONDS;
 
-    const invitation: InvitationRow = {
+    const invitation: InvitationRecord = {
       invitationId,
       fromPlayerId: caller.playerId,
       toPlayerId: targetPlayerId,
@@ -148,15 +101,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       ...(stipulationId !== undefined ? { stipulationId } : {}),
     };
 
-    await dynamoDb.put({
-      TableName: TableNames.MATCH_INVITATIONS,
-      Item: invitation,
-    });
+    await matchmaking.putInvitation(invitation);
 
     // Notify the target if they have a linked user account
-    if (target.userId) {
+    const targetRecord = target as unknown as Record<string, unknown>;
+    if (targetRecord.userId) {
       await createNotification({
-        userId: target.userId,
+        userId: targetRecord.userId as string,
         type: 'match_invitation',
         sourceId: invitationId,
         sourceType: 'match_invitation',

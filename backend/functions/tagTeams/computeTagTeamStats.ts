@@ -1,4 +1,4 @@
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 
 export type FormResult = 'W' | 'L' | 'D';
 
@@ -133,15 +133,11 @@ export function computeFormAndStreak(
 }
 
 /**
- * Fetches all completed matches from DynamoDB.
+ * Fetches all completed matches via the matches repository.
  */
 export async function fetchCompletedMatches(): Promise<MatchRecord[]> {
-  const items = await dynamoDb.scanAll({
-    TableName: TableNames.MATCHES,
-    FilterExpression: '#status = :completed',
-    ExpressionAttributeNames: { '#status': 'status' },
-    ExpressionAttributeValues: { ':completed': 'completed' },
-  });
+  const { matches } = getRepositories();
+  const items = await matches.listCompleted();
   return items as unknown as MatchRecord[];
 }
 

@@ -1,29 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
-const { mockScan } = vi.hoisted(() => ({
-  mockScan: vi.fn(),
-}));
-
-// deleteDivision still uses dynamoDb.scan directly to check the Players table
-// (Players will get its own repository in Wave 4). Everything else goes through
-// the in-memory repository driver.
-vi.mock('../../../lib/dynamodb', async () => {
-  const actual = await vi.importActual<typeof import('../../../lib/dynamodb')>('../../../lib/dynamodb');
-  return {
-    ...actual,
-    dynamoDb: {
-      ...actual.dynamoDb,
-      scan: mockScan,
-    },
-    TableNames: {
-      ...actual.TableNames,
-      PLAYERS: 'Players',
-      DIVISIONS: 'Divisions',
-    },
-  };
-});
-
 import { buildInMemoryRepositories } from '../../../lib/repositories/inMemory';
 import {
   setRepositoriesForTesting,
@@ -176,7 +153,6 @@ describe('updateDivision', () => {
 describe('deleteDivision', () => {
   it('deletes division and returns 204', async () => {
     const created = await repos.divisions.create({ name: 'Raw' });
-    mockScan.mockResolvedValue({ Items: [] });
 
     const event = makeEvent({ pathParameters: { divisionId: created.divisionId } });
 
@@ -204,12 +180,11 @@ describe('deleteDivision', () => {
 
   it('returns 409 when players are assigned to the division', async () => {
     const created = await repos.divisions.create({ name: 'Raw' });
-    mockScan.mockResolvedValue({
-      Items: [
-        { playerId: 'p1', name: 'John', divisionId: created.divisionId },
-        { playerId: 'p2', name: 'Jane', divisionId: created.divisionId },
-      ],
-    });
+    // Create players assigned to this division via the repo
+    const p1 = await repos.players.create({ name: 'John', currentWrestler: 'Wrestler1' });
+    await repos.players.update(p1.playerId, { divisionId: created.divisionId });
+    const p2 = await repos.players.create({ name: 'Jane', currentWrestler: 'Wrestler2' });
+    await repos.players.update(p2.playerId, { divisionId: created.divisionId });
 
     const event = makeEvent({ pathParameters: { divisionId: created.divisionId } });
 
@@ -223,9 +198,8 @@ describe('deleteDivision', () => {
 
   it('returns 409 with correct count for single player', async () => {
     const created = await repos.divisions.create({ name: 'Raw' });
-    mockScan.mockResolvedValue({
-      Items: [{ playerId: 'p1', name: 'John', divisionId: created.divisionId }],
-    });
+    const p1 = await repos.players.create({ name: 'John', currentWrestler: 'Wrestler1' });
+    await repos.players.update(p1.playerId, { divisionId: created.divisionId });
 
     const event = makeEvent({ pathParameters: { divisionId: created.divisionId } });
 
@@ -235,9 +209,8 @@ describe('deleteDivision', () => {
     expect(JSON.parse(result!.body).message).toContain('1 player(s)');
   });
 
-  it('deletes when player scan returns undefined Items', async () => {
+  it('deletes when no players are assigned', async () => {
     const created = await repos.divisions.create({ name: 'Raw' });
-    mockScan.mockResolvedValue({ Items: undefined });
 
     const event = makeEvent({ pathParameters: { divisionId: created.divisionId } });
 

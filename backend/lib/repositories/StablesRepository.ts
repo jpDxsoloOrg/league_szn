@@ -10,6 +10,7 @@ export interface StableCreateInput {
 
 export interface StablePatch {
   name?: string;
+  leaderId?: string;
   imageUrl?: string;
   status?: StableStatus;
   memberIds?: string[];
@@ -43,4 +44,6 @@ export interface StablesRepository {
   listPendingInvitationsByPlayer(playerId: string): Promise<StableInvitation[]>;
   createInvitation(input: StableInvitationCreateInput): Promise<StableInvitation>;
   updateInvitation(invitationId: string, patch: Partial<StableInvitation>): Promise<StableInvitation>;
+  deleteInvitation(invitationId: string): Promise<void>;
+  deleteInvitationsByStable(stableId: string): Promise<void>;
 }

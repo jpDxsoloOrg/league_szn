@@ -1,4 +1,5 @@
 import { dynamoDb, TableNames } from '../../dynamodb';
+import { buildUpdateExpression } from './util';
 import type { MatchesRepository } from '../MatchesRepository';
 import type { Match } from '../types';
 
@@ -58,6 +59,28 @@ export class DynamoMatchesRepository implements MatchesRepository {
       Limit: 1,
     });
     return ((result.Items?.[0]) as (Match & { date: string }) | undefined) ?? null;
+  }
+
+  async create(input: Record<string, unknown>): Promise<Match> {
+    await dynamoDb.put({
+      TableName: TableNames.MATCHES,
+      Item: input,
+    });
+    return input as unknown as Match;
+  }
+
+  async update(matchId: string, date: string, patch: Record<string, unknown>): Promise<Match> {
+    const { UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues } =
+      buildUpdateExpression(patch, new Date().toISOString());
+    const result = await dynamoDb.update({
+      TableName: TableNames.MATCHES,
+      Key: { matchId, date },
+      UpdateExpression,
+      ExpressionAttributeNames,
+      ExpressionAttributeValues,
+      ReturnValues: 'ALL_NEW',
+    });
+    return result.Attributes as Match;
   }
 
   async delete(matchId: string, date: string): Promise<void> {

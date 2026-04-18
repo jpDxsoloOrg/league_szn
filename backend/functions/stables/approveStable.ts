@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
@@ -14,7 +13,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('stableId is required');
     }
 
-    const { stables: stablesRepo } = getRepositories();
+    const { stables: stablesRepo, players: playersRepo } = getRepositories();
 
     const stable = await stablesRepo.findById(stableId);
     if (!stable) {
@@ -25,26 +24,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest(`Stable is already ${stable.status}, cannot approve`);
     }
 
-    const now = new Date().toISOString();
-
     // Update stable status to approved
     await stablesRepo.update(stableId, { status: 'approved' });
 
     // Set the leader's stableId on their player record
-    // Note: using dynamoDb directly for player update to keep REMOVE semantics consistent (Wave 7)
-    await dynamoDb.update({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId: stable.leaderId },
-      UpdateExpression: 'SET #stableId = :stableId, #updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#stableId': 'stableId',
-        '#updatedAt': 'updatedAt',
-      },
-      ExpressionAttributeValues: {
-        ':stableId': stableId,
-        ':updatedAt': now,
-      },
-    });
+    await playersRepo.update(stable.leaderId, { stableId });
 
     return success({ message: 'Stable approved', stableId, status: 'approved' });
   } catch (err) {

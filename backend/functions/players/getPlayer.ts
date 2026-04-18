@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 
@@ -10,42 +9,36 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Player ID is required');
     }
 
+    const { players, seasons, seasonStandings } = getRepositories();
+
     // Get the player
-    const player = await getRepositories().players.findById(playerId);
+    const player = await players.findById(playerId);
 
     if (!player) {
       return notFound('Player not found');
     }
 
     // Fetch all seasons
-    const seasons = await getRepositories().seasons.list();
+    const allSeasons = await seasons.list();
 
-    // Fetch season standings for this player via PlayerIndex GSI
-    // Note: SeasonStandings repo not yet migrated
-    const seasonStandings = await dynamoDb.queryAll({
-      TableName: TableNames.SEASON_STANDINGS,
-      IndexName: 'PlayerIndex',
-      KeyConditionExpression: 'playerId = :playerId',
-      ExpressionAttributeValues: {
-        ':playerId': playerId,
-      },
-    });
+    // Fetch season standings for this player via repository
+    const playerStandings = await seasonStandings.listByPlayer(playerId);
 
     // Build a map of standings by seasonId
     const standingsMap = new Map(
-      seasonStandings.map((s) => [s.seasonId as string, s])
+      playerStandings.map((s) => [s.seasonId, s])
     );
 
     // Show ALL seasons - those with standings get W-L-D, others get 0-0-0
-    const seasonRecords = seasons.map((season) => {
+    const seasonRecords = allSeasons.map((season) => {
       const standing = standingsMap.get(season.seasonId as string);
       return {
         seasonId: season.seasonId,
         seasonName: (season.name as string) || 'Unknown Season',
         seasonStatus: (season.status as string) || 'unknown',
-        wins: standing ? ((standing.wins as number) || 0) : 0,
-        losses: standing ? ((standing.losses as number) || 0) : 0,
-        draws: standing ? ((standing.draws as number) || 0) : 0,
+        wins: standing ? (standing.wins || 0) : 0,
+        losses: standing ? (standing.losses || 0) : 0,
+        draws: standing ? (standing.draws || 0) : 0,
       };
     });
 

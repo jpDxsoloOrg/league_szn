@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import {
   badRequest,
   notFound,
@@ -9,25 +9,6 @@ import {
 } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { createNotification } from '../../lib/notifications';
-
-type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'expired';
-
-interface InvitationRow {
-  invitationId: string;
-  fromPlayerId: string;
-  toPlayerId: string;
-  status: InvitationStatus;
-  createdAt: string;
-  updatedAt?: string;
-  [key: string]: unknown;
-}
-
-interface PlayerRecord {
-  playerId: string;
-  name: string;
-  userId?: string;
-  [key: string]: unknown;
-}
 
 interface ConditionalCheckFailed extends Error {
   name: 'ConditionalCheckFailedException';
@@ -51,15 +32,10 @@ export const handler = async (
       return forbidden('Only wrestlers can decline match invitations');
     }
 
-    // Find the caller's player record via their user sub
-    const playerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
+    const { players, matchmaking } = getRepositories();
 
-    const callerPlayer = playerResult.Items?.[0] as PlayerRecord | undefined;
+    // Find the caller's player record via their user sub
+    const callerPlayer = await players.findByUserId(auth.sub);
     if (!callerPlayer) {
       return badRequest('No player profile linked to your account');
     }
@@ -69,16 +45,10 @@ export const handler = async (
       return badRequest('invitationId is required');
     }
 
-    const invitationResult = await dynamoDb.get({
-      TableName: TableNames.MATCH_INVITATIONS,
-      Key: { invitationId },
-    });
-
-    if (!invitationResult.Item) {
+    const invitation = await matchmaking.getInvitation(invitationId);
+    if (!invitation) {
       return notFound('Match invitation not found');
     }
-
-    const invitation = invitationResult.Item as InvitationRow;
 
     if (invitation.toPlayerId !== callerPlayer.playerId) {
       return forbidden('You cannot decline an invitation that is not addressed to you');
@@ -91,21 +61,14 @@ export const handler = async (
     const now = new Date().toISOString();
 
     try {
-      await dynamoDb.update({
-        TableName: TableNames.MATCH_INVITATIONS,
-        Key: { invitationId },
-        UpdateExpression: 'SET #s = :declined, #u = :now',
-        ConditionExpression: '#s = :pending',
-        ExpressionAttributeNames: {
-          '#s': 'status',
-          '#u': 'updatedAt',
+      await matchmaking.updateInvitation(
+        invitationId,
+        {
+          status: 'declined',
+          updatedAt: now,
         },
-        ExpressionAttributeValues: {
-          ':declined': 'declined',
-          ':pending': 'pending',
-          ':now': now,
-        },
-      });
+        'pending',
+      );
     } catch (err: unknown) {
       if (isConditionalCheckFailed(err)) {
         return badRequest('Only pending invitations can be declined');
@@ -114,15 +77,11 @@ export const handler = async (
     }
 
     // Look up the inviter to notify them
-    const inviterResult = await dynamoDb.get({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId: invitation.fromPlayerId },
-    });
-
-    const inviter = inviterResult.Item as PlayerRecord | undefined;
-    if (inviter?.userId) {
+    const inviter = await players.findById(invitation.fromPlayerId);
+    const inviterRecord = inviter as unknown as Record<string, unknown> | null;
+    if (inviterRecord?.userId) {
       await createNotification({
-        userId: inviter.userId,
+        userId: inviterRecord.userId as string,
         type: 'match_invitation_declined',
         message: `${callerPlayer.name} declined your match invitation.`,
         sourceId: invitationId,

@@ -9,5 +9,7 @@ export interface MatchesRepository {
   listByStatus(status: string): Promise<Match[]>;
   listByTournament(tournamentId: string): Promise<Match[]>;
   listBySeason(seasonId: string): Promise<Match[]>;
+  create(input: Record<string, unknown>): Promise<Match>;
+  update(matchId: string, date: string, patch: Record<string, unknown>): Promise<Match>;
   delete(matchId: string, date: string): Promise<void>;
 }

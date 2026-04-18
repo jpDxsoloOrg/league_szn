@@ -3,26 +3,34 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Hoisted mocks ──────────────────────────────────────────────────
 
-const { mockQuery, mockPut, mockSend } = vi.hoisted(() => ({
-  mockQuery: vi.fn(), mockPut: vi.fn(), mockSend: vi.fn(),
+const { mockSend, mockPlayersFindByUserId, mockPlayersCreate, mockPlayersUpdate } = vi.hoisted(() => ({
+  mockSend: vi.fn(),
+  mockPlayersFindByUserId: vi.fn(),
+  mockPlayersCreate: vi.fn(),
+  mockPlayersUpdate: vi.fn(),
 }));
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: { query: mockQuery, put: mockPut },
-  TableNames: { PLAYERS: 'Players' },
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    players: {
+      findByUserId: mockPlayersFindByUserId,
+      create: mockPlayersCreate,
+      update: mockPlayersUpdate,
+    },
+  }),
 }));
 
 vi.mock('uuid', () => ({ v4: () => 'test-uuid-1234' }));
 
 vi.mock('@aws-sdk/client-cognito-identity-provider', () => ({
   CognitoIdentityProviderClient: vi.fn(() => ({ send: mockSend })),
-  ListUsersCommand: vi.fn((p: any) => ({ _type: 'ListUsers', ...p })),
-  AdminListGroupsForUserCommand: vi.fn((p: any) => ({ _type: 'AdminListGroups', ...p })),
-  AdminEnableUserCommand: vi.fn((p: any) => ({ _type: 'AdminEnable', ...p })),
-  AdminDisableUserCommand: vi.fn((p: any) => ({ _type: 'AdminDisable', ...p })),
-  AdminAddUserToGroupCommand: vi.fn((p: any) => ({ _type: 'AdminAddGroup', ...p })),
-  AdminRemoveUserFromGroupCommand: vi.fn((p: any) => ({ _type: 'AdminRemoveGroup', ...p })),
-  AdminGetUserCommand: vi.fn((p: any) => ({ _type: 'AdminGetUser', ...p })),
+  ListUsersCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'ListUsers', ...p })),
+  AdminListGroupsForUserCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'AdminListGroups', ...p })),
+  AdminEnableUserCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'AdminEnable', ...p })),
+  AdminDisableUserCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'AdminDisable', ...p })),
+  AdminAddUserToGroupCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'AdminAddGroup', ...p })),
+  AdminRemoveUserFromGroupCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'AdminRemoveGroup', ...p })),
+  AdminGetUserCommand: vi.fn((p: Record<string, unknown>) => ({ _type: 'AdminGetUser', ...p })),
 }));
 
 import { handler as listUsers } from '../listUsers';
@@ -40,7 +48,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     isBase64Encoded: false, path: '/', pathParameters: null,
     queryStringParameters: null, multiValueQueryStringParameters: null,
     stageVariables: null, resource: '',
-    requestContext: { authorizer: {} } as any, ...overrides,
+    requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'], ...overrides,
   };
 }
 
@@ -50,11 +58,11 @@ function withAuth(event: APIGatewayProxyEvent, groups: string, sub = 'admin-sub'
     requestContext: {
       ...event.requestContext,
       authorizer: { groups, username: 'adminuser', email: 'admin@test.com', principalId: sub },
-    } as any,
+    } as unknown as APIGatewayProxyEvent['requestContext'],
   };
 }
 
-const body = (r: any) => JSON.parse(r!.body);
+const body = (r: unknown) => JSON.parse((r as { body: string })!.body);
 
 // ─── listUsers ──────────────────────────────────────────────────────
 
@@ -119,7 +127,7 @@ describe('listUsers', () => {
 describe('toggleUserEnabled', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  const ev = (b: any, groups = 'Admin') =>
+  const ev = (b: Record<string, unknown> | null, groups = 'Admin') =>
     withAuth(makeEvent({ body: b ? JSON.stringify(b) : null }), groups);
 
   it('returns 403 if caller is not Admin', async () => {
@@ -170,7 +178,7 @@ describe('toggleUserEnabled', () => {
 describe('updateUserRole', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  const ev = (b: any, groups = 'Admin') =>
+  const ev = (b: Record<string, unknown> | null, groups = 'Admin') =>
     withAuth(makeEvent({ body: b ? JSON.stringify(b) : null }), groups);
 
   it('returns 403 if caller is not Admin', async () => {
@@ -203,7 +211,6 @@ describe('updateUserRole', () => {
   });
 
   it('returns 403 when Moderator tries to manage Admin role (fails requireRole check)', async () => {
-    // Moderator lacks Admin role, so requireRole('Admin') rejects before reaching isSuperAdmin check
     const result = await updateUserRole(ev({ username: 'u', role: 'Admin', action: 'promote' }, 'Moderator'), ctx, cb);
     expect(result!.statusCode).toBe(403);
     expect(body(result).message).toBe('You do not have permission to perform this action');
@@ -242,18 +249,24 @@ describe('updateUserRole', () => {
         ],
       })
       .mockResolvedValueOnce({ Groups: [{ GroupName: 'Wrestler' }, { GroupName: 'Fantasy' }] });
-    mockQuery.mockResolvedValueOnce({ Items: [] });
-    mockPut.mockResolvedValueOnce({});
+    mockPlayersFindByUserId.mockResolvedValueOnce(null);
+    mockPlayersCreate.mockResolvedValueOnce({
+      playerId: 'test-uuid-1234',
+      name: '',
+      currentWrestler: 'Stone Cold',
+      wins: 0,
+      losses: 0,
+      draws: 0,
+    });
+    mockPlayersUpdate.mockResolvedValueOnce({});
 
     const result = await updateUserRole(ev({ username: 'steve', role: 'Wrestler', action: 'promote' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
-    expect(mockPut).toHaveBeenCalledWith(expect.objectContaining({
-      TableName: 'Players',
-      Item: expect.objectContaining({
-        playerId: 'test-uuid-1234', userId: 'user-cognito-sub',
-        currentWrestler: 'Stone Cold', wins: 0, losses: 0, draws: 0,
-      }),
+    expect(mockPlayersCreate).toHaveBeenCalledWith(expect.objectContaining({
+      name: '',
+      currentWrestler: 'Stone Cold',
     }));
+    expect(mockPlayersUpdate).toHaveBeenCalledWith('test-uuid-1234', { userId: 'user-cognito-sub' });
   });
 
   it('promotes to Wrestler but skips Player creation if player exists', async () => {
@@ -262,11 +275,11 @@ describe('updateUserRole', () => {
       .mockResolvedValueOnce({}) // Fantasy group
       .mockResolvedValueOnce({ UserAttributes: [{ Name: 'sub', Value: 'existing-sub' }] })
       .mockResolvedValueOnce({ Groups: [{ GroupName: 'Wrestler' }] });
-    mockQuery.mockResolvedValueOnce({ Items: [{ playerId: 'existing-player' }] });
+    mockPlayersFindByUserId.mockResolvedValueOnce({ playerId: 'existing-player' });
 
     const result = await updateUserRole(ev({ username: 'steve', role: 'Wrestler', action: 'promote' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
-    expect(mockPut).not.toHaveBeenCalled();
+    expect(mockPlayersCreate).not.toHaveBeenCalled();
   });
 
   it('promotes to Wrestler: player creation failure is non-blocking', async () => {

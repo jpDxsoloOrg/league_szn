@@ -1,32 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
-// ---- Mocks ----------------------------------------------------------------
-
-const { mockScan } = vi.hoisted(() => ({
-  mockScan: vi.fn(),
-}));
-
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: vi.fn(),
-    put: vi.fn(),
-    scan: vi.fn(),
-    query: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    scanAll: mockScan,
-    queryAll: vi.fn(),
-  },
-  TableNames: {
-    MATCHES: 'Matches',
-  },
-}));
+import { buildInMemoryRepositories } from '../../../lib/repositories/inMemory';
+import {
+  setRepositoriesForTesting,
+  resetRepositoriesForTesting,
+  type Repositories,
+} from '../../../lib/repositories';
 
 import { handler as getMatches } from '../getMatches';
 
 // ---- Helpers ---------------------------------------------------------------
 
+let repos: Repositories;
 const ctx = {} as Context;
 const cb: Callback = () => {};
 
@@ -43,23 +29,33 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '',
-    requestContext: { authorizer: {} } as any,
+    requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
 
+beforeEach(() => {
+  vi.clearAllMocks();
+  resetRepositoriesForTesting();
+  repos = buildInMemoryRepositories();
+  setRepositoriesForTesting(repos);
+});
+
 // ---- Tests -----------------------------------------------------------------
 
 describe('getMatches', () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it('returns all matches sorted by date descending', async () => {
-    mockScan.mockResolvedValue({
-      Items: [
-        { matchId: 'm1', date: '2024-01-01T00:00:00Z', status: 'completed' },
-        { matchId: 'm3', date: '2024-03-01T00:00:00Z', status: 'scheduled' },
-        { matchId: 'm2', date: '2024-02-01T00:00:00Z', status: 'completed' },
-      ],
+    await repos.matches.create({
+      matchId: 'm1', date: '2024-01-01T00:00:00Z', status: 'completed',
+      participants: [], createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm3', date: '2024-03-01T00:00:00Z', status: 'scheduled',
+      participants: [], createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-02-01T00:00:00Z', status: 'completed',
+      participants: [], createdAt: new Date().toISOString(),
     });
 
     const result = await getMatches(makeEvent(), ctx, cb);
@@ -67,15 +63,12 @@ describe('getMatches', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body).toHaveLength(3);
-    // Most recent first
     expect(body[0].matchId).toBe('m3');
     expect(body[1].matchId).toBe('m2');
     expect(body[2].matchId).toBe('m1');
   });
 
   it('returns empty array when no matches exist', async () => {
-    mockScan.mockResolvedValue({ Items: undefined });
-
     const result = await getMatches(makeEvent(), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
@@ -83,8 +76,13 @@ describe('getMatches', () => {
   });
 
   it('filters by status query parameter', async () => {
-    mockScan.mockResolvedValue({
-      Items: [{ matchId: 'm1', date: '2024-01-01T00:00:00Z', status: 'scheduled' }],
+    await repos.matches.create({
+      matchId: 'm1', date: '2024-01-01T00:00:00Z', status: 'scheduled',
+      participants: [], createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-01-02T00:00:00Z', status: 'completed',
+      participants: [], createdAt: new Date().toISOString(),
     });
 
     const event = makeEvent({
@@ -94,51 +92,57 @@ describe('getMatches', () => {
     const result = await getMatches(event, ctx, cb);
 
     expect(result!.statusCode).toBe(200);
-    // Verify scan was called with filter expression
-    expect(mockScan).toHaveBeenCalledWith(
-      expect.objectContaining({
-        FilterExpression: '#status = :status',
-        ExpressionAttributeNames: { '#status': 'status' },
-        ExpressionAttributeValues: { ':status': 'scheduled' },
-      }),
-    );
+    const body = JSON.parse(result!.body);
+    expect(body).toHaveLength(1);
+    expect(body[0].matchId).toBe('m1');
   });
 
-  it('does not add filter when no status parameter provided', async () => {
-    mockScan.mockResolvedValue({ Items: [] });
+  it('returns all matches when no status parameter provided', async () => {
+    await repos.matches.create({
+      matchId: 'm1', date: '2024-01-01T00:00:00Z', status: 'completed',
+      participants: [], createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-01-02T00:00:00Z', status: 'scheduled',
+      participants: [], createdAt: new Date().toISOString(),
+    });
 
-    await getMatches(makeEvent(), ctx, cb);
+    const result = await getMatches(makeEvent(), ctx, cb);
 
-    const callArgs = mockScan.mock.calls[0][0];
-    expect(callArgs.FilterExpression).toBeUndefined();
-    expect(callArgs.ExpressionAttributeNames).toBeUndefined();
-    expect(callArgs.ExpressionAttributeValues).toBeUndefined();
+    const body = JSON.parse(result!.body);
+    expect(body).toHaveLength(2);
   });
 
   it('filters by playerId using contains on participants', async () => {
-    mockScan.mockResolvedValue({ Items: [] });
+    await repos.matches.create({
+      matchId: 'm1', date: '2024-01-01T00:00:00Z', status: 'completed',
+      participants: ['p1', 'p2'], createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-01-02T00:00:00Z', status: 'completed',
+      participants: ['p3', 'p4'], createdAt: new Date().toISOString(),
+    });
 
     const event = makeEvent({
       queryStringParameters: { playerId: 'p1' },
     });
 
-    await getMatches(event, ctx, cb);
+    const result = await getMatches(event, ctx, cb);
 
-    expect(mockScan).toHaveBeenCalledWith(
-      expect.objectContaining({
-        FilterExpression: 'contains(#participants, :playerId)',
-        ExpressionAttributeNames: expect.objectContaining({ '#participants': 'participants' }),
-        ExpressionAttributeValues: expect.objectContaining({ ':playerId': 'p1' }),
-      }),
-    );
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body).toHaveLength(1);
+    expect(body[0].matchId).toBe('m1');
   });
 
   it('filters by matchType in-memory with normalized aliases', async () => {
-    mockScan.mockResolvedValue({
-      Items: [
-        { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'singles' },
-        { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'Tag Team' },
-      ],
+    await repos.matches.create({
+      matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'singles',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'Tag Team',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
 
     const event = makeEvent({
@@ -147,22 +151,23 @@ describe('getMatches', () => {
 
     const result = await getMatches(event, ctx, cb);
     expect(result!.statusCode).toBe(200);
-    expect(JSON.parse(result!.body)).toEqual([
-      { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'singles' },
-    ]);
-
-    const callArgs = mockScan.mock.calls[0][0];
-    const filterExpr = callArgs.FilterExpression as string | undefined;
-    expect(filterExpr ?? '').not.toContain('#matchFormat');
+    const body = JSON.parse(result!.body);
+    expect(body).toHaveLength(1);
+    expect(body[0].matchFormat).toBe('singles');
   });
 
   it('matches legacy tag values when filtering by Tag Team', async () => {
-    mockScan.mockResolvedValue({
-      Items: [
-        { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tag' },
-        { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'tag team' },
-        { matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'Singles' },
-      ],
+    await repos.matches.create({
+      matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tag',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'tag team',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'Singles',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
 
     const event = makeEvent({
@@ -171,20 +176,29 @@ describe('getMatches', () => {
 
     const result = await getMatches(event, ctx, cb);
     expect(result!.statusCode).toBe(200);
-    expect(JSON.parse(result!.body)).toEqual([
-      { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'tag team' },
-      { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tag' },
-    ]);
+    const body = JSON.parse(result!.body);
+    expect(body).toHaveLength(2);
+    // Should include both tag variants, sorted by date desc
+    expect(body[0].matchFormat).toBe('tag team');
+    expect(body[1].matchFormat).toBe('tag');
   });
 
   it('matches tag aliases when query uses tag-team format', async () => {
-    mockScan.mockResolvedValue({
-      Items: [
-        { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tag' },
-        { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'Tag Team' },
-        { matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'tag-team' },
-        { matchId: 'm4', date: '2024-01-04T00:00:00Z', matchFormat: 'Singles' },
-      ],
+    await repos.matches.create({
+      matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tag',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'Tag Team',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'tag-team',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm4', date: '2024-01-04T00:00:00Z', matchFormat: 'Singles',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
 
     const event = makeEvent({
@@ -193,21 +207,30 @@ describe('getMatches', () => {
 
     const result = await getMatches(event, ctx, cb);
     expect(result!.statusCode).toBe(200);
-    expect(JSON.parse(result!.body)).toEqual([
-      { matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'tag-team' },
-      { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'Tag Team' },
-      { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tag' },
-    ]);
+    const body = JSON.parse(result!.body);
+    expect(body).toHaveLength(3);
+    // All tag variants included, sorted by date desc
+    expect(body[0].matchFormat).toBe('tag-team');
+    expect(body[1].matchFormat).toBe('Tag Team');
+    expect(body[2].matchFormat).toBe('tag');
   });
 
   it('matches tag aliases when query uses tagteam format', async () => {
-    mockScan.mockResolvedValue({
-      Items: [
-        { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tagteam' },
-        { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'tag-team' },
-        { matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'tag team' },
-        { matchId: 'm4', date: '2024-01-04T00:00:00Z', matchFormat: 'Singles' },
-      ],
+    await repos.matches.create({
+      matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tagteam',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'tag-team',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'tag team',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm4', date: '2024-01-04T00:00:00Z', matchFormat: 'Singles',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
 
     const event = makeEvent({
@@ -216,20 +239,22 @@ describe('getMatches', () => {
 
     const result = await getMatches(event, ctx, cb);
     expect(result!.statusCode).toBe(200);
-    expect(JSON.parse(result!.body)).toEqual([
-      { matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'tag team' },
-      { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'tag-team' },
-      { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tagteam' },
-    ]);
+    const body = JSON.parse(result!.body);
+    expect(body).toHaveLength(3);
+    expect(body[0].matchFormat).toBe('tag team');
+    expect(body[1].matchFormat).toBe('tag-team');
+    expect(body[2].matchFormat).toBe('tagteam');
   });
 
   it('filters using legacy matchType field when matchFormat is missing', async () => {
-    mockScan.mockResolvedValue({
-      Items: [
-        { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchType: 'singles' },
-        { matchId: 'm2', date: '2024-01-02T00:00:00Z', matchType: 'tag' },
-      ],
-    });
+    await repos.matches.create({
+      matchId: 'm1', date: '2024-01-01T00:00:00Z', matchType: 'singles',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    } as Record<string, unknown>);
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-01-02T00:00:00Z', matchType: 'tag',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    } as Record<string, unknown>);
 
     const event = makeEvent({
       queryStringParameters: { matchType: 'Singles' },
@@ -237,103 +262,141 @@ describe('getMatches', () => {
 
     const result = await getMatches(event, ctx, cb);
     expect(result!.statusCode).toBe(200);
-    expect(JSON.parse(result!.body)).toEqual([
-      { matchId: 'm1', date: '2024-01-01T00:00:00Z', matchType: 'singles' },
-    ]);
+    const body = JSON.parse(result!.body);
+    expect(body).toHaveLength(1);
+    expect(body[0].matchType).toBe('singles');
   });
 
   it('filters by stipulationId', async () => {
-    mockScan.mockResolvedValue({ Items: [] });
+    await repos.matches.create({
+      matchId: 'm1', date: '2024-01-01T00:00:00Z', stipulationId: 'stip1',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-01-02T00:00:00Z', stipulationId: 'stip2',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
 
     const event = makeEvent({
       queryStringParameters: { stipulationId: 'stip1' },
     });
 
-    await getMatches(event, ctx, cb);
-
-    expect(mockScan).toHaveBeenCalledWith(
-      expect.objectContaining({
-        FilterExpression: '#stipulationId = :stipulationId',
-        ExpressionAttributeNames: expect.objectContaining({ '#stipulationId': 'stipulationId' }),
-        ExpressionAttributeValues: expect.objectContaining({ ':stipulationId': 'stip1' }),
-      }),
-    );
+    const result = await getMatches(event, ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body).toHaveLength(1);
+    expect(body[0].matchId).toBe('m1');
   });
 
   it('filters by championshipId', async () => {
-    mockScan.mockResolvedValue({ Items: [] });
+    await repos.matches.create({
+      matchId: 'm1', date: '2024-01-01T00:00:00Z', championshipId: 'champ1',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-01-02T00:00:00Z', championshipId: 'champ2',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
 
     const event = makeEvent({
       queryStringParameters: { championshipId: 'champ1' },
     });
 
-    await getMatches(event, ctx, cb);
-
-    expect(mockScan).toHaveBeenCalledWith(
-      expect.objectContaining({
-        FilterExpression: '#championshipId = :championshipId',
-        ExpressionAttributeNames: expect.objectContaining({ '#championshipId': 'championshipId' }),
-        ExpressionAttributeValues: expect.objectContaining({ ':championshipId': 'champ1' }),
-      }),
-    );
+    const result = await getMatches(event, ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body).toHaveLength(1);
+    expect(body[0].matchId).toBe('m1');
   });
 
   it('filters by seasonId', async () => {
-    mockScan.mockResolvedValue({ Items: [] });
+    await repos.matches.create({
+      matchId: 'm1', date: '2024-01-01T00:00:00Z', seasonId: 's1',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-01-02T00:00:00Z', seasonId: 's2',
+      participants: [], status: 'completed', createdAt: new Date().toISOString(),
+    });
 
     const event = makeEvent({
       queryStringParameters: { seasonId: 's1' },
     });
 
-    await getMatches(event, ctx, cb);
-
-    expect(mockScan).toHaveBeenCalledWith(
-      expect.objectContaining({
-        FilterExpression: '#seasonId = :seasonId',
-        ExpressionAttributeNames: expect.objectContaining({ '#seasonId': 'seasonId' }),
-        ExpressionAttributeValues: expect.objectContaining({ ':seasonId': 's1' }),
-      }),
-    );
+    const result = await getMatches(event, ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body).toHaveLength(1);
+    expect(body[0].matchId).toBe('m1');
   });
 
   it('filters by dateFrom', async () => {
-    mockScan.mockResolvedValue({ Items: [] });
+    await repos.matches.create({
+      matchId: 'm1', date: '2023-12-31', participants: [],
+      status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-01-01', participants: [],
+      status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm3', date: '2024-06-01', participants: [],
+      status: 'completed', createdAt: new Date().toISOString(),
+    });
 
     const event = makeEvent({
       queryStringParameters: { dateFrom: '2024-01-01' },
     });
 
-    await getMatches(event, ctx, cb);
-
-    expect(mockScan).toHaveBeenCalledWith(
-      expect.objectContaining({
-        FilterExpression: '#date >= :dateFrom',
-        ExpressionAttributeNames: expect.objectContaining({ '#date': 'date' }),
-        ExpressionAttributeValues: expect.objectContaining({ ':dateFrom': '2024-01-01' }),
-      }),
-    );
+    const result = await getMatches(event, ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body).toHaveLength(2);
+    // Should include m2 and m3 (dates >= 2024-01-01)
+    expect(body.map((m: { matchId: string }) => m.matchId).sort()).toEqual(['m2', 'm3']);
   });
 
   it('filters by dateTo', async () => {
-    mockScan.mockResolvedValue({ Items: [] });
+    await repos.matches.create({
+      matchId: 'm1', date: '2024-06-01', participants: [],
+      status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-12-31', participants: [],
+      status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm3', date: '2025-01-01', participants: [],
+      status: 'completed', createdAt: new Date().toISOString(),
+    });
 
     const event = makeEvent({
       queryStringParameters: { dateTo: '2024-12-31' },
     });
 
-    await getMatches(event, ctx, cb);
-
-    expect(mockScan).toHaveBeenCalledWith(
-      expect.objectContaining({
-        FilterExpression: '#date <= :dateTo',
-        ExpressionAttributeNames: expect.objectContaining({ '#date': 'date' }),
-        ExpressionAttributeValues: expect.objectContaining({ ':dateTo': '2024-12-31' }),
-      }),
-    );
+    const result = await getMatches(event, ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body).toHaveLength(2);
+    expect(body.map((m: { matchId: string }) => m.matchId).sort()).toEqual(['m1', 'm2']);
   });
 
   it('combines multiple filters with AND logic', async () => {
-    mockScan.mockResolvedValue({ Items: [] });
+    await repos.matches.create({
+      matchId: 'm1', date: '2024-01-01T00:00:00Z', status: 'completed',
+      participants: ['p1'], seasonId: 's1', matchFormat: 'singles',
+      createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-01-02T00:00:00Z', status: 'completed',
+      participants: ['p2'], seasonId: 's1', matchFormat: 'tag',
+      createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm3', date: '2024-01-03T00:00:00Z', status: 'scheduled',
+      participants: ['p1'], seasonId: 's1', matchFormat: 'singles',
+      createdAt: new Date().toISOString(),
+    });
 
     const event = makeEvent({
       queryStringParameters: {
@@ -344,18 +407,27 @@ describe('getMatches', () => {
       },
     });
 
-    await getMatches(event, ctx, cb);
-
-    const callArgs = mockScan.mock.calls[0][0];
-    const filterExpr = callArgs.FilterExpression as string;
-    expect(filterExpr).toContain('#status = :status');
-    expect(filterExpr).toContain('contains(#participants, :playerId)');
-    expect(filterExpr).toContain('#seasonId = :seasonId');
-    expect(filterExpr.split(' AND ')).toHaveLength(3);
+    const result = await getMatches(event, ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    // Only m1 matches all criteria
+    expect(body).toHaveLength(1);
+    expect(body[0].matchId).toBe('m1');
   });
 
-  it('combines dateFrom and dateTo into a single expression', async () => {
-    mockScan.mockResolvedValue({ Items: [] });
+  it('combines dateFrom and dateTo into a range filter', async () => {
+    await repos.matches.create({
+      matchId: 'm1', date: '2023-12-31', participants: [],
+      status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm2', date: '2024-06-15', participants: [],
+      status: 'completed', createdAt: new Date().toISOString(),
+    });
+    await repos.matches.create({
+      matchId: 'm3', date: '2025-01-01', participants: [],
+      status: 'completed', createdAt: new Date().toISOString(),
+    });
 
     const event = makeEvent({
       queryStringParameters: {
@@ -364,16 +436,17 @@ describe('getMatches', () => {
       },
     });
 
-    await getMatches(event, ctx, cb);
-
-    const callArgs = mockScan.mock.calls[0][0];
-    const filterExpr = callArgs.FilterExpression as string;
-    expect(filterExpr).toContain('#date >= :dateFrom');
-    expect(filterExpr).toContain('#date <= :dateTo');
-    expect(filterExpr.split(' AND ')).toHaveLength(2);
+    const result = await getMatches(event, ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body).toHaveLength(1);
+    expect(body[0].matchId).toBe('m2');
   });
-  it('returns 500 when scan throws', async () => {
-    mockScan.mockRejectedValue(new Error('DynamoDB failure'));
+
+  it('returns 500 when list throws', async () => {
+    vi.spyOn(repos.matches, 'list').mockRejectedValue(new Error('DB failure'));
+    vi.spyOn(repos.matches, 'listByStatus').mockRejectedValue(new Error('DB failure'));
+    vi.spyOn(repos.matches, 'listBySeason').mockRejectedValue(new Error('DB failure'));
 
     const result = await getMatches(makeEvent(), ctx, cb);
 

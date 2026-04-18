@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { getRepositories } from '../../lib/repositories';
 import { noContent, badRequest, serverError, conflict } from '../../lib/response';
 
@@ -10,24 +9,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Company ID is required');
     }
 
-    const { companies, shows } = getRepositories();
+    const { companies, shows, players } = getRepositories();
     const company = await companies.findById(companyId);
     if (!company) {
       return badRequest('Company not found');
     }
 
     // Check if any players are assigned to this company
-    // Note: Players repo not yet migrated (Wave 4), using dynamoDb directly
-    const playersResult = await dynamoDb.scan({
-      TableName: TableNames.PLAYERS,
-      FilterExpression: '#companyId = :companyId',
-      ExpressionAttributeNames: { '#companyId': 'companyId' },
-      ExpressionAttributeValues: { ':companyId': companyId },
-    });
+    const allPlayers = await players.list();
+    const assignedPlayers = allPlayers.filter((p) => p.companyId === companyId);
 
-    if (playersResult.Items && playersResult.Items.length > 0) {
+    if (assignedPlayers.length > 0) {
       return conflict(
-        `Cannot delete company. ${playersResult.Items.length} player(s) are still assigned to this company.`
+        `Cannot delete company. ${assignedPlayers.length} player(s) are still assigned to this company.`
       );
     }
 

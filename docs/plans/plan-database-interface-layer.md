@@ -20,7 +20,7 @@
 | 7b — `recordResult.ts` migration (step 26–27) | ✅ Done | — |
 | 8 — Admin and seed scripts | ✅ Done | — |
 | 9 — Clean up (partial: remove `handlerFactory` alias, update CLAUDE.md) | ✅ Done | — |
-| 9b — Migrate remaining ~46 handler files from direct `dynamoDb` imports | ⏳ | — |
+| 9b — Migrate remaining handler files + delete `dynamodbUtils.ts` | ✅ Done | — |
 
 **Baseline after Wave 2**: 953 tests passing, 17 pre-existing failures (unrelated
 mock-shape drift, tracked separately in `TO-DOS.md`). Typecheck and lint clean.
@@ -106,10 +106,20 @@ domains with existing repos but their individual CRUD handlers weren't
 migrated during Waves 3–4. `dynamodbUtils.ts` still has 3 remaining
 importers. Full cleanup deferred to Wave 9b.
 
-**Where to resume**: Wave 9b — Migrate the remaining ~46 handlers across
-15 domains (matchmaking 10, stables 6, matches 5, championships 5,
-players 4, tournaments 3, overalls 3, etc.) to use repository methods.
-Then delete `dynamodbUtils.ts` and shrink `dynamodb.ts`.
+**After Wave 9b**: 953 tests passing, 0 failures. Typecheck and lint clean.
+All 46 remaining handler files migrated to use repository methods. New
+MatchmakingRepository created (presence, queue, invitations). Write methods
+added to MatchesRepository (create, update) and TournamentsRepository
+(create). Delete methods added to SeasonStandingsRepository (delete,
+deleteAllForSeason, listByPlayer) and StablesRepository (deleteInvitation,
+deleteInvitationsByStable). `dynamodbUtils.ts` deleted — zero references
+remain. Zero files under `backend/functions/` import from
+`backend/lib/dynamodb.ts`. Only `scripts/notify-pending-invites.ts` retains
+a direct import (standalone notification script, out of scope).
+
+**The migration is functionally complete.** All success criteria from the
+plan are met except for shrinking `dynamodb.ts` to an internal-only module
+(it's still importable but no handler imports it).
 
 ## Context
 

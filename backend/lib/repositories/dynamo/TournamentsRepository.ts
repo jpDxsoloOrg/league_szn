@@ -17,6 +17,14 @@ export class DynamoTournamentsRepository implements TournamentsRepository {
     return await dynamoDb.scanAll({ TableName: TableNames.TOURNAMENTS }) as unknown as Tournament[];
   }
 
+  async create(input: Record<string, unknown>): Promise<Tournament> {
+    await dynamoDb.put({
+      TableName: TableNames.TOURNAMENTS,
+      Item: input,
+    });
+    return input as unknown as Tournament;
+  }
+
   async update(tournamentId: string, patch: Partial<Tournament>): Promise<Tournament> {
     const { UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues } =
       buildUpdateExpression(patch, new Date().toISOString());

@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { getRepositories } from '../../lib/repositories';
 import { success, notFound, serverError } from '../../lib/response';
 
@@ -66,21 +65,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const seasonId = event.queryStringParameters?.seasonId;
 
+    const { players, matches } = getRepositories();
+
     // Verify player exists
-    const player = await getRepositories().players.findById(playerId);
+    const player = await players.findById(playerId);
 
     if (!player) {
       return notFound('Player not found');
     }
 
     // Get all completed matches
-    // Note: Matches repo not yet migrated
-    const allMatches = await dynamoDb.scanAll({
-      TableName: TableNames.MATCHES,
-      FilterExpression: '#status = :completed',
-      ExpressionAttributeNames: { '#status': 'status' },
-      ExpressionAttributeValues: { ':completed': 'completed' },
-    }) as unknown as MatchRecord[];
+    const allMatches = await matches.listCompleted() as unknown as MatchRecord[];
 
     // Filter to player's matches and optionally by season
     let playerMatches = allMatches.filter((m) => m.participants.includes(playerId));
@@ -101,8 +96,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Compute per-type stats
     const byMatchType: Record<string, ReturnType<typeof computeStatsForType>> = {};
-    for (const [matchType, matches] of Object.entries(matchesByType)) {
-      byMatchType[matchType] = computeStatsForType(matches, playerId);
+    for (const [matchType, typeMatches] of Object.entries(matchesByType)) {
+      byMatchType[matchType] = computeStatsForType(typeMatches, playerId);
     }
 
     return success({

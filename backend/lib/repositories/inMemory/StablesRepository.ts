@@ -125,4 +125,16 @@ export class InMemoryStablesRepository implements StablesRepository {
     this.invitations.set(invitationId, updated);
     return updated;
   }
+
+  async deleteInvitation(invitationId: string): Promise<void> {
+    this.invitations.delete(invitationId);
+  }
+
+  async deleteInvitationsByStable(stableId: string): Promise<void> {
+    for (const [id, inv] of this.invitations) {
+      if (inv.stableId === stableId) {
+        this.invitations.delete(id);
+      }
+    }
+  }
 }

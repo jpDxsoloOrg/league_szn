@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole, isSuperAdmin } from '../../lib/auth';
@@ -55,46 +54,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Player is not a member of this stable');
     }
 
-    const now = new Date().toISOString();
     const updatedMemberIds = stable.memberIds.filter((id) => id !== playerId);
 
     // Clear the player's stableId
-    // Note: using dynamoDb directly for REMOVE expression on player records (Wave 7)
-    await dynamoDb.update({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId },
-      UpdateExpression: 'REMOVE #stableId SET #updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#stableId': 'stableId',
-        '#updatedAt': 'updatedAt',
-      },
-      ExpressionAttributeValues: {
-        ':updatedAt': now,
-      },
-    });
+    await playersRepo.update(playerId, { stableId: null });
 
     // If only 1 member left (the leader), auto-disband
     if (updatedMemberIds.length <= 1) {
       await stablesRepo.update(stableId, {
         memberIds: updatedMemberIds,
         status: 'disbanded',
-        disbandedAt: now,
+        disbandedAt: new Date().toISOString(),
       });
 
       // Clear the leader's stableId too
       if (updatedMemberIds.length === 1) {
-        await dynamoDb.update({
-          TableName: TableNames.PLAYERS,
-          Key: { playerId: stable.leaderId },
-          UpdateExpression: 'REMOVE #stableId SET #updatedAt = :updatedAt',
-          ExpressionAttributeNames: {
-            '#stableId': 'stableId',
-            '#updatedAt': 'updatedAt',
-          },
-          ExpressionAttributeValues: {
-            ':updatedAt': now,
-          },
-        });
+        await playersRepo.update(stable.leaderId, { stableId: null });
       }
 
       return success({

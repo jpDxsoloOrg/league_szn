@@ -48,4 +48,27 @@ export class DynamoSeasonStandingsRepository implements SeasonStandingsRepositor
       ExpressionAttributeValues: values,
     });
   }
+
+  async listByPlayer(playerId: string): Promise<SeasonStanding[]> {
+    return await dynamoDb.queryAll({
+      TableName: TableNames.SEASON_STANDINGS,
+      IndexName: 'PlayerIndex',
+      KeyConditionExpression: 'playerId = :pid',
+      ExpressionAttributeValues: { ':pid': playerId },
+    }) as unknown as SeasonStanding[];
+  }
+
+  async delete(seasonId: string, playerId: string): Promise<void> {
+    await dynamoDb.delete({
+      TableName: TableNames.SEASON_STANDINGS,
+      Key: { seasonId, playerId },
+    });
+  }
+
+  async deleteAllForSeason(seasonId: string): Promise<void> {
+    const standings = await this.listBySeason(seasonId);
+    for (const standing of standings) {
+      await this.delete(seasonId, standing.playerId);
+    }
+  }
 }

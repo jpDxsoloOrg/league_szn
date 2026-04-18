@@ -184,4 +184,18 @@ export class DynamoStablesRepository implements StablesRepository {
       });
     return result.Attributes as StableInvitation;
   }
+
+  async deleteInvitation(invitationId: string): Promise<void> {
+    await dynamoDb.delete({
+      TableName: TableNames.STABLE_INVITATIONS,
+      Key: { invitationId },
+    });
+  }
+
+  async deleteInvitationsByStable(stableId: string): Promise<void> {
+    const invitations = await this.listInvitationsByStable(stableId);
+    for (const inv of invitations) {
+      await this.deleteInvitation(inv.invitationId);
+    }
+  }
 }

@@ -34,6 +34,20 @@ export class InMemoryMatchesRepository implements MatchesRepository {
     return { ...match, date: match.date };
   }
 
+  async create(input: Record<string, unknown>): Promise<Match> {
+    const match = input as unknown as Match;
+    this.store.set(match.matchId, match);
+    return match;
+  }
+
+  async update(matchId: string, _date: string, patch: Record<string, unknown>): Promise<Match> {
+    const existing = this.store.get(matchId);
+    if (!existing) throw new Error(`Match ${matchId} not found`);
+    const updated: Match = { ...existing, ...patch, updatedAt: new Date().toISOString() } as Match;
+    this.store.set(matchId, updated);
+    return updated;
+  }
+
   async delete(matchId: string, _date: string): Promise<void> {
     this.store.delete(matchId);
   }

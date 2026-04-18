@@ -13,6 +13,12 @@ export class InMemoryTournamentsRepository implements TournamentsRepository {
     return Array.from(this.store.values());
   }
 
+  async create(input: Record<string, unknown>): Promise<Tournament> {
+    const tournament = input as unknown as Tournament;
+    this.store.set(tournament.tournamentId, tournament);
+    return tournament;
+  }
+
   async update(tournamentId: string, patch: Partial<Tournament>): Promise<Tournament> {
     const existing = this.store.get(tournamentId);
     if (!existing) throw new NotFoundError('Tournament', tournamentId);

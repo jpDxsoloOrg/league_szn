@@ -3,33 +3,24 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockGet, mockPut, mockScan, mockQuery, mockUpdate, mockDelete, mockScanAll, mockQueryAll } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockPut: vi.fn(),
-  mockScan: vi.fn(),
-  mockQuery: vi.fn(),
-  mockUpdate: vi.fn(),
-  mockDelete: vi.fn(),
-  mockScanAll: vi.fn(),
-  mockQueryAll: vi.fn(),
-}));
+const mockSeasonsFindById = vi.fn();
+const mockSeasonsDelete = vi.fn();
+const mockStandingsDeleteAllForSeason = vi.fn();
+const mockAwardsDeleteAllForSeason = vi.fn();
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet,
-    put: mockPut,
-    scan: mockScan,
-    query: mockQuery,
-    update: mockUpdate,
-    delete: mockDelete,
-    scanAll: mockScanAll,
-    queryAll: mockQueryAll,
-  },
-  TableNames: {
-    SEASONS: 'Seasons',
-    SEASON_STANDINGS: 'SeasonStandings',
-    SEASON_AWARDS: 'SeasonAwards',
-  },
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    seasons: {
+      findById: mockSeasonsFindById,
+      delete: mockSeasonsDelete,
+    },
+    seasonAwards: {
+      deleteAllForSeason: mockAwardsDeleteAllForSeason,
+    },
+    seasonStandings: {
+      deleteAllForSeason: mockStandingsDeleteAllForSeason,
+    },
+  }),
 }));
 
 import { handler as deleteSeason } from '../deleteSeason';
@@ -52,7 +43,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '',
-    requestContext: { authorizer: {} } as any,
+    requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
@@ -63,66 +54,34 @@ describe('deleteSeason', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('deletes season and returns 204', async () => {
-    mockGet.mockResolvedValue({ Item: { seasonId: 's1', name: 'Season 1' } });
-    mockDelete.mockResolvedValue({});
-    // Two queries: standings + awards, both empty
-    mockQuery.mockResolvedValue({ Items: [] });
+    mockSeasonsFindById.mockResolvedValue({ seasonId: 's1', name: 'Season 1' });
+    mockSeasonsDelete.mockResolvedValue(undefined);
+    mockStandingsDeleteAllForSeason.mockResolvedValue(undefined);
+    mockAwardsDeleteAllForSeason.mockResolvedValue(undefined);
 
     const event = makeEvent({ pathParameters: { seasonId: 's1' } });
 
     const result = await deleteSeason(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
-    expect(mockDelete).toHaveBeenCalledTimes(1);
+    expect(mockSeasonsDelete).toHaveBeenCalledWith('s1');
+    expect(mockAwardsDeleteAllForSeason).toHaveBeenCalledWith('s1');
+    expect(mockStandingsDeleteAllForSeason).toHaveBeenCalledWith('s1');
   });
 
   it('cascades delete to all season standings and awards', async () => {
-    mockGet.mockResolvedValue({ Item: { seasonId: 's1' } });
-    mockDelete.mockResolvedValue({});
-    // First query: standings, second query: awards
-    mockQuery
-      .mockResolvedValueOnce({
-        Items: [
-          { seasonId: 's1', playerId: 'p1' },
-          { seasonId: 's1', playerId: 'p2' },
-          { seasonId: 's1', playerId: 'p3' },
-        ],
-      })
-      .mockResolvedValueOnce({
-        Items: [
-          { seasonId: 's1', awardId: 'a1' },
-        ],
-      });
+    mockSeasonsFindById.mockResolvedValue({ seasonId: 's1' });
+    mockSeasonsDelete.mockResolvedValue(undefined);
+    mockStandingsDeleteAllForSeason.mockResolvedValue(undefined);
+    mockAwardsDeleteAllForSeason.mockResolvedValue(undefined);
 
     const event = makeEvent({ pathParameters: { seasonId: 's1' } });
 
     const result = await deleteSeason(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
-    // 1 season delete + 3 standings deletes + 1 award delete = 5 total
-    expect(mockDelete).toHaveBeenCalledTimes(5);
-    // Verify standings deletes use correct composite key
-    expect(mockDelete).toHaveBeenCalledWith(
-      expect.objectContaining({
-        Key: { seasonId: 's1', playerId: 'p1' },
-      }),
-    );
-    expect(mockDelete).toHaveBeenCalledWith(
-      expect.objectContaining({
-        Key: { seasonId: 's1', playerId: 'p2' },
-      }),
-    );
-    expect(mockDelete).toHaveBeenCalledWith(
-      expect.objectContaining({
-        Key: { seasonId: 's1', playerId: 'p3' },
-      }),
-    );
-    // Verify award delete
-    expect(mockDelete).toHaveBeenCalledWith(
-      expect.objectContaining({
-        Key: { seasonId: 's1', awardId: 'a1' },
-      }),
-    );
+    expect(mockStandingsDeleteAllForSeason).toHaveBeenCalledWith('s1');
+    expect(mockAwardsDeleteAllForSeason).toHaveBeenCalledWith('s1');
   });
 
   it('returns 400 when seasonId is missing from path', async () => {
@@ -135,7 +94,7 @@ describe('deleteSeason', () => {
   });
 
   it('returns 404 when season does not exist', async () => {
-    mockGet.mockResolvedValue({ Item: undefined });
+    mockSeasonsFindById.mockResolvedValue(null);
 
     const event = makeEvent({ pathParameters: { seasonId: 'missing' } });
 
@@ -143,25 +102,25 @@ describe('deleteSeason', () => {
 
     expect(result!.statusCode).toBe(404);
     expect(JSON.parse(result!.body).message).toBe('Season not found');
-    expect(mockDelete).not.toHaveBeenCalled();
+    expect(mockSeasonsDelete).not.toHaveBeenCalled();
   });
 
-  it('handles standings and awards query returning undefined Items', async () => {
-    mockGet.mockResolvedValue({ Item: { seasonId: 's1' } });
-    mockDelete.mockResolvedValue({});
-    mockQuery.mockResolvedValue({ Items: undefined });
+  it('handles empty standings list gracefully', async () => {
+    mockSeasonsFindById.mockResolvedValue({ seasonId: 's1' });
+    mockSeasonsDelete.mockResolvedValue(undefined);
+    mockStandingsDeleteAllForSeason.mockResolvedValue(undefined);
+    mockAwardsDeleteAllForSeason.mockResolvedValue(undefined);
 
     const event = makeEvent({ pathParameters: { seasonId: 's1' } });
 
     const result = await deleteSeason(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
-    // Only the season itself is deleted
-    expect(mockDelete).toHaveBeenCalledTimes(1);
+    expect(mockStandingsDeleteAllForSeason).toHaveBeenCalledWith('s1');
   });
 
-  it('returns 500 when DynamoDB throws', async () => {
-    mockGet.mockRejectedValue(new Error('DynamoDB failure'));
+  it('returns 500 when repository throws', async () => {
+    mockSeasonsFindById.mockRejectedValue(new Error('DB failure'));
 
     const event = makeEvent({ pathParameters: { seasonId: 's1' } });
 

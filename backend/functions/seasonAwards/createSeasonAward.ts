@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { getRepositories } from '../../lib/repositories';
 import { parseBody } from '../../lib/parseBody';
 import { created, badRequest, notFound, serverError } from '../../lib/response';
@@ -28,19 +27,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Verify season exists
-    const { seasons, seasonAwards } = getRepositories();
+    const { seasons, seasonAwards, players } = getRepositories();
     const season = await seasons.findById(seasonId);
     if (!season) {
       return notFound('Season not found');
     }
 
     // Verify player exists
-    // Note: Players repo not yet migrated (Wave 4), using dynamoDb directly
-    const playerResult = await dynamoDb.get({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId: body.playerId },
-    });
-    if (!playerResult.Item) {
+    const player = await players.findById(body.playerId);
+    if (!player) {
       return notFound('Player not found');
     }
 
@@ -49,7 +44,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       name: body.name,
       awardType: 'custom',
       playerId: body.playerId,
-      playerName: (playerResult.Item as { name: string }).name,
+      playerName: player.name,
       description: body.description,
     });
 

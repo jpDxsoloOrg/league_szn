@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { getRepositories } from '../../lib/repositories';
 import { noContent, badRequest, notFound, serverError, conflict } from '../../lib/response';
 
@@ -11,7 +10,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Event ID is required');
     }
 
-    const { events } = getRepositories();
+    const { events, matches } = getRepositories();
 
     const eventItem = await events.findById(eventId);
     if (!eventItem) {
@@ -25,16 +24,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         .filter((matchId): matchId is string => typeof matchId === 'string' && matchId.length > 0);
 
       if (matchIds.length > 0) {
-        // Note: Matches table not yet migrated to repository layer (Wave 5+)
         const matchChecks = await Promise.all(
           matchIds.map(async (matchId: string) => {
-            const matchResult = await dynamoDb.query({
-              TableName: TableNames.MATCHES,
-              KeyConditionExpression: 'matchId = :matchId',
-              ExpressionAttributeValues: { ':matchId': matchId },
-              Limit: 1,
-            });
-            return matchResult.Items?.[0] as Record<string, unknown> | undefined;
+            return matches.findById(matchId);
           })
         );
 

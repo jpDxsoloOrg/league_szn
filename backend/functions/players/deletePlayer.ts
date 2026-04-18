@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { getRepositories } from '../../lib/repositories';
 import { noContent, badRequest, serverError, conflict, notFound } from '../../lib/response';
 
@@ -11,76 +10,50 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Player ID is required');
     }
 
-    const player = await getRepositories().players.findById(playerId);
+    const { players, championships, stables, tagTeams, seasonStandings } = getRepositories();
+
+    const player = await players.findById(playerId);
     if (!player) {
       return notFound('Player not found');
     }
 
     // --- Stable cleanup ---
-    // Note: Stables repo is available but complex cleanup logic uses direct DynamoDB
-    // for multi-table transactional updates that go beyond simple CRUD
     if (player.stableId) {
       try {
         const stableId = player.stableId as string;
-        const stableResult = await dynamoDb.get({
-          TableName: TableNames.STABLES,
-          Key: { stableId },
-        });
-        const stable = stableResult.Item as Record<string, unknown> | undefined;
+        const stable = await stables.findById(stableId);
 
         if (stable && (stable.status === 'active' || stable.status === 'approved')) {
-          const memberIds = (stable.memberIds as string[]) || [];
+          const memberIds = stable.memberIds || [];
           const remainingMembers = memberIds.filter(id => id !== playerId);
-          const now = new Date().toISOString();
 
           if (remainingMembers.length === 0) {
             // No members remain — disband
-            await dynamoDb.update({
-              TableName: TableNames.STABLES,
-              Key: { stableId },
-              UpdateExpression: 'SET memberIds = :empty, #status = :disbanded, disbandedAt = :now, updatedAt = :now',
-              ExpressionAttributeNames: { '#status': 'status' },
-              ExpressionAttributeValues: {
-                ':empty': [],
-                ':disbanded': 'disbanded',
-                ':now': now,
-              },
+            await stables.update(stableId, {
+              memberIds: [],
+              status: 'disbanded',
+              disbandedAt: new Date().toISOString(),
             });
           } else if (remainingMembers.length === 1) {
             // Only one member left (leader alone) — auto-disband
-            await dynamoDb.update({
-              TableName: TableNames.STABLES,
-              Key: { stableId },
-              UpdateExpression: 'SET memberIds = :members, #status = :disbanded, disbandedAt = :now, updatedAt = :now',
-              ExpressionAttributeNames: { '#status': 'status' },
-              ExpressionAttributeValues: {
-                ':members': remainingMembers,
-                ':disbanded': 'disbanded',
-                ':now': now,
-              },
+            await stables.update(stableId, {
+              memberIds: remainingMembers,
+              status: 'disbanded',
+              disbandedAt: new Date().toISOString(),
             });
             // Clear stableId from the remaining member
-            await getRepositories().players.update(remainingMembers[0], { stableId: null });
+            await players.update(remainingMembers[0], { stableId: null });
           } else {
             // Multiple members remain — remove player, promote leader if needed
             const isLeader = stable.leaderId === playerId;
-            const updateParts = ['SET memberIds = :members, updatedAt = :now'];
-            const exprValues: Record<string, unknown> = {
-              ':members': remainingMembers,
-              ':now': now,
-            };
-
             if (isLeader) {
-              updateParts[0] += ', leaderId = :newLeader';
-              exprValues[':newLeader'] = remainingMembers[0];
+              await stables.update(stableId, {
+                memberIds: remainingMembers,
+                leaderId: remainingMembers[0],
+              });
+            } else {
+              await stables.update(stableId, { memberIds: remainingMembers });
             }
-
-            await dynamoDb.update({
-              TableName: TableNames.STABLES,
-              Key: { stableId },
-              UpdateExpression: updateParts[0],
-              ExpressionAttributeValues: exprValues,
-            });
           }
         }
       } catch (stableErr) {
@@ -89,38 +62,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // --- Tag team cleanup ---
-    // Note: TagTeams repo is available but complex cleanup logic uses direct DynamoDB
     if (player.tagTeamId) {
       try {
         const tagTeamId = player.tagTeamId as string;
-        const tagTeamResult = await dynamoDb.get({
-          TableName: TableNames.TAG_TEAMS,
-          Key: { tagTeamId },
-        });
-        const tagTeam = tagTeamResult.Item as Record<string, unknown> | undefined;
+        const tagTeam = await tagTeams.findById(tagTeamId);
 
         if (tagTeam) {
-          const now = new Date().toISOString();
-
           // Dissolve the tag team
-          await dynamoDb.update({
-            TableName: TableNames.TAG_TEAMS,
-            Key: { tagTeamId },
-            UpdateExpression: 'SET #status = :dissolved, dissolvedAt = :now, updatedAt = :now',
-            ExpressionAttributeNames: { '#status': 'status' },
-            ExpressionAttributeValues: {
-              ':dissolved': 'dissolved',
-              ':now': now,
-            },
+          await tagTeams.update(tagTeamId, {
+            status: 'dissolved',
+            dissolvedAt: new Date().toISOString(),
           });
 
           // Clear tagTeamId from the partner if tag team was active
           if (tagTeam.status === 'active') {
             const partnerId = tagTeam.player1Id === playerId
-              ? tagTeam.player2Id as string
-              : tagTeam.player1Id as string;
+              ? tagTeam.player2Id
+              : tagTeam.player1Id;
 
-            await getRepositories().players.update(partnerId, { tagTeamId: null });
+            await players.update(partnerId, { tagTeamId: null });
           }
         }
       } catch (tagTeamErr) {
@@ -129,52 +89,29 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Check if player is a current champion
-    // Note: Championships repo not yet migrated
-    const championshipsResult = await dynamoDb.scan({
-      TableName: TableNames.CHAMPIONSHIPS,
-      FilterExpression: 'contains(#currentChampion, :playerId)',
-      ExpressionAttributeNames: {
-        '#currentChampion': 'currentChampion',
-      },
-      ExpressionAttributeValues: {
-        ':playerId': playerId,
-      },
+    const allChampionships = await championships.list();
+    const heldChampionships = allChampionships.filter(c => {
+      const champion = c.currentChampion;
+      if (Array.isArray(champion)) {
+        return champion.includes(playerId);
+      }
+      return champion === playerId;
     });
 
-    if (championshipsResult.Items && championshipsResult.Items.length > 0) {
-      const championshipNames = championshipsResult.Items.map((c: Record<string, unknown>) => c.name).join(', ');
+    if (heldChampionships.length > 0) {
+      const championshipNames = heldChampionships.map(c => c.name).join(', ');
       return conflict(
         `Cannot delete player. They are currently champion of: ${championshipNames}. Remove their championship first.`
       );
     }
 
     // Delete the player
-    await getRepositories().players.delete(playerId);
+    await players.delete(playerId);
 
     // Also delete from season standings
-    // Note: SeasonStandings repo not yet migrated
-    const standingsResult = await dynamoDb.query({
-      TableName: TableNames.SEASON_STANDINGS,
-      IndexName: 'PlayerIndex',
-      KeyConditionExpression: '#playerId = :playerId',
-      ExpressionAttributeNames: {
-        '#playerId': 'playerId',
-      },
-      ExpressionAttributeValues: {
-        ':playerId': playerId,
-      },
-    });
-
-    if (standingsResult.Items && standingsResult.Items.length > 0) {
-      for (const standing of standingsResult.Items) {
-        await dynamoDb.delete({
-          TableName: TableNames.SEASON_STANDINGS,
-          Key: {
-            seasonId: (standing as Record<string, unknown>).seasonId as string,
-            playerId: playerId,
-          },
-        });
-      }
+    const standings = await seasonStandings.listByPlayer(playerId);
+    for (const standing of standings) {
+      await seasonStandings.delete(standing.seasonId, playerId);
     }
 
     return noContent();

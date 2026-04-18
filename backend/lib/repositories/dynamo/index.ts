@@ -25,6 +25,7 @@ import { DynamoTournamentsRepository } from './TournamentsRepository';
 import { DynamoSeasonStandingsRepository } from './SeasonStandingsRepository';
 import { DynamoContendersRepository } from './ContendersRepository';
 import { DynamoFantasyRepository } from './FantasyRepository';
+import { DynamoMatchmakingRepository } from './MatchmakingRepository';
 import { createDynamoUnitOfWorkFactory } from './DynamoUnitOfWork';
 import { dynamoClearAllData, dynamoExportAllData, dynamoImportAllData } from './adminOps';
 
@@ -55,6 +56,7 @@ registerDriver('dynamo', (): Repositories => ({
   seasonStandings: new DynamoSeasonStandingsRepository(),
   contenders: new DynamoContendersRepository(),
   fantasy: new DynamoFantasyRepository(),
+  matchmaking: new DynamoMatchmakingRepository(),
   runInTransaction: createDynamoUnitOfWorkFactory(),
   clearAllData: dynamoClearAllData,
   exportAllData: dynamoExportAllData,

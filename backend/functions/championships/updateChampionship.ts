@@ -1,7 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { buildUpdateExpression, getOrNotFound } from '../../lib/dynamodbUtils';
-import { success, badRequest, serverError } from '../../lib/response';
+import { getRepositories, NotFoundError } from '../../lib/repositories';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -15,39 +14,26 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody(event);
     if (parseError) return parseError;
 
-    const championshipResult = await getOrNotFound(
-      TableNames.CHAMPIONSHIPS,
-      { championshipId },
-      'Championship not found'
-    );
-    if ('notFoundResponse' in championshipResult) {
-      return championshipResult.notFoundResponse;
-    }
+    const patch: Record<string, unknown> = {};
+    if (body.name !== undefined) patch.name = body.name;
+    if (body.type !== undefined) patch.type = body.type;
+    if (body.imageUrl !== undefined) patch.imageUrl = body.imageUrl;
+    if (body.isActive !== undefined) patch.isActive = body.isActive;
+    if (body.currentChampion !== undefined) patch.currentChampion = body.currentChampion;
+    if (body.divisionId !== undefined) patch.divisionId = body.divisionId;
 
-    const updateExpr = buildUpdateExpression({
-      name: body.name,
-      type: body.type,
-      imageUrl: body.imageUrl,
-      isActive: body.isActive,
-      currentChampion: body.currentChampion,
-      divisionId: body.divisionId,
-    });
-
-    if (!updateExpr.hasChanges) {
+    if (Object.keys(patch).length === 0) {
       return badRequest('No valid fields to update');
     }
 
-    const result = await dynamoDb.update({
-      TableName: TableNames.CHAMPIONSHIPS,
-      Key: { championshipId },
-      UpdateExpression: updateExpr.UpdateExpression,
-      ExpressionAttributeNames: updateExpr.ExpressionAttributeNames,
-      ExpressionAttributeValues: updateExpr.ExpressionAttributeValues,
-      ReturnValues: 'ALL_NEW',
-    });
+    const { championships } = getRepositories();
+    const updated = await championships.update(championshipId, patch);
 
-    return success(result.Attributes);
+    return success(updated);
   } catch (err) {
+    if (err instanceof NotFoundError) {
+      return notFound('Championship not found');
+    }
     console.error('Error updating championship:', err);
     return serverError('Failed to update championship');
   }

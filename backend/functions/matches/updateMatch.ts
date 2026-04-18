@@ -1,5 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import type { MatchCardEntry, MatchDesignation } from '../../lib/repositories/types';
+import type { EventPatch } from '../../lib/repositories/EventsRepository';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
@@ -18,6 +20,7 @@ interface UpdateMatchBody {
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
+    const repos = getRepositories();
     const matchId = event.pathParameters?.matchId;
     if (!matchId) {
       return badRequest('matchId is required');
@@ -27,17 +30,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (parseError) return parseError;
 
     // Fetch existing match (matchId is PK, need to find the sort key 'date')
-    const matchResult = await dynamoDb.query({
-      TableName: TableNames.MATCHES,
-      KeyConditionExpression: 'matchId = :matchId',
-      ExpressionAttributeValues: { ':matchId': matchId },
-      Limit: 1,
-    });
-
-    const existingMatch = matchResult.Items?.[0] as Record<string, unknown> | undefined;
+    const existingMatch = await repos.matches.findByIdWithDate(matchId);
     if (!existingMatch) {
       return notFound('Match not found');
     }
+
+    const existingRecord = existingMatch as unknown as Record<string, unknown>;
 
     // Only allow editing scheduled matches
     if (existingMatch.status !== 'scheduled') {
@@ -57,11 +55,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
 
       const playerValidationPromises = body.participants.map(async (playerId) => {
-        const player = await dynamoDb.get({
-          TableName: TableNames.PLAYERS,
-          Key: { playerId },
-        });
-        return { playerId, exists: !!player.Item, player: player.Item };
+        const player = await repos.players.findById(playerId);
+        return { playerId, exists: !!player, player: player as unknown as Record<string, unknown> | null };
       });
 
       const playerResults = await Promise.all(playerValidationPromises);
@@ -74,19 +69,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       // Validate championship division restriction if championship is set
       const effectiveChampionshipId = body.championshipId !== undefined
         ? body.championshipId
-        : existingMatch.championshipId as string | undefined;
+        : existingRecord.championshipId as string | undefined;
 
       if (effectiveChampionshipId) {
-        const championship = await dynamoDb.get({
-          TableName: TableNames.CHAMPIONSHIPS,
-          Key: { championshipId: effectiveChampionshipId },
-        });
+        const championship = await repos.championships.findById(effectiveChampionshipId);
 
-        if (championship.Item) {
-          const champDivisionId = (championship.Item as Record<string, unknown>).divisionId as string | undefined;
+        if (championship) {
+          const champDivisionId = (championship as unknown as Record<string, unknown>).divisionId as string | undefined;
           if (champDivisionId) {
             const wrongDivision = playerResults.filter((p) => {
-              const playerDivision = (p.player as Record<string, unknown>)?.divisionId as string | undefined;
+              const playerDivision = p.player?.divisionId as string | undefined;
               return playerDivision !== champDivisionId;
             });
 
@@ -102,12 +94,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate championship exists if provided
     if (body.championshipId) {
-      const championship = await dynamoDb.get({
-        TableName: TableNames.CHAMPIONSHIPS,
-        Key: { championshipId: body.championshipId },
-      });
+      const championship = await repos.championships.findById(body.championshipId);
 
-      if (!championship.Item) {
+      if (!championship) {
         return notFound(`Championship not found: ${body.championshipId}`);
       }
     }
@@ -115,10 +104,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Validate isChampionship + championshipId consistency
     const effectiveIsChampionship = body.isChampionship !== undefined
       ? body.isChampionship
-      : existingMatch.isChampionship as boolean;
+      : existingRecord.isChampionship as boolean;
     const effectiveChampionshipId = body.championshipId !== undefined
       ? body.championshipId
-      : existingMatch.championshipId as string | null | undefined;
+      : existingRecord.championshipId as string | null | undefined;
 
     if (effectiveIsChampionship && !effectiveChampionshipId) {
       return badRequest('Championship ID is required for championship matches');
@@ -126,54 +115,41 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate tournament exists if provided
     if (body.tournamentId) {
-      const tournament = await dynamoDb.get({
-        TableName: TableNames.TOURNAMENTS,
-        Key: { tournamentId: body.tournamentId },
-      });
+      const tournament = await repos.tournaments.findById(body.tournamentId);
 
-      if (!tournament.Item) {
+      if (!tournament) {
         return notFound(`Tournament not found: ${body.tournamentId}`);
       }
 
-      if ((tournament.Item as Record<string, unknown>).status === 'completed') {
+      if (tournament.status === 'completed') {
         return badRequest('Cannot assign match to a completed tournament');
       }
     }
 
     // Validate season exists and is active if provided
     if (body.seasonId) {
-      const season = await dynamoDb.get({
-        TableName: TableNames.SEASONS,
-        Key: { seasonId: body.seasonId },
-      });
+      const season = await repos.seasons.findById(body.seasonId);
 
-      if (!season.Item) {
+      if (!season) {
         return notFound(`Season not found: ${body.seasonId}`);
       }
 
-      if ((season.Item as Record<string, unknown>).status !== 'active') {
+      if (season.status !== 'active') {
         return badRequest('Cannot assign match to an inactive season');
       }
     }
 
     // Validate stipulationId exists if provided
     if (body.stipulationId) {
-      const stipulation = await dynamoDb.get({
-        TableName: TableNames.STIPULATIONS,
-        Key: { stipulationId: body.stipulationId },
-      });
+      const stipulation = await repos.stipulations.findById(body.stipulationId);
 
-      if (!stipulation.Item) {
+      if (!stipulation) {
         return notFound(`Stipulation not found: ${body.stipulationId}`);
       }
     }
 
-    // Build update expression
-    const now = new Date().toISOString();
-    const expressionParts: string[] = [];
-    const expressionNames: Record<string, string> = {};
-    const expressionValues: Record<string, unknown> = {};
-
+    // Build patch for update
+    const patch: Record<string, unknown> = {};
     const fieldsToUpdate: Array<{ key: string; bodyKey: keyof UpdateMatchBody }> = [
       { key: 'matchFormat', bodyKey: 'matchFormat' },
       { key: 'stipulationId', bodyKey: 'stipulationId' },
@@ -189,64 +165,41 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     for (const field of fieldsToUpdate) {
       if (body[field.bodyKey] !== undefined) {
-        const alias = `#${field.key}`;
-        const valueAlias = `:${field.key}`;
-        expressionNames[alias] = field.key;
-        expressionValues[valueAlias] = body[field.bodyKey];
-        expressionParts.push(`${alias} = ${valueAlias}`);
+        patch[field.key] = body[field.bodyKey];
       }
     }
 
-    // Always set updatedAt
-    expressionNames['#updatedAt'] = 'updatedAt';
-    expressionValues[':updatedAt'] = now;
-    expressionParts.push('#updatedAt = :updatedAt');
-
-    if (expressionParts.length === 1) {
-      // Only updatedAt — nothing meaningful to update
+    if (Object.keys(patch).length === 0) {
       return badRequest('No fields to update');
     }
 
-    await dynamoDb.update({
-      TableName: TableNames.MATCHES,
-      Key: { matchId, date: existingMatch.date as string },
-      UpdateExpression: `SET ${expressionParts.join(', ')}`,
-      ExpressionAttributeNames: expressionNames,
-      ExpressionAttributeValues: expressionValues,
-    });
+    const matchDate = existingMatch.date;
+
+    await repos.matches.update(matchId, matchDate, patch);
 
     // Handle eventId changes — remove from old event, add to new event
     // Also handle designation changes when staying on the same event
-    const oldEventId = existingMatch.eventId as string | undefined;
+    const oldEventId = existingRecord.eventId as string | undefined;
     const newEventId = body.eventId !== undefined ? (body.eventId as string | null) : undefined;
 
     // Designation changed but event stayed the same — update the card in-place
     const effectiveEventId = newEventId !== undefined ? newEventId : oldEventId;
     if (body.designation !== undefined && effectiveEventId && (newEventId === undefined || newEventId === oldEventId)) {
       try {
-        const eventResult = await dynamoDb.get({
-          TableName: TableNames.EVENTS,
-          Key: { eventId: effectiveEventId },
-        });
+        const eventRecord = await repos.events.findById(effectiveEventId);
 
-        if (eventResult.Item) {
-          const matchCards = ((eventResult.Item as Record<string, unknown>).matchCards as Record<string, unknown>[] | undefined) || [];
+        if (eventRecord) {
+          const matchCards = ((eventRecord as unknown as Record<string, unknown>).matchCards as MatchCardEntry[] | undefined) || [];
           const updatedCards = matchCards.map((card) => {
-            if ((card as Record<string, unknown>).matchId === matchId) {
-              return { ...card, designation: body.designation };
+            if (card.matchId === matchId) {
+              return { ...card, designation: body.designation as MatchDesignation };
             }
             return card;
           });
 
-          await dynamoDb.update({
-            TableName: TableNames.EVENTS,
-            Key: { eventId: effectiveEventId },
-            UpdateExpression: 'SET matchCards = :cards, updatedAt = :now',
-            ExpressionAttributeValues: {
-              ':cards': updatedCards,
-              ':now': now,
-            },
-          });
+          await repos.events.update(effectiveEventId, {
+            matchCards: updatedCards,
+          } as EventPatch);
         }
       } catch (err) {
         console.warn('Failed to update designation on event:', err);
@@ -257,26 +210,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       // Remove from old event if it had one
       if (oldEventId) {
         try {
-          const oldEventResult = await dynamoDb.get({
-            TableName: TableNames.EVENTS,
-            Key: { eventId: oldEventId },
-          });
+          const oldEvent = await repos.events.findById(oldEventId);
 
-          if (oldEventResult.Item) {
-            const matchCards = ((oldEventResult.Item as Record<string, unknown>).matchCards as Record<string, unknown>[] | undefined) || [];
+          if (oldEvent) {
+            const matchCards = ((oldEvent as unknown as Record<string, unknown>).matchCards as MatchCardEntry[] | undefined) || [];
             const updatedCards = matchCards.filter(
-              (card) => (card as Record<string, unknown>).matchId !== matchId,
+              (card) => card.matchId !== matchId,
             );
 
-            await dynamoDb.update({
-              TableName: TableNames.EVENTS,
-              Key: { eventId: oldEventId },
-              UpdateExpression: 'SET matchCards = :cards, updatedAt = :now',
-              ExpressionAttributeValues: {
-                ':cards': updatedCards,
-                ':now': now,
-              },
-            });
+            await repos.events.update(oldEventId, {
+              matchCards: updatedCards,
+            } as EventPatch);
           }
         } catch (err) {
           console.warn('Failed to remove match from old event:', err);
@@ -286,29 +230,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       // Add to new event if one was provided
       if (newEventId) {
         try {
-          const newEventResult = await dynamoDb.get({
-            TableName: TableNames.EVENTS,
-            Key: { eventId: newEventId },
-          });
+          const newEvent = await repos.events.findById(newEventId);
 
-          if (newEventResult.Item) {
-            const existingCards = ((newEventResult.Item as Record<string, unknown>).matchCards as unknown[] | undefined) || [];
-            const newCard = {
+          if (newEvent) {
+            const existingCards = ((newEvent as unknown as Record<string, unknown>).matchCards as MatchCardEntry[] | undefined) || [];
+            const newCard: MatchCardEntry = {
               matchId,
               position: existingCards.length + 1,
-              designation: body.designation || (existingMatch.designation as string | undefined) || 'midcard',
+              designation: (body.designation || (existingRecord.designation as string | undefined) || 'midcard') as MatchDesignation,
             };
 
-            await dynamoDb.update({
-              TableName: TableNames.EVENTS,
-              Key: { eventId: newEventId },
-              UpdateExpression: 'SET matchCards = list_append(if_not_exists(matchCards, :empty), :newCard), updatedAt = :now',
-              ExpressionAttributeValues: {
-                ':newCard': [newCard],
-                ':empty': [],
-                ':now': now,
-              },
-            });
+            await repos.events.update(newEventId, {
+              matchCards: [...existingCards, newCard],
+            } as EventPatch);
           }
         } catch (err) {
           console.warn('Failed to add match to new event:', err);
@@ -317,14 +251,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Return the updated match
-    const updatedResult = await dynamoDb.query({
-      TableName: TableNames.MATCHES,
-      KeyConditionExpression: 'matchId = :matchId',
-      ExpressionAttributeValues: { ':matchId': matchId },
-      Limit: 1,
-    });
-
-    return success(updatedResult.Items?.[0] || { matchId, updated: true });
+    const updatedMatch = await repos.matches.findByIdWithDate(matchId);
+    return success(updatedMatch || { matchId, updated: true });
   } catch (err) {
     console.error('Error updating match:', err);
     return serverError('Failed to update match');
