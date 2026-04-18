@@ -33,7 +33,7 @@ export type { StorylineRequestsRepository, StorylineRequestCreateInput, Storylin
 export type { EventsRepository, EventCreateInput, EventPatch } from './EventsRepository';
 export type { PromosRepository, PromoCreateInput } from './PromosRepository';
 export type { MatchesRepository } from './MatchesRepository';
-export type { ChampionshipsRepository } from './ChampionshipsRepository';
+export type { ChampionshipsRepository, ChampionshipPatch } from './ChampionshipsRepository';
 export type { TournamentsRepository } from './TournamentsRepository';
 export type { SeasonStandingsRepository } from './SeasonStandingsRepository';
 export type { ContendersRepository, ContenderRankingInput, ContenderOverrideInput, RankingHistoryInput } from './ContendersRepository';

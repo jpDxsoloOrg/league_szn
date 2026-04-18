@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError, forbidden } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
@@ -16,7 +15,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('tagTeamId is required');
     }
 
-    const { tagTeams: tagTeamsRepo, players: playersRepo } = getRepositories();
+    const { tagTeams: tagTeamsRepo, players: playersRepo, runInTransaction } = getRepositories();
 
     // Get tag team
     const tagTeam = await tagTeamsRepo.findById(tagTeamId);
@@ -45,62 +44,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const now = new Date().toISOString();
 
-    // Build transaction: update tag team status + clear tagTeamId from both players (Wave 7)
-    const transactItems: Parameters<typeof dynamoDb.transactWrite>[0]['TransactItems'] = [
-      {
-        Update: {
-          TableName: TableNames.TAG_TEAMS,
-          Key: { tagTeamId },
-          UpdateExpression: 'SET #status = :status, #updatedAt = :updatedAt, #dissolvedAt = :dissolvedAt',
-          ExpressionAttributeNames: {
-            '#status': 'status',
-            '#updatedAt': 'updatedAt',
-            '#dissolvedAt': 'dissolvedAt',
-          },
-          ExpressionAttributeValues: {
-            ':status': 'dissolved',
-            ':updatedAt': now,
-            ':dissolvedAt': now,
-          },
-        },
-      },
-    ];
+    // Build transaction: update tag team status + clear tagTeamId from both players
+    await runInTransaction(async (tx) => {
+      tx.updateTagTeam(tagTeamId, { status: 'dissolved', dissolvedAt: now });
 
-    // Only clear tagTeamId from players if the tag team was active
-    if (tagTeam.status === 'active') {
-      transactItems.push(
-        {
-          Update: {
-            TableName: TableNames.PLAYERS,
-            Key: { playerId: tagTeam.player1Id },
-            UpdateExpression: 'REMOVE #tagTeamId SET #updatedAt = :updatedAt',
-            ExpressionAttributeNames: {
-              '#tagTeamId': 'tagTeamId',
-              '#updatedAt': 'updatedAt',
-            },
-            ExpressionAttributeValues: {
-              ':updatedAt': now,
-            },
-          },
-        },
-        {
-          Update: {
-            TableName: TableNames.PLAYERS,
-            Key: { playerId: tagTeam.player2Id },
-            UpdateExpression: 'REMOVE #tagTeamId SET #updatedAt = :updatedAt',
-            ExpressionAttributeNames: {
-              '#tagTeamId': 'tagTeamId',
-              '#updatedAt': 'updatedAt',
-            },
-            ExpressionAttributeValues: {
-              ':updatedAt': now,
-            },
-          },
-        }
-      );
-    }
-
-    await dynamoDb.transactWrite({ TransactItems: transactItems });
+      // Only clear tagTeamId from players if the tag team was active
+      if (tagTeam.status === 'active') {
+        tx.clearPlayerField(tagTeam.player1Id, 'tagTeamId');
+        tx.clearPlayerField(tagTeam.player2Id, 'tagTeamId');
+      }
+    });
 
     return success({
       tagTeamId,

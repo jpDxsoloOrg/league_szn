@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError, forbidden } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
@@ -61,7 +60,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     if (challenge.challengeMode === 'tag_team') {
-      // Tag team challenge: either member of the challenged tag team can respond
       const tagTeam = challenge.challengedTagTeamId
         ? await tagTeams.findById(challenge.challengedTagTeamId)
         : null;
@@ -72,7 +70,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return forbidden('Only members of the challenged tag team can respond');
       }
     } else {
-      // Singles challenge: only the challenged player can respond
       if (responderPlayer.playerId !== challenge.challengedId) {
         return forbidden('Only the challenged player can respond');
       }
@@ -82,23 +79,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     if (action === 'accept' || action === 'decline') {
       const newStatus = action === 'accept' ? 'accepted' : 'declined';
-      const updateExpression = responseMessage
-        ? 'SET #s = :status, responseMessage = :rm, updatedAt = :now'
-        : 'SET #s = :status, updatedAt = :now';
-      const expressionValues: Record<string, unknown> = {
-        ':status': newStatus,
-        ':now': now,
-      };
-      if (responseMessage) expressionValues[':rm'] = responseMessage;
+      const patch: Record<string, unknown> = { status: newStatus };
+      if (responseMessage) patch.responseMessage = responseMessage;
 
-      // Keep direct dynamoDb call for update (could use repo, but keeping consistency with transactWrite below)
-      await dynamoDb.update({
-        TableName: TableNames.CHALLENGES,
-        Key: { challengeId },
-        UpdateExpression: updateExpression,
-        ExpressionAttributeNames: { '#s': 'status' },
-        ExpressionAttributeValues: expressionValues,
-      });
+      await challenges.update(challengeId, patch);
 
       return success({ ...challenge, status: newStatus, responseMessage, updatedAt: now });
     }
@@ -130,35 +114,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (counterStipulation) counterChallenge.stipulation = counterStipulation;
     if (counterMessage) counterChallenge.message = counterMessage;
 
-    // Update original + create counter in transaction — keep transactWrite as direct dynamoDb call (Wave 7)
-    const counterUpdateExpr = responseMessage
-      ? 'SET #s = :status, responseMessage = :rm, counteredChallengeId = :ccid, updatedAt = :now'
-      : 'SET #s = :status, counteredChallengeId = :ccid, updatedAt = :now';
-    const counterExprValues: Record<string, unknown> = {
-      ':status': 'countered',
-      ':ccid': counterChallengeId,
-      ':now': now,
-    };
-    if (responseMessage) counterExprValues[':rm'] = responseMessage;
+    const { runInTransaction } = getRepositories();
 
-    await dynamoDb.transactWrite({
-      TransactItems: [
-        {
-          Update: {
-            TableName: TableNames.CHALLENGES,
-            Key: { challengeId },
-            UpdateExpression: counterUpdateExpr,
-            ExpressionAttributeNames: { '#s': 'status' },
-            ExpressionAttributeValues: counterExprValues,
-          },
-        },
-        {
-          Put: {
-            TableName: TableNames.CHALLENGES,
-            Item: counterChallenge,
-          },
-        },
-      ],
+    const counterPatch: Record<string, unknown> = {
+      status: 'countered',
+      counteredChallengeId: counterChallengeId,
+    };
+    if (responseMessage) counterPatch.responseMessage = responseMessage;
+
+    await runInTransaction(async (tx) => {
+      tx.updateChallenge(challengeId, counterPatch);
+      tx.createChallenge(counterChallenge);
     });
 
     return success({

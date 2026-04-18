@@ -25,8 +25,36 @@ import { InMemoryTournamentsRepository } from './TournamentsRepository';
 import { InMemorySeasonStandingsRepository } from './SeasonStandingsRepository';
 import { InMemoryContendersRepository } from './ContendersRepository';
 import { InMemoryFantasyRepository } from './FantasyRepository';
+import { InMemoryUnitOfWork } from './InMemoryUnitOfWork';
 
 export function buildInMemoryRepositories(): Repositories {
+  const playersRepo = new InMemoryPlayersRepository();
+  const challengesRepo = new InMemoryChallengesRepository();
+  const tagTeamsRepo = new InMemoryTagTeamsRepository();
+  const championshipsRepo = new InMemoryChampionshipsRepository();
+  const matchesRepo = new InMemoryMatchesRepository();
+  const seasonStandingsRepo = new InMemorySeasonStandingsRepository();
+
+  const runInTransaction: Repositories['runInTransaction'] = async <T>(fn: (tx: import('../unitOfWork').UnitOfWork) => Promise<T>): Promise<T> => {
+    const uow = new InMemoryUnitOfWork({
+      players: playersRepo.store as unknown as Map<string, Record<string, unknown>>,
+      tagTeams: tagTeamsRepo.store as unknown as Map<string, Record<string, unknown>>,
+      championships: championshipsRepo.store as unknown as Map<string, Record<string, unknown>>,
+      championshipHistory: championshipsRepo.historyStore as unknown as Array<Record<string, unknown>>,
+      challenges: challengesRepo.store as unknown as Map<string, Record<string, unknown>>,
+      seasonStandings: seasonStandingsRepo.store as unknown as Array<Record<string, unknown>>,
+      matches: matchesRepo.store as unknown as Map<string, Record<string, unknown>>,
+    });
+    try {
+      const result = await fn(uow);
+      await uow.commit();
+      return result;
+    } catch (err) {
+      await uow.rollback();
+      throw err;
+    }
+  };
+
   return {
     divisions: new InMemoryDivisionsRepository(),
     stipulations: new InMemoryStipulationsRepository(),
@@ -40,23 +68,21 @@ export function buildInMemoryRepositories(): Repositories {
     overalls: new InMemoryOverallsRepository(),
     seasons: new InMemorySeasonsRepository(),
     seasonAwards: new InMemorySeasonAwardsRepository(),
-    players: new InMemoryPlayersRepository(),
-    challenges: new InMemoryChallengesRepository(),
-    tagTeams: new InMemoryTagTeamsRepository(),
+    players: playersRepo,
+    challenges: challengesRepo,
+    tagTeams: tagTeamsRepo,
     stables: new InMemoryStablesRepository(),
     transfers: new InMemoryTransfersRepository(),
     storylineRequests: new InMemoryStorylineRequestsRepository(),
     events: new InMemoryEventsRepository(),
     promos: new InMemoryPromosRepository(),
-    matches: new InMemoryMatchesRepository(),
-    championships: new InMemoryChampionshipsRepository(),
+    matches: matchesRepo,
+    championships: championshipsRepo,
     tournaments: new InMemoryTournamentsRepository(),
-    seasonStandings: new InMemorySeasonStandingsRepository(),
+    seasonStandings: seasonStandingsRepo,
     contenders: new InMemoryContendersRepository(),
     fantasy: new InMemoryFantasyRepository(),
-    runInTransaction: async () => {
-      throw new Error('runInTransaction is not implemented in the in-memory driver yet (scheduled for Wave 7)');
-    },
+    runInTransaction,
   };
 }
 
@@ -88,3 +114,4 @@ export { InMemoryTournamentsRepository } from './TournamentsRepository';
 export { InMemorySeasonStandingsRepository } from './SeasonStandingsRepository';
 export { InMemoryContendersRepository } from './ContendersRepository';
 export { InMemoryFantasyRepository } from './FantasyRepository';
+export { InMemoryUnitOfWork } from './InMemoryUnitOfWork';

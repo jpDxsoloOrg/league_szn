@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
@@ -14,7 +13,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('tagTeamId is required');
     }
 
-    const { tagTeams: tagTeamsRepo, players: playersRepo } = getRepositories();
+    const { tagTeams: tagTeamsRepo, players: playersRepo, runInTransaction } = getRepositories();
 
     // Get tag team
     const tagTeam = await tagTeamsRepo.findById(tagTeamId);
@@ -45,61 +44,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Player 2 is already in a tag team');
     }
 
-    const now = new Date().toISOString();
-
-    // Use transactWrite to atomically update tag team status and both player records (Wave 7)
-    await dynamoDb.transactWrite({
-      TransactItems: [
-        {
-          Update: {
-            TableName: TableNames.TAG_TEAMS,
-            Key: { tagTeamId },
-            UpdateExpression: 'SET #status = :status, #updatedAt = :updatedAt',
-            ExpressionAttributeNames: {
-              '#status': 'status',
-              '#updatedAt': 'updatedAt',
-            },
-            ExpressionAttributeValues: {
-              ':status': 'active',
-              ':updatedAt': now,
-            },
-          },
-        },
-        {
-          Update: {
-            TableName: TableNames.PLAYERS,
-            Key: { playerId: tagTeam.player1Id },
-            UpdateExpression: 'SET #tagTeamId = :tagTeamId, #updatedAt = :updatedAt',
-            ConditionExpression: 'attribute_not_exists(#tagTeamId) OR #tagTeamId = :null',
-            ExpressionAttributeNames: {
-              '#tagTeamId': 'tagTeamId',
-              '#updatedAt': 'updatedAt',
-            },
-            ExpressionAttributeValues: {
-              ':tagTeamId': tagTeamId,
-              ':updatedAt': now,
-              ':null': null,
-            },
-          },
-        },
-        {
-          Update: {
-            TableName: TableNames.PLAYERS,
-            Key: { playerId: tagTeam.player2Id },
-            UpdateExpression: 'SET #tagTeamId = :tagTeamId, #updatedAt = :updatedAt',
-            ConditionExpression: 'attribute_not_exists(#tagTeamId) OR #tagTeamId = :null',
-            ExpressionAttributeNames: {
-              '#tagTeamId': 'tagTeamId',
-              '#updatedAt': 'updatedAt',
-            },
-            ExpressionAttributeValues: {
-              ':tagTeamId': tagTeamId,
-              ':updatedAt': now,
-              ':null': null,
-            },
-          },
-        },
-      ],
+    // Atomically update tag team status and both player records
+    await runInTransaction(async (tx) => {
+      tx.updateTagTeam(tagTeamId, { status: 'active' });
+      tx.setPlayerTagTeamId(tagTeam.player1Id, tagTeamId);
+      tx.setPlayerTagTeamId(tagTeam.player2Id, tagTeamId);
     });
 
     return success({

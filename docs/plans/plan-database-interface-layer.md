@@ -16,7 +16,8 @@
 | 4 — Medium-complexity aggregates with GSIs (Players, Challenges, TagTeams, Stables, Transfers, StorylineRequests, Events, Promos) | ✅ Done | — |
 | 5 — Cross-aggregate reads (Standings, Dashboard, Rivalries, Statistics, Activity) | ✅ Done | — |
 | 6 — Contenders & Fantasy (batched writes) | ✅ Done | — |
-| 7 — Transactional writes + `runInTransaction` + `recordResult.ts` | ⏳ | — |
+| 7 — Transactional writes + `runInTransaction` (steps 23–25) | ✅ Done | — |
+| 7b — `recordResult.ts` migration (step 26–27) | ⏳ | — |
 | 8 — Admin and seed scripts | ⏳ | — |
 | 9 — Clean up (delete `dynamodbUtils.ts`, shrink `dynamodb.ts`, remove deprecated `handlerFactory`) | ⏳ | — |
 
@@ -57,9 +58,24 @@ of DynamoDB SDK. The `calculateRankings` handler now uses
 `championships.listActive()` and `championships.findById()` from the Wave 5
 ChampionshipsRepository instead of direct DynamoDB scans/gets.
 
-**Where to resume**: Wave 7 — Transactional writes + `runInTransaction` +
-`recordResult.ts`. Build `DynamoUnitOfWork` and `InMemoryUnitOfWork`, then
-migrate transactional handlers in order of increasing complexity.
+**After Wave 7 (steps 23–25)**: 967 tests passing, 0 failures. Typecheck and
+lint clean. UnitOfWork interface expanded with 17 typed mutation methods
+covering Players, TagTeams, Championships, Championship History, Challenges,
+Season Standings, and Matches. DynamoUnitOfWork stages TransactWriteItems and
+flushes in ≤100-item chunks. InMemoryUnitOfWork stages closures and applies
+on commit. Write methods added to ChampionshipsRepository (update,
+removeChampion, closeReign, reopenReign, deleteHistoryEntry, incrementDefenses,
+decrementDefenses), MatchesRepository (findByIdWithDate, delete),
+SeasonStandingsRepository (findStanding, increment), TournamentsRepository
+(update). 6 transactional handlers migrated: vacateChampionship,
+respondToChallenge, approveTagTeam, dissolveTagTeam, deleteTagTeam,
+deleteMatch. All now use `runInTransaction` for atomic multi-aggregate writes
+instead of direct `dynamoDb.transactWrite`.
+
+**Where to resume**: Wave 7b — `recordResult.ts` migration (step 26–27).
+The 707-line handler is the acid test for the UoW abstraction. Expected to
+drop to ~200 lines with all UpdateExpression / ExpressionAttributeValues
+strings eliminated.
 
 ## Context
 

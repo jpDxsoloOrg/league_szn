@@ -1,5 +1,7 @@
 import { dynamoDb, TableNames } from '../../dynamodb';
-import type { ChampionshipsRepository } from '../ChampionshipsRepository';
+import { buildUpdateExpression } from './util';
+import { NotFoundError } from '../errors';
+import type { ChampionshipsRepository, ChampionshipPatch } from '../ChampionshipsRepository';
 import type { Championship, ChampionshipHistoryEntry } from '../types';
 
 export class DynamoChampionshipsRepository implements ChampionshipsRepository {
@@ -44,5 +46,81 @@ export class DynamoChampionshipsRepository implements ChampionshipsRepository {
       Limit: 1,
     });
     return ((result.Items?.[0]) as ChampionshipHistoryEntry | undefined) ?? null;
+  }
+
+  async update(championshipId: string, patch: ChampionshipPatch): Promise<Championship> {
+    const { UpdateExpression, ExpressionAttributeNames, ExpressionAttributeValues } =
+      buildUpdateExpression(patch, new Date().toISOString());
+    try {
+      const result = await dynamoDb.update({
+        TableName: TableNames.CHAMPIONSHIPS,
+        Key: { championshipId },
+        UpdateExpression,
+        ExpressionAttributeNames,
+        ExpressionAttributeValues,
+        ConditionExpression: 'attribute_exists(championshipId)',
+        ReturnValues: 'ALL_NEW',
+      });
+      return result.Attributes as Championship;
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'ConditionalCheckFailedException') {
+        throw new NotFoundError('Championship', championshipId);
+      }
+      throw err;
+    }
+  }
+
+  async removeChampion(championshipId: string): Promise<Championship> {
+    const result = await dynamoDb.update({
+      TableName: TableNames.CHAMPIONSHIPS,
+      Key: { championshipId },
+      UpdateExpression: 'REMOVE currentChampion SET updatedAt = :now, version = if_not_exists(version, :zero) + :one',
+      ExpressionAttributeValues: { ':now': new Date().toISOString(), ':zero': 0, ':one': 1 },
+      ReturnValues: 'ALL_NEW',
+    });
+    return result.Attributes as Championship;
+  }
+
+  async closeReign(championshipId: string, wonDate: string, lostDate: string, daysHeld: number): Promise<void> {
+    await dynamoDb.update({
+      TableName: TableNames.CHAMPIONSHIP_HISTORY,
+      Key: { championshipId, wonDate },
+      UpdateExpression: 'SET lostDate = :lostDate, daysHeld = :daysHeld',
+      ExpressionAttributeValues: { ':lostDate': lostDate, ':daysHeld': daysHeld },
+    });
+  }
+
+  async reopenReign(championshipId: string, wonDate: string): Promise<void> {
+    await dynamoDb.update({
+      TableName: TableNames.CHAMPIONSHIP_HISTORY,
+      Key: { championshipId, wonDate },
+      UpdateExpression: 'REMOVE lostDate, daysHeld SET updatedAt = :now',
+      ExpressionAttributeValues: { ':now': new Date().toISOString() },
+    });
+  }
+
+  async deleteHistoryEntry(championshipId: string, wonDate: string): Promise<void> {
+    await dynamoDb.delete({
+      TableName: TableNames.CHAMPIONSHIP_HISTORY,
+      Key: { championshipId, wonDate },
+    });
+  }
+
+  async incrementDefenses(championshipId: string, wonDate: string): Promise<void> {
+    await dynamoDb.update({
+      TableName: TableNames.CHAMPIONSHIP_HISTORY,
+      Key: { championshipId, wonDate },
+      UpdateExpression: 'SET defenses = if_not_exists(defenses, :zero) + :one, updatedAt = :now',
+      ExpressionAttributeValues: { ':zero': 0, ':one': 1, ':now': new Date().toISOString() },
+    });
+  }
+
+  async decrementDefenses(championshipId: string, wonDate: string): Promise<void> {
+    await dynamoDb.update({
+      TableName: TableNames.CHAMPIONSHIP_HISTORY,
+      Key: { championshipId, wonDate },
+      UpdateExpression: 'SET defenses = defenses - :one, updatedAt = :now',
+      ExpressionAttributeValues: { ':one': 1, ':now': new Date().toISOString() },
+    });
   }
 }

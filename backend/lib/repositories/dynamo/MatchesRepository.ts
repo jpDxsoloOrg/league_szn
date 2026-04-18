@@ -49,4 +49,21 @@ export class DynamoMatchesRepository implements MatchesRepository {
       ExpressionAttributeValues: { ':seasonId': seasonId },
     }) as unknown as Match[];
   }
+
+  async findByIdWithDate(matchId: string): Promise<(Match & { date: string }) | null> {
+    const result = await dynamoDb.query({
+      TableName: TableNames.MATCHES,
+      KeyConditionExpression: 'matchId = :matchId',
+      ExpressionAttributeValues: { ':matchId': matchId },
+      Limit: 1,
+    });
+    return ((result.Items?.[0]) as (Match & { date: string }) | undefined) ?? null;
+  }
+
+  async delete(matchId: string, date: string): Promise<void> {
+    await dynamoDb.delete({
+      TableName: TableNames.MATCHES,
+      Key: { matchId, date },
+    });
+  }
 }

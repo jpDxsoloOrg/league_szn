@@ -1,4 +1,5 @@
 import type { TournamentsRepository } from '../TournamentsRepository';
+import { NotFoundError } from '../errors';
 import type { Tournament } from '../types';
 
 export class InMemoryTournamentsRepository implements TournamentsRepository {
@@ -10,5 +11,13 @@ export class InMemoryTournamentsRepository implements TournamentsRepository {
 
   async list(): Promise<Tournament[]> {
     return Array.from(this.store.values());
+  }
+
+  async update(tournamentId: string, patch: Partial<Tournament>): Promise<Tournament> {
+    const existing = this.store.get(tournamentId);
+    if (!existing) throw new NotFoundError('Tournament', tournamentId);
+    const updated: Tournament = { ...existing, ...patch, updatedAt: new Date().toISOString() };
+    this.store.set(tournamentId, updated);
+    return updated;
   }
 }

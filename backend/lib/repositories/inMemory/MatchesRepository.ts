@@ -27,4 +27,14 @@ export class InMemoryMatchesRepository implements MatchesRepository {
   async listBySeason(seasonId: string): Promise<Match[]> {
     return Array.from(this.store.values()).filter((m) => m.seasonId === seasonId);
   }
+
+  async findByIdWithDate(matchId: string): Promise<(Match & { date: string }) | null> {
+    const match = this.store.get(matchId);
+    if (!match) return null;
+    return { ...match, date: match.date };
+  }
+
+  async delete(matchId: string, _date: string): Promise<void> {
+    this.store.delete(matchId);
+  }
 }
