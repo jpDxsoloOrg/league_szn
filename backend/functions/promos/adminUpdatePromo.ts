@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { requireRole } from '../../lib/auth';
@@ -18,35 +18,24 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (parseError) return parseError;
     const { isPinned, isHidden } = body;
 
-    const result = await dynamoDb.get({
-      TableName: TableNames.PROMOS,
-      Key: { promoId },
-    });
-    if (!result.Item) {
+    const { promos } = getRepositories();
+
+    const existing = await promos.findById(promoId);
+    if (!existing) {
       return notFound('Promo not found');
     }
 
-    const now = new Date().toISOString();
-    const updates: string[] = ['updatedAt = :now'];
-    const values: Record<string, unknown> = { ':now': now };
-
+    const patch: Partial<Record<string, unknown>> = {};
     if (typeof isPinned === 'boolean') {
-      updates.push('isPinned = :pinned');
-      values[':pinned'] = isPinned;
+      patch.isPinned = isPinned;
     }
     if (typeof isHidden === 'boolean') {
-      updates.push('isHidden = :hidden');
-      values[':hidden'] = isHidden;
+      patch.isHidden = isHidden;
     }
 
-    await dynamoDb.update({
-      TableName: TableNames.PROMOS,
-      Key: { promoId },
-      UpdateExpression: `SET ${updates.join(', ')}`,
-      ExpressionAttributeValues: values,
-    });
+    const updated = await promos.update(promoId, patch);
 
-    return success({ ...result.Item, ...body, updatedAt: now });
+    return success(updated);
   } catch (err) {
     console.error('Error updating promo:', err);
     return serverError('Failed to update promo');

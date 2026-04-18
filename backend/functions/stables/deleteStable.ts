@@ -1,13 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames, getOrNotFound } from '../../lib/dynamodb';
-import { noContent, badRequest, serverError } from '../../lib/response';
+import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import { noContent, badRequest, notFound, serverError } from '../../lib/response';
 import { requireSuperAdmin } from '../../lib/auth';
-
-interface StableRecord {
-  [key: string]: unknown;
-  stableId: string;
-  memberIds: string[];
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -19,20 +14,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('stableId is required');
     }
 
-    const result = await getOrNotFound<StableRecord>(
-      TableNames.STABLES,
-      { stableId },
-      'Stable not found'
-    );
+    const { stables: stablesRepo } = getRepositories();
 
-    if ('notFoundResponse' in result) {
-      return result.notFoundResponse;
+    const stable = await stablesRepo.findById(stableId);
+    if (!stable) {
+      return notFound('Stable not found');
     }
 
-    const stable = result.item;
     const now = new Date().toISOString();
 
     // Clear stableId from all member players
+    // Note: using dynamoDb directly for REMOVE expression on player records (Wave 7)
     const clearPlayerPromises = stable.memberIds.map((playerId) =>
       dynamoDb.update({
         TableName: TableNames.PLAYERS,
@@ -49,12 +41,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     );
 
     // Delete all invitations for this stable
-    const invitations = await dynamoDb.scanAll({
-      TableName: TableNames.STABLE_INVITATIONS,
-      FilterExpression: '#stableId = :stableId',
-      ExpressionAttributeNames: { '#stableId': 'stableId' },
-      ExpressionAttributeValues: { ':stableId': stableId },
-    });
+    const invitations = await stablesRepo.listInvitationsByStable(stableId);
 
     const deleteInvitationPromises = invitations.map((inv) =>
       dynamoDb.delete({
@@ -67,10 +54,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     await Promise.all([...clearPlayerPromises, ...deleteInvitationPromises]);
 
     // Hard delete the stable record
-    await dynamoDb.delete({
-      TableName: TableNames.STABLES,
-      Key: { stableId },
-    });
+    await stablesRepo.delete(stableId);
 
     return noContent();
   } catch (err) {

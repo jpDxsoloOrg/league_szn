@@ -161,7 +161,7 @@ describe('cancelChallenge', () => {
     mockQuery.mockResolvedValue({
       Items: [{ playerId: 'p1', userId: 'user-sub-1' }],
     });
-    mockUpdate.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({ Attributes: { ...pendingChallenge, status: 'cancelled', updatedAt: '2026-01-01T00:00:00.000Z' } });
 
     const event = withAuth(
       makeEvent({ pathParameters: { challengeId: 'ch1' } }),
@@ -182,7 +182,7 @@ describe('cancelChallenge', () => {
 
   it('allows Admin to cancel any challenge without player lookup', async () => {
     mockGet.mockResolvedValue({ Item: pendingChallenge });
-    mockUpdate.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({ Attributes: { ...pendingChallenge, status: 'cancelled', updatedAt: '2026-01-01T00:00:00.000Z' } });
 
     const event = withAuth(
       makeEvent({ pathParameters: { challengeId: 'ch1' } }),
@@ -204,7 +204,7 @@ describe('cancelChallenge', () => {
     mockQuery.mockResolvedValue({
       Items: [{ playerId: 'p1', userId: 'mod-sub' }],
     });
-    mockUpdate.mockResolvedValue({});
+    mockUpdate.mockResolvedValue({ Attributes: { ...pendingChallenge, status: 'cancelled', updatedAt: '2026-01-01T00:00:00.000Z' } });
 
     const event = withAuth(
       makeEvent({ pathParameters: { challengeId: 'ch1' } }),

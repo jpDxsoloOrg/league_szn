@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { getOrNotFound } from '../../lib/dynamodbUtils';
-import { noContent, badRequest, serverError, conflict } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { noContent, badRequest, serverError, conflict, notFound } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -11,14 +11,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Player ID is required');
     }
 
-    const playerResult = await getOrNotFound(TableNames.PLAYERS, { playerId }, 'Player not found');
-    if ('notFoundResponse' in playerResult) {
-      return playerResult.notFoundResponse;
+    const player = await getRepositories().players.findById(playerId);
+    if (!player) {
+      return notFound('Player not found');
     }
 
-    const player = playerResult.item as Record<string, unknown>;
-
     // --- Stable cleanup ---
+    // Note: Stables repo is available but complex cleanup logic uses direct DynamoDB
+    // for multi-table transactional updates that go beyond simple CRUD
     if (player.stableId) {
       try {
         const stableId = player.stableId as string;
@@ -60,12 +60,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               },
             });
             // Clear stableId from the remaining member
-            await dynamoDb.update({
-              TableName: TableNames.PLAYERS,
-              Key: { playerId: remainingMembers[0] },
-              UpdateExpression: 'REMOVE stableId SET updatedAt = :now',
-              ExpressionAttributeValues: { ':now': now },
-            });
+            await getRepositories().players.update(remainingMembers[0], { stableId: null });
           } else {
             // Multiple members remain — remove player, promote leader if needed
             const isLeader = stable.leaderId === playerId;
@@ -94,6 +89,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // --- Tag team cleanup ---
+    // Note: TagTeams repo is available but complex cleanup logic uses direct DynamoDB
     if (player.tagTeamId) {
       try {
         const tagTeamId = player.tagTeamId as string;
@@ -124,12 +120,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               ? tagTeam.player2Id as string
               : tagTeam.player1Id as string;
 
-            await dynamoDb.update({
-              TableName: TableNames.PLAYERS,
-              Key: { playerId: partnerId },
-              UpdateExpression: 'REMOVE tagTeamId SET updatedAt = :now',
-              ExpressionAttributeValues: { ':now': now },
-            });
+            await getRepositories().players.update(partnerId, { tagTeamId: null });
           }
         }
       } catch (tagTeamErr) {
@@ -138,6 +129,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Check if player is a current champion
+    // Note: Championships repo not yet migrated
     const championshipsResult = await dynamoDb.scan({
       TableName: TableNames.CHAMPIONSHIPS,
       FilterExpression: 'contains(#currentChampion, :playerId)',
@@ -157,12 +149,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Delete the player
-    await dynamoDb.delete({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId },
-    });
+    await getRepositories().players.delete(playerId);
 
     // Also delete from season standings
+    // Note: SeasonStandings repo not yet migrated
     const standingsResult = await dynamoDb.query({
       TableName: TableNames.SEASON_STANDINGS,
       IndexName: 'PlayerIndex',

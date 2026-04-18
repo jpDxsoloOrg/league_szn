@@ -1,5 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import type { ChallengeStatus } from '../../lib/repositories';
 import { success, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { requireRole } from '../../lib/auth';
@@ -19,31 +20,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('statuses array is required and must not be empty');
     }
 
-    let challenges: Record<string, unknown>[] = [];
+    const { challenges } = getRepositories();
+
+    let allChallenges: { challengeId: string }[] = [];
 
     for (const status of statuses) {
-      const items = await dynamoDb.queryAll({
-        TableName: TableNames.CHALLENGES,
-        IndexName: 'StatusIndex',
-        KeyConditionExpression: '#s = :status',
-        ExpressionAttributeNames: { '#s': 'status' },
-        ExpressionAttributeValues: { ':status': status },
-        ScanIndexForward: false,
-      });
-      challenges = challenges.concat(items);
-      if (challenges.length >= MAX_BULK_DELETE) break;
+      const items = await challenges.listByStatus(status as ChallengeStatus);
+      allChallenges = allChallenges.concat(items);
+      if (allChallenges.length >= MAX_BULK_DELETE) break;
     }
 
-    challenges = challenges.slice(0, MAX_BULK_DELETE);
+    allChallenges = allChallenges.slice(0, MAX_BULK_DELETE);
     let deleted = 0;
 
-    for (const c of challenges) {
-      const challengeId = c.challengeId as string;
-      if (!challengeId) continue;
-      await dynamoDb.delete({
-        TableName: TableNames.CHALLENGES,
-        Key: { challengeId },
-      });
+    for (const c of allChallenges) {
+      if (!c.challengeId) continue;
+      await challenges.delete(c.challengeId);
       deleted += 1;
     }
 

@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 
@@ -15,49 +15,30 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('stableId is required');
     }
 
-    // Verify caller is the stable leader
-    const callerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
+    const { stables: stablesRepo, players: playersRepo } = getRepositories();
 
-    const callerPlayer = callerResult.Items?.[0];
+    // Verify caller is the stable leader
+    const callerPlayer = await playersRepo.findByUserId(auth.sub);
     if (!callerPlayer) {
       return badRequest('Player not found');
     }
 
-    // Query invitations for this stable using the StableIndex GSI
-    const result = await dynamoDb.query({
-      TableName: TableNames.STABLE_INVITATIONS,
-      IndexName: 'StableIndex',
-      KeyConditionExpression: '#stableId = :stableId',
-      ExpressionAttributeNames: {
-        '#stableId': 'stableId',
-      },
-      ExpressionAttributeValues: {
-        ':stableId': stableId,
-      },
-      ScanIndexForward: false, // newest first
-    });
+    // Query invitations for this stable
+    const invitations = await stablesRepo.listInvitationsByStable(stableId);
 
-    const invitations = result.Items || [];
+    // Enrich with player names and stable name
+    const stable = await stablesRepo.findById(stableId);
 
-    // Enrich with player names
     const enriched = await Promise.all(
       invitations.map(async (inv) => {
-        const enrichedInv = { ...inv };
+        const enrichedInv: Record<string, unknown> = { ...inv };
 
         // Get invited player name
         if (inv.invitedPlayerId) {
           try {
-            const playerResult = await dynamoDb.get({
-              TableName: TableNames.PLAYERS,
-              Key: { playerId: inv.invitedPlayerId },
-            });
-            if (playerResult.Item) {
-              enrichedInv.invitedPlayerName = playerResult.Item.name;
+            const player = await playersRepo.findById(inv.invitedPlayerId);
+            if (player) {
+              enrichedInv.invitedPlayerName = player.name;
             }
           } catch {
             // Skip enrichment on error
@@ -67,31 +48,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         // Get inviting player name
         if (inv.invitedByPlayerId) {
           try {
-            const playerResult = await dynamoDb.get({
-              TableName: TableNames.PLAYERS,
-              Key: { playerId: inv.invitedByPlayerId },
-            });
-            if (playerResult.Item) {
-              enrichedInv.invitedByPlayerName = playerResult.Item.name;
+            const player = await playersRepo.findById(inv.invitedByPlayerId);
+            if (player) {
+              enrichedInv.invitedByPlayerName = player.name;
             }
           } catch {
             // Skip enrichment on error
           }
         }
 
-        // Get stable name
-        if (inv.stableId) {
-          try {
-            const stableResult = await dynamoDb.get({
-              TableName: TableNames.STABLES,
-              Key: { stableId: inv.stableId },
-            });
-            if (stableResult.Item) {
-              enrichedInv.stableName = stableResult.Item.name;
-            }
-          } catch {
-            // Skip enrichment on error
-          }
+        // Add stable name
+        if (stable) {
+          enrichedInv.stableName = stable.name;
         }
 
         return enrichedInv;

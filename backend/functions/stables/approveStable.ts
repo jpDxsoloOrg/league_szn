@@ -1,15 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames, getOrNotFound } from '../../lib/dynamodb';
-import { success, badRequest, serverError } from '../../lib/response';
+import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
-
-interface StableRecord {
-  [key: string]: unknown;
-  stableId: string;
-  leaderId: string;
-  memberIds: string[];
-  status: string;
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -21,17 +14,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('stableId is required');
     }
 
-    const result = await getOrNotFound<StableRecord>(
-      TableNames.STABLES,
-      { stableId },
-      'Stable not found'
-    );
+    const { stables: stablesRepo } = getRepositories();
 
-    if ('notFoundResponse' in result) {
-      return result.notFoundResponse;
+    const stable = await stablesRepo.findById(stableId);
+    if (!stable) {
+      return notFound('Stable not found');
     }
-
-    const stable = result.item;
 
     if (stable.status !== 'pending') {
       return badRequest(`Stable is already ${stable.status}, cannot approve`);
@@ -40,21 +28,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const now = new Date().toISOString();
 
     // Update stable status to approved
-    await dynamoDb.update({
-      TableName: TableNames.STABLES,
-      Key: { stableId },
-      UpdateExpression: 'SET #status = :status, #updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#status': 'status',
-        '#updatedAt': 'updatedAt',
-      },
-      ExpressionAttributeValues: {
-        ':status': 'approved',
-        ':updatedAt': now,
-      },
-    });
+    await stablesRepo.update(stableId, { status: 'approved' });
 
     // Set the leader's stableId on their player record
+    // Note: using dynamoDb directly for player update to keep REMOVE semantics consistent (Wave 7)
     await dynamoDb.update({
       TableName: TableNames.PLAYERS,
       Key: { playerId: stable.leaderId },

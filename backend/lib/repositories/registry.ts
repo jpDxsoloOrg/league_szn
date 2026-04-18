@@ -10,6 +10,14 @@ import type { NotificationsRepository } from './NotificationsRepository';
 import type { OverallsRepository } from './OverallsRepository';
 import type { SeasonsRepository } from './SeasonsRepository';
 import type { SeasonAwardsRepository } from './SeasonAwardsRepository';
+import type { PlayersRepository } from './PlayersRepository';
+import type { ChallengesRepository } from './ChallengesRepository';
+import type { TagTeamsRepository } from './TagTeamsRepository';
+import type { StablesRepository } from './StablesRepository';
+import type { TransfersRepository } from './TransfersRepository';
+import type { StorylineRequestsRepository } from './StorylineRequestsRepository';
+import type { EventsRepository } from './EventsRepository';
+import type { PromosRepository } from './PromosRepository';
 import type { UnitOfWorkFactory } from './unitOfWork';
 
 export interface Repositories {
@@ -25,6 +33,14 @@ export interface Repositories {
   overalls: OverallsRepository;
   seasons: SeasonsRepository;
   seasonAwards: SeasonAwardsRepository;
+  players: PlayersRepository;
+  challenges: ChallengesRepository;
+  tagTeams: TagTeamsRepository;
+  stables: StablesRepository;
+  transfers: TransfersRepository;
+  storylineRequests: StorylineRequestsRepository;
+  events: EventsRepository;
+  promos: PromosRepository;
   runInTransaction: UnitOfWorkFactory;
 }
 

@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError, forbidden } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 
@@ -13,17 +13,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('challengeId is required');
     }
 
-    const result = await dynamoDb.get({
-      TableName: TableNames.CHALLENGES,
-      Key: { challengeId },
-    });
-    const challenge = result.Item;
+    const { challenges, players, tagTeams } = getRepositories();
+
+    const challenge = await challenges.findById(challengeId);
     if (!challenge) {
       return notFound('Challenge not found');
     }
 
     const adminCancellableStatuses = ['pending', 'countered', 'accepted'];
-    if (isAdmin && !adminCancellableStatuses.includes(challenge.status as string)) {
+    if (isAdmin && !adminCancellableStatuses.includes(challenge.status)) {
       return badRequest('Only pending, countered, or accepted challenges can be cancelled by admin');
     }
     if (!isAdmin && challenge.status !== 'pending') {
@@ -32,23 +30,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Verify the canceller is the challenger (or admin)
     if (!isAdmin) {
-      const playerResult = await dynamoDb.query({
-        TableName: TableNames.PLAYERS,
-        IndexName: 'UserIdIndex',
-        KeyConditionExpression: 'userId = :uid',
-        ExpressionAttributeValues: { ':uid': auth.sub },
-      });
-      const player = playerResult.Items?.[0];
+      const player = await players.findByUserId(auth.sub);
       if (!player) {
         return forbidden('Player not found for current user');
       }
 
       if (challenge.challengeMode === 'tag_team') {
-        const tagTeamResult = await dynamoDb.get({
-          TableName: TableNames.TAG_TEAMS,
-          Key: { tagTeamId: challenge.challengerTagTeamId as string },
-        });
-        const tagTeam = tagTeamResult.Item;
+        const tagTeam = challenge.challengerTagTeamId
+          ? await tagTeams.findById(challenge.challengerTagTeamId)
+          : null;
         if (!tagTeam || (player.playerId !== tagTeam.player1Id && player.playerId !== tagTeam.player2Id)) {
           return forbidden('Only members of the challenger tag team or an admin can cancel');
         }
@@ -59,18 +49,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const now = new Date().toISOString();
 
-    await dynamoDb.update({
-      TableName: TableNames.CHALLENGES,
-      Key: { challengeId },
-      UpdateExpression: 'SET #s = :status, updatedAt = :now',
-      ExpressionAttributeNames: { '#s': 'status' },
-      ExpressionAttributeValues: {
-        ':status': 'cancelled',
-        ':now': now,
-      },
+    const updated = await challenges.update(challengeId, {
+      status: 'cancelled',
+      updatedAt: now,
     });
 
-    return success({ ...challenge, status: 'cancelled', updatedAt: now });
+    return success(updated);
   } catch (err) {
     console.error('Error cancelling challenge:', err);
     return serverError('Failed to cancel challenge');

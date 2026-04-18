@@ -1,5 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, notFound, serverError } from '../../lib/response';
 
 interface MatchRecord {
@@ -13,12 +14,6 @@ interface MatchRecord {
   isChampionship: boolean;
   status: string;
   seasonId?: string;
-}
-
-interface PlayerRecord {
-  playerId: string;
-  name: string;
-  currentWrestler: string;
 }
 
 function getMatchCategory(match: MatchRecord): string {
@@ -72,18 +67,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const seasonId = event.queryStringParameters?.seasonId;
 
     // Verify player exists
-    const playerResult = await dynamoDb.get({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId },
-    });
+    const player = await getRepositories().players.findById(playerId);
 
-    if (!playerResult.Item) {
+    if (!player) {
       return notFound('Player not found');
     }
 
-    const player = playerResult.Item as unknown as PlayerRecord;
-
     // Get all completed matches
+    // Note: Matches repo not yet migrated
     const allMatches = await dynamoDb.scanAll({
       TableName: TableNames.MATCHES,
       FilterExpression: '#status = :completed',

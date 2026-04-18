@@ -1,25 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import type { StorylineRequest, StorylineRequestStatus } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
-
-interface StorylineRequestRecord {
-  requestId: string;
-  requesterId: string;
-  targetPlayerIds: string[];
-  requestType: string;
-  description: string;
-  status: string;
-  gmNote?: string;
-  createdAt: string;
-  updatedAt: string;
-  reviewedBy?: string;
-}
-
-interface PlayerRecord {
-  playerId: string;
-  name: string;
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Admin', 'Moderator');
@@ -27,22 +10,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
   try {
     const statusFilter = event.queryStringParameters?.status;
+    const { storylineRequests, players } = getRepositories();
 
-    let requests: StorylineRequestRecord[];
+    let requests: StorylineRequest[];
 
     if (statusFilter) {
-      const result = await dynamoDb.queryAll({
-        TableName: TableNames.STORYLINE_REQUESTS,
-        IndexName: 'StatusIndex',
-        KeyConditionExpression: '#status = :status',
-        ExpressionAttributeNames: { '#status': 'status' },
-        ExpressionAttributeValues: { ':status': statusFilter },
-        ScanIndexForward: false,
-      });
-      requests = result as unknown as StorylineRequestRecord[];
+      requests = await storylineRequests.listByStatus(statusFilter as StorylineRequestStatus);
     } else {
-      const result = await dynamoDb.scanAll({ TableName: TableNames.STORYLINE_REQUESTS });
-      requests = result as unknown as StorylineRequestRecord[];
+      requests = await storylineRequests.list();
     }
 
     // Collect unique player IDs (requester + targets)
@@ -52,9 +27,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       for (const pid of req.targetPlayerIds || []) playerIds.add(pid);
     }
 
-    const playersResult = await dynamoDb.scanAll({ TableName: TableNames.PLAYERS });
+    const allPlayers = await players.list();
     const playersMap = new Map<string, string>(
-      (playersResult as unknown as PlayerRecord[])
+      allPlayers
         .filter((p) => playerIds.has(p.playerId))
         .map((p) => [p.playerId, p.name])
     );

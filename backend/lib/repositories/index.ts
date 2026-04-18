@@ -24,3 +24,11 @@ export type { NotificationsRepository, NotificationPage } from './NotificationsR
 export type { OverallsRepository, OverallSubmitInput, JoinedOverall } from './OverallsRepository';
 export type { SeasonsRepository, SeasonCreateInput, SeasonPatch } from './SeasonsRepository';
 export type { SeasonAwardsRepository, SeasonAwardCreateInput } from './SeasonAwardsRepository';
+export type { PlayersRepository, PlayerCreateInput, PlayerPatch } from './PlayersRepository';
+export type { ChallengesRepository, ChallengeCreateInput } from './ChallengesRepository';
+export type { TagTeamsRepository, TagTeamCreateInput, TagTeamPatch } from './TagTeamsRepository';
+export type { StablesRepository, StableCreateInput, StablePatch, StableInvitationCreateInput } from './StablesRepository';
+export type { TransfersRepository, TransferCreateInput, TransferReviewInput } from './TransfersRepository';
+export type { StorylineRequestsRepository, StorylineRequestCreateInput, StorylineRequestReviewInput } from './StorylineRequestsRepository';
+export type { EventsRepository, EventCreateInput, EventPatch } from './EventsRepository';
+export type { PromosRepository, PromoCreateInput } from './PromosRepository';

@@ -1,20 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames, getOrNotFound } from '../../lib/dynamodb';
-import { success, badRequest, serverError, forbidden } from '../../lib/response';
+import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import { success, badRequest, notFound, serverError, forbidden } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
-
-interface TagTeamRecord {
-  [key: string]: unknown;
-  tagTeamId: string;
-  player1Id: string;
-  player2Id: string;
-  status: string;
-}
-
-interface PlayerRecord {
-  playerId: string;
-  userId?: string;
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -28,18 +16,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('tagTeamId is required');
     }
 
+    const { tagTeams: tagTeamsRepo, players: playersRepo } = getRepositories();
+
     // Get tag team
-    const result = await getOrNotFound<TagTeamRecord>(
-      TableNames.TAG_TEAMS,
-      { tagTeamId },
-      'Tag team not found'
-    );
-
-    if ('notFoundResponse' in result) {
-      return result.notFoundResponse;
+    const tagTeam = await tagTeamsRepo.findById(tagTeamId);
+    if (!tagTeam) {
+      return notFound('Tag team not found');
     }
-
-    const tagTeam = result.item;
 
     if (tagTeam.status === 'dissolved') {
       return badRequest('This tag team is already dissolved');
@@ -47,14 +30,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Unless Admin, verify caller is a member of the tag team
     if (!hasRole(auth, 'Admin')) {
-      const callerResult = await dynamoDb.query({
-        TableName: TableNames.PLAYERS,
-        IndexName: 'UserIdIndex',
-        KeyConditionExpression: 'userId = :uid',
-        ExpressionAttributeValues: { ':uid': auth.sub },
-      });
-
-      const callerPlayer = callerResult.Items?.[0] as PlayerRecord | undefined;
+      const callerPlayer = await playersRepo.findByUserId(auth.sub);
       if (!callerPlayer) {
         return badRequest('No player profile linked to your account');
       }
@@ -69,7 +45,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const now = new Date().toISOString();
 
-    // Build transaction: update tag team status + clear tagTeamId from both players
+    // Build transaction: update tag team status + clear tagTeamId from both players (Wave 7)
     const transactItems: Parameters<typeof dynamoDb.transactWrite>[0]['TransactItems'] = [
       {
         Update: {

@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { getOrNotFound } from '../../lib/dynamodbUtils';
-import { noContent, badRequest, serverError, conflict } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { noContent, badRequest, notFound, serverError, conflict } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -11,24 +11,23 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Event ID is required');
     }
 
-    const existingEvent = await getOrNotFound(TableNames.EVENTS, { eventId }, 'Event not found');
-    if ('notFoundResponse' in existingEvent) {
-      return existingEvent.notFoundResponse;
-    }
+    const { events } = getRepositories();
 
-    const eventItem = existingEvent.item as Record<string, unknown>;
+    const eventItem = await events.findById(eventId);
+    if (!eventItem) {
+      return notFound('Event not found');
+    }
 
     // Check if event has completed matches
     if (Array.isArray(eventItem.matchCards) && eventItem.matchCards.length > 0) {
       const matchIds = eventItem.matchCards
-        .filter((card): card is Record<string, unknown> => !!card && typeof card === 'object')
         .map((card) => card.matchId)
         .filter((matchId): matchId is string => typeof matchId === 'string' && matchId.length > 0);
 
       if (matchIds.length > 0) {
+        // Note: Matches table not yet migrated to repository layer (Wave 5+)
         const matchChecks = await Promise.all(
           matchIds.map(async (matchId: string) => {
-            // Matches table uses a composite PK (matchId + date), so query by hash key.
             const matchResult = await dynamoDb.query({
               TableName: TableNames.MATCHES,
               KeyConditionExpression: 'matchId = :matchId',
@@ -52,10 +51,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Delete the event
-    await dynamoDb.delete({
-      TableName: TableNames.EVENTS,
-      Key: { eventId },
-    });
+    await events.delete(eventId);
 
     return noContent();
   } catch (err) {

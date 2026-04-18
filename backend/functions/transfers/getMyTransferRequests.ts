@@ -1,25 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, notFound, serverError } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
-
-interface TransferRequestRecord {
-  requestId: string;
-  playerId: string;
-  fromDivisionId: string;
-  toDivisionId: string;
-  reason: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  reviewedBy?: string;
-  reviewNote?: string;
-}
-
-interface DivisionRecord {
-  divisionId: string;
-  name: string;
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Wrestler');
@@ -27,29 +9,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
   try {
     const { sub } = getAuthContext(event);
+    const repos = getRepositories();
 
-    const playerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :userId',
-      ExpressionAttributeValues: { ':userId': sub },
-    });
+    const player = await repos.players.findByUserId(sub);
 
-    if (!playerResult.Items || playerResult.Items.length === 0) {
+    if (!player) {
       return notFound('No player profile found for this user');
     }
 
-    const player = playerResult.Items[0];
-    const playerId = player.playerId as string;
+    const playerId = player.playerId;
 
-    const requestsResult = await dynamoDb.queryAll({
-      TableName: TableNames.TRANSFER_REQUESTS,
-      IndexName: 'PlayerTransfersIndex',
-      KeyConditionExpression: 'playerId = :playerId',
-      ExpressionAttributeValues: { ':playerId': playerId },
-    });
-
-    const requests = requestsResult as unknown as TransferRequestRecord[];
+    const requests = await repos.transfers.listByPlayer(playerId);
 
     // Collect unique division IDs to join names
     const divisionIds = new Set<string>();
@@ -61,13 +31,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const divisionsMap = new Map<string, string>();
     await Promise.all(
       Array.from(divisionIds).map(async (divisionId) => {
-        const result = await dynamoDb.get({
-          TableName: TableNames.DIVISIONS,
-          Key: { divisionId },
-        });
-        if (result.Item) {
-          const div = result.Item as unknown as DivisionRecord;
-          divisionsMap.set(divisionId, div.name);
+        const division = await repos.divisions.findById(divisionId);
+        if (division) {
+          divisionsMap.set(divisionId, division.name);
         }
       })
     );

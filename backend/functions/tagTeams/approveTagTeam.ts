@@ -1,21 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames, getOrNotFound } from '../../lib/dynamodb';
-import { success, badRequest, serverError } from '../../lib/response';
+import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
-
-interface TagTeamRecord {
-  [key: string]: unknown;
-  tagTeamId: string;
-  name: string;
-  player1Id: string;
-  player2Id: string;
-  status: string;
-}
-
-interface PlayerRecord {
-  playerId: string;
-  tagTeamId?: string;
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -27,37 +14,23 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('tagTeamId is required');
     }
 
+    const { tagTeams: tagTeamsRepo, players: playersRepo } = getRepositories();
+
     // Get tag team
-    const result = await getOrNotFound<TagTeamRecord>(
-      TableNames.TAG_TEAMS,
-      { tagTeamId },
-      'Tag team not found'
-    );
-
-    if ('notFoundResponse' in result) {
-      return result.notFoundResponse;
+    const tagTeam = await tagTeamsRepo.findById(tagTeamId);
+    if (!tagTeam) {
+      return notFound('Tag team not found');
     }
-
-    const tagTeam = result.item;
 
     if (tagTeam.status !== 'pending_admin') {
       return badRequest('This tag team is not awaiting admin approval');
     }
 
     // Verify both players still exist and neither already has a tag team (race condition check)
-    const [player1Result, player2Result] = await Promise.all([
-      dynamoDb.get({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId: tagTeam.player1Id },
-      }),
-      dynamoDb.get({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId: tagTeam.player2Id },
-      }),
+    const [player1, player2] = await Promise.all([
+      playersRepo.findById(tagTeam.player1Id),
+      playersRepo.findById(tagTeam.player2Id),
     ]);
-
-    const player1 = player1Result.Item as PlayerRecord | undefined;
-    const player2 = player2Result.Item as PlayerRecord | undefined;
 
     if (!player1) {
       return badRequest('Player 1 no longer exists');
@@ -74,7 +47,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const now = new Date().toISOString();
 
-    // Use transactWrite to atomically update tag team status and both player records
+    // Use transactWrite to atomically update tag team status and both player records (Wave 7)
     await dynamoDb.transactWrite({
       TransactItems: [
         {

@@ -1,16 +1,15 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, forbidden, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import type { EventCheckInStatus } from '../../lib/repositories/types';
 
-type CheckInStatus = 'available' | 'tentative' | 'unavailable';
+const VALID_STATUSES: ReadonlyArray<EventCheckInStatus> = ['available', 'tentative', 'unavailable'];
 
 interface CheckInBody {
-  status: CheckInStatus;
+  status: EventCheckInStatus;
 }
-
-const VALID_STATUSES: ReadonlyArray<CheckInStatus> = ['available', 'tentative', 'unavailable'];
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -34,61 +33,37 @@ export const handler = async (
       return badRequest('status must be one of available, tentative, unavailable');
     }
 
-    // Find the caller's player record via their user sub
-    const playerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
+    const { events, players } = getRepositories();
 
-    const callerPlayer = playerResult.Items?.[0];
+    // Find the caller's player record via their user sub
+    const callerPlayer = await players.findByUserId(auth.sub);
     if (!callerPlayer) {
       return badRequest('No player profile linked to your account');
     }
 
-    const playerId = callerPlayer.playerId as string;
+    const playerId = callerPlayer.playerId;
 
     // Fetch the event
-    const eventResult = await dynamoDb.get({
-      TableName: TableNames.EVENTS,
-      Key: { eventId },
-    });
+    const eventItem = await events.findById(eventId);
 
-    if (!eventResult.Item) {
+    if (!eventItem) {
       return notFound('Event not found');
     }
 
-    const eventItem = eventResult.Item as Record<string, unknown>;
-    const eventStatus = eventItem.status as string | undefined;
-
-    if (eventStatus !== 'upcoming' && eventStatus !== 'in-progress') {
+    if (eventItem.status !== 'upcoming' && eventItem.status !== 'in-progress') {
       return badRequest('Check-in is only allowed for upcoming or in-progress events');
     }
 
-    const eventDate = eventItem.date as string | undefined;
-    if (!eventDate) {
+    if (!eventItem.date) {
       return serverError('Event is missing a date');
     }
 
-    const eventTimeSeconds = Math.floor(new Date(eventDate).getTime() / 1000);
+    const eventTimeSeconds = Math.floor(new Date(eventItem.date).getTime() / 1000);
     if (Number.isNaN(eventTimeSeconds)) {
       return serverError('Event has an invalid date');
     }
-    const ttl = eventTimeSeconds + 30 * 86400;
 
-    const checkIn = {
-      eventId,
-      playerId,
-      status,
-      checkedInAt: new Date().toISOString(),
-      ttl,
-    };
-
-    await dynamoDb.put({
-      TableName: TableNames.EVENT_CHECK_INS,
-      Item: checkIn,
-    });
+    const checkIn = await events.upsertCheckIn(eventId, playerId, status);
 
     return success(checkIn);
   } catch (err) {

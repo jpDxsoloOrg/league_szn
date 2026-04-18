@@ -1,15 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames, getOrNotFound } from '../../lib/dynamodb';
-import { success, badRequest, serverError } from '../../lib/response';
+import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole, isSuperAdmin } from '../../lib/auth';
-
-interface StableRecord {
-  [key: string]: unknown;
-  stableId: string;
-  leaderId: string;
-  memberIds: string[];
-  status: string;
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -23,17 +16,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('stableId is required');
     }
 
-    const result = await getOrNotFound<StableRecord>(
-      TableNames.STABLES,
-      { stableId },
-      'Stable not found'
-    );
+    const { stables: stablesRepo, players: playersRepo } = getRepositories();
 
-    if ('notFoundResponse' in result) {
-      return result.notFoundResponse;
+    const stable = await stablesRepo.findById(stableId);
+    if (!stable) {
+      return notFound('Stable not found');
     }
-
-    const stable = result.item;
 
     if (stable.status === 'disbanded') {
       return badRequest('Stable is already disbanded');
@@ -41,14 +29,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Only leader or Admin can disband
     if (!isSuperAdmin(auth)) {
-      const callerResult = await dynamoDb.query({
-        TableName: TableNames.PLAYERS,
-        IndexName: 'UserIdIndex',
-        KeyConditionExpression: 'userId = :uid',
-        ExpressionAttributeValues: { ':uid': auth.sub },
-      });
-
-      const callerPlayer = callerResult.Items?.[0];
+      const callerPlayer = await playersRepo.findByUserId(auth.sub);
       if (!callerPlayer || callerPlayer.playerId !== stable.leaderId) {
         return badRequest('Only the stable leader or an admin can disband this stable');
       }
@@ -57,23 +38,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const now = new Date().toISOString();
 
     // Update stable status to disbanded
-    await dynamoDb.update({
-      TableName: TableNames.STABLES,
-      Key: { stableId },
-      UpdateExpression: 'SET #status = :status, #disbandedAt = :disbandedAt, #updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#status': 'status',
-        '#disbandedAt': 'disbandedAt',
-        '#updatedAt': 'updatedAt',
-      },
-      ExpressionAttributeValues: {
-        ':status': 'disbanded',
-        ':disbandedAt': now,
-        ':updatedAt': now,
-      },
+    await stablesRepo.update(stableId, {
+      status: 'disbanded',
+      disbandedAt: now,
     });
 
     // Remove stableId from ALL member Player records
+    // Note: using dynamoDb directly for REMOVE expression on player records (Wave 7)
     const clearPromises = stable.memberIds.map((playerId) =>
       dynamoDb.update({
         TableName: TableNames.PLAYERS,

@@ -1,15 +1,13 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    const result = await dynamoDb.scan({
-      TableName: TableNames.PLAYERS,
-    });
+    const players = await getRepositories().players.list();
 
     // Only include players who have a wrestler assigned (exclude Fantasy-only users)
-    const wrestlers = (result.Items || []).filter((p) => p.currentWrestler);
+    const wrestlers = players.filter((p) => p.currentWrestler);
 
     return success(wrestlers);
   } catch (err) {
