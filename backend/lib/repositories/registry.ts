@@ -1,12 +1,30 @@
 import type { DivisionsRepository } from './DivisionsRepository';
 import type { StipulationsRepository } from './StipulationsRepository';
 import type { MatchTypesRepository } from './MatchTypesRepository';
+import type { SiteConfigRepository } from './SiteConfigRepository';
+import type { VideosRepository } from './VideosRepository';
+import type { AnnouncementsRepository } from './AnnouncementsRepository';
+import type { CompaniesRepository } from './CompaniesRepository';
+import type { ShowsRepository } from './ShowsRepository';
+import type { NotificationsRepository } from './NotificationsRepository';
+import type { OverallsRepository } from './OverallsRepository';
+import type { SeasonsRepository } from './SeasonsRepository';
+import type { SeasonAwardsRepository } from './SeasonAwardsRepository';
 import type { UnitOfWorkFactory } from './unitOfWork';
 
 export interface Repositories {
   divisions: DivisionsRepository;
   stipulations: StipulationsRepository;
   matchTypes: MatchTypesRepository;
+  siteConfig: SiteConfigRepository;
+  videos: VideosRepository;
+  announcements: AnnouncementsRepository;
+  companies: CompaniesRepository;
+  shows: ShowsRepository;
+  notifications: NotificationsRepository;
+  overalls: OverallsRepository;
+  seasons: SeasonsRepository;
+  seasonAwards: SeasonAwardsRepository;
   runInTransaction: UnitOfWorkFactory;
 }
 

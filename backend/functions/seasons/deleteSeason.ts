@@ -1,37 +1,31 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { getOrNotFound } from '../../lib/dynamodbUtils';
-import { noContent, badRequest, serverError } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { noContent, badRequest, notFound, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const seasonId = event.pathParameters?.seasonId;
-
     if (!seasonId) {
       return badRequest('Season ID is required');
     }
 
-    const seasonResult = await getOrNotFound(TableNames.SEASONS, { seasonId }, 'Season not found');
-    if ('notFoundResponse' in seasonResult) {
-      return seasonResult.notFoundResponse;
+    const { seasons, seasonAwards } = getRepositories();
+    const existing = await seasons.findById(seasonId);
+    if (!existing) {
+      return notFound('Season not found');
     }
 
     // Delete the season
-    await dynamoDb.delete({
-      TableName: TableNames.SEASONS,
-      Key: { seasonId },
-    });
+    await seasons.delete(seasonId);
 
     // Also delete season standings
+    // Note: SeasonStandings repo not yet migrated (Wave 4/5), using dynamoDb directly
     const standingsResult = await dynamoDb.query({
       TableName: TableNames.SEASON_STANDINGS,
       KeyConditionExpression: '#seasonId = :seasonId',
-      ExpressionAttributeNames: {
-        '#seasonId': 'seasonId',
-      },
-      ExpressionAttributeValues: {
-        ':seasonId': seasonId,
-      },
+      ExpressionAttributeNames: { '#seasonId': 'seasonId' },
+      ExpressionAttributeValues: { ':seasonId': seasonId },
     });
 
     if (standingsResult.Items && standingsResult.Items.length > 0) {
@@ -40,35 +34,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           TableName: TableNames.SEASON_STANDINGS,
           Key: {
             seasonId: seasonId,
-            playerId: (standing as any).playerId,
+            playerId: (standing as Record<string, string>).playerId,
           },
         });
       }
     }
 
-    // Also delete season awards
-    const awardsResult = await dynamoDb.query({
-      TableName: TableNames.SEASON_AWARDS,
-      KeyConditionExpression: '#seasonId = :seasonId',
-      ExpressionAttributeNames: {
-        '#seasonId': 'seasonId',
-      },
-      ExpressionAttributeValues: {
-        ':seasonId': seasonId,
-      },
-    });
-
-    if (awardsResult.Items && awardsResult.Items.length > 0) {
-      for (const award of awardsResult.Items) {
-        await dynamoDb.delete({
-          TableName: TableNames.SEASON_AWARDS,
-          Key: {
-            seasonId: seasonId,
-            awardId: (award as Record<string, string>).awardId,
-          },
-        });
-      }
-    }
+    // Delete season awards via repository
+    await seasonAwards.deleteAllForSeason(seasonId);
 
     return noContent();
   } catch (err) {
