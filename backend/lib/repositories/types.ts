@@ -310,6 +310,112 @@ export interface Promo {
   updatedAt: string;
 }
 
+// ─── Wave 6 types ──────────────────────────────────────────────────
+
+export interface ContenderRanking {
+  championshipId: string;
+  playerId: string;
+  rank: number;
+  rankingScore: number;
+  winPercentage: number;
+  currentStreak: number;
+  qualityScore?: number;
+  recencyScore?: number;
+  matchesInPeriod: number;
+  winsInPeriod: number;
+  previousRank?: number | null;
+  peakRank?: number;
+  weeksAtTop?: number;
+  isOverridden?: boolean;
+  overrideType?: string | null;
+  organicRank?: number | null;
+  calculatedAt: string;
+  updatedAt: string;
+}
+
+export type OverrideType = 'bump_to_top' | 'send_to_bottom';
+
+export interface ContenderOverride {
+  championshipId: string;
+  playerId: string;
+  overrideType: OverrideType;
+  reason: string;
+  createdBy: string;
+  createdAt: string;
+  expiresAt?: string;
+  active: boolean;
+  removedAt?: string;
+  removedReason?: string;
+}
+
+export interface RankingHistoryEntry {
+  playerId: string;
+  weekKey: string;
+  championshipId: string;
+  rank: number;
+  rankingScore: number;
+  movement: number;
+  isOverridden?: boolean;
+  overrideType?: string | null;
+  organicRank?: number | null;
+  createdAt: string;
+}
+
+export interface FantasyConfig {
+  configKey: string;
+  defaultBudget: number;
+  defaultPicksPerDivision: number;
+  baseWinPoints: number;
+  championshipBonus: number;
+  titleWinBonus: number;
+  titleDefenseBonus: number;
+  costFluctuationEnabled: boolean;
+  costChangePerWin: number;
+  costChangePerLoss: number;
+  costResetStrategy: string;
+  underdogMultiplier: number;
+  perfectPickBonus: number;
+  streakBonusThreshold: number;
+  streakBonusPoints: number;
+  [key: string]: unknown;
+}
+
+export interface PointBreakdown {
+  points: number;
+  basePoints: number;
+  multipliers: string[];
+  matchId?: string;
+  reason: string;
+}
+
+export interface FantasyPick {
+  eventId: string;
+  fantasyUserId: string;
+  username?: string;
+  picks: Record<string, string[]>;
+  totalSpent?: number;
+  pointsEarned?: number;
+  breakdown?: Record<string, PointBreakdown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CostHistoryEntry {
+  date: string;
+  cost: number;
+  reason: string;
+}
+
+export interface WrestlerCost {
+  playerId: string;
+  currentCost: number;
+  baseCost: number;
+  costHistory: CostHistoryEntry[];
+  winRate30Days: number;
+  recentRecord: string;
+  updatedAt: string;
+}
+
 // ─── Wave 5 types ──────────────────────────────────────────────────
 
 export interface Match {

@@ -1,24 +1,8 @@
 import { Handler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { calculateRankingsForChampionship, RankingResult } from '../../lib/rankingCalculator';
 import { applyOverrides, ActiveOverride, OverrideType, RankingWithOverride } from '../../lib/overrideApplicator';
-
-interface Championship {
-  championshipId: string;
-  name: string;
-  type: 'singles' | 'tag';
-  currentChampion?: string | string[];
-  divisionId?: string;
-  isActive: boolean;
-}
-
-interface ExistingRanking {
-  championshipId: string;
-  playerId: string;
-  rank: number;
-  peakRank?: number;
-}
 
 interface RankingResultSummary {
   message: string;
@@ -51,27 +35,26 @@ interface ConfigOverrides {
 
 async function calculateAllRankings(requestedChampionshipId?: string, configOverrides?: ConfigOverrides): Promise<RankingResultSummary> {
   const now = new Date().toISOString();
+  const { championships: champRepo, contenders } = getRepositories();
 
   // 1. Determine which championships to recalculate
-  let championships: Championship[] = [];
+  let championships: Array<{
+    championshipId: string;
+    name: string;
+    type: 'singles' | 'tag';
+    currentChampion?: string | string[];
+    divisionId?: string;
+    isActive?: boolean;
+  }> = [];
 
   if (requestedChampionshipId) {
-    const result = await dynamoDb.get({
-      TableName: TableNames.CHAMPIONSHIPS,
-      Key: { championshipId: requestedChampionshipId },
-    });
-
-    if (result.Item) {
-      championships = [result.Item as unknown as Championship];
+    const champ = await champRepo.findById(requestedChampionshipId);
+    if (champ) {
+      championships = [champ as typeof championships[number]];
     }
   } else {
-    const result = await dynamoDb.scanAll({
-      TableName: TableNames.CHAMPIONSHIPS,
-      FilterExpression: 'isActive = :active',
-      ExpressionAttributeValues: { ':active': true },
-    });
-
-    championships = result as unknown as Championship[];
+    const active = await champRepo.listActive();
+    championships = active as typeof championships;
   }
 
   if (championships.length === 0) {
@@ -91,34 +74,20 @@ async function calculateAllRankings(requestedChampionshipId?: string, configOver
     const { championshipId } = championship;
 
     // 2a. Fetch existing rankings so we can preserve previousRank and peakRank
-    const existingItems = await dynamoDb.queryAll({
-      TableName: TableNames.CONTENDER_RANKINGS,
-      KeyConditionExpression: 'championshipId = :cid',
-      ExpressionAttributeValues: { ':cid': championshipId },
-    });
+    const existingRankings = await contenders.listByChampionship(championshipId);
 
-    const existingMap = new Map<string, ExistingRanking>();
-    for (const item of existingItems) {
-      const existing = item as unknown as ExistingRanking;
+    const existingMap = new Map<string, typeof existingRankings[number]>();
+    for (const existing of existingRankings) {
       existingMap.set(existing.playerId, existing);
     }
 
     // 2b. Delete all existing rankings for this championship
-    for (const item of existingItems) {
-      await dynamoDb.delete({
-        TableName: TableNames.CONTENDER_RANKINGS,
-        Key: {
-          championshipId: item.championshipId as string,
-          playerId: item.playerId as string,
-        },
-      });
-    }
+    await contenders.deleteAllForChampionship(championshipId);
 
     // 2c. Calculate new rankings (division-locked if championship has divisionId)
-    // If divisionRestricted is explicitly false, ignore the championship's divisionId
     const useDivisionId = configOverrides?.divisionRestricted === false
       ? undefined
-      : championship.divisionId;
+      : (championship as { divisionId?: string }).divisionId;
 
     const rankings: RankingResult[] = await calculateRankingsForChampionship({
       championshipId,
@@ -131,24 +100,19 @@ async function calculateAllRankings(requestedChampionshipId?: string, configOver
     });
 
     // 2d. Fetch active overrides for this championship
-    const overrideResult = await dynamoDb.query({
-      TableName: TableNames.CONTENDER_OVERRIDES,
-      KeyConditionExpression: 'championshipId = :cid',
-      FilterExpression: 'active = :active',
-      ExpressionAttributeValues: { ':cid': championshipId, ':active': true },
-    });
+    const activeOverrides = await contenders.listActiveOverrides(championshipId);
 
-    const validOverrides: ActiveOverride[] = (overrideResult.Items || [])
-      .filter((o) => !o.expiresAt || (o.expiresAt as string) > now)
+    const validOverrides: ActiveOverride[] = activeOverrides
+      .filter((o) => !o.expiresAt || o.expiresAt > now)
       .map((o) => ({
-        playerId: o.playerId as string,
+        playerId: o.playerId,
         overrideType: o.overrideType as OverrideType,
       }));
 
     // 2e. Apply overrides to rankings
     const adjustedRankings: RankingWithOverride[] = applyOverrides(rankings, validOverrides);
 
-    // 2f. Write new rankings to CONTENDER_RANKINGS
+    // 2f. Write new rankings to contenders repository
     for (const ranking of adjustedRankings) {
       const oldData = existingMap.get(ranking.playerId);
       const previousRank = oldData ? oldData.rank : undefined;
@@ -156,31 +120,26 @@ async function calculateAllRankings(requestedChampionshipId?: string, configOver
       const peakRank = Math.min(oldPeakRank, ranking.rank);
       const weeksAtTop =
         ranking.rank === 1
-          ? ((oldData as Record<string, unknown> | undefined)?.weeksAtTop as number ?? 0) + 1
-          : (oldData as Record<string, unknown> | undefined)?.weeksAtTop as number ?? 0;
+          ? (oldData?.weeksAtTop ?? 0) + 1
+          : (oldData?.weeksAtTop ?? 0);
 
-      await dynamoDb.put({
-        TableName: TableNames.CONTENDER_RANKINGS,
-        Item: {
-          championshipId,
-          playerId: ranking.playerId,
-          rank: ranking.rank,
-          rankingScore: ranking.rankingScore,
-          winPercentage: ranking.winPercentage,
-          currentStreak: ranking.currentStreak,
-          qualityScore: ranking.qualityScore,
-          recencyScore: ranking.recencyScore,
-          matchesInPeriod: ranking.matchesInPeriod,
-          winsInPeriod: ranking.winsInPeriod,
-          previousRank: previousRank ?? null,
-          peakRank,
-          weeksAtTop,
-          isOverridden: ranking.isOverridden || false,
-          overrideType: ranking.overrideType || null,
-          organicRank: ranking.organicRank || null,
-          calculatedAt: now,
-          updatedAt: now,
-        },
+      await contenders.upsertRanking({
+        championshipId,
+        playerId: ranking.playerId,
+        rank: ranking.rank,
+        rankingScore: ranking.rankingScore,
+        winPercentage: ranking.winPercentage,
+        currentStreak: ranking.currentStreak,
+        qualityScore: ranking.qualityScore,
+        recencyScore: ranking.recencyScore,
+        matchesInPeriod: ranking.matchesInPeriod,
+        winsInPeriod: ranking.winsInPeriod,
+        previousRank: previousRank ?? null,
+        peakRank,
+        weeksAtTop,
+        isOverridden: ranking.isOverridden || false,
+        overrideType: ranking.overrideType || null,
+        organicRank: ranking.organicRank || null,
       });
     }
 
@@ -192,20 +151,16 @@ async function calculateAllRankings(requestedChampionshipId?: string, configOver
       const previousRank = oldData ? oldData.rank : undefined;
       const movement = previousRank !== undefined ? previousRank - ranking.rank : 0;
 
-      await dynamoDb.put({
-        TableName: TableNames.RANKING_HISTORY,
-        Item: {
-          playerId: ranking.playerId,
-          weekKey,
-          championshipId,
-          rank: ranking.rank,
-          rankingScore: ranking.rankingScore,
-          movement,
-          isOverridden: ranking.isOverridden || false,
-          overrideType: ranking.overrideType || null,
-          organicRank: ranking.organicRank || null,
-          createdAt: now,
-        },
+      await contenders.writeHistory({
+        playerId: ranking.playerId,
+        weekKey,
+        championshipId,
+        rank: ranking.rank,
+        rankingScore: ranking.rankingScore,
+        movement,
+        isOverridden: ranking.isOverridden || false,
+        overrideType: ranking.overrideType || null,
+        organicRank: ranking.organicRank || null,
       });
     }
 

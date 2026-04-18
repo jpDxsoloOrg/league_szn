@@ -3,27 +3,35 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ---- Mocks ----------------------------------------------------------------
 
-const { mockGet, mockDelete, mockQueryAll } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockDelete: vi.fn(),
-  mockQueryAll: vi.fn(),
-}));
+const mockFantasyRepo = {
+  getConfig: vi.fn(),
+  upsertConfig: vi.fn(),
+  findPick: vi.fn(),
+  listPicksByEvent: vi.fn(),
+  listPicksByUser: vi.fn(),
+  listAllPicks: vi.fn(),
+  savePick: vi.fn(),
+  updatePickScoring: vi.fn(),
+  deletePick: vi.fn(),
+  findCost: vi.fn(),
+  listAllCosts: vi.fn(),
+  upsertCost: vi.fn(),
+  initializeCost: vi.fn(),
+};
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet,
-    put: vi.fn(),
-    scan: vi.fn(),
-    query: vi.fn(),
-    update: vi.fn(),
-    delete: mockDelete,
-    scanAll: vi.fn(),
-    queryAll: mockQueryAll,
-  },
-  TableNames: {
-    EVENTS: 'Events',
-    FANTASY_PICKS: 'FantasyPicks',
-  },
+const mockEventsRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+  create: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+};
+
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    fantasy: mockFantasyRepo,
+    events: mockEventsRepo,
+  }),
 }));
 
 import { handler as clearPicks } from '../clearPicks';
@@ -41,7 +49,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     httpMethod: 'GET', isBase64Encoded: false, path: '/',
     pathParameters: null, queryStringParameters: null,
     multiValueQueryStringParameters: null, stageVariables: null,
-    resource: '', requestContext: { authorizer: {} } as any,
+    resource: '', requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
@@ -52,7 +60,7 @@ function withAuth(event: APIGatewayProxyEvent, groups = 'Fantasy', sub = 'user-1
     requestContext: {
       ...event.requestContext,
       authorizer: { groups, username: 'testuser', email: 'test@test.com', principalId: sub },
-    } as any,
+    } as unknown as APIGatewayProxyEvent['requestContext'],
   };
 }
 
@@ -75,7 +83,7 @@ describe('clearPicks', () => {
   });
 
   it('returns 404 when event does not exist', async () => {
-    mockGet.mockResolvedValueOnce({ Item: undefined });
+    mockEventsRepo.findById.mockResolvedValueOnce(null);
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'e1' } }));
     const result = await clearPicks(event, ctx, cb);
@@ -84,7 +92,7 @@ describe('clearPicks', () => {
   });
 
   it('returns 400 when event is completed', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1', status: 'completed' } });
+    mockEventsRepo.findById.mockResolvedValueOnce({ eventId: 'e1', status: 'completed' });
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'e1' } }));
     const result = await clearPicks(event, ctx, cb);
@@ -93,8 +101,8 @@ describe('clearPicks', () => {
   });
 
   it('returns 400 when picks are locked', async () => {
-    mockGet.mockResolvedValueOnce({
-      Item: { eventId: 'e1', status: 'scheduled', fantasyLocked: true },
+    mockEventsRepo.findById.mockResolvedValueOnce({
+      eventId: 'e1', status: 'scheduled', fantasyLocked: true,
     });
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'e1' } }));
@@ -104,22 +112,20 @@ describe('clearPicks', () => {
   });
 
   it('deletes user picks and returns 204', async () => {
-    mockGet.mockResolvedValueOnce({
-      Item: { eventId: 'e1', status: 'scheduled' },
+    mockEventsRepo.findById.mockResolvedValueOnce({
+      eventId: 'e1', status: 'scheduled',
     });
-    mockDelete.mockResolvedValueOnce({});
+    mockFantasyRepo.deletePick.mockResolvedValueOnce(undefined);
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'e1' } }));
     const result = await clearPicks(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
-    expect(mockDelete).toHaveBeenCalledWith(expect.objectContaining({
-      Key: { eventId: 'e1', fantasyUserId: 'user-1' },
-    }));
+    expect(mockFantasyRepo.deletePick).toHaveBeenCalledWith('e1', 'user-1');
   });
 
   it('returns 500 on unexpected error', async () => {
-    mockGet.mockRejectedValueOnce(new Error('DynamoDB failure'));
+    mockEventsRepo.findById.mockRejectedValueOnce(new Error('DynamoDB failure'));
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'e1' } }));
     const result = await clearPicks(event, ctx, cb);
@@ -139,10 +145,10 @@ describe('getAllMyPicks', () => {
   });
 
   it('returns user picks sorted by eventId descending', async () => {
-    mockQueryAll.mockResolvedValueOnce([
-      { eventId: 'event-001', fantasyUserId: 'user-1' },
+    mockFantasyRepo.listPicksByUser.mockResolvedValueOnce([
       { eventId: 'event-003', fantasyUserId: 'user-1' },
       { eventId: 'event-002', fantasyUserId: 'user-1' },
+      { eventId: 'event-001', fantasyUserId: 'user-1' },
     ]);
 
     const event = withAuth(makeEvent());
@@ -157,7 +163,7 @@ describe('getAllMyPicks', () => {
   });
 
   it('returns empty array when user has no picks', async () => {
-    mockQueryAll.mockResolvedValueOnce([]);
+    mockFantasyRepo.listPicksByUser.mockResolvedValueOnce([]);
 
     const event = withAuth(makeEvent());
     const result = await getAllMyPicks(event, ctx, cb);
@@ -166,20 +172,17 @@ describe('getAllMyPicks', () => {
     expect(JSON.parse(result!.body)).toEqual([]);
   });
 
-  it('uses UserPicksIndex GSI with correct key', async () => {
-    mockQueryAll.mockResolvedValueOnce([]);
+  it('calls listPicksByUser with correct fantasyUserId', async () => {
+    mockFantasyRepo.listPicksByUser.mockResolvedValueOnce([]);
 
     const event = withAuth(makeEvent(), 'Fantasy', 'my-sub');
     await getAllMyPicks(event, ctx, cb);
 
-    expect(mockQueryAll).toHaveBeenCalledWith(expect.objectContaining({
-      IndexName: 'UserPicksIndex',
-      ExpressionAttributeValues: { ':uid': 'my-sub' },
-    }));
+    expect(mockFantasyRepo.listPicksByUser).toHaveBeenCalledWith('my-sub');
   });
 
   it('returns 500 on unexpected error', async () => {
-    mockQueryAll.mockRejectedValueOnce(new Error('DynamoDB failure'));
+    mockFantasyRepo.listPicksByUser.mockRejectedValueOnce(new Error('DynamoDB failure'));
 
     const event = withAuth(makeEvent());
     const result = await getAllMyPicks(event, ctx, cb);
@@ -206,7 +209,7 @@ describe('getUserPicks', () => {
   });
 
   it('returns 404 when no picks found for event', async () => {
-    mockGet.mockResolvedValueOnce({ Item: undefined });
+    mockFantasyRepo.findPick.mockResolvedValueOnce(null);
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'e1' } }));
     const result = await getUserPicks(event, ctx, cb);
@@ -216,7 +219,7 @@ describe('getUserPicks', () => {
 
   it('returns picks for the event', async () => {
     const pickData = { eventId: 'e1', fantasyUserId: 'user-1', picks: { d1: ['p1'] } };
-    mockGet.mockResolvedValueOnce({ Item: pickData });
+    mockFantasyRepo.findPick.mockResolvedValueOnce(pickData);
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'e1' } }));
     const result = await getUserPicks(event, ctx, cb);
@@ -226,18 +229,16 @@ describe('getUserPicks', () => {
   });
 
   it('uses fantasyUserId from auth context', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1' } });
+    mockFantasyRepo.findPick.mockResolvedValueOnce({ eventId: 'e1' });
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'e1' } }), 'Fantasy', 'my-sub');
     await getUserPicks(event, ctx, cb);
 
-    expect(mockGet).toHaveBeenCalledWith(expect.objectContaining({
-      Key: { eventId: 'e1', fantasyUserId: 'my-sub' },
-    }));
+    expect(mockFantasyRepo.findPick).toHaveBeenCalledWith('e1', 'my-sub');
   });
 
   it('returns 500 on unexpected error', async () => {
-    mockGet.mockRejectedValueOnce(new Error('DynamoDB failure'));
+    mockFantasyRepo.findPick.mockRejectedValueOnce(new Error('DynamoDB failure'));
 
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'e1' } }));
     const result = await getUserPicks(event, ctx, cb);

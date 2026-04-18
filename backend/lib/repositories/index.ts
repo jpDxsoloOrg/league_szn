@@ -36,3 +36,5 @@ export type { MatchesRepository } from './MatchesRepository';
 export type { ChampionshipsRepository } from './ChampionshipsRepository';
 export type { TournamentsRepository } from './TournamentsRepository';
 export type { SeasonStandingsRepository } from './SeasonStandingsRepository';
+export type { ContendersRepository, ContenderRankingInput, ContenderOverrideInput, RankingHistoryInput } from './ContendersRepository';
+export type { FantasyRepository, FantasyPickInput, WrestlerCostInitInput } from './FantasyRepository';

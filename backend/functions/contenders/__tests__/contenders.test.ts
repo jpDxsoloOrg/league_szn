@@ -3,25 +3,45 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockGet, mockPut, mockDelete, mockScanAll, mockQueryAll, mockQuery } = vi.hoisted(() => ({
-  mockGet: vi.fn(), mockPut: vi.fn(), mockDelete: vi.fn(),
-  mockScanAll: vi.fn(), mockQueryAll: vi.fn(), mockQuery: vi.fn(),
+const mockContendersRepo = {
+  listByChampionship: vi.fn(),
+  listByChampionshipRanked: vi.fn(),
+  deleteAllForChampionship: vi.fn(),
+  upsertRanking: vi.fn(),
+  findOverride: vi.fn(),
+  listActiveOverrides: vi.fn(),
+  createOverride: vi.fn(),
+  deactivateOverride: vi.fn(),
+  writeHistory: vi.fn(),
+};
+
+const mockChampionshipsRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+  listActive: vi.fn(),
+  listHistory: vi.fn(),
+  listAllHistory: vi.fn(),
+  findCurrentReign: vi.fn(),
+};
+
+const mockPlayersRepo = {
+  findById: vi.fn(),
+  findByUserId: vi.fn(),
+  list: vi.fn(),
+  create: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+};
+
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    contenders: mockContendersRepo,
+    championships: mockChampionshipsRepo,
+    players: mockPlayersRepo,
+  }),
 }));
 
 const { mockCalcRankings } = vi.hoisted(() => ({ mockCalcRankings: vi.fn() }));
-
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet, put: mockPut, scan: vi.fn(), query: mockQuery,
-    update: vi.fn(), delete: mockDelete, scanAll: mockScanAll, queryAll: mockQueryAll,
-  },
-  TableNames: {
-    PLAYERS: 'Players', MATCHES: 'Matches', CHAMPIONSHIPS: 'Championships',
-    CONTENDER_RANKINGS: 'ContenderRankings', RANKING_HISTORY: 'RankingHistory',
-    CONTENDER_OVERRIDES: 'ContenderOverrides',
-    STABLES: 'Stables', TAG_TEAMS: 'TagTeams', STABLE_INVITATIONS: 'StableInvitations',
-  },
-}));
 
 vi.mock('../../../lib/rankingCalculator', () => ({
   calculateRankingsForChampionship: mockCalcRankings,
@@ -64,21 +84,31 @@ function rankResult(playerId: string, rank: number, score = 80) {
   };
 }
 
-/** Shorthand for a ContenderRanking row stored in DynamoDB. */
+/** Shorthand for a ContenderRanking row. */
 function rankRow(cid: string, pid: string, rank: number, prev: number | null = null) {
   return {
     championshipId: cid, playerId: pid, rank, rankingScore: 80,
     winPercentage: 70, currentStreak: 2, matchesInPeriod: 5,
     winsInPeriod: 4, previousRank: prev, calculatedAt: '2025-01-15T00:00:00Z',
+    updatedAt: '2025-01-15T00:00:00Z',
   };
 }
 
 function champ(id: string, name: string, extra: Record<string, unknown> = {}) {
-  return { championshipId: id, name, type: 'singles', isActive: true, ...extra };
+  return {
+    championshipId: id, name, type: 'singles' as const, isActive: true,
+    createdAt: '2025-01-01T00:00:00Z', updatedAt: '2025-01-01T00:00:00Z',
+    ...extra,
+  };
 }
 
 function player(id: string, name: string, wrestler: string, img?: string) {
-  return { playerId: id, name, currentWrestler: wrestler, ...(img ? { imageUrl: img } : {}) };
+  return {
+    playerId: id, name, currentWrestler: wrestler,
+    wins: 0, losses: 0, draws: 0,
+    createdAt: '2025-01-01T00:00:00Z', updatedAt: '2025-01-01T00:00:00Z',
+    ...(img ? { imageUrl: img } : {}),
+  };
 }
 
 // ─── calculateRankings ──────────────────────────────────────────────
@@ -86,14 +116,16 @@ function player(id: string, name: string, wrestler: string, img?: string) {
 describe('calculateRankings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockQuery.mockResolvedValue({ Items: [] });
+    mockContendersRepo.upsertRanking.mockResolvedValue({});
+    mockContendersRepo.writeHistory.mockResolvedValue({});
+    mockContendersRepo.deleteAllForChampionship.mockResolvedValue(undefined);
+    mockContendersRepo.listActiveOverrides.mockResolvedValue([]);
   });
 
   it('calculates rankings via rankingCalculator and writes results', async () => {
-    mockScanAll.mockResolvedValue([champ('c1', 'World Title')]);
-    mockQueryAll.mockResolvedValue([]);
+    mockChampionshipsRepo.listActive.mockResolvedValue([champ('c1', 'World Title')]);
+    mockContendersRepo.listByChampionship.mockResolvedValue([]);
     mockCalcRankings.mockResolvedValue([rankResult('p1', 1)]);
-    mockPut.mockResolvedValue({});
 
     const result = await calculateRankings(makeEvent(), ctx, cb);
 
@@ -104,82 +136,75 @@ describe('calculateRankings', () => {
     expect(mockCalcRankings).toHaveBeenCalledWith(
       expect.objectContaining({ championshipId: 'c1', championshipType: 'singles' }),
     );
-    expect(mockPut).toHaveBeenCalledTimes(2); // ranking + history
+    expect(mockContendersRepo.upsertRanking).toHaveBeenCalledTimes(1);
+    expect(mockContendersRepo.writeHistory).toHaveBeenCalledTimes(1);
   });
 
   it('preserves previousRank, peakRank, and weeksAtTop from existing rankings', async () => {
-    mockScanAll.mockResolvedValue([champ('c1', 'IC Title')]);
-    mockQueryAll.mockResolvedValue([
+    mockChampionshipsRepo.listActive.mockResolvedValue([champ('c1', 'IC Title')]);
+    mockContendersRepo.listByChampionship.mockResolvedValue([
       { championshipId: 'c1', playerId: 'p1', rank: 3, peakRank: 2, weeksAtTop: 1 },
     ]);
-    mockDelete.mockResolvedValue({});
     mockCalcRankings.mockResolvedValue([rankResult('p1', 1, 90)]);
-    mockPut.mockResolvedValue({});
 
     await calculateRankings(makeEvent(), ctx, cb);
 
-    const crPut = mockPut.mock.calls.find((c: any) => c[0].TableName === 'ContenderRankings');
-    expect(crPut).toBeDefined();
-    const item = crPut![0].Item;
-    expect(item.previousRank).toBe(3);
-    expect(item.peakRank).toBe(1);       // min(oldPeak=2, newRank=1)
-    expect(item.weeksAtTop).toBe(2);     // rank===1 so incremented from 1 to 2
+    expect(mockContendersRepo.upsertRanking).toHaveBeenCalledWith(
+      expect.objectContaining({
+        previousRank: 3,
+        peakRank: 1,       // min(oldPeak=2, newRank=1)
+        weeksAtTop: 2,     // rank===1 so incremented from 1 to 2
+      }),
+    );
   });
 
   it('deletes old rankings before writing new ones', async () => {
-    mockScanAll.mockResolvedValue([champ('c1', 'Tag Title', { type: 'tag' })]);
-    mockQueryAll.mockResolvedValue([
+    mockChampionshipsRepo.listActive.mockResolvedValue([champ('c1', 'Tag Title', { type: 'tag' })]);
+    mockContendersRepo.listByChampionship.mockResolvedValue([
       { championshipId: 'c1', playerId: 'old-1', rank: 1 },
       { championshipId: 'c1', playerId: 'old-2', rank: 2 },
     ]);
-    mockDelete.mockResolvedValue({});
     mockCalcRankings.mockResolvedValue([]);
 
     await calculateRankings(makeEvent(), ctx, cb);
 
-    expect(mockDelete).toHaveBeenCalledTimes(2);
-    expect(mockDelete).toHaveBeenCalledWith(expect.objectContaining({
-      TableName: 'ContenderRankings', Key: { championshipId: 'c1', playerId: 'old-1' },
-    }));
-    expect(mockDelete).toHaveBeenCalledWith(expect.objectContaining({
-      TableName: 'ContenderRankings', Key: { championshipId: 'c1', playerId: 'old-2' },
-    }));
+    expect(mockContendersRepo.deleteAllForChampionship).toHaveBeenCalledWith('c1');
   });
 
   it('writes ranking history entries with weekKey in YYYY-WW format', async () => {
-    mockScanAll.mockResolvedValue([champ('c1', 'World')]);
-    mockQueryAll.mockResolvedValue([]);
+    mockChampionshipsRepo.listActive.mockResolvedValue([champ('c1', 'World')]);
+    mockContendersRepo.listByChampionship.mockResolvedValue([]);
     mockCalcRankings.mockResolvedValue([rankResult('p1', 1)]);
-    mockPut.mockResolvedValue({});
 
     await calculateRankings(makeEvent(), ctx, cb);
 
-    const histPut = mockPut.mock.calls.find((c: any) => c[0].TableName === 'RankingHistory');
-    expect(histPut).toBeDefined();
-    const item = histPut![0].Item;
-    expect(item.playerId).toBe('p1');
-    expect(item.championshipId).toBe('c1');
-    expect(item.weekKey).toMatch(/^c1#\d{4}-\d{2}$/);
-    expect(item.movement).toBe(0); // no previous rank
+    expect(mockContendersRepo.writeHistory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        playerId: 'p1',
+        championshipId: 'c1',
+        movement: 0, // no previous rank
+      }),
+    );
+    const call = mockContendersRepo.writeHistory.mock.calls[0][0];
+    expect(call.weekKey).toMatch(/^c1#\d{4}-\d{2}$/);
   });
 
   it('filters to a single championship when championshipId is in body', async () => {
-    mockGet.mockResolvedValue({ Item: champ('c-x', 'US Title') });
-    mockQueryAll.mockResolvedValue([]);
+    mockChampionshipsRepo.findById.mockResolvedValue(champ('c-x', 'US Title'));
+    mockContendersRepo.listByChampionship.mockResolvedValue([]);
+    mockContendersRepo.listActiveOverrides.mockResolvedValue([]);
     mockCalcRankings.mockResolvedValue([]);
 
     const event = makeEvent({ body: JSON.stringify({ championshipId: 'c-x' }) });
     const result = await calculateRankings(event, ctx, cb);
 
     expect(result!.statusCode).toBe(200);
-    expect(mockGet).toHaveBeenCalledWith(expect.objectContaining({
-      TableName: 'Championships', Key: { championshipId: 'c-x' },
-    }));
-    expect(mockScanAll).not.toHaveBeenCalled();
+    expect(mockChampionshipsRepo.findById).toHaveBeenCalledWith('c-x');
+    expect(mockChampionshipsRepo.listActive).not.toHaveBeenCalled();
   });
 
   it('returns success with zero counts when no championships found', async () => {
-    mockScanAll.mockResolvedValue([]);
+    mockChampionshipsRepo.listActive.mockResolvedValue([]);
 
     const result = await calculateRankings(makeEvent(), ctx, cb);
 
@@ -190,7 +215,7 @@ describe('calculateRankings', () => {
   });
 
   it('returns 500 when an unexpected error occurs', async () => {
-    mockScanAll.mockRejectedValue(new Error('DB down'));
+    mockChampionshipsRepo.listActive.mockRejectedValue(new Error('DB down'));
 
     const result = await calculateRankings(makeEvent(), ctx, cb);
 
@@ -204,10 +229,10 @@ describe('calculateRankings', () => {
 describe('getContenders', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('returns contenders for a championship via RankIndex GSI', async () => {
-    mockGet.mockResolvedValueOnce({ Item: champ('c1', 'World Title', { divisionId: 'raw' }) });
-    mockQueryAll.mockResolvedValue([rankRow('c1', 'p1', 1, 2)]);
-    mockGet.mockResolvedValueOnce({ Item: player('p1', 'John Cena', 'Cena', 'cena.jpg') });
+  it('returns contenders for a championship ranked by rank', async () => {
+    mockChampionshipsRepo.findById.mockResolvedValue(champ('c1', 'World Title', { divisionId: 'raw' }));
+    mockContendersRepo.listByChampionshipRanked.mockResolvedValue([rankRow('c1', 'p1', 1, 2)]);
+    mockPlayersRepo.findById.mockResolvedValue(player('p1', 'John Cena', 'Cena', 'cena.jpg'));
 
     const result = await getContenders(makeEvent({ pathParameters: { championshipId: 'c1' } }), ctx, cb);
 
@@ -222,19 +247,20 @@ describe('getContenders', () => {
   });
 
   it('filters out current champion and re-ranks remaining contenders', async () => {
-    mockGet.mockResolvedValueOnce({ Item: champ('c1', 'World', { currentChampion: 'champ' }) });
-    mockQueryAll.mockResolvedValue([
+    mockChampionshipsRepo.findById.mockResolvedValue(champ('c1', 'World', { currentChampion: 'champ' }));
+    mockContendersRepo.listByChampionshipRanked.mockResolvedValue([
       rankRow('c1', 'champ', 1, 1), rankRow('c1', 'p2', 2, 3), rankRow('c1', 'p3', 3, null),
     ]);
-    mockGet.mockResolvedValueOnce({ Item: player('champ', 'The Champ', 'Roman', 'roman.jpg') });
-    mockGet.mockResolvedValueOnce({ Item: player('p2', 'Two', 'Seth') });
-    mockGet.mockResolvedValueOnce({ Item: player('p3', 'Three', 'Drew') });
+    mockPlayersRepo.findById
+      .mockResolvedValueOnce(player('champ', 'The Champ', 'Roman', 'roman.jpg'))
+      .mockResolvedValueOnce(player('p2', 'Two', 'Seth'))
+      .mockResolvedValueOnce(player('p3', 'Three', 'Drew'));
 
     const result = await getContenders(makeEvent({ pathParameters: { championshipId: 'c1' } }), ctx, cb);
     const body = JSON.parse(result!.body);
 
     expect(body.contenders).toHaveLength(2);
-    expect(body.contenders.find((c: any) => c.playerId === 'champ')).toBeUndefined();
+    expect(body.contenders.find((c: Record<string, unknown>) => c.playerId === 'champ')).toBeUndefined();
     expect(body.contenders[0].rank).toBe(1);
     expect(body.contenders[0].playerId).toBe('p2');
     expect(body.contenders[1].rank).toBe(2);
@@ -244,10 +270,13 @@ describe('getContenders', () => {
   });
 
   it('enriches contenders with player data and falls back to Unknown', async () => {
-    mockGet.mockResolvedValueOnce({ Item: champ('c1', 'IC Title') });
-    mockQueryAll.mockResolvedValue([rankRow('c1', 'p1', 1, 1), rankRow('c1', 'p-gone', 2, null)]);
-    mockGet.mockResolvedValueOnce({ Item: player('p1', 'Known', 'AJ', 'aj.jpg') });
-    mockGet.mockResolvedValueOnce({ Item: undefined }); // player not found
+    mockChampionshipsRepo.findById.mockResolvedValue(champ('c1', 'IC Title'));
+    mockContendersRepo.listByChampionshipRanked.mockResolvedValue([
+      rankRow('c1', 'p1', 1, 1), rankRow('c1', 'p-gone', 2, null),
+    ]);
+    mockPlayersRepo.findById
+      .mockResolvedValueOnce(player('p1', 'Known', 'AJ', 'aj.jpg'))
+      .mockResolvedValueOnce(null); // player not found
 
     const result = await getContenders(makeEvent({ pathParameters: { championshipId: 'c1' } }), ctx, cb);
     const body = JSON.parse(result!.body);
@@ -260,10 +289,13 @@ describe('getContenders', () => {
   });
 
   it('calculates movement (previousRank - adjustedRank) and marks new entries', async () => {
-    mockGet.mockResolvedValueOnce({ Item: champ('c1', 'Title') });
-    mockQueryAll.mockResolvedValue([rankRow('c1', 'p1', 1, 3), rankRow('c1', 'p2', 2, null)]);
-    mockGet.mockResolvedValueOnce({ Item: player('p1', 'A', 'X') });
-    mockGet.mockResolvedValueOnce({ Item: player('p2', 'B', 'Y') });
+    mockChampionshipsRepo.findById.mockResolvedValue(champ('c1', 'Title'));
+    mockContendersRepo.listByChampionshipRanked.mockResolvedValue([
+      rankRow('c1', 'p1', 1, 3), rankRow('c1', 'p2', 2, null),
+    ]);
+    mockPlayersRepo.findById
+      .mockResolvedValueOnce(player('p1', 'A', 'X'))
+      .mockResolvedValueOnce(player('p2', 'B', 'Y'));
 
     const result = await getContenders(makeEvent({ pathParameters: { championshipId: 'c1' } }), ctx, cb);
     const body = JSON.parse(result!.body);
@@ -282,7 +314,7 @@ describe('getContenders', () => {
   });
 
   it('returns 404 when championship does not exist', async () => {
-    mockGet.mockResolvedValue({ Item: undefined });
+    mockChampionshipsRepo.findById.mockResolvedValue(null);
 
     const result = await getContenders(
       makeEvent({ pathParameters: { championshipId: 'bad' } }), ctx, cb,
@@ -293,7 +325,7 @@ describe('getContenders', () => {
   });
 
   it('returns 500 when an unexpected error occurs', async () => {
-    mockGet.mockRejectedValue(new Error('timeout'));
+    mockChampionshipsRepo.findById.mockRejectedValue(new Error('timeout'));
 
     const result = await getContenders(
       makeEvent({ pathParameters: { championshipId: 'c1' } }), ctx, cb,

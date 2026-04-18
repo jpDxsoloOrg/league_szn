@@ -15,7 +15,7 @@
 | 3 — Read-heavy leaves (Seasons, Announcements, Videos, Companies, Shows, Notifications, Overalls, SiteConfig, SeasonAwards) | ✅ Done | — |
 | 4 — Medium-complexity aggregates with GSIs (Players, Challenges, TagTeams, Stables, Transfers, StorylineRequests, Events, Promos) | ✅ Done | — |
 | 5 — Cross-aggregate reads (Standings, Dashboard, Rivalries, Statistics, Activity) | ✅ Done | — |
-| 6 — Contenders & Fantasy (batched writes) | ⏳ | — |
+| 6 — Contenders & Fantasy (batched writes) | ✅ Done | — |
 | 7 — Transactional writes + `runInTransaction` + `recordResult.ts` | ⏳ | — |
 | 8 — Admin and seed scripts | ⏳ | — |
 | 9 — Clean up (delete `dynamodbUtils.ts`, shrink `dynamodb.ts`, remove deprecated `handlerFactory`) | ⏳ | — |
@@ -47,9 +47,19 @@ getActivity eliminated (individual player/championship lookups replaced with
 batch list calls). All 9 test files updated to mock repository methods instead
 of DynamoDB SDK.
 
-**Where to resume**: Wave 6 — Contenders & Fantasy (batched writes). These write
-many items but don't need strict transactionality (async-invoked, idempotent
-rebuild jobs).
+**After Wave 6**: 967 tests passing, 0 failures. Typecheck and lint clean.
+2 domains migrated: Contenders (rankings, overrides, history) and Fantasy
+(config, picks, wrestler costs). 2 new repository interfaces created:
+ContendersRepository and FantasyRepository. 5 contender handlers and 12 fantasy
+handlers migrated from direct `dynamoDb` calls to repository methods. All 11
+test files (2 contender, 9 fantasy) updated to mock repository methods instead
+of DynamoDB SDK. The `calculateRankings` handler now uses
+`championships.listActive()` and `championships.findById()` from the Wave 5
+ChampionshipsRepository instead of direct DynamoDB scans/gets.
+
+**Where to resume**: Wave 7 — Transactional writes + `runInTransaction` +
+`recordResult.ts`. Build `DynamoUnitOfWork` and `InMemoryUnitOfWork`, then
+migrate transactional handlers in order of increasing complexity.
 
 ## Context
 

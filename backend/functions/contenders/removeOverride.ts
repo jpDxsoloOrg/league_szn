@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { invokeAsync } from '../../lib/asyncLambda';
 
@@ -12,29 +12,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('championshipId and playerId are required');
     }
 
-    // Get the existing override
-    const result = await dynamoDb.get({
-      TableName: TableNames.CONTENDER_OVERRIDES,
-      Key: { championshipId, playerId },
-    });
+    const { contenders } = getRepositories();
 
-    if (!result.Item || !result.Item.active) {
+    // Get the existing override
+    const existing = await contenders.findOverride(championshipId, playerId);
+
+    if (!existing || !existing.active) {
       return notFound('No active override found for this player and championship');
     }
 
-    const now = new Date().toISOString();
-
     // Deactivate the override
-    await dynamoDb.update({
-      TableName: TableNames.CONTENDER_OVERRIDES,
-      Key: { championshipId, playerId },
-      UpdateExpression: 'SET active = :false, removedAt = :now, removedReason = :reason',
-      ExpressionAttributeValues: {
-        ':false': false,
-        ':now': now,
-        ':reason': 'removed by admin',
-      },
-    });
+    await contenders.deactivateOverride(championshipId, playerId, 'removed by admin');
 
     // Trigger ranking recalculation for this championship
     try {

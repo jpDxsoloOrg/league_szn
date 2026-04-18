@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { badRequest, notFound, noContent, serverError } from '../../lib/response';
 import { requireRole, getAuthContext } from '../../lib/auth';
 
@@ -14,29 +14,24 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const { sub: fantasyUserId } = getAuthContext(event);
+    const { events, fantasy } = getRepositories();
 
     // Check event status
-    const eventResult = await dynamoDb.get({
-      TableName: TableNames.EVENTS,
-      Key: { eventId },
-    });
+    const eventItem = await events.findById(eventId);
 
-    if (!eventResult.Item) {
+    if (!eventItem) {
       return notFound('Event not found');
     }
 
-    if (eventResult.Item.status === 'completed') {
+    if (eventItem.status === 'completed') {
       return badRequest('Cannot clear picks for a completed event');
     }
 
-    if (eventResult.Item.fantasyLocked) {
+    if (eventItem.fantasyLocked) {
       return badRequest('Picks are locked for this event');
     }
 
-    await dynamoDb.delete({
-      TableName: TableNames.FANTASY_PICKS,
-      Key: { eventId, fantasyUserId },
-    });
+    await fantasy.deletePick(eventId, fantasyUserId);
 
     return noContent();
   } catch (err) {

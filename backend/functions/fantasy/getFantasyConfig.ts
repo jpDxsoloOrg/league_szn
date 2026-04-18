@@ -1,8 +1,9 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import type { FantasyConfig } from '../../lib/repositories';
 
-const DEFAULT_CONFIG = {
+const DEFAULT_CONFIG: FantasyConfig = {
   configKey: 'GLOBAL',
   defaultBudget: 500,
   defaultPicksPerDivision: 2,
@@ -20,14 +21,13 @@ const DEFAULT_CONFIG = {
   streakBonusPoints: 25,
 };
 
+export { DEFAULT_CONFIG };
+
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    const result = await dynamoDb.get({
-      TableName: TableNames.FANTASY_CONFIG,
-      Key: { configKey: 'GLOBAL' },
-    });
-
-    return success(result.Item || DEFAULT_CONFIG);
+    const { fantasy } = getRepositories();
+    const config = await fantasy.getConfig();
+    return success(config || DEFAULT_CONFIG);
   } catch (err) {
     console.error('Error fetching fantasy config:', err);
     return serverError('Failed to fetch fantasy config');

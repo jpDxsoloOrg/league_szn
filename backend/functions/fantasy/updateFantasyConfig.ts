@@ -1,26 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { requireRole } from '../../lib/auth';
-
-const DEFAULT_CONFIG = {
-  configKey: 'GLOBAL',
-  defaultBudget: 500,
-  defaultPicksPerDivision: 2,
-  baseWinPoints: 10,
-  championshipBonus: 5,
-  titleWinBonus: 10,
-  titleDefenseBonus: 5,
-  costFluctuationEnabled: true,
-  costChangePerWin: 10,
-  costChangePerLoss: 5,
-  costResetStrategy: 'reset',
-  underdogMultiplier: 1.5,
-  perfectPickBonus: 50,
-  streakBonusThreshold: 5,
-  streakBonusPoints: 25,
-};
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -30,25 +12,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody(event);
     if (parseError) return parseError;
 
-    // Read existing config or use defaults
-    const existing = await dynamoDb.get({
-      TableName: TableNames.FANTASY_CONFIG,
-      Key: { configKey: 'GLOBAL' },
-    });
-
-    const currentConfig = existing.Item || DEFAULT_CONFIG;
-
-    // Merge body into existing config
-    const updatedConfig = {
-      ...currentConfig,
-      ...body,
-      configKey: 'GLOBAL', // Always enforce the key
-    };
-
-    await dynamoDb.put({
-      TableName: TableNames.FANTASY_CONFIG,
-      Item: updatedConfig,
-    });
+    const { fantasy } = getRepositories();
+    const updatedConfig = await fantasy.upsertConfig(body as Record<string, unknown>);
 
     return success(updatedConfig);
   } catch (err) {

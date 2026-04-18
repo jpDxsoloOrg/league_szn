@@ -23,6 +23,8 @@ import { InMemoryMatchesRepository } from './MatchesRepository';
 import { InMemoryChampionshipsRepository } from './ChampionshipsRepository';
 import { InMemoryTournamentsRepository } from './TournamentsRepository';
 import { InMemorySeasonStandingsRepository } from './SeasonStandingsRepository';
+import { InMemoryContendersRepository } from './ContendersRepository';
+import { InMemoryFantasyRepository } from './FantasyRepository';
 
 export function buildInMemoryRepositories(): Repositories {
   return {
@@ -50,6 +52,8 @@ export function buildInMemoryRepositories(): Repositories {
     championships: new InMemoryChampionshipsRepository(),
     tournaments: new InMemoryTournamentsRepository(),
     seasonStandings: new InMemorySeasonStandingsRepository(),
+    contenders: new InMemoryContendersRepository(),
+    fantasy: new InMemoryFantasyRepository(),
     runInTransaction: async () => {
       throw new Error('runInTransaction is not implemented in the in-memory driver yet (scheduled for Wave 7)');
     },
@@ -82,3 +86,5 @@ export { InMemoryMatchesRepository } from './MatchesRepository';
 export { InMemoryChampionshipsRepository } from './ChampionshipsRepository';
 export { InMemoryTournamentsRepository } from './TournamentsRepository';
 export { InMemorySeasonStandingsRepository } from './SeasonStandingsRepository';
+export { InMemoryContendersRepository } from './ContendersRepository';
+export { InMemoryFantasyRepository } from './FantasyRepository';

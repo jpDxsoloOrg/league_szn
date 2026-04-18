@@ -3,29 +3,53 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ---- Mocks ----------------------------------------------------------------
 
-const { mockGet, mockPut, mockScanAll } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockPut: vi.fn(),
-  mockScanAll: vi.fn(),
+const mockFantasyRepo = {
+  getConfig: vi.fn(),
+  upsertConfig: vi.fn(),
+  findPick: vi.fn(),
+  listPicksByEvent: vi.fn(),
+  listPicksByUser: vi.fn(),
+  listAllPicks: vi.fn(),
+  savePick: vi.fn(),
+  updatePickScoring: vi.fn(),
+  deletePick: vi.fn(),
+  findCost: vi.fn(),
+  listAllCosts: vi.fn(),
+  upsertCost: vi.fn(),
+  initializeCost: vi.fn(),
+};
+
+const mockEventsRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+};
+
+const mockPlayersRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+};
+
+const mockMatchesRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+};
+
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    fantasy: mockFantasyRepo,
+    events: mockEventsRepo,
+    players: mockPlayersRepo,
+    matches: mockMatchesRepo,
+  }),
 }));
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet,
-    put: mockPut,
-    scan: vi.fn(),
-    query: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    scanAll: mockScanAll,
-    queryAll: vi.fn(),
-  },
-  TableNames: {
-    EVENTS: 'Events',
-    FANTASY_CONFIG: 'FantasyConfig',
-    FANTASY_PICKS: 'FantasyPicks',
-    PLAYERS: 'Players',
-    WRESTLER_COSTS: 'WrestlerCosts',
+vi.mock('../getFantasyConfig', () => ({
+  DEFAULT_CONFIG: {
+    configKey: 'GLOBAL', defaultBudget: 500, defaultPicksPerDivision: 2,
+    baseWinPoints: 10, championshipBonus: 5, titleWinBonus: 10,
+    titleDefenseBonus: 5, costFluctuationEnabled: true, costChangePerWin: 10,
+    costChangePerLoss: 5, costResetStrategy: 'reset', underdogMultiplier: 1.5,
+    perfectPickBonus: 50, streakBonusThreshold: 5, streakBonusPoints: 25,
   },
 }));
 
@@ -40,23 +64,33 @@ const base: APIGatewayProxyEvent = {
   body: null, headers: {}, multiValueHeaders: {}, httpMethod: 'POST',
   isBase64Encoded: false, path: '/', pathParameters: null,
   queryStringParameters: null, multiValueQueryStringParameters: null,
-  stageVariables: null, resource: '', requestContext: { authorizer: {} } as any,
+  stageVariables: null, resource: '', requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
 };
 const makeEvent = (o: Partial<APIGatewayProxyEvent> = {}) => ({ ...base, ...o }) as APIGatewayProxyEvent;
 
 const withAuth = (ev: APIGatewayProxyEvent, groups = 'Fantasy', sub = 'user-1') => ({
   ...ev, requestContext: { ...ev.requestContext,
     authorizer: { groups, username: 'testuser', email: 'test@test.com', principalId: sub },
-  } as any,
+  } as unknown as APIGatewayProxyEvent['requestContext'],
 }) as APIGatewayProxyEvent;
 
 function setupValidPicks() {
-  mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1', status: 'scheduled' } }); // event
-  mockGet.mockResolvedValueOnce({ Item: { defaultBudget: 500, defaultPicksPerDivision: 2 } }); // config
-  mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', name: 'Rock', divisionId: 'd1' }, { playerId: 'p2', name: 'Cena', divisionId: 'd1' }]); // players
-  mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', currentCost: 100 }, { playerId: 'p2', currentCost: 150 }]); // costs
-  mockGet.mockResolvedValueOnce({ Item: undefined }); // existing picks
-  mockPut.mockResolvedValueOnce({});
+  mockEventsRepo.findById.mockResolvedValueOnce({ eventId: 'e1', status: 'scheduled' });
+  mockFantasyRepo.getConfig.mockResolvedValueOnce({ defaultBudget: 500, defaultPicksPerDivision: 2 });
+  mockPlayersRepo.list.mockResolvedValueOnce([
+    { playerId: 'p1', name: 'Rock', divisionId: 'd1' },
+    { playerId: 'p2', name: 'Cena', divisionId: 'd1' },
+  ]);
+  mockFantasyRepo.listAllCosts.mockResolvedValueOnce([
+    { playerId: 'p1', currentCost: 100 },
+    { playerId: 'p2', currentCost: 150 },
+  ]);
+  mockFantasyRepo.findPick.mockResolvedValueOnce(null);
+  mockFantasyRepo.savePick.mockImplementationOnce((input: Record<string, unknown>) => Promise.resolve({
+    ...input,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }));
 }
 
 // ---- Tests -----------------------------------------------------------------
@@ -95,10 +129,10 @@ describe('submitPicks', () => {
   });
 
   it('returns 400 when picks is not an object', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1', status: 'scheduled' } });
-    mockGet.mockResolvedValueOnce({ Item: {} });
-    mockScanAll.mockResolvedValueOnce([]);
-    mockScanAll.mockResolvedValueOnce([]);
+    mockEventsRepo.findById.mockResolvedValueOnce({ eventId: 'e1', status: 'scheduled' });
+    mockFantasyRepo.getConfig.mockResolvedValueOnce(null);
+    mockPlayersRepo.list.mockResolvedValueOnce([]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([]);
     const ev = withAuth(makeEvent({ pathParameters: { eventId: 'e1' }, body: JSON.stringify({ picks: 'bad' }) }));
     const result = await handler(ev, ctx, cb);
     expect(result!.statusCode).toBe(400);
@@ -106,26 +140,26 @@ describe('submitPicks', () => {
   });
 
   it('returns 404 when event does not exist', async () => {
-    mockGet.mockResolvedValueOnce({ Item: undefined });
+    mockEventsRepo.findById.mockResolvedValueOnce(null);
     const ev = withAuth(makeEvent({ pathParameters: { eventId: 'e1' }, body: JSON.stringify({ picks: {} }) }));
     const result = await handler(ev, ctx, cb);
     expect(result!.statusCode).toBe(404);
   });
 
   it('returns 400 when event is completed', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1', status: 'completed' } });
+    mockEventsRepo.findById.mockResolvedValueOnce({ eventId: 'e1', status: 'completed' });
     const ev = withAuth(makeEvent({ pathParameters: { eventId: 'e1' }, body: JSON.stringify({ picks: {} }) }));
     expect((await handler(ev, ctx, cb))!.statusCode).toBe(400);
   });
 
   it('returns 400 when event is cancelled', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1', status: 'cancelled' } });
+    mockEventsRepo.findById.mockResolvedValueOnce({ eventId: 'e1', status: 'cancelled' });
     const ev = withAuth(makeEvent({ pathParameters: { eventId: 'e1' }, body: JSON.stringify({ picks: {} }) }));
     expect((await handler(ev, ctx, cb))!.statusCode).toBe(400);
   });
 
   it('returns 400 when event is fantasy-locked', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1', status: 'scheduled', fantasyLocked: true } });
+    mockEventsRepo.findById.mockResolvedValueOnce({ eventId: 'e1', status: 'scheduled', fantasyLocked: true });
     const ev = withAuth(makeEvent({ pathParameters: { eventId: 'e1' }, body: JSON.stringify({ picks: {} }) }));
     const result = await handler(ev, ctx, cb);
     expect(result!.statusCode).toBe(400);
@@ -133,10 +167,13 @@ describe('submitPicks', () => {
   });
 
   it('returns 400 when too many picks for a division', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1', status: 'scheduled' } });
-    mockGet.mockResolvedValueOnce({ Item: { defaultBudget: 500, defaultPicksPerDivision: 1 } });
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', name: 'A', divisionId: 'd1' }, { playerId: 'p2', name: 'B', divisionId: 'd1' }]);
-    mockScanAll.mockResolvedValueOnce([]);
+    mockEventsRepo.findById.mockResolvedValueOnce({ eventId: 'e1', status: 'scheduled' });
+    mockFantasyRepo.getConfig.mockResolvedValueOnce({ defaultBudget: 500, defaultPicksPerDivision: 1 });
+    mockPlayersRepo.list.mockResolvedValueOnce([
+      { playerId: 'p1', name: 'A', divisionId: 'd1' },
+      { playerId: 'p2', name: 'B', divisionId: 'd1' },
+    ]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([]);
     const ev = withAuth(makeEvent({ pathParameters: { eventId: 'e1' }, body: JSON.stringify({ picks: { d1: ['p1', 'p2'] } }) }));
     const result = await handler(ev, ctx, cb);
     expect(result!.statusCode).toBe(400);
@@ -144,10 +181,10 @@ describe('submitPicks', () => {
   });
 
   it('returns 400 when player is picked in multiple divisions', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1', status: 'scheduled' } });
-    mockGet.mockResolvedValueOnce({ Item: { defaultBudget: 500, defaultPicksPerDivision: 2 } });
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', name: 'A', divisionId: 'd1' }]);
-    mockScanAll.mockResolvedValueOnce([]);
+    mockEventsRepo.findById.mockResolvedValueOnce({ eventId: 'e1', status: 'scheduled' });
+    mockFantasyRepo.getConfig.mockResolvedValueOnce({ defaultBudget: 500, defaultPicksPerDivision: 2 });
+    mockPlayersRepo.list.mockResolvedValueOnce([{ playerId: 'p1', name: 'A', divisionId: 'd1' }]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([]);
     const ev = withAuth(makeEvent({ pathParameters: { eventId: 'e1' }, body: JSON.stringify({ picks: { d1: ['p1'], d2: ['p1'] } }) }));
     const result = await handler(ev, ctx, cb);
     expect(result!.statusCode).toBe(400);
@@ -155,19 +192,19 @@ describe('submitPicks', () => {
   });
 
   it('returns 400 when player does not exist', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1', status: 'scheduled' } });
-    mockGet.mockResolvedValueOnce({ Item: {} });
-    mockScanAll.mockResolvedValueOnce([]);
-    mockScanAll.mockResolvedValueOnce([]);
+    mockEventsRepo.findById.mockResolvedValueOnce({ eventId: 'e1', status: 'scheduled' });
+    mockFantasyRepo.getConfig.mockResolvedValueOnce(null);
+    mockPlayersRepo.list.mockResolvedValueOnce([]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([]);
     const ev = withAuth(makeEvent({ pathParameters: { eventId: 'e1' }, body: JSON.stringify({ picks: { d1: ['p99'] } }) }));
     expect((await handler(ev, ctx, cb))!.statusCode).toBe(400);
   });
 
   it('returns 400 when player does not belong to division', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1', status: 'scheduled' } });
-    mockGet.mockResolvedValueOnce({ Item: {} });
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', name: 'Rock', divisionId: 'd2' }]);
-    mockScanAll.mockResolvedValueOnce([]);
+    mockEventsRepo.findById.mockResolvedValueOnce({ eventId: 'e1', status: 'scheduled' });
+    mockFantasyRepo.getConfig.mockResolvedValueOnce(null);
+    mockPlayersRepo.list.mockResolvedValueOnce([{ playerId: 'p1', name: 'Rock', divisionId: 'd2' }]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([]);
     const ev = withAuth(makeEvent({ pathParameters: { eventId: 'e1' }, body: JSON.stringify({ picks: { d1: ['p1'] } }) }));
     const result = await handler(ev, ctx, cb);
     expect(result!.statusCode).toBe(400);
@@ -175,10 +212,16 @@ describe('submitPicks', () => {
   });
 
   it('returns 400 when total cost exceeds budget', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1', status: 'scheduled' } });
-    mockGet.mockResolvedValueOnce({ Item: { defaultBudget: 100, defaultPicksPerDivision: 2 } });
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', name: 'A', divisionId: 'd1' }, { playerId: 'p2', name: 'B', divisionId: 'd1' }]);
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', currentCost: 60 }, { playerId: 'p2', currentCost: 60 }]);
+    mockEventsRepo.findById.mockResolvedValueOnce({ eventId: 'e1', status: 'scheduled' });
+    mockFantasyRepo.getConfig.mockResolvedValueOnce({ defaultBudget: 100, defaultPicksPerDivision: 2 });
+    mockPlayersRepo.list.mockResolvedValueOnce([
+      { playerId: 'p1', name: 'A', divisionId: 'd1' },
+      { playerId: 'p2', name: 'B', divisionId: 'd1' },
+    ]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([
+      { playerId: 'p1', currentCost: 60 },
+      { playerId: 'p2', currentCost: 60 },
+    ]);
     const ev = withAuth(makeEvent({ pathParameters: { eventId: 'e1' }, body: JSON.stringify({ picks: { d1: ['p1', 'p2'] } }) }));
     const result = await handler(ev, ctx, cb);
     expect(result!.statusCode).toBe(400);
@@ -192,16 +235,18 @@ describe('submitPicks', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body).toMatchObject({ eventId: 'e1', fantasyUserId: 'user-1', totalSpent: 100 });
-    expect(mockPut).toHaveBeenCalledOnce();
+    expect(mockFantasyRepo.savePick).toHaveBeenCalledOnce();
   });
 
   it('preserves createdAt on update', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1', status: 'scheduled' } });
-    mockGet.mockResolvedValueOnce({ Item: {} });
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', name: 'A', divisionId: 'd1' }]);
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', currentCost: 50 }]);
-    mockGet.mockResolvedValueOnce({ Item: { createdAt: '2024-01-01T00:00:00.000Z' } });
-    mockPut.mockResolvedValueOnce({});
+    mockEventsRepo.findById.mockResolvedValueOnce({ eventId: 'e1', status: 'scheduled' });
+    mockFantasyRepo.getConfig.mockResolvedValueOnce(null);
+    mockPlayersRepo.list.mockResolvedValueOnce([{ playerId: 'p1', name: 'A', divisionId: 'd1' }]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([{ playerId: 'p1', currentCost: 50 }]);
+    mockFantasyRepo.findPick.mockResolvedValueOnce({ createdAt: '2024-01-01T00:00:00.000Z' });
+    mockFantasyRepo.savePick.mockImplementationOnce((input: Record<string, unknown>, existingCreatedAt: string) =>
+      Promise.resolve({ ...input, createdAt: existingCreatedAt, updatedAt: new Date().toISOString() }),
+    );
     const ev = withAuth(makeEvent({ pathParameters: { eventId: 'e1' }, body: JSON.stringify({ picks: { d1: ['p1'] } }) }));
     const result = await handler(ev, ctx, cb);
     expect(result!.statusCode).toBe(200);
@@ -209,18 +254,20 @@ describe('submitPicks', () => {
   });
 
   it('returns 500 on unexpected error', async () => {
-    mockGet.mockRejectedValueOnce(new Error('DynamoDB failure'));
+    mockEventsRepo.findById.mockRejectedValueOnce(new Error('DynamoDB failure'));
     const ev = withAuth(makeEvent({ pathParameters: { eventId: 'e1' }, body: JSON.stringify({ picks: { d1: ['p1'] } }) }));
     expect((await handler(ev, ctx, cb))!.statusCode).toBe(500);
   });
 
   it('uses default cost of 100 when player has no cost record', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1', status: 'scheduled' } });
-    mockGet.mockResolvedValueOnce({ Item: { defaultBudget: 500, defaultPicksPerDivision: 2 } });
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', name: 'A', divisionId: 'd1' }]);
-    mockScanAll.mockResolvedValueOnce([]);
-    mockGet.mockResolvedValueOnce({ Item: undefined });
-    mockPut.mockResolvedValueOnce({});
+    mockEventsRepo.findById.mockResolvedValueOnce({ eventId: 'e1', status: 'scheduled' });
+    mockFantasyRepo.getConfig.mockResolvedValueOnce({ defaultBudget: 500, defaultPicksPerDivision: 2 });
+    mockPlayersRepo.list.mockResolvedValueOnce([{ playerId: 'p1', name: 'A', divisionId: 'd1' }]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([]);
+    mockFantasyRepo.findPick.mockResolvedValueOnce(null);
+    mockFantasyRepo.savePick.mockImplementationOnce((input: Record<string, unknown>) =>
+      Promise.resolve({ ...input, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }),
+    );
     const ev = withAuth(makeEvent({ pathParameters: { eventId: 'e1' }, body: JSON.stringify({ picks: { d1: ['p1'] } }) }));
     const result = await handler(ev, ctx, cb);
     expect(result!.statusCode).toBe(200);
@@ -228,10 +275,10 @@ describe('submitPicks', () => {
   });
 
   it('returns 400 when division picks is not an array', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { eventId: 'e1', status: 'scheduled' } });
-    mockGet.mockResolvedValueOnce({ Item: {} });
-    mockScanAll.mockResolvedValueOnce([]);
-    mockScanAll.mockResolvedValueOnce([]);
+    mockEventsRepo.findById.mockResolvedValueOnce({ eventId: 'e1', status: 'scheduled' });
+    mockFantasyRepo.getConfig.mockResolvedValueOnce(null);
+    mockPlayersRepo.list.mockResolvedValueOnce([]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([]);
     const ev = withAuth(makeEvent({ pathParameters: { eventId: 'e1' }, body: JSON.stringify({ picks: { d1: 'not-array' } }) }));
     const result = await handler(ev, ctx, cb);
     expect(result!.statusCode).toBe(400);

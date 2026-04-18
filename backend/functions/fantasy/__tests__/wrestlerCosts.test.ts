@@ -3,27 +3,32 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ---- Mocks ----------------------------------------------------------------
 
-const { mockGet, mockPut, mockScanAll } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockPut: vi.fn(),
-  mockScanAll: vi.fn(),
-}));
+const mockFantasyRepo = {
+  getConfig: vi.fn(),
+  upsertConfig: vi.fn(),
+  findPick: vi.fn(),
+  listPicksByEvent: vi.fn(),
+  listPicksByUser: vi.fn(),
+  listAllPicks: vi.fn(),
+  savePick: vi.fn(),
+  updatePickScoring: vi.fn(),
+  deletePick: vi.fn(),
+  findCost: vi.fn(),
+  listAllCosts: vi.fn(),
+  upsertCost: vi.fn(),
+  initializeCost: vi.fn(),
+};
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet,
-    put: mockPut,
-    scan: vi.fn(),
-    query: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    scanAll: mockScanAll,
-    queryAll: vi.fn(),
-  },
-  TableNames: {
-    PLAYERS: 'Players',
-    WRESTLER_COSTS: 'WrestlerCosts',
-  },
+const mockPlayersRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+};
+
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    fantasy: mockFantasyRepo,
+    players: mockPlayersRepo,
+  }),
 }));
 
 import { handler as getWrestlerCosts } from '../getWrestlerCosts';
@@ -54,8 +59,8 @@ describe('getWrestlerCosts', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns merged player + cost data with trends', async () => {
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', currentCost: 120, baseCost: 100, costHistory: [], winRate30Days: 60, recentRecord: '3-2', updatedAt: '2024-01-01' }]);
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', name: 'Rock', currentWrestler: 'The Rock', divisionId: 'd1', imageUrl: 'img.png', updatedAt: '2024-01-01' }]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([{ playerId: 'p1', currentCost: 120, baseCost: 100, costHistory: [], winRate30Days: 60, recentRecord: '3-2', updatedAt: '2024-01-01' }]);
+    mockPlayersRepo.list.mockResolvedValueOnce([{ playerId: 'p1', name: 'Rock', currentWrestler: 'The Rock', divisionId: 'd1', imageUrl: 'img.png', updatedAt: '2024-01-01' }]);
     const result = await getWrestlerCosts(makeEvent(), ctx, cb);
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
@@ -64,8 +69,8 @@ describe('getWrestlerCosts', () => {
   });
 
   it('returns default costs when player has no cost record', async () => {
-    mockScanAll.mockResolvedValueOnce([]);
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', name: 'Rock', currentWrestler: 'The Rock' }]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([]);
+    mockPlayersRepo.list.mockResolvedValueOnce([{ playerId: 'p1', name: 'Rock', currentWrestler: 'The Rock' }]);
     const result = await getWrestlerCosts(makeEvent(), ctx, cb);
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
@@ -73,22 +78,22 @@ describe('getWrestlerCosts', () => {
   });
 
   it('calculates cost trend correctly: down', async () => {
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', currentCost: 80, baseCost: 100 }]);
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', name: 'Rock', currentWrestler: 'R' }]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([{ playerId: 'p1', currentCost: 80, baseCost: 100 }]);
+    mockPlayersRepo.list.mockResolvedValueOnce([{ playerId: 'p1', name: 'Rock', currentWrestler: 'R' }]);
     const result = await getWrestlerCosts(makeEvent(), ctx, cb);
     expect(JSON.parse(result!.body)[0].costTrend).toBe('down');
   });
 
   it('calculates cost trend correctly: stable', async () => {
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', currentCost: 100, baseCost: 100 }]);
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', name: 'Rock', currentWrestler: 'R' }]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([{ playerId: 'p1', currentCost: 100, baseCost: 100 }]);
+    mockPlayersRepo.list.mockResolvedValueOnce([{ playerId: 'p1', name: 'Rock', currentWrestler: 'R' }]);
     const result = await getWrestlerCosts(makeEvent(), ctx, cb);
     expect(JSON.parse(result!.body)[0].costTrend).toBe('stable');
   });
 
   it('returns empty array when no players exist', async () => {
-    mockScanAll.mockResolvedValueOnce([]);
-    mockScanAll.mockResolvedValueOnce([]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([]);
+    mockPlayersRepo.list.mockResolvedValueOnce([]);
 
     const result = await getWrestlerCosts(makeEvent(), ctx, cb);
     expect(result!.statusCode).toBe(200);
@@ -96,7 +101,7 @@ describe('getWrestlerCosts', () => {
   });
 
   it('returns 500 on error', async () => {
-    mockScanAll.mockRejectedValueOnce(new Error('fail'));
+    mockFantasyRepo.listAllCosts.mockRejectedValueOnce(new Error('fail'));
 
     const result = await getWrestlerCosts(makeEvent(), ctx, cb);
     expect(result!.statusCode).toBe(500);
@@ -115,14 +120,14 @@ describe('initializeWrestlerCosts', () => {
   });
 
   it('initializes costs for players without existing costs', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockPlayersRepo.list.mockResolvedValueOnce([
       { playerId: 'p1', name: 'Rock' },
       { playerId: 'p2', name: 'Cena' },
     ]);
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([
       { playerId: 'p1', currentCost: 100 }, // already exists
     ]);
-    mockPut.mockResolvedValue({});
+    mockFantasyRepo.initializeCost.mockResolvedValue({});
 
     const event = withAuth(makeEvent({ body: JSON.stringify({ baseCost: 100 }) }));
     const result = await initializeWrestlerCosts(event, ctx, cb);
@@ -132,50 +137,45 @@ describe('initializeWrestlerCosts', () => {
     expect(body.initialized).toBe(1); // only p2
     expect(body.skipped).toBe(1); // p1
     expect(body.total).toBe(2);
-    expect(mockPut).toHaveBeenCalledOnce();
+    expect(mockFantasyRepo.initializeCost).toHaveBeenCalledOnce();
   });
 
   it('skips all players when all already have costs', async () => {
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1' }]);
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1', currentCost: 100 }]);
+    mockPlayersRepo.list.mockResolvedValueOnce([{ playerId: 'p1' }]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([{ playerId: 'p1', currentCost: 100 }]);
 
     const event = withAuth(makeEvent({ body: null }));
     const result = await initializeWrestlerCosts(event, ctx, cb);
 
     expect(result!.statusCode).toBe(201);
     expect(JSON.parse(result!.body).initialized).toBe(0);
-    expect(mockPut).not.toHaveBeenCalled();
+    expect(mockFantasyRepo.initializeCost).not.toHaveBeenCalled();
   });
 
   it('uses default baseCost of 100 when not provided in body', async () => {
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1' }]);
-    mockScanAll.mockResolvedValueOnce([]);
-    mockPut.mockResolvedValue({});
+    mockPlayersRepo.list.mockResolvedValueOnce([{ playerId: 'p1' }]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([]);
+    mockFantasyRepo.initializeCost.mockResolvedValue({});
 
     const event = withAuth(makeEvent({ body: null }));
     await initializeWrestlerCosts(event, ctx, cb);
 
-    const putCall = mockPut.mock.calls[0][0];
-    expect(putCall.Item.currentCost).toBe(100);
-    expect(putCall.Item.baseCost).toBe(100);
+    expect(mockFantasyRepo.initializeCost).toHaveBeenCalledWith({ playerId: 'p1', baseCost: 100 });
   });
 
   it('uses custom baseCost from body', async () => {
-    mockScanAll.mockResolvedValueOnce([{ playerId: 'p1' }]);
-    mockScanAll.mockResolvedValueOnce([]);
-    mockPut.mockResolvedValue({});
+    mockPlayersRepo.list.mockResolvedValueOnce([{ playerId: 'p1' }]);
+    mockFantasyRepo.listAllCosts.mockResolvedValueOnce([]);
+    mockFantasyRepo.initializeCost.mockResolvedValue({});
 
     const event = withAuth(makeEvent({ body: JSON.stringify({ baseCost: 200 }) }));
     await initializeWrestlerCosts(event, ctx, cb);
 
-    const putCall = mockPut.mock.calls[0][0];
-    expect(putCall.Item.currentCost).toBe(200);
-    expect(putCall.Item.baseCost).toBe(200);
-    expect(putCall.Item.costHistory[0].reason).toBe('Initialized');
+    expect(mockFantasyRepo.initializeCost).toHaveBeenCalledWith({ playerId: 'p1', baseCost: 200 });
   });
 
   it('returns 500 on error', async () => {
-    mockScanAll.mockRejectedValueOnce(new Error('fail'));
+    mockPlayersRepo.list.mockRejectedValueOnce(new Error('fail'));
 
     const event = withAuth(makeEvent());
     const result = await initializeWrestlerCosts(event, ctx, cb);
@@ -214,14 +214,14 @@ describe('updateWrestlerCost', () => {
   });
 
   it('returns 404 when wrestler cost not found', async () => {
-    mockGet.mockResolvedValueOnce({ Item: undefined });
+    mockFantasyRepo.findCost.mockResolvedValueOnce(null);
     const ev = withAuth(makeEvent({ pathParameters: { playerId: 'p1' }, body: JSON.stringify({ currentCost: 150 }) }));
     expect(JSON.parse((await updateWrestlerCost(ev, ctx, cb))!.body).message).toContain('initialization');
   });
 
   it('updates cost and adds history entry', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', currentCost: 100, baseCost: 100, costHistory: [] } });
-    mockPut.mockResolvedValueOnce({});
+    mockFantasyRepo.findCost.mockResolvedValueOnce({ playerId: 'p1', currentCost: 100, baseCost: 100, costHistory: [] });
+    mockFantasyRepo.upsertCost.mockImplementationOnce((cost: Record<string, unknown>) => Promise.resolve(cost));
     const ev = withAuth(makeEvent({ pathParameters: { playerId: 'p1' }, body: JSON.stringify({ currentCost: 150, reason: 'Admin adjustment' }) }));
     const result = await updateWrestlerCost(ev, ctx, cb);
     expect(result!.statusCode).toBe(200);
@@ -232,8 +232,8 @@ describe('updateWrestlerCost', () => {
   });
 
   it('uses default reason "Manual override" when not provided', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', currentCost: 100, costHistory: [] } });
-    mockPut.mockResolvedValueOnce({});
+    mockFantasyRepo.findCost.mockResolvedValueOnce({ playerId: 'p1', currentCost: 100, costHistory: [] });
+    mockFantasyRepo.upsertCost.mockImplementationOnce((cost: Record<string, unknown>) => Promise.resolve(cost));
     const ev = withAuth(makeEvent({ pathParameters: { playerId: 'p1' }, body: JSON.stringify({ currentCost: 200 }) }));
     const body = JSON.parse((await updateWrestlerCost(ev, ctx, cb))!.body);
     expect(body.costHistory[0].reason).toBe('Manual override');
@@ -241,8 +241,8 @@ describe('updateWrestlerCost', () => {
 
   it('trims cost history to last 20 entries', async () => {
     const longHistory = Array.from({ length: 20 }, (_, i) => ({ date: '2024-01-01', cost: 100 + i, reason: `Entry ${i}` }));
-    mockGet.mockResolvedValueOnce({ Item: { playerId: 'p1', currentCost: 100, costHistory: longHistory } });
-    mockPut.mockResolvedValueOnce({});
+    mockFantasyRepo.findCost.mockResolvedValueOnce({ playerId: 'p1', currentCost: 100, costHistory: longHistory });
+    mockFantasyRepo.upsertCost.mockImplementationOnce((cost: Record<string, unknown>) => Promise.resolve(cost));
     const ev = withAuth(makeEvent({ pathParameters: { playerId: 'p1' }, body: JSON.stringify({ currentCost: 250 }) }));
     const body = JSON.parse((await updateWrestlerCost(ev, ctx, cb))!.body);
     expect(body.costHistory).toHaveLength(20);
@@ -251,7 +251,7 @@ describe('updateWrestlerCost', () => {
   });
 
   it('returns 500 on unexpected error', async () => {
-    mockGet.mockRejectedValueOnce(new Error('fail'));
+    mockFantasyRepo.findCost.mockRejectedValueOnce(new Error('fail'));
     const ev = withAuth(makeEvent({ pathParameters: { playerId: 'p1' }, body: JSON.stringify({ currentCost: 150 }) }));
     expect((await updateWrestlerCost(ev, ctx, cb))!.statusCode).toBe(500);
   });

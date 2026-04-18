@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole, getAuthContext } from '../../lib/auth';
 
@@ -14,17 +14,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const { sub: fantasyUserId } = getAuthContext(event);
+    const { fantasy } = getRepositories();
 
-    const result = await dynamoDb.get({
-      TableName: TableNames.FANTASY_PICKS,
-      Key: { eventId, fantasyUserId },
-    });
+    const pick = await fantasy.findPick(eventId, fantasyUserId);
 
-    if (!result.Item) {
+    if (!pick) {
       return notFound('No picks found for this event');
     }
 
-    return success(result.Item);
+    return success(pick);
   } catch (err) {
     console.error('Error fetching user picks:', err);
     return serverError('Failed to fetch picks');

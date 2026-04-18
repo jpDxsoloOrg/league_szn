@@ -3,25 +3,44 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ---- Mocks ----------------------------------------------------------------
 
-const { mockScanAll } = vi.hoisted(() => ({
-  mockScanAll: vi.fn(),
-}));
+const mockFantasyRepo = {
+  getConfig: vi.fn(),
+  upsertConfig: vi.fn(),
+  findPick: vi.fn(),
+  listPicksByEvent: vi.fn(),
+  listPicksByUser: vi.fn(),
+  listAllPicks: vi.fn(),
+  savePick: vi.fn(),
+  updatePickScoring: vi.fn(),
+  deletePick: vi.fn(),
+  findCost: vi.fn(),
+  listAllCosts: vi.fn(),
+  upsertCost: vi.fn(),
+  initializeCost: vi.fn(),
+};
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: vi.fn(),
-    put: vi.fn(),
-    scan: vi.fn(),
-    query: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    scanAll: mockScanAll,
-    queryAll: vi.fn(),
-  },
-  TableNames: {
-    FANTASY_PICKS: 'FantasyPicks',
-    EVENTS: 'Events',
-  },
+const mockEventsRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+};
+
+const mockPlayersRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+};
+
+const mockMatchesRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+};
+
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    fantasy: mockFantasyRepo,
+    events: mockEventsRepo,
+    players: mockPlayersRepo,
+    matches: mockMatchesRepo,
+  }),
 }));
 
 import { handler } from '../getFantasyLeaderboard';
@@ -37,7 +56,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     httpMethod: 'GET', isBase64Encoded: false, path: '/',
     pathParameters: null, queryStringParameters: null,
     multiValueQueryStringParameters: null, stageVariables: null,
-    resource: '', requestContext: { authorizer: {} } as any,
+    resource: '', requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
@@ -48,8 +67,8 @@ describe('getFantasyLeaderboard', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns empty leaderboard when no picks exist', async () => {
-    mockScanAll.mockResolvedValueOnce([]); // picks
-    mockScanAll.mockResolvedValueOnce([]); // completed events
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([]);
+    mockEventsRepo.list.mockResolvedValueOnce([]);
 
     const result = await handler(makeEvent(), ctx, cb);
 
@@ -58,15 +77,12 @@ describe('getFantasyLeaderboard', () => {
   });
 
   it('aggregates points across events and assigns ranks', async () => {
-    // Picks
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       { eventId: 'e1', fantasyUserId: 'u1', username: 'Alice', pointsEarned: 20 },
       { eventId: 'e1', fantasyUserId: 'u2', username: 'Bob', pointsEarned: 30 },
       { eventId: 'e2', fantasyUserId: 'u1', username: 'Alice', pointsEarned: 15 },
     ]);
-    // No season filter, so no season events scan needed
-    // Completed events
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([
       { eventId: 'e1', status: 'completed', date: '2024-01-01' },
       { eventId: 'e2', status: 'completed', date: '2024-01-15' },
     ]);
@@ -86,16 +102,12 @@ describe('getFantasyLeaderboard', () => {
   });
 
   it('filters by seasonId when provided', async () => {
-    // Picks
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       { eventId: 'e1', fantasyUserId: 'u1', username: 'Alice', pointsEarned: 20 },
       { eventId: 'e2', fantasyUserId: 'u1', username: 'Alice', pointsEarned: 50 },
     ]);
-    // Season events (only e1 is in this season)
-    mockScanAll.mockResolvedValueOnce([{ eventId: 'e1', seasonId: 's1' }]);
-    // Completed events
-    mockScanAll.mockResolvedValueOnce([
-      { eventId: 'e1', status: 'completed', date: '2024-01-01' },
+    mockEventsRepo.list.mockResolvedValueOnce([
+      { eventId: 'e1', seasonId: 's1', status: 'completed', date: '2024-01-01' },
       { eventId: 'e2', status: 'completed', date: '2024-02-01' },
     ]);
 
@@ -114,12 +126,12 @@ describe('getFantasyLeaderboard', () => {
   });
 
   it('only counts picks for completed events', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       { eventId: 'e1', fantasyUserId: 'u1', username: 'Alice', pointsEarned: 20 },
       { eventId: 'e2', fantasyUserId: 'u1', username: 'Alice', pointsEarned: 99 },
     ]);
     // Only e1 is completed
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([
       { eventId: 'e1', status: 'completed', date: '2024-01-01' },
     ]);
 
@@ -129,13 +141,13 @@ describe('getFantasyLeaderboard', () => {
   });
 
   it('calculates perfect picks when all wrestlers scored > 0', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       {
         eventId: 'e1', fantasyUserId: 'u1', username: 'Alice', pointsEarned: 30,
         breakdown: { p1: { points: 10 }, p2: { points: 20 } },
       },
     ]);
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([
       { eventId: 'e1', status: 'completed', date: '2024-01-01' },
     ]);
 
@@ -145,13 +157,13 @@ describe('getFantasyLeaderboard', () => {
   });
 
   it('does not count perfect pick when any wrestler scored 0', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       {
         eventId: 'e1', fantasyUserId: 'u1', username: 'Alice', pointsEarned: 10,
         breakdown: { p1: { points: 10 }, p2: { points: 0 } },
       },
     ]);
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([
       { eventId: 'e1', status: 'completed', date: '2024-01-01' },
     ]);
 
@@ -160,12 +172,12 @@ describe('getFantasyLeaderboard', () => {
   });
 
   it('calculates current streak correctly', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       { eventId: 'e1', fantasyUserId: 'u1', username: 'A', pointsEarned: 10 },
       { eventId: 'e2', fantasyUserId: 'u1', username: 'A', pointsEarned: 5 },
       { eventId: 'e3', fantasyUserId: 'u1', username: 'A', pointsEarned: 20 },
     ]);
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([
       { eventId: 'e1', status: 'completed', date: '2024-01-01' },
       { eventId: 'e2', status: 'completed', date: '2024-01-08' },
       { eventId: 'e3', status: 'completed', date: '2024-01-15' },
@@ -177,12 +189,12 @@ describe('getFantasyLeaderboard', () => {
   });
 
   it('breaks streak when user scored 0 in an event', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       { eventId: 'e1', fantasyUserId: 'u1', username: 'A', pointsEarned: 10 },
       { eventId: 'e2', fantasyUserId: 'u1', username: 'A', pointsEarned: 0 },
       { eventId: 'e3', fantasyUserId: 'u1', username: 'A', pointsEarned: 20 },
     ]);
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([
       { eventId: 'e1', status: 'completed', date: '2024-01-01' },
       { eventId: 'e2', status: 'completed', date: '2024-01-08' },
       { eventId: 'e3', status: 'completed', date: '2024-01-15' },
@@ -194,12 +206,12 @@ describe('getFantasyLeaderboard', () => {
   });
 
   it('skips non-participated events for streak (does not break)', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       { eventId: 'e1', fantasyUserId: 'u1', username: 'A', pointsEarned: 10 },
       // u1 did not participate in e2
       { eventId: 'e3', fantasyUserId: 'u1', username: 'A', pointsEarned: 20 },
     ]);
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([
       { eventId: 'e1', status: 'completed', date: '2024-01-01' },
       { eventId: 'e2', status: 'completed', date: '2024-01-08' },
       { eventId: 'e3', status: 'completed', date: '2024-01-15' },
@@ -211,12 +223,12 @@ describe('getFantasyLeaderboard', () => {
   });
 
   it('sorts by currentSeasonPoints descending, then totalPoints', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       { eventId: 'e1', fantasyUserId: 'u1', username: 'A', pointsEarned: 50 },
       { eventId: 'e1', fantasyUserId: 'u2', username: 'B', pointsEarned: 50 },
       { eventId: 'e2', fantasyUserId: 'u1', username: 'A', pointsEarned: 10 },
     ]);
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([
       { eventId: 'e1', status: 'completed', date: '2024-01-01' },
       { eventId: 'e2', status: 'completed', date: '2024-01-08' },
     ]);
@@ -229,17 +241,17 @@ describe('getFantasyLeaderboard', () => {
   });
 
   it('returns 500 on unexpected error', async () => {
-    mockScanAll.mockRejectedValueOnce(new Error('DynamoDB failure'));
+    mockFantasyRepo.listAllPicks.mockRejectedValueOnce(new Error('DynamoDB failure'));
 
     const result = await handler(makeEvent(), ctx, cb);
     expect(result!.statusCode).toBe(500);
   });
 
   it('uses truncated fantasyUserId as username fallback', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       { eventId: 'e1', fantasyUserId: 'abcdefgh-1234-5678', pointsEarned: 10 },
     ]);
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([
       { eventId: 'e1', status: 'completed', date: '2024-01-01' },
     ]);
 

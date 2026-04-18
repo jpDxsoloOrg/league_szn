@@ -1,29 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
-
-interface ContenderRanking {
-  championshipId: string;
-  playerId: string;
-  rank: number;
-  rankingScore: number;
-  winPercentage: number;
-  currentStreak: number;
-  matchesInPeriod: number;
-  winsInPeriod: number;
-  previousRank?: number | null;
-  isOverridden?: boolean;
-  overrideType?: string | null;
-  organicRank?: number | null;
-  calculatedAt: string;
-}
-
-interface Player {
-  playerId: string;
-  name: string;
-  currentWrestler: string;
-  imageUrl?: string;
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -33,32 +10,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Championship ID is required');
     }
 
+    const { championships, contenders, players } = getRepositories();
+
     // ------------------------------------------------------------------
     // 1. Validate the championship exists
     // ------------------------------------------------------------------
-    const championshipResult = await dynamoDb.get({
-      TableName: TableNames.CHAMPIONSHIPS,
-      Key: { championshipId },
-    });
+    const championship = await championships.findById(championshipId);
 
-    if (!championshipResult.Item) {
+    if (!championship) {
       return notFound('Championship not found');
     }
 
-    const championship = championshipResult.Item;
-
     // ------------------------------------------------------------------
-    // 2. Query contender rankings using the RankIndex GSI
+    // 2. Query contender rankings using ranked order
     // ------------------------------------------------------------------
-    const rankingsResult = await dynamoDb.queryAll({
-      TableName: TableNames.CONTENDER_RANKINGS,
-      IndexName: 'RankIndex',
-      KeyConditionExpression: 'championshipId = :cid',
-      ExpressionAttributeValues: { ':cid': championshipId },
-      ScanIndexForward: true, // ascending by rank
-    });
-
-    const rankings = rankingsResult as unknown as ContenderRanking[];
+    const rankings = await contenders.listByChampionshipRanked(championshipId);
 
     // ------------------------------------------------------------------
     // 3. Collect all player IDs to fetch (contenders + current champion)
@@ -68,7 +34,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       playerIds.add(ranking.playerId);
     }
 
-    const currentChampion = championship.currentChampion as string | string[] | undefined;
+    const currentChampion = championship.currentChampion;
     if (currentChampion) {
       if (Array.isArray(currentChampion)) {
         currentChampion.forEach((id) => playerIds.add(id));
@@ -80,16 +46,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // ------------------------------------------------------------------
     // 4. Fetch all required player records
     // ------------------------------------------------------------------
-    const playersMap = new Map<string, Player>();
+    const playersMap = new Map<string, { playerId: string; name: string; currentWrestler: string; imageUrl?: string }>();
 
     for (const playerId of playerIds) {
-      const playerResult = await dynamoDb.get({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId },
-      });
-
-      if (playerResult.Item) {
-        const player = playerResult.Item as unknown as Player;
+      const player = await players.findById(playerId);
+      if (player) {
         playersMap.set(playerId, player);
       }
     }
@@ -115,8 +76,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // ------------------------------------------------------------------
     // 6. Build enriched contender list, excluding the current champion
-    //    (handles case where #1 contender became champion but rankings
-    //    haven't been recalculated yet)
     // ------------------------------------------------------------------
     const championIds = new Set<string>();
     if (currentChampion) {
@@ -131,11 +90,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       (ranking) => !championIds.has(ranking.playerId),
     );
 
-    const contenders = filteredRankings.map((ranking, index) => {
+    const contendersList = filteredRankings.map((ranking, index) => {
       const player = playersMap.get(ranking.playerId);
       const previousRank = ranking.previousRank ?? null;
       const isNew = previousRank === null || previousRank === undefined;
-      const adjustedRank = index + 1; // Re-rank after filtering out champion
+      const adjustedRank = index + 1;
       const movement = isNew ? 0 : (previousRank as number) - adjustedRank;
 
       return {
@@ -172,9 +131,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return success({
       championshipId,
       championshipName: championship.name || championshipId,
-      divisionId: championship.divisionId || null,
+      divisionId: (championship as unknown as Record<string, unknown>).divisionId || null,
       currentChampion: currentChampionData,
-      contenders,
+      contenders: contendersList,
       calculatedAt,
     });
   } catch (err) {

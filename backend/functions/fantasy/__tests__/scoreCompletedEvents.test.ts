@@ -3,25 +3,32 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ---- Mocks ----------------------------------------------------------------
 
-const { mockScanAll } = vi.hoisted(() => ({
-  mockScanAll: vi.fn(),
-}));
+const mockFantasyRepo = {
+  getConfig: vi.fn(),
+  upsertConfig: vi.fn(),
+  findPick: vi.fn(),
+  listPicksByEvent: vi.fn(),
+  listPicksByUser: vi.fn(),
+  listAllPicks: vi.fn(),
+  savePick: vi.fn(),
+  updatePickScoring: vi.fn(),
+  deletePick: vi.fn(),
+  findCost: vi.fn(),
+  listAllCosts: vi.fn(),
+  upsertCost: vi.fn(),
+  initializeCost: vi.fn(),
+};
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: vi.fn(),
-    put: vi.fn(),
-    scan: vi.fn(),
-    query: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    scanAll: mockScanAll,
-    queryAll: vi.fn(),
-  },
-  TableNames: {
-    EVENTS: 'Events',
-    FANTASY_PICKS: 'FantasyPicks',
-  },
+const mockEventsRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+};
+
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    fantasy: mockFantasyRepo,
+    events: mockEventsRepo,
+  }),
 }));
 
 const { mockCalculateFantasyPoints } = vi.hoisted(() => ({
@@ -72,13 +79,11 @@ describe('scoreCompletedEvents', () => {
   });
 
   it('scores unscored picks for completed events', async () => {
-    // Completed events
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([
       { eventId: 'e1', status: 'completed' },
       { eventId: 'e2', status: 'completed' },
     ]);
-    // All picks
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       { eventId: 'e1', fantasyUserId: 'u1', pointsEarned: undefined },
       { eventId: 'e2', fantasyUserId: 'u1', pointsEarned: 20 }, // already scored
     ]);
@@ -96,10 +101,10 @@ describe('scoreCompletedEvents', () => {
   });
 
   it('returns empty scored list when no unscored picks exist', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([
       { eventId: 'e1', status: 'completed' },
     ]);
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       { eventId: 'e1', fantasyUserId: 'u1', pointsEarned: 30 }, // already scored
     ]);
 
@@ -112,10 +117,10 @@ describe('scoreCompletedEvents', () => {
   });
 
   it('treats null pointsEarned as unscored', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([
       { eventId: 'e1', status: 'completed' },
     ]);
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       { eventId: 'e1', fantasyUserId: 'u1', pointsEarned: null },
     ]);
     mockCalculateFantasyPoints.mockResolvedValueOnce(undefined);
@@ -127,8 +132,8 @@ describe('scoreCompletedEvents', () => {
   });
 
   it('does not score picks for non-completed events', async () => {
-    mockScanAll.mockResolvedValueOnce([]); // no completed events
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([]); // no completed events
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       { eventId: 'e1', fantasyUserId: 'u1', pointsEarned: undefined },
     ]);
 
@@ -140,11 +145,11 @@ describe('scoreCompletedEvents', () => {
   });
 
   it('continues scoring other events when one fails', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([
       { eventId: 'e1', status: 'completed' },
       { eventId: 'e2', status: 'completed' },
     ]);
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       { eventId: 'e1', fantasyUserId: 'u1', pointsEarned: undefined },
       { eventId: 'e2', fantasyUserId: 'u1', pointsEarned: undefined },
     ]);
@@ -163,7 +168,7 @@ describe('scoreCompletedEvents', () => {
   });
 
   it('returns 500 on unexpected outer error', async () => {
-    mockScanAll.mockRejectedValueOnce(new Error('DynamoDB failure'));
+    mockEventsRepo.list.mockRejectedValueOnce(new Error('DynamoDB failure'));
 
     const event = withAuth(makeEvent());
     const result = await handler(event, ctx, cb);
@@ -171,10 +176,10 @@ describe('scoreCompletedEvents', () => {
   });
 
   it('de-duplicates event IDs when multiple users have unscored picks', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockEventsRepo.list.mockResolvedValueOnce([
       { eventId: 'e1', status: 'completed' },
     ]);
-    mockScanAll.mockResolvedValueOnce([
+    mockFantasyRepo.listAllPicks.mockResolvedValueOnce([
       { eventId: 'e1', fantasyUserId: 'u1', pointsEarned: undefined },
       { eventId: 'e1', fantasyUserId: 'u2', pointsEarned: undefined },
     ]);

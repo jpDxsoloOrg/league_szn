@@ -1,60 +1,13 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
-
-interface Override {
-  championshipId: string;
-  playerId: string;
-  overrideType: string;
-  reason: string;
-  createdBy: string;
-  createdAt: string;
-  expiresAt?: string;
-  active: boolean;
-}
-
-interface Player {
-  playerId: string;
-  name: string;
-  currentWrestler: string;
-  imageUrl?: string;
-}
-
-interface EnrichedOverride extends Override {
-  playerName: string;
-  wrestlerName: string;
-  playerImageUrl: string | null;
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const championshipId = event.queryStringParameters?.championshipId;
+    const { contenders, players } = getRepositories();
 
-    let overrides: Override[];
-
-    if (championshipId) {
-      // Query by championship using ActiveOverridesIndex GSI
-      const result = await dynamoDb.queryAll({
-        TableName: TableNames.CONTENDER_OVERRIDES,
-        IndexName: 'ActiveOverridesIndex',
-        KeyConditionExpression: 'championshipId = :cid',
-        FilterExpression: 'active = :active',
-        ExpressionAttributeValues: {
-          ':cid': championshipId,
-          ':active': true,
-        },
-        ScanIndexForward: false, // newest first
-      });
-      overrides = result as unknown as Override[];
-    } else {
-      // Scan all active overrides (admin-only, low volume)
-      const result = await dynamoDb.scanAll({
-        TableName: TableNames.CONTENDER_OVERRIDES,
-        FilterExpression: 'active = :active',
-        ExpressionAttributeValues: { ':active': true },
-      });
-      overrides = result as unknown as Override[];
-    }
+    const overrides = await contenders.listActiveOverrides(championshipId);
 
     // Collect unique player IDs for enrichment
     const playerIds = new Set<string>();
@@ -62,20 +15,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       playerIds.add(override.playerId);
     }
 
-    // Batch-get player details
-    const playersMap = new Map<string, Player>();
+    // Fetch player details
+    const playersMap = new Map<string, { name: string; currentWrestler: string; imageUrl?: string }>();
     for (const playerId of playerIds) {
-      const playerResult = await dynamoDb.get({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId },
-      });
-      if (playerResult.Item) {
-        playersMap.set(playerId, playerResult.Item as unknown as Player);
+      const player = await players.findById(playerId);
+      if (player) {
+        playersMap.set(playerId, player);
       }
     }
 
     // Enrich overrides with player names and sort by createdAt desc
-    const enriched: EnrichedOverride[] = overrides
+    const enriched = overrides
       .map((override) => {
         const player = playersMap.get(override.playerId);
         return {

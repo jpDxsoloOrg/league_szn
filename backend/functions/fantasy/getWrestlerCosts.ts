@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 
 function determineTrend(currentCost: number, baseCost: number): 'up' | 'down' | 'stable' {
@@ -10,20 +10,22 @@ function determineTrend(currentCost: number, baseCost: number): 'up' | 'down' | 
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    const [costsResult, playersResult] = await Promise.all([
-      dynamoDb.scanAll({ TableName: TableNames.WRESTLER_COSTS }),
-      dynamoDb.scanAll({ TableName: TableNames.PLAYERS }),
+    const { fantasy, players } = getRepositories();
+
+    const [allCosts, allPlayers] = await Promise.all([
+      fantasy.listAllCosts(),
+      players.list(),
     ]);
 
-    const costMap = new Map<string, Record<string, unknown>>();
-    for (const cost of costsResult) {
-      costMap.set(cost.playerId as string, cost);
+    const costMap = new Map<string, typeof allCosts[number]>();
+    for (const cost of allCosts) {
+      costMap.set(cost.playerId, cost);
     }
 
-    const merged = playersResult.map((player) => {
-      const cost = costMap.get(player.playerId as string);
-      const currentCost = (cost?.currentCost as number) || 100;
-      const baseCost = (cost?.baseCost as number) || 100;
+    const merged = allPlayers.map((player) => {
+      const cost = costMap.get(player.playerId);
+      const currentCost = cost?.currentCost || 100;
+      const baseCost = cost?.baseCost || 100;
 
       return {
         playerId: player.playerId,
@@ -34,10 +36,10 @@ export const handler: APIGatewayProxyHandler = async () => {
         currentCost,
         baseCost,
         costHistory: cost?.costHistory || [],
-        winRate30Days: (cost?.winRate30Days as number) || 0,
-        recentRecord: (cost?.recentRecord as string) || '0-0',
+        winRate30Days: cost?.winRate30Days || 0,
+        recentRecord: cost?.recentRecord || '0-0',
         costTrend: determineTrend(currentCost, baseCost),
-        updatedAt: (cost?.updatedAt as string) || player.updatedAt,
+        updatedAt: cost?.updatedAt || player.updatedAt,
       };
     });
 

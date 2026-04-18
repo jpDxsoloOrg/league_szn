@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { requireRole, getAuthContext } from '../../lib/auth';
 
@@ -9,20 +9,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (denied) return denied;
 
     const { sub: fantasyUserId } = getAuthContext(event);
+    const { fantasy } = getRepositories();
 
-    const result = await dynamoDb.queryAll({
-      TableName: TableNames.FANTASY_PICKS,
-      IndexName: 'UserPicksIndex',
-      KeyConditionExpression: 'fantasyUserId = :uid',
-      ExpressionAttributeValues: { ':uid': fantasyUserId },
-    });
+    const picks = await fantasy.listPicksByUser(fantasyUserId);
 
-    // Sort by eventId descending (most recent first)
-    result.sort((a, b) =>
-      (b.eventId as string).localeCompare(a.eventId as string)
-    );
-
-    return success(result);
+    return success(picks);
   } catch (err) {
     console.error('Error fetching all picks:', err);
     return serverError('Failed to fetch picks');

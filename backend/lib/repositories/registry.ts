@@ -22,6 +22,8 @@ import type { MatchesRepository } from './MatchesRepository';
 import type { ChampionshipsRepository } from './ChampionshipsRepository';
 import type { TournamentsRepository } from './TournamentsRepository';
 import type { SeasonStandingsRepository } from './SeasonStandingsRepository';
+import type { ContendersRepository } from './ContendersRepository';
+import type { FantasyRepository } from './FantasyRepository';
 import type { UnitOfWorkFactory } from './unitOfWork';
 
 export interface Repositories {
@@ -49,6 +51,8 @@ export interface Repositories {
   championships: ChampionshipsRepository;
   tournaments: TournamentsRepository;
   seasonStandings: SeasonStandingsRepository;
+  contenders: ContendersRepository;
+  fantasy: FantasyRepository;
   runInTransaction: UnitOfWorkFactory;
 }
 
