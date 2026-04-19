@@ -28,7 +28,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('action must be "accept" or "decline"');
     }
 
-    const { tagTeams: tagTeamsRepo, players: playersRepo } = getRepositories();
+    const { roster: { tagTeams: tagTeamsRepo, players: playersRepo } } = getRepositories();
 
     // Get tag team
     const tagTeam = await tagTeamsRepo.findById(tagTeamId);

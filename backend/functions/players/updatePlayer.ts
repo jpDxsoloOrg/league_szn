@@ -16,7 +16,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody(event);
     if (parseError) return parseError;
 
-    const player = await getRepositories().players.findById(playerId);
+    const player = await getRepositories().roster.players.findById(playerId);
     if (!player) {
       return notFound('Player not found');
     }
@@ -71,7 +71,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         hasChanges = true;
       } else {
         // Validate that the division exists
-        const division = await getRepositories().divisions.findById(body.divisionId as string);
+        const division = await getRepositories().leagueOps.divisions.findById(body.divisionId as string);
         if (!division) {
           return notFound(`Division ${body.divisionId} not found`);
         }
@@ -84,7 +84,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('No valid fields to update');
     }
 
-    const updated = await getRepositories().players.update(playerId, patch);
+    const updated = await getRepositories().roster.players.update(playerId, patch);
     return success(updated);
   } catch (err) {
     if (err instanceof NotFoundError) return notFound(err.message);

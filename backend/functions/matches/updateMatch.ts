@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { MatchCardEntry, MatchDesignation } from '../../lib/repositories/types';
-import type { EventPatch } from '../../lib/repositories/EventsRepository';
+import type { EventPatch } from '../../lib/repositories/LeagueOpsRepository';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
@@ -30,7 +30,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (parseError) return parseError;
 
     // Fetch existing match (matchId is PK, need to find the sort key 'date')
-    const existingMatch = await repos.matches.findByIdWithDate(matchId);
+    const existingMatch = await repos.competition.matches.findByIdWithDate(matchId);
     if (!existingMatch) {
       return notFound('Match not found');
     }
@@ -55,7 +55,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
 
       const playerValidationPromises = body.participants.map(async (playerId) => {
-        const player = await repos.players.findById(playerId);
+        const player = await repos.roster.players.findById(playerId);
         return { playerId, exists: !!player, player: player as unknown as Record<string, unknown> | null };
       });
 
@@ -72,7 +72,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         : existingRecord.championshipId as string | undefined;
 
       if (effectiveChampionshipId) {
-        const championship = await repos.championships.findById(effectiveChampionshipId);
+        const championship = await repos.competition.championships.findById(effectiveChampionshipId);
 
         if (championship) {
           const champDivisionId = (championship as unknown as Record<string, unknown>).divisionId as string | undefined;
@@ -94,7 +94,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate championship exists if provided
     if (body.championshipId) {
-      const championship = await repos.championships.findById(body.championshipId);
+      const championship = await repos.competition.championships.findById(body.championshipId);
 
       if (!championship) {
         return notFound(`Championship not found: ${body.championshipId}`);
@@ -115,7 +115,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate tournament exists if provided
     if (body.tournamentId) {
-      const tournament = await repos.tournaments.findById(body.tournamentId);
+      const tournament = await repos.competition.tournaments.findById(body.tournamentId);
 
       if (!tournament) {
         return notFound(`Tournament not found: ${body.tournamentId}`);
@@ -128,7 +128,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate season exists and is active if provided
     if (body.seasonId) {
-      const season = await repos.seasons.findById(body.seasonId);
+      const season = await repos.season.seasons.findById(body.seasonId);
 
       if (!season) {
         return notFound(`Season not found: ${body.seasonId}`);
@@ -141,7 +141,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate stipulationId exists if provided
     if (body.stipulationId) {
-      const stipulation = await repos.stipulations.findById(body.stipulationId);
+      const stipulation = await repos.competition.stipulations.findById(body.stipulationId);
 
       if (!stipulation) {
         return notFound(`Stipulation not found: ${body.stipulationId}`);
@@ -175,7 +175,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const matchDate = existingMatch.date;
 
-    await repos.matches.update(matchId, matchDate, patch);
+    await repos.competition.matches.update(matchId, matchDate, patch);
 
     // Handle eventId changes — remove from old event, add to new event
     // Also handle designation changes when staying on the same event
@@ -186,7 +186,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const effectiveEventId = newEventId !== undefined ? newEventId : oldEventId;
     if (body.designation !== undefined && effectiveEventId && (newEventId === undefined || newEventId === oldEventId)) {
       try {
-        const eventRecord = await repos.events.findById(effectiveEventId);
+        const eventRecord = await repos.leagueOps.events.findById(effectiveEventId);
 
         if (eventRecord) {
           const matchCards = ((eventRecord as unknown as Record<string, unknown>).matchCards as MatchCardEntry[] | undefined) || [];
@@ -197,7 +197,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             return card;
           });
 
-          await repos.events.update(effectiveEventId, {
+          await repos.leagueOps.events.update(effectiveEventId, {
             matchCards: updatedCards,
           } as EventPatch);
         }
@@ -210,7 +210,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       // Remove from old event if it had one
       if (oldEventId) {
         try {
-          const oldEvent = await repos.events.findById(oldEventId);
+          const oldEvent = await repos.leagueOps.events.findById(oldEventId);
 
           if (oldEvent) {
             const matchCards = ((oldEvent as unknown as Record<string, unknown>).matchCards as MatchCardEntry[] | undefined) || [];
@@ -218,7 +218,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               (card) => card.matchId !== matchId,
             );
 
-            await repos.events.update(oldEventId, {
+            await repos.leagueOps.events.update(oldEventId, {
               matchCards: updatedCards,
             } as EventPatch);
           }
@@ -230,7 +230,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       // Add to new event if one was provided
       if (newEventId) {
         try {
-          const newEvent = await repos.events.findById(newEventId);
+          const newEvent = await repos.leagueOps.events.findById(newEventId);
 
           if (newEvent) {
             const existingCards = ((newEvent as unknown as Record<string, unknown>).matchCards as MatchCardEntry[] | undefined) || [];
@@ -240,7 +240,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               designation: (body.designation || (existingRecord.designation as string | undefined) || 'midcard') as MatchDesignation,
             };
 
-            await repos.events.update(newEventId, {
+            await repos.leagueOps.events.update(newEventId, {
               matchCards: [...existingCards, newCard],
             } as EventPatch);
           }
@@ -251,7 +251,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Return the updated match
-    const updatedMatch = await repos.matches.findByIdWithDate(matchId);
+    const updatedMatch = await repos.competition.matches.findByIdWithDate(matchId);
     return success(updatedMatch || { matchId, updated: true });
   } catch (err) {
     console.error('Error updating match:', err);

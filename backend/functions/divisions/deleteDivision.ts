@@ -4,11 +4,11 @@ import { getRepositories } from '../../lib/repositories';
 import type { Division } from '../../lib/repositories/types';
 
 export const handler = deleteHandlerFactory<Division>({
-  repo: () => getRepositories().divisions,
+  repo: () => getRepositories().leagueOps.divisions,
   entityName: 'division',
   idParam: 'divisionId',
   preDelete: async (divisionId) => {
-    const { players } = getRepositories();
+    const { roster: { players } } = getRepositories();
     const allPlayers = await players.list();
     const assignedPlayers = allPlayers.filter((p) => p.divisionId === divisionId);
     const count = assignedPlayers.length;

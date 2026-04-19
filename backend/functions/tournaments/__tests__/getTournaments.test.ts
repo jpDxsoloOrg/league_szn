@@ -45,10 +45,10 @@ beforeEach(() => {
 
 describe('getTournaments', () => {
   it('returns all tournaments sorted by createdAt descending', async () => {
-    await repos.tournaments.create({
+    await repos.competition.tournaments.create({
       tournamentId: 't1', name: 'Old Tournament', createdAt: '2024-01-01T00:00:00Z',
     } as Record<string, unknown>);
-    await repos.tournaments.create({
+    await repos.competition.tournaments.create({
       tournamentId: 't2', name: 'New Tournament', createdAt: '2024-06-01T00:00:00Z',
     } as Record<string, unknown>);
 
@@ -69,7 +69,7 @@ describe('getTournaments', () => {
   });
 
   it('returns 500 when list throws', async () => {
-    vi.spyOn(repos.tournaments, 'list').mockRejectedValue(new Error('DB failure'));
+    vi.spyOn(repos.competition.tournaments, 'list').mockRejectedValue(new Error('DB failure'));
 
     const result = await getTournaments(makeEvent(), ctx, cb);
 

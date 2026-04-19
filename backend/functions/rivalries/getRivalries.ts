@@ -30,7 +30,7 @@ function intensityBadge(matchCount: number): 'heatingUp' | 'intense' | 'historic
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const { matches, players } = getRepositories();
+    const { competition: { matches }, roster: { players } } = getRepositories();
     const seasonId = event.queryStringParameters?.seasonId;
 
     const [allPlayers, allMatches] = await Promise.all([

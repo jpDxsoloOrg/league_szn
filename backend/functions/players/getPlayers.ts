@@ -4,7 +4,7 @@ import { success, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    const players = await getRepositories().players.list();
+    const players = await getRepositories().roster.players.list();
 
     // Only include players who have a wrestler assigned (exclude Fantasy-only users)
     const wrestlers = players.filter((p) => p.currentWrestler);

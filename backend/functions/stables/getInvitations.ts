@@ -15,7 +15,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('stableId is required');
     }
 
-    const { stables: stablesRepo, players: playersRepo } = getRepositories();
+    const { roster: { stables: stablesRepo, players: playersRepo } } = getRepositories();
 
     // Verify caller is the stable leader
     const callerPlayer = await playersRepo.findByUserId(auth.sub);

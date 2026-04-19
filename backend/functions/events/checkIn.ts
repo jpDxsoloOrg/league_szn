@@ -33,7 +33,7 @@ export const handler = async (
       return badRequest('status must be one of available, tentative, unavailable');
     }
 
-    const { events, players } = getRepositories();
+    const { leagueOps: { events }, roster: { players } } = getRepositories();
 
     // Find the caller's player record via their user sub
     const callerPlayer = await players.findByUserId(auth.sub);

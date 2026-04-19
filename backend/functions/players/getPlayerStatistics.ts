@@ -65,7 +65,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const seasonId = event.queryStringParameters?.seasonId;
 
-    const { players, matches } = getRepositories();
+    const { roster: { players }, competition: { matches } } = getRepositories();
 
     // Verify player exists
     const player = await players.findById(playerId);

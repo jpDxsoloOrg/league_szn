@@ -3,7 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import { NotFoundError } from '../../lib/repositories/errors';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
-import type { EventPatch } from '../../lib/repositories/EventsRepository';
+import type { EventPatch } from '../../lib/repositories/LeagueOpsRepository';
 
 interface UpdateEventBody {
   name?: string;
@@ -40,7 +40,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<UpdateEventBody>(event);
     if (parseError) return parseError;
 
-    const { events, companies } = getRepositories();
+    const { leagueOps: { events, companies } } = getRepositories();
 
     const existing = await events.findById(eventId);
     if (!existing) {

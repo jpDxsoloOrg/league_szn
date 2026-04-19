@@ -26,7 +26,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Valid reaction is required (fire, mic, trash, mind-blown, clap)');
     }
 
-    const { promos } = getRepositories();
+    const { content: { promos } } = getRepositories();
 
     // Get the promo
     const promo = await promos.findById(promoId);

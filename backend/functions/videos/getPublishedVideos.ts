@@ -5,7 +5,7 @@ import { success, serverError } from '../../lib/response';
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const category = event.queryStringParameters?.category;
-    const { videos } = getRepositories();
+    const { content: { videos } } = getRepositories();
     const items = await videos.listPublished(category);
     return success(items);
   } catch (err) {

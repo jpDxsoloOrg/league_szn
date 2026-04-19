@@ -3,6 +3,6 @@ import { getRepositories } from '../../lib/repositories';
 import type { Division } from '../../lib/repositories/types';
 
 export const handler = listHandlerFactory<Division>({
-  repo: () => getRepositories().divisions,
+  repo: () => getRepositories().leagueOps.divisions,
   entityName: 'divisions',
 });

@@ -5,7 +5,7 @@ import { created, badRequest, forbidden, notFound, serverError } from '../../lib
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
-import type { InvitationRecord } from '../../lib/repositories/MatchmakingRepository';
+import type { InvitationRecord } from '../../lib/repositories/LeagueOpsRepository';
 
 interface CreateInvitationBody {
   targetPlayerId?: string;
@@ -23,7 +23,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return forbidden('Only wrestlers can send match invitations');
     }
 
-    const { players, matchmaking } = getRepositories();
+    const { roster: { players }, leagueOps: { matchmaking } } = getRepositories();
 
     // Find the caller's player record via their user sub
     const callerPlayer = await players.findByUserId(auth.sub);

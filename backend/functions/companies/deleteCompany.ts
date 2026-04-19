@@ -9,7 +9,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Company ID is required');
     }
 
-    const { companies, shows, players } = getRepositories();
+    const { leagueOps: { companies, shows }, roster: { players } } = getRepositories();
     const company = await companies.findById(companyId);
     if (!company) {
       return badRequest('Company not found');

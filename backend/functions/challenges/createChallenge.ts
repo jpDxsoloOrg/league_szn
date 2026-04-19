@@ -30,7 +30,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('matchType is required');
     }
 
-    const { players, challenges, tagTeams } = getRepositories();
+    const { roster: { players, tagTeams }, user: { challenges } } = getRepositories();
 
     // Find the challenger's player record via their user sub
     const challengerPlayer = await players.findByUserId(auth.sub);

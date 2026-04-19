@@ -54,21 +54,21 @@ describe('deleteEvent', () => {
   });
 
   it('deletes event with empty matchCards and returns 204', async () => {
-    const eventItem = await repos.events.create({
+    const eventItem = await repos.leagueOps.events.create({
       name: 'Test', eventType: 'ppv', date: '2024-01-01',
     });
-    await repos.events.update(eventItem.eventId, { matchCards: [] });
+    await repos.leagueOps.events.update(eventItem.eventId, { matchCards: [] });
 
     const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
     const result = await deleteEvent(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
-    expect(await repos.events.findById(eventItem.eventId)).toBeNull();
+    expect(await repos.leagueOps.events.findById(eventItem.eventId)).toBeNull();
   });
 
   it('deletes event when matchCards property is undefined', async () => {
-    const eventItem = await repos.events.create({
+    const eventItem = await repos.leagueOps.events.create({
       name: 'Test', eventType: 'ppv', date: '2024-01-01',
     });
 
@@ -80,10 +80,10 @@ describe('deleteEvent', () => {
   });
 
   it('deletes event when matchCards have no matchId values', async () => {
-    const eventItem = await repos.events.create({
+    const eventItem = await repos.leagueOps.events.create({
       name: 'Test', eventType: 'ppv', date: '2024-01-01',
     });
-    await repos.events.update(eventItem.eventId, {
+    await repos.leagueOps.events.update(eventItem.eventId, {
       matchCards: [{ position: 1, designation: 'pre-show' } as { position: number; matchId: string; designation: 'pre-show' }],
     });
 
@@ -95,19 +95,19 @@ describe('deleteEvent', () => {
   });
 
   it('deletes event when associated matches are not completed', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01', status: 'scheduled',
       participants: [], createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-01', status: 'in-progress',
       participants: [], createdAt: new Date().toISOString(),
     });
 
-    const eventItem = await repos.events.create({
+    const eventItem = await repos.leagueOps.events.create({
       name: 'Test', eventType: 'ppv', date: '2024-01-01',
     });
-    await repos.events.update(eventItem.eventId, {
+    await repos.leagueOps.events.update(eventItem.eventId, {
       matchCards: [
         { position: 1, matchId: 'm1', designation: 'main-event' as const },
         { position: 2, matchId: 'm2', designation: 'opener' as const },
@@ -122,15 +122,15 @@ describe('deleteEvent', () => {
   });
 
   it('returns 409 when event has a completed match', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01', status: 'completed',
       participants: [], createdAt: new Date().toISOString(),
     });
 
-    const eventItem = await repos.events.create({
+    const eventItem = await repos.leagueOps.events.create({
       name: 'Test', eventType: 'ppv', date: '2024-01-01',
     });
-    await repos.events.update(eventItem.eventId, {
+    await repos.leagueOps.events.update(eventItem.eventId, {
       matchCards: [{ position: 1, matchId: 'm1', designation: 'main-event' as const }],
     });
 
@@ -144,23 +144,23 @@ describe('deleteEvent', () => {
   });
 
   it('returns 409 with correct count for multiple completed matches', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01', status: 'completed',
       participants: [], createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-02', status: 'completed',
       participants: [], createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm3', date: '2024-01-03', status: 'scheduled',
       participants: [], createdAt: new Date().toISOString(),
     });
 
-    const eventItem = await repos.events.create({
+    const eventItem = await repos.leagueOps.events.create({
       name: 'Test', eventType: 'ppv', date: '2024-01-01',
     });
-    await repos.events.update(eventItem.eventId, {
+    await repos.leagueOps.events.update(eventItem.eventId, {
       matchCards: [
         { position: 1, matchId: 'm1', designation: 'main-event' as const },
         { position: 2, matchId: 'm2', designation: 'co-main' as const },
@@ -177,10 +177,10 @@ describe('deleteEvent', () => {
   });
 
   it('allows deletion when match lookup returns no match', async () => {
-    const eventItem = await repos.events.create({
+    const eventItem = await repos.leagueOps.events.create({
       name: 'Test', eventType: 'ppv', date: '2024-01-01',
     });
-    await repos.events.update(eventItem.eventId, {
+    await repos.leagueOps.events.update(eventItem.eventId, {
       matchCards: [{ position: 1, matchId: 'm-deleted', designation: 'midcard' as const }],
     });
 
@@ -192,7 +192,7 @@ describe('deleteEvent', () => {
   });
 
   it('returns 500 when repository fails', async () => {
-    vi.spyOn(repos.events, 'findById').mockRejectedValue(new Error('DB error'));
+    vi.spyOn(repos.leagueOps.events, 'findById').mockRejectedValue(new Error('DB error'));
     const event = makeEvent({ pathParameters: { eventId: 'e1' } });
 
     const result = await deleteEvent(event, ctx, cb);

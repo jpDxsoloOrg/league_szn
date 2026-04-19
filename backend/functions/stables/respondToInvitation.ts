@@ -30,7 +30,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('action must be "accept" or "decline"');
     }
 
-    const { stables: stablesRepo, players: playersRepo } = getRepositories();
+    const { roster: { stables: stablesRepo, players: playersRepo } } = getRepositories();
 
     // Get invitation
     const invitation = await stablesRepo.findInvitationById(invitationId);

@@ -41,7 +41,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('action must be accept, decline, or counter');
     }
 
-    const { challenges, players, tagTeams } = getRepositories();
+    const { user: { challenges }, roster: { players, tagTeams } } = getRepositories();
 
     // Get the challenge via repo
     const challenge = await challenges.findById(challengeId);

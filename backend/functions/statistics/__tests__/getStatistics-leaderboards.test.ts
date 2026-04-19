@@ -14,11 +14,13 @@ const { mockPlayersList, mockMatchesList, mockChampionshipsListAllHistory, mockC
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
-    players: { list: mockPlayersList },
-    matches: { list: mockMatchesList },
-    championships: { listAllHistory: mockChampionshipsListAllHistory, list: mockChampionshipsList },
-    matchTypes: { list: mockMatchTypesList },
-    stipulations: { list: mockStipulationsList },
+    roster: { players: { list: mockPlayersList } },
+    competition: {
+      matches: { list: mockMatchesList },
+      championships: { listAllHistory: mockChampionshipsListAllHistory, list: mockChampionshipsList },
+      matchTypes: { list: mockMatchTypesList },
+      stipulations: { list: mockStipulationsList },
+    },
   }),
 }));
 

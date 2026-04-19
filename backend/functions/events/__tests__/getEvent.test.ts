@@ -54,13 +54,13 @@ describe('getEvent', () => {
   });
 
   it('returns event with empty enrichedMatches when no matchCards', async () => {
-    await repos.events.create({
+    await repos.leagueOps.events.create({
       name: 'WrestleMania', eventType: 'ppv', date: '2024-01-01',
     });
-    const events = await repos.events.list();
+    const events = await repos.leagueOps.events.list();
     const eventItem = events[0];
     // Set matchCards to empty array
-    await repos.events.update(eventItem.eventId, { matchCards: [] });
+    await repos.leagueOps.events.update(eventItem.eventId, { matchCards: [] });
 
     const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
@@ -74,17 +74,17 @@ describe('getEvent', () => {
 
   it('returns enriched match data with player names and championship info', async () => {
     // Create player
-    const player = await repos.players.create({
+    const player = await repos.roster.players.create({
       name: 'John Cena', currentWrestler: 'John Cena',
     });
 
     // Create championship
-    const championship = await repos.championships.create({
+    const championship = await repos.competition.championships.create({
       name: 'World Championship', type: 'singles',
     });
 
     // Create match
-    const match = await repos.matches.create({
+    const match = await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01', matchFormat: 'singles', stipulation: 'No DQ',
       participants: [player.playerId], winners: [player.playerId], losers: [],
       isChampionship: true, championshipId: championship.championshipId,
@@ -92,10 +92,10 @@ describe('getEvent', () => {
     });
 
     // Create event with matchCards
-    const eventItem = await repos.events.create({
+    const eventItem = await repos.leagueOps.events.create({
       name: 'WrestleMania', eventType: 'ppv', date: '2024-01-01',
     });
-    await repos.events.update(eventItem.eventId, {
+    await repos.leagueOps.events.update(eventItem.eventId, {
       matchCards: [{ position: 1, matchId: match.matchId, designation: 'main-event' as const, notes: 'Title match' }],
     });
 
@@ -118,10 +118,10 @@ describe('getEvent', () => {
   });
 
   it('returns matchData null when matchId is missing from card', async () => {
-    const eventItem = await repos.events.create({
+    const eventItem = await repos.leagueOps.events.create({
       name: 'Raw', eventType: 'weekly', date: '2024-01-01',
     });
-    await repos.events.update(eventItem.eventId, {
+    await repos.leagueOps.events.update(eventItem.eventId, {
       matchCards: [{ position: 1, matchId: undefined as unknown as string, designation: 'pre-show' as const }],
     });
 
@@ -134,10 +134,10 @@ describe('getEvent', () => {
   });
 
   it('returns matchData null when match is not found in database', async () => {
-    const eventItem = await repos.events.create({
+    const eventItem = await repos.leagueOps.events.create({
       name: 'Raw', eventType: 'weekly', date: '2024-01-01',
     });
-    await repos.events.update(eventItem.eventId, {
+    await repos.leagueOps.events.update(eventItem.eventId, {
       matchCards: [{ position: 1, matchId: 'm-gone', designation: 'opener' as const }],
     });
 
@@ -153,16 +153,16 @@ describe('getEvent', () => {
 
   it('uses Unknown Player/Wrestler when player not found', async () => {
     // Create a match with a non-existent player
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01', matchFormat: 'singles',
       participants: ['p-missing'], isChampionship: false, status: 'scheduled',
       createdAt: new Date().toISOString(),
     });
 
-    const eventItem = await repos.events.create({
+    const eventItem = await repos.leagueOps.events.create({
       name: 'Raw', eventType: 'weekly', date: '2024-01-01',
     });
-    await repos.events.update(eventItem.eventId, {
+    await repos.leagueOps.events.update(eventItem.eventId, {
       matchCards: [{ position: 1, matchId: 'm1', designation: 'midcard' as const }],
     });
 
@@ -177,16 +177,16 @@ describe('getEvent', () => {
   });
 
   it('omits championshipName when match is not a championship match', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01', matchFormat: 'tag',
       participants: [], isChampionship: false, status: 'scheduled',
       createdAt: new Date().toISOString(),
     });
 
-    const eventItem = await repos.events.create({
+    const eventItem = await repos.leagueOps.events.create({
       name: 'Raw', eventType: 'weekly', date: '2024-01-01',
     });
-    await repos.events.update(eventItem.eventId, {
+    await repos.leagueOps.events.update(eventItem.eventId, {
       matchCards: [{ position: 1, matchId: 'm1', designation: 'midcard' as const }],
     });
 
@@ -201,7 +201,7 @@ describe('getEvent', () => {
   });
 
   it('handles event with undefined matchCards property', async () => {
-    const eventItem = await repos.events.create({
+    const eventItem = await repos.leagueOps.events.create({
       name: 'Raw', eventType: 'weekly', date: '2024-01-01',
     });
 
@@ -215,7 +215,7 @@ describe('getEvent', () => {
   });
 
   it('returns 500 when repository fails', async () => {
-    vi.spyOn(repos.events, 'findById').mockRejectedValue(new Error('DB error'));
+    vi.spyOn(repos.leagueOps.events, 'findById').mockRejectedValue(new Error('DB error'));
     const event = makeEvent({ pathParameters: { eventId: 'e1' } });
 
     const result = await getEvent(event, ctx, cb);

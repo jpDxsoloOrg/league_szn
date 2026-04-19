@@ -7,7 +7,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { playerId, promoType, includeHidden, excludeResponses } = event.queryStringParameters || {};
 
-    const { promos, players } = getRepositories();
+    const { content: { promos }, roster: { players } } = getRepositories();
 
     let promoList: Promo[];
 

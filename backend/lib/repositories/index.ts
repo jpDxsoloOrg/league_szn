@@ -11,31 +11,94 @@ export {
 export * from './errors';
 export * from './unitOfWork';
 export * from './types';
-export type { DivisionsRepository, DivisionCreateInput, DivisionPatch } from './DivisionsRepository';
-export type { StipulationsRepository, StipulationCreateInput, StipulationPatch } from './StipulationsRepository';
-export type { MatchTypesRepository, MatchTypeCreateInput, MatchTypePatch } from './MatchTypesRepository';
-export type { SiteConfigRepository, FeatureFlags } from './SiteConfigRepository';
+
+// Aggregate repository interfaces and their input types
+export type { CrudRepository } from './CrudRepository';
+
+export type {
+  RosterRepository,
+  PlayerCreateInput,
+  PlayerPatch,
+  TagTeamCreateInput,
+  TagTeamPatch,
+  StableCreateInput,
+  StablePatch,
+  StableInvitationCreateInput,
+  OverallSubmitInput,
+  JoinedOverall,
+  TransferCreateInput,
+  TransferReviewInput,
+  StablesMethods,
+  OverallsMethods,
+  TransfersMethods,
+} from './RosterRepository';
+
+export type {
+  CompetitionRepository,
+  ChampionshipCreateInput,
+  ChampionshipPatch,
+  ContenderRankingInput,
+  ContenderOverrideInput,
+  RankingHistoryInput,
+  MatchTypeCreateInput,
+  MatchTypePatch,
+  StipulationCreateInput,
+  StipulationPatch,
+  MatchesMethods,
+  ChampionshipsMethods,
+  TournamentsMethods,
+  ContendersMethods,
+} from './CompetitionRepository';
+
+export type {
+  SeasonRepository,
+  SeasonCreateInput,
+  SeasonPatch,
+  SeasonAwardCreateInput,
+  StandingsMethods,
+  AwardsMethods,
+} from './SeasonRepository';
+
+export type {
+  LeagueOpsRepository,
+  EventCreateInput,
+  EventPatch,
+  ShowCreateInput,
+  ShowPatch,
+  CompanyCreateInput,
+  CompanyPatch,
+  DivisionCreateInput,
+  DivisionPatch,
+  PresenceRecord,
+  QueueRecord,
+  InvitationRecord,
+  MatchmakingMethods,
+} from './LeagueOpsRepository';
+
+export type {
+  ContentRepository,
+  AnnouncementCreateInput,
+  AnnouncementPatch,
+  VideoCreateInput,
+  VideoPatch,
+  PromoCreateInput,
+  StorylineRequestCreateInput,
+  StorylineRequestReviewInput,
+  PromosMethods,
+  StorylineRequestsMethods,
+} from './ContentRepository';
+
+export type {
+  UserRepository,
+  NotificationPage,
+  ChallengeCreateInput,
+  FantasyPickInput,
+  WrestlerCostInitInput,
+  NotificationsMethods,
+  FantasyMethods,
+  SiteConfigMethods,
+} from './UserRepository';
+
+// SiteConfigRepository kept for FeatureFlags and DEFAULT_FEATURES
+export type { FeatureFlags } from './SiteConfigRepository';
 export { DEFAULT_FEATURES } from './SiteConfigRepository';
-export type { VideosRepository, VideoCreateInput, VideoPatch } from './VideosRepository';
-export type { AnnouncementsRepository, AnnouncementCreateInput, AnnouncementPatch } from './AnnouncementsRepository';
-export type { CompaniesRepository, CompanyCreateInput, CompanyPatch } from './CompaniesRepository';
-export type { ShowsRepository, ShowCreateInput, ShowPatch } from './ShowsRepository';
-export type { NotificationsRepository, NotificationPage } from './NotificationsRepository';
-export type { OverallsRepository, OverallSubmitInput, JoinedOverall } from './OverallsRepository';
-export type { SeasonsRepository, SeasonCreateInput, SeasonPatch } from './SeasonsRepository';
-export type { SeasonAwardsRepository, SeasonAwardCreateInput } from './SeasonAwardsRepository';
-export type { PlayersRepository, PlayerCreateInput, PlayerPatch } from './PlayersRepository';
-export type { ChallengesRepository, ChallengeCreateInput } from './ChallengesRepository';
-export type { TagTeamsRepository, TagTeamCreateInput, TagTeamPatch } from './TagTeamsRepository';
-export type { StablesRepository, StableCreateInput, StablePatch, StableInvitationCreateInput } from './StablesRepository';
-export type { TransfersRepository, TransferCreateInput, TransferReviewInput } from './TransfersRepository';
-export type { StorylineRequestsRepository, StorylineRequestCreateInput, StorylineRequestReviewInput } from './StorylineRequestsRepository';
-export type { EventsRepository, EventCreateInput, EventPatch } from './EventsRepository';
-export type { PromosRepository, PromoCreateInput } from './PromosRepository';
-export type { MatchesRepository } from './MatchesRepository';
-export type { ChampionshipsRepository, ChampionshipPatch, ChampionshipCreateInput } from './ChampionshipsRepository';
-export type { TournamentsRepository } from './TournamentsRepository';
-export type { SeasonStandingsRepository } from './SeasonStandingsRepository';
-export type { ContendersRepository, ContenderRankingInput, ContenderOverrideInput, RankingHistoryInput } from './ContendersRepository';
-export type { FantasyRepository, FantasyPickInput, WrestlerCostInitInput } from './FantasyRepository';
-export type { MatchmakingRepository, PresenceRecord, QueueRecord, InvitationRecord } from './MatchmakingRepository';

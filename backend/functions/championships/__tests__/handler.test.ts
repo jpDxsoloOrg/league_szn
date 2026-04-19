@@ -25,7 +25,8 @@ const {
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
-    championships: {
+    competition: {
+      championships: {
       list: mockChampionshipsList,
       findById: mockChampionshipsFindById,
       create: mockChampionshipsCreate,
@@ -34,6 +35,7 @@ vi.mock('../../../lib/repositories', () => ({
       listHistory: mockChampionshipsListHistory,
       deleteHistoryEntry: mockChampionshipsDeleteHistoryEntry,
       findCurrentReign: mockChampionshipsFindCurrentReign,
+    },
     },
     runInTransaction: mockRunInTransaction,
   }),

@@ -11,7 +11,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { sub } = getAuthContext(event);
     const repos = getRepositories();
 
-    const player = await repos.players.findByUserId(sub);
+    const player = await repos.roster.players.findByUserId(sub);
 
     if (!player) {
       return notFound('No player profile found for this user');
@@ -19,7 +19,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const playerId = player.playerId;
 
-    const requests = await repos.transfers.listByPlayer(playerId);
+    const requests = await repos.roster.transfers.listByPlayer(playerId);
 
     // Collect unique division IDs to join names
     const divisionIds = new Set<string>();
@@ -31,7 +31,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const divisionsMap = new Map<string, string>();
     await Promise.all(
       Array.from(divisionIds).map(async (divisionId) => {
-        const division = await repos.divisions.findById(divisionId);
+        const division = await repos.leagueOps.divisions.findById(divisionId);
         if (division) {
           divisionsMap.set(divisionId, division.name);
         }

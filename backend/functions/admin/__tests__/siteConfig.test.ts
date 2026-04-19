@@ -4,7 +4,7 @@ import {
   setRepositoriesForTesting,
   resetRepositoriesForTesting,
 } from '../../../lib/repositories';
-import { InMemorySiteConfigRepository } from '../../../lib/repositories/inMemory/SiteConfigRepository';
+// InMemoryUserRepository import removed — no longer needed
 import { buildInMemoryRepositories } from '../../../lib/repositories/inMemory';
 
 import { handler as getSiteConfig } from '../getSiteConfig';
@@ -52,11 +52,11 @@ function withAuth(event: APIGatewayProxyEvent, groups: string, sub = 'user-sub-1
   };
 }
 
-let siteConfigRepo: InMemorySiteConfigRepository;
+let siteConfigRepo: ReturnType<typeof buildInMemoryRepositories>['user']['siteConfig'];
 
 beforeEach(() => {
   const repos = buildInMemoryRepositories();
-  siteConfigRepo = repos.siteConfig as InMemorySiteConfigRepository;
+  siteConfigRepo = repos.user.siteConfig;
   setRepositoriesForTesting(repos);
 });
 
@@ -76,14 +76,14 @@ describe('getSiteConfig', () => {
   });
 
   it('returns features from existing config', async () => {
-    siteConfigRepo.features = {
+    await siteConfigRepo.updateFeatures({
       fantasy: false,
       challenges: true,
       promos: false,
       contenders: true,
       statistics: true,
       stables: true,
-    };
+    });
 
     const result = await getSiteConfig(makeEvent(), ctx, cb);
 
@@ -185,14 +185,14 @@ describe('updateSiteConfig', () => {
   });
 
   it('merges new features with existing config and returns updated features', async () => {
-    siteConfigRepo.features = {
+    await siteConfigRepo.updateFeatures({
       fantasy: true,
       challenges: true,
       promos: true,
       contenders: true,
       statistics: true,
       stables: true,
-    };
+    });
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ features: { fantasy: false, promos: false } }) }),

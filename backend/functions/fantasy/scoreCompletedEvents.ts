@@ -13,7 +13,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const denied = requireRole(event, 'Fantasy');
     if (denied) return denied;
 
-    const { events, fantasy } = getRepositories();
+    const { leagueOps: { events }, user: { fantasy } } = getRepositories();
 
     // Find all completed events
     const allEvents = await events.list();

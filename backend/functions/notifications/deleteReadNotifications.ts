@@ -11,7 +11,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const userId = auth.sub;
-    const { notifications } = getRepositories();
+    const { user: { notifications } } = getRepositories();
     const deleted = await notifications.deleteAllRead(userId);
 
     return success({ deleted });

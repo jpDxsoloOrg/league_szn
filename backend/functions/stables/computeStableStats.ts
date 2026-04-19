@@ -69,7 +69,7 @@ export interface StableStandingsData {
  * Fetches all completed matches via the matches repository.
  */
 export async function fetchCompletedMatches(): Promise<MatchRecord[]> {
-  const { matches } = getRepositories();
+  const { competition: { matches } } = getRepositories();
   const items = await matches.listCompleted();
 
   return items.map((item) => ({
@@ -94,7 +94,7 @@ export async function fetchCompletedMatches(): Promise<MatchRecord[]> {
  * Fetches all active stables via the stables repository.
  */
 export async function fetchActiveStables(): Promise<StableRecord[]> {
-  const { stables } = getRepositories();
+  const { roster: { stables } } = getRepositories();
   const allStables = await stables.list();
 
   return allStables

@@ -15,9 +15,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     let requests: TransferRequest[];
 
     if (statusFilter) {
-      requests = await repos.transfers.listByStatus(statusFilter);
+      requests = await repos.roster.transfers.listByStatus(statusFilter);
     } else {
-      requests = await repos.transfers.list();
+      requests = await repos.roster.transfers.list();
     }
 
     // Collect unique player/division IDs
@@ -29,8 +29,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const [players, divisions] = await Promise.all([
-      repos.players.list(),
-      repos.divisions.list(),
+      repos.roster.players.list(),
+      repos.leagueOps.divisions.list(),
     ]);
 
     const playersMap = new Map<string, string>(

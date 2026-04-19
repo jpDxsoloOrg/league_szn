@@ -147,8 +147,8 @@ describe('createPlayer', () => {
   });
 
   it('creates player with valid divisionId', async () => {
-    await repos.divisions.create({ name: 'Raw' });
-    const divisions = await repos.divisions.list();
+    await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const divisions = await repos.leagueOps.divisions.list();
     const divisionId = divisions[0].divisionId;
 
     const event = makeEvent({
@@ -174,8 +174,8 @@ describe('createPlayer', () => {
 
 describe('getPlayers', () => {
   it('returns all players with wrestlers assigned', async () => {
-    await repos.players.create({ name: 'P1', currentWrestler: 'The Rock' });
-    await repos.players.create({ name: 'P2', currentWrestler: 'John Cena' });
+    await repos.roster.players.create({ name: 'P1', currentWrestler: 'The Rock' });
+    await repos.roster.players.create({ name: 'P2', currentWrestler: 'John Cena' });
 
     const result = await getPlayers(makeEvent(), ctx, cb);
 
@@ -184,9 +184,9 @@ describe('getPlayers', () => {
   });
 
   it('filters out players without currentWrestler', async () => {
-    await repos.players.create({ name: 'P1', currentWrestler: 'The Rock' });
+    await repos.roster.players.create({ name: 'P1', currentWrestler: 'The Rock' });
     // Create a player without currentWrestler via store directly
-    const store = (repos.players as unknown as { store: Map<string, Record<string, unknown>> }).store;
+    const store = (repos.roster as unknown as { playersStore: Map<string, Record<string, unknown>> }).playersStore;
     store.set('p-no-wrestler', {
       playerId: 'p-no-wrestler', name: 'P2', wins: 0, losses: 0, draws: 0,
       createdAt: new Date().toISOString(),
@@ -206,7 +206,7 @@ describe('getPlayers', () => {
   });
 
   it('returns 500 when list throws an error', async () => {
-    vi.spyOn(repos.players, 'list').mockRejectedValue(new Error('DB failure'));
+    vi.spyOn(repos.roster.players, 'list').mockRejectedValue(new Error('DB failure'));
 
     const result = await getPlayers(makeEvent(), ctx, cb);
 
@@ -219,7 +219,7 @@ describe('getPlayers', () => {
 
 describe('updatePlayer', () => {
   it('updates player fields and returns updated player', async () => {
-    const player = await repos.players.create({ name: 'Old Name', currentWrestler: 'Rock' });
+    const player = await repos.roster.players.create({ name: 'Old Name', currentWrestler: 'Rock' });
 
     const event = makeEvent({
       pathParameters: { playerId: player.playerId },
@@ -256,7 +256,7 @@ describe('updatePlayer', () => {
   });
 
   it('returns 400 when no valid fields to update', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
 
     const event = makeEvent({
       pathParameters: { playerId: player.playerId },
@@ -270,7 +270,7 @@ describe('updatePlayer', () => {
   });
 
   it('removes divisionId when set to empty string', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
 
     const event = makeEvent({
       pathParameters: { playerId: player.playerId },
@@ -283,7 +283,7 @@ describe('updatePlayer', () => {
   });
 
   it('updates currentWrestler field', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Old Wrestler' });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Old Wrestler' });
 
     const event = makeEvent({
       pathParameters: { playerId: player.playerId },
@@ -297,7 +297,7 @@ describe('updatePlayer', () => {
   });
 
   it('updates imageUrl field', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
 
     const event = makeEvent({
       pathParameters: { playerId: player.playerId },
@@ -311,9 +311,9 @@ describe('updatePlayer', () => {
   });
 
   it('updates divisionId with valid division (validates existence)', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
-    await repos.divisions.create({ name: 'Raw' });
-    const divisions = await repos.divisions.list();
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const divisions = await repos.leagueOps.divisions.list();
     const divisionId = divisions[0].divisionId;
 
     const event = makeEvent({
@@ -328,7 +328,7 @@ describe('updatePlayer', () => {
   });
 
   it('returns 404 when divisionId references non-existent division', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
 
     const event = makeEvent({
       pathParameters: { playerId: player.playerId },
@@ -342,7 +342,7 @@ describe('updatePlayer', () => {
   });
 
   it('returns 500 when an unexpected error occurs', async () => {
-    vi.spyOn(repos.players, 'findById').mockRejectedValue(new Error('DB failure'));
+    vi.spyOn(repos.roster.players, 'findById').mockRejectedValue(new Error('DB failure'));
 
     const event = makeEvent({
       pathParameters: { playerId: 'p1' },
@@ -360,7 +360,7 @@ describe('updatePlayer', () => {
 
 describe('deletePlayer', () => {
   it('deletes player and returns 204', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
     // Mock the dynamoDb calls for season standings cleanup
     mockDynamoQuery.mockResolvedValue({ Items: [] });
 
@@ -369,7 +369,7 @@ describe('deletePlayer', () => {
     const result = await deletePlayer(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
-    expect(await repos.players.findById(player.playerId)).toBeNull();
+    expect(await repos.roster.players.findById(player.playerId)).toBeNull();
   });
 
   it('returns 404 if player not found', async () => {
@@ -381,8 +381,8 @@ describe('deletePlayer', () => {
   });
 
   it('returns 409 if player is a current champion', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
-    await repos.championships.create({
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.competition.championships.create({
       name: 'World Championship', type: 'singles', currentChampion: player.playerId,
     });
 
@@ -403,17 +403,17 @@ describe('deletePlayer', () => {
   });
 
   it('cleans up season standings on delete', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
     // Seed season standings via repo
-    await repos.seasonStandings.increment('s1', player.playerId, { wins: 1 });
-    await repos.seasonStandings.increment('s2', player.playerId, { wins: 2 });
+    await repos.season.standings.increment('s1', player.playerId, { wins: 1 });
+    await repos.season.standings.increment('s2', player.playerId, { wins: 2 });
 
     const event = makeEvent({ pathParameters: { playerId: player.playerId } });
 
     await deletePlayer(event, ctx, cb);
 
     // Season standings should be cleaned up
-    const remaining = await repos.seasonStandings.listByPlayer(player.playerId);
+    const remaining = await repos.season.standings.listByPlayer(player.playerId);
     expect(remaining).toHaveLength(0);
   });
 });
@@ -431,14 +431,14 @@ describe('getMyProfile', () => {
 
   it('returns player profile with season records for Wrestler', async () => {
     // Create player linked to user
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
-    await repos.players.update(player.playerId, { userId: 'user-sub-1' });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
 
     // Create a season and add standings via repo
-    const season = await repos.seasons.create({ name: 'Season 1', startDate: '2025-01-01' });
-    await repos.seasonStandings.increment(season.seasonId, player.playerId, { wins: 5 });
-    await repos.seasonStandings.increment(season.seasonId, player.playerId, { losses: 2 });
-    await repos.seasonStandings.increment(season.seasonId, player.playerId, { draws: 1 });
+    const season = await repos.season.seasons.create({ name: 'Season 1', startDate: '2025-01-01' });
+    await repos.season.standings.increment(season.seasonId, player.playerId, { wins: 5 });
+    await repos.season.standings.increment(season.seasonId, player.playerId, { losses: 2 });
+    await repos.season.standings.increment(season.seasonId, player.playerId, { draws: 1 });
 
     const event = withAuth(makeEvent(), 'Wrestler');
 
@@ -461,10 +461,10 @@ describe('getMyProfile', () => {
   });
 
   it('shows 0-0-0 for seasons with no standings', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
-    await repos.players.update(player.playerId, { userId: 'user-sub-1' });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
 
-    await repos.seasons.create({ name: 'Season 1', startDate: '2025-01-01' });
+    await repos.season.seasons.create({ name: 'Season 1', startDate: '2025-01-01' });
     // no standings seeded — will get 0-0-0 defaults
 
     const event = withAuth(makeEvent(), 'Wrestler');
@@ -477,7 +477,7 @@ describe('getMyProfile', () => {
   });
 
   it('returns 500 when an unexpected error occurs', async () => {
-    vi.spyOn(repos.players, 'findByUserId').mockRejectedValue(new Error('DB failure'));
+    vi.spyOn(repos.roster.players, 'findByUserId').mockRejectedValue(new Error('DB failure'));
 
     const event = withAuth(makeEvent(), 'Wrestler');
 
@@ -500,8 +500,8 @@ describe('updateMyProfile', () => {
   });
 
   it('updates own profile via userId lookup', async () => {
-    const player = await repos.players.create({ name: 'Old', currentWrestler: 'Rock' });
-    await repos.players.update(player.playerId, { userId: 'user-sub-1' });
+    const player = await repos.roster.players.create({ name: 'Old', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ name: 'New Name' }) }),
@@ -526,8 +526,8 @@ describe('updateMyProfile', () => {
   });
 
   it('returns 400 when no valid fields to update', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
-    await repos.players.update(player.playerId, { userId: 'user-sub-1' });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ hackedField: 'nope' }) }),
@@ -541,8 +541,8 @@ describe('updateMyProfile', () => {
   });
 
   it('rejects non-string field values', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
-    await repos.players.update(player.playerId, { userId: 'user-sub-1' });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ name: 123 }) }),
@@ -556,8 +556,8 @@ describe('updateMyProfile', () => {
   });
 
   it('rejects empty name', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
-    await repos.players.update(player.playerId, { userId: 'user-sub-1' });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ name: '   ' }) }),
@@ -571,8 +571,8 @@ describe('updateMyProfile', () => {
   });
 
   it('rejects name exceeding MAX_NAME_LENGTH (100 chars)', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
-    await repos.players.update(player.playerId, { userId: 'user-sub-1' });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ name: 'A'.repeat(101) }) }),
@@ -586,8 +586,8 @@ describe('updateMyProfile', () => {
   });
 
   it('rejects imageUrl exceeding MAX_URL_LENGTH (2048 chars)', async () => {
-    const player = await repos.players.create({ name: 'John', currentWrestler: 'Rock' });
-    await repos.players.update(player.playerId, { userId: 'user-sub-1' });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ imageUrl: 'https://x.com/' + 'a'.repeat(2048) }) }),
@@ -601,7 +601,7 @@ describe('updateMyProfile', () => {
   });
 
   it('returns 500 when an unexpected error occurs', async () => {
-    vi.spyOn(repos.players, 'findByUserId').mockRejectedValue(new Error('DB failure'));
+    vi.spyOn(repos.roster.players, 'findByUserId').mockRejectedValue(new Error('DB failure'));
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ name: 'X' }) }),

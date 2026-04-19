@@ -69,6 +69,7 @@ export async function scheduleMatchInternal(
   input: ScheduleMatchInput,
 ): Promise<ScheduleMatchResult> {
   const repos = getRepositories();
+  const { competition, roster, season: seasonAggregate, leagueOps, user, content } = repos;
 
   if (!input.matchFormat || !input.participants || input.participants.length < 2) {
     throw new ScheduleMatchError(400, 'matchFormat and at least 2 participants are required');
@@ -77,7 +78,7 @@ export async function scheduleMatchInternal(
   // Resolve date: use provided date, or event date if eventId given, or today
   let resolvedDate = input.date;
   if (!resolvedDate && input.eventId) {
-    const eventForDate = await repos.events.findById(input.eventId);
+    const eventForDate = await leagueOps.events.findById(input.eventId);
     if (eventForDate) {
       resolvedDate = (eventForDate as unknown as Record<string, unknown>).date as string;
     }
@@ -98,7 +99,7 @@ export async function scheduleMatchInternal(
 
   // Validate all participants exist
   const playerValidationPromises = input.participants.map(async (playerId) => {
-    const player = await repos.players.findById(playerId);
+    const player = await roster.players.findById(playerId);
     return { playerId, exists: !!player, player: player as unknown as Record<string, unknown> | null };
   });
 
@@ -111,7 +112,7 @@ export async function scheduleMatchInternal(
 
   // Validate championship exists if provided
   if (input.championshipId) {
-    const championship = await repos.championships.findById(input.championshipId);
+    const championship = await competition.championships.findById(input.championshipId);
 
     if (!championship) {
       throw new ScheduleMatchError(404, `Championship not found: ${input.championshipId}`);
@@ -136,7 +137,7 @@ export async function scheduleMatchInternal(
 
   // Validate tournament exists if provided
   if (input.tournamentId) {
-    const tournament = await repos.tournaments.findById(input.tournamentId);
+    const tournament = await competition.tournaments.findById(input.tournamentId);
 
     if (!tournament) {
       throw new ScheduleMatchError(404, `Tournament not found: ${input.tournamentId}`);
@@ -149,7 +150,7 @@ export async function scheduleMatchInternal(
 
   // Validate season exists and is active if provided
   if (input.seasonId) {
-    const season = await repos.seasons.findById(input.seasonId);
+    const season = await seasonAggregate.seasons.findById(input.seasonId);
 
     if (!season) {
       throw new ScheduleMatchError(404, `Season not found: ${input.seasonId}`);
@@ -162,7 +163,7 @@ export async function scheduleMatchInternal(
 
   // Validate stipulationId exists if provided
   if (input.stipulationId) {
-    const stipulation = await repos.stipulations.findById(input.stipulationId);
+    const stipulation = await competition.stipulations.findById(input.stipulationId);
 
     if (!stipulation) {
       throw new ScheduleMatchError(404, `Stipulation not found: ${input.stipulationId}`);
@@ -188,13 +189,13 @@ export async function scheduleMatchInternal(
   if (input.challengeId) match.challengeId = input.challengeId;
   if (input.promoId) match.promoId = input.promoId;
 
-  await repos.matches.create(match);
+  await competition.matches.create(match);
 
   // If challengeId provided, mark challenge as scheduled and link match
   if (input.challengeId) {
-    const challenge = await repos.challenges.findById(input.challengeId);
+    const challenge = await user.challenges.findById(input.challengeId);
     if (challenge && ['pending', 'countered', 'accepted'].includes(challenge.status)) {
-      await repos.challenges.update(input.challengeId, {
+      await user.challenges.update(input.challengeId, {
         status: 'scheduled',
         matchId: match.matchId as string,
         updatedAt: now,
@@ -204,9 +205,9 @@ export async function scheduleMatchInternal(
 
   // If promoId provided, hide promo and optionally link match (scheduling from call-out auto-hides it)
   if (input.promoId) {
-    const promo = await repos.promos.findById(input.promoId);
+    const promo = await content.promos.findById(input.promoId);
     if (promo) {
-      await repos.promos.update(input.promoId, {
+      await content.promos.update(input.promoId, {
         isHidden: true,
         matchId: match.matchId as string,
         updatedAt: now,
@@ -216,7 +217,7 @@ export async function scheduleMatchInternal(
 
   // If an event was specified, auto-add the match to the event's matchCards
   if (input.eventId) {
-    const eventRecord = await repos.events.findById(input.eventId);
+    const eventRecord = await leagueOps.events.findById(input.eventId);
 
     if (eventRecord) {
       const existingCards = ((eventRecord as unknown as Record<string, unknown>).matchCards as MatchCardEntry[] | undefined) || [];
@@ -226,7 +227,7 @@ export async function scheduleMatchInternal(
         designation: (input.designation || 'midcard') as MatchDesignation,
       };
 
-      await repos.events.update(input.eventId, {
+      await leagueOps.events.update(input.eventId, {
         matchCards: [...existingCards, newCard],
       });
     }
