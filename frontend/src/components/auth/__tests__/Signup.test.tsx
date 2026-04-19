@@ -23,9 +23,13 @@ vi.mock('react-i18next', () => ({
         'auth.passwordPlaceholder': 'Min 8 chars, uppercase, lowercase, number',
         'auth.enterConfirmPassword': 'Confirm your password',
         'auth.wrestlerName': 'Wrestler Name',
-        'auth.wrestlerOptional': '(optional)',
-        'auth.wrestlerPlaceholder': 'Enter your wrestler name to request wrestler access',
-        'auth.wrestlerHint': "If you're a wrestler, enter your in-game name. An admin will review and approve your wrestler access.",
+        'auth.wrestlerPlaceholder': 'Enter your in-game wrestler name',
+        'auth.wrestlerHintRequired': 'The wrestler you\'ll be using in the league.',
+        'auth.playerName': 'Player Name',
+        'auth.playerNamePlaceholder': 'Enter your Discord name',
+        'auth.playerNameHint': 'Your Discord username so other players can find you.',
+        'auth.psnId': 'PSN ID',
+        'auth.psnIdPlaceholder': 'Enter your PlayStation Network ID',
         'auth.createAccountBtn': 'Create Account',
         'auth.creatingAccount': 'Creating Account...',
         'auth.alreadyHaveAccount': 'Already have an account?',
@@ -74,18 +78,21 @@ function renderSignup() {
 /** Fill the signup form with valid data and submit */
 async function fillAndSubmitSignupForm(
   user: ReturnType<typeof userEvent.setup>,
-  overrides: { email?: string; password?: string; confirm?: string; wrestlerName?: string } = {}
+  overrides: { email?: string; password?: string; confirm?: string; playerName?: string; psnId?: string; wrestlerName?: string } = {}
 ) {
   const email = overrides.email ?? 'new@league.com';
   const password = overrides.password ?? 'Password1';
   const confirm = overrides.confirm ?? password;
+  const playerName = overrides.playerName ?? 'TestPlayer';
+  const psnId = overrides.psnId ?? 'TestPSN123';
+  const wrestlerName = overrides.wrestlerName ?? 'Stone Cold';
 
   await user.type(screen.getByLabelText('Email'), email);
+  await user.type(screen.getByLabelText('Player Name'), playerName);
+  await user.type(screen.getByLabelText('PSN ID'), psnId);
+  await user.type(screen.getByLabelText('Wrestler Name'), wrestlerName);
   await user.type(screen.getByLabelText('Password'), password);
   await user.type(screen.getByLabelText('Confirm Password'), confirm);
-  if (overrides.wrestlerName) {
-    await user.type(screen.getByLabelText(/Wrestler Name/), overrides.wrestlerName);
-  }
   await user.click(screen.getByRole('button', { name: 'Create Account' }));
 }
 
@@ -100,9 +107,11 @@ describe('Signup', () => {
     expect(screen.getByRole('heading', { name: 'Create Account' })).toBeInTheDocument();
     expect(screen.getByText('Join League SZN')).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
+    expect(screen.getByLabelText('Player Name')).toBeInTheDocument();
+    expect(screen.getByLabelText('PSN ID')).toBeInTheDocument();
+    expect(screen.getByLabelText('Wrestler Name')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
     expect(screen.getByLabelText('Confirm Password')).toBeInTheDocument();
-    expect(screen.getByLabelText(/Wrestler Name/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create Account' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Sign In' })).toHaveAttribute('href', '/login');
   });
@@ -124,7 +133,7 @@ describe('Signup', () => {
     expect(mockSignUp).not.toHaveBeenCalled();
   });
 
-  it('calls signUp with correct args including optional wrestler name', async () => {
+  it('calls signUp with correct args including required fields', async () => {
     const user = userEvent.setup();
     mockSignUp.mockResolvedValue({ isConfirmed: true });
 
@@ -133,6 +142,8 @@ describe('Signup', () => {
     await fillAndSubmitSignupForm(user, {
       email: 'wrestler@league.com',
       password: 'StrongPw1',
+      playerName: 'DiscordGuy',
+      psnId: 'PSN_Player1',
       wrestlerName: 'The Undertaker',
     });
 
@@ -140,7 +151,7 @@ describe('Signup', () => {
       expect(mockSignUp).toHaveBeenCalledWith(
         'wrestler@league.com',
         'StrongPw1',
-        { wrestlerName: 'The Undertaker' }
+        { playerName: 'DiscordGuy', psnId: 'PSN_Player1', wrestlerName: 'The Undertaker' }
       );
     });
   });
