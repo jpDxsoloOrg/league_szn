@@ -8,10 +8,10 @@ import {
   updateHandlerFactory,
   deleteHandlerFactory,
 } from '../handlers';
-import { InMemoryDivisionsRepository } from '../repositories/inMemory';
+import { InMemoryLeagueOpsRepository } from '../repositories/inMemory';
 import { ConflictError } from '../repositories/errors';
 import type { Division } from '../repositories/types';
-import type { DivisionCreateInput, DivisionPatch } from '../repositories/DivisionsRepository';
+import type { DivisionCreateInput, DivisionPatch } from '../repositories/LeagueOpsRepository';
 
 async function invoke(
   handler: APIGatewayProxyHandler,
@@ -41,8 +41,8 @@ function makeRepoEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewa
 }
 
 describe('createHandlerFactory (repo-backed)', () => {
-  let repo: InMemoryDivisionsRepository;
-  beforeEach(() => { repo = new InMemoryDivisionsRepository(); });
+  let repo: InMemoryLeagueOpsRepository['divisions'];
+  beforeEach(() => { repo = new InMemoryLeagueOpsRepository().divisions; });
 
   it('creates an item via the repo and returns 201', async () => {
     const handler = createHandlerFactory<DivisionCreateInput, Division>({
@@ -122,8 +122,8 @@ describe('createHandlerFactory (repo-backed)', () => {
 });
 
 describe('getHandlerFactory', () => {
-  let repo: InMemoryDivisionsRepository;
-  beforeEach(() => { repo = new InMemoryDivisionsRepository(); });
+  let repo: InMemoryLeagueOpsRepository['divisions'];
+  beforeEach(() => { repo = new InMemoryLeagueOpsRepository().divisions; });
 
   it('returns 200 with the item when found', async () => {
     const created = await repo.create({ name: 'Raw' });
@@ -190,8 +190,8 @@ describe('getHandlerFactory', () => {
 });
 
 describe('listHandlerFactory', () => {
-  let repo: InMemoryDivisionsRepository;
-  beforeEach(() => { repo = new InMemoryDivisionsRepository(); });
+  let repo: InMemoryLeagueOpsRepository['divisions'];
+  beforeEach(() => { repo = new InMemoryLeagueOpsRepository().divisions; });
 
   it('returns all items from the repo', async () => {
     await repo.create({ name: 'Raw' });
@@ -234,8 +234,8 @@ describe('listHandlerFactory', () => {
 });
 
 describe('updateHandlerFactory', () => {
-  let repo: InMemoryDivisionsRepository;
-  beforeEach(() => { repo = new InMemoryDivisionsRepository(); });
+  let repo: InMemoryLeagueOpsRepository['divisions'];
+  beforeEach(() => { repo = new InMemoryLeagueOpsRepository().divisions; });
 
   it('updates the item and returns 200', async () => {
     const created = await repo.create({ name: 'Raw' });
@@ -307,8 +307,8 @@ describe('updateHandlerFactory', () => {
 });
 
 describe('deleteHandlerFactory', () => {
-  let repo: InMemoryDivisionsRepository;
-  beforeEach(() => { repo = new InMemoryDivisionsRepository(); });
+  let repo: InMemoryLeagueOpsRepository['divisions'];
+  beforeEach(() => { repo = new InMemoryLeagueOpsRepository().divisions; });
 
   it('deletes the item and returns 204', async () => {
     const created = await repo.create({ name: 'Raw' });
