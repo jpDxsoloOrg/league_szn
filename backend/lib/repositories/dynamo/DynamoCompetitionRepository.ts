@@ -36,11 +36,15 @@ import type {
 
 class MatchesDynamo implements MatchesMethods {
   async findById(matchId: string): Promise<Match | null> {
-    const result = await dynamoDb.get({
+    // Matches table has a composite key (matchId + date), so we must use
+    // query (partition-key only) instead of get (which requires the full key).
+    const result = await dynamoDb.query({
       TableName: TableNames.MATCHES,
-      Key: { matchId },
+      KeyConditionExpression: 'matchId = :matchId',
+      ExpressionAttributeValues: { ':matchId': matchId },
+      Limit: 1,
     });
-    return (result.Item as Match | undefined) ?? null;
+    return ((result.Items?.[0]) as Match | undefined) ?? null;
   }
 
   async findByIdWithDate(matchId: string): Promise<(Match & { date: string }) | null> {

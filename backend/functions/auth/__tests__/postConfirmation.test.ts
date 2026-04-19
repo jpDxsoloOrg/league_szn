@@ -45,7 +45,7 @@ describe('postConfirmation handler', () => {
     vi.clearAllMocks();
   });
 
-  it('adds user to Fantasy group and returns the event', async () => {
+  it('adds user to Wrestler group and returns the event', async () => {
     mockSend.mockResolvedValue({});
 
     const event = makePostConfirmationEvent();
@@ -56,7 +56,7 @@ describe('postConfirmation handler', () => {
     expect(command.input).toEqual({
       UserPoolId: 'us-east-1_TestPool',
       Username: 'testuser',
-      GroupName: 'Fantasy',
+      GroupName: 'Wrestler',
     });
     expect(result).toEqual(event);
   });
@@ -85,7 +85,7 @@ describe('postConfirmation handler', () => {
     expect(command.input).toEqual({
       UserPoolId: 'eu-west-1_CustomPool',
       Username: 'custom-user@test.com',
-      GroupName: 'Fantasy',
+      GroupName: 'Wrestler',
     });
   });
 });
