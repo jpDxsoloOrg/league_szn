@@ -4,7 +4,7 @@ import type { MatchTypePatch } from '../../lib/repositories/MatchTypesRepository
 import type { MatchType } from '../../lib/repositories/types';
 
 export const handler = updateHandlerFactory<MatchTypePatch, MatchType>({
-  repo: () => getRepositories().matchTypes,
+  repo: () => getRepositories().competition.matchTypes,
   entityName: 'match type',
   idParam: 'matchTypeId',
   entityLabel: 'Match type',

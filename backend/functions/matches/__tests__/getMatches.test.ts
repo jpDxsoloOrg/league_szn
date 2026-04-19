@@ -45,15 +45,15 @@ beforeEach(() => {
 
 describe('getMatches', () => {
   it('returns all matches sorted by date descending', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01T00:00:00Z', status: 'completed',
       participants: [], createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm3', date: '2024-03-01T00:00:00Z', status: 'scheduled',
       participants: [], createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-02-01T00:00:00Z', status: 'completed',
       participants: [], createdAt: new Date().toISOString(),
     });
@@ -76,11 +76,11 @@ describe('getMatches', () => {
   });
 
   it('filters by status query parameter', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01T00:00:00Z', status: 'scheduled',
       participants: [], createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-02T00:00:00Z', status: 'completed',
       participants: [], createdAt: new Date().toISOString(),
     });
@@ -98,11 +98,11 @@ describe('getMatches', () => {
   });
 
   it('returns all matches when no status parameter provided', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01T00:00:00Z', status: 'completed',
       participants: [], createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-02T00:00:00Z', status: 'scheduled',
       participants: [], createdAt: new Date().toISOString(),
     });
@@ -114,11 +114,11 @@ describe('getMatches', () => {
   });
 
   it('filters by playerId using contains on participants', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01T00:00:00Z', status: 'completed',
       participants: ['p1', 'p2'], createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-02T00:00:00Z', status: 'completed',
       participants: ['p3', 'p4'], createdAt: new Date().toISOString(),
     });
@@ -136,11 +136,11 @@ describe('getMatches', () => {
   });
 
   it('filters by matchType in-memory with normalized aliases', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'singles',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'Tag Team',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
@@ -157,15 +157,15 @@ describe('getMatches', () => {
   });
 
   it('matches legacy tag values when filtering by Tag Team', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tag',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'tag team',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'Singles',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
@@ -184,19 +184,19 @@ describe('getMatches', () => {
   });
 
   it('matches tag aliases when query uses tag-team format', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tag',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'Tag Team',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'tag-team',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm4', date: '2024-01-04T00:00:00Z', matchFormat: 'Singles',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
@@ -216,19 +216,19 @@ describe('getMatches', () => {
   });
 
   it('matches tag aliases when query uses tagteam format', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01T00:00:00Z', matchFormat: 'tagteam',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-02T00:00:00Z', matchFormat: 'tag-team',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm3', date: '2024-01-03T00:00:00Z', matchFormat: 'tag team',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm4', date: '2024-01-04T00:00:00Z', matchFormat: 'Singles',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
@@ -247,11 +247,11 @@ describe('getMatches', () => {
   });
 
   it('filters using legacy matchType field when matchFormat is missing', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01T00:00:00Z', matchType: 'singles',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     } as Record<string, unknown>);
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-02T00:00:00Z', matchType: 'tag',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     } as Record<string, unknown>);
@@ -268,11 +268,11 @@ describe('getMatches', () => {
   });
 
   it('filters by stipulationId', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01T00:00:00Z', stipulationId: 'stip1',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-02T00:00:00Z', stipulationId: 'stip2',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
@@ -289,11 +289,11 @@ describe('getMatches', () => {
   });
 
   it('filters by championshipId', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01T00:00:00Z', championshipId: 'champ1',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-02T00:00:00Z', championshipId: 'champ2',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
@@ -310,11 +310,11 @@ describe('getMatches', () => {
   });
 
   it('filters by seasonId', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01T00:00:00Z', seasonId: 's1',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-02T00:00:00Z', seasonId: 's2',
       participants: [], status: 'completed', createdAt: new Date().toISOString(),
     });
@@ -331,15 +331,15 @@ describe('getMatches', () => {
   });
 
   it('filters by dateFrom', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2023-12-31', participants: [],
       status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-01', participants: [],
       status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm3', date: '2024-06-01', participants: [],
       status: 'completed', createdAt: new Date().toISOString(),
     });
@@ -357,15 +357,15 @@ describe('getMatches', () => {
   });
 
   it('filters by dateTo', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-06-01', participants: [],
       status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-12-31', participants: [],
       status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm3', date: '2025-01-01', participants: [],
       status: 'completed', createdAt: new Date().toISOString(),
     });
@@ -382,17 +382,17 @@ describe('getMatches', () => {
   });
 
   it('combines multiple filters with AND logic', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01T00:00:00Z', status: 'completed',
       participants: ['p1'], seasonId: 's1', matchFormat: 'singles',
       createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-01-02T00:00:00Z', status: 'completed',
       participants: ['p2'], seasonId: 's1', matchFormat: 'tag',
       createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm3', date: '2024-01-03T00:00:00Z', status: 'scheduled',
       participants: ['p1'], seasonId: 's1', matchFormat: 'singles',
       createdAt: new Date().toISOString(),
@@ -416,15 +416,15 @@ describe('getMatches', () => {
   });
 
   it('combines dateFrom and dateTo into a range filter', async () => {
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm1', date: '2023-12-31', participants: [],
       status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm2', date: '2024-06-15', participants: [],
       status: 'completed', createdAt: new Date().toISOString(),
     });
-    await repos.matches.create({
+    await repos.competition.matches.create({
       matchId: 'm3', date: '2025-01-01', participants: [],
       status: 'completed', createdAt: new Date().toISOString(),
     });
@@ -444,9 +444,9 @@ describe('getMatches', () => {
   });
 
   it('returns 500 when list throws', async () => {
-    vi.spyOn(repos.matches, 'list').mockRejectedValue(new Error('DB failure'));
-    vi.spyOn(repos.matches, 'listByStatus').mockRejectedValue(new Error('DB failure'));
-    vi.spyOn(repos.matches, 'listBySeason').mockRejectedValue(new Error('DB failure'));
+    vi.spyOn(repos.competition.matches, 'list').mockRejectedValue(new Error('DB failure'));
+    vi.spyOn(repos.competition.matches, 'listByStatus').mockRejectedValue(new Error('DB failure'));
+    vi.spyOn(repos.competition.matches, 'listBySeason').mockRejectedValue(new Error('DB failure'));
 
     const result = await getMatches(makeEvent(), ctx, cb);
 

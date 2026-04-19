@@ -13,7 +13,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('announcementId is required');
     }
 
-    const { announcements } = getRepositories();
+    const { content: { announcements } } = getRepositories();
     const existing = await announcements.findById(announcementId);
     if (!existing) {
       return notFound('Announcement not found');

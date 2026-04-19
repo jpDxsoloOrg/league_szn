@@ -9,7 +9,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('videoId is required');
     }
 
-    const { videos } = getRepositories();
+    const { content: { videos } } = getRepositories();
     const video = await videos.findById(videoId);
     if (!video) {
       return notFound('Video not found');

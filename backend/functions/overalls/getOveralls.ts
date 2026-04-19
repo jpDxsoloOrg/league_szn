@@ -9,7 +9,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   if (denied) return denied;
 
   try {
-    const { overalls, players } = getRepositories();
+    const { roster: { overalls, players } } = getRepositories();
     const [overallsList, playersList] = await Promise.all([
       overalls.listAll(),
       players.list(),

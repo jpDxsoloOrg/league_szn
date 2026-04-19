@@ -4,7 +4,7 @@ import type { StipulationCreateInput } from '../../lib/repositories/Stipulations
 import type { Stipulation } from '../../lib/repositories/types';
 
 export const handler = createHandlerFactory<StipulationCreateInput, Stipulation>({
-  repo: () => getRepositories().stipulations,
+  repo: () => getRepositories().competition.stipulations,
   entityName: 'stipulation',
   requiredFields: ['name'],
   optionalFields: ['description'],

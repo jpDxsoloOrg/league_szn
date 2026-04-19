@@ -28,7 +28,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('picks must be an object mapping divisionId to playerIds[]');
     }
 
-    const { events, fantasy, players } = getRepositories();
+    const { leagueOps: { events }, user: { fantasy }, roster: { players } } = getRepositories();
 
     const eventItem = await events.findById(eventId);
     if (!eventItem) {

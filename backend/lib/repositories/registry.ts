@@ -1,60 +1,20 @@
-import type { DivisionsRepository } from './DivisionsRepository';
-import type { StipulationsRepository } from './StipulationsRepository';
-import type { MatchTypesRepository } from './MatchTypesRepository';
-import type { SiteConfigRepository } from './SiteConfigRepository';
-import type { VideosRepository } from './VideosRepository';
-import type { AnnouncementsRepository } from './AnnouncementsRepository';
-import type { CompaniesRepository } from './CompaniesRepository';
-import type { ShowsRepository } from './ShowsRepository';
-import type { NotificationsRepository } from './NotificationsRepository';
-import type { OverallsRepository } from './OverallsRepository';
-import type { SeasonsRepository } from './SeasonsRepository';
-import type { SeasonAwardsRepository } from './SeasonAwardsRepository';
-import type { PlayersRepository } from './PlayersRepository';
-import type { ChallengesRepository } from './ChallengesRepository';
-import type { TagTeamsRepository } from './TagTeamsRepository';
-import type { StablesRepository } from './StablesRepository';
-import type { TransfersRepository } from './TransfersRepository';
-import type { StorylineRequestsRepository } from './StorylineRequestsRepository';
-import type { EventsRepository } from './EventsRepository';
-import type { PromosRepository } from './PromosRepository';
-import type { MatchesRepository } from './MatchesRepository';
-import type { ChampionshipsRepository } from './ChampionshipsRepository';
-import type { TournamentsRepository } from './TournamentsRepository';
-import type { SeasonStandingsRepository } from './SeasonStandingsRepository';
-import type { ContendersRepository } from './ContendersRepository';
-import type { FantasyRepository } from './FantasyRepository';
-import type { MatchmakingRepository } from './MatchmakingRepository';
+import type {
+  RosterAggregate,
+  CompetitionAggregate,
+  SeasonAggregate,
+  LeagueOpsAggregate,
+  ContentAggregate,
+  UserAggregate,
+} from './aggregates';
 import type { UnitOfWorkFactory } from './unitOfWork';
 
 export interface Repositories {
-  divisions: DivisionsRepository;
-  stipulations: StipulationsRepository;
-  matchTypes: MatchTypesRepository;
-  siteConfig: SiteConfigRepository;
-  videos: VideosRepository;
-  announcements: AnnouncementsRepository;
-  companies: CompaniesRepository;
-  shows: ShowsRepository;
-  notifications: NotificationsRepository;
-  overalls: OverallsRepository;
-  seasons: SeasonsRepository;
-  seasonAwards: SeasonAwardsRepository;
-  players: PlayersRepository;
-  challenges: ChallengesRepository;
-  tagTeams: TagTeamsRepository;
-  stables: StablesRepository;
-  transfers: TransfersRepository;
-  storylineRequests: StorylineRequestsRepository;
-  events: EventsRepository;
-  promos: PromosRepository;
-  matches: MatchesRepository;
-  championships: ChampionshipsRepository;
-  tournaments: TournamentsRepository;
-  seasonStandings: SeasonStandingsRepository;
-  contenders: ContendersRepository;
-  fantasy: FantasyRepository;
-  matchmaking: MatchmakingRepository;
+  roster: RosterAggregate;
+  competition: CompetitionAggregate;
+  season: SeasonAggregate;
+  leagueOps: LeagueOpsAggregate;
+  content: ContentAggregate;
+  user: UserAggregate;
   runInTransaction: UnitOfWorkFactory;
 
   // Admin bulk operations

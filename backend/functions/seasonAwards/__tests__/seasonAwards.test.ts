@@ -27,24 +27,30 @@ const {
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
-    seasonAwards: {
-      listBySeason: mockSeasonAwardsListBySeason,
-      findById: mockSeasonAwardsFindById,
-      create: mockSeasonAwardsCreate,
-      delete: mockSeasonAwardsDelete,
+    season: {
+      seasonAwards: {
+        listBySeason: mockSeasonAwardsListBySeason,
+        findById: mockSeasonAwardsFindById,
+        create: mockSeasonAwardsCreate,
+        delete: mockSeasonAwardsDelete,
+      },
+      seasons: {
+        findById: mockSeasonsFindById,
+      },
     },
-    matches: {
-      list: mockMatchesList,
+    competition: {
+      matches: {
+        list: mockMatchesList,
+      },
+      championships: {
+        listAllHistory: mockChampionshipsListAllHistory,
+      },
     },
-    players: {
-      list: mockPlayersList,
-      findById: mockPlayersFind,
-    },
-    championships: {
-      listAllHistory: mockChampionshipsListAllHistory,
-    },
-    seasons: {
-      findById: mockSeasonsFindById,
+    roster: {
+      players: {
+        list: mockPlayersList,
+        findById: mockPlayersFind,
+      },
     },
   }),
 }));

@@ -5,7 +5,7 @@ import { parseBody } from '../../lib/parseBody';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const { tournaments } = getRepositories();
+    const { competition: { tournaments } } = getRepositories();
     const tournamentId = event.pathParameters?.tournamentId;
 
     if (!tournamentId) {

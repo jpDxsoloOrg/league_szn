@@ -10,15 +10,17 @@ const mockAwardsDeleteAllForSeason = vi.fn();
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
-    seasons: {
-      findById: mockSeasonsFindById,
-      delete: mockSeasonsDelete,
-    },
-    seasonAwards: {
-      deleteAllForSeason: mockAwardsDeleteAllForSeason,
-    },
-    seasonStandings: {
-      deleteAllForSeason: mockStandingsDeleteAllForSeason,
+    season: {
+      seasons: {
+        findById: mockSeasonsFindById,
+        delete: mockSeasonsDelete,
+      },
+      seasonAwards: {
+        deleteAllForSeason: mockAwardsDeleteAllForSeason,
+      },
+      seasonStandings: {
+        deleteAllForSeason: mockStandingsDeleteAllForSeason,
+      },
     },
   }),
 }));

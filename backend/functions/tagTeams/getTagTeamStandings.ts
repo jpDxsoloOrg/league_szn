@@ -25,7 +25,7 @@ interface TagTeamStanding {
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    const { tagTeams: tagTeamsRepo, players: playersRepo } = getRepositories();
+    const { roster: { tagTeams: tagTeamsRepo, players: playersRepo } } = getRepositories();
 
     // Get all active tag teams via repo
     const tagTeams = await tagTeamsRepo.listByStatus('active');

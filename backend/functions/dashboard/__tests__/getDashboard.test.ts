@@ -25,14 +25,18 @@ const {
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
-    championships: { list: mockChampionshipsList, findCurrentReign: mockChampionshipsFindCurrentReign },
-    players: { list: mockPlayersList },
-    seasons: { list: mockSeasonsList },
-    matches: { list: mockMatchesList },
-    stipulations: { list: mockStipulationsList },
-    events: { listByStatus: mockEventsListByStatus },
-    challenges: { listByStatus: mockChallengesListByStatus },
-    seasonStandings: { listBySeason: mockSeasonStandingsListBySeason },
+    competition: {
+      championships: { list: mockChampionshipsList, findCurrentReign: mockChampionshipsFindCurrentReign },
+      matches: { list: mockMatchesList },
+      stipulations: { list: mockStipulationsList },
+    },
+    roster: { players: { list: mockPlayersList } },
+    season: {
+      seasons: { list: mockSeasonsList },
+      seasonStandings: { listBySeason: mockSeasonStandingsListBySeason },
+    },
+    leagueOps: { events: { listByStatus: mockEventsListByStatus } },
+    user: { challenges: { listByStatus: mockChallengesListByStatus } },
   }),
 }));
 

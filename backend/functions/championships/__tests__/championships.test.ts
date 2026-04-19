@@ -100,7 +100,7 @@ describe('createChampionship', () => {
 describe('getChampionships', () => {
   it('returns only active championships (filters isActive === false)', async () => {
     // Seed championships directly into the in-memory store
-    const store = (repos.championships as unknown as { store: Map<string, Record<string, unknown>> }).store;
+    const store = (repos.competition.championships as unknown as { store: Map<string, Record<string, unknown>> }).store;
     store.set('c1', { championshipId: 'c1', name: 'Active', isActive: true, type: 'singles', createdAt: '' } as Record<string, unknown>);
     store.set('c2', { championshipId: 'c2', name: 'Retired', isActive: false, type: 'singles', createdAt: '' } as Record<string, unknown>);
     store.set('c3', { championshipId: 'c3', name: 'Default', type: 'singles', createdAt: '' } as Record<string, unknown>);
@@ -119,7 +119,7 @@ describe('getChampionships', () => {
   });
 
   it('returns 500 when list throws an error', async () => {
-    vi.spyOn(repos.championships, 'list').mockRejectedValue(new Error('DB failure'));
+    vi.spyOn(repos.competition.championships, 'list').mockRejectedValue(new Error('DB failure'));
     const r = await getChampionships(ev(), ctx, cb);
     expect(r!.statusCode).toBe(500);
     expect(body(r).message).toBe('Failed to fetch championships');
@@ -128,7 +128,7 @@ describe('getChampionships', () => {
 
 describe('getChampionshipHistory', () => {
   it('returns history for a championship', async () => {
-    const historyStore = (repos.championships as unknown as { historyStore: Record<string, unknown>[] }).historyStore;
+    const historyStore = (repos.competition.championships as unknown as { historyStore: Record<string, unknown>[] }).historyStore;
     historyStore.push(
       { championshipId: 'c1', wonDate: '2024-01-01', playerId: 'p1' },
       { championshipId: 'c1', wonDate: '2024-06-01', playerId: 'p2' },
@@ -154,8 +154,8 @@ describe('getChampionshipHistory', () => {
 
 describe('updateChampionship', () => {
   it('updates championship fields and returns updated item', async () => {
-    await repos.championships.create({ name: 'Old', type: 'singles' });
-    const champ = (await repos.championships.list())[0];
+    await repos.competition.championships.create({ name: 'Old', type: 'singles' });
+    const champ = (await repos.competition.championships.list())[0];
 
     const r = await updateChampionship(ev({
       pathParameters: { championshipId: champ.championshipId }, body: JSON.stringify({ name: 'New' }),
@@ -173,8 +173,8 @@ describe('updateChampionship', () => {
   });
 
   it('returns 400 when no valid fields to update', async () => {
-    await repos.championships.create({ name: 'Belt', type: 'singles' });
-    const champ = (await repos.championships.list())[0];
+    await repos.competition.championships.create({ name: 'Belt', type: 'singles' });
+    const champ = (await repos.competition.championships.list())[0];
 
     const r = await updateChampionship(ev({
       pathParameters: { championshipId: champ.championshipId }, body: JSON.stringify({}),
@@ -192,8 +192,8 @@ describe('updateChampionship', () => {
   });
 
   it('updates imageUrl field', async () => {
-    await repos.championships.create({ name: 'Belt', type: 'singles' });
-    const champ = (await repos.championships.list())[0];
+    await repos.competition.championships.create({ name: 'Belt', type: 'singles' });
+    const champ = (await repos.competition.championships.list())[0];
 
     const r = await updateChampionship(ev({
       pathParameters: { championshipId: champ.championshipId },
@@ -204,8 +204,8 @@ describe('updateChampionship', () => {
   });
 
   it('updates currentChampion field', async () => {
-    await repos.championships.create({ name: 'Belt', type: 'singles' });
-    const champ = (await repos.championships.list())[0];
+    await repos.competition.championships.create({ name: 'Belt', type: 'singles' });
+    const champ = (await repos.competition.championships.list())[0];
 
     const r = await updateChampionship(ev({
       pathParameters: { championshipId: champ.championshipId },
@@ -216,8 +216,8 @@ describe('updateChampionship', () => {
   });
 
   it('updates divisionId field', async () => {
-    await repos.championships.create({ name: 'Belt', type: 'singles' });
-    const champ = (await repos.championships.list())[0];
+    await repos.competition.championships.create({ name: 'Belt', type: 'singles' });
+    const champ = (await repos.competition.championships.list())[0];
 
     const r = await updateChampionship(ev({
       pathParameters: { championshipId: champ.championshipId },
@@ -229,7 +229,7 @@ describe('updateChampionship', () => {
   });
 
   it('returns 500 when an unexpected error occurs', async () => {
-    vi.spyOn(repos.championships, 'update').mockRejectedValue(new Error('DB failure'));
+    vi.spyOn(repos.competition.championships, 'update').mockRejectedValue(new Error('DB failure'));
     const r = await updateChampionship(ev({
       pathParameters: { championshipId: 'c1' },
       body: JSON.stringify({ name: 'New' }),
@@ -241,9 +241,9 @@ describe('updateChampionship', () => {
 
 describe('deleteChampionship', () => {
   it('deletes championship and cascades to history, returns 204', async () => {
-    await repos.championships.create({ name: 'Belt', type: 'singles' });
-    const champ = (await repos.championships.list())[0];
-    const historyStore = (repos.championships as unknown as { historyStore: Record<string, unknown>[] }).historyStore;
+    await repos.competition.championships.create({ name: 'Belt', type: 'singles' });
+    const champ = (await repos.competition.championships.list())[0];
+    const historyStore = (repos.competition.championships as unknown as { historyStore: Record<string, unknown>[] }).historyStore;
     historyStore.push(
       { championshipId: champ.championshipId, wonDate: '2024-01-01' },
       { championshipId: champ.championshipId, wonDate: '2024-06-01' },
@@ -252,19 +252,19 @@ describe('deleteChampionship', () => {
     const r = await deleteChampionship(ev({ pathParameters: { championshipId: champ.championshipId } }), ctx, cb);
     expect(r!.statusCode).toBe(204);
     // Championship should be gone
-    const remaining = await repos.championships.findById(champ.championshipId);
+    const remaining = await repos.competition.championships.findById(champ.championshipId);
     expect(remaining).toBeNull();
     // History should be gone
     expect(historyStore.filter(h => h.championshipId === champ.championshipId)).toHaveLength(0);
   });
 
   it('deletes championship with no history', async () => {
-    await repos.championships.create({ name: 'Belt', type: 'singles' });
-    const champ = (await repos.championships.list())[0];
+    await repos.competition.championships.create({ name: 'Belt', type: 'singles' });
+    const champ = (await repos.competition.championships.list())[0];
 
     const r = await deleteChampionship(ev({ pathParameters: { championshipId: champ.championshipId } }), ctx, cb);
     expect(r!.statusCode).toBe(204);
-    expect(await repos.championships.findById(champ.championshipId)).toBeNull();
+    expect(await repos.competition.championships.findById(champ.championshipId)).toBeNull();
   });
 
   it('returns 404 if championship not found', async () => {
@@ -283,21 +283,21 @@ describe('deleteChampionship', () => {
 describe('vacateChampionship', () => {
   it('vacates championship and closes current reign', async () => {
     // Create championship with a current champion
-    const store = (repos.championships as unknown as { store: Map<string, Record<string, unknown>> }).store;
+    const store = (repos.competition.championships as unknown as { store: Map<string, Record<string, unknown>> }).store;
     store.set('c1', {
       championshipId: 'c1', name: 'World Title', type: 'singles',
       currentChampion: 'p1', isActive: true, createdAt: new Date().toISOString(),
     });
 
     // Add history entry for current reign
-    const historyStore = (repos.championships as unknown as { historyStore: Record<string, unknown>[] }).historyStore;
+    const historyStore = (repos.competition.championships as unknown as { historyStore: Record<string, unknown>[] }).historyStore;
     historyStore.push({ championshipId: 'c1', wonDate: '2024-01-01', playerId: 'p1' });
 
     const r = await vacateChampionship(ev({ pathParameters: { championshipId: 'c1' } }), ctx, cb);
     expect(r!.statusCode).toBe(200);
 
     // Championship should no longer have a current champion
-    const updated = await repos.championships.findById('c1');
+    const updated = await repos.competition.championships.findById('c1');
     expect(updated!.currentChampion).toBeUndefined();
 
     // History entry should be closed (have lostDate and daysHeld)
@@ -307,7 +307,7 @@ describe('vacateChampionship', () => {
   });
 
   it('vacates championship with no open history record', async () => {
-    const store = (repos.championships as unknown as { store: Map<string, Record<string, unknown>> }).store;
+    const store = (repos.competition.championships as unknown as { store: Map<string, Record<string, unknown>> }).store;
     store.set('c1', {
       championshipId: 'c1', name: 'World Title', type: 'singles',
       currentChampion: 'p1', isActive: true, createdAt: new Date().toISOString(),
@@ -316,12 +316,12 @@ describe('vacateChampionship', () => {
     const r = await vacateChampionship(ev({ pathParameters: { championshipId: 'c1' } }), ctx, cb);
     expect(r!.statusCode).toBe(200);
 
-    const updated = await repos.championships.findById('c1');
+    const updated = await repos.competition.championships.findById('c1');
     expect(updated!.currentChampion).toBeUndefined();
   });
 
   it('returns 400 if championship is already vacant', async () => {
-    const store = (repos.championships as unknown as { store: Map<string, Record<string, unknown>> }).store;
+    const store = (repos.competition.championships as unknown as { store: Map<string, Record<string, unknown>> }).store;
     store.set('c1', {
       championshipId: 'c1', name: 'World Title', type: 'singles',
       isActive: true, createdAt: new Date().toISOString(),

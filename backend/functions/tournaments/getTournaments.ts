@@ -4,7 +4,7 @@ import { success, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    const { tournaments } = getRepositories();
+    const { competition: { tournaments } } = getRepositories();
     const items = await tournaments.list();
 
     // Sort by creation date descending (most recent first)

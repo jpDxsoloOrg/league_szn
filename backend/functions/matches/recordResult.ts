@@ -49,7 +49,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    const { matches, runInTransaction } = getRepositories();
+    const { competition: { matches }, runInTransaction } = getRepositories();
 
     // Get the match
     const match = await matches.findByIdWithDate(matchId);
@@ -178,7 +178,7 @@ async function handleChampionshipResult(
 ): Promise<void> {
   if (isDraw) return; // Draws don't affect championships
 
-  const { championships, contenders, matches: matchesRepo, runInTransaction } = getRepositories();
+  const { competition: { championships, contenders, matches: matchesRepo }, runInTransaction } = getRepositories();
   const championshipId = match.championshipId!;
 
   const championship = await championships.findById(championshipId);
@@ -235,7 +235,7 @@ async function handleTitleChange(
   matchId: string,
   oldChampion: string | string[] | undefined,
 ): Promise<void> {
-  const { championships, runInTransaction } = getRepositories();
+  const { competition: { championships }, runInTransaction } = getRepositories();
   const championshipId = championship.championshipId;
 
   // Find current reign to close it
@@ -276,7 +276,7 @@ async function handleTournamentProgression(
   isDraw: boolean,
   allParticipants: string[],
 ): Promise<void> {
-  const { tournaments } = getRepositories();
+  const { competition: { tournaments } } = getRepositories();
   const tournamentId = match.tournamentId!;
 
   const tournament = await tournaments.findById(tournamentId);
@@ -409,7 +409,7 @@ async function handleTournamentProgression(
 // ── Auto-complete event ────────────────────────────────────────────────
 
 async function autoCompleteEvent(matchId: string): Promise<void> {
-  const { events, matches } = getRepositories();
+  const { competition: { matches }, leagueOps: { events } } = getRepositories();
 
   // Find events that are upcoming or in-progress
   const allEvents = await events.list();

@@ -9,7 +9,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Season ID is required');
     }
 
-    const { seasons, seasonAwards, seasonStandings } = getRepositories();
+    const { season: { seasons, seasonAwards, seasonStandings } } = getRepositories();
     const existing = await seasons.findById(seasonId);
     if (!existing) {
       return notFound('Season not found');

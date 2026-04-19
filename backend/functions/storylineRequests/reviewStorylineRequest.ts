@@ -22,7 +22,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('requestId path parameter is required');
     }
 
-    const { storylineRequests, players } = getRepositories();
+    const { content: { storylineRequests }, roster: { players } } = getRepositories();
 
     const storylineRequest = await storylineRequests.findById(requestId);
     if (!storylineRequest) {

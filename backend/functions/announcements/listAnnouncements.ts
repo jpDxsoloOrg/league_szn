@@ -8,7 +8,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   if (denied) return denied;
 
   try {
-    const { announcements } = getRepositories();
+    const { content: { announcements } } = getRepositories();
     const items = await announcements.list();
     return success(items);
   } catch (err) {

@@ -44,7 +44,7 @@ export const handler = async (
       );
     }
 
-    const { players, matchmaking } = getRepositories();
+    const { roster: { players }, leagueOps: { matchmaking } } = getRepositories();
 
     const matchFormat = body.matchFormat;
     const stipulationId = body.stipulationId;

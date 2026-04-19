@@ -12,7 +12,7 @@ interface PlayerRecord {
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const statusFilter = event.queryStringParameters?.status;
-    const { tagTeams: tagTeamsRepo, players: playersRepo } = getRepositories();
+    const { roster: { tagTeams: tagTeamsRepo, players: playersRepo } } = getRepositories();
 
     const tagTeams = statusFilter
       ? await tagTeamsRepo.listByStatus(statusFilter as TagTeamStatus)

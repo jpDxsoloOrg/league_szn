@@ -134,7 +134,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('tagTeamId is required');
     }
 
-    const { tagTeams: tagTeamsRepo, players: playersRepo } = getRepositories();
+    const { roster: { tagTeams: tagTeamsRepo, players: playersRepo } } = getRepositories();
 
     const tagTeam = await tagTeamsRepo.findById(tagTeamId);
     if (!tagTeam) {

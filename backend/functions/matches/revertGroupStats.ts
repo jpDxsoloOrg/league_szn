@@ -13,7 +13,7 @@ export async function revertGroupStats(input: RevertGroupStatsInput): Promise<vo
 
   if (participants.length === 0) return;
 
-  const { players } = getRepositories();
+  const { roster: { players } } = getRepositories();
 
   // Fetch all participant Player records in parallel
   const playerPromises = participants.map((playerId) => players.findById(playerId));
@@ -33,7 +33,7 @@ async function revertStableStats(
   losers: string[],
   isDraw: boolean
 ): Promise<void> {
-  const { stables } = getRepositories();
+  const { roster: { stables } } = getRepositories();
 
   const stableMembers = new Map<string, string[]>();
   for (const player of playerRecords) {
@@ -82,7 +82,7 @@ async function revertTagTeamStats(
 ): Promise<void> {
   if (!teams || teams.length === 0) return;
 
-  const { tagTeams } = getRepositories();
+  const { roster: { tagTeams } } = getRepositories();
 
   const tagTeamIds = new Set<string>();
   for (const player of playerRecords) {

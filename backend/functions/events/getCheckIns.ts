@@ -33,7 +33,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('eventId is required');
     }
 
-    const { events, players } = getRepositories();
+    const { leagueOps: { events }, roster: { players } } = getRepositories();
 
     // Fetch all check-in rows for this event.
     const checkInItems = await events.listCheckIns(eventId);

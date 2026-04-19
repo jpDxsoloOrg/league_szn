@@ -8,6 +8,7 @@ export {
   resetRepositoriesForTesting,
   type Repositories,
 } from './registry';
+export type { RosterAggregate, CompetitionAggregate, SeasonAggregate, LeagueOpsAggregate, ContentAggregate, UserAggregate } from './aggregates';
 export * from './errors';
 export * from './unitOfWork';
 export * from './types';

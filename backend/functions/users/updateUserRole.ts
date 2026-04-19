@@ -89,7 +89,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           }
 
           // Check if a player already exists for this userId
-          const { players } = getRepositories();
+          const { roster: { players } } = getRepositories();
           const existingPlayer = await players.findByUserId(sub);
 
           if (!existingPlayer) {

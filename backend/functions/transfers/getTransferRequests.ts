@@ -10,14 +10,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
   try {
     const statusFilter = event.queryStringParameters?.status;
-    const repos = getRepositories();
+    const { roster: { transfers, players: playersRepo }, leagueOps: { divisions: divisionsRepo } } = getRepositories();
 
     let requests: TransferRequest[];
 
     if (statusFilter) {
-      requests = await repos.transfers.listByStatus(statusFilter);
+      requests = await transfers.listByStatus(statusFilter);
     } else {
-      requests = await repos.transfers.list();
+      requests = await transfers.list();
     }
 
     // Collect unique player/division IDs
@@ -29,8 +29,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const [players, divisions] = await Promise.all([
-      repos.players.list(),
-      repos.divisions.list(),
+      playersRepo.list(),
+      divisionsRepo.list(),
     ]);
 
     const playersMap = new Map<string, string>(

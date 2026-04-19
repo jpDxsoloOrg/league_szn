@@ -10,7 +10,7 @@ function determineTrend(currentCost: number, baseCost: number): 'up' | 'down' | 
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    const { fantasy, players } = getRepositories();
+    const { user: { fantasy }, roster: { players } } = getRepositories();
 
     const [allCosts, allPlayers] = await Promise.all([
       fantasy.listAllCosts(),

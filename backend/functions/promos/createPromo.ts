@@ -45,7 +45,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Response promos must reference an existing promo (targetPromoId)');
     }
 
-    const { promos, players } = getRepositories();
+    const { content: { promos }, roster: { players } } = getRepositories();
 
     // Find the player via user sub
     const player = await players.findByUserId(auth.sub);

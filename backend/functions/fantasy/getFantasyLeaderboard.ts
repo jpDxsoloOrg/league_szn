@@ -16,7 +16,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const seasonId = event.queryStringParameters?.seasonId;
 
-    const { fantasy, events } = getRepositories();
+    const { user: { fantasy }, leagueOps: { events } } = getRepositories();
 
     // Scan all fantasy picks
     const allPicks = await fantasy.listAllPicks();

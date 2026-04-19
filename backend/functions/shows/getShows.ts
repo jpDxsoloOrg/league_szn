@@ -5,7 +5,7 @@ import { success, serverError } from '../../lib/response';
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const companyId = event.queryStringParameters?.companyId;
-    const { shows } = getRepositories();
+    const { leagueOps: { shows } } = getRepositories();
 
     const items = companyId
       ? await shows.listByCompany(companyId)

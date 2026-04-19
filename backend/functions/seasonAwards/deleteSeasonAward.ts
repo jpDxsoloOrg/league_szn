@@ -14,7 +14,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Award ID is required');
     }
 
-    const { seasonAwards } = getRepositories();
+    const { season: { seasonAwards } } = getRepositories();
     const existing = await seasonAwards.findById(seasonId, awardId);
     if (!existing) {
       return notFound('Award not found');

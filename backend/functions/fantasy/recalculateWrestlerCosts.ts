@@ -8,7 +8,7 @@ import { requireRole } from '../../lib/auth';
  * Called from recordResult.ts after a match result is recorded.
  */
 export async function recalculateCosts(): Promise<void> {
-  const { fantasy, players, matches } = getRepositories();
+  const { user: { fantasy }, roster: { players }, competition: { matches } } = getRepositories();
 
   // Fetch config
   const config = await fantasy.getConfig();

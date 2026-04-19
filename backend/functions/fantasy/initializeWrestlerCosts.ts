@@ -11,7 +11,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const body = event.body ? JSON.parse(event.body) : {};
     const baseCost = body.baseCost || 100;
 
-    const { fantasy, players } = getRepositories();
+    const { user: { fantasy }, roster: { players } } = getRepositories();
 
     const [allPlayers, existingCosts] = await Promise.all([
       players.list(),

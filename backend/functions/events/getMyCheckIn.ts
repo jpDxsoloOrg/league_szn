@@ -17,7 +17,7 @@ export const handler = async (
       return badRequest('eventId is required');
     }
 
-    const { events, players } = getRepositories();
+    const { leagueOps: { events }, roster: { players } } = getRepositories();
 
     // Find the caller's player record via their user sub
     const callerPlayer = await players.findByUserId(auth.sub);

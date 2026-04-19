@@ -137,7 +137,7 @@ function computePlayerStatistics(
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const { matches: matchesRepo, players: playersRepo, championships: championshipsRepo, matchTypes: matchTypesRepo, stipulations: stipulationsRepo } = getRepositories();
+    const { competition: { matches: matchesRepo, championships: championshipsRepo, matchTypes: matchTypesRepo, stipulations: stipulationsRepo }, roster: { players: playersRepo } } = getRepositories();
 
     const section = event.queryStringParameters?.section;
     const seasonId = event.queryStringParameters?.seasonId;

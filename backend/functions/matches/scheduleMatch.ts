@@ -68,7 +68,18 @@ export class ScheduleMatchError extends Error {
 export async function scheduleMatchInternal(
   input: ScheduleMatchInput,
 ): Promise<ScheduleMatchResult> {
-  const repos = getRepositories();
+  const rawRepos = getRepositories();
+  const repos = {
+    matches: rawRepos.competition.matches,
+    championships: rawRepos.competition.championships,
+    tournaments: rawRepos.competition.tournaments,
+    stipulations: rawRepos.competition.stipulations,
+    players: rawRepos.roster.players,
+    events: rawRepos.leagueOps.events,
+    seasons: rawRepos.season.seasons,
+    challenges: rawRepos.user.challenges,
+    promos: rawRepos.content.promos,
+  };
 
   if (!input.matchFormat || !input.participants || input.participants.length < 2) {
     throw new ScheduleMatchError(400, 'matchFormat and at least 2 participants are required');

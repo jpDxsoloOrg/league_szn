@@ -35,7 +35,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('reason must be a non-empty string');
     }
 
-    const { championships, players, contenders } = getRepositories();
+    const { competition: { championships, contenders }, roster: { players } } = getRepositories();
 
     // Validate championship exists and is active
     const championship = await championships.findById(championshipId);

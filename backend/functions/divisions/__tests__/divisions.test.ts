@@ -47,8 +47,8 @@ beforeEach(() => {
 
 describe('getDivisions', () => {
   it('returns all divisions', async () => {
-    await repos.divisions.create({ name: 'Raw' });
-    await repos.divisions.create({ name: 'SmackDown' });
+    await repos.leagueOps.divisions.create({ name: 'Raw' });
+    await repos.leagueOps.divisions.create({ name: 'SmackDown' });
 
     const result = await getDivisions(makeEvent(), ctx, cb);
 
@@ -66,7 +66,7 @@ describe('getDivisions', () => {
   });
 
   it('returns 500 when the repository throws', async () => {
-    repos.divisions.list = vi.fn().mockRejectedValue(new Error('boom'));
+    repos.leagueOps.divisions.list = vi.fn().mockRejectedValue(new Error('boom'));
 
     const result = await getDivisions(makeEvent(), ctx, cb);
 
@@ -88,7 +88,7 @@ describe('createDivision', () => {
     expect(body.createdAt).toBeDefined();
     expect(body.updatedAt).toBeDefined();
     expect(body.description).toBeUndefined();
-    expect(await repos.divisions.findById('test-uuid-1')).not.toBeNull();
+    expect(await repos.leagueOps.divisions.findById('test-uuid-1')).not.toBeNull();
   });
 
   it('creates a division with name and description', async () => {
@@ -137,7 +137,7 @@ describe('createDivision', () => {
   });
 
   it('returns 500 when the repository throws', async () => {
-    repos.divisions.create = vi.fn().mockRejectedValue(new Error('boom'));
+    repos.leagueOps.divisions.create = vi.fn().mockRejectedValue(new Error('boom'));
     const event = makeEvent({ body: JSON.stringify({ name: 'Raw' }) });
 
     const result = await createDivision(event, ctx, cb);

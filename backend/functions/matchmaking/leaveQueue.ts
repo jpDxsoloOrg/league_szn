@@ -12,7 +12,7 @@ export const handler = async (
       return forbidden('Only wrestlers can leave the matchmaking queue');
     }
 
-    const { players, matchmaking } = getRepositories();
+    const { roster: { players }, leagueOps: { matchmaking } } = getRepositories();
 
     // Find the caller's player record via their user sub
     const callerPlayer = await players.findByUserId(auth.sub);
