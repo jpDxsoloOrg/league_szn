@@ -11,6 +11,8 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [playerName, setPlayerName] = useState('');
+  const [psnId, setPsnId] = useState('');
   const [wrestlerName, setWrestlerName] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [step, setStep] = useState<'signup' | 'verify'>('signup');
@@ -30,7 +32,9 @@ export default function Signup() {
 
     try {
       const result = await signUp(email, password, {
-        wrestlerName: wrestlerName || undefined,
+        playerName,
+        psnId,
+        wrestlerName,
       });
 
       if (result.isConfirmed) {
@@ -132,6 +136,44 @@ export default function Signup() {
           </div>
 
           <div className="form-group">
+            <label htmlFor="playerName">{t('auth.playerName')}</label>
+            <input
+              type="text"
+              id="playerName"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              placeholder={t('auth.playerNamePlaceholder')}
+              required
+            />
+            <p className="field-hint">{t('auth.playerNameHint')}</p>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="psnId">{t('auth.psnId')}</label>
+            <input
+              type="text"
+              id="psnId"
+              value={psnId}
+              onChange={(e) => setPsnId(e.target.value)}
+              placeholder={t('auth.psnIdPlaceholder')}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="wrestlerName">{t('auth.wrestlerName')}</label>
+            <input
+              type="text"
+              id="wrestlerName"
+              value={wrestlerName}
+              onChange={(e) => setWrestlerName(e.target.value)}
+              placeholder={t('auth.wrestlerPlaceholder')}
+              required
+            />
+            <p className="field-hint">{t('auth.wrestlerHintRequired')}</p>
+          </div>
+
+          <div className="form-group">
             <label htmlFor="password">{t('auth.password')}</label>
             <input
               type="password"
@@ -157,22 +199,6 @@ export default function Signup() {
               minLength={8}
               aria-invalid={error ? 'true' : undefined}
             />
-          </div>
-
-          <div className="form-group wrestler-name-group">
-            <label htmlFor="wrestlerName">
-              {t('auth.wrestlerName')} <span className="optional-label">{t('auth.wrestlerOptional')}</span>
-            </label>
-            <input
-              type="text"
-              id="wrestlerName"
-              value={wrestlerName}
-              onChange={(e) => setWrestlerName(e.target.value)}
-              placeholder={t('auth.wrestlerPlaceholder')}
-            />
-            <p className="field-hint">
-              {t('auth.wrestlerHint')}
-            </p>
           </div>
 
           {error && (

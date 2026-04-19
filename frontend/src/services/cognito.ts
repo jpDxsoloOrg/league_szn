@@ -147,7 +147,7 @@ export const cognitoAuth = {
   signUp: async (
     email: string,
     password: string,
-    options?: { wrestlerName?: string }
+    options?: { wrestlerName?: string; psnId?: string; playerName?: string }
   ): Promise<{ isConfirmed: boolean; userId?: string }> => {
     try {
       logger.debug('Attempting sign up');
@@ -158,6 +158,14 @@ export const cognitoAuth = {
 
       if (options?.wrestlerName) {
         userAttributes['custom:wrestler_name'] = options.wrestlerName;
+      }
+
+      if (options?.psnId) {
+        userAttributes['custom:psn_id'] = options.psnId;
+      }
+
+      if (options?.playerName) {
+        userAttributes['custom:player_name'] = options.playerName;
       }
 
       const result = await signUp({

@@ -137,6 +137,7 @@ provider:
             - cognito-idp:AdminAddUserToGroup
             - cognito-idp:AdminRemoveUserFromGroup
             - cognito-idp:AdminListGroupsForUser
+            - cognito-idp:AdminDeleteUser
             - cognito-idp:AdminDisableUser
             - cognito-idp:AdminEnableUser
             - cognito-idp:ListUsers
@@ -239,6 +240,11 @@ functions:
           authorizer: adminAuthorizer
       - http:
           path: admin/users/toggle-enabled
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/users/delete
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
@@ -1267,6 +1273,18 @@ resources:
             Required: true
             Mutable: true
           - Name: wrestler_name
+            AttributeDataType: String
+            Mutable: true
+            StringAttributeConstraints:
+              MinLength: '0'
+              MaxLength: '100'
+          - Name: psn_id
+            AttributeDataType: String
+            Mutable: true
+            StringAttributeConstraints:
+              MinLength: '0'
+              MaxLength: '50'
+          - Name: player_name
             AttributeDataType: String
             Mutable: true
             StringAttributeConstraints:

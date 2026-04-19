@@ -8,6 +8,8 @@ export const usersApi = {
       email: string;
       name: string;
       wrestlerName: string;
+      psnId: string;
+      playerName: string;
       status: string;
       enabled: boolean;
       created: string;
@@ -36,6 +38,16 @@ export const usersApi = {
     return fetchWithAuth(`${API_BASE_URL}/admin/users/toggle-enabled`, {
       method: 'POST',
       body: JSON.stringify({ username, enabled }),
+    });
+  },
+
+  deleteUser: async (username: string): Promise<{
+    message: string;
+    username: string;
+  }> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/users/delete`, {
+      method: 'POST',
+      body: JSON.stringify({ username }),
     });
   },
 };

@@ -10,6 +10,8 @@ interface CognitoUser {
   email: string;
   name: string;
   wrestlerName: string;
+  psnId: string;
+  playerName: string;
   status: string;
   enabled: boolean;
   created: string;
@@ -104,6 +106,21 @@ export default function ManageUsers() {
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update user status');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteUser = async (username: string) => {
+    if (!confirm(`Permanently delete user "${username}"? This cannot be undone.`)) {
+      return;
+    }
+    setActionLoading(username);
+    try {
+      await usersApi.deleteUser(username);
+      setUsers((prev) => prev.filter((u) => u.username !== username));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete user');
     } finally {
       setActionLoading(null);
     }
@@ -350,6 +367,17 @@ export default function ManageUsers() {
                         >
                           {user.enabled ? 'Disable' : 'Enable'}
                         </button>
+
+                        {/* Delete disabled user from Cognito */}
+                        {!user.enabled && (
+                          <button
+                            className="btn-action btn-delete"
+                            onClick={() => handleDeleteUser(user.username)}
+                            title="Permanently delete this user from Cognito"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
