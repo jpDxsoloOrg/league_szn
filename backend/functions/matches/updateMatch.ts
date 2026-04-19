@@ -20,16 +20,7 @@ interface UpdateMatchBody {
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const rawRepos = getRepositories();
-    const repos = {
-      matches: rawRepos.competition.matches,
-      championships: rawRepos.competition.championships,
-      tournaments: rawRepos.competition.tournaments,
-      stipulations: rawRepos.competition.stipulations,
-      players: rawRepos.roster.players,
-      events: rawRepos.leagueOps.events,
-      seasons: rawRepos.season.seasons,
-    };
+    const repos = getRepositories();
     const matchId = event.pathParameters?.matchId;
     if (!matchId) {
       return badRequest('matchId is required');

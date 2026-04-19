@@ -81,7 +81,7 @@ const initializeRoundRobinStandings = (participants: string[]): Record<string, u
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const { competition: { tournaments } } = getRepositories();
+    const { tournaments } = getRepositories();
     const { data: body, error: parseError } = parseBody<CreateTournamentBody>(event);
     if (parseError) return parseError;
 

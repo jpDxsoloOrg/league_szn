@@ -27,7 +27,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Verify season exists
-    const { season: { seasons, seasonAwards }, roster: { players } } = getRepositories();
+    const { seasons, seasonAwards, players } = getRepositories();
     const season = await seasons.findById(seasonId);
     if (!season) {
       return notFound('Season not found');

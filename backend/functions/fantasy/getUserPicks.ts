@@ -14,7 +14,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const { sub: fantasyUserId } = getAuthContext(event);
-    const { user: { fantasy } } = getRepositories();
+    const { fantasy } = getRepositories();
 
     const pick = await fantasy.findPick(eventId, fantasyUserId);
 

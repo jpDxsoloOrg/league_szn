@@ -26,7 +26,7 @@ export const handler = async (
       return badRequest('eventId is required');
     }
 
-    const { leagueOps: { events } } = getRepositories();
+    const { events } = getRepositories();
 
     const checkIns = await events.listCheckIns(eventId);
 

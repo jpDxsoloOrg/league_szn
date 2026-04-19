@@ -12,7 +12,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody(event);
     if (parseError) return parseError;
 
-    const { user: { fantasy } } = getRepositories();
+    const { fantasy } = getRepositories();
     const updatedConfig = await fantasy.upsertConfig(body as Record<string, unknown>);
 
     return success(updatedConfig);

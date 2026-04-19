@@ -10,7 +10,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Player ID is required');
     }
 
-    const { roster: { players, stables, tagTeams }, competition: { championships }, season: { seasonStandings } } = getRepositories();
+    const { players, championships, stables, tagTeams, seasonStandings } = getRepositories();
 
     const player = await players.findById(playerId);
     if (!player) {

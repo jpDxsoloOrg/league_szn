@@ -6,7 +6,7 @@ import type { PointBreakdown } from '../../lib/repositories';
  * Called when autoCompleteEvent detects all matches in an event are finished.
  */
 export async function calculateFantasyPoints(eventId: string): Promise<void> {
-  const { leagueOps: { events }, user: { fantasy }, competition: { matches } } = getRepositories();
+  const { events, fantasy, matches } = getRepositories();
 
   // 1. Get the event to find its match IDs
   const eventItem = await events.findById(eventId);

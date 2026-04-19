@@ -3,7 +3,7 @@ import type { CompanyCreateInput } from '../../lib/repositories';
 import { createHandlerFactory } from '../../lib/handlers';
 
 export const handler = createHandlerFactory<CompanyCreateInput, unknown>({
-  repo: () => getRepositories().leagueOps.companies,
+  repo: () => getRepositories().companies,
   entityName: 'company',
   requiredFields: ['name'],
   optionalFields: ['abbreviation', 'imageUrl', 'description'],

@@ -9,7 +9,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (denied) return denied;
 
     const { sub: fantasyUserId } = getAuthContext(event);
-    const { user: { fantasy } } = getRepositories();
+    const { fantasy } = getRepositories();
 
     const picks = await fantasy.listPicksByUser(fantasyUserId);
 

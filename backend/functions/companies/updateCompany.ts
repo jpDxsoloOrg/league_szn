@@ -20,7 +20,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<UpdateCompanyBody>(event);
     if (parseError) return parseError;
 
-    const { leagueOps: { companies } } = getRepositories();
+    const { companies } = getRepositories();
     const existing = await companies.findById(companyId);
     if (!existing) {
       return badRequest('Company not found');

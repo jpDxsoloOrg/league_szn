@@ -10,7 +10,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
   try {
     const statusFilter = event.queryStringParameters?.status;
-    const { content: { storylineRequests }, roster: { players } } = getRepositories();
+    const { storylineRequests, players } = getRepositories();
 
     let requests: StorylineRequest[];
 

@@ -25,7 +25,7 @@ export { DEFAULT_CONFIG };
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    const { user: { fantasy } } = getRepositories();
+    const { fantasy } = getRepositories();
     const config = await fantasy.getConfig();
     return success(config || DEFAULT_CONFIG);
   } catch (err) {

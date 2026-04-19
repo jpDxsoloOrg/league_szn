@@ -25,7 +25,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Stable name is required');
     }
 
-    const { roster: { players: playersRepo, stables: stablesRepo } } = getRepositories();
+    const { players: playersRepo, stables: stablesRepo } = getRepositories();
 
     // Find the player record via auth.sub
     const player = await playersRepo.findByUserId(auth.sub);

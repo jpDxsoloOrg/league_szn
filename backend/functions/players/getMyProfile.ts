@@ -10,7 +10,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { sub } = getAuthContext(event);
 
-    const { roster: { players }, season: { seasons, seasonStandings } } = getRepositories();
+    const { players, seasons, seasonStandings } = getRepositories();
 
     const player = await players.findByUserId(sub);
 

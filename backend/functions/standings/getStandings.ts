@@ -48,7 +48,7 @@ function computeRecentFormAndStreak(
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const { competition: { matches }, roster: { players, overalls }, season: { seasonStandings } } = getRepositories();
+    const { matches, players, overalls, seasonStandings } = getRepositories();
     const seasonId = event.queryStringParameters?.seasonId;
 
     // Fetch overalls and matches in parallel

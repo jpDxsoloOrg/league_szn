@@ -14,7 +14,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { limit: limitStr, cursor } = event.queryStringParameters || {};
     const limit = limitStr ? parseInt(limitStr, 10) : 20;
 
-    const { user: { notifications } } = getRepositories();
+    const { notifications } = getRepositories();
     const page = await notifications.listByUser(userId, limit, cursor);
 
     return success(page);

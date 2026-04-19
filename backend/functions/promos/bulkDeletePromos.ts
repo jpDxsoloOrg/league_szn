@@ -19,7 +19,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('isHidden boolean is required (e.g. { "isHidden": true } to delete hidden promos)');
     }
 
-    const { content: { promos } } = getRepositories();
+    const { promos } = getRepositories();
 
     const allPromos = await promos.list();
     const toDelete = allPromos.filter((p) => p.isHidden === isHidden).slice(0, MAX_BULK_DELETE);

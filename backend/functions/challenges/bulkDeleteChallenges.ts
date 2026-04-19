@@ -20,7 +20,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('statuses array is required and must not be empty');
     }
 
-    const { user: { challenges } } = getRepositories();
+    const { challenges } = getRepositories();
 
     let allChallenges: { challengeId: string }[] = [];
 

@@ -4,7 +4,7 @@ import { success, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    const { user: { siteConfig } } = getRepositories();
+    const { siteConfig } = getRepositories();
     const features = await siteConfig.getFeatures();
     return success({ features });
   } catch (error) {

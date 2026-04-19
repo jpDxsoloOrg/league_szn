@@ -16,7 +16,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const userId = auth.sub;
-    const { user: { notifications } } = getRepositories();
+    const { notifications } = getRepositories();
     const notification = await notifications.findByNotificationId(notificationId);
 
     if (!notification || notification.userId !== userId) {

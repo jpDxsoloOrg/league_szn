@@ -22,7 +22,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('currentCost must be a positive number');
     }
 
-    const { user: { fantasy } } = getRepositories();
+    const { fantasy } = getRepositories();
 
     const existing = await fantasy.findCost(playerId);
     if (!existing) {

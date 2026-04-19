@@ -10,7 +10,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Championship ID is required');
     }
 
-    const { competition: { championships, contenders }, roster: { players } } = getRepositories();
+    const { championships, contenders, players } = getRepositories();
 
     // ------------------------------------------------------------------
     // 1. Validate the championship exists

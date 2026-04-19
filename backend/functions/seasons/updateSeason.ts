@@ -19,7 +19,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<UpdateSeasonBody>(event);
     if (parseError) return parseError;
 
-    const { season: { seasons } } = getRepositories();
+    const { seasons } = getRepositories();
     const existing = await seasons.findById(seasonId);
     if (!existing) {
       return notFound('Season not found');

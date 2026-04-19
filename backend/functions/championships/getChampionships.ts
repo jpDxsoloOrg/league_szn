@@ -4,7 +4,7 @@ import { success, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    const { competition: { championships } } = getRepositories();
+    const { championships } = getRepositories();
     const allChampionships = await championships.list();
 
     // Filter active championships by default

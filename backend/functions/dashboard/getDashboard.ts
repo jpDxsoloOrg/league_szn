@@ -67,7 +67,7 @@ interface DashboardResponse {
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    const { competition: { championships, matches, stipulations }, roster: { players }, season: { seasons, seasonStandings }, leagueOps: { events }, user: { challenges } } = getRepositories();
+    const { championships, players, seasons, matches, stipulations, events, challenges, seasonStandings } = getRepositories();
 
     // Fetch data: championships, players, seasons, matches, stipulations; events and challenges via query
     const [championshipList, playerList, seasonList, matchList, stipulationList, upcomingEventsList, inProgressEventsList, pendingChallengeList] =

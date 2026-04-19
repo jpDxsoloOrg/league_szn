@@ -5,7 +5,7 @@ import type { EventCreateInput } from '../../lib/repositories/EventsRepository';
 import type { LeagueEvent } from '../../lib/repositories/types';
 
 export const handler = createHandlerFactory<EventCreateInput, LeagueEvent>({
-  repo: () => getRepositories().leagueOps.events,
+  repo: () => getRepositories().events,
   entityName: 'event',
   requiredFields: ['name', 'eventType', 'date'],
   optionalFields: ['companyIds', 'showId', 'seasonId', 'venue', 'description', 'imageUrl', 'themeColor', 'fantasyBudget', 'fantasyPicksPerDivision', 'fantasyEnabled'],
@@ -17,7 +17,7 @@ export const handler = createHandlerFactory<EventCreateInput, LeagueEvent>({
       if (!Array.isArray(body.companyIds)) {
         return badRequest('companyIds must be an array of company IDs');
       }
-      const { leagueOps: { companies } } = getRepositories();
+      const { companies } = getRepositories();
       for (const companyId of body.companyIds as string[]) {
         const company = await companies.findById(companyId);
         if (!company) {

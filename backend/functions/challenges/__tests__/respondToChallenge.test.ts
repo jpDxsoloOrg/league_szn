@@ -38,8 +38,9 @@ const mockRunInTransaction = vi.fn();
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
-    user: { challenges: mockChallengesRepo },
-    roster: { players: mockPlayersRepo, tagTeams: mockTagTeamsRepo },
+    challenges: mockChallengesRepo,
+    players: mockPlayersRepo,
+    tagTeams: mockTagTeamsRepo,
     runInTransaction: mockRunInTransaction,
   }),
 }));

@@ -10,7 +10,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Event ID is required');
     }
 
-    const { leagueOps: { events }, roster: { players }, competition: { stipulations, matches, championships } } = getRepositories();
+    const { events, players, stipulations, matches, championships } = getRepositories();
 
     // Get the event
     const eventItem = await events.findById(eventId);

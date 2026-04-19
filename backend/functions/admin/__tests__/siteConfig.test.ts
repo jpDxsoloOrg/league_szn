@@ -56,7 +56,7 @@ let siteConfigRepo: InMemorySiteConfigRepository;
 
 beforeEach(() => {
   const repos = buildInMemoryRepositories();
-  siteConfigRepo = repos.user.siteConfig as InMemorySiteConfigRepository;
+  siteConfigRepo = repos.siteConfig as InMemorySiteConfigRepository;
   setRepositoriesForTesting(repos);
 });
 

@@ -24,7 +24,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return forbidden('Only wrestlers can view the matchmaking queue');
     }
 
-    const { roster: { players }, leagueOps: { matchmaking } } = getRepositories();
+    const { players, matchmaking } = getRepositories();
 
     // Find the caller's player record via their user sub
     const callerPlayer = await players.findByUserId(auth.sub);

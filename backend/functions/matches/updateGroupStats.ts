@@ -13,7 +13,7 @@ export async function updateGroupStats(input: UpdateGroupStatsInput): Promise<vo
 
   if (participants.length === 0) return;
 
-  const { roster: { players } } = getRepositories();
+  const { players } = getRepositories();
 
   // 1. Fetch all participant Player records in parallel
   const playerPromises = participants.map((playerId) => players.findById(playerId));
@@ -36,7 +36,7 @@ async function updateStableStats(
   losers: string[],
   isDraw: boolean
 ): Promise<void> {
-  const { roster: { stables } } = getRepositories();
+  const { stables } = getRepositories();
 
   // Group participants by stableId
   const stableMembers = new Map<string, string[]>();
@@ -87,7 +87,7 @@ async function updateTagTeamStats(
   // Tag team stats only update when teams field is present (tag/multi-person matches)
   if (!teams || teams.length === 0) return;
 
-  const { roster: { tagTeams } } = getRepositories();
+  const { tagTeams } = getRepositories();
 
   // Collect unique tagTeamIds from participants
   const tagTeamIds = new Set<string>();

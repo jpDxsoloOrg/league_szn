@@ -4,7 +4,7 @@ import { success, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    const { leagueOps: { companies } } = getRepositories();
+    const { companies } = getRepositories();
     const items = await companies.list();
     return success(items);
   } catch (err) {

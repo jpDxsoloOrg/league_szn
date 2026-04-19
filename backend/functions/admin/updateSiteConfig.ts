@@ -33,7 +33,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    const { user: { siteConfig } } = getRepositories();
+    const { siteConfig } = getRepositories();
     const updatedFeatures = await siteConfig.updateFeatures(features);
 
     return success({ features: updatedFeatures });

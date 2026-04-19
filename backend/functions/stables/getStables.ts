@@ -6,7 +6,7 @@ import { success, serverError } from '../../lib/response';
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const statusFilter = event.queryStringParameters?.status;
-    const { roster: { stables: stablesRepo } } = getRepositories();
+    const { stables: stablesRepo } = getRepositories();
 
     const stables = statusFilter
       ? await stablesRepo.listByStatus(statusFilter as StableStatus)

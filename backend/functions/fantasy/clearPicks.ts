@@ -14,7 +14,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const { sub: fantasyUserId } = getAuthContext(event);
-    const { leagueOps: { events }, user: { fantasy } } = getRepositories();
+    const { events, fantasy } = getRepositories();
 
     // Check event status
     const eventItem = await events.findById(eventId);

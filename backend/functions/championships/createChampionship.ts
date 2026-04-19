@@ -4,7 +4,7 @@ import type { ChampionshipCreateInput, Championship } from '../../lib/repositori
 import { badRequest } from '../../lib/response';
 
 export const handler = createHandlerFactory<ChampionshipCreateInput, Championship>({
-  repo: () => getRepositories().competition.championships,
+  repo: () => getRepositories().championships,
   entityName: 'championship',
   requiredFields: ['name', 'type'],
   optionalFields: ['currentChampion', 'divisionId', 'imageUrl'],

@@ -12,7 +12,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('championshipId and playerId are required');
     }
 
-    const { competition: { contenders } } = getRepositories();
+    const { contenders } = getRepositories();
 
     // Get the existing override
     const existing = await contenders.findOverride(championshipId, playerId);

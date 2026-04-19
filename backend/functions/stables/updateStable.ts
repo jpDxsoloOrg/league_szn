@@ -24,7 +24,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<UpdateStableBody>(event);
     if (parseError) return parseError;
 
-    const { roster: { stables: stablesRepo, players: playersRepo } } = getRepositories();
+    const { stables: stablesRepo, players: playersRepo } = getRepositories();
 
     const stable = await stablesRepo.findById(stableId);
     if (!stable) {

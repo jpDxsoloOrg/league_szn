@@ -14,7 +14,7 @@ export const handler = async (
       return forbidden('Only wrestlers can send presence heartbeats');
     }
 
-    const { roster: { players }, leagueOps: { matchmaking } } = getRepositories();
+    const { players, matchmaking } = getRepositories();
 
     // Find the caller's player record via their user sub
     const callerPlayer = await players.findByUserId(auth.sub);

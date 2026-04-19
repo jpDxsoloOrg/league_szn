@@ -21,7 +21,7 @@ const mockFantasyRepo = {
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
-    user: { fantasy: mockFantasyRepo },
+    fantasy: mockFantasyRepo,
   }),
 }));
 

@@ -18,7 +18,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (parseError) return parseError;
     const { isPinned, isHidden } = body;
 
-    const { content: { promos } } = getRepositories();
+    const { promos } = getRepositories();
 
     const existing = await promos.findById(promoId);
     if (!existing) {

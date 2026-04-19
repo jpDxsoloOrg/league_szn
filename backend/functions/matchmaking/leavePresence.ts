@@ -7,7 +7,7 @@ async function expirePendingInvitations(
   direction: 'to' | 'from',
   playerId: string
 ): Promise<void> {
-  const { leagueOps: { matchmaking } } = getRepositories();
+  const { matchmaking } = getRepositories();
 
   const items = direction === 'to'
     ? await matchmaking.listInvitationsByToPlayer(playerId)
@@ -37,7 +37,7 @@ export const handler = async (
       return forbidden('Only wrestlers can leave presence');
     }
 
-    const { roster: { players }, leagueOps: { matchmaking } } = getRepositories();
+    const { players, matchmaking } = getRepositories();
 
     // Find the caller's player record via their user sub
     const callerPlayer = await players.findByUserId(auth.sub);

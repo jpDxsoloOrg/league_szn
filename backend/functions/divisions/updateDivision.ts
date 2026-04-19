@@ -4,7 +4,7 @@ import type { DivisionPatch } from '../../lib/repositories/DivisionsRepository';
 import type { Division } from '../../lib/repositories/types';
 
 export const handler = updateHandlerFactory<DivisionPatch, Division>({
-  repo: () => getRepositories().leagueOps.divisions,
+  repo: () => getRepositories().divisions,
   entityName: 'division',
   idParam: 'divisionId',
   patchFields: ['name', 'description'],

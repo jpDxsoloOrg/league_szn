@@ -13,7 +13,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('stableId is required');
     }
 
-    const { roster: { stables: stablesRepo } } = getRepositories();
+    const { stables: stablesRepo } = getRepositories();
 
     const stable = await stablesRepo.findById(stableId);
     if (!stable) {

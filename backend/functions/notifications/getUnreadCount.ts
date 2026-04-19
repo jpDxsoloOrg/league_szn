@@ -11,7 +11,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const userId = auth.sub;
-    const { user: { notifications } } = getRepositories();
+    const { notifications } = getRepositories();
     const count = await notifications.countUnread(userId);
 
     return success({ count });

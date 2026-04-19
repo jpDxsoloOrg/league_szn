@@ -21,7 +21,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
   try {
     const { sub } = getAuthContext(event);
-    const { roster: { players }, content: { storylineRequests } } = getRepositories();
+    const { players, storylineRequests } = getRepositories();
 
     const player = await players.findByUserId(sub);
     if (!player) {

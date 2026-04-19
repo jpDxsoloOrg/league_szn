@@ -12,12 +12,10 @@ const { mockSend, mockPlayersFindByUserId, mockPlayersCreate, mockPlayersUpdate 
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
-    roster: {
-      players: {
-        findByUserId: mockPlayersFindByUserId,
-        create: mockPlayersCreate,
-        update: mockPlayersUpdate,
-      },
+    players: {
+      findByUserId: mockPlayersFindByUserId,
+      create: mockPlayersCreate,
+      update: mockPlayersUpdate,
     },
   }),
 }));

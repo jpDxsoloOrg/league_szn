@@ -22,7 +22,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<UpdateShowBody>(event);
     if (parseError) return parseError;
 
-    const { leagueOps: { shows, companies } } = getRepositories();
+    const { shows, companies } = getRepositories();
     const existing = await shows.findById(showId);
     if (!existing) {
       return notFound('Show not found');

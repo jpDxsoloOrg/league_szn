@@ -35,7 +35,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const auth = getAuthContext(event);
-    const { content: { videos } } = getRepositories();
+    const { videos } = getRepositories();
 
     const video = await videos.create({
       title,

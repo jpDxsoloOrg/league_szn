@@ -35,7 +35,7 @@ interface ConfigOverrides {
 
 async function calculateAllRankings(requestedChampionshipId?: string, configOverrides?: ConfigOverrides): Promise<RankingResultSummary> {
   const now = new Date().toISOString();
-  const { competition: { championships: champRepo, contenders } } = getRepositories();
+  const { championships: champRepo, contenders } = getRepositories();
 
   // 1. Determine which championships to recalculate
   let championships: Array<{

@@ -70,7 +70,7 @@ function buildChampionshipNameMap(allChampionships: Championship[]): Record<stri
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { limit, cursor, typeFilter } = parseQuery(event);
-    const { competition: { matches, championships, tournaments }, season: { seasons }, user: { challenges }, content: { promos }, roster: { players } } = getRepositories();
+    const { matches, championships, seasons, tournaments, challenges, promos, players } = getRepositories();
 
     const includeMatch = !typeFilter || typeFilter === 'match';
     const includeChampionship = !typeFilter || typeFilter === 'championship';

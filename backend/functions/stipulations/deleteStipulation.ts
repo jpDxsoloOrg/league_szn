@@ -3,7 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import type { Stipulation } from '../../lib/repositories/types';
 
 export const handler = deleteHandlerFactory<Stipulation>({
-  repo: () => getRepositories().competition.stipulations,
+  repo: () => getRepositories().stipulations,
   entityName: 'stipulation',
   idParam: 'stipulationId',
 });

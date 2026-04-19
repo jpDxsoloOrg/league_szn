@@ -33,17 +33,15 @@ const {
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
-    roster: { players: { findById: mockPlayersFindById } },
-    competition: {
-      championships: { findById: mockChampionshipsFindById },
-      tournaments: { findById: mockTournamentsFindById },
-      matches: { create: mockMatchesCreate },
-      stipulations: { findById: mockStipulationsFindById },
-    },
-    season: { seasons: { findById: mockSeasonsFindById } },
-    leagueOps: { events: { findById: mockEventsFindById, update: mockEventsUpdate } },
-    user: { challenges: { findById: mockChallengesFindById, update: mockChallengesUpdate } },
-    content: { promos: { findById: mockPromosFindById, update: mockPromosUpdate } },
+    players: { findById: mockPlayersFindById },
+    championships: { findById: mockChampionshipsFindById },
+    tournaments: { findById: mockTournamentsFindById },
+    seasons: { findById: mockSeasonsFindById },
+    events: { findById: mockEventsFindById, update: mockEventsUpdate },
+    matches: { create: mockMatchesCreate },
+    challenges: { findById: mockChallengesFindById, update: mockChallengesUpdate },
+    promos: { findById: mockPromosFindById, update: mockPromosUpdate },
+    stipulations: { findById: mockStipulationsFindById },
   }),
 }));
 

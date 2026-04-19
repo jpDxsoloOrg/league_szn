@@ -4,7 +4,7 @@ import type { DivisionCreateInput } from '../../lib/repositories/DivisionsReposi
 import type { Division } from '../../lib/repositories/types';
 
 export const handler = createHandlerFactory<DivisionCreateInput, Division>({
-  repo: () => getRepositories().leagueOps.divisions,
+  repo: () => getRepositories().divisions,
   entityName: 'division',
   requiredFields: ['name'],
   optionalFields: ['description'],

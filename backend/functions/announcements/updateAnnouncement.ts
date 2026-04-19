@@ -25,7 +25,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: reqBody, error: parseError } = parseBody<UpdateAnnouncementBody>(event);
     if (parseError) return parseError;
 
-    const { content: { announcements } } = getRepositories();
+    const { announcements } = getRepositories();
     const updated = await announcements.update(announcementId, reqBody);
     return success(updated);
   } catch (err) {

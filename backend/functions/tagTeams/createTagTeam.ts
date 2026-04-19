@@ -26,7 +26,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('name and partnerId are required');
     }
 
-    const { roster: { players: playersRepo, tagTeams: tagTeamsRepo } } = getRepositories();
+    const { players: playersRepo, tagTeams: tagTeamsRepo } = getRepositories();
 
     // Find the caller's player record via their user sub
     const callerPlayer = await playersRepo.findByUserId(auth.sub);

@@ -41,7 +41,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('action must be accept, decline, or counter');
     }
 
-    const { user: { challenges }, roster: { players, tagTeams }, runInTransaction } = getRepositories();
+    const { challenges, players, tagTeams } = getRepositories();
 
     // Get the challenge via repo
     const challenge = await challenges.findById(challengeId);
@@ -113,6 +113,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
     if (counterStipulation) counterChallenge.stipulation = counterStipulation;
     if (counterMessage) counterChallenge.message = counterMessage;
+
+    const { runInTransaction } = getRepositories();
 
     const counterPatch: Record<string, unknown> = {
       status: 'countered',

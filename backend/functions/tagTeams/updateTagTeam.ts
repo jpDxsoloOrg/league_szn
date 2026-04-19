@@ -25,7 +25,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (parseError) return parseError;
     const { name, imageUrl } = body;
 
-    const { roster: { tagTeams: tagTeamsRepo, players: playersRepo } } = getRepositories();
+    const { tagTeams: tagTeamsRepo, players: playersRepo } = getRepositories();
 
     // Get existing tag team
     const tagTeam = await tagTeamsRepo.findById(tagTeamId);

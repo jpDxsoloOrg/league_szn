@@ -22,10 +22,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('requestId path parameter is required');
     }
 
-    const { roster: { transfers, players } } = getRepositories();
+    const repos = getRepositories();
 
     // Fetch the request
-    const transferRequest = await transfers.findById(requestId);
+    const transferRequest = await repos.transfers.findById(requestId);
 
     if (!transferRequest) {
       return notFound('Transfer request not found');
@@ -43,7 +43,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('status must be "approved" or "rejected"');
     }
 
-    const reviewed = await transfers.review(requestId, {
+    const reviewed = await repos.transfers.review(requestId, {
       status,
       reviewedBy: username,
       reviewNote,
@@ -54,11 +54,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // If approved, update the player's divisionId
     if (status === 'approved') {
       const toDivisionId = transferRequest.toDivisionId;
-      await players.update(playerId, { divisionId: toDivisionId });
+      await repos.players.update(playerId, { divisionId: toDivisionId });
     }
 
     // Look up the player's userId to send a notification
-    const player = await players.findById(playerId);
+    const player = await repos.players.findById(playerId);
 
     if (player?.userId) {
       const userId = player.userId;

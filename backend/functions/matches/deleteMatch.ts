@@ -16,7 +16,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('matchId is required');
     }
 
-    const { competition: { matches }, leagueOps: { events }, runInTransaction } = getRepositories();
+    const { matches, events, runInTransaction } = getRepositories();
 
     // Find the match (need date for composite key delete)
     const match = await matches.findByIdWithDate(matchId);
@@ -138,7 +138,7 @@ async function rollbackCompletedMatch(
 }
 
 async function revertEventStatus(eventId: string): Promise<void> {
-  const { competition: { matches }, leagueOps: { events } } = getRepositories();
+  const { events, matches } = getRepositories();
 
   const eventItem = await events.findById(eventId);
   if (!eventItem) return;
@@ -168,7 +168,7 @@ async function revertEventStatus(eventId: string): Promise<void> {
 async function rollbackChampionshipResult(match: Match): Promise<void> {
   const championshipId = match.championshipId!;
   const matchId = match.matchId;
-  const { competition: { championships } } = getRepositories();
+  const { championships } = getRepositories();
 
   // Find the championship history entry created by this match
   const history = await championships.listHistory(championshipId);
@@ -210,7 +210,7 @@ async function rollbackTournamentResult(match: Match): Promise<void> {
   const winners = match.winners || [];
   const losers = match.losers || [];
   const isDraw = match.isDraw === true;
-  const { competition: { tournaments } } = getRepositories();
+  const { tournaments } = getRepositories();
 
   const tournament = await tournaments.findById(tournamentId);
   if (!tournament) return;

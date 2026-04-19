@@ -27,7 +27,7 @@ const buildPlayerInfo = (player: Player | undefined): PlayerInfo => ({
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { status, playerId } = event.queryStringParameters || {};
-    const { user: { challenges }, roster: { players, tagTeams } } = getRepositories();
+    const { challenges, players, tagTeams } = getRepositories();
 
     let challengeList: Challenge[];
 

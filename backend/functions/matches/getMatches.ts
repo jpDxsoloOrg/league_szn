@@ -26,7 +26,7 @@ function getAllowedMatchTypeValues(matchType: string): Set<string> {
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const { competition: { matches } } = getRepositories();
+    const { matches } = getRepositories();
     const params = event.queryStringParameters ?? {};
     const allowedMatchTypeValues = params.matchType ? getAllowedMatchTypeValues(params.matchType) : null;
 

@@ -136,7 +136,7 @@ export function computeFormAndStreak(
  * Fetches all completed matches via the matches repository.
  */
 export async function fetchCompletedMatches(): Promise<MatchRecord[]> {
-  const { competition: { matches } } = getRepositories();
+  const { matches } = getRepositories();
   const items = await matches.listCompleted();
   return items as unknown as MatchRecord[];
 }

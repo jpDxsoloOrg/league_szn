@@ -215,7 +215,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Season ID is required');
     }
 
-    const { season: { seasonAwards }, competition: { matches, championships }, roster: { players } } = getRepositories();
+    const { seasonAwards, matches, players, championships } = getRepositories();
 
     // Fetch custom awards via repository
     const customAwardsRaw = await seasonAwards.listBySeason(seasonId);

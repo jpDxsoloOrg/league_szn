@@ -41,7 +41,7 @@ beforeEach(() => {
 
 describe('updateDivision', () => {
   it('updates division name and returns updated record', async () => {
-    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const created = await repos.divisions.create({ name: 'Raw' });
 
     const event = makeEvent({
       pathParameters: { divisionId: created.divisionId },
@@ -52,12 +52,12 @@ describe('updateDivision', () => {
 
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body).name).toBe('Raw Updated');
-    const stored = await repos.leagueOps.divisions.findById(created.divisionId);
+    const stored = await repos.divisions.findById(created.divisionId);
     expect(stored?.name).toBe('Raw Updated');
   });
 
   it('updates division description', async () => {
-    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const created = await repos.divisions.create({ name: 'Raw' });
 
     const event = makeEvent({
       pathParameters: { divisionId: created.divisionId },
@@ -71,7 +71,7 @@ describe('updateDivision', () => {
   });
 
   it('refreshes the updatedAt timestamp on every update', async () => {
-    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const created = await repos.divisions.create({ name: 'Raw' });
     const before = created.updatedAt;
     await new Promise((r) => setTimeout(r, 2));
 
@@ -136,7 +136,7 @@ describe('updateDivision', () => {
   });
 
   it('returns 500 when the repository throws', async () => {
-    repos.leagueOps.divisions.update = vi.fn().mockRejectedValue(new Error('boom'));
+    repos.divisions.update = vi.fn().mockRejectedValue(new Error('boom'));
 
     const event = makeEvent({
       pathParameters: { divisionId: 'div-1' },
@@ -152,14 +152,14 @@ describe('updateDivision', () => {
 
 describe('deleteDivision', () => {
   it('deletes division and returns 204', async () => {
-    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const created = await repos.divisions.create({ name: 'Raw' });
 
     const event = makeEvent({ pathParameters: { divisionId: created.divisionId } });
 
     const result = await deleteDivision(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
-    expect(await repos.leagueOps.divisions.findById(created.divisionId)).toBeNull();
+    expect(await repos.divisions.findById(created.divisionId)).toBeNull();
   });
 
   it('returns 400 when divisionId is missing from path', async () => {
@@ -179,12 +179,12 @@ describe('deleteDivision', () => {
   });
 
   it('returns 409 when players are assigned to the division', async () => {
-    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const created = await repos.divisions.create({ name: 'Raw' });
     // Create players assigned to this division via the repo
-    const p1 = await repos.roster.players.create({ name: 'John', currentWrestler: 'Wrestler1' });
-    await repos.roster.players.update(p1.playerId, { divisionId: created.divisionId });
-    const p2 = await repos.roster.players.create({ name: 'Jane', currentWrestler: 'Wrestler2' });
-    await repos.roster.players.update(p2.playerId, { divisionId: created.divisionId });
+    const p1 = await repos.players.create({ name: 'John', currentWrestler: 'Wrestler1' });
+    await repos.players.update(p1.playerId, { divisionId: created.divisionId });
+    const p2 = await repos.players.create({ name: 'Jane', currentWrestler: 'Wrestler2' });
+    await repos.players.update(p2.playerId, { divisionId: created.divisionId });
 
     const event = makeEvent({ pathParameters: { divisionId: created.divisionId } });
 
@@ -193,13 +193,13 @@ describe('deleteDivision', () => {
     expect(result!.statusCode).toBe(409);
     expect(JSON.parse(result!.body).message).toContain('2 player(s)');
     expect(JSON.parse(result!.body).message).toContain('Cannot delete division');
-    expect(await repos.leagueOps.divisions.findById(created.divisionId)).not.toBeNull();
+    expect(await repos.divisions.findById(created.divisionId)).not.toBeNull();
   });
 
   it('returns 409 with correct count for single player', async () => {
-    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
-    const p1 = await repos.roster.players.create({ name: 'John', currentWrestler: 'Wrestler1' });
-    await repos.roster.players.update(p1.playerId, { divisionId: created.divisionId });
+    const created = await repos.divisions.create({ name: 'Raw' });
+    const p1 = await repos.players.create({ name: 'John', currentWrestler: 'Wrestler1' });
+    await repos.players.update(p1.playerId, { divisionId: created.divisionId });
 
     const event = makeEvent({ pathParameters: { divisionId: created.divisionId } });
 
@@ -210,18 +210,18 @@ describe('deleteDivision', () => {
   });
 
   it('deletes when no players are assigned', async () => {
-    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const created = await repos.divisions.create({ name: 'Raw' });
 
     const event = makeEvent({ pathParameters: { divisionId: created.divisionId } });
 
     const result = await deleteDivision(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
-    expect(await repos.leagueOps.divisions.findById(created.divisionId)).toBeNull();
+    expect(await repos.divisions.findById(created.divisionId)).toBeNull();
   });
 
   it('returns 500 when the repository throws', async () => {
-    repos.leagueOps.divisions.findById = vi.fn().mockRejectedValue(new Error('boom'));
+    repos.divisions.findById = vi.fn().mockRejectedValue(new Error('boom'));
 
     const event = makeEvent({ pathParameters: { divisionId: 'div-1' } });
 

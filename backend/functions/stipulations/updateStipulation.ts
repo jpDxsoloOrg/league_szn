@@ -4,7 +4,7 @@ import type { StipulationPatch } from '../../lib/repositories/StipulationsReposi
 import type { Stipulation } from '../../lib/repositories/types';
 
 export const handler = updateHandlerFactory<StipulationPatch, Stipulation>({
-  repo: () => getRepositories().competition.stipulations,
+  repo: () => getRepositories().stipulations,
   entityName: 'stipulation',
   idParam: 'stipulationId',
   patchFields: ['name', 'description'],

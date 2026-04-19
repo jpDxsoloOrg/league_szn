@@ -5,7 +5,7 @@ import { success, serverError } from '../../lib/response';
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const championshipId = event.queryStringParameters?.championshipId;
-    const { competition: { contenders }, roster: { players } } = getRepositories();
+    const { contenders, players } = getRepositories();
 
     const overrides = await contenders.listActiveOverrides(championshipId);
 

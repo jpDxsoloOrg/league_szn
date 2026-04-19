@@ -35,11 +35,9 @@ const mockPlayersRepo = {
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
-    competition: {
-      contenders: mockContendersRepo,
-      championships: mockChampionshipsRepo,
-    },
-    roster: { players: mockPlayersRepo },
+    contenders: mockContendersRepo,
+    championships: mockChampionshipsRepo,
+    players: mockPlayersRepo,
   }),
 }));
 

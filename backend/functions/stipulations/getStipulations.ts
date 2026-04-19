@@ -3,6 +3,6 @@ import { getRepositories } from '../../lib/repositories';
 import type { Stipulation } from '../../lib/repositories/types';
 
 export const handler = listHandlerFactory<Stipulation>({
-  repo: () => getRepositories().competition.stipulations,
+  repo: () => getRepositories().stipulations,
   entityName: 'stipulations',
 });

@@ -26,7 +26,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('No valid fields to update');
     }
 
-    const { competition: { championships } } = getRepositories();
+    const { championships } = getRepositories();
     const updated = await championships.update(championshipId, patch);
 
     return success(updated);

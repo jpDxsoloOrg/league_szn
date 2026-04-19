@@ -23,15 +23,13 @@ const {
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
-    competition: {
-      matches: { listCompleted: mockMatchesListCompleted },
-      championships: { listAllHistory: mockChampionshipsListAllHistory, list: mockChampionshipsList },
-      tournaments: { list: mockTournamentsList },
-    },
-    season: { seasons: { list: mockSeasonsList } },
-    user: { challenges: { list: mockChallengesList } },
-    content: { promos: { list: mockPromosList } },
-    roster: { players: { list: mockPlayersList } },
+    matches: { listCompleted: mockMatchesListCompleted },
+    championships: { listAllHistory: mockChampionshipsListAllHistory, list: mockChampionshipsList },
+    seasons: { list: mockSeasonsList },
+    tournaments: { list: mockTournamentsList },
+    challenges: { list: mockChallengesList },
+    promos: { list: mockPromosList },
+    players: { list: mockPlayersList },
   }),
 }));
 

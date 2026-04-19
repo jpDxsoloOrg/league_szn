@@ -21,7 +21,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (parseError) return parseError;
 
     // Look up the player by userId
-    const player = await getRepositories().roster.players.findByUserId(sub);
+    const player = await getRepositories().players.findByUserId(sub);
 
     if (!player) {
       return notFound('No player profile found for this user');
@@ -84,7 +84,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('No valid fields to update. Allowed fields: ' + ALLOWED_FIELDS.join(', '));
     }
 
-    const updated = await getRepositories().roster.players.update(playerId, patch);
+    const updated = await getRepositories().players.update(playerId, patch);
     return success(updated);
   } catch (err) {
     if (err instanceof NotFoundError) return notFound(err.message);

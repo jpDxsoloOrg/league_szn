@@ -13,7 +13,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('challengeId is required');
     }
 
-    const { user: { challenges } } = getRepositories();
+    const { challenges } = getRepositories();
 
     const challenge = await challenges.findById(challengeId);
     if (!challenge) {

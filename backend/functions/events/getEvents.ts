@@ -9,7 +9,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const status = event.queryStringParameters?.status;
     const seasonId = event.queryStringParameters?.seasonId;
 
-    const { leagueOps: { events } } = getRepositories();
+    const { events } = getRepositories();
 
     let results: LeagueEvent[];
 
