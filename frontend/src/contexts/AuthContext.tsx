@@ -12,7 +12,7 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, options?: { wrestlerName?: string }) => Promise<{ isConfirmed: boolean }>;
+  signUp: (email: string, password: string, options?: { wrestlerName?: string; psnId?: string; playerName?: string }) => Promise<{ isConfirmed: boolean }>;
   confirmSignUp: (email: string, code: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -144,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const handleSignUp = useCallback(async (email: string, password: string, options?: { wrestlerName?: string }) => {
+  const handleSignUp = useCallback(async (email: string, password: string, options?: { wrestlerName?: string; psnId?: string; playerName?: string }) => {
     return cognitoAuth.signUp(email, password, options);
   }, []);
 

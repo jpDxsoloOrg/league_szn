@@ -60,6 +60,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           email: attrs['email'] || '',
           name: attrs['name'] || '',
           wrestlerName: attrs['custom:wrestler_name'] || '',
+          psnId: attrs['custom:psn_id'] || '',
+          playerName: attrs['custom:player_name'] || '',
           status: user.UserStatus,
           enabled: user.Enabled,
           created: user.UserCreateDate?.toISOString(),
