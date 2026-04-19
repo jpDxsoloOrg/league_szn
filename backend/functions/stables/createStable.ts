@@ -1,9 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
-import { v4 as uuidv4 } from 'uuid';
 
 interface CreateStableBody {
   name: string;
@@ -26,44 +25,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Stable name is required');
     }
 
-    // Find the player record via auth.sub
-    const playerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
+    const { roster: { players: playersRepo, stables: stablesRepo } } = getRepositories();
 
-    const player = playerResult.Items?.[0];
+    // Find the player record via auth.sub
+    const player = await playersRepo.findByUserId(auth.sub);
     if (!player) {
       return badRequest('No player profile linked to your account');
     }
-
-    const playerId = player.playerId as string;
 
     // Check player doesn't already belong to a stable
     if (player.stableId) {
       return badRequest('You already belong to a stable');
     }
 
-    const now = new Date().toISOString();
-    const stable = {
-      stableId: uuidv4(),
+    const stable = await stablesRepo.create({
       name: name.trim(),
-      leaderId: playerId,
-      memberIds: [playerId],
+      leaderId: player.playerId,
+      memberIds: [player.playerId],
       status: 'pending',
       imageUrl: imageUrl || undefined,
-      wins: 0,
-      losses: 0,
-      draws: 0,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await dynamoDb.put({
-      TableName: TableNames.STABLES,
-      Item: stable,
     });
 
     return created(stable);

@@ -1,7 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { getOrNotFound } from '../../lib/dynamodbUtils';
-import { noContent, badRequest, serverError } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { noContent, badRequest, notFound, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -11,43 +10,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Championship ID is required');
     }
 
-    const championshipResult = await getOrNotFound(
-      TableNames.CHAMPIONSHIPS,
-      { championshipId },
-      'Championship not found'
-    );
-    if ('notFoundResponse' in championshipResult) {
-      return championshipResult.notFoundResponse;
+    const { competition: { championships } } = getRepositories();
+
+    const existing = await championships.findById(championshipId);
+    if (!existing) {
+      return notFound('Championship not found');
     }
 
     // Delete the championship
-    await dynamoDb.delete({
-      TableName: TableNames.CHAMPIONSHIPS,
-      Key: { championshipId },
-    });
+    await championships.delete(championshipId);
 
     // Also delete championship history
-    const historyResult = await dynamoDb.query({
-      TableName: TableNames.CHAMPIONSHIP_HISTORY,
-      KeyConditionExpression: '#championshipId = :championshipId',
-      ExpressionAttributeNames: {
-        '#championshipId': 'championshipId',
-      },
-      ExpressionAttributeValues: {
-        ':championshipId': championshipId,
-      },
-    });
-
-    if (historyResult.Items && historyResult.Items.length > 0) {
-      for (const history of historyResult.Items) {
-        await dynamoDb.delete({
-          TableName: TableNames.CHAMPIONSHIP_HISTORY,
-          Key: {
-            championshipId: championshipId,
-            wonDate: (history as any).wonDate,
-          },
-        });
-      }
+    const history = await championships.listHistory(championshipId);
+    for (const entry of history) {
+      await championships.deleteHistoryEntry(championshipId, entry.wonDate);
     }
 
     return noContent();

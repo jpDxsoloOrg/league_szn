@@ -1,25 +1,11 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, forbidden, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 
 interface QueuePreferences {
   matchFormat?: string;
   stipulationId?: string;
-}
-
-interface QueueRow {
-  playerId: string;
-  joinedAt: string;
-  preferences?: QueuePreferences;
-  ttl?: number;
-}
-
-interface PlayerRecord {
-  playerId: string;
-  name?: string;
-  currentWrestler?: string;
-  imageUrl?: string;
 }
 
 interface QueueEntryResponse {
@@ -38,49 +24,34 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return forbidden('Only wrestlers can view the matchmaking queue');
     }
 
-    // Find the caller's player record via their user sub
-    const playerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
+    const { roster: { players }, leagueOps: { matchmaking } } = getRepositories();
 
-    const callerPlayer = playerResult.Items?.[0];
+    // Find the caller's player record via their user sub
+    const callerPlayer = await players.findByUserId(auth.sub);
     if (!callerPlayer) {
       return badRequest('No player profile linked to your account');
     }
 
-
     // Fetch all queue rows
-    const queueItems = await dynamoDb.scanAll({
-      TableName: TableNames.MATCHMAKING_QUEUE,
-    });
+    const queueItems = await matchmaking.listQueue();
 
     const nowSeconds = Math.floor(Date.now() / 1000);
 
-    const activeRows: QueueRow[] = [];
-    for (const item of queueItems) {
-      const row = item as unknown as QueueRow;
-      if (!row.playerId) continue;
-      if (typeof row.ttl === 'number' && row.ttl < nowSeconds) continue;
-      activeRows.push(row);
-    }
+    const activeRows = queueItems.filter((row) => {
+      if (!row.playerId) return false;
+      if (typeof row.ttl === 'number' && row.ttl < nowSeconds) return false;
+      return true;
+    });
 
     // Hydrate with player records (individual gets; queue is expected to be small)
     const playerResults = await Promise.all(
-      activeRows.map((row) =>
-        dynamoDb.get({
-          TableName: TableNames.PLAYERS,
-          Key: { playerId: row.playerId },
-        })
-      )
+      activeRows.map((row) => players.findById(row.playerId))
     );
 
     const response: QueueEntryResponse[] = [];
     for (let i = 0; i < activeRows.length; i++) {
       const row = activeRows[i];
-      const player = playerResults[i].Item as unknown as PlayerRecord | undefined;
+      const player = playerResults[i];
       if (!player || !player.playerId) continue; // skip orphaned rows
 
       const entry: QueueEntryResponse = {

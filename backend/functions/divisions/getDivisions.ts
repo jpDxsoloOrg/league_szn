@@ -1,16 +1,8 @@
-import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, serverError } from '../../lib/response';
+import { listHandlerFactory } from '../../lib/handlers';
+import { getRepositories } from '../../lib/repositories';
+import type { Division } from '../../lib/repositories/types';
 
-export const handler: APIGatewayProxyHandler = async () => {
-  try {
-    const result = await dynamoDb.scan({
-      TableName: TableNames.DIVISIONS,
-    });
-
-    return success(result.Items || []);
-  } catch (err) {
-    console.error('Error fetching divisions:', err);
-    return serverError('Failed to fetch divisions');
-  }
-};
+export const handler = listHandlerFactory<Division>({
+  repo: () => getRepositories().leagueOps.divisions,
+  entityName: 'divisions',
+});

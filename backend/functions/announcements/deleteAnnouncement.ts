@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { noContent, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 
@@ -13,19 +13,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('announcementId is required');
     }
 
-    const result = await dynamoDb.get({
-      TableName: TableNames.ANNOUNCEMENTS,
-      Key: { announcementId },
-    });
-    if (!result.Item) {
+    const { content: { announcements } } = getRepositories();
+    const existing = await announcements.findById(announcementId);
+    if (!existing) {
       return notFound('Announcement not found');
     }
 
-    await dynamoDb.delete({
-      TableName: TableNames.ANNOUNCEMENTS,
-      Key: { announcementId },
-    });
-
+    await announcements.delete(announcementId);
     return noContent();
   } catch (err) {
     console.error('Error deleting announcement:', err);

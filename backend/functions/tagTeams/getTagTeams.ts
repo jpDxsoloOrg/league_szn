@@ -1,21 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import type { TagTeamStatus } from '../../lib/repositories/types';
 import { success, serverError } from '../../lib/response';
-
-interface TagTeamRecord {
-  tagTeamId: string;
-  name: string;
-  player1Id: string;
-  player2Id: string;
-  imageUrl?: string;
-  status: string;
-  wins: number;
-  losses: number;
-  draws: number;
-  createdAt: string;
-  updatedAt: string;
-  dissolvedAt?: string;
-}
 
 interface PlayerRecord {
   playerId: string;
@@ -26,24 +12,11 @@ interface PlayerRecord {
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const statusFilter = event.queryStringParameters?.status;
+    const { roster: { tagTeams: tagTeamsRepo, players: playersRepo } } = getRepositories();
 
-    let items: Record<string, unknown>[];
-
-    if (statusFilter) {
-      items = await dynamoDb.queryAll({
-        TableName: TableNames.TAG_TEAMS,
-        IndexName: 'StatusIndex',
-        KeyConditionExpression: '#status = :status',
-        ExpressionAttributeNames: { '#status': 'status' },
-        ExpressionAttributeValues: { ':status': statusFilter },
-      });
-    } else {
-      items = await dynamoDb.scanAll({
-        TableName: TableNames.TAG_TEAMS,
-      });
-    }
-
-    const tagTeams = items as unknown as TagTeamRecord[];
+    const tagTeams = statusFilter
+      ? await tagTeamsRepo.listByStatus(statusFilter as TagTeamStatus)
+      : await tagTeamsRepo.list();
 
     // Collect all unique player IDs
     const playerIds = new Set<string>();
@@ -53,23 +26,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Fetch player details in parallel
-    const playerPromises = Array.from(playerIds).map((playerId) =>
-      dynamoDb.get({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId },
-        ProjectionExpression: 'playerId, #name, imageUrl',
-        ExpressionAttributeNames: { '#name': 'name' },
-      })
+    const playerResults = await Promise.all(
+      Array.from(playerIds).map((playerId) => playersRepo.findById(playerId))
     );
-
-    const playerResults = await Promise.all(playerPromises);
 
     // Build player lookup map
     const playerMap = new Map<string, PlayerRecord>();
-    for (const result of playerResults) {
-      if (result.Item) {
-        const player = result.Item as PlayerRecord;
-        playerMap.set(player.playerId, player);
+    for (const player of playerResults) {
+      if (player) {
+        playerMap.set(player.playerId, {
+          playerId: player.playerId,
+          name: player.name,
+          imageUrl: player.imageUrl,
+        });
       }
     }
 

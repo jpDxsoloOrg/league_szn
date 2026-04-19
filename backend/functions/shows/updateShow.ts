@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames, buildUpdateExpression, getOrNotFound } from '../../lib/dynamodb';
+import { getRepositories, NotFoundError } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
@@ -15,7 +15,6 @@ interface UpdateShowBody {
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const showId = event.pathParameters?.showId;
-
     if (!showId) {
       return badRequest('Show ID is required');
     }
@@ -23,46 +22,29 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<UpdateShowBody>(event);
     if (parseError) return parseError;
 
-    const showResult = await getOrNotFound(TableNames.SHOWS, { showId }, 'Show not found');
-    if ('notFoundResponse' in showResult) {
-      return showResult.notFoundResponse;
+    const { leagueOps: { shows, companies } } = getRepositories();
+    const existing = await shows.findById(showId);
+    if (!existing) {
+      return notFound('Show not found');
     }
 
     // If companyId is being changed, validate the new company exists
     if (body.companyId !== undefined) {
-      const companyResult = await dynamoDb.get({
-        TableName: TableNames.COMPANIES,
-        Key: { companyId: body.companyId },
-      });
-      if (!companyResult.Item) {
+      const company = await companies.findById(body.companyId);
+      if (!company) {
         return notFound(`Company ${body.companyId} not found`);
       }
     }
 
-    const updateExpr = buildUpdateExpression({
-      name: body.name,
-      companyId: body.companyId,
-      description: body.description,
-      schedule: body.schedule,
-      dayOfWeek: body.dayOfWeek,
-      imageUrl: body.imageUrl,
-    });
-
-    if (!updateExpr.hasChanges) {
+    const hasChanges = Object.values(body).some((v) => v !== undefined);
+    if (!hasChanges) {
       return badRequest('No valid fields to update');
     }
 
-    const result = await dynamoDb.update({
-      TableName: TableNames.SHOWS,
-      Key: { showId },
-      UpdateExpression: updateExpr.UpdateExpression,
-      ExpressionAttributeNames: updateExpr.ExpressionAttributeNames,
-      ExpressionAttributeValues: updateExpr.ExpressionAttributeValues,
-      ReturnValues: 'ALL_NEW',
-    });
-
-    return success(result.Attributes);
+    const updated = await shows.update(showId, body);
+    return success(updated);
   } catch (err) {
+    if (err instanceof NotFoundError) return notFound('Show not found');
     console.error('Error updating show:', err);
     return serverError('Failed to update show');
   }

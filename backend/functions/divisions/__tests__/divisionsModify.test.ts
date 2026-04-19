@@ -1,41 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
-// ─── Mocks ───────────────────────────────────────────────────────────
-
-const { mockGet, mockPut, mockScan, mockQuery, mockUpdate, mockDelete, mockScanAll, mockQueryAll } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockPut: vi.fn(),
-  mockScan: vi.fn(),
-  mockQuery: vi.fn(),
-  mockUpdate: vi.fn(),
-  mockDelete: vi.fn(),
-  mockScanAll: vi.fn(),
-  mockQueryAll: vi.fn(),
-}));
-
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet,
-    put: mockPut,
-    scan: mockScan,
-    query: mockQuery,
-    update: mockUpdate,
-    delete: mockDelete,
-    scanAll: mockScanAll,
-    queryAll: mockQueryAll,
-  },
-  TableNames: {
-    DIVISIONS: 'Divisions',
-    PLAYERS: 'Players',
-  },
-}));
-
+import { buildInMemoryRepositories } from '../../../lib/repositories/inMemory';
+import {
+  setRepositoriesForTesting,
+  resetRepositoriesForTesting,
+  type Repositories,
+} from '../../../lib/repositories';
 import { handler as updateDivision } from '../updateDivision';
 import { handler as deleteDivision } from '../deleteDivision';
 
-// ─── Helpers ─────────────────────────────────────────────────────────
-
+let repos: Repositories;
 const ctx = {} as Context;
 const cb: Callback = () => {};
 
@@ -52,24 +27,24 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '',
-    requestContext: { authorizer: {} } as any,
+    requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
 
-// ─── updateDivision ──────────────────────────────────────────────────
+beforeEach(() => {
+  vi.clearAllMocks();
+  resetRepositoriesForTesting();
+  repos = buildInMemoryRepositories();
+  setRepositoriesForTesting(repos);
+});
 
 describe('updateDivision', () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it('updates division name and returns updated record', async () => {
-    mockGet.mockResolvedValue({ Item: { divisionId: 'div-1', name: 'Raw' } });
-    mockUpdate.mockResolvedValue({
-      Attributes: { divisionId: 'div-1', name: 'Raw Updated', updatedAt: '2024-01-01' },
-    });
+    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
 
     const event = makeEvent({
-      pathParameters: { divisionId: 'div-1' },
+      pathParameters: { divisionId: created.divisionId },
       body: JSON.stringify({ name: 'Raw Updated' }),
     });
 
@@ -77,46 +52,39 @@ describe('updateDivision', () => {
 
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body).name).toBe('Raw Updated');
-    expect(mockUpdate).toHaveBeenCalledOnce();
-    const updateCall = mockUpdate.mock.calls[0][0];
-    expect(updateCall.UpdateExpression).toContain('#name = :name');
-    expect(updateCall.UpdateExpression).toContain('#updatedAt = :updatedAt');
-    expect(updateCall.ReturnValues).toBe('ALL_NEW');
+    const stored = await repos.leagueOps.divisions.findById(created.divisionId);
+    expect(stored?.name).toBe('Raw Updated');
   });
 
   it('updates division description', async () => {
-    mockGet.mockResolvedValue({ Item: { divisionId: 'div-1', name: 'Raw' } });
-    mockUpdate.mockResolvedValue({
-      Attributes: { divisionId: 'div-1', name: 'Raw', description: 'Monday Night Raw' },
-    });
+    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
 
     const event = makeEvent({
-      pathParameters: { divisionId: 'div-1' },
+      pathParameters: { divisionId: created.divisionId },
       body: JSON.stringify({ description: 'Monday Night Raw' }),
     });
 
     const result = await updateDivision(event, ctx, cb);
 
     expect(result!.statusCode).toBe(200);
-    const updateCall = mockUpdate.mock.calls[0][0];
-    expect(updateCall.UpdateExpression).toContain('#description = :description');
+    expect(JSON.parse(result!.body).description).toBe('Monday Night Raw');
   });
 
-  it('always updates the updatedAt timestamp', async () => {
-    mockGet.mockResolvedValue({ Item: { divisionId: 'div-1', name: 'Raw' } });
-    mockUpdate.mockResolvedValue({ Attributes: { divisionId: 'div-1' } });
+  it('refreshes the updatedAt timestamp on every update', async () => {
+    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const before = created.updatedAt;
+    await new Promise((r) => setTimeout(r, 2));
 
     const event = makeEvent({
-      pathParameters: { divisionId: 'div-1' },
+      pathParameters: { divisionId: created.divisionId },
       body: JSON.stringify({ name: 'New Name' }),
     });
 
-    await updateDivision(event, ctx, cb);
+    const result = await updateDivision(event, ctx, cb);
 
-    const updateCall = mockUpdate.mock.calls[0][0];
-    expect(updateCall.UpdateExpression).toContain('#updatedAt = :updatedAt');
-    expect(updateCall.ExpressionAttributeNames['#updatedAt']).toBe('updatedAt');
-    expect(updateCall.ExpressionAttributeValues[':updatedAt']).toBeDefined();
+    const body = JSON.parse(result!.body);
+    expect(body.updatedAt).toBeDefined();
+    expect(body.updatedAt).not.toBe(before);
   });
 
   it('returns 400 when divisionId is missing from path', async () => {
@@ -143,9 +111,19 @@ describe('updateDivision', () => {
     expect(JSON.parse(result!.body).message).toBe('Request body is required');
   });
 
-  it('returns 404 when division does not exist', async () => {
-    mockGet.mockResolvedValue({ Item: undefined });
+  it('returns 400 when no valid patch fields are provided', async () => {
+    const event = makeEvent({
+      pathParameters: { divisionId: 'div-1' },
+      body: JSON.stringify({ unrelated: 'ignored' }),
+    });
 
+    const result = await updateDivision(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toBe('No valid fields to update');
+  });
+
+  it('returns 404 when division does not exist', async () => {
     const event = makeEvent({
       pathParameters: { divisionId: 'nonexistent' },
       body: JSON.stringify({ name: 'X' }),
@@ -154,12 +132,11 @@ describe('updateDivision', () => {
     const result = await updateDivision(event, ctx, cb);
 
     expect(result!.statusCode).toBe(404);
-    expect(JSON.parse(result!.body).message).toBe('Division not found');
+    expect(JSON.parse(result!.body).message).toContain('nonexistent');
   });
 
-  it('returns 500 on DynamoDB error', async () => {
-    mockGet.mockResolvedValue({ Item: { divisionId: 'div-1' } });
-    mockUpdate.mockRejectedValue(new Error('DynamoDB failure'));
+  it('returns 500 when the repository throws', async () => {
+    repos.leagueOps.divisions.update = vi.fn().mockRejectedValue(new Error('boom'));
 
     const event = makeEvent({
       pathParameters: { divisionId: 'div-1' },
@@ -173,25 +150,16 @@ describe('updateDivision', () => {
   });
 });
 
-// ─── deleteDivision ──────────────────────────────────────────────────
-
 describe('deleteDivision', () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it('deletes division and returns 204', async () => {
-    mockGet.mockResolvedValue({ Item: { divisionId: 'div-1', name: 'Raw' } });
-    mockScan.mockResolvedValue({ Items: [] });
-    mockDelete.mockResolvedValue({});
+    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
 
-    const event = makeEvent({ pathParameters: { divisionId: 'div-1' } });
+    const event = makeEvent({ pathParameters: { divisionId: created.divisionId } });
 
     const result = await deleteDivision(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
-    expect(mockDelete).toHaveBeenCalledWith({
-      TableName: 'Divisions',
-      Key: { divisionId: 'div-1' },
-    });
+    expect(await repos.leagueOps.divisions.findById(created.divisionId)).toBeNull();
   });
 
   it('returns 400 when divisionId is missing from path', async () => {
@@ -202,8 +170,6 @@ describe('deleteDivision', () => {
   });
 
   it('returns 404 when division does not exist', async () => {
-    mockGet.mockResolvedValue({ Item: undefined });
-
     const event = makeEvent({ pathParameters: { divisionId: 'nonexistent' } });
 
     const result = await deleteDivision(event, ctx, cb);
@@ -213,31 +179,29 @@ describe('deleteDivision', () => {
   });
 
   it('returns 409 when players are assigned to the division', async () => {
-    mockGet.mockResolvedValue({ Item: { divisionId: 'div-1', name: 'Raw' } });
-    mockScan.mockResolvedValue({
-      Items: [
-        { playerId: 'p1', name: 'John', divisionId: 'div-1' },
-        { playerId: 'p2', name: 'Jane', divisionId: 'div-1' },
-      ],
-    });
+    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    // Create players assigned to this division via the repo
+    const p1 = await repos.roster.players.create({ name: 'John', currentWrestler: 'Wrestler1' });
+    await repos.roster.players.update(p1.playerId, { divisionId: created.divisionId });
+    const p2 = await repos.roster.players.create({ name: 'Jane', currentWrestler: 'Wrestler2' });
+    await repos.roster.players.update(p2.playerId, { divisionId: created.divisionId });
 
-    const event = makeEvent({ pathParameters: { divisionId: 'div-1' } });
+    const event = makeEvent({ pathParameters: { divisionId: created.divisionId } });
 
     const result = await deleteDivision(event, ctx, cb);
 
     expect(result!.statusCode).toBe(409);
     expect(JSON.parse(result!.body).message).toContain('2 player(s)');
     expect(JSON.parse(result!.body).message).toContain('Cannot delete division');
-    expect(mockDelete).not.toHaveBeenCalled();
+    expect(await repos.leagueOps.divisions.findById(created.divisionId)).not.toBeNull();
   });
 
   it('returns 409 with correct count for single player', async () => {
-    mockGet.mockResolvedValue({ Item: { divisionId: 'div-1', name: 'Raw' } });
-    mockScan.mockResolvedValue({
-      Items: [{ playerId: 'p1', name: 'John', divisionId: 'div-1' }],
-    });
+    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const p1 = await repos.roster.players.create({ name: 'John', currentWrestler: 'Wrestler1' });
+    await repos.roster.players.update(p1.playerId, { divisionId: created.divisionId });
 
-    const event = makeEvent({ pathParameters: { divisionId: 'div-1' } });
+    const event = makeEvent({ pathParameters: { divisionId: created.divisionId } });
 
     const result = await deleteDivision(event, ctx, cb);
 
@@ -245,21 +209,19 @@ describe('deleteDivision', () => {
     expect(JSON.parse(result!.body).message).toContain('1 player(s)');
   });
 
-  it('deletes when player scan returns undefined Items', async () => {
-    mockGet.mockResolvedValue({ Item: { divisionId: 'div-1', name: 'Raw' } });
-    mockScan.mockResolvedValue({ Items: undefined });
-    mockDelete.mockResolvedValue({});
+  it('deletes when no players are assigned', async () => {
+    const created = await repos.leagueOps.divisions.create({ name: 'Raw' });
 
-    const event = makeEvent({ pathParameters: { divisionId: 'div-1' } });
+    const event = makeEvent({ pathParameters: { divisionId: created.divisionId } });
 
     const result = await deleteDivision(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
-    expect(mockDelete).toHaveBeenCalledOnce();
+    expect(await repos.leagueOps.divisions.findById(created.divisionId)).toBeNull();
   });
 
-  it('returns 500 on DynamoDB error', async () => {
-    mockGet.mockRejectedValue(new Error('DynamoDB failure'));
+  it('returns 500 when the repository throws', async () => {
+    repos.leagueOps.divisions.findById = vi.fn().mockRejectedValue(new Error('boom'));
 
     const event = makeEvent({ pathParameters: { divisionId: 'div-1' } });
 

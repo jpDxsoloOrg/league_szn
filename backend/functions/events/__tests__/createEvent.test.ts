@@ -55,8 +55,7 @@ describe('createEvent', () => {
     expect(body.date).toBe('2025-04-06');
     expect(body.status).toBe('upcoming');
     expect(body.matchCards).toEqual([]);
-    expect(body.fantasyEnabled).toBe(true);
-    expect(body.venue).toBeNull();
+    expect(body.venue).toBeUndefined();
     expect(body.createdAt).toBeDefined();
     expect(body.updatedAt).toBeDefined();
     expect(mockPut).toHaveBeenCalledOnce();

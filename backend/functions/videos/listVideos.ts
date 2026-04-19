@@ -1,19 +1,11 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async () => {
   try {
-    const items = await dynamoDb.scanAll({
-      TableName: TableNames.VIDEOS,
-    });
-
-    items.sort((a, b) => {
-      const dateA = (a.createdAt as string) || '';
-      const dateB = (b.createdAt as string) || '';
-      return dateB.localeCompare(dateA);
-    });
-
+    const { content: { videos } } = getRepositories();
+    const items = await videos.list();
     return success(items);
   } catch (err) {
     console.error('Error listing videos:', err);

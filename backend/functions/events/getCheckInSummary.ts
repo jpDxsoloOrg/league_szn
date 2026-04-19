@@ -1,17 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { badRequest, serverError, success, unauthorized } from '../../lib/response';
 import { getAuthContext } from '../../lib/auth';
-
-type CheckInStatus = 'available' | 'tentative' | 'unavailable';
-
-interface CheckInRow {
-  eventId: string;
-  playerId: string;
-  status: CheckInStatus;
-  checkedInAt: string;
-  ttl: number;
-}
 
 interface CheckInSummary {
   eventId: string;
@@ -36,6 +26,10 @@ export const handler = async (
       return badRequest('eventId is required');
     }
 
+    const { leagueOps: { events } } = getRepositories();
+
+    const checkIns = await events.listCheckIns(eventId);
+
     const summary: CheckInSummary = {
       eventId,
       available: 0,
@@ -44,31 +38,16 @@ export const handler = async (
       total: 0,
     };
 
-    let lastEvaluatedKey: Record<string, unknown> | undefined;
-    do {
-      const result = await dynamoDb.query({
-        TableName: TableNames.EVENT_CHECK_INS,
-        KeyConditionExpression: 'eventId = :eid',
-        ExpressionAttributeValues: {
-          ':eid': eventId,
-        },
-        ExclusiveStartKey: lastEvaluatedKey,
-      });
-
-      const rows = (result.Items || []) as CheckInRow[];
-      for (const row of rows) {
-        if (row.status === 'available') {
-          summary.available += 1;
-        } else if (row.status === 'tentative') {
-          summary.tentative += 1;
-        } else if (row.status === 'unavailable') {
-          summary.unavailable += 1;
-        }
-        summary.total += 1;
+    for (const row of checkIns) {
+      if (row.status === 'available') {
+        summary.available += 1;
+      } else if (row.status === 'tentative') {
+        summary.tentative += 1;
+      } else if (row.status === 'unavailable') {
+        summary.unavailable += 1;
       }
-
-      lastEvaluatedKey = result.LastEvaluatedKey;
-    } while (lastEvaluatedKey);
+      summary.total += 1;
+    }
 
     return success(summary);
   } catch (err) {

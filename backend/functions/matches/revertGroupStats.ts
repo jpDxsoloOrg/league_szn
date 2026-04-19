@@ -1,4 +1,4 @@
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 
 interface RevertGroupStatsInput {
   winners: string[];
@@ -8,56 +8,35 @@ interface RevertGroupStatsInput {
   teams?: string[][];
 }
 
-interface PlayerRecord {
-  playerId: string;
-  stableId?: string;
-  tagTeamId?: string;
-}
-
-interface TagTeamRecord {
-  tagTeamId: string;
-  player1Id: string;
-  player2Id: string;
-}
-
 export async function revertGroupStats(input: RevertGroupStatsInput): Promise<void> {
   const { winners, losers, isDraw, participants, teams } = input;
 
   if (participants.length === 0) return;
 
-  // Batch-get all participant Player records
-  const playerPromises = participants.map((playerId) =>
-    dynamoDb.get({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId },
-      ProjectionExpression: 'playerId, stableId, tagTeamId',
-    })
-  );
+  const { roster: { players } } = getRepositories();
+
+  // Fetch all participant Player records in parallel
+  const playerPromises = participants.map((playerId) => players.findById(playerId));
   const playerResults = await Promise.all(playerPromises);
 
-  const players: PlayerRecord[] = [];
-  for (const result of playerResults) {
-    if (result.Item) {
-      players.push({
-        playerId: result.Item.playerId as string,
-        stableId: result.Item.stableId as string | undefined,
-        tagTeamId: result.Item.tagTeamId as string | undefined,
-      });
-    }
-  }
+  const playerRecords = playerResults.filter(
+    (p): p is NonNullable<typeof p> => p !== null
+  );
 
-  await revertStableStats(players, winners, losers, isDraw);
-  await revertTagTeamStats(players, winners, losers, isDraw, teams);
+  await revertStableStats(playerRecords, winners, losers, isDraw);
+  await revertTagTeamStats(playerRecords, winners, losers, isDraw, teams);
 }
 
 async function revertStableStats(
-  players: PlayerRecord[],
+  playerRecords: Array<{ playerId: string; stableId?: string }>,
   winners: string[],
   losers: string[],
   isDraw: boolean
 ): Promise<void> {
+  const { roster: { stables } } = getRepositories();
+
   const stableMembers = new Map<string, string[]>();
-  for (const player of players) {
+  for (const player of playerRecords) {
     if (!player.stableId) continue;
     const existing = stableMembers.get(player.stableId) || [];
     existing.push(player.playerId);
@@ -66,10 +45,9 @@ async function revertStableStats(
 
   const winnersSet = new Set(winners);
   const losersSet = new Set(losers);
-  const now = new Date().toISOString();
 
   for (const [stableId, memberIds] of stableMembers) {
-    let field: string | null = null;
+    let field: 'wins' | 'losses' | 'draws' | null = null;
 
     if (isDraw) {
       field = 'draws';
@@ -82,12 +60,13 @@ async function revertStableStats(
     if (!field) continue;
 
     try {
-      await dynamoDb.update({
-        TableName: TableNames.STABLES,
-        Key: { stableId },
-        UpdateExpression: `SET ${field} = if_not_exists(${field}, :one) - :one, updatedAt = :now`,
-        ExpressionAttributeValues: { ':one': 1, ':now': now },
-      });
+      const stable = await stables.findById(stableId);
+      if (!stable) continue;
+
+      const patch: Record<string, number> = {};
+      patch[field] = Math.max((stable[field] || 0) - 1, 0);
+
+      await stables.update(stableId, patch);
     } catch (err) {
       console.warn(`Failed to revert stable stats for ${stableId}:`, err);
     }
@@ -95,7 +74,7 @@ async function revertStableStats(
 }
 
 async function revertTagTeamStats(
-  players: PlayerRecord[],
+  playerRecords: Array<{ playerId: string; tagTeamId?: string }>,
   winners: string[],
   losers: string[],
   isDraw: boolean,
@@ -103,8 +82,10 @@ async function revertTagTeamStats(
 ): Promise<void> {
   if (!teams || teams.length === 0) return;
 
+  const { roster: { tagTeams } } = getRepositories();
+
   const tagTeamIds = new Set<string>();
-  for (const player of players) {
+  for (const player of playerRecords) {
     if (player.tagTeamId) {
       tagTeamIds.add(player.tagTeamId);
     }
@@ -113,27 +94,16 @@ async function revertTagTeamStats(
   if (tagTeamIds.size === 0) return;
 
   const tagTeamPromises = Array.from(tagTeamIds).map((tagTeamId) =>
-    dynamoDb.get({
-      TableName: TableNames.TAG_TEAMS,
-      Key: { tagTeamId },
-      ProjectionExpression: 'tagTeamId, player1Id, player2Id',
-    })
+    tagTeams.findById(tagTeamId)
   );
   const tagTeamResults = await Promise.all(tagTeamPromises);
 
-  const participantSet = new Set(players.map((p) => p.playerId));
+  const participantSet = new Set(playerRecords.map((p) => p.playerId));
   const winnersSet = new Set(winners);
   const losersSet = new Set(losers);
-  const now = new Date().toISOString();
 
-  for (const result of tagTeamResults) {
-    if (!result.Item) continue;
-
-    const tagTeam: TagTeamRecord = {
-      tagTeamId: result.Item.tagTeamId as string,
-      player1Id: result.Item.player1Id as string,
-      player2Id: result.Item.player2Id as string,
-    };
+  for (const tagTeam of tagTeamResults) {
+    if (!tagTeam) continue;
 
     if (!participantSet.has(tagTeam.player1Id) || !participantSet.has(tagTeam.player2Id)) {
       continue;
@@ -144,7 +114,7 @@ async function revertTagTeamStats(
     );
     if (!sameTeam) continue;
 
-    let field: string | null = null;
+    let field: 'wins' | 'losses' | 'draws' | null = null;
 
     if (isDraw) {
       field = 'draws';
@@ -157,12 +127,10 @@ async function revertTagTeamStats(
     if (!field) continue;
 
     try {
-      await dynamoDb.update({
-        TableName: TableNames.TAG_TEAMS,
-        Key: { tagTeamId: tagTeam.tagTeamId },
-        UpdateExpression: `SET ${field} = if_not_exists(${field}, :one) - :one, updatedAt = :now`,
-        ExpressionAttributeValues: { ':one': 1, ':now': now },
-      });
+      const patch: Record<string, number> = {};
+      patch[field] = Math.max((tagTeam[field] || 0) - 1, 0);
+
+      await tagTeams.update(tagTeam.tagTeamId, patch);
     } catch (err) {
       console.warn(`Failed to revert tag team stats for ${tagTeam.tagTeamId}:`, err);
     }

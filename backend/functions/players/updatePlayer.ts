@@ -1,8 +1,9 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { buildUpdateExpression, getOrNotFound } from '../../lib/dynamodbUtils';
-import { success, badRequest, serverError } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { NotFoundError } from '../../lib/repositories/errors';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
+import type { PlayerPatch } from '../../lib/repositories';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -15,25 +16,39 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody(event);
     if (parseError) return parseError;
 
-    const playerResult = await getOrNotFound(TableNames.PLAYERS, { playerId }, 'Player not found');
-    if ('notFoundResponse' in playerResult) {
-      return playerResult.notFoundResponse;
+    const player = await getRepositories().roster.players.findById(playerId);
+    if (!player) {
+      return notFound('Player not found');
     }
 
-    const updateFields: Record<string, unknown> = {
-      currentWrestler: body.currentWrestler,
-      name: body.name,
-      imageUrl: body.imageUrl,
-      psnId: body.psnId,
-      alternateWrestler: body.alternateWrestler,
-    };
-    const removeFields: string[] = [];
+    const patch: PlayerPatch = {};
+    let hasChanges = false;
+
+    if (body.currentWrestler !== undefined) {
+      patch.currentWrestler = body.currentWrestler as string;
+      hasChanges = true;
+    }
+    if (body.name !== undefined) {
+      patch.name = body.name as string;
+      hasChanges = true;
+    }
+    if (body.imageUrl !== undefined) {
+      patch.imageUrl = body.imageUrl as string;
+      hasChanges = true;
+    }
+    if (body.psnId !== undefined) {
+      patch.psnId = body.psnId as string;
+      hasChanges = true;
+    }
 
     if (body.alignment !== undefined) {
       if (body.alignment === '' || body.alignment === null) {
-        removeFields.push('alignment');
+        // Setting to undefined will be handled by the repo's buildUpdateExpression as REMOVE
+        patch.alignment = undefined;
+        hasChanges = true;
       } else if (['face', 'heel', 'neutral'].includes(body.alignment as string)) {
-        updateFields.alignment = body.alignment;
+        patch.alignment = body.alignment as 'face' | 'heel' | 'neutral';
+        hasChanges = true;
       } else {
         return badRequest('Invalid alignment. Must be face, heel, or neutral');
       }
@@ -41,48 +56,38 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     if (body.alternateWrestler !== undefined) {
       if (body.alternateWrestler === '' || body.alternateWrestler === null) {
-        removeFields.push('alternateWrestler');
-        delete updateFields.alternateWrestler;
+        patch.alternateWrestler = undefined;
+        hasChanges = true;
+      } else {
+        patch.alternateWrestler = body.alternateWrestler as string;
+        hasChanges = true;
       }
     }
 
     if (body.divisionId !== undefined) {
       if (body.divisionId === '' || body.divisionId === null) {
         // Remove divisionId if empty string or null
-        removeFields.push('divisionId');
+        patch.divisionId = undefined;
+        hasChanges = true;
       } else {
         // Validate that the division exists
-        const divisionResult = await getOrNotFound(
-          TableNames.DIVISIONS,
-          { divisionId: body.divisionId },
-          `Division ${body.divisionId} not found`
-        );
-        if ('notFoundResponse' in divisionResult) {
-          return divisionResult.notFoundResponse;
+        const division = await getRepositories().leagueOps.divisions.findById(body.divisionId as string);
+        if (!division) {
+          return notFound(`Division ${body.divisionId} not found`);
         }
-        updateFields.divisionId = body.divisionId;
+        patch.divisionId = body.divisionId as string;
+        hasChanges = true;
       }
     }
 
-    const updateExpr = buildUpdateExpression(updateFields, {
-      removeFields,
-    });
-
-    if (!updateExpr.hasChanges) {
+    if (!hasChanges) {
       return badRequest('No valid fields to update');
     }
 
-    const result = await dynamoDb.update({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId },
-      UpdateExpression: updateExpr.UpdateExpression,
-      ExpressionAttributeNames: updateExpr.ExpressionAttributeNames,
-      ExpressionAttributeValues: updateExpr.ExpressionAttributeValues,
-      ReturnValues: 'ALL_NEW',
-    });
-
-    return success(result.Attributes);
+    const updated = await getRepositories().roster.players.update(playerId, patch);
+    return success(updated);
   } catch (err) {
+    if (err instanceof NotFoundError) return notFound(err.message);
     console.error('Error updating player:', err);
     return serverError('Failed to update player');
   }

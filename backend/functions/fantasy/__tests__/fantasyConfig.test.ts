@@ -3,25 +3,28 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ---- Mocks ----------------------------------------------------------------
 
-const { mockGet, mockPut } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockPut: vi.fn(),
-}));
+const mockFantasyRepo = {
+  getConfig: vi.fn(),
+  upsertConfig: vi.fn(),
+  findPick: vi.fn(),
+  listPicksByEvent: vi.fn(),
+  listPicksByUser: vi.fn(),
+  listAllPicks: vi.fn(),
+  savePick: vi.fn(),
+  updatePickScoring: vi.fn(),
+  deletePick: vi.fn(),
+  findCost: vi.fn(),
+  listAllCosts: vi.fn(),
+  upsertCost: vi.fn(),
+  initializeCost: vi.fn(),
+};
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet,
-    put: mockPut,
-    scan: vi.fn(),
-    query: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    scanAll: vi.fn(),
-    queryAll: vi.fn(),
-  },
-  TableNames: {
-    FANTASY_CONFIG: 'FantasyConfig',
-  },
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    user: {
+      fantasy: mockFantasyRepo,
+    },
+  }),
 }));
 
 import { handler as getFantasyConfig } from '../getFantasyConfig';
@@ -38,7 +41,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     httpMethod: 'GET', isBase64Encoded: false, path: '/',
     pathParameters: null, queryStringParameters: null,
     multiValueQueryStringParameters: null, stageVariables: null,
-    resource: '', requestContext: { authorizer: {} } as any,
+    resource: '', requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
@@ -49,7 +52,7 @@ function withAuth(event: APIGatewayProxyEvent, groups = 'Admin', sub = 'admin-1'
     requestContext: {
       ...event.requestContext,
       authorizer: { groups, username: 'admin', email: 'admin@test.com', principalId: sub },
-    } as any,
+    } as unknown as APIGatewayProxyEvent['requestContext'],
   };
 }
 
@@ -60,7 +63,7 @@ describe('getFantasyConfig', () => {
 
   it('returns stored config when it exists', async () => {
     const storedConfig = { configKey: 'GLOBAL', defaultBudget: 750, baseWinPoints: 15 };
-    mockGet.mockResolvedValueOnce({ Item: storedConfig });
+    mockFantasyRepo.getConfig.mockResolvedValueOnce(storedConfig);
 
     const result = await getFantasyConfig(makeEvent(), ctx, cb);
 
@@ -69,7 +72,7 @@ describe('getFantasyConfig', () => {
   });
 
   it('returns DEFAULT_CONFIG when no config exists', async () => {
-    mockGet.mockResolvedValueOnce({ Item: undefined });
+    mockFantasyRepo.getConfig.mockResolvedValueOnce(null);
 
     const result = await getFantasyConfig(makeEvent(), ctx, cb);
 
@@ -92,8 +95,8 @@ describe('getFantasyConfig', () => {
     expect(body.streakBonusPoints).toBe(25);
   });
 
-  it('returns 500 on DynamoDB error', async () => {
-    mockGet.mockRejectedValueOnce(new Error('DynamoDB failure'));
+  it('returns 500 on repository error', async () => {
+    mockFantasyRepo.getConfig.mockRejectedValueOnce(new Error('DynamoDB failure'));
 
     const result = await getFantasyConfig(makeEvent(), ctx, cb);
 
@@ -131,9 +134,8 @@ describe('updateFantasyConfig', () => {
   });
 
   it('merges updates into existing config', async () => {
-    const existing = { configKey: 'GLOBAL', defaultBudget: 500, baseWinPoints: 10 };
-    mockGet.mockResolvedValueOnce({ Item: existing });
-    mockPut.mockResolvedValueOnce({});
+    const merged = { configKey: 'GLOBAL', defaultBudget: 750, baseWinPoints: 10 };
+    mockFantasyRepo.upsertConfig.mockResolvedValueOnce(merged);
 
     const event = withAuth(makeEvent({
       body: JSON.stringify({ defaultBudget: 750 }),
@@ -148,8 +150,8 @@ describe('updateFantasyConfig', () => {
   });
 
   it('uses DEFAULT_CONFIG when no existing config', async () => {
-    mockGet.mockResolvedValueOnce({ Item: undefined });
-    mockPut.mockResolvedValueOnce({});
+    const merged = { configKey: 'GLOBAL', defaultBudget: 500, baseWinPoints: 20 };
+    mockFantasyRepo.upsertConfig.mockResolvedValueOnce(merged);
 
     const event = withAuth(makeEvent({
       body: JSON.stringify({ baseWinPoints: 20 }),
@@ -164,8 +166,8 @@ describe('updateFantasyConfig', () => {
   });
 
   it('always enforces configKey as GLOBAL even if body tries to change it', async () => {
-    mockGet.mockResolvedValueOnce({ Item: { configKey: 'GLOBAL' } });
-    mockPut.mockResolvedValueOnce({});
+    const merged = { configKey: 'GLOBAL' };
+    mockFantasyRepo.upsertConfig.mockResolvedValueOnce(merged);
 
     const event = withAuth(makeEvent({
       body: JSON.stringify({ configKey: 'HACKED' }),
@@ -176,8 +178,8 @@ describe('updateFantasyConfig', () => {
     expect(JSON.parse(result!.body).configKey).toBe('GLOBAL');
   });
 
-  it('returns 500 on DynamoDB error', async () => {
-    mockGet.mockRejectedValueOnce(new Error('fail'));
+  it('returns 500 on repository error', async () => {
+    mockFantasyRepo.upsertConfig.mockRejectedValueOnce(new Error('fail'));
 
     const event = withAuth(makeEvent({ body: JSON.stringify({ x: 1 }) }));
     const result = await updateFantasyConfig(event, ctx, cb);

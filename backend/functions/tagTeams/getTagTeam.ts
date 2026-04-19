@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames, getOrNotFound } from '../../lib/dynamodb';
-import { success, badRequest, serverError } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import {
   TagTeamRecord,
   FormResult,
@@ -134,60 +134,45 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('tagTeamId is required');
     }
 
-    const result = await getOrNotFound<TagTeamRecord>(
-      TableNames.TAG_TEAMS,
-      { tagTeamId },
-      'Tag team not found'
-    );
+    const { roster: { tagTeams: tagTeamsRepo, players: playersRepo } } = getRepositories();
 
-    if ('notFoundResponse' in result) {
-      return result.notFoundResponse;
+    const tagTeam = await tagTeamsRepo.findById(tagTeamId);
+    if (!tagTeam) {
+      return notFound('Tag team not found');
     }
 
-    const tagTeam = result.item;
-
     // Fetch player details, completed matches, and all active tag teams in parallel
-    const [player1Result, player2Result, completedMatches, activeTagTeamItems] =
+    // Note: completedMatches uses dynamoDb directly — matches migration deferred to Wave 5+
+    const [player1, player2, completedMatches, activeTagTeams] =
       await Promise.all([
-        dynamoDb.get({
-          TableName: TableNames.PLAYERS,
-          Key: { playerId: tagTeam.player1Id },
-        }),
-        dynamoDb.get({
-          TableName: TableNames.PLAYERS,
-          Key: { playerId: tagTeam.player2Id },
-        }),
+        playersRepo.findById(tagTeam.player1Id),
+        playersRepo.findById(tagTeam.player2Id),
         fetchCompletedMatches(),
-        dynamoDb.queryAll({
-          TableName: TableNames.TAG_TEAMS,
-          IndexName: 'StatusIndex',
-          KeyConditionExpression: '#status = :status',
-          ExpressionAttributeNames: { '#status': 'status' },
-          ExpressionAttributeValues: { ':status': 'active' },
-        }),
+        tagTeamsRepo.listByStatus('active'),
       ]);
 
-    const player1: PlayerSummary | null = player1Result.Item
+    const player1Summary: PlayerSummary | null = player1
       ? {
-          playerId: player1Result.Item.playerId as string,
-          playerName: player1Result.Item.name as string,
-          wrestlerName: player1Result.Item.currentWrestler as string,
-          imageUrl: player1Result.Item.imageUrl as string | undefined,
-          psnId: player1Result.Item.psnId as string | undefined,
+          playerId: player1.playerId,
+          playerName: player1.name,
+          wrestlerName: player1.currentWrestler,
+          imageUrl: player1.imageUrl,
+          psnId: player1.psnId,
         }
       : null;
 
-    const player2: PlayerSummary | null = player2Result.Item
+    const player2Summary: PlayerSummary | null = player2
       ? {
-          playerId: player2Result.Item.playerId as string,
-          playerName: player2Result.Item.name as string,
-          wrestlerName: player2Result.Item.currentWrestler as string,
-          imageUrl: player2Result.Item.imageUrl as string | undefined,
-          psnId: player2Result.Item.psnId as string | undefined,
+          playerId: player2.playerId,
+          playerName: player2.name,
+          wrestlerName: player2.currentWrestler,
+          imageUrl: player2.imageUrl,
+          psnId: player2.psnId,
         }
       : null;
 
-    const activeTagTeams = activeTagTeamItems as unknown as TagTeamRecord[];
+    // Cast active tag teams to TagTeamRecord for computeHeadToHead
+    const activeTagTeamRecords = activeTagTeams as unknown as TagTeamRecord[];
 
     // Find all matches where both members competed on the same team
     const teamMatches = findTagTeamMatches(
@@ -206,7 +191,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const standings: TagTeamStandingsInfo = { winPercentage, recentForm, currentStreak };
 
     // Compute head-to-head records
-    const headToHead = computeHeadToHead(teamMatches, activeTagTeams, tagTeamId);
+    const headToHead = computeHeadToHead(teamMatches, activeTagTeamRecords, tagTeamId);
 
     // Compute match-type breakdown
     const matchTypeRecords = computeMatchTypeBreakdown(teamMatches);
@@ -216,8 +201,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     return success({
       ...tagTeam,
-      player1,
-      player2,
+      player1: player1Summary,
+      player2: player2Summary,
       standings,
       headToHead,
       matchTypeRecords,

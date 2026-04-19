@@ -1,42 +1,25 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import type { JoinedOverall } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
-
-interface OverallRecord {
-  playerId: string;
-  mainOverall: number;
-  alternateOverall?: number;
-  submittedAt: string;
-  updatedAt: string;
-}
-
-interface PlayerRecord {
-  playerId: string;
-  name: string;
-  currentWrestler: string;
-}
-
-interface JoinedOverall extends OverallRecord {
-  playerName: string;
-  wrestlerName: string;
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Admin', 'Moderator');
   if (denied) return denied;
 
   try {
-    const [overallsResult, playersResult] = await Promise.all([
-      dynamoDb.scanAll({ TableName: TableNames.WRESTLER_OVERALLS }),
-      dynamoDb.scanAll({ TableName: TableNames.PLAYERS }),
+    const { roster: { overalls, players } } = getRepositories();
+    const [overallsList, playersList] = await Promise.all([
+      overalls.listAll(),
+      players.list(),
     ]);
 
-    const playersMap = new Map<string, PlayerRecord>(
-      (playersResult as unknown as PlayerRecord[]).map((p) => [p.playerId, p])
+    const playersMap = new Map(
+      playersList.map((p) => [p.playerId, p])
     );
 
-    const joined: JoinedOverall[] = (overallsResult as unknown as OverallRecord[]).map((overall) => {
+    const joined: JoinedOverall[] = overallsList.map((overall) => {
       const player = playersMap.get(overall.playerId);
       return {
         ...overall,

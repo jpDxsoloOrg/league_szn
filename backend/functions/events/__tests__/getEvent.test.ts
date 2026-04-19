@@ -1,28 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
-// ─── Mocks ───────────────────────────────────────────────────────────
-
-const { mockGet, mockQuery } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockQuery: vi.fn(),
-}));
-
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet, put: vi.fn(), scan: vi.fn(), query: mockQuery,
-    update: vi.fn(), delete: vi.fn(), scanAll: vi.fn(), queryAll: vi.fn(),
-  },
-  TableNames: {
-    EVENTS: 'Events', MATCHES: 'Matches',
-    PLAYERS: 'Players', CHAMPIONSHIPS: 'Championships',
-  },
-}));
+import { buildInMemoryRepositories } from '../../../lib/repositories/inMemory';
+import {
+  setRepositoriesForTesting,
+  resetRepositoriesForTesting,
+  type Repositories,
+} from '../../../lib/repositories';
 
 import { handler as getEvent } from '../getEvent';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
+let repos: Repositories;
 const ctx = {} as Context;
 const cb: Callback = () => {};
 
@@ -32,15 +22,21 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     isBase64Encoded: false, path: '/', pathParameters: null,
     queryStringParameters: null, multiValueQueryStringParameters: null,
     stageVariables: null, resource: '',
-    requestContext: { authorizer: {} } as any, ...overrides,
+    requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
+    ...overrides,
   };
 }
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  resetRepositoriesForTesting();
+  repos = buildInMemoryRepositories();
+  setRepositoriesForTesting(repos);
+});
 
 // ─── Tests ───────────────────────────────────────────────────────────
 
 describe('getEvent', () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it('returns 400 when eventId path parameter is missing', async () => {
     const result = await getEvent(makeEvent({ pathParameters: null }), ctx, cb);
 
@@ -49,7 +45,6 @@ describe('getEvent', () => {
   });
 
   it('returns 404 when event does not exist', async () => {
-    mockGet.mockResolvedValue({ Item: undefined });
     const event = makeEvent({ pathParameters: { eventId: 'nonexistent' } });
 
     const result = await getEvent(event, ctx, cb);
@@ -59,67 +54,78 @@ describe('getEvent', () => {
   });
 
   it('returns event with empty enrichedMatches when no matchCards', async () => {
-    mockGet.mockResolvedValue({
-      Item: { eventId: 'e1', name: 'WrestleMania', matchCards: [] },
+    await repos.leagueOps.events.create({
+      name: 'WrestleMania', eventType: 'ppv', date: '2024-01-01',
     });
-    const event = makeEvent({ pathParameters: { eventId: 'e1' } });
+    const events = await repos.leagueOps.events.list();
+    const eventItem = events[0];
+    // Set matchCards to empty array
+    await repos.leagueOps.events.update(eventItem.eventId, { matchCards: [] });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
     const result = await getEvent(event, ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    expect(body.eventId).toBe('e1');
+    expect(body.eventId).toBe(eventItem.eventId);
     expect(body.enrichedMatches).toEqual([]);
   });
 
   it('returns enriched match data with player names and championship info', async () => {
-    mockGet
-      .mockResolvedValueOnce({
-        Item: {
-          eventId: 'e1', name: 'WrestleMania',
-          matchCards: [{ position: 1, matchId: 'm1', designation: 'Main Event', notes: 'Title match' }],
-        },
-      })
-      .mockResolvedValueOnce({
-        Item: { playerId: 'p1', name: 'John Cena', currentWrestler: 'John Cena' },
-      })
-      .mockResolvedValueOnce({
-        Item: { championshipId: 'c1', name: 'World Championship' },
-      });
-    mockQuery.mockResolvedValueOnce({
-      Items: [{
-        matchId: 'm1', matchFormat: 'singles', stipulation: 'No DQ',
-        participants: ['p1'], winners: ['p1'], losers: [],
-        isChampionship: true, championshipId: 'c1', status: 'completed',
-      }],
+    // Create player
+    const player = await repos.roster.players.create({
+      name: 'John Cena', currentWrestler: 'John Cena',
     });
 
-    const event = makeEvent({ pathParameters: { eventId: 'e1' } });
+    // Create championship
+    const championship = await repos.competition.championships.create({
+      name: 'World Championship', type: 'singles',
+    });
+
+    // Create match
+    const match = await repos.competition.matches.create({
+      matchId: 'm1', date: '2024-01-01', matchFormat: 'singles', stipulation: 'No DQ',
+      participants: [player.playerId], winners: [player.playerId], losers: [],
+      isChampionship: true, championshipId: championship.championshipId,
+      status: 'completed', createdAt: new Date().toISOString(),
+    });
+
+    // Create event with matchCards
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'WrestleMania', eventType: 'ppv', date: '2024-01-01',
+    });
+    await repos.leagueOps.events.update(eventItem.eventId, {
+      matchCards: [{ position: 1, matchId: match.matchId, designation: 'main-event' as const, notes: 'Title match' }],
+    });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
     const result = await getEvent(event, ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body.enrichedMatches).toHaveLength(1);
-    const match = body.enrichedMatches[0];
-    expect(match.position).toBe(1);
-    expect(match.designation).toBe('Main Event');
-    expect(match.notes).toBe('Title match');
-    expect(match.matchData.matchFormat).toBe('singles');
-    expect(match.matchData.participants).toHaveLength(1);
-    expect(match.matchData.participants[0].playerName).toBe('John Cena');
-    expect(match.matchData.participants[0].wrestlerName).toBe('John Cena');
-    expect(match.matchData.isChampionship).toBe(true);
-    expect(match.matchData.championshipName).toBe('World Championship');
+    const enrichedMatch = body.enrichedMatches[0];
+    expect(enrichedMatch.position).toBe(1);
+    expect(enrichedMatch.designation).toBe('main-event');
+    expect(enrichedMatch.notes).toBe('Title match');
+    expect(enrichedMatch.matchData.matchFormat).toBe('singles');
+    expect(enrichedMatch.matchData.participants).toHaveLength(1);
+    expect(enrichedMatch.matchData.participants[0].playerName).toBe('John Cena');
+    expect(enrichedMatch.matchData.participants[0].wrestlerName).toBe('John Cena');
+    expect(enrichedMatch.matchData.isChampionship).toBe(true);
+    expect(enrichedMatch.matchData.championshipName).toBe('World Championship');
   });
 
   it('returns matchData null when matchId is missing from card', async () => {
-    mockGet.mockResolvedValueOnce({
-      Item: {
-        eventId: 'e1', name: 'Raw',
-        matchCards: [{ position: 1, matchId: undefined, designation: 'TBD' }],
-      },
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'Raw', eventType: 'weekly', date: '2024-01-01',
     });
-    const event = makeEvent({ pathParameters: { eventId: 'e1' } });
+    await repos.leagueOps.events.update(eventItem.eventId, {
+      matchCards: [{ position: 1, matchId: undefined as unknown as string, designation: 'pre-show' as const }],
+    });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
     const result = await getEvent(event, ctx, cb);
 
@@ -128,14 +134,14 @@ describe('getEvent', () => {
   });
 
   it('returns matchData null when match is not found in database', async () => {
-    mockGet.mockResolvedValueOnce({
-      Item: {
-        eventId: 'e1', name: 'Raw',
-        matchCards: [{ position: 1, matchId: 'm-gone', designation: 'Opener' }],
-      },
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'Raw', eventType: 'weekly', date: '2024-01-01',
     });
-    mockQuery.mockResolvedValueOnce({ Items: [] });
-    const event = makeEvent({ pathParameters: { eventId: 'e1' } });
+    await repos.leagueOps.events.update(eventItem.eventId, {
+      matchCards: [{ position: 1, matchId: 'm-gone', designation: 'opener' as const }],
+    });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
     const result = await getEvent(event, ctx, cb);
 
@@ -146,21 +152,21 @@ describe('getEvent', () => {
   });
 
   it('uses Unknown Player/Wrestler when player not found', async () => {
-    mockGet
-      .mockResolvedValueOnce({
-        Item: {
-          eventId: 'e1',
-          matchCards: [{ position: 1, matchId: 'm1', designation: 'Match' }],
-        },
-      })
-      .mockResolvedValueOnce({ Item: undefined });
-    mockQuery.mockResolvedValueOnce({
-      Items: [{
-        matchId: 'm1', matchFormat: 'singles',
-        participants: ['p-missing'], isChampionship: false, status: 'scheduled',
-      }],
+    // Create a match with a non-existent player
+    await repos.competition.matches.create({
+      matchId: 'm1', date: '2024-01-01', matchFormat: 'singles',
+      participants: ['p-missing'], isChampionship: false, status: 'scheduled',
+      createdAt: new Date().toISOString(),
     });
-    const event = makeEvent({ pathParameters: { eventId: 'e1' } });
+
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'Raw', eventType: 'weekly', date: '2024-01-01',
+    });
+    await repos.leagueOps.events.update(eventItem.eventId, {
+      matchCards: [{ position: 1, matchId: 'm1', designation: 'midcard' as const }],
+    });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
     const result = await getEvent(event, ctx, cb);
 
@@ -171,19 +177,20 @@ describe('getEvent', () => {
   });
 
   it('omits championshipName when match is not a championship match', async () => {
-    mockGet.mockResolvedValueOnce({
-      Item: {
-        eventId: 'e1',
-        matchCards: [{ position: 1, matchId: 'm1', designation: 'Match' }],
-      },
+    await repos.competition.matches.create({
+      matchId: 'm1', date: '2024-01-01', matchFormat: 'tag',
+      participants: [], isChampionship: false, status: 'scheduled',
+      createdAt: new Date().toISOString(),
     });
-    mockQuery.mockResolvedValueOnce({
-      Items: [{
-        matchId: 'm1', matchFormat: 'tag',
-        participants: [], isChampionship: false, status: 'scheduled',
-      }],
+
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'Raw', eventType: 'weekly', date: '2024-01-01',
     });
-    const event = makeEvent({ pathParameters: { eventId: 'e1' } });
+    await repos.leagueOps.events.update(eventItem.eventId, {
+      matchCards: [{ position: 1, matchId: 'm1', designation: 'midcard' as const }],
+    });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
     const result = await getEvent(event, ctx, cb);
 
@@ -194,10 +201,11 @@ describe('getEvent', () => {
   });
 
   it('handles event with undefined matchCards property', async () => {
-    mockGet.mockResolvedValue({
-      Item: { eventId: 'e1', name: 'Raw' },
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'Raw', eventType: 'weekly', date: '2024-01-01',
     });
-    const event = makeEvent({ pathParameters: { eventId: 'e1' } });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
     const result = await getEvent(event, ctx, cb);
 
@@ -206,8 +214,8 @@ describe('getEvent', () => {
     expect(body.enrichedMatches).toEqual([]);
   });
 
-  it('returns 500 when DynamoDB fails', async () => {
-    mockGet.mockRejectedValue(new Error('DynamoDB error'));
+  it('returns 500 when repository fails', async () => {
+    vi.spyOn(repos.leagueOps.events, 'findById').mockRejectedValue(new Error('DB error'));
     const event = makeEvent({ pathParameters: { eventId: 'e1' } });
 
     const result = await getEvent(event, ctx, cb);

@@ -3,13 +3,50 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockGet, mockQuery, mockUpdate, mockTransactWrite } = vi.hoisted(() => ({
-  mockGet: vi.fn(), mockQuery: vi.fn(), mockUpdate: vi.fn(), mockTransactWrite: vi.fn(),
-}));
+const mockChallengesRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+  listByStatus: vi.fn(),
+  listByChallenger: vi.fn(),
+  listByChallenged: vi.fn(),
+  listByPlayer: vi.fn(),
+  create: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+};
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: { get: mockGet, query: mockQuery, update: mockUpdate, transactWrite: mockTransactWrite },
-  TableNames: { CHALLENGES: 'Challenges', PLAYERS: 'Players' },
+const mockPlayersRepo = {
+  findById: vi.fn(),
+  findByUserId: vi.fn(),
+  list: vi.fn(),
+  create: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+};
+
+const mockTagTeamsRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+  listByStatus: vi.fn(),
+  listByPlayer: vi.fn(),
+  create: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+};
+
+const mockRunInTransaction = vi.fn();
+
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    user: {
+      challenges: mockChallengesRepo,
+    },
+    roster: {
+      players: mockPlayersRepo,
+      tagTeams: mockTagTeamsRepo,
+    },
+    runInTransaction: mockRunInTransaction,
+  }),
 }));
 
 vi.mock('uuid', () => ({ v4: () => 'counter-uuid-5678' }));
@@ -48,18 +85,28 @@ function respondEvent(body: object) {
 const pendingChallenge = {
   challengeId: 'ch1', challengerId: 'p1', challengedId: 'p2',
   matchType: 'Singles', status: 'pending', createdAt: '2025-01-15T10:00:00.000Z',
+  expiresAt: '2025-01-22T10:00:00.000Z', updatedAt: '2025-01-15T10:00:00.000Z',
 };
 
 /** Set up mocks so the challenged player (p2) is the responder */
 function setupValidResponder() {
-  mockGet.mockResolvedValue({ Item: pendingChallenge });
-  mockQuery.mockResolvedValue({ Items: [{ playerId: 'p2', userId: 'user-sub-2' }] });
+  mockChallengesRepo.findById.mockResolvedValue(pendingChallenge);
+  mockPlayersRepo.findByUserId.mockResolvedValue({ playerId: 'p2', userId: 'user-sub-2', name: 'P2', currentWrestler: 'W2', wins: 0, losses: 0, draws: 0, createdAt: '', updatedAt: '' });
 }
 
 // ─── respondToChallenge ─────────────────────────────────────────────
 
 describe('respondToChallenge', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRunInTransaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
+      const tx = {
+        updateChallenge: vi.fn(),
+        createChallenge: vi.fn(),
+      };
+      await fn(tx);
+    });
+  });
 
   it('returns 403 when user does not have Wrestler role', async () => {
     const event = withAuth(makeEvent({ pathParameters: { challengeId: 'ch1' }, body: JSON.stringify({ action: 'accept' }) }), 'Fantasy');
@@ -100,61 +147,61 @@ describe('respondToChallenge', () => {
   });
 
   it('returns 404 when challenge does not exist', async () => {
-    mockGet.mockResolvedValue({ Item: undefined });
+    mockChallengesRepo.findById.mockResolvedValue(null);
     const result = await respondToChallenge(respondEvent({ action: 'accept' }), ctx, cb);
     expect(result!.statusCode).toBe(404);
     expect(JSON.parse(result!.body).message).toBe('Challenge not found');
   });
 
   it('returns 400 when challenge is no longer pending', async () => {
-    mockGet.mockResolvedValue({ Item: { ...pendingChallenge, status: 'accepted' } });
+    mockChallengesRepo.findById.mockResolvedValue({ ...pendingChallenge, status: 'accepted' });
     const result = await respondToChallenge(respondEvent({ action: 'accept' }), ctx, cb);
     expect(result!.statusCode).toBe(400);
     expect(JSON.parse(result!.body).message).toBe('Challenge is no longer pending');
   });
 
   it('returns 403 when responder is not the challenged player', async () => {
-    mockGet.mockResolvedValue({ Item: pendingChallenge });
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p3', userId: 'user-sub-2' }] });
+    mockChallengesRepo.findById.mockResolvedValue(pendingChallenge);
+    mockPlayersRepo.findByUserId.mockResolvedValue({ playerId: 'p3', userId: 'user-sub-2', name: 'P3', currentWrestler: 'W3', wins: 0, losses: 0, draws: 0, createdAt: '', updatedAt: '' });
     const result = await respondToChallenge(respondEvent({ action: 'accept' }), ctx, cb);
     expect(result!.statusCode).toBe(403);
     expect(JSON.parse(result!.body).message).toBe('Only the challenged player can respond');
   });
 
   it('returns 403 when responder has no player profile', async () => {
-    mockGet.mockResolvedValue({ Item: pendingChallenge });
-    mockQuery.mockResolvedValue({ Items: [] });
+    mockChallengesRepo.findById.mockResolvedValue(pendingChallenge);
+    mockPlayersRepo.findByUserId.mockResolvedValue(null);
     const result = await respondToChallenge(respondEvent({ action: 'accept' }), ctx, cb);
     expect(result!.statusCode).toBe(403);
   });
 
   it('accepts a challenge and updates status to accepted', async () => {
     setupValidResponder();
-    mockUpdate.mockResolvedValue({});
+    mockChallengesRepo.update.mockResolvedValue({ ...pendingChallenge, status: 'accepted' });
     const result = await respondToChallenge(respondEvent({ action: 'accept' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body.status).toBe('accepted');
     expect(body.updatedAt).toBeDefined();
-    expect(mockUpdate).toHaveBeenCalledOnce();
+    expect(mockChallengesRepo.update).toHaveBeenCalledWith('ch1', { status: 'accepted' });
   });
 
-  it('accepts with responseMessage and includes it in update expression', async () => {
+  it('accepts with responseMessage', async () => {
     setupValidResponder();
-    mockUpdate.mockResolvedValue({});
+    mockChallengesRepo.update.mockResolvedValue({ ...pendingChallenge, status: 'accepted', responseMessage: 'Bring it!' });
     const result = await respondToChallenge(respondEvent({ action: 'accept', responseMessage: 'Bring it!' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body).responseMessage).toBe('Bring it!');
-    expect(mockUpdate.mock.calls[0][0].UpdateExpression).toContain('responseMessage');
+    expect(mockChallengesRepo.update).toHaveBeenCalledWith('ch1', { status: 'accepted', responseMessage: 'Bring it!' });
   });
 
   it('declines a challenge and updates status to declined', async () => {
     setupValidResponder();
-    mockUpdate.mockResolvedValue({});
+    mockChallengesRepo.update.mockResolvedValue({ ...pendingChallenge, status: 'declined' });
     const result = await respondToChallenge(respondEvent({ action: 'decline' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body).status).toBe('declined');
-    expect(mockUpdate).toHaveBeenCalledOnce();
+    expect(mockChallengesRepo.update).toHaveBeenCalledOnce();
   });
 
   it('returns 400 when countering without counterMatchType', async () => {
@@ -164,9 +211,8 @@ describe('respondToChallenge', () => {
     expect(JSON.parse(result!.body).message).toBe('counterMatchType is required when countering');
   });
 
-  it('counters a challenge with transactWrite creating a new reversed challenge', async () => {
+  it('counters a challenge using UoW creating a new reversed challenge', async () => {
     setupValidResponder();
-    mockTransactWrite.mockResolvedValue({});
 
     const result = await respondToChallenge(respondEvent({
       action: 'counter', counterMatchType: 'Cage', counterStipulation: 'Steel Cage',
@@ -185,16 +231,11 @@ describe('respondToChallenge', () => {
     expect(body.counter.message).toBe('My terms!');
     expect(body.counter.status).toBe('pending');
     expect(body.counter.expiresAt).toBeDefined();
-    expect(mockTransactWrite).toHaveBeenCalledOnce();
-    const tx = mockTransactWrite.mock.calls[0][0];
-    expect(tx.TransactItems).toHaveLength(2);
-    expect(tx.TransactItems[0]).toHaveProperty('Update');
-    expect(tx.TransactItems[1]).toHaveProperty('Put');
+    expect(mockRunInTransaction).toHaveBeenCalledOnce();
   });
 
   it('counters without optional counterStipulation and counterMessage', async () => {
     setupValidResponder();
-    mockTransactWrite.mockResolvedValue({});
     const result = await respondToChallenge(respondEvent({ action: 'counter', counterMatchType: 'TLC' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
@@ -204,7 +245,7 @@ describe('respondToChallenge', () => {
   });
 
   it('returns 500 when an unexpected error occurs', async () => {
-    mockGet.mockRejectedValue(new Error('DynamoDB failure'));
+    mockChallengesRepo.findById.mockRejectedValue(new Error('DB failure'));
     const result = await respondToChallenge(respondEvent({ action: 'accept' }), ctx, cb);
     expect(result!.statusCode).toBe(500);
     expect(JSON.parse(result!.body).message).toBe('Failed to respond to challenge');

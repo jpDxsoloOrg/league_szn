@@ -123,7 +123,7 @@ describe('promos router', () => {
 
   it('POST /promos/{promoId}/react routes to reactToPromo', async () => {
     mockGet.mockResolvedValue({
-      Item: { promoId: 'pr1', playerId: 'p1', content: 'A'.repeat(50), promoType: 'open-mic' },
+      Item: { promoId: 'pr1', playerId: 'p1', content: 'A'.repeat(50), promoType: 'open-mic', reactions: {}, reactionCounts: { fire: 0, mic: 0, trash: 0, 'mind-blown': 0, clap: 0 } },
     });
     mockUpdate.mockResolvedValue({});
     const event = makeEvent({

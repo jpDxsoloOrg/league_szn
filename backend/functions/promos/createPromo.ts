@@ -1,12 +1,12 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
-import { v4 as uuidv4 } from 'uuid';
 import { createNotification } from '../../lib/notifications';
+import type { PromoType } from '../../lib/repositories/types';
 
-const VALID_PROMO_TYPES = ['open-mic', 'call-out', 'response', 'pre-match', 'post-match', 'championship', 'return'];
+const VALID_PROMO_TYPES: PromoType[] = ['open-mic', 'call-out', 'response', 'pre-match', 'post-match', 'championship', 'return'];
 
 interface CreatePromoBody {
   promoType: string;
@@ -32,7 +32,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (parseError) return parseError;
     const { promoType, title, content, targetPlayerId, targetPromoId, matchId, championshipId, challengeMode, challengerTagTeamName, targetTagTeamName } = body;
 
-    if (!promoType || !VALID_PROMO_TYPES.includes(promoType)) {
+    if (!promoType || !VALID_PROMO_TYPES.includes(promoType as PromoType)) {
       return badRequest('Valid promoType is required');
     }
     if (!content || content.length < 50) {
@@ -45,60 +45,37 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Response promos must reference an existing promo (targetPromoId)');
     }
 
+    const { content: { promos }, roster: { players } } = getRepositories();
+
     // Find the player via user sub
-    const playerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
-    const player = playerResult.Items?.[0];
+    const player = await players.findByUserId(auth.sub);
     if (!player) {
       return badRequest('No player profile linked to your account');
     }
 
-    const now = new Date().toISOString();
-
-    const promo: Record<string, unknown> = {
-      promoId: uuidv4(),
-      playerId: player.playerId as string,
-      promoType,
+    const promo = await promos.create({
+      playerId: player.playerId,
+      promoType: promoType as PromoType,
+      title,
       content,
-      reactions: {},
-      reactionCounts: { fire: 0, mic: 0, trash: 0, 'mind-blown': 0, clap: 0 },
-      isPinned: false,
-      isHidden: false,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    if (title) promo.title = title;
-    if (targetPlayerId) promo.targetPlayerId = targetPlayerId;
-    if (targetPromoId) promo.targetPromoId = targetPromoId;
-    if (matchId) promo.matchId = matchId;
-    if (championshipId) promo.championshipId = championshipId;
-    if (challengeMode) promo.challengeMode = challengeMode;
-    if (challengerTagTeamName) promo.challengerTagTeamName = challengerTagTeamName;
-    if (targetTagTeamName) promo.targetTagTeamName = targetTagTeamName;
-
-    await dynamoDb.put({
-      TableName: TableNames.PROMOS,
-      Item: promo,
+      targetPlayerId,
+      targetPromoId,
+      matchId,
+      championshipId,
+      challengeMode,
+      challengerTagTeamName,
+      targetTagTeamName,
     });
 
     // Notify the target player if they have a linked user account
     if (targetPlayerId) {
-      const targetResult = await dynamoDb.get({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId: targetPlayerId },
-      });
-      const targetPlayer = targetResult.Item as Record<string, unknown> | undefined;
+      const targetPlayer = await players.findById(targetPlayerId);
       if (targetPlayer?.userId) {
         await createNotification({
-          userId: targetPlayer.userId as string,
+          userId: targetPlayer.userId,
           type: 'promo_mention',
-          message: `${player.name as string} cut a promo calling you out!`,
-          sourceId: promo.promoId as string,
+          message: `${player.name} cut a promo calling you out!`,
+          sourceId: promo.promoId,
           sourceType: 'promo',
         });
       }

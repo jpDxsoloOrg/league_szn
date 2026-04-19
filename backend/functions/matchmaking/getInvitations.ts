@@ -1,30 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, forbidden, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
-
-type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'expired' | 'cancelled';
-
-interface InvitationRow {
-  invitationId: string;
-  fromPlayerId: string;
-  toPlayerId: string;
-  status: InvitationStatus;
-  expiresAt: string;
-  createdAt: string;
-  updatedAt?: string;
-  matchType?: string;
-  stipulation?: string;
-  championshipId?: string;
-  message?: string;
-}
-
-interface PlayerRecord {
-  playerId: string;
-  name?: string;
-  currentWrestler?: string;
-  imageUrl?: string;
-}
+import type { InvitationRecord } from '../../lib/repositories/LeagueOpsRepository';
 
 interface PlayerSummary {
   playerId: string;
@@ -33,7 +11,7 @@ interface PlayerSummary {
   imageUrl?: string;
 }
 
-interface HydratedInvitation extends InvitationRow {
+interface HydratedInvitation extends InvitationRecord {
   from: PlayerSummary;
   to: PlayerSummary;
 }
@@ -43,18 +21,6 @@ interface GetInvitationsResponse {
   outgoing: HydratedInvitation[];
 }
 
-const toPlayerSummary = (player: PlayerRecord): PlayerSummary => {
-  const summary: PlayerSummary = {
-    playerId: player.playerId,
-    name: player.name || '',
-    currentWrestler: player.currentWrestler || '',
-  };
-  if (player.imageUrl) {
-    summary.imageUrl = player.imageUrl;
-  }
-  return summary;
-};
-
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const auth = getAuthContext(event);
@@ -62,45 +28,29 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return forbidden('Only wrestlers can view match invitations');
     }
 
-    // Look up caller's player profile via UserIdIndex
-    const playerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
+    const { roster: { players }, leagueOps: { matchmaking } } = getRepositories();
 
-    const callerPlayer = playerResult.Items?.[0];
+    // Look up caller's player profile via UserIdIndex
+    const callerPlayer = await players.findByUserId(auth.sub);
     if (!callerPlayer) {
       return badRequest('No player profile linked to your account');
     }
 
-    const callerPlayerId = callerPlayer.playerId as string;
+    const callerPlayerId = callerPlayer.playerId;
 
-    const [incomingResult, outgoingResult] = await Promise.all([
-      dynamoDb.query({
-        TableName: TableNames.MATCH_INVITATIONS,
-        IndexName: 'ToPlayerIndex',
-        KeyConditionExpression: 'toPlayerId = :pid',
-        ExpressionAttributeValues: { ':pid': callerPlayerId },
-      }),
-      dynamoDb.query({
-        TableName: TableNames.MATCH_INVITATIONS,
-        IndexName: 'FromPlayerIndex',
-        KeyConditionExpression: 'fromPlayerId = :pid',
-        ExpressionAttributeValues: { ':pid': callerPlayerId },
-      }),
+    const [incomingItems, outgoingItems] = await Promise.all([
+      matchmaking.listInvitationsByToPlayer(callerPlayerId),
+      matchmaking.listInvitationsByFromPlayer(callerPlayerId),
     ]);
 
     const nowIso = new Date().toISOString();
 
-    const incomingRows = (incomingResult.Items || [])
-      .map((item) => item as unknown as InvitationRow)
-      .filter((row) => row.status === 'pending' && row.expiresAt > nowIso);
-
-    const outgoingRows = (outgoingResult.Items || [])
-      .map((item) => item as unknown as InvitationRow)
-      .filter((row) => row.status === 'pending' && row.expiresAt > nowIso);
+    const incomingRows = incomingItems.filter(
+      (row) => row.status === 'pending' && row.expiresAt > nowIso
+    );
+    const outgoingRows = outgoingItems.filter(
+      (row) => row.status === 'pending' && row.expiresAt > nowIso
+    );
 
     // Collect unique player IDs for hydration
     const playerIds = new Set<string>();
@@ -111,23 +61,26 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const playerIdList = Array.from(playerIds);
     const playerFetches = await Promise.all(
-      playerIdList.map((pid) =>
-        dynamoDb.get({ TableName: TableNames.PLAYERS, Key: { playerId: pid } })
-      )
+      playerIdList.map((pid) => players.findById(pid))
     );
 
     const playerMap = new Map<string, PlayerSummary>();
-    playerFetches.forEach((result, idx) => {
+    playerFetches.forEach((player, idx) => {
       const pid = playerIdList[idx];
-      if (result.Item) {
-        const player = result.Item as unknown as PlayerRecord;
-        if (player.playerId) {
-          playerMap.set(pid, toPlayerSummary(player));
+      if (player && player.playerId) {
+        const summary: PlayerSummary = {
+          playerId: player.playerId,
+          name: player.name || '',
+          currentWrestler: player.currentWrestler || '',
+        };
+        if (player.imageUrl) {
+          summary.imageUrl = player.imageUrl;
         }
+        playerMap.set(pid, summary);
       }
     });
 
-    const hydrate = (row: InvitationRow): HydratedInvitation | null => {
+    const hydrate = (row: InvitationRecord): HydratedInvitation | null => {
       const from = playerMap.get(row.fromPlayerId);
       const to = playerMap.get(row.toPlayerId);
       if (!from || !to) {

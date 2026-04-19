@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
@@ -33,31 +33,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    // Get existing config and merge
-    const existing = await dynamoDb.get({
-      TableName: TableNames.SITE_CONFIG,
-      Key: { configKey: 'features' },
-    });
-
-    const currentFeatures = existing.Item?.features || {
-      fantasy: true,
-      challenges: true,
-      promos: true,
-      contenders: true,
-      statistics: true,
-      stables: true,
-    };
-
-    const updatedFeatures = { ...currentFeatures, ...features };
-
-    await dynamoDb.put({
-      TableName: TableNames.SITE_CONFIG,
-      Item: {
-        configKey: 'features',
-        features: updatedFeatures,
-        updatedAt: new Date().toISOString(),
-      },
-    });
+    const { user: { siteConfig } } = getRepositories();
+    const updatedFeatures = await siteConfig.updateFeatures(features);
 
     return success({ features: updatedFeatures });
   } catch (error) {

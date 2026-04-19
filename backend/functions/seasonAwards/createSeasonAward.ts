@@ -1,6 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { v4 as uuid } from 'uuid';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { parseBody } from '../../lib/parseBody';
 import { created, badRequest, notFound, serverError } from '../../lib/response';
 
@@ -28,38 +27,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Verify season exists
-    const seasonResult = await dynamoDb.get({
-      TableName: TableNames.SEASONS,
-      Key: { seasonId },
-    });
-    if (!seasonResult.Item) {
+    const { season: { seasons, awards: seasonAwards }, roster: { players } } = getRepositories();
+    const season = await seasons.findById(seasonId);
+    if (!season) {
       return notFound('Season not found');
     }
 
     // Verify player exists
-    const playerResult = await dynamoDb.get({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId: body.playerId },
-    });
-    if (!playerResult.Item) {
+    const player = await players.findById(body.playerId);
+    if (!player) {
       return notFound('Player not found');
     }
 
-    const now = new Date().toISOString();
-    const item = {
-      awardId: uuid(),
+    const item = await seasonAwards.create({
       seasonId,
       name: body.name,
-      awardType: 'custom' as const,
+      awardType: 'custom',
       playerId: body.playerId,
-      playerName: (playerResult.Item as { name: string }).name,
-      description: body.description || null,
-      createdAt: now,
-    };
-
-    await dynamoDb.put({
-      TableName: TableNames.SEASON_AWARDS,
-      Item: item,
+      playerName: player.name,
+      description: body.description,
     });
 
     return created(item);

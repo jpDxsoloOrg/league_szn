@@ -1,62 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import type { Match, Player, Championship, ChampionshipHistoryEntry } from '../../lib/repositories';
 import { success, badRequest, serverError } from '../../lib/response';
-
-interface MatchRecord {
-  matchId: string;
-  date: string;
-  matchFormat?: string;
-  matchType?: string; // legacy field name in existing DB records
-  stipulationId?: string;
-  participants: string[];
-  teams?: string[][];
-  winners?: string[];
-  losers?: string[];
-  isChampionship: boolean;
-  championshipId?: string;
-  status: string;
-  seasonId?: string;
-  starRating?: number;
-  matchOfTheNight?: boolean;
-}
-
-interface PlayerRecord {
-  playerId: string;
-  name: string;
-  currentWrestler: string;
-  wins: number;
-  losses: number;
-  draws: number;
-  imageUrl?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface ChampionshipHistoryRecord {
-  championshipId: string;
-  champion: string | string[];
-  wonDate: string;
-  lostDate?: string;
-  daysHeld?: number;
-  defenses?: number;
-}
-
-interface ChampionshipRecord {
-  championshipId: string;
-  name: string;
-  type: string;
-  currentChampion?: string | string[];
-}
-
-interface MatchTypeRecord {
-  matchTypeId: string;
-  name: string;
-}
-
-interface StipulationRecord {
-  stipulationId: string;
-  name: string;
-}
 
 function normalizeMatchType(value?: string): string {
   const normalized = (value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -70,7 +15,7 @@ function normalizeMatchType(value?: string): string {
   }
 }
 
-function categorizeMatch(match: MatchRecord): string {
+function categorizeMatch(match: Match): string {
   // Map match formats to stat types — handle legacy matchType field
   const mt = (match.matchFormat || match.matchType || 'singles').toLowerCase();
   if (mt.includes('tag')) return 'tag';
@@ -78,7 +23,7 @@ function categorizeMatch(match: MatchRecord): string {
 }
 
 function computeStreaks(
-  matches: MatchRecord[],
+  matches: Match[],
   playerId: string
 ): { currentWinStreak: number; longestWinStreak: number; longestLossStreak: number } {
   // Sort by date ascending
@@ -117,7 +62,7 @@ function computeStreaks(
 }
 
 function computePlayerStatistics(
-  matches: MatchRecord[],
+  matches: Match[],
   playerId: string,
   statType: string
 ): {
@@ -134,7 +79,7 @@ function computePlayerStatistics(
   championshipWins: number;
   championshipLosses: number;
 } {
-  let filtered: MatchRecord[];
+  let filtered: Match[];
 
   if (statType === 'overall') {
     filtered = matches.filter((m) => m.participants.includes(playerId));
@@ -192,6 +137,8 @@ function computePlayerStatistics(
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
+    const { competition: { matches: matchesRepo, championships: championshipsRepo, matchTypes: matchTypesRepo, stipulations: stipulationsRepo }, roster: { players: playersRepo } } = getRepositories();
+
     const section = event.queryStringParameters?.section;
     const seasonId = event.queryStringParameters?.seasonId;
 
@@ -200,14 +147,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Load common data
-    const [playersResult, matchesResult] = await Promise.all([
-      dynamoDb.scanAll({ TableName: TableNames.PLAYERS }),
-      dynamoDb.scanAll({ TableName: TableNames.MATCHES }),
+    const [allPlayers, allMatches] = await Promise.all([
+      playersRepo.list(),
+      matchesRepo.list(),
     ]);
 
     // Only include players who have a wrestler assigned (exclude Fantasy-only users)
-    const players = (playersResult as unknown as PlayerRecord[]).filter((p) => p.currentWrestler);
-    const allMatches = matchesResult as unknown as MatchRecord[];
+    const players = allPlayers.filter((p) => p.currentWrestler);
     const allCompletedMatches = allMatches.filter((m) => m.status === 'completed');
     const completedMatches = seasonId ? allCompletedMatches.filter((m) => m.seasonId === seasonId) : allCompletedMatches;
 
@@ -235,10 +181,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }));
 
         // Championship stats for this player
-        const champHistoryItems = await dynamoDb.scanAll({
-          TableName: TableNames.CHAMPIONSHIP_HISTORY,
-        });
-        const champHistory = champHistoryItems as unknown as ChampionshipHistoryRecord[];
+        const champHistory = await championshipsRepo.listAllHistory();
 
         const playerChampHistory = champHistory.filter((h) => {
           const champ = h.champion;
@@ -247,16 +190,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         });
 
         // Group by championship
-        const champGroups: Record<string, ChampionshipHistoryRecord[]> = {};
+        const champGroups: Record<string, ChampionshipHistoryEntry[]> = {};
         for (const h of playerChampHistory) {
           if (!champGroups[h.championshipId]) champGroups[h.championshipId] = [];
           champGroups[h.championshipId].push(h);
         }
 
-        const championshipsResult = await dynamoDb.scanAll({
-          TableName: TableNames.CHAMPIONSHIPS,
-        });
-        const championships = championshipsResult as unknown as ChampionshipRecord[];
+        const championships = await championshipsRepo.list();
 
         const championshipStats = Object.entries(champGroups).map(([champId, reigns]) => {
           const now = new Date();
@@ -412,10 +352,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }));
 
         // Championship history for longest reign
-        const champHistoryItems = await dynamoDb.scanAll({
-          TableName: TableNames.CHAMPIONSHIP_HISTORY,
-        });
-        const champHistory = champHistoryItems as unknown as ChampionshipHistoryRecord[];
+        const champHistory = await championshipsRepo.listAllHistory();
 
         // Most wins
         const mostWins = [...allPlayerStats]
@@ -515,10 +452,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           ...computePlayerStatistics(completedMatches, p.playerId, 'overall'),
         }));
 
-        const champHistoryItems = await dynamoDb.scanAll({
-          TableName: TableNames.CHAMPIONSHIP_HISTORY,
-        });
-        const champHistory = champHistoryItems as unknown as ChampionshipHistoryRecord[];
+        const champHistory = await championshipsRepo.listAllHistory();
 
         const now = new Date();
 
@@ -588,7 +522,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const bestCageRecord = [...allMatchTypeStats].filter((s) => s.matchType === 'cage' && s.matchesPlayed >= 3).sort((a, b) => b.winPercentage - a.winPercentage)[0];
         const mostLadderWins = [...allMatchTypeStats].filter((s) => s.matchType === 'ladder').sort((a, b) => b.wins - a.wins)[0];
 
-        function makeRecord(name: string, player: PlayerRecord | undefined, value: number | string, desc: string) {
+        function makeRecord(name: string, player: Player | undefined, value: number | string, desc: string) {
           return {
             recordName: name,
             holderName: player?.name || 'N/A',
@@ -688,15 +622,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           updatedAt: new Date().toISOString(),
         }));
 
-        const champHistoryItems = await dynamoDb.scanAll({
-          TableName: TableNames.CHAMPIONSHIP_HISTORY,
-        });
-        const champHistory = champHistoryItems as unknown as ChampionshipHistoryRecord[];
-
-        const championshipsResult = await dynamoDb.scanAll({
-          TableName: TableNames.CHAMPIONSHIPS,
-        });
-        const championships = championshipsResult as unknown as ChampionshipRecord[];
+        const [champHistory, championships] = await Promise.all([
+          championshipsRepo.listAllHistory(),
+          championshipsRepo.list(),
+        ]);
 
         const playerChampHistory = champHistory.filter((h) => {
           const champ = h.champion;
@@ -704,7 +633,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           return champ === playerId;
         });
 
-        const champGroups: Record<string, ChampionshipHistoryRecord[]> = {};
+        const champGroups: Record<string, ChampionshipHistoryEntry[]> = {};
         for (const h of playerChampHistory) {
           if (!champGroups[h.championshipId]) champGroups[h.championshipId] = [];
           champGroups[h.championshipId].push(h);
@@ -757,7 +686,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
       case 'match-ratings': {
         const ratedMatches = allCompletedMatches.filter(
-          (m): m is MatchRecord & { starRating: number } => typeof (m as MatchRecord).starRating === 'number'
+          (m): m is Match & { starRating: number } => typeof m.starRating === 'number'
         );
         const sorted = [...ratedMatches].sort(
           (a, b) => (b.starRating ?? 0) - (a.starRating ?? 0)
@@ -796,23 +725,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const selectedMatchTypeId = event.queryStringParameters?.matchTypeId;
         const selectedStipulationId = event.queryStringParameters?.stipulationId;
 
-        const [matchTypesResult, stipulationsResult] = await Promise.all([
-          dynamoDb.scanAll({ TableName: TableNames.MATCH_TYPES }),
-          dynamoDb.scanAll({ TableName: TableNames.STIPULATIONS }),
+        const [matchTypesList, stipulationsList] = await Promise.all([
+          matchTypesRepo.list(),
+          stipulationsRepo.list(),
         ]);
 
-        const matchTypes = matchTypesResult as unknown as MatchTypeRecord[];
-        const stipulations = stipulationsResult as unknown as StipulationRecord[];
-
         const selectedMatchType = selectedMatchTypeId
-          ? matchTypes.find((mt) => mt.matchTypeId === selectedMatchTypeId)
+          ? matchTypesList.find((mt) => mt.matchTypeId === selectedMatchTypeId)
           : undefined;
         if (selectedMatchTypeId && !selectedMatchType) {
           return badRequest(`Unknown matchTypeId: ${selectedMatchTypeId}`);
         }
 
         const selectedStipulation = selectedStipulationId
-          ? stipulations.find((s) => s.stipulationId === selectedStipulationId)
+          ? stipulationsList.find((s) => s.stipulationId === selectedStipulationId)
           : undefined;
         if (selectedStipulationId && !selectedStipulation) {
           return badRequest(`Unknown stipulationId: ${selectedStipulationId}`);
@@ -903,10 +829,10 @@ function computeAchievements(
   playerId: string,
   stats: { statType: string; wins: number; matchesPlayed: number; longestWinStreak: number; longestLossStreak: number; championshipWins: number }[],
   championshipStats: { championshipId: string; totalReigns: number; longestReign: number; totalDaysHeld: number }[],
-  completedMatches: MatchRecord[],
-  allChampHistory: ChampionshipHistoryRecord[],
-  allChampionships: ChampionshipRecord[],
-  _players: PlayerRecord[]
+  completedMatches: Match[],
+  allChampHistory: ChampionshipHistoryEntry[],
+  allChampionships: Championship[],
+  _players: Player[]
 ) {
   const earned: { playerId: string; achievementId: string; achievementName: string; achievementType: string; description: string; earnedAt: string; icon: string; metadata?: Record<string, unknown> }[] = [];
   const overall = stats.find((s) => s.statType === 'overall');
@@ -958,10 +884,7 @@ function computeAchievements(
   }
 
   // a9: Grand Slam - hold every championship at least once
-  const activeChampionships = allChampionships.filter((c) => {
-    const ch = c as ChampionshipRecord & { isActive?: boolean };
-    return ch.isActive !== false;
-  });
+  const activeChampionships = allChampionships.filter((c) => c.isActive !== false);
   if (activeChampionships.length > 0) {
     const heldChampionships = new Set(championshipStats.filter((cs) => cs.totalReigns > 0).map((cs) => cs.championshipId));
     const hasAll = activeChampionships.every((c) => heldChampionships.has(c.championshipId));

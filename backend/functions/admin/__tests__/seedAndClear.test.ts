@@ -3,29 +3,16 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockPut, mockUpdate, mockDelete, mockScanAll } = vi.hoisted(() => ({
-  mockPut: vi.fn(),
-  mockUpdate: vi.fn(),
-  mockDelete: vi.fn(),
-  mockScanAll: vi.fn(),
-}));
+const mockClearAllData = vi.fn();
+const mockExportAllData = vi.fn();
+const mockImportAllData = vi.fn();
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: vi.fn(), put: mockPut, scan: vi.fn(), query: vi.fn(),
-    update: mockUpdate, delete: mockDelete, scanAll: mockScanAll, queryAll: vi.fn(),
-  },
-  TableNames: {
-    SITE_CONFIG: 'SiteConfig', PLAYERS: 'Players', DIVISIONS: 'Divisions',
-    CHAMPIONSHIPS: 'Championships', CHAMPIONSHIP_HISTORY: 'ChampionshipHistory',
-    SEASON_STANDINGS: 'SeasonStandings', SEASONS: 'Seasons', MATCHES: 'Matches',
-    TOURNAMENTS: 'Tournaments', EVENTS: 'Events', CONTENDER_RANKINGS: 'ContenderRankings',
-    RANKING_HISTORY: 'RankingHistory', FANTASY_CONFIG: 'FantasyConfig',
-    WRESTLER_COSTS: 'WrestlerCosts', FANTASY_PICKS: 'FantasyPicks',
-    CHALLENGES: 'Challenges', PROMOS: 'Promos',
-    CONTENDER_OVERRIDES: 'ContenderOverrides',
-    STABLES: 'Stables', TAG_TEAMS: 'TagTeams', STABLE_INVITATIONS: 'StableInvitations',
-  },
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    clearAllData: mockClearAllData,
+    exportAllData: mockExportAllData,
+    importAllData: mockImportAllData,
+  }),
 }));
 
 const { mockUuidV4 } = vi.hoisted(() => {
@@ -81,8 +68,12 @@ describe('seedData', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('seeds all sample data and returns created counts', async () => {
-    mockPut.mockResolvedValue({});
-    mockUpdate.mockResolvedValue({});
+    mockImportAllData.mockResolvedValue({
+      divisions: 3, players: 12, seasons: 1, seasonStandings: 12,
+      championships: 4, championshipHistory: 4, matches: 12, tournaments: 2,
+      events: 3, contenderRankings: 8, rankingHistory: 9,
+      fantasyConfig: 1, wrestlerCosts: 12, challenges: 6, promos: 7, siteConfig: 1,
+    });
 
     const result = await seedData(makeEvent(), ctx, cb);
 
@@ -108,12 +99,15 @@ describe('seedData', () => {
     expect(body.createdCounts.promos).toBe(7);
     expect(body.createdCounts.siteConfig).toBe(1);
 
-    // Verify put was called many times for all entity inserts
-    expect(mockPut.mock.calls.length).toBeGreaterThan(90);
+    // Verify importAllData was called with data
+    expect(mockImportAllData).toHaveBeenCalledOnce();
+    const importData = mockImportAllData.mock.calls[0][0];
+    expect(importData.divisions).toHaveLength(3);
+    expect(importData.players).toHaveLength(12);
   });
 
-  it('returns 500 when DynamoDB throws during seeding', async () => {
-    mockPut.mockRejectedValue(new Error('DynamoDB write error'));
+  it('returns 500 when importAllData throws', async () => {
+    mockImportAllData.mockRejectedValue(new Error('write error'));
 
     const result = await seedData(makeEvent(), ctx, cb);
 
@@ -121,9 +115,13 @@ describe('seedData', () => {
     expect(JSON.parse(result!.body).message).toBe('Failed to seed data');
   });
 
-  it('accepts optional body with modules array and still runs full seed (until modular seed exists)', async () => {
-    mockPut.mockResolvedValue({});
-    mockUpdate.mockResolvedValue({});
+  it('accepts optional body with modules array and still runs full seed', async () => {
+    mockImportAllData.mockResolvedValue({
+      divisions: 3, players: 12, seasons: 1, seasonStandings: 12,
+      championships: 4, championshipHistory: 4, matches: 12, tournaments: 2,
+      events: 3, contenderRankings: 8, rankingHistory: 9,
+      fantasyConfig: 1, wrestlerCosts: 12, challenges: 6, promos: 7, siteConfig: 1,
+    });
 
     const result = await seedData(
       makeEvent({ body: '{"modules":["core"]}' }),
@@ -138,8 +136,12 @@ describe('seedData', () => {
   });
 
   it('runs full seed when body is empty or modules array is empty', async () => {
-    mockPut.mockResolvedValue({});
-    mockUpdate.mockResolvedValue({});
+    mockImportAllData.mockResolvedValue({
+      divisions: 3, players: 12, seasons: 1, seasonStandings: 12,
+      championships: 4, championshipHistory: 4, matches: 12, tournaments: 2,
+      events: 3, contenderRankings: 8, rankingHistory: 9,
+      fantasyConfig: 1, wrestlerCosts: 12, challenges: 6, promos: 7, siteConfig: 1,
+    });
 
     const resultEmptyBody = await seedData(makeEvent({ body: '{}' }), ctx, cb);
     expect(resultEmptyBody!.statusCode).toBe(200);
@@ -154,7 +156,7 @@ describe('seedData', () => {
     expect(JSON.parse(resultEmptyModules!.body).createdCounts.players).toBe(12);
   });
 
-  it('returns 500 when body has only invalid module IDs', async () => {
+  it('returns 400 when body has only invalid module IDs', async () => {
     const result = await seedData(
       makeEvent({ body: '{"modules":["unknown-module"]}' }),
       ctx,
@@ -197,8 +199,22 @@ describe('clearAll', () => {
   });
 
   it('clears all tables and returns deleted counts when Admin', async () => {
-    mockScanAll.mockResolvedValue([{ playerId: 'p1' }, { playerId: 'p2' }]);
-    mockDelete.mockResolvedValue({});
+    mockClearAllData.mockResolvedValue({
+      players: { deleted: 2, errors: 0 },
+      matches: { deleted: 2, errors: 0 },
+      championships: { deleted: 2, errors: 0 },
+      championshipHistory: { deleted: 2, errors: 0 },
+      tournaments: { deleted: 2, errors: 0 },
+      seasons: { deleted: 2, errors: 0 },
+      seasonStandings: { deleted: 2, errors: 0 },
+      divisions: { deleted: 2, errors: 0 },
+      events: { deleted: 2, errors: 0 },
+      contenderRankings: { deleted: 2, errors: 0 },
+      contenderOverrides: { deleted: 2, errors: 0 },
+      rankingHistory: { deleted: 2, errors: 0 },
+      challenges: { deleted: 2, errors: 0 },
+      promos: { deleted: 2, errors: 0 },
+    });
     const event = withAuth(makeEvent(), 'Admin');
 
     const result = await clearAll(event, ctx, cb);
@@ -206,7 +222,7 @@ describe('clearAll', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body.message).toBe('All data cleared successfully');
-    expect(mockDelete).toHaveBeenCalledTimes(28); // 14 tables * 2 items
+    expect(mockClearAllData).toHaveBeenCalledOnce();
 
     const labels = ['players', 'matches', 'championships', 'championshipHistory',
       'tournaments', 'seasons', 'seasonStandings', 'divisions', 'events',
@@ -217,7 +233,10 @@ describe('clearAll', () => {
   });
 
   it('returns zero counts when all tables are empty', async () => {
-    mockScanAll.mockResolvedValue([]);
+    mockClearAllData.mockResolvedValue({
+      players: { deleted: 0, errors: 0 },
+      matches: { deleted: 0, errors: 0 },
+    });
 
     const event = withAuth(makeEvent(), 'Admin');
 
@@ -228,18 +247,12 @@ describe('clearAll', () => {
     expect(body.message).toBe('All data cleared successfully');
     expect(body.deletedCounts.players).toBe(0);
     expect(body.deletedCounts.matches).toBe(0);
-    expect(mockDelete).not.toHaveBeenCalled();
   });
 
   it('reports error counts when individual deletes fail', async () => {
-    mockScanAll.mockResolvedValue([{ playerId: 'p1' }, { playerId: 'p2' }, { playerId: 'p3' }]);
-    let callIndex = 0;
-    mockDelete.mockImplementation(() => {
-      callIndex++;
-      if (callIndex % 3 === 2) {
-        return Promise.reject(new Error('Throttled'));
-      }
-      return Promise.resolve({});
+    mockClearAllData.mockResolvedValue({
+      players: { deleted: 2, errors: 1 },
+      matches: { deleted: 3, errors: 0 },
     });
 
     const event = withAuth(makeEvent(), 'Admin');
@@ -250,25 +263,11 @@ describe('clearAll', () => {
     const body = JSON.parse(result!.body);
     expect(body.message).toContain('error(s)');
     expect(body.errorCounts).toBeDefined();
+    expect(body.errorCounts.players).toBe(1);
   });
 
-  it('uses sort keys for tables that have composite keys', async () => {
-    mockScanAll.mockResolvedValue([{ matchId: 'm1', date: '2024-01-01' }]);
-    mockDelete.mockResolvedValue({});
-    const event = withAuth(makeEvent(), 'Admin');
-
-    await clearAll(event, ctx, cb);
-
-    const deleteCallsArgs = mockDelete.mock.calls.map(c => c[0]);
-    const matchesDelete = deleteCallsArgs.find((a: any) => a.TableName === 'Matches');
-    if (matchesDelete) {
-      expect(matchesDelete.Key).toHaveProperty('matchId');
-      expect(matchesDelete.Key).toHaveProperty('date');
-    }
-  });
-
-  it('returns 500 when scanAll throws a top-level error', async () => {
-    mockScanAll.mockRejectedValue(new Error('DynamoDB scan error'));
+  it('returns 500 when clearAllData throws', async () => {
+    mockClearAllData.mockRejectedValue(new Error('scan error'));
 
     const event = withAuth(makeEvent(), 'Admin');
 
@@ -276,25 +275,5 @@ describe('clearAll', () => {
 
     expect(result!.statusCode).toBe(500);
     expect(JSON.parse(result!.body).message).toBe('Failed to clear all data');
-  });
-
-  it('uses ExpressionAttributeNames to handle reserved words in scan', async () => {
-    mockScanAll.mockResolvedValue([]);
-    const event = withAuth(makeEvent(), 'Admin');
-
-    await clearAll(event, ctx, cb);
-
-    const scanCalls = mockScanAll.mock.calls;
-    expect(scanCalls.length).toBe(14);
-    for (const call of scanCalls) {
-      expect(call[0].ExpressionAttributeNames).toHaveProperty('#pk');
-      expect(call[0].ProjectionExpression).toContain('#pk');
-    }
-    // Tables with sort keys also have '#sk'
-    const matchesScan = scanCalls.find((c: any) => c[0].TableName === 'Matches');
-    if (matchesScan) {
-      expect(matchesScan[0].ExpressionAttributeNames).toHaveProperty('#sk');
-      expect(matchesScan[0].ProjectionExpression).toContain('#sk');
-    }
   });
 });

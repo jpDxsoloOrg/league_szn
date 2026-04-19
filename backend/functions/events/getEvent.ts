@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -10,22 +10,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Event ID is required');
     }
 
-    // Get the event
-    const eventResult = await dynamoDb.get({
-      TableName: TableNames.EVENTS,
-      Key: { eventId },
-    });
+    const { leagueOps: { events }, roster: { players }, competition: { matches, championships, stipulations } } = getRepositories();
 
-    if (!eventResult.Item) {
+    // Get the event
+    const eventItem = await events.findById(eventId);
+
+    if (!eventItem) {
       return notFound('Event not found');
     }
 
-    const eventItem = eventResult.Item as Record<string, any>;
-    const matchCards: Record<string, any>[] = eventItem.matchCards || [];
+    const matchCards = eventItem.matchCards || [];
 
     // Build enrichedMatches array matching the EventWithMatches frontend type
     const enrichedMatches = await Promise.all(
-      matchCards.map(async (card: Record<string, any>) => {
+      matchCards.map(async (card) => {
         if (!card.matchId) {
           return {
             position: card.position,
@@ -36,15 +34,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           };
         }
 
-        // Fetch the match (Matches table uses composite key: matchId + date)
-        const matchQuery = await dynamoDb.query({
-          TableName: TableNames.MATCHES,
-          KeyConditionExpression: 'matchId = :matchId',
-          ExpressionAttributeValues: { ':matchId': card.matchId },
-          Limit: 1,
-        });
+        const match = await matches.findById(card.matchId);
 
-        if (!matchQuery.Items || matchQuery.Items.length === 0) {
+        if (!match) {
           return {
             position: card.position,
             matchId: card.matchId,
@@ -54,45 +46,31 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           };
         }
 
-        const match = matchQuery.Items[0] as Record<string, any>;
-
-        // Fetch participant player data
-        const participants: { playerId: string; playerName: string; wrestlerName: string }[] = [];
-        if (match.participants && match.participants.length > 0) {
-          const playerPromises = match.participants.map(async (playerId: string) => {
-            const playerResult = await dynamoDb.get({
-              TableName: TableNames.PLAYERS,
-              Key: { playerId },
-            });
-            const player = playerResult.Item as Record<string, any> | undefined;
+        // Fetch participant player data via repository
+        const participantData: { playerId: string; playerName: string; wrestlerName: string }[] = [];
+        if (Array.isArray(match.participants) && match.participants.length > 0) {
+          const playerPromises = (match.participants as string[]).map(async (playerId: string) => {
+            const player = await players.findById(playerId);
             return {
               playerId,
               playerName: player?.name || 'Unknown Player',
               wrestlerName: player?.currentWrestler || 'Unknown Wrestler',
             };
           });
-          participants.push(...(await Promise.all(playerPromises)));
+          participantData.push(...(await Promise.all(playerPromises)));
         }
 
-        // Fetch championship name if applicable
+        // Fetch championship name via repository
         let championshipName: string | undefined;
         if (match.isChampionship && match.championshipId) {
-          const championshipResult = await dynamoDb.get({
-            TableName: TableNames.CHAMPIONSHIPS,
-            Key: { championshipId: match.championshipId },
-          });
-          const championship = championshipResult.Item as Record<string, any> | undefined;
+          const championship = await championships.findById(match.championshipId as string);
           championshipName = championship?.name;
         }
 
-        // Fetch stipulation name if applicable
+        // Fetch stipulation name via repository
         let stipulationName: string | undefined;
         if (match.stipulationId) {
-          const stipulationResult = await dynamoDb.get({
-            TableName: TableNames.STIPULATIONS,
-            Key: { stipulationId: match.stipulationId },
-          });
-          const stipulation = stipulationResult.Item as Record<string, any> | undefined;
+          const stipulation = await stipulations.findById(match.stipulationId as string);
           stipulationName = stipulation?.name;
         }
 
@@ -106,7 +84,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             matchFormat: match.matchFormat,
             stipulationId: match.stipulationId,
             stipulationName,
-            participants,
+            participants: participantData,
             winners: match.winners,
             losers: match.losers,
             isChampionship: match.isChampionship || false,

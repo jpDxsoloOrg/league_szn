@@ -1,4 +1,4 @@
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 
 /** A completed match record from DynamoDB */
 export interface MatchRecord {
@@ -66,59 +66,53 @@ export interface StableStandingsData {
 }
 
 /**
- * Fetches all completed matches from DynamoDB.
+ * Fetches all completed matches via the matches repository.
  */
 export async function fetchCompletedMatches(): Promise<MatchRecord[]> {
-  const items = await dynamoDb.scanAll({
-    TableName: TableNames.MATCHES,
-    FilterExpression: '#status = :completed',
-    ExpressionAttributeNames: { '#status': 'status' },
-    ExpressionAttributeValues: { ':completed': 'completed' },
-  });
+  const { competition: { matches } } = getRepositories();
+  const items = await matches.listCompleted();
 
   return items.map((item) => ({
-    matchId: item.matchId as string,
-    date: item.date as string,
-    matchFormat: (item.matchFormat as string) || (item.matchType as string) || 'unknown',
-    participants: (item.participants as string[]) || [],
-    winners: (item.winners as string[]) || [],
-    losers: (item.losers as string[]) || [],
-    isDraw: item.isDraw as boolean | undefined,
-    status: item.status as string,
-    teams: item.teams as string[][] | undefined,
-    isChampionship: item.isChampionship as boolean | undefined,
-    championshipId: item.championshipId as string | undefined,
-    tournamentId: item.tournamentId as string | undefined,
-    seasonId: item.seasonId as string | undefined,
-    stipulation: item.stipulation as string | undefined,
+    matchId: item.matchId,
+    date: item.date,
+    matchFormat: item.matchFormat || item.matchType || 'unknown',
+    participants: item.participants || [],
+    winners: item.winners || [],
+    losers: item.losers || [],
+    isDraw: item.isDraw,
+    status: item.status,
+    teams: item.teams,
+    isChampionship: item.isChampionship,
+    championshipId: item.championshipId,
+    tournamentId: item.tournamentId,
+    seasonId: item.seasonId,
+    stipulation: item.stipulationId,
   }));
 }
 
 /**
- * Fetches all active stables from DynamoDB.
+ * Fetches all active stables via the stables repository.
  */
 export async function fetchActiveStables(): Promise<StableRecord[]> {
-  const items = await dynamoDb.scanAll({
-    TableName: TableNames.STABLES,
-    FilterExpression: '#status = :active OR #status = :approved',
-    ExpressionAttributeNames: { '#status': 'status' },
-    ExpressionAttributeValues: { ':active': 'active', ':approved': 'approved' },
-  });
+  const { roster: { stables } } = getRepositories();
+  const allStables = await stables.list();
 
-  return items.map((item) => ({
-    stableId: item.stableId as string,
-    name: item.name as string,
-    leaderId: item.leaderId as string,
-    memberIds: (item.memberIds as string[]) || [],
-    status: item.status as string,
-    imageUrl: item.imageUrl as string | undefined,
-    wins: (item.wins as number) || 0,
-    losses: (item.losses as number) || 0,
-    draws: (item.draws as number) || 0,
-    createdAt: item.createdAt as string,
-    updatedAt: item.updatedAt as string,
-    disbandedAt: item.disbandedAt as string | undefined,
-  }));
+  return allStables
+    .filter((s) => s.status === 'active' || s.status === 'approved')
+    .map((item) => ({
+      stableId: item.stableId,
+      name: item.name,
+      leaderId: item.leaderId,
+      memberIds: item.memberIds || [],
+      status: item.status,
+      imageUrl: item.imageUrl,
+      wins: item.wins || 0,
+      losses: item.losses || 0,
+      draws: item.draws || 0,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      disbandedAt: item.disbandedAt,
+    }));
 }
 
 /**

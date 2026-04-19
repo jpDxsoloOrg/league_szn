@@ -1,9 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
-import { v4 as uuidv4 } from 'uuid';
 
 interface CreateVideoBody {
   title: string;
@@ -36,25 +35,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const auth = getAuthContext(event);
-    const now = new Date().toISOString();
+    const { content: { videos } } = getRepositories();
 
-    const video: Record<string, unknown> = {
-      videoId: uuidv4(),
-      title: title.trim(),
-      description: description?.trim() || '',
-      videoUrl: videoUrl.trim(),
-      thumbnailUrl: thumbnailUrl?.trim() || '',
+    const video = await videos.create({
+      title,
+      description,
+      videoUrl,
+      thumbnailUrl,
       category,
-      tags: tags || [],
-      isPublished: isPublished === false ? 'false' : 'true',
+      tags,
+      isPublished,
       uploadedBy: auth.username || auth.sub,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await dynamoDb.put({
-      TableName: TableNames.VIDEOS,
-      Item: video,
     });
 
     return created(video);

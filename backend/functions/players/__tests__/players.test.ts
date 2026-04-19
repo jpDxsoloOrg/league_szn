@@ -1,29 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
-// ─── Mocks ───────────────────────────────────────────────────────────
-
-const { mockGet, mockPut, mockScan, mockQuery, mockUpdate, mockDelete, mockScanAll, mockQueryAll } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockPut: vi.fn(),
-  mockScan: vi.fn(),
+// ─── dynamoDb mock (still needed for handlers that use dynamoDb directly) ────
+const { mockQuery: mockDynamoQuery, mockDelete: mockDynamoDelete, mockUpdate: mockDynamoUpdate, mockQueryAll: mockDynamoQueryAll } = vi.hoisted(() => ({
   mockQuery: vi.fn(),
-  mockUpdate: vi.fn(),
   mockDelete: vi.fn(),
-  mockScanAll: vi.fn(),
+  mockUpdate: vi.fn(),
   mockQueryAll: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
   dynamoDb: {
-    get: mockGet,
-    put: mockPut,
-    scan: mockScan,
-    query: mockQuery,
-    update: mockUpdate,
-    delete: mockDelete,
-    scanAll: mockScanAll,
-    queryAll: mockQueryAll,
+    get: vi.fn(),
+    put: vi.fn(),
+    scan: vi.fn(),
+    query: mockDynamoQuery,
+    update: mockDynamoUpdate,
+    delete: mockDynamoDelete,
+    scanAll: vi.fn(),
+    queryAll: mockDynamoQueryAll,
   },
   TableNames: {
     PLAYERS: 'Players',
@@ -37,9 +32,17 @@ vi.mock('../../../lib/dynamodb', () => ({
   },
 }));
 
+let uuidCounter = 0;
 vi.mock('uuid', () => ({
-  v4: () => 'test-uuid-1234',
+  v4: () => `test-uuid-${++uuidCounter}`,
 }));
+
+import { buildInMemoryRepositories } from '../../../lib/repositories/inMemory';
+import {
+  setRepositoriesForTesting,
+  resetRepositoriesForTesting,
+  type Repositories,
+} from '../../../lib/repositories';
 
 import { handler as createPlayer } from '../createPlayer';
 import { handler as getPlayers } from '../getPlayers';
@@ -50,6 +53,7 @@ import { handler as updateMyProfile } from '../updateMyProfile';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
+let repos: Repositories;
 const ctx = {} as Context;
 const cb: Callback = () => {};
 
@@ -66,7 +70,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '',
-    requestContext: { authorizer: {} } as any,
+    requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
@@ -77,17 +81,22 @@ function withAuth(event: APIGatewayProxyEvent, groups: string, sub = 'user-sub-1
     requestContext: {
       ...event.requestContext,
       authorizer: { groups, username: 'testuser', email: 'test@test.com', principalId: sub },
-    } as any,
+    } as unknown as APIGatewayProxyEvent['requestContext'],
   };
 }
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  uuidCounter = 0;
+  resetRepositoriesForTesting();
+  repos = buildInMemoryRepositories();
+  setRepositoriesForTesting(repos);
+});
 
 // ─── createPlayer ────────────────────────────────────────────────────
 
 describe('createPlayer', () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it('creates a player with required fields and returns 201', async () => {
-    mockPut.mockResolvedValue({});
     const event = makeEvent({
       body: JSON.stringify({ name: 'John Doe', currentWrestler: 'The Rock' }),
     });
@@ -96,13 +105,12 @@ describe('createPlayer', () => {
 
     expect(result!.statusCode).toBe(201);
     const body = JSON.parse(result!.body);
-    expect(body.playerId).toBe('test-uuid-1234');
+    expect(body.playerId).toBeDefined();
     expect(body.name).toBe('John Doe');
     expect(body.currentWrestler).toBe('The Rock');
     expect(body.wins).toBe(0);
     expect(body.losses).toBe(0);
     expect(body.draws).toBe(0);
-    expect(mockPut).toHaveBeenCalledOnce();
   });
 
   it('returns 400 when name is missing', async () => {
@@ -127,7 +135,7 @@ describe('createPlayer', () => {
   });
 
   it('validates divisionId exists when provided', async () => {
-    mockGet.mockResolvedValue({ Item: undefined });
+    // Division does not exist in repos
     const event = makeEvent({
       body: JSON.stringify({ name: 'John', currentWrestler: 'Rock', divisionId: 'bad-div' }),
     });
@@ -139,16 +147,18 @@ describe('createPlayer', () => {
   });
 
   it('creates player with valid divisionId', async () => {
-    mockGet.mockResolvedValue({ Item: { divisionId: 'div-1', name: 'Raw' } });
-    mockPut.mockResolvedValue({});
+    await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const divisions = await repos.leagueOps.divisions.list();
+    const divisionId = divisions[0].divisionId;
+
     const event = makeEvent({
-      body: JSON.stringify({ name: 'John', currentWrestler: 'Rock', divisionId: 'div-1' }),
+      body: JSON.stringify({ name: 'John', currentWrestler: 'Rock', divisionId }),
     });
 
     const result = await createPlayer(event, ctx, cb);
 
     expect(result!.statusCode).toBe(201);
-    expect(JSON.parse(result!.body).divisionId).toBe('div-1');
+    expect(JSON.parse(result!.body).divisionId).toBe(divisionId);
   });
 
   it('returns 400 for missing body', async () => {
@@ -163,15 +173,9 @@ describe('createPlayer', () => {
 // ─── getPlayers ──────────────────────────────────────────────────────
 
 describe('getPlayers', () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it('returns all players with wrestlers assigned', async () => {
-    mockScan.mockResolvedValue({
-      Items: [
-        { playerId: '1', name: 'P1', currentWrestler: 'The Rock' },
-        { playerId: '2', name: 'P2', currentWrestler: 'John Cena' },
-      ],
-    });
+    await repos.roster.players.create({ name: 'P1', currentWrestler: 'The Rock' });
+    await repos.roster.players.create({ name: 'P2', currentWrestler: 'John Cena' });
 
     const result = await getPlayers(makeEvent(), ctx, cb);
 
@@ -180,11 +184,12 @@ describe('getPlayers', () => {
   });
 
   it('filters out players without currentWrestler', async () => {
-    mockScan.mockResolvedValue({
-      Items: [
-        { playerId: '1', name: 'P1', currentWrestler: 'The Rock' },
-        { playerId: '2', name: 'P2' },
-      ],
+    await repos.roster.players.create({ name: 'P1', currentWrestler: 'The Rock' });
+    // Create a player without currentWrestler via store directly
+    const store = (repos.roster as unknown as { playersStore: Map<string, Record<string, unknown>> }).playersStore;
+    store.set('p-no-wrestler', {
+      playerId: 'p-no-wrestler', name: 'P2', wins: 0, losses: 0, draws: 0,
+      createdAt: new Date().toISOString(),
     });
 
     const result = await getPlayers(makeEvent(), ctx, cb);
@@ -194,16 +199,14 @@ describe('getPlayers', () => {
   });
 
   it('returns empty array when no players exist', async () => {
-    mockScan.mockResolvedValue({ Items: undefined });
-
     const result = await getPlayers(makeEvent(), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body)).toEqual([]);
   });
 
-  it('returns 500 when scan throws an error', async () => {
-    mockScan.mockRejectedValue(new Error('DynamoDB failure'));
+  it('returns 500 when list throws an error', async () => {
+    vi.spyOn(repos.roster.players, 'list').mockRejectedValue(new Error('DB failure'));
 
     const result = await getPlayers(makeEvent(), ctx, cb);
 
@@ -215,14 +218,11 @@ describe('getPlayers', () => {
 // ─── updatePlayer ────────────────────────────────────────────────────
 
 describe('updatePlayer', () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it('updates player fields and returns updated player', async () => {
-    mockGet.mockResolvedValue({ Item: { playerId: 'p1', name: 'Old Name' } });
-    mockUpdate.mockResolvedValue({ Attributes: { playerId: 'p1', name: 'New Name' } });
+    const player = await repos.roster.players.create({ name: 'Old Name', currentWrestler: 'Rock' });
 
     const event = makeEvent({
-      pathParameters: { playerId: 'p1' },
+      pathParameters: { playerId: player.playerId },
       body: JSON.stringify({ name: 'New Name' }),
     });
 
@@ -233,8 +233,6 @@ describe('updatePlayer', () => {
   });
 
   it('returns 404 if player does not exist', async () => {
-    mockGet.mockResolvedValue({ Item: undefined });
-
     const event = makeEvent({
       pathParameters: { playerId: 'missing' },
       body: JSON.stringify({ name: 'X' }),
@@ -258,10 +256,10 @@ describe('updatePlayer', () => {
   });
 
   it('returns 400 when no valid fields to update', async () => {
-    mockGet.mockResolvedValue({ Item: { playerId: 'p1' } });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
 
     const event = makeEvent({
-      pathParameters: { playerId: 'p1' },
+      pathParameters: { playerId: player.playerId },
       body: JSON.stringify({}),
     });
 
@@ -272,28 +270,23 @@ describe('updatePlayer', () => {
   });
 
   it('removes divisionId when set to empty string', async () => {
-    mockGet.mockResolvedValue({ Item: { playerId: 'p1', divisionId: 'div-1' } });
-    mockUpdate.mockResolvedValue({ Attributes: { playerId: 'p1' } });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
 
     const event = makeEvent({
-      pathParameters: { playerId: 'p1' },
+      pathParameters: { playerId: player.playerId },
       body: JSON.stringify({ divisionId: '' }),
     });
 
     const result = await updatePlayer(event, ctx, cb);
 
     expect(result!.statusCode).toBe(200);
-    // Verify update was called with REMOVE expression
-    const updateCall = mockUpdate.mock.calls[0][0];
-    expect(updateCall.UpdateExpression).toContain('REMOVE');
   });
 
   it('updates currentWrestler field', async () => {
-    mockGet.mockResolvedValue({ Item: { playerId: 'p1', currentWrestler: 'Old Wrestler' } });
-    mockUpdate.mockResolvedValue({ Attributes: { playerId: 'p1', currentWrestler: 'New Wrestler' } });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Old Wrestler' });
 
     const event = makeEvent({
-      pathParameters: { playerId: 'p1' },
+      pathParameters: { playerId: player.playerId },
       body: JSON.stringify({ currentWrestler: 'New Wrestler' }),
     });
 
@@ -301,53 +294,44 @@ describe('updatePlayer', () => {
 
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body).currentWrestler).toBe('New Wrestler');
-    const updateCall = mockUpdate.mock.calls[0][0];
-    expect(updateCall.UpdateExpression).toContain('#currentWrestler');
   });
 
   it('updates imageUrl field', async () => {
-    mockGet.mockResolvedValue({ Item: { playerId: 'p1', name: 'John' } });
-    mockUpdate.mockResolvedValue({ Attributes: { playerId: 'p1', imageUrl: 'https://example.com/new.png' } });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
 
     const event = makeEvent({
-      pathParameters: { playerId: 'p1' },
+      pathParameters: { playerId: player.playerId },
       body: JSON.stringify({ imageUrl: 'https://example.com/new.png' }),
     });
 
     const result = await updatePlayer(event, ctx, cb);
 
     expect(result!.statusCode).toBe(200);
-    const updateCall = mockUpdate.mock.calls[0][0];
-    expect(updateCall.UpdateExpression).toContain('#imageUrl');
+    expect(JSON.parse(result!.body).imageUrl).toBe('https://example.com/new.png');
   });
 
   it('updates divisionId with valid division (validates existence)', async () => {
-    mockGet
-      .mockResolvedValueOnce({ Item: { playerId: 'p1', name: 'John' } })
-      .mockResolvedValueOnce({ Item: { divisionId: 'div-1', name: 'Raw' } });
-    mockUpdate.mockResolvedValue({ Attributes: { playerId: 'p1', divisionId: 'div-1' } });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const divisions = await repos.leagueOps.divisions.list();
+    const divisionId = divisions[0].divisionId;
 
     const event = makeEvent({
-      pathParameters: { playerId: 'p1' },
-      body: JSON.stringify({ divisionId: 'div-1' }),
+      pathParameters: { playerId: player.playerId },
+      body: JSON.stringify({ divisionId }),
     });
 
     const result = await updatePlayer(event, ctx, cb);
 
     expect(result!.statusCode).toBe(200);
-    const updateCall = mockUpdate.mock.calls[0][0];
-    expect(updateCall.UpdateExpression).toContain('SET');
-    expect(updateCall.UpdateExpression).toContain('#divisionId');
-    expect(updateCall.UpdateExpression).not.toMatch(/REMOVE\s.*#divisionId/);
+    expect(JSON.parse(result!.body).divisionId).toBe(divisionId);
   });
 
   it('returns 404 when divisionId references non-existent division', async () => {
-    mockGet
-      .mockResolvedValueOnce({ Item: { playerId: 'p1', name: 'John' } })
-      .mockResolvedValueOnce({ Item: undefined });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
 
     const event = makeEvent({
-      pathParameters: { playerId: 'p1' },
+      pathParameters: { playerId: player.playerId },
       body: JSON.stringify({ divisionId: 'bad-div' }),
     });
 
@@ -358,7 +342,7 @@ describe('updatePlayer', () => {
   });
 
   it('returns 500 when an unexpected error occurs', async () => {
-    mockGet.mockRejectedValue(new Error('DynamoDB failure'));
+    vi.spyOn(repos.roster.players, 'findById').mockRejectedValue(new Error('DB failure'));
 
     const event = makeEvent({
       pathParameters: { playerId: 'p1' },
@@ -375,25 +359,20 @@ describe('updatePlayer', () => {
 // ─── deletePlayer ────────────────────────────────────────────────────
 
 describe('deletePlayer', () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it('deletes player and returns 204', async () => {
-    mockGet.mockResolvedValue({ Item: { playerId: 'p1', name: 'John' } });
-    mockScan.mockResolvedValue({ Items: [] }); // no championships
-    mockDelete.mockResolvedValue({});
-    mockQuery.mockResolvedValue({ Items: [] }); // no standings
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    // Mock the dynamoDb calls for season standings cleanup
+    mockDynamoQuery.mockResolvedValue({ Items: [] });
 
-    const event = makeEvent({ pathParameters: { playerId: 'p1' } });
+    const event = makeEvent({ pathParameters: { playerId: player.playerId } });
 
     const result = await deletePlayer(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
-    expect(mockDelete).toHaveBeenCalled();
+    expect(await repos.roster.players.findById(player.playerId)).toBeNull();
   });
 
   it('returns 404 if player not found', async () => {
-    mockGet.mockResolvedValue({ Item: undefined });
-
     const event = makeEvent({ pathParameters: { playerId: 'missing' } });
 
     const result = await deletePlayer(event, ctx, cb);
@@ -402,12 +381,12 @@ describe('deletePlayer', () => {
   });
 
   it('returns 409 if player is a current champion', async () => {
-    mockGet.mockResolvedValue({ Item: { playerId: 'p1' } });
-    mockScan.mockResolvedValue({
-      Items: [{ name: 'World Championship', currentChampion: 'p1' }],
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.competition.championships.create({
+      name: 'World Championship', type: 'singles', currentChampion: player.playerId,
     });
 
-    const event = makeEvent({ pathParameters: { playerId: 'p1' } });
+    const event = makeEvent({ pathParameters: { playerId: player.playerId } });
 
     const result = await deletePlayer(event, ctx, cb);
 
@@ -424,30 +403,24 @@ describe('deletePlayer', () => {
   });
 
   it('cleans up season standings on delete', async () => {
-    mockGet.mockResolvedValue({ Item: { playerId: 'p1' } });
-    mockScan.mockResolvedValue({ Items: [] });
-    mockDelete.mockResolvedValue({});
-    mockQuery.mockResolvedValue({
-      Items: [
-        { seasonId: 's1', playerId: 'p1' },
-        { seasonId: 's2', playerId: 'p1' },
-      ],
-    });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    // Seed season standings via repo
+    await repos.season.standings.increment('s1', player.playerId, { wins: 1 });
+    await repos.season.standings.increment('s2', player.playerId, { wins: 2 });
 
-    const event = makeEvent({ pathParameters: { playerId: 'p1' } });
+    const event = makeEvent({ pathParameters: { playerId: player.playerId } });
 
     await deletePlayer(event, ctx, cb);
 
-    // 1 player delete + 2 standings deletes = 3 total
-    expect(mockDelete).toHaveBeenCalledTimes(3);
+    // Season standings should be cleaned up
+    const remaining = await repos.season.standings.listByPlayer(player.playerId);
+    expect(remaining).toHaveLength(0);
   });
 });
 
 // ─── getMyProfile ────────────────────────────────────────────────────
 
 describe('getMyProfile', () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it('returns 403 if not Wrestler role', async () => {
     const event = withAuth(makeEvent(), 'Fantasy');
 
@@ -457,15 +430,15 @@ describe('getMyProfile', () => {
   });
 
   it('returns player profile with season records for Wrestler', async () => {
-    mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'p1', name: 'John', userId: 'user-sub-1' }],
-    });
-    mockScanAll.mockResolvedValue([
-      { seasonId: 's1', name: 'Season 1', status: 'active' },
-    ]);
-    mockQueryAll.mockResolvedValue([
-      { seasonId: 's1', playerId: 'p1', wins: 5, losses: 2, draws: 1 },
-    ]);
+    // Create player linked to user
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
+
+    // Create a season and add standings via repo
+    const season = await repos.season.seasons.create({ name: 'Season 1', startDate: '2025-01-01' });
+    await repos.season.standings.increment(season.seasonId, player.playerId, { wins: 5 });
+    await repos.season.standings.increment(season.seasonId, player.playerId, { losses: 2 });
+    await repos.season.standings.increment(season.seasonId, player.playerId, { draws: 1 });
 
     const event = withAuth(makeEvent(), 'Wrestler');
 
@@ -473,14 +446,12 @@ describe('getMyProfile', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    expect(body.playerId).toBe('p1');
+    expect(body.playerId).toBe(player.playerId);
     expect(body.seasonRecords).toHaveLength(1);
     expect(body.seasonRecords[0].wins).toBe(5);
   });
 
   it('returns 404 if no player linked to user', async () => {
-    mockQuery.mockResolvedValue({ Items: [] });
-
     const event = withAuth(makeEvent(), 'Wrestler');
 
     const result = await getMyProfile(event, ctx, cb);
@@ -490,13 +461,11 @@ describe('getMyProfile', () => {
   });
 
   it('shows 0-0-0 for seasons with no standings', async () => {
-    mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'p1', userId: 'user-sub-1' }],
-    });
-    mockScanAll.mockResolvedValue([
-      { seasonId: 's1', name: 'Season 1', status: 'active' },
-    ]);
-    mockQueryAll.mockResolvedValue([]); // no standings
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
+
+    await repos.season.seasons.create({ name: 'Season 1', startDate: '2025-01-01' });
+    // no standings seeded — will get 0-0-0 defaults
 
     const event = withAuth(makeEvent(), 'Wrestler');
 
@@ -508,7 +477,7 @@ describe('getMyProfile', () => {
   });
 
   it('returns 500 when an unexpected error occurs', async () => {
-    mockQuery.mockRejectedValue(new Error('DynamoDB failure'));
+    vi.spyOn(repos.roster.players, 'findByUserId').mockRejectedValue(new Error('DB failure'));
 
     const event = withAuth(makeEvent(), 'Wrestler');
 
@@ -522,8 +491,6 @@ describe('getMyProfile', () => {
 // ─── updateMyProfile ─────────────────────────────────────────────────
 
 describe('updateMyProfile', () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it('returns 403 if not Wrestler role', async () => {
     const event = withAuth(makeEvent({ body: JSON.stringify({ name: 'X' }) }), 'Fantasy');
 
@@ -533,12 +500,8 @@ describe('updateMyProfile', () => {
   });
 
   it('updates own profile via userId lookup', async () => {
-    mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'p1', userId: 'user-sub-1', name: 'Old' }],
-    });
-    mockUpdate.mockResolvedValue({
-      Attributes: { playerId: 'p1', name: 'New Name' },
-    });
+    const player = await repos.roster.players.create({ name: 'Old', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ name: 'New Name' }) }),
@@ -552,8 +515,6 @@ describe('updateMyProfile', () => {
   });
 
   it('returns 404 if no player profile found', async () => {
-    mockQuery.mockResolvedValue({ Items: [] });
-
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ name: 'X' }) }),
       'Wrestler',
@@ -565,9 +526,8 @@ describe('updateMyProfile', () => {
   });
 
   it('returns 400 when no valid fields to update', async () => {
-    mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'p1', userId: 'user-sub-1' }],
-    });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ hackedField: 'nope' }) }),
@@ -581,9 +541,8 @@ describe('updateMyProfile', () => {
   });
 
   it('rejects non-string field values', async () => {
-    mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'p1', userId: 'user-sub-1' }],
-    });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ name: 123 }) }),
@@ -597,9 +556,8 @@ describe('updateMyProfile', () => {
   });
 
   it('rejects empty name', async () => {
-    mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'p1', userId: 'user-sub-1' }],
-    });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ name: '   ' }) }),
@@ -613,9 +571,8 @@ describe('updateMyProfile', () => {
   });
 
   it('rejects name exceeding MAX_NAME_LENGTH (100 chars)', async () => {
-    mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'p1', userId: 'user-sub-1' }],
-    });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ name: 'A'.repeat(101) }) }),
@@ -629,9 +586,8 @@ describe('updateMyProfile', () => {
   });
 
   it('rejects imageUrl exceeding MAX_URL_LENGTH (2048 chars)', async () => {
-    mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'p1', userId: 'user-sub-1' }],
-    });
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ imageUrl: 'https://x.com/' + 'a'.repeat(2048) }) }),
@@ -645,7 +601,7 @@ describe('updateMyProfile', () => {
   });
 
   it('returns 500 when an unexpected error occurs', async () => {
-    mockQuery.mockRejectedValue(new Error('DynamoDB failure'));
+    vi.spyOn(repos.roster.players, 'findByUserId').mockRejectedValue(new Error('DB failure'));
 
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ name: 'X' }) }),

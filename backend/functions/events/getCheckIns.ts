@@ -1,24 +1,10 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, forbidden, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
+import type { EventCheckInStatus } from '../../lib/repositories/types';
 
-type CheckInStatus = 'available' | 'tentative' | 'unavailable';
-type RosterBucket = CheckInStatus | 'noResponse';
-
-interface CheckInRow {
-  eventId: string;
-  playerId: string;
-  status: CheckInStatus;
-}
-
-interface PlayerRecord {
-  playerId: string;
-  name?: string;
-  currentWrestler?: string;
-  imageUrl?: string;
-  divisionId?: string;
-}
+type RosterBucket = EventCheckInStatus | 'noResponse';
 
 interface PlayerSummary {
   playerId: string;
@@ -35,21 +21,6 @@ interface CheckInsResponse {
   noResponse: PlayerSummary[];
 }
 
-const toPlayerSummary = (player: PlayerRecord): PlayerSummary => {
-  const summary: PlayerSummary = {
-    playerId: player.playerId,
-    name: player.name || '',
-    currentWrestler: player.currentWrestler || '',
-  };
-  if (player.imageUrl) {
-    summary.imageUrl = player.imageUrl;
-  }
-  if (player.divisionId) {
-    summary.divisionId = player.divisionId;
-  }
-  return summary;
-};
-
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const auth = getAuthContext(event);
@@ -62,25 +33,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('eventId is required');
     }
 
-    // Fetch all check-in rows for this event.
-    const checkInItems = await dynamoDb.queryAll({
-      TableName: TableNames.EVENT_CHECK_INS,
-      KeyConditionExpression: 'eventId = :eid',
-      ExpressionAttributeValues: { ':eid': eventId },
-    });
+    const { leagueOps: { events }, roster: { players } } = getRepositories();
 
-    const statusByPlayerId = new Map<string, CheckInStatus>();
+    // Fetch all check-in rows for this event.
+    const checkInItems = await events.listCheckIns(eventId);
+
+    const statusByPlayerId = new Map<string, EventCheckInStatus>();
     for (const item of checkInItems) {
-      const row = item as unknown as CheckInRow;
-      if (row.playerId && row.status) {
-        statusByPlayerId.set(row.playerId, row.status);
+      if (item.playerId && item.status) {
+        statusByPlayerId.set(item.playerId, item.status);
       }
     }
 
     // TODO: optimize with role-based GSI for larger leagues
-    const playerItems = await dynamoDb.scanAll({
-      TableName: TableNames.PLAYERS,
-    });
+    const playerItems = await players.list();
 
     const response: CheckInsResponse = {
       available: [],
@@ -89,13 +55,23 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       noResponse: [],
     };
 
-    for (const item of playerItems) {
-      const player = item as unknown as PlayerRecord;
+    for (const player of playerItems) {
       if (!player.playerId) continue;
       // Only include players who have a wrestler assigned (exclude Fantasy-only users)
       if (!player.currentWrestler) continue;
 
-      const summary = toPlayerSummary(player);
+      const summary: PlayerSummary = {
+        playerId: player.playerId,
+        name: player.name || '',
+        currentWrestler: player.currentWrestler || '',
+      };
+      if (player.imageUrl) {
+        summary.imageUrl = player.imageUrl;
+      }
+      if (player.divisionId) {
+        summary.divisionId = player.divisionId;
+      }
+
       const status = statusByPlayerId.get(player.playerId);
       const bucket: RosterBucket = status ?? 'noResponse';
       response[bucket].push(summary);

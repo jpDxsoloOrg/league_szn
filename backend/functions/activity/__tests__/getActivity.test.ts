@@ -1,32 +1,46 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
-const { mockScanAll, mockGet } = vi.hoisted(() => ({
-  mockScanAll: vi.fn(),
-  mockGet: vi.fn(),
+const {
+  mockMatchesListCompleted,
+  mockChampionshipsListAllHistory,
+  mockChampionshipsList,
+  mockSeasonsList,
+  mockTournamentsList,
+  mockChallengesList,
+  mockPromosList,
+  mockPlayersList,
+} = vi.hoisted(() => ({
+  mockMatchesListCompleted: vi.fn(),
+  mockChampionshipsListAllHistory: vi.fn(),
+  mockChampionshipsList: vi.fn(),
+  mockSeasonsList: vi.fn(),
+  mockTournamentsList: vi.fn(),
+  mockChallengesList: vi.fn(),
+  mockPromosList: vi.fn(),
+  mockPlayersList: vi.fn(),
 }));
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet,
-    put: vi.fn(),
-    scan: vi.fn(),
-    query: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    scanAll: mockScanAll,
-    queryAll: vi.fn(),
-  },
-  TableNames: {
-    PLAYERS: 'Players',
-    MATCHES: 'Matches',
-    CHAMPIONSHIPS: 'Championships',
-    CHAMPIONSHIP_HISTORY: 'ChampionshipHistory',
-    TOURNAMENTS: 'Tournaments',
-    SEASONS: 'Seasons',
-    CHALLENGES: 'Challenges',
-    PROMOS: 'Promos',
-  },
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    competition: {
+      matches: { listCompleted: mockMatchesListCompleted },
+      championships: { listAllHistory: mockChampionshipsListAllHistory, list: mockChampionshipsList },
+      tournaments: { list: mockTournamentsList },
+    },
+    season: {
+      seasons: { list: mockSeasonsList },
+    },
+    user: {
+      challenges: { list: mockChallengesList },
+    },
+    content: {
+      promos: { list: mockPromosList },
+    },
+    roster: {
+      players: { list: mockPlayersList },
+    },
+  }),
 }));
 
 import { handler as getActivity } from '../getActivity';
@@ -52,11 +66,21 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
   };
 }
 
+function mockAllEmpty() {
+  mockMatchesListCompleted.mockResolvedValue([]);
+  mockChampionshipsListAllHistory.mockResolvedValue([]);
+  mockChampionshipsList.mockResolvedValue([]);
+  mockSeasonsList.mockResolvedValue([]);
+  mockTournamentsList.mockResolvedValue([]);
+  mockChallengesList.mockResolvedValue([]);
+  mockPromosList.mockResolvedValue([]);
+  mockPlayersList.mockResolvedValue([]);
+}
+
 describe('getActivity', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockScanAll.mockResolvedValue([]);
-    mockGet.mockResolvedValue({ Item: { name: 'Test Player', currentWrestler: 'Wrestler' } });
+    mockAllEmpty();
   });
 
   it('returns empty items and null nextCursor when no data', async () => {
@@ -69,24 +93,22 @@ describe('getActivity', () => {
   });
 
   it('returns merged and sorted activity items', async () => {
-    mockScanAll
-      .mockResolvedValueOnce([
-        {
-          matchId: 'm1',
-          date: '2024-02-01T12:00:00.000Z',
-          updatedAt: '2024-02-01T14:00:00.000Z',
-          status: 'completed',
-          participants: ['p1', 'p2'],
-          winners: ['p1'],
-          losers: ['p2'],
-          matchFormat: 'singles',
-        },
-      ])
-      .mockResolvedValue([])
-      .mockResolvedValue([])
-      .mockResolvedValue([])
-      .mockResolvedValue([])
-      .mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([
+      {
+        matchId: 'm1',
+        date: '2024-02-01T12:00:00.000Z',
+        updatedAt: '2024-02-01T14:00:00.000Z',
+        status: 'completed',
+        participants: ['p1', 'p2'],
+        winners: ['p1'],
+        losers: ['p2'],
+        matchFormat: 'singles',
+      },
+    ]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Test Player', currentWrestler: 'Wrestler' },
+      { playerId: 'p2', name: 'Test Player', currentWrestler: 'Wrestler2' },
+    ]);
 
     const result = await getActivity(makeEvent(), ctx, cb);
 
@@ -101,33 +123,31 @@ describe('getActivity', () => {
   });
 
   it('excludes matches without updatedAt from activity', async () => {
-    mockScanAll
-      .mockResolvedValueOnce([
-        {
-          matchId: 'm1',
-          date: '2024-02-01T12:00:00.000Z',
-          updatedAt: '2024-02-01T14:00:00.000Z',
-          status: 'completed',
-          participants: ['p1', 'p2'],
-          winners: ['p1'],
-          losers: ['p2'],
-          matchFormat: 'singles',
-        },
-        {
-          matchId: 'm2',
-          date: '2024-02-02T12:00:00.000Z',
-          status: 'completed',
-          participants: ['p1', 'p2'],
-          winners: ['p2'],
-          losers: ['p1'],
-          matchFormat: 'singles',
-        },
-      ])
-      .mockResolvedValue([])
-      .mockResolvedValue([])
-      .mockResolvedValue([])
-      .mockResolvedValue([])
-      .mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([
+      {
+        matchId: 'm1',
+        date: '2024-02-01T12:00:00.000Z',
+        updatedAt: '2024-02-01T14:00:00.000Z',
+        status: 'completed',
+        participants: ['p1', 'p2'],
+        winners: ['p1'],
+        losers: ['p2'],
+        matchFormat: 'singles',
+      },
+      {
+        matchId: 'm2',
+        date: '2024-02-02T12:00:00.000Z',
+        status: 'completed',
+        participants: ['p1', 'p2'],
+        winners: ['p2'],
+        losers: ['p1'],
+        matchFormat: 'singles',
+      },
+    ]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Test Player', currentWrestler: 'Wrestler' },
+      { playerId: 'p2', name: 'Test Player', currentWrestler: 'Wrestler2' },
+    ]);
 
     const result = await getActivity(makeEvent(), ctx, cb);
 
@@ -148,17 +168,15 @@ describe('getActivity', () => {
       losers: ['p2'],
       matchFormat: 'singles',
     };
-    mockScanAll
-      .mockResolvedValueOnce([
-        match,
-        { ...match, matchId: 'm2', date: '2024-01-02T00:00:00.000Z', updatedAt: '2024-01-02T00:00:00.000Z' },
-        { ...match, matchId: 'm3', date: '2024-01-03T00:00:00.000Z', updatedAt: '2024-01-03T00:00:00.000Z' },
-      ])
-      .mockResolvedValue([])
-      .mockResolvedValue([])
-      .mockResolvedValue([])
-      .mockResolvedValue([])
-      .mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([
+      match,
+      { ...match, matchId: 'm2', date: '2024-01-02T00:00:00.000Z', updatedAt: '2024-01-02T00:00:00.000Z' },
+      { ...match, matchId: 'm3', date: '2024-01-03T00:00:00.000Z', updatedAt: '2024-01-03T00:00:00.000Z' },
+    ]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Test Player', currentWrestler: 'Wrestler' },
+      { playerId: 'p2', name: 'Test Player', currentWrestler: 'Wrestler2' },
+    ]);
 
     const result = await getActivity(
       makeEvent({ queryStringParameters: { limit: '2' } }),
@@ -182,17 +200,15 @@ describe('getActivity', () => {
       losers: ['p2'],
       matchFormat: 'singles',
     };
-    mockScanAll
-      .mockResolvedValueOnce([
-        { ...match, matchId: 'm3', date: '2024-01-03T00:00:00.000Z', updatedAt: '2024-01-03T00:00:00.000Z' },
-        { ...match, matchId: 'm2', date: '2024-01-02T00:00:00.000Z', updatedAt: '2024-01-02T00:00:00.000Z' },
-        { ...match, matchId: 'm1', date: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z' },
-      ])
-      .mockResolvedValue([])
-      .mockResolvedValue([])
-      .mockResolvedValue([])
-      .mockResolvedValue([])
-      .mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([
+      { ...match, matchId: 'm3', date: '2024-01-03T00:00:00.000Z', updatedAt: '2024-01-03T00:00:00.000Z' },
+      { ...match, matchId: 'm2', date: '2024-01-02T00:00:00.000Z', updatedAt: '2024-01-02T00:00:00.000Z' },
+      { ...match, matchId: 'm1', date: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z' },
+    ]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Test Player', currentWrestler: 'Wrestler' },
+      { playerId: 'p2', name: 'Test Player', currentWrestler: 'Wrestler2' },
+    ]);
 
     const result = await getActivity(
       makeEvent({ queryStringParameters: { limit: '2', cursor: '2024-01-02T12:00:00.000Z' } }),
@@ -207,26 +223,23 @@ describe('getActivity', () => {
     expect(body.items[1].metadata.matchId).toBe('m1');
   });
 
-  it('when type=match only scans Matches table', async () => {
-    mockScanAll.mockResolvedValue([]);
-
+  it('when type=match only calls match-related repos', async () => {
     await getActivity(
       makeEvent({ queryStringParameters: { type: 'match' } }),
       ctx,
       cb
     );
 
-    expect(mockScanAll).toHaveBeenCalledTimes(1);
-    expect(mockScanAll).toHaveBeenCalledWith(
-      expect.objectContaining({
-        TableName: 'Matches',
-        FilterExpression: '#s = :status',
-      })
-    );
+    expect(mockMatchesListCompleted).toHaveBeenCalledTimes(1);
+    expect(mockChampionshipsListAllHistory).not.toHaveBeenCalled();
+    expect(mockSeasonsList).not.toHaveBeenCalled();
+    expect(mockTournamentsList).not.toHaveBeenCalled();
+    expect(mockChallengesList).not.toHaveBeenCalled();
+    expect(mockPromosList).not.toHaveBeenCalled();
   });
 
-  it('returns 500 when DynamoDB scanAll throws', async () => {
-    mockScanAll.mockRejectedValue(new Error('DynamoDB failure'));
+  it('returns 500 when a repository method throws', async () => {
+    mockMatchesListCompleted.mockRejectedValue(new Error('DynamoDB failure'));
 
     const result = await getActivity(makeEvent(), ctx, cb);
 

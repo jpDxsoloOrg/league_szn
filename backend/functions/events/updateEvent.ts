@@ -1,15 +1,9 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { buildUpdateExpression, getOrNotFound } from '../../lib/dynamodbUtils';
+import { getRepositories } from '../../lib/repositories';
+import { NotFoundError } from '../../lib/repositories/errors';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
-
-interface MatchCardEntry {
-  position: number;
-  matchId: string;
-  designation: string;
-  notes?: string;
-}
+import type { EventPatch } from '../../lib/repositories/LeagueOpsRepository';
 
 interface UpdateEventBody {
   name?: string;
@@ -21,7 +15,7 @@ interface UpdateEventBody {
   themeColor?: string;
   status?: 'upcoming' | 'in-progress' | 'completed' | 'cancelled';
   seasonId?: string;
-  matchCards?: MatchCardEntry[];
+  matchCards?: EventPatch['matchCards'];
   attendance?: number;
   rating?: number;
   fantasyEnabled?: boolean;
@@ -46,9 +40,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { data: body, error: parseError } = parseBody<UpdateEventBody>(event);
     if (parseError) return parseError;
 
-    const eventResult = await getOrNotFound(TableNames.EVENTS, { eventId }, 'Event not found');
-    if ('notFoundResponse' in eventResult) {
-      return eventResult.notFoundResponse;
+    const { leagueOps: { events, companies } } = getRepositories();
+
+    const existing = await events.findById(eventId);
+    if (!existing) {
+      return notFound('Event not found');
     }
 
     // Validate eventType if provided
@@ -67,52 +63,44 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return badRequest('companyIds must be an array of company IDs');
       }
       for (const companyId of body.companyIds) {
-        const companyResult = await dynamoDb.get({
-          TableName: TableNames.COMPANIES,
-          Key: { companyId },
-        });
-        if (!companyResult.Item) {
+        const company = await companies.findById(companyId);
+        if (!company) {
           return notFound(`Company ${companyId} not found`);
         }
       }
     }
 
-    const updateExpr = buildUpdateExpression({
-      name: body.name,
-      eventType: body.eventType,
-      date: body.date,
-      venue: body.venue,
-      description: body.description,
-      imageUrl: body.imageUrl,
-      themeColor: body.themeColor,
-      status: body.status,
-      seasonId: body.seasonId,
-      matchCards: body.matchCards,
-      attendance: body.attendance,
-      rating: body.rating,
-      fantasyEnabled: body.fantasyEnabled,
-      fantasyLocked: body.fantasyLocked,
-      fantasyBudget: body.fantasyBudget,
-      fantasyPicksPerDivision: body.fantasyPicksPerDivision,
-      companyIds: body.companyIds,
-      showId: body.showId,
-    });
+    const patch: EventPatch = {};
+    if (body.name !== undefined) patch.name = body.name;
+    if (body.eventType !== undefined) patch.eventType = body.eventType;
+    if (body.date !== undefined) patch.date = body.date;
+    if (body.venue !== undefined) patch.venue = body.venue;
+    if (body.description !== undefined) patch.description = body.description;
+    if (body.imageUrl !== undefined) patch.imageUrl = body.imageUrl;
+    if (body.themeColor !== undefined) patch.themeColor = body.themeColor;
+    if (body.status !== undefined) patch.status = body.status;
+    if (body.seasonId !== undefined) patch.seasonId = body.seasonId;
+    if (body.matchCards !== undefined) patch.matchCards = body.matchCards;
+    if (body.attendance !== undefined) patch.attendance = body.attendance;
+    if (body.rating !== undefined) patch.rating = body.rating;
+    if (body.fantasyEnabled !== undefined) patch.fantasyEnabled = body.fantasyEnabled;
+    if (body.fantasyLocked !== undefined) patch.fantasyLocked = body.fantasyLocked;
+    if (body.fantasyBudget !== undefined) patch.fantasyBudget = body.fantasyBudget;
+    if (body.fantasyPicksPerDivision !== undefined) patch.fantasyPicksPerDivision = body.fantasyPicksPerDivision;
+    if (body.companyIds !== undefined) patch.companyIds = body.companyIds;
+    if (body.showId !== undefined) patch.showId = body.showId;
 
-    if (!updateExpr.hasChanges) {
+    if (Object.keys(patch).length === 0) {
       return badRequest('No valid fields to update');
     }
 
-    const result = await dynamoDb.update({
-      TableName: TableNames.EVENTS,
-      Key: { eventId },
-      UpdateExpression: updateExpr.UpdateExpression,
-      ExpressionAttributeNames: updateExpr.ExpressionAttributeNames,
-      ExpressionAttributeValues: updateExpr.ExpressionAttributeValues,
-      ReturnValues: 'ALL_NEW',
-    });
+    const updated = await events.update(eventId, patch);
 
-    return success(result.Attributes);
+    return success(updated);
   } catch (err) {
+    if (err instanceof NotFoundError) {
+      return notFound('Event not found');
+    }
     console.error('Error updating event:', err);
     return serverError('Failed to update event');
   }

@@ -1,45 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
-// ─── Mocks ───────────────────────────────────────────────────────────
-
-const { mockGet, mockPut, mockScan, mockQuery, mockUpdate, mockDelete, mockScanAll, mockQueryAll } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockPut: vi.fn(),
-  mockScan: vi.fn(),
-  mockQuery: vi.fn(),
-  mockUpdate: vi.fn(),
-  mockDelete: vi.fn(),
-  mockScanAll: vi.fn(),
-  mockQueryAll: vi.fn(),
-}));
-
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet,
-    put: mockPut,
-    scan: mockScan,
-    query: mockQuery,
-    update: mockUpdate,
-    delete: mockDelete,
-    scanAll: mockScanAll,
-    queryAll: mockQueryAll,
-  },
-  TableNames: {
-    DIVISIONS: 'Divisions',
-    PLAYERS: 'Players',
-  },
-}));
-
+let uuidCounter = 0;
 vi.mock('uuid', () => ({
-  v4: () => 'test-uuid-1234',
+  v4: () => `test-uuid-${++uuidCounter}`,
 }));
 
+import { buildInMemoryRepositories } from '../../../lib/repositories/inMemory';
+import {
+  setRepositoriesForTesting,
+  resetRepositoriesForTesting,
+  type Repositories,
+} from '../../../lib/repositories';
 import { handler as getDivisions } from '../getDivisions';
 import { handler as createDivision } from '../createDivision';
 
-// ─── Helpers ─────────────────────────────────────────────────────────
-
+let repos: Repositories;
 const ctx = {} as Context;
 const cb: Callback = () => {};
 
@@ -56,76 +32,66 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '',
-    requestContext: { authorizer: {} } as any,
+    requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
 
-// ─── getDivisions ────────────────────────────────────────────────────
+beforeEach(() => {
+  vi.clearAllMocks();
+  uuidCounter = 0;
+  resetRepositoriesForTesting();
+  repos = buildInMemoryRepositories();
+  setRepositoriesForTesting(repos);
+});
 
 describe('getDivisions', () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it('returns all divisions via scan', async () => {
-    mockScan.mockResolvedValue({
-      Items: [
-        { divisionId: 'div-1', name: 'Raw' },
-        { divisionId: 'div-2', name: 'SmackDown' },
-      ],
-    });
+  it('returns all divisions', async () => {
+    await repos.leagueOps.divisions.create({ name: 'Raw' });
+    await repos.leagueOps.divisions.create({ name: 'SmackDown' });
 
     const result = await getDivisions(makeEvent(), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body).toHaveLength(2);
-    expect(body[0].name).toBe('Raw');
-    expect(body[1].name).toBe('SmackDown');
-    expect(mockScan).toHaveBeenCalledWith({ TableName: 'Divisions' });
+    expect(body.map((d: { name: string }) => d.name).sort()).toEqual(['Raw', 'SmackDown']);
   });
 
   it('returns empty array when no divisions exist', async () => {
-    mockScan.mockResolvedValue({ Items: undefined });
-
     const result = await getDivisions(makeEvent(), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body)).toEqual([]);
   });
 
-  it('returns 500 on DynamoDB error', async () => {
-    mockScan.mockRejectedValue(new Error('DynamoDB failure'));
+  it('returns 500 when the repository throws', async () => {
+    repos.leagueOps.divisions.list = vi.fn().mockRejectedValue(new Error('boom'));
 
     const result = await getDivisions(makeEvent(), ctx, cb);
 
     expect(result!.statusCode).toBe(500);
-    expect(JSON.parse(result!.body).message).toBe('Failed to fetch divisions');
+    expect(JSON.parse(result!.body).message).toBe('Failed to fetch divisions list');
   });
 });
 
-// ─── createDivision ──────────────────────────────────────────────────
-
 describe('createDivision', () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it('creates a division with name only and returns 201', async () => {
-    mockPut.mockResolvedValue({});
     const event = makeEvent({ body: JSON.stringify({ name: 'Raw' }) });
 
     const result = await createDivision(event, ctx, cb);
 
     expect(result!.statusCode).toBe(201);
     const body = JSON.parse(result!.body);
-    expect(body.divisionId).toBe('test-uuid-1234');
+    expect(body.divisionId).toBe('test-uuid-1');
     expect(body.name).toBe('Raw');
     expect(body.createdAt).toBeDefined();
     expect(body.updatedAt).toBeDefined();
     expect(body.description).toBeUndefined();
-    expect(mockPut).toHaveBeenCalledOnce();
+    expect(await repos.leagueOps.divisions.findById('test-uuid-1')).not.toBeNull();
   });
 
   it('creates a division with name and description', async () => {
-    mockPut.mockResolvedValue({});
     const event = makeEvent({
       body: JSON.stringify({ name: 'SmackDown', description: 'Friday Night SmackDown' }),
     });
@@ -170,8 +136,8 @@ describe('createDivision', () => {
     expect(JSON.parse(result!.body).message).toBe('Invalid JSON in request body');
   });
 
-  it('returns 500 on DynamoDB error', async () => {
-    mockPut.mockRejectedValue(new Error('DynamoDB failure'));
+  it('returns 500 when the repository throws', async () => {
+    repos.leagueOps.divisions.create = vi.fn().mockRejectedValue(new Error('boom'));
     const event = makeEvent({ body: JSON.stringify({ name: 'Raw' }) });
 
     const result = await createDivision(event, ctx, cb);

@@ -1,6 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { v4 as uuidv4 } from 'uuid';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
@@ -22,20 +21,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
   try {
     const { sub } = getAuthContext(event);
+    const { roster: { players }, content: { storylineRequests } } = getRepositories();
 
-    const playerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :userId',
-      ExpressionAttributeValues: { ':userId': sub },
-    });
-
-    if (!playerResult.Items || playerResult.Items.length === 0) {
+    const player = await players.findByUserId(sub);
+    if (!player) {
       return notFound('No player profile found for this user');
     }
 
-    const player = playerResult.Items[0];
-    const requesterId = player.playerId as string;
+    const requesterId = player.playerId;
 
     const parsed = parseBody<CreateStorylineRequestBody>(event);
     if (parsed.error) return parsed.error;
@@ -70,33 +63,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate all target players exist
     const targetResults = await Promise.all(
-      uniqueTargets.map((playerId) =>
-        dynamoDb.get({ TableName: TableNames.PLAYERS, Key: { playerId } })
-      )
+      uniqueTargets.map((playerId) => players.findById(playerId))
     );
 
-    const missing = targetResults.findIndex((r) => !r.Item);
+    const missing = targetResults.findIndex((r) => !r);
     if (missing !== -1) {
       return notFound(`Target player not found: ${uniqueTargets[missing]}`);
     }
 
-    const now = new Date().toISOString();
-    const requestId = uuidv4();
-
-    const item = {
-      requestId,
+    const item = await storylineRequests.create({
       requesterId,
       targetPlayerIds: uniqueTargets,
       requestType,
       description: trimmedDescription,
-      status: 'pending' as const,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await dynamoDb.put({
-      TableName: TableNames.STORYLINE_REQUESTS,
-      Item: item,
     });
 
     return success(item);

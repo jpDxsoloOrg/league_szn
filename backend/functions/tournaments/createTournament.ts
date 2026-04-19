@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
@@ -64,8 +64,8 @@ const generateSingleEliminationBracket = (participants: string[]): { rounds: Bra
   return { rounds };
 };
 
-const initializeRoundRobinStandings = (participants: string[]): Record<string, any> => {
-  const standings: Record<string, any> = {};
+const initializeRoundRobinStandings = (participants: string[]): Record<string, unknown> => {
+  const standings: Record<string, unknown> = {};
 
   for (const playerId of participants) {
     standings[playerId] = {
@@ -81,6 +81,7 @@ const initializeRoundRobinStandings = (participants: string[]): Record<string, a
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
+    const { competition: { tournaments } } = getRepositories();
     const { data: body, error: parseError } = parseBody<CreateTournamentBody>(event);
     if (parseError) return parseError;
 
@@ -118,10 +119,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       tournament.standings = initializeRoundRobinStandings(body.participants);
     }
 
-    await dynamoDb.put({
-      TableName: TableNames.TOURNAMENTS,
-      Item: tournament,
-    });
+    await tournaments.create(tournament);
 
     return created(tournament);
   } catch (err) {

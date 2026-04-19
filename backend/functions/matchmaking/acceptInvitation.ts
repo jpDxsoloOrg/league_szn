@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import {
   success,
   badRequest,
@@ -14,22 +14,7 @@ import {
   ScheduleMatchError,
   ScheduleMatchInput,
 } from '../matches/scheduleMatch';
-
-type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'expired';
-
-interface InvitationRow {
-  invitationId: string;
-  fromPlayerId: string;
-  toPlayerId: string;
-  status: InvitationStatus;
-  createdAt: string;
-  expiresAt: string;
-  updatedAt?: string;
-  acceptedAt?: string;
-  matchFormat?: string;
-  stipulationId?: string;
-  [key: string]: unknown;
-}
+import type { InvitationRecord } from '../../lib/repositories/LeagueOpsRepository';
 
 interface PlayerRecord {
   playerId: string;
@@ -66,15 +51,10 @@ export const handler = async (
       return forbidden('Only wrestlers can accept match invitations');
     }
 
-    // Find the caller's player record via their user sub
-    const playerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
+    const { roster: { players }, leagueOps: { matchmaking } } = getRepositories();
 
-    const callerPlayer = playerResult.Items?.[0] as PlayerRecord | undefined;
+    // Find the caller's player record via their user sub
+    const callerPlayer = await players.findByUserId(auth.sub);
     if (!callerPlayer) {
       return badRequest('No player profile linked to your account');
     }
@@ -84,16 +64,10 @@ export const handler = async (
       return badRequest('invitationId is required');
     }
 
-    const invitationResult = await dynamoDb.get({
-      TableName: TableNames.MATCH_INVITATIONS,
-      Key: { invitationId },
-    });
-
-    if (!invitationResult.Item) {
+    const invitation = await matchmaking.getInvitation(invitationId);
+    if (!invitation) {
       return notFound('Match invitation not found');
     }
-
-    const invitation = invitationResult.Item as InvitationRow;
 
     if (invitation.toPlayerId !== callerPlayer.playerId) {
       return forbidden('Only the recipient can accept');
@@ -110,27 +84,17 @@ export const handler = async (
     }
 
     // Conditionally mark the invitation as accepted
-    let updatedInvitation: InvitationRow;
+    let updatedInvitation: InvitationRecord;
     try {
-      const updateResult = await dynamoDb.update({
-        TableName: TableNames.MATCH_INVITATIONS,
-        Key: { invitationId },
-        UpdateExpression: 'SET #s = :accepted, acceptedAt = :now, updatedAt = :now',
-        ConditionExpression: '#s = :pending',
-        ExpressionAttributeNames: { '#s': 'status' },
-        ExpressionAttributeValues: {
-          ':accepted': 'accepted',
-          ':pending': 'pending',
-          ':now': nowIso,
+      updatedInvitation = await matchmaking.updateInvitation(
+        invitationId,
+        {
+          status: 'accepted',
+          acceptedAt: nowIso,
+          updatedAt: nowIso,
         },
-        ReturnValues: 'ALL_NEW',
-      });
-      updatedInvitation = (updateResult.Attributes as InvitationRow | undefined) ?? {
-        ...invitation,
-        status: 'accepted',
-        acceptedAt: nowIso,
-        updatedAt: nowIso,
-      };
+        'pending',
+      );
     } catch (err: unknown) {
       if (isConditionalCheckFailed(err)) {
         return badRequest('Invitation already actioned');
@@ -164,35 +128,29 @@ export const handler = async (
     }
 
     // Fetch both players to notify them
-    const [fromPlayerResult, toPlayerResult] = await Promise.all([
-      dynamoDb.get({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId: invitation.fromPlayerId },
-      }),
-      dynamoDb.get({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId: invitation.toPlayerId },
-      }),
+    const [fromPlayer, toPlayer] = await Promise.all([
+      players.findById(invitation.fromPlayerId),
+      players.findById(invitation.toPlayerId),
     ]);
 
-    const fromPlayer = fromPlayerResult.Item as PlayerRecord | undefined;
-    const toPlayer = toPlayerResult.Item as PlayerRecord | undefined;
+    const fromRecord = fromPlayer as unknown as PlayerRecord | undefined;
+    const toRecord = toPlayer as unknown as PlayerRecord | undefined;
 
     const notifications: CreateNotificationParams[] = [];
-    if (fromPlayer?.userId) {
+    if (fromRecord?.userId) {
       notifications.push({
-        userId: fromPlayer.userId,
+        userId: fromRecord.userId,
         type: 'match_scheduled',
-        message: `Match scheduled with ${displayName(toPlayer)}`,
+        message: `Match scheduled with ${displayName(toRecord)}`,
         sourceId: matchId,
         sourceType: 'match',
       });
     }
-    if (toPlayer?.userId) {
+    if (toRecord?.userId) {
       notifications.push({
-        userId: toPlayer.userId,
+        userId: toRecord.userId,
         type: 'match_scheduled',
-        message: `Match scheduled with ${displayName(fromPlayer)}`,
+        message: `Match scheduled with ${displayName(fromRecord)}`,
         sourceId: matchId,
         sourceType: 'match',
       });
@@ -206,10 +164,7 @@ export const handler = async (
     await Promise.all(
       [invitation.fromPlayerId, invitation.toPlayerId].map(async (pid) => {
         try {
-          await dynamoDb.delete({
-            TableName: TableNames.MATCHMAKING_QUEUE,
-            Key: { playerId: pid },
-          });
+          await matchmaking.deleteQueue(pid);
         } catch (cleanupErr: unknown) {
           console.error(
             `Failed to remove player ${pid} from matchmaking queue:`,

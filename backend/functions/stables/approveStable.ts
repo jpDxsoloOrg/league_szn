@@ -1,15 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames, getOrNotFound } from '../../lib/dynamodb';
-import { success, badRequest, serverError } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
-
-interface StableRecord {
-  [key: string]: unknown;
-  stableId: string;
-  leaderId: string;
-  memberIds: string[];
-  status: string;
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -21,53 +13,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('stableId is required');
     }
 
-    const result = await getOrNotFound<StableRecord>(
-      TableNames.STABLES,
-      { stableId },
-      'Stable not found'
-    );
+    const { roster: { stables: stablesRepo, players: playersRepo } } = getRepositories();
 
-    if ('notFoundResponse' in result) {
-      return result.notFoundResponse;
+    const stable = await stablesRepo.findById(stableId);
+    if (!stable) {
+      return notFound('Stable not found');
     }
-
-    const stable = result.item;
 
     if (stable.status !== 'pending') {
       return badRequest(`Stable is already ${stable.status}, cannot approve`);
     }
 
-    const now = new Date().toISOString();
-
     // Update stable status to approved
-    await dynamoDb.update({
-      TableName: TableNames.STABLES,
-      Key: { stableId },
-      UpdateExpression: 'SET #status = :status, #updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#status': 'status',
-        '#updatedAt': 'updatedAt',
-      },
-      ExpressionAttributeValues: {
-        ':status': 'approved',
-        ':updatedAt': now,
-      },
-    });
+    await stablesRepo.update(stableId, { status: 'approved' });
 
     // Set the leader's stableId on their player record
-    await dynamoDb.update({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId: stable.leaderId },
-      UpdateExpression: 'SET #stableId = :stableId, #updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#stableId': 'stableId',
-        '#updatedAt': 'updatedAt',
-      },
-      ExpressionAttributeValues: {
-        ':stableId': stableId,
-        ':updatedAt': now,
-      },
-    });
+    await playersRepo.update(stable.leaderId, { stableId });
 
     return success({ message: 'Stable approved', stableId, status: 'approved' });
   } catch (err) {

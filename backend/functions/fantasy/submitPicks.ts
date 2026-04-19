@@ -1,9 +1,9 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { getOrNotFound } from '../../lib/dynamodbUtils';
-import { success, badRequest, serverError } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole, getAuthContext } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import { DEFAULT_CONFIG } from './getFantasyConfig';
 
 interface SubmitPicksBody {
   picks: Record<string, string[]>;
@@ -28,12 +28,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('picks must be an object mapping divisionId to playerIds[]');
     }
 
-    const eventResult = await getOrNotFound(TableNames.EVENTS, { eventId }, 'Event not found');
-    if ('notFoundResponse' in eventResult) {
-      return eventResult.notFoundResponse;
-    }
+    const { leagueOps: { events }, user: { fantasy }, roster: { players } } = getRepositories();
 
-    const eventItem = eventResult.item;
+    const eventItem = await events.findById(eventId);
+    if (!eventItem) {
+      return notFound('Event not found');
+    }
 
     if (eventItem.status === 'completed' || eventItem.status === 'cancelled') {
       return badRequest('This event is no longer accepting picks');
@@ -44,30 +44,24 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Get config for defaults
-    const configResult = await dynamoDb.get({
-      TableName: TableNames.FANTASY_CONFIG,
-      Key: { configKey: 'GLOBAL' },
-    });
-
-    const config = configResult.Item || { defaultBudget: 500, defaultPicksPerDivision: 2 };
-    const budget = (eventItem.fantasyBudget as number) || (config.defaultBudget as number) || 500;
-    const picksPerDivision =
-      (eventItem.fantasyPicksPerDivision as number) || (config.defaultPicksPerDivision as number) || 2;
+    const config = await fantasy.getConfig() || DEFAULT_CONFIG;
+    const budget = eventItem.fantasyBudget || config.defaultBudget || 500;
+    const picksPerDivision = eventItem.fantasyPicksPerDivision || config.defaultPicksPerDivision || 2;
 
     // Fetch players and costs for validation
     const [allPlayers, allCosts] = await Promise.all([
-      dynamoDb.scanAll({ TableName: TableNames.PLAYERS }),
-      dynamoDb.scanAll({ TableName: TableNames.WRESTLER_COSTS }),
+      players.list(),
+      fantasy.listAllCosts(),
     ]);
 
-    const playerMap = new Map<string, Record<string, unknown>>();
+    const playerMap = new Map<string, typeof allPlayers[number]>();
     for (const p of allPlayers) {
-      playerMap.set(p.playerId as string, p);
+      playerMap.set(p.playerId, p);
     }
 
     const costMap = new Map<string, number>();
     for (const c of allCosts) {
-      costMap.set(c.playerId as string, (c.currentCost as number) || 100);
+      costMap.set(c.playerId, c.currentCost || 100);
     }
 
     // Validate each pick
@@ -114,26 +108,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Check for existing picks (to preserve createdAt)
-    const existingResult = await dynamoDb.get({
-      TableName: TableNames.FANTASY_PICKS,
-      Key: { eventId, fantasyUserId },
-    });
+    const existingPick = await fantasy.findPick(eventId, fantasyUserId);
 
-    const timestamp = new Date().toISOString();
-    const pickRecord = {
-      eventId,
-      fantasyUserId,
-      username,
-      picks,
-      totalSpent,
-      createdAt: (existingResult.Item?.createdAt as string) || timestamp,
-      updatedAt: timestamp,
-    };
-
-    await dynamoDb.put({
-      TableName: TableNames.FANTASY_PICKS,
-      Item: pickRecord,
-    });
+    const pickRecord = await fantasy.savePick(
+      {
+        eventId,
+        fantasyUserId,
+        username,
+        picks,
+        totalSpent,
+      },
+      existingPick?.createdAt,
+    );
 
     return success(pickRecord);
   } catch (err) {

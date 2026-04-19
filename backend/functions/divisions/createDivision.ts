@@ -1,11 +1,11 @@
-import { TableNames } from '../../lib/dynamodb';
-import { handlerFactory } from '../../lib/handlers';
+import { createHandlerFactory } from '../../lib/handlers';
+import { getRepositories } from '../../lib/repositories';
+import type { DivisionCreateInput } from '../../lib/repositories/LeagueOpsRepository';
+import type { Division } from '../../lib/repositories/types';
 
-export const handler = handlerFactory({
-  tableName: TableNames.DIVISIONS,
-  idField: 'divisionId',
+export const handler = createHandlerFactory<DivisionCreateInput, Division>({
+  repo: () => getRepositories().leagueOps.divisions,
   entityName: 'division',
   requiredFields: ['name'],
   optionalFields: ['description'],
 });
-

@@ -1,7 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { getOrNotFound } from '../../lib/dynamodbUtils';
-import { noContent, badRequest, serverError } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { noContent, badRequest, notFound, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -15,20 +14,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Award ID is required');
     }
 
-    const awardResult = await getOrNotFound(
-      TableNames.SEASON_AWARDS,
-      { seasonId, awardId },
-      'Award not found'
-    );
-    if ('notFoundResponse' in awardResult) {
-      return awardResult.notFoundResponse;
+    const { season: { awards: seasonAwards } } = getRepositories();
+    const existing = await seasonAwards.findById(seasonId, awardId);
+    if (!existing) {
+      return notFound('Award not found');
     }
 
-    await dynamoDb.delete({
-      TableName: TableNames.SEASON_AWARDS,
-      Key: { seasonId, awardId },
-    });
-
+    await seasonAwards.delete(seasonId, awardId);
     return noContent();
   } catch (err) {
     console.error('Error deleting season award:', err);

@@ -1,29 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
-const { mockScanAll } = vi.hoisted(() => ({
-  mockScanAll: vi.fn(),
+const { mockPlayersList, mockMatchesList, mockChampionshipsListAllHistory, mockChampionshipsList, mockMatchTypesList, mockStipulationsList } = vi.hoisted(() => ({
+  mockPlayersList: vi.fn(),
+  mockMatchesList: vi.fn(),
+  mockChampionshipsListAllHistory: vi.fn(),
+  mockChampionshipsList: vi.fn(),
+  mockMatchTypesList: vi.fn(),
+  mockStipulationsList: vi.fn(),
 }));
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: vi.fn(),
-    put: vi.fn(),
-    scan: vi.fn(),
-    query: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    scanAll: mockScanAll,
-    queryAll: vi.fn(),
-  },
-  TableNames: {
-    PLAYERS: 'Players',
-    MATCHES: 'Matches',
-    MATCH_TYPES: 'MatchTypes',
-    STIPULATIONS: 'Stipulations',
-    CHAMPIONSHIPS: 'Championships',
-    CHAMPIONSHIP_HISTORY: 'ChampionshipHistory',
-  },
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    roster: { players: { list: mockPlayersList } },
+    competition: {
+      matches: { list: mockMatchesList },
+      championships: { listAllHistory: mockChampionshipsListAllHistory, list: mockChampionshipsList },
+      matchTypes: { list: mockMatchTypesList },
+      stipulations: { list: mockStipulationsList },
+    },
+  }),
 }));
 
 import { handler } from '../getStatistics';
@@ -44,7 +40,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '',
-    requestContext: {} as any,
+    requestContext: {} as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
@@ -76,6 +72,15 @@ function makeMatch(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function setupDefaultMocks(players: unknown[] = [], matches: unknown[] = [], matchTypes: unknown[] = [], stipulations: unknown[] = []) {
+  mockPlayersList.mockResolvedValue(players);
+  mockMatchesList.mockResolvedValue(matches);
+  mockChampionshipsListAllHistory.mockResolvedValue([]);
+  mockChampionshipsList.mockResolvedValue([]);
+  mockMatchTypesList.mockResolvedValue(matchTypes);
+  mockStipulationsList.mockResolvedValue(stipulations);
+}
+
 describe('getStatistics - match-types section', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -94,16 +99,17 @@ describe('getStatistics - match-types section', () => {
       makeMatch({ participants: ['p3', 'p1'], winners: ['p3'], losers: ['p1'], matchFormat: 'Triple Threat' }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce(players)
-      .mockResolvedValueOnce(matches)
-      .mockResolvedValueOnce([
+    setupDefaultMocks(
+      players,
+      matches,
+      [
         { matchTypeId: 'mt-single', name: 'Single' },
         { matchTypeId: 'mt-tag', name: 'Tag Team' },
-      ])
-      .mockResolvedValueOnce([
+      ],
+      [
         { stipulationId: 'stip-none', name: 'No DQ' },
-      ]);
+      ],
+    );
 
     const result = await handler(makeEvent({
       queryStringParameters: { section: 'match-types' },
@@ -130,14 +136,15 @@ describe('getStatistics - match-types section', () => {
       makeMatch({ participants: ['p3', 'p1'], winners: ['p3'], losers: ['p1'], matchFormat: 'Triple Threat' }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce(players)
-      .mockResolvedValueOnce(matches)
-      .mockResolvedValueOnce([
+    setupDefaultMocks(
+      players,
+      matches,
+      [
         { matchTypeId: 'mt-single', name: 'Single' },
         { matchTypeId: 'mt-tag', name: 'Tag Team' },
-      ])
-      .mockResolvedValueOnce([]);
+      ],
+      [],
+    );
 
     const result = await handler(makeEvent({
       queryStringParameters: { section: 'match-types', matchTypeId: 'mt-tag' },
@@ -174,14 +181,15 @@ describe('getStatistics - match-types section', () => {
       }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce(players)
-      .mockResolvedValueOnce(matches)
-      .mockResolvedValueOnce([{ matchTypeId: 'mt-single', name: 'Single' }])
-      .mockResolvedValueOnce([
+    setupDefaultMocks(
+      players,
+      matches,
+      [{ matchTypeId: 'mt-single', name: 'Single' }],
+      [
         { stipulationId: 'stip-cage', name: 'Steel Cage' },
         { stipulationId: 'stip-ladder', name: 'Ladder Match' },
-      ]);
+      ],
+    );
 
     const result = await handler(makeEvent({
       queryStringParameters: { section: 'match-types', stipulationId: 'stip-cage' },

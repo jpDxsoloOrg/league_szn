@@ -1,13 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames, getOrNotFound } from '../../lib/dynamodb';
-import { success, badRequest, serverError } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
-
-interface TagTeamRecord {
-  [key: string]: unknown;
-  tagTeamId: string;
-  status: string;
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -19,18 +13,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('tagTeamId is required');
     }
 
+    const { roster: { tagTeams: tagTeamsRepo } } = getRepositories();
+
     // Get tag team
-    const result = await getOrNotFound<TagTeamRecord>(
-      TableNames.TAG_TEAMS,
-      { tagTeamId },
-      'Tag team not found'
-    );
-
-    if ('notFoundResponse' in result) {
-      return result.notFoundResponse;
+    const tagTeam = await tagTeamsRepo.findById(tagTeamId);
+    if (!tagTeam) {
+      return notFound('Tag team not found');
     }
-
-    const tagTeam = result.item;
 
     if (tagTeam.status !== 'pending_admin') {
       return badRequest('This tag team is not awaiting admin approval');
@@ -38,20 +27,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const now = new Date().toISOString();
 
-    await dynamoDb.update({
-      TableName: TableNames.TAG_TEAMS,
-      Key: { tagTeamId },
-      UpdateExpression: 'SET #status = :status, #updatedAt = :updatedAt, #dissolvedAt = :dissolvedAt',
-      ExpressionAttributeNames: {
-        '#status': 'status',
-        '#updatedAt': 'updatedAt',
-        '#dissolvedAt': 'dissolvedAt',
-      },
-      ExpressionAttributeValues: {
-        ':status': 'dissolved',
-        ':updatedAt': now,
-        ':dissolvedAt': now,
-      },
+    await tagTeamsRepo.update(tagTeamId, {
+      status: 'dissolved',
+      dissolvedAt: now,
     });
 
     return success({

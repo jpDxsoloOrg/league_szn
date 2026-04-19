@@ -3,35 +3,62 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ---- Mocks ----------------------------------------------------------------
 
-const { mockGet, mockPut, mockUpdate } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockPut: vi.fn(),
-  mockUpdate: vi.fn(),
+const {
+  mockPlayersFindById,
+  mockChampionshipsFindById,
+  mockTournamentsFindById,
+  mockSeasonsFindById,
+  mockEventsFindById,
+  mockEventsUpdate,
+  mockMatchesCreate,
+  mockChallengesFindById,
+  mockChallengesUpdate,
+  mockPromosFindById,
+  mockPromosUpdate,
+  mockStipulationsFindById,
+} = vi.hoisted(() => ({
+  mockPlayersFindById: vi.fn(),
+  mockChampionshipsFindById: vi.fn(),
+  mockTournamentsFindById: vi.fn(),
+  mockSeasonsFindById: vi.fn(),
+  mockEventsFindById: vi.fn(),
+  mockEventsUpdate: vi.fn(),
+  mockMatchesCreate: vi.fn(),
+  mockChallengesFindById: vi.fn(),
+  mockChallengesUpdate: vi.fn(),
+  mockPromosFindById: vi.fn(),
+  mockPromosUpdate: vi.fn(),
+  mockStipulationsFindById: vi.fn(),
 }));
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet,
-    put: mockPut,
-    scan: vi.fn(),
-    query: vi.fn(),
-    update: mockUpdate,
-    delete: vi.fn(),
-    scanAll: vi.fn(),
-    queryAll: vi.fn(),
-    transactWrite: vi.fn(),
-  },
-  TableNames: {
-    MATCHES: 'Matches',
-    PLAYERS: 'Players',
-    CHAMPIONSHIPS: 'Championships',
-    TOURNAMENTS: 'Tournaments',
-    SEASONS: 'Seasons',
-    EVENTS: 'Events',
-    STIPULATIONS: 'Stipulations',
-    CHALLENGES: 'Challenges',
-    PROMOS: 'Promos',
-  },
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    roster: {
+      players: { findById: mockPlayersFindById },
+    },
+    competition: {
+      championships: { findById: mockChampionshipsFindById },
+      tournaments: { findById: mockTournamentsFindById },
+      matches: { create: mockMatchesCreate },
+      stipulations: { findById: mockStipulationsFindById },
+    },
+    season: {
+      seasons: { findById: mockSeasonsFindById },
+    },
+    leagueOps: {
+      events: { findById: mockEventsFindById, update: mockEventsUpdate },
+    },
+    user: {
+      challenges: { findById: mockChallengesFindById, update: mockChallengesUpdate },
+    },
+    content: {
+      promos: { findById: mockPromosFindById, update: mockPromosUpdate },
+    },
+  }),
+}));
+
+vi.mock('../../../lib/notifications', () => ({
+  createNotifications: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('uuid', () => ({
@@ -50,7 +77,7 @@ function ev(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent
     body: null, headers: {}, multiValueHeaders: {}, httpMethod: 'POST',
     isBase64Encoded: false, path: '/', pathParameters: null,
     queryStringParameters: null, multiValueQueryStringParameters: null,
-    stageVariables: null, resource: '', requestContext: { authorizer: {} } as any,
+    stageVariables: null, resource: '', requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
@@ -68,8 +95,8 @@ describe('scheduleMatch', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('creates a match with valid data and returns 201', async () => {
-    mockGet.mockResolvedValue({ Item: { playerId: 'p1' } });
-    mockPut.mockResolvedValue({});
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockMatchesCreate.mockResolvedValue({});
     const r = await scheduleMatch(ev({ body: validBody() }), ctx, cb);
     expect(r!.statusCode).toBe(201);
     const b = JSON.parse(r!.body);
@@ -77,12 +104,12 @@ describe('scheduleMatch', () => {
     expect(b.matchFormat).toBe('Singles');
     expect(b.participants).toEqual(['p1', 'p2']);
     expect(b.status).toBe('scheduled');
-    expect(mockPut).toHaveBeenCalledOnce();
+    expect(mockMatchesCreate).toHaveBeenCalledOnce();
   });
 
   it('sets stipulationId to undefined when not provided', async () => {
-    mockGet.mockResolvedValue({ Item: { playerId: 'p1' } });
-    mockPut.mockResolvedValue({});
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockMatchesCreate.mockResolvedValue({});
     const r = await scheduleMatch(ev({ body: validBody({ stipulationId: undefined }) }), ctx, cb);
     expect(r!.statusCode).toBe(201);
     expect(JSON.parse(r!.body).stipulationId).toBeUndefined();
@@ -117,33 +144,31 @@ describe('scheduleMatch', () => {
   });
 
   it('returns 400 when duplicate participants are provided', async () => {
-    mockGet.mockResolvedValue({ Item: { playerId: 'p1' } });
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
     const r = await scheduleMatch(ev({ body: validBody({ participants: ['p1', 'p1'] }) }), ctx, cb);
     expect(r!.statusCode).toBe(400);
     expect(JSON.parse(r!.body).message).toContain('Duplicate participants');
   });
 
   it('returns 404 when a participant does not exist', async () => {
-    mockGet
-      .mockResolvedValueOnce({ Item: { playerId: 'p1' } })
-      .mockResolvedValueOnce({ Item: undefined });
+    mockPlayersFindById
+      .mockResolvedValueOnce({ playerId: 'p1' })
+      .mockResolvedValueOnce(null);
     const r = await scheduleMatch(ev({ body: validBody() }), ctx, cb);
     expect(r!.statusCode).toBe(404);
     expect(JSON.parse(r!.body).message).toContain('p2');
   });
 
   it('returns 400 when isChampionship but no championshipId', async () => {
-    mockGet.mockResolvedValue({ Item: { playerId: 'p1' } });
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
     const r = await scheduleMatch(ev({ body: validBody({ isChampionship: true }) }), ctx, cb);
     expect(r!.statusCode).toBe(400);
     expect(JSON.parse(r!.body).message).toContain('Championship ID is required');
   });
 
   it('returns 404 when championshipId does not exist', async () => {
-    mockGet
-      .mockResolvedValueOnce({ Item: { playerId: 'p1' } })
-      .mockResolvedValueOnce({ Item: { playerId: 'p2' } })
-      .mockResolvedValueOnce({ Item: undefined });
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockChampionshipsFindById.mockResolvedValue(null);
     const r = await scheduleMatch(ev({
       body: validBody({ isChampionship: true, championshipId: 'bad' }),
     }), ctx, cb);
@@ -152,10 +177,10 @@ describe('scheduleMatch', () => {
   });
 
   it('returns 400 when championship division restriction violated', async () => {
-    mockGet
-      .mockResolvedValueOnce({ Item: { playerId: 'p1', divisionId: 'div-1' } })
-      .mockResolvedValueOnce({ Item: { playerId: 'p2', divisionId: 'div-2' } })
-      .mockResolvedValueOnce({ Item: { championshipId: 'c1', divisionId: 'div-1' } });
+    mockPlayersFindById
+      .mockResolvedValueOnce({ playerId: 'p1', divisionId: 'div-1' })
+      .mockResolvedValueOnce({ playerId: 'p2', divisionId: 'div-2' });
+    mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', divisionId: 'div-1' });
     const r = await scheduleMatch(ev({
       body: validBody({ isChampionship: true, championshipId: 'c1' }),
     }), ctx, cb);
@@ -164,54 +189,44 @@ describe('scheduleMatch', () => {
   });
 
   it('returns 404 when tournamentId does not exist', async () => {
-    mockGet
-      .mockResolvedValueOnce({ Item: { playerId: 'p1' } })
-      .mockResolvedValueOnce({ Item: { playerId: 'p2' } })
-      .mockResolvedValueOnce({ Item: undefined });
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockTournamentsFindById.mockResolvedValue(null);
     const r = await scheduleMatch(ev({ body: validBody({ tournamentId: 'bad' }) }), ctx, cb);
     expect(r!.statusCode).toBe(404);
     expect(JSON.parse(r!.body).message).toContain('Tournament not found');
   });
 
   it('returns 400 when tournament is completed', async () => {
-    mockGet
-      .mockResolvedValueOnce({ Item: { playerId: 'p1' } })
-      .mockResolvedValueOnce({ Item: { playerId: 'p2' } })
-      .mockResolvedValueOnce({ Item: { tournamentId: 't1', status: 'completed' } });
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockTournamentsFindById.mockResolvedValue({ tournamentId: 't1', status: 'completed' });
     const r = await scheduleMatch(ev({ body: validBody({ tournamentId: 't1' }) }), ctx, cb);
     expect(r!.statusCode).toBe(400);
     expect(JSON.parse(r!.body).message).toContain('completed tournament');
   });
 
   it('returns 404 when seasonId does not exist', async () => {
-    mockGet
-      .mockResolvedValueOnce({ Item: { playerId: 'p1' } })
-      .mockResolvedValueOnce({ Item: { playerId: 'p2' } })
-      .mockResolvedValueOnce({ Item: undefined });
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockSeasonsFindById.mockResolvedValue(null);
     const r = await scheduleMatch(ev({ body: validBody({ seasonId: 'bad' }) }), ctx, cb);
     expect(r!.statusCode).toBe(404);
     expect(JSON.parse(r!.body).message).toContain('Season not found');
   });
 
   it('returns 400 when season is not active', async () => {
-    mockGet
-      .mockResolvedValueOnce({ Item: { playerId: 'p1' } })
-      .mockResolvedValueOnce({ Item: { playerId: 'p2' } })
-      .mockResolvedValueOnce({ Item: { seasonId: 's1', status: 'ended' } });
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockSeasonsFindById.mockResolvedValue({ seasonId: 's1', status: 'ended' });
     const r = await scheduleMatch(ev({ body: validBody({ seasonId: 's1' }) }), ctx, cb);
     expect(r!.statusCode).toBe(400);
     expect(JSON.parse(r!.body).message).toContain('inactive season');
   });
 
   it('resolves date from event when date not provided', async () => {
-    // Call order: 1) event for date resolution, 2) player p1, 3) player p2, 4) event for matchCards
-    mockGet
-      .mockResolvedValueOnce({ Item: { eventId: 'e1', date: '2024-07-04T00:00:00Z' } })
-      .mockResolvedValueOnce({ Item: { playerId: 'p1' } })
-      .mockResolvedValueOnce({ Item: { playerId: 'p2' } })
-      .mockResolvedValueOnce({ Item: { eventId: 'e1', matchCards: [] } });
-    mockPut.mockResolvedValue({});
-    mockUpdate.mockResolvedValue({});
+    mockEventsFindById
+      .mockResolvedValueOnce({ eventId: 'e1', date: '2024-07-04T00:00:00Z' })
+      .mockResolvedValueOnce({ eventId: 'e1', matchCards: [] });
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockMatchesCreate.mockResolvedValue({});
+    mockEventsUpdate.mockResolvedValue({});
     const r = await scheduleMatch(ev({
       body: JSON.stringify({ matchFormat: 'Singles', participants: ['p1', 'p2'], isChampionship: false, eventId: 'e1' }),
     }), ctx, cb);
@@ -220,35 +235,33 @@ describe('scheduleMatch', () => {
   });
 
   it('auto-adds match to event matchCards when eventId provided', async () => {
-    mockGet
-      .mockResolvedValueOnce({ Item: { playerId: 'p1' } })
-      .mockResolvedValueOnce({ Item: { playerId: 'p2' } })
-      .mockResolvedValueOnce({ Item: { eventId: 'e1', matchCards: [{ matchId: 'x' }] } });
-    mockPut.mockResolvedValue({});
-    mockUpdate.mockResolvedValue({});
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockMatchesCreate.mockResolvedValue({});
+    mockEventsFindById.mockResolvedValue({ eventId: 'e1', matchCards: [{ matchId: 'x' }] });
+    mockEventsUpdate.mockResolvedValue({});
     const r = await scheduleMatch(ev({ body: validBody({ eventId: 'e1' }) }), ctx, cb);
     expect(r!.statusCode).toBe(201);
-    expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ Key: { eventId: 'e1' } }));
-    const card = mockUpdate.mock.calls[0][0].ExpressionAttributeValues[':newCard'][0];
-    expect(card.position).toBe(2);
-    expect(card.designation).toBe('midcard');
+    expect(mockEventsUpdate).toHaveBeenCalledWith('e1', expect.objectContaining({
+      matchCards: expect.arrayContaining([
+        expect.objectContaining({ matchId: 'test-uuid-match', position: 2, designation: 'midcard' }),
+      ]),
+    }));
   });
 
   it('returns 500 on unexpected error', async () => {
-    mockGet.mockRejectedValue(new Error('Unexpected'));
+    mockPlayersFindById.mockRejectedValue(new Error('Unexpected'));
     const r = await scheduleMatch(ev({ body: validBody() }), ctx, cb);
     expect(r!.statusCode).toBe(500);
     expect(JSON.parse(r!.body).message).toBe('Failed to schedule match');
   });
 
   it('includes challengeId and promoId on match when provided', async () => {
-    mockGet
-      .mockResolvedValueOnce({ Item: { playerId: 'p1' } })
-      .mockResolvedValueOnce({ Item: { playerId: 'p2' } })
-      .mockResolvedValueOnce({ Item: { challengeId: 'ch1', status: 'accepted' } })
-      .mockResolvedValueOnce({ Item: { promoId: 'pr1' } });
-    mockPut.mockResolvedValue({});
-    mockUpdate.mockResolvedValue({});
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockMatchesCreate.mockResolvedValue({});
+    mockChallengesFindById.mockResolvedValue({ challengeId: 'ch1', status: 'accepted' });
+    mockChallengesUpdate.mockResolvedValue({});
+    mockPromosFindById.mockResolvedValue({ promoId: 'pr1' });
+    mockPromosUpdate.mockResolvedValue({});
     const r = await scheduleMatch(ev({
       body: validBody({ challengeId: 'ch1', promoId: 'pr1' }),
     }), ctx, cb);
@@ -259,42 +272,28 @@ describe('scheduleMatch', () => {
   });
 
   it('updates challenge to scheduled when challengeId provided', async () => {
-    mockGet
-      .mockResolvedValueOnce({ Item: { playerId: 'p1' } })
-      .mockResolvedValueOnce({ Item: { playerId: 'p2' } })
-      .mockResolvedValueOnce({ Item: { challengeId: 'ch1', status: 'accepted' } });
-    mockPut.mockResolvedValue({});
-    mockUpdate.mockResolvedValue({});
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockMatchesCreate.mockResolvedValue({});
+    mockChallengesFindById.mockResolvedValue({ challengeId: 'ch1', status: 'accepted' });
+    mockChallengesUpdate.mockResolvedValue({});
     const r = await scheduleMatch(ev({ body: validBody({ challengeId: 'ch1' }) }), ctx, cb);
     expect(r!.statusCode).toBe(201);
-    expect(mockUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        TableName: 'Challenges',
-        Key: { challengeId: 'ch1' },
-      })
-    );
-    const values = mockUpdate.mock.calls[0][0].ExpressionAttributeValues;
-    expect(values[':status']).toBe('scheduled');
-    expect(values[':matchId']).toBe('test-uuid-match');
+    expect(mockChallengesUpdate).toHaveBeenCalledWith('ch1', expect.objectContaining({
+      status: 'scheduled',
+      matchId: 'test-uuid-match',
+    }));
   });
 
   it('updates promo to hidden when promoId provided', async () => {
-    mockGet
-      .mockResolvedValueOnce({ Item: { playerId: 'p1' } })
-      .mockResolvedValueOnce({ Item: { playerId: 'p2' } })
-      .mockResolvedValueOnce({ Item: { promoId: 'pr1' } });
-    mockPut.mockResolvedValue({});
-    mockUpdate.mockResolvedValue({});
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockMatchesCreate.mockResolvedValue({});
+    mockPromosFindById.mockResolvedValue({ promoId: 'pr1' });
+    mockPromosUpdate.mockResolvedValue({});
     const r = await scheduleMatch(ev({ body: validBody({ promoId: 'pr1' }) }), ctx, cb);
     expect(r!.statusCode).toBe(201);
-    expect(mockUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        TableName: 'Promos',
-        Key: { promoId: 'pr1' },
-      })
-    );
-    const values = mockUpdate.mock.calls[0][0].ExpressionAttributeValues;
-    expect(values[':hidden']).toBe(true);
-    expect(values[':matchId']).toBe('test-uuid-match');
+    expect(mockPromosUpdate).toHaveBeenCalledWith('pr1', expect.objectContaining({
+      isHidden: true,
+      matchId: 'test-uuid-match',
+    }));
   });
 });

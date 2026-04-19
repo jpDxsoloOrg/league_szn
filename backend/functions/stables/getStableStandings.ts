@@ -9,6 +9,8 @@ import {
   computeWinPercentage,
 } from './computeStableStats';
 
+// Note: fetchActiveStables and fetchCompletedMatches use dynamoDb directly — matches/stables scan migration deferred to Wave 5+
+
 interface StableStanding {
   stableId: string;
   name: string;

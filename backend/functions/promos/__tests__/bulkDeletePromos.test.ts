@@ -67,8 +67,8 @@ describe('bulkDeletePromos', () => {
 
   it('deletes hidden promos and returns count when Admin', async () => {
     mockScanAll.mockResolvedValue([
-      { promoId: 'pr1', isHidden: true },
-      { promoId: 'pr2', isHidden: true },
+      { promoId: 'pr1', isHidden: true, createdAt: '2025-01-01T00:00:00.000Z' },
+      { promoId: 'pr2', isHidden: true, createdAt: '2025-01-02T00:00:00.000Z' },
     ]);
     mockDelete.mockResolvedValue({});
     const event = withAuth(

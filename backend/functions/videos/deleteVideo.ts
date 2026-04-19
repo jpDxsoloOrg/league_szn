@@ -1,7 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { getOrNotFound } from '../../lib/dynamodbUtils';
-import { noContent, badRequest, serverError } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { noContent, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -14,20 +13,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('videoId is required');
     }
 
-    const result = await getOrNotFound(
-      TableNames.VIDEOS,
-      { videoId },
-      'Video not found'
-    );
-    if ('notFoundResponse' in result) {
-      return result.notFoundResponse;
+    const { content: { videos } } = getRepositories();
+    const existing = await videos.findById(videoId);
+    if (!existing) {
+      return notFound('Video not found');
     }
 
-    await dynamoDb.delete({
-      TableName: TableNames.VIDEOS,
-      Key: { videoId },
-    });
-
+    await videos.delete(videoId);
     return noContent();
   } catch (err) {
     console.error('Error deleting video:', err);

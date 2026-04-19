@@ -1,26 +1,11 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames, getOrNotFound } from '../../lib/dynamodb';
-import { success, badRequest, serverError } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 
 interface RespondBody {
   action: 'accept' | 'decline';
-}
-
-interface InvitationRecord {
-  [key: string]: unknown;
-  invitationId: string;
-  stableId: string;
-  invitedPlayerId: string;
-  status: string;
-}
-
-interface StableRecord {
-  [key: string]: unknown;
-  stableId: string;
-  memberIds: string[];
-  status: string;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -45,18 +30,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('action must be "accept" or "decline"');
     }
 
+    const { roster: { stables: stablesRepo, players: playersRepo } } = getRepositories();
+
     // Get invitation
-    const invitationResult = await getOrNotFound<InvitationRecord>(
-      TableNames.STABLE_INVITATIONS,
-      { invitationId },
-      'Invitation not found'
-    );
-
-    if ('notFoundResponse' in invitationResult) {
-      return invitationResult.notFoundResponse;
+    const invitation = await stablesRepo.findInvitationById(invitationId);
+    if (!invitation) {
+      return notFound('Invitation not found');
     }
-
-    const invitation = invitationResult.item;
 
     if (invitation.status !== 'pending') {
       return badRequest(`Invitation is already ${invitation.status}`);
@@ -67,78 +47,31 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Verify caller is the invited player
-    const callerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
-
-    const callerPlayer = callerResult.Items?.[0];
+    const callerPlayer = await playersRepo.findByUserId(auth.sub);
     if (!callerPlayer || callerPlayer.playerId !== invitation.invitedPlayerId) {
       return badRequest('You can only respond to your own invitations');
     }
 
-    const now = new Date().toISOString();
-
     if (action === 'decline') {
-      await dynamoDb.update({
-        TableName: TableNames.STABLE_INVITATIONS,
-        Key: { invitationId },
-        UpdateExpression: 'SET #status = :status, #updatedAt = :updatedAt',
-        ExpressionAttributeNames: {
-          '#status': 'status',
-          '#updatedAt': 'updatedAt',
-        },
-        ExpressionAttributeValues: {
-          ':status': 'declined',
-          ':updatedAt': now,
-        },
-      });
-
+      await stablesRepo.updateInvitation(invitationId, { status: 'declined' });
       return success({ message: 'Invitation declined', invitationId });
     }
 
     // action === 'accept'
-    // Verify player still has no stable (use ConditionExpression)
-    try {
-      await dynamoDb.update({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId: invitation.invitedPlayerId },
-        UpdateExpression: 'SET #stableId = :stableId, #updatedAt = :updatedAt',
-        ConditionExpression: 'attribute_not_exists(#stableId) OR #stableId = :empty',
-        ExpressionAttributeNames: {
-          '#stableId': 'stableId',
-          '#updatedAt': 'updatedAt',
-        },
-        ExpressionAttributeValues: {
-          ':stableId': stableId,
-          ':updatedAt': now,
-          ':empty': '',
-        },
-      });
-    } catch (conditionErr: unknown) {
-      if (
-        conditionErr instanceof Error &&
-        conditionErr.name === 'ConditionalCheckFailedException'
-      ) {
-        return badRequest('You already belong to a stable');
-      }
-      throw conditionErr;
+    // Verify player doesn't already belong to a stable
+    if (callerPlayer.stableId) {
+      return badRequest('You already belong to a stable');
     }
+
+    // Set the player's stableId
+    await playersRepo.update(invitation.invitedPlayerId, { stableId });
 
     // Get stable to update memberIds
-    const stableResult = await getOrNotFound<StableRecord>(
-      TableNames.STABLES,
-      { stableId },
-      'Stable not found'
-    );
-
-    if ('notFoundResponse' in stableResult) {
-      return stableResult.notFoundResponse;
+    const stable = await stablesRepo.findById(stableId);
+    if (!stable) {
+      return notFound('Stable not found');
     }
 
-    const stable = stableResult.item;
     const updatedMemberIds = [...stable.memberIds, invitation.invitedPlayerId];
 
     // Determine new status: if approved and now >= 2 members, set to active
@@ -147,36 +80,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         ? 'active'
         : stable.status;
 
-    await dynamoDb.update({
-      TableName: TableNames.STABLES,
-      Key: { stableId },
-      UpdateExpression: 'SET #memberIds = :memberIds, #status = :status, #updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#memberIds': 'memberIds',
-        '#status': 'status',
-        '#updatedAt': 'updatedAt',
-      },
-      ExpressionAttributeValues: {
-        ':memberIds': updatedMemberIds,
-        ':status': newStatus,
-        ':updatedAt': now,
-      },
+    await stablesRepo.update(stableId, {
+      memberIds: updatedMemberIds,
+      status: newStatus,
     });
 
     // Update invitation status
-    await dynamoDb.update({
-      TableName: TableNames.STABLE_INVITATIONS,
-      Key: { invitationId },
-      UpdateExpression: 'SET #status = :status, #updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#status': 'status',
-        '#updatedAt': 'updatedAt',
-      },
-      ExpressionAttributeValues: {
-        ':status': 'accepted',
-        ':updatedAt': now,
-      },
-    });
+    await stablesRepo.updateInvitation(invitationId, { status: 'accepted' });
 
     return success({
       message: 'Invitation accepted',

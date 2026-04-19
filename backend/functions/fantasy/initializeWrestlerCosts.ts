@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { created, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 
@@ -10,32 +10,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const body = event.body ? JSON.parse(event.body) : {};
     const baseCost = body.baseCost || 100;
-    const timestamp = new Date().toISOString();
-    const today = timestamp.split('T')[0];
 
-    const [players, existingCosts] = await Promise.all([
-      dynamoDb.scanAll({ TableName: TableNames.PLAYERS }),
-      dynamoDb.scanAll({ TableName: TableNames.WRESTLER_COSTS }),
+    const { user: { fantasy }, roster: { players } } = getRepositories();
+
+    const [allPlayers, existingCosts] = await Promise.all([
+      players.list(),
+      fantasy.listAllCosts(),
     ]);
 
-    const existingIds = new Set(existingCosts.map((c) => c.playerId as string));
+    const existingIds = new Set(existingCosts.map((c) => c.playerId));
 
     let newCount = 0;
-    for (const player of players) {
-      if (existingIds.has(player.playerId as string)) continue;
+    for (const player of allPlayers) {
+      if (existingIds.has(player.playerId)) continue;
 
-      await dynamoDb.put({
-        TableName: TableNames.WRESTLER_COSTS,
-        Item: {
-          playerId: player.playerId,
-          currentCost: baseCost,
-          baseCost,
-          costHistory: [{ date: today, cost: baseCost, reason: 'Initialized' }],
-          winRate30Days: 0,
-          recentRecord: '0-0',
-          updatedAt: timestamp,
-        },
-      });
+      await fantasy.initializeCost({ playerId: player.playerId, baseCost });
       newCount++;
     }
 
@@ -43,7 +32,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       message: 'Wrestler costs initialized',
       initialized: newCount,
       skipped: existingCosts.length,
-      total: players.length,
+      total: allPlayers.length,
     });
   } catch (err) {
     console.error('Error initializing wrestler costs:', err);

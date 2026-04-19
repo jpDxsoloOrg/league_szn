@@ -1,15 +1,8 @@
-import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { success, serverError } from '../../lib/response';
+import { listHandlerFactory } from '../../lib/handlers';
+import { getRepositories } from '../../lib/repositories';
+import type { MatchType } from '../../lib/repositories/types';
 
-export const handler: APIGatewayProxyHandler = async () => {
-  try {
-    const result = await dynamoDb.scan({
-      TableName: TableNames.MATCH_TYPES,
-    });
-    return success(result.Items || []);
-  } catch (err) {
-    console.error('Error fetching match types:', err);
-    return serverError('Failed to fetch match types');
-  }
-};
+export const handler = listHandlerFactory<MatchType>({
+  repo: () => getRepositories().competition.matchTypes,
+  entityName: 'match types',
+});

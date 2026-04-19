@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { getAuthContext } from '../../lib/auth';
@@ -11,19 +11,6 @@ interface SetOverrideBody {
   overrideType: 'bump_to_top' | 'send_to_bottom';
   reason: string;
   expiresAt?: string;
-}
-
-interface Championship {
-  championshipId: string;
-  currentChampion?: string | string[];
-  divisionId?: string;
-  isActive: boolean;
-}
-
-interface Player {
-  playerId: string;
-  name: string;
-  divisionId?: string;
 }
 
 const VALID_OVERRIDE_TYPES = ['bump_to_top', 'send_to_bottom'] as const;
@@ -48,33 +35,23 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('reason must be a non-empty string');
     }
 
-    // Validate championship exists and is active
-    const champResult = await dynamoDb.get({
-      TableName: TableNames.CHAMPIONSHIPS,
-      Key: { championshipId },
-    });
+    const { competition: { championships, contenders }, roster: { players } } = getRepositories();
 
-    if (!champResult.Item) {
+    // Validate championship exists and is active
+    const championship = await championships.findById(championshipId);
+    if (!championship) {
       return badRequest('Championship not found');
     }
-
-    const championship = champResult.Item as unknown as Championship;
 
     if (!championship.isActive) {
       return badRequest('Championship is not active');
     }
 
     // Validate player exists
-    const playerResult = await dynamoDb.get({
-      TableName: TableNames.PLAYERS,
-      Key: { playerId },
-    });
-
-    if (!playerResult.Item) {
+    const player = await players.findById(playerId);
+    if (!player) {
       return badRequest('Player not found');
     }
-
-    const player = playerResult.Item as unknown as Player;
 
     // Player must not be the current champion
     const currentChampion = championship.currentChampion;
@@ -86,47 +63,27 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // If championship is division-locked, player must be in that division
-    if (championship.divisionId && player.divisionId !== championship.divisionId) {
+    const champDivisionId = (championship as unknown as Record<string, unknown>).divisionId as string | undefined;
+    if (champDivisionId && player.divisionId !== champDivisionId) {
       return badRequest('Player is not in the division required for this championship');
     }
 
-    const now = new Date().toISOString();
     const auth = getAuthContext(event);
 
     // Deactivate existing active override for this player/championship
-    const existingResult = await dynamoDb.get({
-      TableName: TableNames.CONTENDER_OVERRIDES,
-      Key: { championshipId, playerId },
-    });
-
-    if (existingResult.Item && existingResult.Item.active) {
-      await dynamoDb.update({
-        TableName: TableNames.CONTENDER_OVERRIDES,
-        Key: { championshipId, playerId },
-        UpdateExpression: 'SET active = :false, removedAt = :now, removedReason = :reason',
-        ExpressionAttributeValues: {
-          ':false': false,
-          ':now': now,
-          ':reason': 'replaced by new override',
-        },
-      });
+    const existingOverride = await contenders.findOverride(championshipId, playerId);
+    if (existingOverride && existingOverride.active) {
+      await contenders.deactivateOverride(championshipId, playerId, 'replaced by new override');
     }
 
     // Write new override
-    const override = {
+    const override = await contenders.createOverride({
       championshipId,
       playerId,
       overrideType,
       reason: reason.trim(),
       createdBy: auth.username || 'admin',
-      createdAt: now,
       ...(expiresAt ? { expiresAt } : {}),
-      active: true,
-    };
-
-    await dynamoDb.put({
-      TableName: TableNames.CONTENDER_OVERRIDES,
-      Item: override,
     });
 
     // Trigger ranking recalculation for this championship

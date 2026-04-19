@@ -3,27 +3,25 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockScanAll } = vi.hoisted(() => ({
-  mockScanAll: vi.fn(),
+const { mockPlayersList, mockMatchesList, mockChampionshipsListAllHistory, mockChampionshipsList, mockMatchTypesList, mockStipulationsList } = vi.hoisted(() => ({
+  mockPlayersList: vi.fn(),
+  mockMatchesList: vi.fn(),
+  mockChampionshipsListAllHistory: vi.fn(),
+  mockChampionshipsList: vi.fn(),
+  mockMatchTypesList: vi.fn(),
+  mockStipulationsList: vi.fn(),
 }));
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: vi.fn(),
-    put: vi.fn(),
-    scan: vi.fn(),
-    query: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    scanAll: mockScanAll,
-    queryAll: vi.fn(),
-  },
-  TableNames: {
-    PLAYERS: 'Players',
-    MATCHES: 'Matches',
-    CHAMPIONSHIPS: 'Championships',
-    CHAMPIONSHIP_HISTORY: 'ChampionshipHistory',
-  },
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    roster: { players: { list: mockPlayersList } },
+    competition: {
+      matches: { list: mockMatchesList },
+      championships: { listAllHistory: mockChampionshipsListAllHistory, list: mockChampionshipsList },
+      matchTypes: { list: mockMatchTypesList },
+      stipulations: { list: mockStipulationsList },
+    },
+  }),
 }));
 
 import { handler } from '../getStatistics';
@@ -46,7 +44,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '',
-    requestContext: {} as any,
+    requestContext: {} as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
@@ -83,6 +81,15 @@ const player1 = makePlayer('p1', 'Player One', 'Wrestler A');
 const player2 = makePlayer('p2', 'Player Two', 'Wrestler B');
 const player3 = makePlayer('p3', 'Player Three', 'Wrestler C');
 
+function setupDefaultMocks(players: unknown[] = [], matches: unknown[] = [], champHistory: unknown[] = [], championships: unknown[] = []) {
+  mockPlayersList.mockResolvedValue(players);
+  mockMatchesList.mockResolvedValue(matches);
+  mockChampionshipsListAllHistory.mockResolvedValue(champHistory);
+  mockChampionshipsList.mockResolvedValue(championships);
+  mockMatchTypesList.mockResolvedValue([]);
+  mockStipulationsList.mockResolvedValue([]);
+}
+
 // ─── Validation Tests ────────────────────────────────────────────────
 
 describe('getStatistics - Validation', () => {
@@ -98,9 +105,7 @@ describe('getStatistics - Validation', () => {
   });
 
   it('returns 400 for an unknown section value', async () => {
-    mockScanAll
-      .mockResolvedValueOnce([player1])  // PLAYERS
-      .mockResolvedValueOnce([]);         // MATCHES
+    setupDefaultMocks([player1], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'invalid-section' },
@@ -113,9 +118,7 @@ describe('getStatistics - Validation', () => {
   });
 
   it('returns player list without stats when head-to-head is missing player IDs', async () => {
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce([]);                  // MATCHES
+    setupDefaultMocks([player1, player2], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'head-to-head' },
@@ -136,9 +139,7 @@ describe('getStatistics - player-stats', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns only player list when no playerId is specified', async () => {
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce([]);                  // MATCHES
+    setupDefaultMocks([player1, player2], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats' },
@@ -166,11 +167,7 @@ describe('getStatistics - player-stats', () => {
       makeMatch({ matchId: 'm5', matchFormat: 'Singles', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: 'p1' },
@@ -182,32 +179,32 @@ describe('getStatistics - player-stats', () => {
     const body = JSON.parse(result!.body);
     expect(body.statistics).toHaveLength(5);
 
-    const statTypes = body.statistics.map((s: any) => s.statType);
+    const statTypes = body.statistics.map((s: Record<string, unknown>) => s.statType);
     expect(statTypes).toEqual(['overall', 'singles', 'tag', 'ladder', 'cage']);
 
     // overall: 4 wins, 1 loss
-    const overall = body.statistics.find((s: any) => s.statType === 'overall');
+    const overall = body.statistics.find((s: Record<string, unknown>) => s.statType === 'overall');
     expect(overall.wins).toBe(4);
     expect(overall.losses).toBe(1);
     expect(overall.matchesPlayed).toBe(5);
 
     // singles: m1, m3, m4, m5 (all Singles format, stipulationId no longer affects categorization)
-    const singles = body.statistics.find((s: any) => s.statType === 'singles');
+    const singles = body.statistics.find((s: Record<string, unknown>) => s.statType === 'singles');
     expect(singles.wins).toBe(3);
     expect(singles.losses).toBe(1);
 
     // tag: m2 = 1 win
-    const tag = body.statistics.find((s: any) => s.statType === 'tag');
+    const tag = body.statistics.find((s: Record<string, unknown>) => s.statType === 'tag');
     expect(tag.wins).toBe(1);
     expect(tag.matchesPlayed).toBe(1);
 
     // ladder: categorization is now format-only, so no matches map to ladder
-    const ladder = body.statistics.find((s: any) => s.statType === 'ladder');
+    const ladder = body.statistics.find((s: Record<string, unknown>) => s.statType === 'ladder');
     expect(ladder.wins).toBe(0);
     expect(ladder.matchesPlayed).toBe(0);
 
     // cage: categorization is now format-only, so no matches map to cage
-    const cage = body.statistics.find((s: any) => s.statType === 'cage');
+    const cage = body.statistics.find((s: Record<string, unknown>) => s.statType === 'cage');
     expect(cage.losses).toBe(0);
     expect(cage.wins).toBe(0);
   });
@@ -240,11 +237,7 @@ describe('getStatistics - player-stats', () => {
       { championshipId: 'c1', name: 'World Title', type: 'singles', currentChampion: 'p2' },
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce(champHistory)         // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce(championships);       // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, champHistory, championships);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: 'p1' },
@@ -286,11 +279,7 @@ describe('getStatistics - player-stats', () => {
       { championshipId: 'c-tag', name: 'Tag Titles', type: 'tag', currentChampion: ['p1', 'p2'] },
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce(champHistory)         // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce(championships);       // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, champHistory, championships);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: 'p1' },
@@ -313,11 +302,7 @@ describe('getStatistics - player-stats', () => {
       makeMatch({ matchId: 'm3', date: '2024-03-01', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: 'p1' },
@@ -330,7 +315,7 @@ describe('getStatistics - player-stats', () => {
     expect(body.achievements).toBeDefined();
     expect(Array.isArray(body.achievements)).toBe(true);
     // Should at least have "First Victory" (a1)
-    const firstVictory = body.achievements.find((a: any) => a.achievementId === 'a1');
+    const firstVictory = body.achievements.find((a: Record<string, unknown>) => a.achievementId === 'a1');
     expect(firstVictory).toBeDefined();
     expect(firstVictory.achievementName).toBe('First Victory');
   });
@@ -353,11 +338,7 @@ describe('getStatistics - player-stats', () => {
       { championshipId: 'c1', name: 'World Title', type: 'singles', currentChampion: 'p1' },
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1])        // PLAYERS
-      .mockResolvedValueOnce(matches)           // MATCHES
-      .mockResolvedValueOnce(champHistory)      // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce(championships);    // CHAMPIONSHIPS
+    setupDefaultMocks([player1], matches, champHistory, championships);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: 'p1' },
@@ -388,9 +369,7 @@ describe('getStatistics - head-to-head', () => {
       makeMatch({ matchId: 'm4', date: '2024-04-01', participants: ['p1', 'p3'], winners: ['p1'], losers: ['p3'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2, player3])  // PLAYERS
-      .mockResolvedValueOnce(matches);                      // MATCHES
+    setupDefaultMocks([player1, player2, player3], matches);
 
     const event = makeEvent({
       queryStringParameters: { section: 'head-to-head', player1Id: 'p1', player2Id: 'p2' },
@@ -419,9 +398,7 @@ describe('getStatistics - head-to-head', () => {
       })
     );
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches);             // MATCHES
+    setupDefaultMocks([player1, player2], matches);
 
     const event = makeEvent({
       queryStringParameters: { section: 'head-to-head', player1Id: 'p1', player2Id: 'p2' },
@@ -444,9 +421,7 @@ describe('getStatistics - head-to-head', () => {
       makeMatch({ matchId: 'm3', participants: ['p2', 'p3'], winners: ['p2'], losers: ['p3'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2, player3])  // PLAYERS
-      .mockResolvedValueOnce(matches);                      // MATCHES
+    setupDefaultMocks([player1, player2, player3], matches);
 
     const event = makeEvent({
       queryStringParameters: { section: 'head-to-head', player1Id: 'p1', player2Id: 'p2' },
@@ -470,9 +445,7 @@ describe('getStatistics - head-to-head', () => {
       makeMatch({ matchId: 'm2', participants: ['p2', 'p3'], winners: ['p2'], losers: ['p3'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2, player3])  // PLAYERS
-      .mockResolvedValueOnce(matches);                      // MATCHES
+    setupDefaultMocks([player1, player2, player3], matches);
 
     const event = makeEvent({
       queryStringParameters: { section: 'head-to-head', player1Id: 'p1', player2Id: 'p2' },
@@ -502,11 +475,7 @@ describe('getStatistics - seasonId filtering', () => {
       makeMatch({ matchId: 'm4', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }), // no seasonId
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: 'p1', seasonId: 's1' },
@@ -530,9 +499,7 @@ describe('getStatistics - seasonId filtering', () => {
       makeMatch({ matchId: 'm3', date: '2024-03-01', seasonId: 's2', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches);             // MATCHES
+    setupDefaultMocks([player1, player2], matches);
 
     const event = makeEvent({
       queryStringParameters: { section: 'head-to-head', player1Id: 'p1', player2Id: 'p2', seasonId: 's1' },
@@ -554,10 +521,7 @@ describe('getStatistics - seasonId filtering', () => {
       makeMatch({ matchId: 'm3', seasonId: 's2', participants: ['p1', 'p2'], winners: ['p2'], losers: ['p1'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIP_HISTORY
+    setupDefaultMocks([player1, player2], matches, []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'leaderboards', seasonId: 's1' },
@@ -590,11 +554,7 @@ describe('getStatistics - seasonId filtering', () => {
       { championshipId: 'c1', name: 'World Title', type: 'singles', currentChampion: 'p2' },
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce(champHistory)          // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce(championships);        // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, champHistory, championships);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: 'p1', seasonId: 's1' },
@@ -617,10 +577,6 @@ describe('getStatistics - seasonId filtering', () => {
   });
 
   it('keeps achievements all-time when seasonId is set', async () => {
-    // Season s1 has only 1 match for p1, but all-time p1 has 3 wins
-    // The season filter applies to stats computation, but achievements
-    // use the filtered completedMatches. However championship-based
-    // achievements use all-time championship history.
     const matches = [
       makeMatch({ matchId: 'm1', seasonId: 's1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'], isChampionship: true }),
     ];
@@ -637,11 +593,7 @@ describe('getStatistics - seasonId filtering', () => {
       { championshipId: 'c3', name: 'US Title', type: 'singles', currentChampion: 'p2' },
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce(champHistory)          // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce(championships);        // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, champHistory, championships);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: 'p1', seasonId: 's1' },
@@ -667,11 +619,7 @@ describe('getStatistics - seasonId filtering', () => {
       makeMatch({ matchId: 'm1', seasonId: 's1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] }),
     ];
 
-    mockScanAll
-      .mockResolvedValueOnce([player1, player2])  // PLAYERS
-      .mockResolvedValueOnce(matches)              // MATCHES
-      .mockResolvedValueOnce([])                   // CHAMPIONSHIP_HISTORY
-      .mockResolvedValueOnce([]);                  // CHAMPIONSHIPS
+    setupDefaultMocks([player1, player2], matches, [], []);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: 'p1', seasonId: 'nonexistent' },
@@ -694,7 +642,8 @@ describe('getStatistics - error handling', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns 500 when database call throws an error', async () => {
-    mockScanAll.mockRejectedValueOnce(new Error('DynamoDB connection failed'));
+    mockPlayersList.mockRejectedValue(new Error('DynamoDB connection failed'));
+    mockMatchesList.mockResolvedValue([]);
 
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats' },

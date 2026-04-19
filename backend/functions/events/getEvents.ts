@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import type { LeagueEvent } from '../../lib/repositories/types';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -8,55 +9,26 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const status = event.queryStringParameters?.status;
     const seasonId = event.queryStringParameters?.seasonId;
 
-    let events: Record<string, any>[] = [];
+    const { leagueOps: { events } } = getRepositories();
+
+    let results: LeagueEvent[];
 
     if (eventType) {
-      // Query DateIndex: PK=eventType, SK=date
-      const result = await dynamoDb.query({
-        TableName: TableNames.EVENTS,
-        IndexName: 'DateIndex',
-        KeyConditionExpression: '#eventType = :eventType',
-        ExpressionAttributeNames: { '#eventType': 'eventType' },
-        ExpressionAttributeValues: { ':eventType': eventType },
-        ScanIndexForward: false,
-      });
-      events = (result.Items || []) as Record<string, any>[];
+      results = await events.listByEventType(eventType);
     } else if (status) {
-      // Query StatusIndex: PK=status, SK=date
-      const result = await dynamoDb.query({
-        TableName: TableNames.EVENTS,
-        IndexName: 'StatusIndex',
-        KeyConditionExpression: '#status = :status',
-        ExpressionAttributeNames: { '#status': 'status' },
-        ExpressionAttributeValues: { ':status': status },
-        ScanIndexForward: false,
-      });
-      events = (result.Items || []) as Record<string, any>[];
+      results = await events.listByStatus(status as LeagueEvent['status']);
     } else if (seasonId) {
-      // Query SeasonIndex: PK=seasonId, SK=date
-      const result = await dynamoDb.query({
-        TableName: TableNames.EVENTS,
-        IndexName: 'SeasonIndex',
-        KeyConditionExpression: '#seasonId = :seasonId',
-        ExpressionAttributeNames: { '#seasonId': 'seasonId' },
-        ExpressionAttributeValues: { ':seasonId': seasonId },
-        ScanIndexForward: false,
-      });
-      events = (result.Items || []) as Record<string, any>[];
+      results = await events.listBySeason(seasonId);
     } else {
-      // No filters: scan all events
-      const result = await dynamoDb.scan({
-        TableName: TableNames.EVENTS,
-      });
-      events = (result.Items || []) as Record<string, any>[];
+      results = await events.list();
     }
 
     // Sort by date descending (most recent first)
-    events.sort((a, b) => {
+    results.sort((a, b) => {
       return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
 
-    return success(events);
+    return success(results);
   } catch (err) {
     console.error('Error fetching events:', err);
     return serverError('Failed to fetch events');

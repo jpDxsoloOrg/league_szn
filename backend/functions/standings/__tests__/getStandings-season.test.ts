@@ -3,36 +3,22 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockGet, mockPut, mockScan, mockQuery, mockUpdate, mockDelete, mockScanAll, mockQueryAll } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockPut: vi.fn(),
-  mockScan: vi.fn(),
-  mockQuery: vi.fn(),
-  mockUpdate: vi.fn(),
-  mockDelete: vi.fn(),
-  mockScanAll: vi.fn(),
-  mockQueryAll: vi.fn(),
+const { mockOverallsListAll, mockMatchesListCompleted, mockPlayersList, mockSeasonStandingsListBySeason } = vi.hoisted(() => ({
+  mockOverallsListAll: vi.fn(),
+  mockMatchesListCompleted: vi.fn(),
+  mockPlayersList: vi.fn(),
+  mockSeasonStandingsListBySeason: vi.fn(),
 }));
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet,
-    put: mockPut,
-    scan: mockScan,
-    query: mockQuery,
-    update: mockUpdate,
-    delete: mockDelete,
-    scanAll: mockScanAll,
-    queryAll: mockQueryAll,
-  },
-  TableNames: {
-    PLAYERS: 'Players',
-    SEASON_STANDINGS: 'SeasonStandings',
-    MATCHES: 'Matches',
-    STABLES: 'Stables',
-    TAG_TEAMS: 'TagTeams',
-    STABLE_INVITATIONS: 'StableInvitations',
-  },
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    roster: {
+      overalls: { listAll: mockOverallsListAll },
+      players: { list: mockPlayersList },
+    },
+    competition: { matches: { listCompleted: mockMatchesListCompleted } },
+    season: { standings: { listBySeason: mockSeasonStandingsListBySeason } },
+  }),
 }));
 
 import { handler as getStandings } from '../getStandings';
@@ -55,7 +41,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '',
-    requestContext: { authorizer: {} } as any,
+    requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
@@ -72,17 +58,17 @@ describe('getStandings — season-specific (with seasonId)', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns season standings merged with all players', async () => {
-    mockQueryAll.mockResolvedValue([
+    mockSeasonStandingsListBySeason.mockResolvedValue([
       { seasonId: 's1', playerId: 'p1', wins: 5, losses: 2, draws: 1 },
       { seasonId: 's1', playerId: 'p2', wins: 8, losses: 3, draws: 0 },
     ]);
-    mockScanAll
-      .mockResolvedValueOnce([]) // completed matches
-      .mockResolvedValueOnce([
-        { playerId: 'p1', name: 'Alice', currentWrestler: 'Wrestler A' },
-        { playerId: 'p2', name: 'Bob', currentWrestler: 'Wrestler B' },
-        { playerId: 'p3', name: 'Carol', currentWrestler: 'Wrestler C' },
-      ]);
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Alice', currentWrestler: 'Wrestler A' },
+      { playerId: 'p2', name: 'Bob', currentWrestler: 'Wrestler B' },
+      { playerId: 'p3', name: 'Carol', currentWrestler: 'Wrestler C' },
+    ]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
@@ -111,13 +97,13 @@ describe('getStandings — season-specific (with seasonId)', () => {
   });
 
   it('gives 0-0-0 to players without season standings', async () => {
-    mockQueryAll.mockResolvedValue([]); // no standings at all
-    mockScanAll
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        { playerId: 'p1', name: 'Alice', currentWrestler: 'W1' },
-        { playerId: 'p2', name: 'Bob', currentWrestler: 'W2' },
-      ]);
+    mockSeasonStandingsListBySeason.mockResolvedValue([]); // no standings at all
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Alice', currentWrestler: 'W1' },
+      { playerId: 'p2', name: 'Bob', currentWrestler: 'W2' },
+    ]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
@@ -133,18 +119,18 @@ describe('getStandings — season-specific (with seasonId)', () => {
   });
 
   it('sorts season standings by wins desc then losses asc', async () => {
-    mockQueryAll.mockResolvedValue([
+    mockSeasonStandingsListBySeason.mockResolvedValue([
       { seasonId: 's1', playerId: 'p1', wins: 5, losses: 4, draws: 0 },
       { seasonId: 's1', playerId: 'p2', wins: 5, losses: 1, draws: 0 },
       { seasonId: 's1', playerId: 'p3', wins: 7, losses: 3, draws: 0 },
     ]);
-    mockScanAll
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        { playerId: 'p1', name: 'Alice', currentWrestler: 'W1' },
-        { playerId: 'p2', name: 'Bob', currentWrestler: 'W2' },
-        { playerId: 'p3', name: 'Carol', currentWrestler: 'W3' },
-      ]);
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Alice', currentWrestler: 'W1' },
+      { playerId: 'p2', name: 'Bob', currentWrestler: 'W2' },
+      { playerId: 'p3', name: 'Carol', currentWrestler: 'W3' },
+    ]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
@@ -156,8 +142,10 @@ describe('getStandings — season-specific (with seasonId)', () => {
   });
 
   it('returns empty players when no players exist for a season', async () => {
-    mockQueryAll.mockResolvedValue([]);
-    mockScanAll.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    mockSeasonStandingsListBySeason.mockResolvedValue([]);
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
@@ -167,42 +155,43 @@ describe('getStandings — season-specific (with seasonId)', () => {
     expect(body.seasonId).toBe('s1');
   });
 
-  it('queries SeasonStandings table with correct seasonId', async () => {
-    mockQueryAll.mockResolvedValue([]);
-    mockScanAll.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+  it('calls seasonStandings.listBySeason with correct seasonId', async () => {
+    mockSeasonStandingsListBySeason.mockResolvedValue([]);
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([]);
 
     await getStandings(makeSeasonEvent('season-42'), ctx, cb);
 
-    expect(mockQueryAll).toHaveBeenCalledTimes(1);
-    expect(mockQueryAll).toHaveBeenCalledWith({
-      TableName: 'SeasonStandings',
-      KeyConditionExpression: 'seasonId = :seasonId',
-      ExpressionAttributeValues: { ':seasonId': 'season-42' },
-    });
+    expect(mockSeasonStandingsListBySeason).toHaveBeenCalledTimes(1);
+    expect(mockSeasonStandingsListBySeason).toHaveBeenCalledWith('season-42');
   });
 
-  it('scans Matches then Players when fetching season standings', async () => {
-    mockQueryAll.mockResolvedValue([]);
-    mockScanAll.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+  it('calls repository methods for overalls, matches, players, and seasonStandings', async () => {
+    mockSeasonStandingsListBySeason.mockResolvedValue([]);
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([]);
 
     await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
-    expect(mockScanAll).toHaveBeenCalledTimes(2);
-    expect(mockScanAll).toHaveBeenNthCalledWith(1, expect.objectContaining({ TableName: 'Matches' }));
-    expect(mockScanAll).toHaveBeenNthCalledWith(2, { TableName: 'Players' });
+    expect(mockOverallsListAll).toHaveBeenCalledTimes(1);
+    expect(mockMatchesListCompleted).toHaveBeenCalledTimes(1);
+    expect(mockPlayersList).toHaveBeenCalledTimes(1);
+    expect(mockSeasonStandingsListBySeason).toHaveBeenCalledTimes(1);
   });
 
   it('handles standings with falsy wins/losses/draws (defaults to 0)', async () => {
-    mockQueryAll.mockResolvedValue([
+    mockSeasonStandingsListBySeason.mockResolvedValue([
       { seasonId: 's1', playerId: 'p1', wins: 0, losses: 0, draws: 0 },
       { seasonId: 's1', playerId: 'p2', wins: undefined, losses: undefined, draws: undefined },
     ]);
-    mockScanAll
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        { playerId: 'p1', name: 'Alice', currentWrestler: 'W1' },
-        { playerId: 'p2', name: 'Bob', currentWrestler: 'W2' },
-      ]);
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Alice', currentWrestler: 'W1' },
+      { playerId: 'p2', name: 'Bob', currentWrestler: 'W2' },
+    ]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
@@ -217,14 +206,14 @@ describe('getStandings — season-specific (with seasonId)', () => {
   });
 
   it('preserves original player fields in season standings response', async () => {
-    mockQueryAll.mockResolvedValue([
+    mockSeasonStandingsListBySeason.mockResolvedValue([
       { seasonId: 's1', playerId: 'p1', wins: 3, losses: 1, draws: 0 },
     ]);
-    mockScanAll
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        { playerId: 'p1', name: 'Alice', currentWrestler: 'The Rock', divisionId: 'div-1' },
-      ]);
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Alice', currentWrestler: 'The Rock', divisionId: 'div-1' },
+    ]);
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
@@ -241,8 +230,10 @@ describe('getStandings — season-specific (with seasonId)', () => {
 describe('getStandings — error handling (season)', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('returns 500 when queryAll throws', async () => {
-    mockQueryAll.mockRejectedValue(new Error('DynamoDB query failed'));
+  it('returns 500 when seasonStandings.listBySeason throws', async () => {
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockSeasonStandingsListBySeason.mockRejectedValue(new Error('DynamoDB query failed'));
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 
@@ -250,11 +241,11 @@ describe('getStandings — error handling (season)', () => {
     expect(JSON.parse(result!.body).message).toBe('Failed to fetch standings');
   });
 
-  it('returns 500 when scanAll (players) throws during season query', async () => {
-    mockQueryAll.mockResolvedValue([]);
-    mockScanAll
-      .mockResolvedValueOnce([]) // Matches scan succeeds
-      .mockRejectedValueOnce(new Error('DynamoDB scan failed')); // Players scan fails
+  it('returns 500 when players.list throws during season query', async () => {
+    mockSeasonStandingsListBySeason.mockResolvedValue([]);
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockRejectedValue(new Error('DynamoDB scan failed'));
 
     const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
 

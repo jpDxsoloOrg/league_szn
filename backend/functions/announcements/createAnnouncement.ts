@@ -1,9 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
-import { v4 as uuidv4 } from 'uuid';
 
 interface CreateAnnouncementBody {
   title: string;
@@ -32,29 +31,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const auth = getAuthContext(event);
-    const now = new Date().toISOString();
+    const { content: { announcements } } = getRepositories();
 
-    const announcement: Record<string, unknown> = {
-      announcementId: uuidv4(),
-      title: title.trim(),
-      body: body.trim(),
-      priority: typeof priority === 'number' ? priority : 1,
-      isActive: isActive === false ? 'false' : 'true',
+    const announcement = await announcements.create({
+      title,
+      body,
+      priority,
+      isActive,
+      expiresAt,
+      videoUrl,
       createdBy: auth.username || auth.sub,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    if (expiresAt) {
-      announcement.expiresAt = expiresAt;
-    }
-    if (videoUrl && typeof videoUrl === 'string' && videoUrl.trim().length > 0) {
-      announcement.videoUrl = videoUrl.trim();
-    }
-
-    await dynamoDb.put({
-      TableName: TableNames.ANNOUNCEMENTS,
-      Item: announcement,
     });
 
     return created(announcement);

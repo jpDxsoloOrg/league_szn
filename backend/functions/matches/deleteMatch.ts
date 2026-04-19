@@ -1,20 +1,10 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import type { Match } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 import { invokeAsync } from '../../lib/asyncLambda';
 import { revertGroupStats } from './revertGroupStats';
-
-interface TransactWriteItem {
-  Update?: {
-    TableName: string;
-    Key: Record<string, unknown>;
-    UpdateExpression: string;
-    ExpressionAttributeNames?: Record<string, string>;
-    ExpressionAttributeValues?: Record<string, unknown>;
-  };
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Moderator');
@@ -26,22 +16,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('matchId is required');
     }
 
-    // Query the match (matchId is PK, need to find the sort key 'date')
-    const matchResult = await dynamoDb.query({
-      TableName: TableNames.MATCHES,
-      KeyConditionExpression: 'matchId = :matchId',
-      ExpressionAttributeValues: { ':matchId': matchId },
-      Limit: 1,
-    });
+    const { competition: { matches }, leagueOps: { events }, runInTransaction } = getRepositories();
 
-    const match = matchResult.Items?.[0];
+    // Find the match (need date for composite key delete)
+    const match = await matches.findByIdWithDate(matchId);
     if (!match) {
       return notFound('Match not found');
     }
 
     // If match was completed, roll back all stat changes
     if (match.status === 'completed') {
-      await rollbackCompletedMatch(match);
+      await rollbackCompletedMatch(match, runInTransaction);
 
       // Roll back championship changes if this was a championship match
       if (match.isChampionship && match.championshipId) {
@@ -55,16 +40,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Delete the match record
-    await dynamoDb.delete({
-      TableName: TableNames.MATCHES,
-      Key: { matchId, date: match.date as string },
-    });
+    await matches.delete(matchId, match.date);
 
     // If match was linked to an event, remove it from the event's matchCards
-    const eventId = match.eventId as string | undefined;
-    if (eventId) {
+    if (match.eventId) {
       try {
-        await removeMatchFromEvent(eventId, matchId);
+        const eventItem = await events.findById(match.eventId);
+        if (eventItem) {
+          const updatedCards = (eventItem.matchCards || []).filter(
+            (card) => card.matchId !== matchId
+          );
+          await events.update(match.eventId, { matchCards: updatedCards });
+        }
       } catch (err) {
         console.warn('Failed to remove match from event:', err);
       }
@@ -89,90 +76,42 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   }
 };
 
-async function rollbackCompletedMatch(match: Record<string, unknown>): Promise<void> {
-  const winners = (match.winners as string[]) || [];
-  const losers = (match.losers as string[]) || [];
+async function rollbackCompletedMatch(
+  match: Match,
+  runInTransaction: ReturnType<typeof getRepositories>['runInTransaction'],
+): Promise<void> {
+  const winners = match.winners || [];
+  const losers = match.losers || [];
   const isDraw = match.isDraw === true;
-  const seasonId = match.seasonId as string | undefined;
-  const timestamp = new Date().toISOString();
+  const seasonId = match.seasonId;
 
-  const transactItems: TransactWriteItem[] = [];
-
-  // 1. Decrement winner stats (all-time)
-  for (const playerId of winners) {
-    transactItems.push({
-      Update: {
-        TableName: TableNames.PLAYERS,
-        Key: { playerId },
-        UpdateExpression: isDraw
-          ? 'SET draws = if_not_exists(draws, :one) - :one, updatedAt = :timestamp'
-          : 'SET wins = if_not_exists(wins, :one) - :one, updatedAt = :timestamp',
-        ExpressionAttributeValues: {
-          ':one': 1,
-          ':timestamp': timestamp,
-        },
-      },
-    });
-  }
-
-  // 2. Decrement loser stats (all-time) — skip for draws
-  if (!isDraw) {
-    for (const playerId of losers) {
-      transactItems.push({
-        Update: {
-          TableName: TableNames.PLAYERS,
-          Key: { playerId },
-          UpdateExpression: 'SET losses = if_not_exists(losses, :one) - :one, updatedAt = :timestamp',
-          ExpressionAttributeValues: {
-            ':one': 1,
-            ':timestamp': timestamp,
-          },
-        },
-      });
-    }
-  }
-
-  // 3. Decrement season standings if match had a seasonId
-  if (seasonId) {
+  // Use UoW to atomically decrement all player/season stats
+  await runInTransaction(async (tx) => {
+    // 1. Decrement winner stats (all-time)
     for (const playerId of winners) {
-      transactItems.push({
-        Update: {
-          TableName: TableNames.SEASON_STANDINGS,
-          Key: { seasonId, playerId },
-          UpdateExpression: isDraw
-            ? 'SET draws = if_not_exists(draws, :one) - :one, updatedAt = :timestamp'
-            : 'SET wins = if_not_exists(wins, :one) - :one, updatedAt = :timestamp',
-          ExpressionAttributeValues: {
-            ':one': 1,
-            ':timestamp': timestamp,
-          },
-        },
-      });
+      tx.incrementPlayerRecord(playerId, isDraw ? { draws: -1 } : { wins: -1 });
     }
 
+    // 2. Decrement loser stats (all-time) — skip for draws
     if (!isDraw) {
       for (const playerId of losers) {
-        transactItems.push({
-          Update: {
-            TableName: TableNames.SEASON_STANDINGS,
-            Key: { seasonId, playerId },
-            UpdateExpression: 'SET losses = if_not_exists(losses, :one) - :one, updatedAt = :timestamp',
-            ExpressionAttributeValues: {
-              ':one': 1,
-              ':timestamp': timestamp,
-            },
-          },
-        });
+        tx.incrementPlayerRecord(playerId, { losses: -1 });
       }
     }
-  }
 
-  // Execute rollback transaction
-  if (transactItems.length > 0) {
-    await dynamoDb.transactWrite({
-      TransactItems: transactItems,
-    } as TransactWriteCommandInput);
-  }
+    // 3. Decrement season standings if match had a seasonId
+    if (seasonId) {
+      for (const playerId of winners) {
+        tx.incrementStanding(seasonId, playerId, isDraw ? { draws: -1 } : { wins: -1 });
+      }
+
+      if (!isDraw) {
+        for (const playerId of losers) {
+          tx.incrementStanding(seasonId, playerId, { losses: -1 });
+        }
+      }
+    }
+  });
 
   // 4. Revert stable and tag team group stats (non-critical)
   const allParticipants = isDraw ? [...winners] : [...winners, ...losers];
@@ -182,17 +121,16 @@ async function rollbackCompletedMatch(match: Record<string, unknown>): Promise<v
       losers,
       isDraw,
       participants: allParticipants,
-      teams: match.teams as string[][] | undefined,
+      teams: match.teams,
     });
   } catch (err) {
     console.warn('Group stats revert failed:', err);
   }
 
   // 5. Revert event auto-complete status if needed
-  const eventId = match.eventId as string | undefined;
-  if (eventId) {
+  if (match.eventId) {
     try {
-      await revertEventStatus(eventId);
+      await revertEventStatus(match.eventId);
     } catch (err) {
       console.warn('Event status revert failed:', err);
     }
@@ -200,31 +138,23 @@ async function rollbackCompletedMatch(match: Record<string, unknown>): Promise<v
 }
 
 async function revertEventStatus(eventId: string): Promise<void> {
-  const eventResult = await dynamoDb.get({
-    TableName: TableNames.EVENTS,
-    Key: { eventId },
-  });
+  const { leagueOps: { events }, competition: { matches } } = getRepositories();
 
-  if (!eventResult.Item) return;
+  const eventItem = await events.findById(eventId);
+  if (!eventItem) return;
 
   // Only revert if the event was auto-completed
-  if (eventResult.Item.status !== 'completed') return;
+  if (eventItem.status !== 'completed') return;
 
   // Check remaining matches to determine correct status
-  const matchCards = (eventResult.Item.matchCards as Record<string, unknown>[] | undefined) || [];
-  const matchIds = matchCards.map((c) => c.matchId as string).filter(Boolean);
+  const matchCards = eventItem.matchCards || [];
+  const matchIds = matchCards.map((c) => c.matchId).filter(Boolean);
 
   if (matchIds.length === 0) return;
 
   let hasCompleted = false;
   for (const mId of matchIds) {
-    const matchQuery = await dynamoDb.query({
-      TableName: TableNames.MATCHES,
-      KeyConditionExpression: 'matchId = :matchId',
-      ExpressionAttributeValues: { ':matchId': mId },
-      Limit: 1,
-    });
-    const m = matchQuery.Items?.[0];
+    const m = await matches.findById(mId);
     if (m && m.status === 'completed') {
       hasCompleted = true;
     }
@@ -232,136 +162,61 @@ async function revertEventStatus(eventId: string): Promise<void> {
 
   // If some matches are still completed, set to in-progress; otherwise upcoming
   const newStatus = hasCompleted ? 'in-progress' : 'upcoming';
-
-  await dynamoDb.update({
-    TableName: TableNames.EVENTS,
-    Key: { eventId },
-    UpdateExpression: 'SET #status = :status, updatedAt = :now',
-    ExpressionAttributeNames: { '#status': 'status' },
-    ExpressionAttributeValues: {
-      ':status': newStatus,
-      ':now': new Date().toISOString(),
-    },
-  });
+  await events.update(eventId, { status: newStatus as 'upcoming' | 'in-progress' });
 }
 
-async function rollbackChampionshipResult(match: Record<string, unknown>): Promise<void> {
-  const championshipId = match.championshipId as string;
-  const matchId = match.matchId as string;
+async function rollbackChampionshipResult(match: Match): Promise<void> {
+  const championshipId = match.championshipId!;
+  const matchId = match.matchId;
+  const { competition: { championships } } = getRepositories();
 
   // Find the championship history entry created by this match
-  const historyResult = await dynamoDb.queryAll({
-    TableName: TableNames.CHAMPIONSHIP_HISTORY,
-    KeyConditionExpression: 'championshipId = :cid',
-    FilterExpression: 'matchId = :matchId',
-    ExpressionAttributeValues: {
-      ':cid': championshipId,
-      ':matchId': matchId,
-    },
-  });
-
-  const reignCreatedByMatch = historyResult.find(
-    (item) => item.matchId === matchId
-  );
+  const history = await championships.listHistory(championshipId);
+  const reignCreatedByMatch = history.find((item) => item.matchId === matchId);
 
   if (reignCreatedByMatch) {
     // This match created a new reign — delete it and reopen the previous reign
-    await dynamoDb.delete({
-      TableName: TableNames.CHAMPIONSHIP_HISTORY,
-      Key: {
-        championshipId,
-        wonDate: reignCreatedByMatch.wonDate as string,
-      },
-    });
+    await championships.deleteHistoryEntry(championshipId, reignCreatedByMatch.wonDate);
 
     // Find the previous reign (most recent one that has a lostDate)
-    const allReigns = await dynamoDb.queryAll({
-      TableName: TableNames.CHAMPIONSHIP_HISTORY,
-      KeyConditionExpression: 'championshipId = :cid',
-      ExpressionAttributeValues: { ':cid': championshipId },
-      ScanIndexForward: false,
-    });
-
-    // The previous reign should be the most recent one with a lostDate
-    const previousReign = allReigns.find((r) => r.lostDate);
+    const remainingHistory = await championships.listHistory(championshipId);
+    const sortedReigns = remainingHistory.sort(
+      (a, b) => new Date(b.wonDate).getTime() - new Date(a.wonDate).getTime(),
+    );
+    const previousReign = sortedReigns.find((r) => r.lostDate);
 
     if (previousReign) {
-      // Reopen the previous reign (remove lostDate and daysHeld)
-      await dynamoDb.update({
-        TableName: TableNames.CHAMPIONSHIP_HISTORY,
-        Key: {
-          championshipId,
-          wonDate: previousReign.wonDate as string,
-        },
-        UpdateExpression: 'REMOVE lostDate, daysHeld SET updatedAt = :now',
-        ExpressionAttributeValues: {
-          ':now': new Date().toISOString(),
-        },
-      });
-
+      // Reopen the previous reign
+      await championships.reopenReign(championshipId, previousReign.wonDate);
       // Restore previous champion on the championship record
-      await dynamoDb.update({
-        TableName: TableNames.CHAMPIONSHIPS,
-        Key: { championshipId },
-        UpdateExpression: 'SET currentChampion = :champion, updatedAt = :now',
-        ExpressionAttributeValues: {
-          ':champion': previousReign.champion,
-          ':now': new Date().toISOString(),
-        },
+      await championships.update(championshipId, {
+        currentChampion: previousReign.champion,
       });
     } else {
       // No previous reign — title becomes vacant
-      await dynamoDb.update({
-        TableName: TableNames.CHAMPIONSHIPS,
-        Key: { championshipId },
-        UpdateExpression: 'REMOVE currentChampion SET updatedAt = :now',
-        ExpressionAttributeValues: {
-          ':now': new Date().toISOString(),
-        },
-      });
+      await championships.removeChampion(championshipId);
     }
   } else {
     // This match was a title defense — decrement defense count on current reign
-    const currentReigns = await dynamoDb.queryAll({
-      TableName: TableNames.CHAMPIONSHIP_HISTORY,
-      KeyConditionExpression: 'championshipId = :cid',
-      FilterExpression: 'attribute_not_exists(lostDate)',
-      ExpressionAttributeValues: { ':cid': championshipId },
-    });
-
-    const currentReign = currentReigns[0];
+    const currentReign = await championships.findCurrentReign(championshipId);
     if (currentReign && typeof currentReign.defenses === 'number' && currentReign.defenses > 0) {
-      await dynamoDb.update({
-        TableName: TableNames.CHAMPIONSHIP_HISTORY,
-        Key: {
-          championshipId,
-          wonDate: currentReign.wonDate as string,
-        },
-        UpdateExpression: 'SET defenses = defenses - :one, updatedAt = :now',
-        ExpressionAttributeValues: {
-          ':one': 1,
-          ':now': new Date().toISOString(),
-        },
-      });
+      await championships.decrementDefenses(championshipId, currentReign.wonDate);
     }
   }
 }
 
-async function rollbackTournamentResult(match: Record<string, unknown>): Promise<void> {
-  const tournamentId = match.tournamentId as string;
-  const winners = (match.winners as string[]) || [];
-  const losers = (match.losers as string[]) || [];
+async function rollbackTournamentResult(match: Match): Promise<void> {
+  const tournamentId = match.tournamentId!;
+  const winners = match.winners || [];
+  const losers = match.losers || [];
   const isDraw = match.isDraw === true;
+  const { competition: { tournaments } } = getRepositories();
 
-  const tournament = await dynamoDb.get({
-    TableName: TableNames.TOURNAMENTS,
-    Key: { tournamentId },
-  });
+  const tournament = await tournaments.findById(tournamentId);
+  if (!tournament) return;
 
-  if (!tournament.Item) return;
-
-  if (tournament.Item.type === 'round-robin') {
-    const standings = (tournament.Item.standings as Record<string, { wins: number; losses: number; draws: number; points: number }>) || {};
+  if (tournament.type === 'round-robin') {
+    const standings = (tournament.standings as Record<string, { wins: number; losses: number; draws: number; points: number }>) || {};
 
     if (isDraw) {
       for (const playerId of winners) {
@@ -384,24 +239,14 @@ async function rollbackTournamentResult(match: Record<string, unknown>): Promise
       }
     }
 
-    // If tournament was completed, revert to in-progress
-    const newStatus = tournament.Item.status === 'completed' ? 'in-progress' : tournament.Item.status;
-
-    await dynamoDb.update({
-      TableName: TableNames.TOURNAMENTS,
-      Key: { tournamentId },
-      UpdateExpression: 'SET standings = :standings, #status = :status, updatedAt = :now REMOVE winner',
-      ExpressionAttributeNames: { '#status': 'status' },
-      ExpressionAttributeValues: {
-        ':standings': standings,
-        ':status': newStatus,
-        ':now': new Date().toISOString(),
-      },
-    });
+    const newStatus = tournament.status === 'completed' ? 'in-progress' : tournament.status;
+    const patch: Partial<typeof tournament> = { standings, status: newStatus };
+    delete (patch as Record<string, unknown>).winner;
+    await tournaments.update(tournamentId, patch);
   }
 
-  if (tournament.Item.type === 'single-elimination' && tournament.Item.brackets) {
-    const brackets = tournament.Item.brackets as {
+  if (tournament.type === 'single-elimination' && tournament.brackets) {
+    const brackets = tournament.brackets as {
       rounds: Array<{
         matches: Array<{
           participant1?: string;
@@ -411,9 +256,7 @@ async function rollbackTournamentResult(match: Record<string, unknown>): Promise
         }>;
       }>;
     };
-    const matchId = match.matchId as string;
 
-    // Find the bracket match and clear the winner
     let foundRoundIndex = -1;
     let foundMatchIndex = -1;
 
@@ -422,7 +265,7 @@ async function rollbackTournamentResult(match: Record<string, unknown>): Promise
       if (!round?.matches) continue;
       for (let matchIndex = 0; matchIndex < round.matches.length; matchIndex++) {
         const bracketMatch = round.matches[matchIndex];
-        if (bracketMatch?.matchId === matchId) {
+        if (bracketMatch?.matchId === match.matchId) {
           foundRoundIndex = roundIndex;
           foundMatchIndex = matchIndex;
           break;
@@ -453,43 +296,10 @@ async function rollbackTournamentResult(match: Record<string, unknown>): Promise
         }
       }
 
-      const newStatus = tournament.Item.status === 'completed' ? 'in-progress' : tournament.Item.status;
-
-      await dynamoDb.update({
-        TableName: TableNames.TOURNAMENTS,
-        Key: { tournamentId },
-        UpdateExpression: 'SET brackets = :brackets, #status = :status, updatedAt = :now REMOVE winner',
-        ExpressionAttributeNames: { '#status': 'status' },
-        ExpressionAttributeValues: {
-          ':brackets': brackets,
-          ':status': newStatus,
-          ':now': new Date().toISOString(),
-        },
-      });
+      const newStatus = tournament.status === 'completed' ? 'in-progress' : tournament.status;
+      const patch: Partial<typeof tournament> = { brackets, status: newStatus };
+      delete (patch as Record<string, unknown>).winner;
+      await tournaments.update(tournamentId, patch);
     }
   }
-}
-
-async function removeMatchFromEvent(eventId: string, matchId: string): Promise<void> {
-  const eventResult = await dynamoDb.get({
-    TableName: TableNames.EVENTS,
-    Key: { eventId },
-  });
-
-  if (!eventResult.Item) return;
-
-  const matchCards = (eventResult.Item.matchCards as Record<string, unknown>[] | undefined) || [];
-  const updatedCards = matchCards.filter(
-    (card) => (card as Record<string, unknown>).matchId !== matchId
-  );
-
-  await dynamoDb.update({
-    TableName: TableNames.EVENTS,
-    Key: { eventId },
-    UpdateExpression: 'SET matchCards = :cards, updatedAt = :now',
-    ExpressionAttributeValues: {
-      ':cards': updatedCards,
-      ':now': new Date().toISOString(),
-    },
-  });
 }

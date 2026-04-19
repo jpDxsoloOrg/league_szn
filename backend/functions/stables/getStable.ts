@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames, getOrNotFound } from '../../lib/dynamodb';
-import { success, badRequest, serverError } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import {
   StableRecord,
   MatchRecord,
@@ -45,26 +45,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('stableId is required');
     }
 
-    const result = await getOrNotFound<StableRecord & Record<string, unknown>>(
-      TableNames.STABLES,
-      { stableId },
-      'Stable not found'
-    );
+    const { roster: { stables: stablesRepo, players: playersRepo } } = getRepositories();
 
-    if ('notFoundResponse' in result) {
-      return result.notFoundResponse;
+    const stable = await stablesRepo.findById(stableId);
+    if (!stable) {
+      return notFound('Stable not found');
     }
 
-    const stable = result.item;
-
-    // Fetch members, all stables, and completed matches in parallel
+    // Fetch members via repo, all stables and completed matches in parallel
+    // Note: fetchActiveStables and fetchCompletedMatches use dynamoDb directly — matches migration deferred to Wave 5+
     const memberPromises = (stable.memberIds || []).map((playerId) =>
-      dynamoDb.get({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId },
-        ProjectionExpression: 'playerId, #n, currentWrestler, imageUrl, psnId, wins, losses, draws',
-        ExpressionAttributeNames: { '#n': 'name' },
-      })
+      playersRepo.findById(playerId)
     );
 
     const [memberResults, allStables, matches] = await Promise.all([
@@ -77,22 +68,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const members: PlayerSummary[] = [];
     let leaderName = '';
 
-    for (const memberResult of memberResults) {
-      if (memberResult.Item) {
-        const player: PlayerSummary = {
-          playerId: memberResult.Item.playerId as string,
-          playerName: memberResult.Item.name as string,
-          wrestlerName: memberResult.Item.currentWrestler as string,
-          imageUrl: memberResult.Item.imageUrl as string | undefined,
-          psnId: memberResult.Item.psnId as string | undefined,
-          wins: (memberResult.Item.wins as number) || 0,
-          losses: (memberResult.Item.losses as number) || 0,
-          draws: (memberResult.Item.draws as number) || 0,
+    for (const player of memberResults) {
+      if (player) {
+        const summary: PlayerSummary = {
+          playerId: player.playerId,
+          playerName: player.name,
+          wrestlerName: player.currentWrestler,
+          imageUrl: player.imageUrl,
+          psnId: player.psnId,
+          wins: player.wins || 0,
+          losses: player.losses || 0,
+          draws: player.draws || 0,
         };
-        members.push(player);
+        members.push(summary);
 
         if (player.playerId === stable.leaderId) {
-          leaderName = player.playerName;
+          leaderName = player.name;
         }
       }
     }
@@ -105,7 +96,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Cast stable to the expected type for computation
-    const stableForCompute: import('./computeStableStats').StableRecord = {
+    const stableForCompute: StableRecord = {
       stableId: stable.stableId,
       name: stable.name,
       leaderId: stable.leaderId,

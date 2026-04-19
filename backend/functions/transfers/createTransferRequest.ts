@@ -1,6 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { v4 as uuidv4 } from 'uuid';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
@@ -18,20 +17,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { sub } = getAuthContext(event);
 
     // Look up the player by userId
-    const playerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :userId',
-      ExpressionAttributeValues: { ':userId': sub },
-    });
+    const player = await getRepositories().roster.players.findByUserId(sub);
 
-    if (!playerResult.Items || playerResult.Items.length === 0) {
+    if (!player) {
       return notFound('No player profile found for this user');
     }
 
-    const player = playerResult.Items[0];
-    const playerId = player.playerId as string;
-    const fromDivisionId = player.divisionId as string | undefined;
+    const playerId = player.playerId;
+    const fromDivisionId = player.divisionId;
 
     if (!fromDivisionId) {
       return badRequest('You are not currently assigned to a division');
@@ -54,49 +47,24 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Validate target division exists
-    const divisionResult = await dynamoDb.get({
-      TableName: TableNames.DIVISIONS,
-      Key: { divisionId: toDivisionId },
-    });
+    const division = await getRepositories().leagueOps.divisions.findById(toDivisionId);
 
-    if (!divisionResult.Item) {
+    if (!division) {
       return notFound('Target division not found');
     }
 
     // Check for existing pending request
-    const existingResult = await dynamoDb.query({
-      TableName: TableNames.TRANSFER_REQUESTS,
-      IndexName: 'PlayerTransfersIndex',
-      KeyConditionExpression: 'playerId = :playerId',
-      FilterExpression: '#status = :pending',
-      ExpressionAttributeNames: { '#status': 'status' },
-      ExpressionAttributeValues: {
-        ':playerId': playerId,
-        ':pending': 'pending',
-      },
-    });
+    const pendingRequests = await getRepositories().roster.transfers.listPendingByPlayer(playerId);
 
-    if (existingResult.Items && existingResult.Items.length > 0) {
+    if (pendingRequests.length > 0) {
       return badRequest('You already have a pending transfer request. Cancel it before submitting a new one.');
     }
 
-    const now = new Date().toISOString();
-    const requestId = uuidv4();
-
-    const item = {
-      requestId,
+    const item = await getRepositories().roster.transfers.create({
       playerId,
       fromDivisionId,
       toDivisionId,
       reason: reason.trim(),
-      status: 'pending',
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await dynamoDb.put({
-      TableName: TableNames.TRANSFER_REQUESTS,
-      Item: item,
     });
 
     return success(item);

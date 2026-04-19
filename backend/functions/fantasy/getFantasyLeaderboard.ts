@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 
 interface LeaderboardEntry {
@@ -16,30 +16,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const seasonId = event.queryStringParameters?.seasonId;
 
+    const { user: { fantasy }, leagueOps: { events } } = getRepositories();
+
     // Scan all fantasy picks
-    const allPicks = await dynamoDb.scanAll({
-      TableName: TableNames.FANTASY_PICKS,
-    });
+    const allPicks = await fantasy.listAllPicks();
 
     // If filtering by season, get events for that season to filter picks
+    const allEvents = await events.list();
     let seasonEventIds: Set<string> | null = null;
     if (seasonId) {
-      const eventsResult = await dynamoDb.scanAll({
-        TableName: TableNames.EVENTS,
-        FilterExpression: 'seasonId = :sid',
-        ExpressionAttributeValues: { ':sid': seasonId },
-      });
-      seasonEventIds = new Set(eventsResult.map((e) => e.eventId as string));
+      seasonEventIds = new Set(
+        allEvents
+          .filter((e) => e.seasonId === seasonId)
+          .map((e) => e.eventId),
+      );
     }
 
     // Get completed events to determine which picks have been scored
-    const completedEvents = await dynamoDb.scanAll({
-      TableName: TableNames.EVENTS,
-      FilterExpression: '#status = :completed',
-      ExpressionAttributeNames: { '#status': 'status' },
-      ExpressionAttributeValues: { ':completed': 'completed' },
-    });
-    const completedEventIds = new Set(completedEvents.map((e) => e.eventId as string));
+    const completedEvents = allEvents.filter((e) => e.status === 'completed');
+    const completedEventIds = new Set(completedEvents.map((e) => e.eventId));
 
     // Aggregate points per user
     const userStats = new Map<
@@ -55,10 +50,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     >();
 
     for (const pick of allPicks) {
-      const fantasyUserId = pick.fantasyUserId as string;
-      const pickEventId = pick.eventId as string;
-      const pointsEarned = (pick.pointsEarned as number) || 0;
-      const username = (pick.username as string) || fantasyUserId.slice(0, 8);
+      const fantasyUserId = pick.fantasyUserId;
+      const pickEventId = pick.eventId;
+      const pointsEarned = pick.pointsEarned || 0;
+      const username = pick.username || fantasyUserId.slice(0, 8);
 
       // Only count picks for completed events
       if (!completedEventIds.has(pickEventId)) continue;
@@ -75,9 +70,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
 
       const stats = userStats.get(fantasyUserId)!;
-      // Update username to latest if available
       if (pick.username) {
-        stats.username = pick.username as string;
+        stats.username = pick.username;
       }
 
       stats.totalPoints += pointsEarned;
@@ -89,7 +83,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
 
       // Check for perfect picks (all picked wrestlers won)
-      const breakdown = pick.breakdown as Record<string, { points: number }> | undefined;
+      const breakdown = pick.breakdown;
       if (breakdown && pointsEarned > 0) {
         const allWon = Object.values(breakdown).every((b) => b.points > 0);
         if (allWon) {
@@ -99,35 +93,31 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Calculate streaks (consecutive events with points > 0)
-    // Sort completed events by date for proper streak calculation
     const completedEventsList = completedEvents
-      .sort((a, b) => (a.date as string).localeCompare(b.date as string))
-      .map((e) => e.eventId as string);
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((e) => e.eventId);
 
     // Build leaderboard entries
     const entries: LeaderboardEntry[] = [];
 
     for (const stats of userStats.values()) {
-      // Calculate current streak
       let currentStreak = 0;
       const userEventPoints = new Map(
         stats.eventResults.map((r) => [r.eventId, r.points])
       );
 
-      // Walk backwards through completed events
       for (let i = completedEventsList.length - 1; i >= 0; i--) {
         const eid = completedEventsList[i];
         const pts = userEventPoints.get(eid);
         if (pts !== undefined && pts > 0) {
           currentStreak++;
         } else if (pts !== undefined && pts === 0) {
-          break; // Participated but scored 0 - streak broken
+          break;
         }
-        // If user didn't participate in this event, skip it (don't break streak)
       }
 
       entries.push({
-        rank: 0, // Will be set after sorting
+        rank: 0,
         fantasyUserId: stats.fantasyUserId,
         username: stats.username,
         totalPoints: stats.totalPoints,

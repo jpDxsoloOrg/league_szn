@@ -1,31 +1,13 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames, getOrNotFound } from '../../lib/dynamodb';
-import { created, badRequest, serverError } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { created, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
-import { v4 as uuidv4 } from 'uuid';
 
 interface InviteBody {
   playerId: string;
   message?: string;
-}
-
-interface StableRecord {
-  [key: string]: unknown;
-  stableId: string;
-  name: string;
-  leaderId: string;
-  memberIds: string[];
-  status: string;
-}
-
-interface PlayerRecord {
-  [key: string]: unknown;
-  playerId: string;
-  name: string;
-  stableId?: string;
-  userId?: string;
 }
 
 const MAX_STABLE_MEMBERS = 6;
@@ -51,28 +33,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('playerId is required');
     }
 
-    // Get stable
-    const stableResult = await getOrNotFound<StableRecord>(
-      TableNames.STABLES,
-      { stableId },
-      'Stable not found'
-    );
+    const { roster: { stables: stablesRepo, players: playersRepo } } = getRepositories();
 
-    if ('notFoundResponse' in stableResult) {
-      return stableResult.notFoundResponse;
+    // Get stable
+    const stable = await stablesRepo.findById(stableId);
+    if (!stable) {
+      return notFound('Stable not found');
     }
 
-    const stable = stableResult.item;
-
     // Verify caller is the stable leader
-    const callerResult = await dynamoDb.query({
-      TableName: TableNames.PLAYERS,
-      IndexName: 'UserIdIndex',
-      KeyConditionExpression: 'userId = :uid',
-      ExpressionAttributeValues: { ':uid': auth.sub },
-    });
-
-    const callerPlayer = callerResult.Items?.[0];
+    const callerPlayer = await playersRepo.findByUserId(auth.sub);
     if (!callerPlayer || callerPlayer.playerId !== stable.leaderId) {
       return badRequest('Only the stable leader can invite members');
     }
@@ -88,39 +58,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Verify invited player exists and has no stable
-    const invitedResult = await getOrNotFound<PlayerRecord>(
-      TableNames.PLAYERS,
-      { playerId },
-      'Invited player not found'
-    );
-
-    if ('notFoundResponse' in invitedResult) {
-      return invitedResult.notFoundResponse;
+    const invitedPlayer = await playersRepo.findById(playerId);
+    if (!invitedPlayer) {
+      return notFound('Invited player not found');
     }
-
-    const invitedPlayer = invitedResult.item;
 
     if (invitedPlayer.stableId) {
       return badRequest('Player already belongs to a stable');
     }
 
     // Check for existing pending invitation for this player+stable
-    const existingInvitations = await dynamoDb.scanAll({
-      TableName: TableNames.STABLE_INVITATIONS,
-      FilterExpression: '#stableId = :stableId AND #invitedPlayerId = :playerId AND #status = :pending',
-      ExpressionAttributeNames: {
-        '#stableId': 'stableId',
-        '#invitedPlayerId': 'invitedPlayerId',
-        '#status': 'status',
-      },
-      ExpressionAttributeValues: {
-        ':stableId': stableId,
-        ':playerId': playerId,
-        ':pending': 'pending',
-      },
-    });
+    const existingInvitations = await stablesRepo.listInvitationsByStable(stableId);
+    const hasPendingInvitation = existingInvitations.some(
+      (inv) => inv.invitedPlayerId === playerId && inv.status === 'pending'
+    );
 
-    if (existingInvitations.length > 0) {
+    if (hasPendingInvitation) {
       return badRequest('A pending invitation already exists for this player');
     }
 
@@ -128,22 +81,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const expiresAt = new Date(now);
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    const invitation = {
-      invitationId: uuidv4(),
+    const invitation = await stablesRepo.createInvitation({
       stableId,
-      stableName: stable.name,
       invitedPlayerId: playerId,
       invitedByPlayerId: stable.leaderId,
       message: message || undefined,
-      status: 'pending',
       expiresAt: expiresAt.toISOString(),
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    };
-
-    await dynamoDb.put({
-      TableName: TableNames.STABLE_INVITATIONS,
-      Item: invitation,
     });
 
     // Notify the invited player

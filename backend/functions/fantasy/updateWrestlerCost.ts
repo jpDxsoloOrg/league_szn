@@ -1,7 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
-import { getOrNotFound } from '../../lib/dynamodbUtils';
-import { success, badRequest, serverError } from '../../lib/response';
+import { getRepositories } from '../../lib/repositories';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -23,18 +22,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('currentCost must be a positive number');
     }
 
-    const existing = await getOrNotFound(
-      TableNames.WRESTLER_COSTS,
-      { playerId },
-      'Wrestler cost not found. Run initialization first.'
-    );
-    if ('notFoundResponse' in existing) {
-      return existing.notFoundResponse;
+    const { user: { fantasy } } = getRepositories();
+
+    const existing = await fantasy.findCost(playerId);
+    if (!existing) {
+      return notFound('Wrestler cost not found. Run initialization first.');
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const currentItem = existing.item;
-    const costHistory = [...((currentItem.costHistory as Array<Record<string, unknown>>) || [])];
+    const costHistory = [...existing.costHistory];
     costHistory.push({
       date: today,
       cost: body.currentCost,
@@ -42,19 +38,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
     while (costHistory.length > 20) costHistory.shift();
 
-    const updatedItem = {
-      ...currentItem,
+    const updated = await fantasy.upsertCost({
+      ...existing,
       currentCost: body.currentCost,
       costHistory,
       updatedAt: new Date().toISOString(),
-    };
-
-    await dynamoDb.put({
-      TableName: TableNames.WRESTLER_COSTS,
-      Item: updatedItem,
     });
 
-    return success(updatedItem);
+    return success(updated);
   } catch (err) {
     console.error('Error updating wrestler cost:', err);
     return serverError('Failed to update wrestler cost');

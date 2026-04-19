@@ -2,36 +2,45 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 const {
-  mockGet,
-  mockPut,
-  mockScan,
-  mockQuery,
-  mockUpdate,
-  mockDelete,
-  mockTransactWrite,
+  mockChampionshipsList,
+  mockChampionshipsFindById,
+  mockChampionshipsCreate,
+  mockChampionshipsUpdate,
+  mockChampionshipsDelete,
+  mockChampionshipsListHistory,
+  mockChampionshipsDeleteHistoryEntry,
+  mockChampionshipsFindCurrentReign,
+  mockRunInTransaction,
 } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockPut: vi.fn(),
-  mockScan: vi.fn(),
-  mockQuery: vi.fn(),
-  mockUpdate: vi.fn(),
-  mockDelete: vi.fn(),
-  mockTransactWrite: vi.fn(),
+  mockChampionshipsList: vi.fn(),
+  mockChampionshipsFindById: vi.fn(),
+  mockChampionshipsCreate: vi.fn(),
+  mockChampionshipsUpdate: vi.fn(),
+  mockChampionshipsDelete: vi.fn(),
+  mockChampionshipsListHistory: vi.fn(),
+  mockChampionshipsDeleteHistoryEntry: vi.fn(),
+  mockChampionshipsFindCurrentReign: vi.fn(),
+  mockRunInTransaction: vi.fn(),
 }));
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet,
-    put: mockPut,
-    scan: mockScan,
-    query: mockQuery,
-    update: mockUpdate,
-    delete: mockDelete,
-    transactWrite: mockTransactWrite,
-  },
-  TableNames: {
-    CHAMPIONSHIPS: 'Championships',
-    CHAMPIONSHIP_HISTORY: 'ChampionshipHistory',
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    competition: {
+      championships: {
+      list: mockChampionshipsList,
+      findById: mockChampionshipsFindById,
+      create: mockChampionshipsCreate,
+      update: mockChampionshipsUpdate,
+      delete: mockChampionshipsDelete,
+      listHistory: mockChampionshipsListHistory,
+      deleteHistoryEntry: mockChampionshipsDeleteHistoryEntry,
+      findCurrentReign: mockChampionshipsFindCurrentReign,
+    },
+    },
+    runInTransaction: mockRunInTransaction,
+  }),
+  NotFoundError: class NotFoundError extends Error {
+    constructor(msg: string) { super(msg); this.name = 'NotFoundError'; }
   },
 }));
 
@@ -59,7 +68,7 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '/championships',
-    requestContext: { authorizer: {} } as any,
+    requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
@@ -68,7 +77,7 @@ describe('championships router', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('GET /championships routes to getChampionships and returns 200', async () => {
-    mockScan.mockResolvedValue({ Items: [{ championshipId: 'c1', name: 'World' }] });
+    mockChampionshipsList.mockResolvedValue([{ championshipId: 'c1', name: 'World', isActive: true }]);
     const event = makeEvent({ httpMethod: 'GET', resource: '/championships', pathParameters: null });
     const result = await handler(event, ctx, cb);
     expect(result!.statusCode).toBe(200);
@@ -76,7 +85,15 @@ describe('championships router', () => {
   });
 
   it('POST /championships routes to createChampionship and returns 201', async () => {
-    mockPut.mockResolvedValue({});
+    mockChampionshipsCreate.mockResolvedValue({
+      championshipId: 'test-uuid-1234',
+      name: 'World',
+      type: 'singles',
+      divisionId: 'div-1',
+      isActive: true,
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+    });
     const event = makeEvent({
       httpMethod: 'POST',
       resource: '/championships',
@@ -89,7 +106,7 @@ describe('championships router', () => {
   });
 
   it('GET /championships/{id}/history routes to getChampionshipHistory', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ championshipId: 'c1', wonDate: '2025-01-01' }] });
+    mockChampionshipsListHistory.mockResolvedValue([{ championshipId: 'c1', wonDate: '2025-01-01' }]);
     const event = makeEvent({
       httpMethod: 'GET',
       resource: '/championships/{championshipId}/history',
@@ -101,11 +118,16 @@ describe('championships router', () => {
   });
 
   it('POST /championships/{id}/vacate routes to vacateChampionship', async () => {
-    mockGet
-      .mockResolvedValueOnce({ Item: { championshipId: 'c1', currentChampionId: 'p1', currentChampion: 'p1' } })
-      .mockResolvedValueOnce({ Item: { championshipId: 'c1', currentChampionId: null, currentChampion: null } });
-    mockQuery.mockResolvedValue({ Items: [{ championshipId: 'c1', wonDate: '2025-01-01', playerId: 'p1' }] });
-    mockTransactWrite.mockResolvedValue({});
+    mockChampionshipsFindById
+      .mockResolvedValueOnce({ championshipId: 'c1', currentChampionId: 'p1', currentChampion: 'p1' })
+      .mockResolvedValueOnce({ championshipId: 'c1', currentChampionId: null, currentChampion: null });
+    mockChampionshipsFindCurrentReign.mockResolvedValue({ championshipId: 'c1', wonDate: '2025-01-01', playerId: 'p1' });
+    mockRunInTransaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => Promise<void>) => {
+      await fn({
+        removeChampion: vi.fn(),
+        closeReign: vi.fn(),
+      });
+    });
     const event = makeEvent({
       httpMethod: 'POST',
       resource: '/championships/{championshipId}/vacate',
@@ -117,8 +139,7 @@ describe('championships router', () => {
   });
 
   it('PUT /championships/{id} routes to updateChampionship', async () => {
-    mockGet.mockResolvedValue({ Item: { championshipId: 'c1', name: 'World' } });
-    mockUpdate.mockResolvedValue({});
+    mockChampionshipsUpdate.mockResolvedValue({ championshipId: 'c1', name: 'World Heavyweight' });
     const event = makeEvent({
       httpMethod: 'PUT',
       resource: '/championships/{championshipId}',
@@ -130,9 +151,9 @@ describe('championships router', () => {
   });
 
   it('DELETE /championships/{id} routes to deleteChampionship and returns 204', async () => {
-    mockGet.mockResolvedValue({ Item: { championshipId: 'c1' } });
-    mockQuery.mockResolvedValue({ Items: [] });
-    mockDelete.mockResolvedValue({});
+    mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1' });
+    mockChampionshipsDelete.mockResolvedValue(undefined);
+    mockChampionshipsListHistory.mockResolvedValue([]);
     const event = makeEvent({
       httpMethod: 'DELETE',
       resource: '/championships/{championshipId}',

@@ -1,27 +1,10 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
+import type { Match, Player } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 
 const MIN_MATCHES_FOR_RIVALRY = 3;
 const MAX_RIVALRIES_RETURNED = 20;
-
-interface MatchRecord {
-  matchId: string;
-  date: string;
-  participants: string[];
-  winners?: string[];
-  losers?: string[];
-  isChampionship?: boolean;
-  status: string;
-  seasonId?: string;
-}
-
-interface PlayerRecord {
-  playerId: string;
-  name: string;
-  currentWrestler: string;
-  imageUrl?: string;
-}
 
 interface RivalryAgg {
   player1Id: string;
@@ -47,22 +30,22 @@ function intensityBadge(matchCount: number): 'heatingUp' | 'intense' | 'historic
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
+    const { competition: { matches }, roster: { players } } = getRepositories();
     const seasonId = event.queryStringParameters?.seasonId;
 
-    const [playersResult, matchesResult] = await Promise.all([
-      dynamoDb.scanAll({ TableName: TableNames.PLAYERS }),
-      dynamoDb.scanAll({ TableName: TableNames.MATCHES }),
+    const [allPlayers, allMatches] = await Promise.all([
+      players.list(),
+      matches.list(),
     ]);
 
     // Only include players who have a wrestler assigned (exclude Fantasy-only users)
-    const players = (playersResult as unknown as PlayerRecord[]).filter((p) => p.currentWrestler);
-    const allMatches = matchesResult as unknown as MatchRecord[];
-    let completed = allMatches.filter((m) => m.status === 'completed');
+    const filteredPlayers = allPlayers.filter((p: Player) => p.currentWrestler);
+    let completed = allMatches.filter((m: Match) => m.status === 'completed');
     if (seasonId) {
-      completed = completed.filter((m) => m.seasonId === seasonId);
+      completed = completed.filter((m: Match) => m.seasonId === seasonId);
     }
 
-    const playerMap = new Map(players.map((p) => [p.playerId, p]));
+    const playerMap = new Map(filteredPlayers.map((p: Player) => [p.playerId, p]));
 
     const aggMap = new Map<string, RivalryAgg>();
 

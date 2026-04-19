@@ -1,35 +1,91 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
-// ---- Mocks ----------------------------------------------------------------
+// ---- Repository Mocks -----------------------------------------------------
 
-const { mockGet, mockScan, mockQuery, mockUpdate, mockTransactWrite } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockScan: vi.fn(),
-  mockQuery: vi.fn(),
-  mockUpdate: vi.fn(),
-  mockTransactWrite: vi.fn(),
+const mockMatchesRepo = {
+  findById: vi.fn(),
+  findByIdWithDate: vi.fn(),
+  list: vi.fn(),
+  listCompleted: vi.fn(),
+  listByStatus: vi.fn(),
+  listByTournament: vi.fn(),
+  listBySeason: vi.fn(),
+  delete: vi.fn(),
+};
+
+const mockChampionshipsRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+  listActive: vi.fn(),
+  listHistory: vi.fn(),
+  listAllHistory: vi.fn(),
+  findCurrentReign: vi.fn(),
+  update: vi.fn(),
+  removeChampion: vi.fn(),
+  closeReign: vi.fn(),
+  reopenReign: vi.fn(),
+  deleteHistoryEntry: vi.fn(),
+  incrementDefenses: vi.fn(),
+  decrementDefenses: vi.fn(),
+};
+
+const mockTournamentsRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+  update: vi.fn(),
+};
+
+const mockEventsRepo = {
+  findById: vi.fn(),
+  list: vi.fn(),
+  listByStatus: vi.fn(),
+  listBySeason: vi.fn(),
+  listByEventType: vi.fn(),
+  listByDateRange: vi.fn(),
+  create: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  getCheckIn: vi.fn(),
+  listCheckIns: vi.fn(),
+  upsertCheckIn: vi.fn(),
+  deleteCheckIn: vi.fn(),
+};
+
+const mockContendersRepo = {
+  listByChampionship: vi.fn(),
+  listByChampionshipRanked: vi.fn(),
+  deleteAllForChampionship: vi.fn(),
+  upsertRanking: vi.fn(),
+  findOverride: vi.fn(),
+  listActiveOverrides: vi.fn(),
+  createOverride: vi.fn(),
+  deactivateOverride: vi.fn(),
+  writeHistory: vi.fn(),
+};
+
+const mockRunInTransaction = vi.fn();
+
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    competition: {
+      matches: mockMatchesRepo,
+      championships: mockChampionshipsRepo,
+      tournaments: mockTournamentsRepo,
+      contenders: mockContendersRepo,
+    },
+    leagueOps: {
+      events: mockEventsRepo,
+    },
+    runInTransaction: mockRunInTransaction,
+  }),
 }));
 
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet, put: vi.fn(), scan: mockScan, query: mockQuery,
-    update: mockUpdate, delete: vi.fn(), scanAll: vi.fn(), queryAll: vi.fn(),
-    transactWrite: mockTransactWrite,
-  },
-  TableNames: {
-    MATCHES: 'Matches', PLAYERS: 'Players', CHAMPIONSHIPS: 'Championships',
-    CHAMPIONSHIP_HISTORY: 'ChampionshipHistory', TOURNAMENTS: 'Tournaments',
-    SEASONS: 'Seasons', SEASON_STANDINGS: 'SeasonStandings',
-    EVENTS: 'Events', CONTENDER_RANKINGS: 'ContenderRankings',
-  },
+vi.mock('../../../lib/asyncLambda', () => ({
+  invokeAsync: vi.fn().mockResolvedValue(undefined),
 }));
-
-vi.mock('../../../lib/rankingCalculator', () => ({
-  calculateRankingsForChampionship: vi.fn().mockResolvedValue([]),
-}));
-vi.mock('../../fantasy/recalculateWrestlerCosts', () => ({
-  recalculateCosts: vi.fn().mockResolvedValue(undefined),
+vi.mock('../updateGroupStats', () => ({
+  updateGroupStats: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('../../fantasy/calculateFantasyPoints', () => ({
   calculateFantasyPoints: vi.fn().mockResolvedValue(undefined),
@@ -49,12 +105,23 @@ function ev(body: object): APIGatewayProxyEvent {
     httpMethod: 'POST', isBase64Encoded: false, path: '/',
     pathParameters: { matchId: 'm1' }, queryStringParameters: null,
     multiValueQueryStringParameters: null, stageVariables: null,
-    resource: '', requestContext: { authorizer: {} } as any,
+    resource: '', requestContext: { authorizer: {} } as never,
   };
 }
 
-function tournUpdate() {
-  return mockUpdate.mock.calls.find((c: any) => c[0].Key?.tournamentId === 't1');
+function stubCoreTransaction() {
+  mockRunInTransaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
+    const tx = {
+      updateMatch: vi.fn(),
+      incrementPlayerRecord: vi.fn(),
+      incrementStanding: vi.fn(),
+      updateChampionship: vi.fn(),
+      closeReign: vi.fn(),
+      startReign: vi.fn(),
+    };
+    await fn(tx);
+    return tx;
+  });
 }
 
 // ---- Round-Robin Tests -----------------------------------------------------
@@ -62,14 +129,14 @@ function tournUpdate() {
 describe('recordResult — round-robin tournament', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  function stubRR(standings: Record<string, any>, participants: string[], status = 'in-progress') {
-    mockQuery.mockResolvedValue({ Items: [{ ...base, tournamentId: 't1' }] });
-    mockTransactWrite.mockResolvedValue({});
-    mockGet.mockResolvedValue({
-      Item: { tournamentId: 't1', type: 'round-robin', standings, participants, status },
+  function stubRR(standings: Record<string, unknown>, participants: string[], status = 'in-progress') {
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue({ ...base, tournamentId: 't1' });
+    stubCoreTransaction();
+    mockTournamentsRepo.findById.mockResolvedValue({
+      tournamentId: 't1', type: 'round-robin', standings, participants, status,
     });
-    mockUpdate.mockResolvedValue({});
-    mockScan.mockResolvedValue({ Items: [] });
+    mockTournamentsRepo.update.mockResolvedValue(undefined);
+    mockEventsRepo.list.mockResolvedValue([]);
   }
 
   it('updates standings: winner +1 win/+2 pts, loser +1 loss/+0 pts', async () => {
@@ -79,9 +146,15 @@ describe('recordResult — round-robin tournament', () => {
     );
     await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
 
-    const s = tournUpdate()![0].ExpressionAttributeValues[':standings'];
-    expect(s.p1).toMatchObject({ wins: 1, points: 2 });
-    expect(s.p2).toMatchObject({ losses: 1, points: 0 });
+    expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({
+        standings: expect.objectContaining({
+          p1: expect.objectContaining({ wins: 1, points: 2 }),
+          p2: expect.objectContaining({ losses: 1, points: 0 }),
+        }),
+      }),
+    );
   });
 
   // Note: Draw detection requires winners === losers (sorted), but the overlap
@@ -100,24 +173,35 @@ describe('recordResult — round-robin tournament', () => {
     );
     await recordResult(ev({ winners: ['p2'], losers: ['p3'] }), ctx, cb);
 
-    const vals = tournUpdate()![0].ExpressionAttributeValues;
-    expect(vals[':status']).toBe('in-progress');
+    expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ status: 'in-progress' }),
+    );
   });
 
   it('transitions from upcoming to in-progress on first result', async () => {
     stubRR({}, ['p1', 'p2', 'p3'], 'upcoming');
     await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
 
-    expect(tournUpdate()![0].ExpressionAttributeValues[':status']).toBe('in-progress');
+    expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ status: 'in-progress' }),
+    );
   });
 
   it('initializes standings for new participants not yet in standings', async () => {
     stubRR({}, ['p1', 'p2', 'p3']);
     await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
 
-    const s = tournUpdate()![0].ExpressionAttributeValues[':standings'];
-    expect(s.p1).toBeDefined();
-    expect(s.p2).toBeDefined();
+    expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({
+        standings: expect.objectContaining({
+          p1: expect.objectContaining({ wins: expect.any(Number) }),
+          p2: expect.objectContaining({ losses: expect.any(Number) }),
+        }),
+      }),
+    );
   });
 });
 
@@ -126,14 +210,14 @@ describe('recordResult — round-robin tournament', () => {
 describe('recordResult — single-elimination tournament', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  function stubSE(brackets: any, status = 'in-progress') {
-    mockQuery.mockResolvedValue({ Items: [{ ...base, tournamentId: 't1', participants: ['p1', 'p2'] }] });
-    mockTransactWrite.mockResolvedValue({});
-    mockGet.mockResolvedValue({
-      Item: { tournamentId: 't1', type: 'single-elimination', brackets, status },
+  function stubSE(brackets: unknown, status = 'in-progress') {
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue({ ...base, tournamentId: 't1', participants: ['p1', 'p2'] });
+    stubCoreTransaction();
+    mockTournamentsRepo.findById.mockResolvedValue({
+      tournamentId: 't1', type: 'single-elimination', brackets, status,
     });
-    mockUpdate.mockResolvedValue({});
-    mockScan.mockResolvedValue({ Items: [] });
+    mockTournamentsRepo.update.mockResolvedValue(undefined);
+    mockEventsRepo.list.mockResolvedValue([]);
   }
 
   it('advances winner to next round (first of pair -> participant1)', async () => {
@@ -145,32 +229,52 @@ describe('recordResult — single-elimination tournament', () => {
     });
     await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
 
-    const b = tournUpdate()![0].ExpressionAttributeValues[':brackets'];
-    expect(b.rounds[1].matches[0].participant1).toBe('p1');
+    expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({
+        brackets: expect.objectContaining({
+          rounds: expect.arrayContaining([
+            expect.anything(),
+            expect.objectContaining({
+              matches: [expect.objectContaining({ participant1: 'p1' })],
+            }),
+          ]),
+        }),
+      }),
+    );
   });
 
   it('advances second-of-pair winner to participant2 in next round', async () => {
     const match = { ...base, tournamentId: 't1', participants: ['p3', 'p4'] };
-    mockQuery.mockResolvedValue({ Items: [match] });
-    mockTransactWrite.mockResolvedValue({});
-    mockGet.mockResolvedValue({
-      Item: {
-        tournamentId: 't1', type: 'single-elimination', status: 'in-progress',
-        brackets: {
-          rounds: [
-            { matches: [{ participant1: 'p1', participant2: 'p2', winner: 'p1' }, { participant1: 'p3', participant2: 'p4' }] },
-            { matches: [{ participant1: 'p1', participant2: null }] },
-          ],
-        },
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(match);
+    stubCoreTransaction();
+    mockTournamentsRepo.findById.mockResolvedValue({
+      tournamentId: 't1', type: 'single-elimination', status: 'in-progress',
+      brackets: {
+        rounds: [
+          { matches: [{ participant1: 'p1', participant2: 'p2', winner: 'p1' }, { participant1: 'p3', participant2: 'p4' }] },
+          { matches: [{ participant1: 'p1', participant2: null }] },
+        ],
       },
     });
-    mockUpdate.mockResolvedValue({});
-    mockScan.mockResolvedValue({ Items: [] });
+    mockTournamentsRepo.update.mockResolvedValue(undefined);
+    mockEventsRepo.list.mockResolvedValue([]);
 
     await recordResult(ev({ winners: ['p3'], losers: ['p4'] }), ctx, cb);
 
-    const b = tournUpdate()![0].ExpressionAttributeValues[':brackets'];
-    expect(b.rounds[1].matches[0].participant2).toBe('p3');
+    expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({
+        brackets: expect.objectContaining({
+          rounds: expect.arrayContaining([
+            expect.anything(),
+            expect.objectContaining({
+              matches: [expect.objectContaining({ participant1: 'p1', participant2: 'p3' })],
+            }),
+          ]),
+        }),
+      }),
+    );
   });
 
   it('completes tournament when final round match decided', async () => {
@@ -179,9 +283,13 @@ describe('recordResult — single-elimination tournament', () => {
     });
     await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
 
-    const vals = tournUpdate()![0].ExpressionAttributeValues;
-    expect(vals[':status']).toBe('completed');
-    expect(vals[':winner']).toBe('p1');
+    expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({
+        status: 'completed',
+        winner: 'p1',
+      }),
+    );
   });
 
   it('transitions from upcoming to in-progress on first bracket result', async () => {
@@ -193,7 +301,10 @@ describe('recordResult — single-elimination tournament', () => {
     }, 'upcoming');
     await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
 
-    expect(tournUpdate()![0].ExpressionAttributeValues[':status']).toBe('in-progress');
+    expect(mockTournamentsRepo.update).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ status: 'in-progress' }),
+    );
   });
 });
 
@@ -203,77 +314,59 @@ describe('recordResult — event auto-complete', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('marks event completed when all matches are done', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ Items: [base] }) // match lookup
-      .mockResolvedValueOnce({ Items: [{ matchId: 'm1', status: 'completed' }] })
-      .mockResolvedValueOnce({ Items: [{ matchId: 'm2', status: 'completed' }] });
-    mockTransactWrite.mockResolvedValue({});
-    mockScan.mockImplementation(async (params: any) => {
-      if (params.TableName === 'Events')
-        return { Items: [{ eventId: 'e1', status: 'upcoming', matchCards: [{ matchId: 'm1' }, { matchId: 'm2' }] }] };
-      return { Items: [] };
-    });
-    mockUpdate.mockResolvedValue({});
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(base);
+    stubCoreTransaction();
+    mockEventsRepo.list.mockResolvedValue([
+      { eventId: 'e1', status: 'upcoming', matchCards: [{ matchId: 'm1' }, { matchId: 'm2' }] },
+    ]);
+    // findById is used per match to check completion status
+    mockMatchesRepo.findById
+      .mockResolvedValueOnce({ matchId: 'm1', status: 'completed' })
+      .mockResolvedValueOnce({ matchId: 'm2', status: 'completed' });
+    mockEventsRepo.update.mockResolvedValue(undefined);
 
     await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
 
-    const completed = mockUpdate.mock.calls.find(
-      (c: any) => c[0].Key?.eventId === 'e1' && c[0].ExpressionAttributeValues?.[':completed'],
-    );
-    expect(completed).toBeDefined();
+    expect(mockEventsRepo.update).toHaveBeenCalledWith('e1', { status: 'completed' });
   });
 
   it('marks upcoming event as in-progress when some matches still pending', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ Items: [base] })
-      .mockResolvedValueOnce({ Items: [{ matchId: 'm1', status: 'completed' }] })
-      .mockResolvedValueOnce({ Items: [{ matchId: 'm2', status: 'scheduled' }] });
-    mockTransactWrite.mockResolvedValue({});
-    mockScan.mockImplementation(async (params: any) => {
-      if (params.TableName === 'Events')
-        return { Items: [{ eventId: 'e1', status: 'upcoming', matchCards: [{ matchId: 'm1' }, { matchId: 'm2' }] }] };
-      return { Items: [] };
-    });
-    mockUpdate.mockResolvedValue({});
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(base);
+    stubCoreTransaction();
+    mockEventsRepo.list.mockResolvedValue([
+      { eventId: 'e1', status: 'upcoming', matchCards: [{ matchId: 'm1' }, { matchId: 'm2' }] },
+    ]);
+    mockMatchesRepo.findById
+      .mockResolvedValueOnce({ matchId: 'm1', status: 'completed' })
+      .mockResolvedValueOnce({ matchId: 'm2', status: 'scheduled' });
+    mockEventsRepo.update.mockResolvedValue(undefined);
 
     await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
 
-    const inProg = mockUpdate.mock.calls.find(
-      (c: any) => c[0].Key?.eventId === 'e1' && c[0].ExpressionAttributeValues?.[':inProgress'],
-    );
-    expect(inProg).toBeDefined();
+    expect(mockEventsRepo.update).toHaveBeenCalledWith('e1', { status: 'in-progress' });
   });
 
   it('does not change status for already in-progress event with pending matches', async () => {
-    mockQuery
-      .mockResolvedValueOnce({ Items: [base] })
-      .mockResolvedValueOnce({ Items: [{ matchId: 'm1', status: 'completed' }] })
-      .mockResolvedValueOnce({ Items: [{ matchId: 'm2', status: 'scheduled' }] });
-    mockTransactWrite.mockResolvedValue({});
-    mockScan.mockImplementation(async (params: any) => {
-      if (params.TableName === 'Events')
-        return { Items: [{ eventId: 'e1', status: 'in-progress', matchCards: [{ matchId: 'm1' }, { matchId: 'm2' }] }] };
-      return { Items: [] };
-    });
-    mockUpdate.mockResolvedValue({});
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(base);
+    stubCoreTransaction();
+    mockEventsRepo.list.mockResolvedValue([
+      { eventId: 'e1', status: 'in-progress', matchCards: [{ matchId: 'm1' }, { matchId: 'm2' }] },
+    ]);
+    mockMatchesRepo.findById
+      .mockResolvedValueOnce({ matchId: 'm1', status: 'completed' })
+      .mockResolvedValueOnce({ matchId: 'm2', status: 'scheduled' });
 
     await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
 
     // Should NOT update event status since it is already in-progress
-    const eventUpdate = mockUpdate.mock.calls.find(
-      (c: any) => c[0].Key?.eventId === 'e1',
-    );
-    expect(eventUpdate).toBeUndefined();
+    expect(mockEventsRepo.update).not.toHaveBeenCalled();
   });
 
   it('succeeds even if auto-complete throws', async () => {
-    mockQuery.mockResolvedValueOnce({ Items: [base] });
-    mockTransactWrite.mockResolvedValue({});
-    // Scan throws for events
-    mockScan.mockImplementation(async (params: any) => {
-      if (params.TableName === 'Events') throw new Error('event scan fail');
-      return { Items: [] };
-    });
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(base);
+    stubCoreTransaction();
+    // events.list throws
+    mockEventsRepo.list.mockRejectedValue(new Error('event list fail'));
 
     const r = await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
     expect(r!.statusCode).toBe(200);

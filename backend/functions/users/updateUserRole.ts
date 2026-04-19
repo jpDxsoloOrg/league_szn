@@ -6,10 +6,9 @@ import {
   AdminListGroupsForUserCommand,
   AdminGetUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
-import { v4 as uuidv4 } from 'uuid';
 import { success, badRequest, forbidden, serverError } from '../../lib/response';
 import { requireRole, getAuthContext, isSuperAdmin } from '../../lib/auth';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
@@ -90,31 +89,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           }
 
           // Check if a player already exists for this userId
-          const existingPlayer = await dynamoDb.query({
-            TableName: TableNames.PLAYERS,
-            IndexName: 'UserIdIndex',
-            KeyConditionExpression: 'userId = :userId',
-            ExpressionAttributeValues: {
-              ':userId': sub,
-            },
-          });
+          const { roster: { players } } = getRepositories();
+          const existingPlayer = await players.findByUserId(sub);
 
-          if (!existingPlayer.Items || existingPlayer.Items.length === 0) {
-            const timestamp = new Date().toISOString();
-            await dynamoDb.put({
-              TableName: TableNames.PLAYERS,
-              Item: {
-                playerId: uuidv4(),
-                userId: sub,
-                name: '',
-                currentWrestler: wrestlerName || '',
-                wins: 0,
-                losses: 0,
-                draws: 0,
-                createdAt: timestamp,
-                updatedAt: timestamp,
-              },
+          if (!existingPlayer) {
+            const newPlayer = await players.create({
+              name: '',
+              currentWrestler: wrestlerName || '',
             });
+            await players.update(newPlayer.playerId, { userId: sub });
           }
         } catch (playerError) {
           console.error('Failed to auto-create player for wrestler:', playerError);

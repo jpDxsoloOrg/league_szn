@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { dynamoDb, TableNames } from '../../lib/dynamodb';
+import { getRepositories } from '../../lib/repositories';
 import { success, notFound, badRequest, serverError } from '../../lib/response';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -9,89 +9,66 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('challengeId is required');
     }
 
-    const result = await dynamoDb.get({
-      TableName: TableNames.CHALLENGES,
-      Key: { challengeId },
-    });
+    const { user: { challenges }, roster: { players, tagTeams } } = getRepositories();
 
-    const challenge = result.Item;
+    const challenge = await challenges.findById(challengeId);
     if (!challenge) {
       return notFound('Challenge not found');
     }
 
     // Enrich with player names
-    const playerIds = new Set<string>();
-    playerIds.add(challenge.challengerId as string);
-    playerIds.add(challenge.challengedId as string);
-
-    const playerMap: Record<string, { name: string; currentWrestler: string; imageUrl?: string }> = {};
-    for (const pid of playerIds) {
-      const playerResult = await dynamoDb.get({
-        TableName: TableNames.PLAYERS,
-        Key: { playerId: pid },
-      });
-      if (playerResult.Item) {
-        playerMap[pid] = {
-          name: playerResult.Item.name as string,
-          currentWrestler: playerResult.Item.currentWrestler as string,
-          imageUrl: playerResult.Item.imageUrl as string | undefined,
-        };
-      }
-    }
-
-    const challenger = playerMap[challenge.challengerId as string];
-    const challenged = playerMap[challenge.challengedId as string];
+    const [challengerPlayer, challengedPlayer] = await Promise.all([
+      players.findById(challenge.challengerId),
+      players.findById(challenge.challengedId),
+    ]);
 
     const enriched: Record<string, unknown> = {
       ...challenge,
-      challengeMode: (challenge.challengeMode as string) || 'singles',
-      challenger: challenger
-        ? { playerName: challenger.name, wrestlerName: challenger.currentWrestler, imageUrl: challenger.imageUrl }
+      challengeMode: challenge.challengeMode || 'singles',
+      challenger: challengerPlayer
+        ? { playerName: challengerPlayer.name, wrestlerName: challengerPlayer.currentWrestler, imageUrl: challengerPlayer.imageUrl }
         : { playerName: 'Unknown', wrestlerName: 'Unknown' },
-      challenged: challenged
-        ? { playerName: challenged.name, wrestlerName: challenged.currentWrestler, imageUrl: challenged.imageUrl }
+      challenged: challengedPlayer
+        ? { playerName: challengedPlayer.name, wrestlerName: challengedPlayer.currentWrestler, imageUrl: challengedPlayer.imageUrl }
         : { playerName: 'Unknown', wrestlerName: 'Unknown' },
     };
 
     // Enrich tag team challenge data
     if (challenge.challengeMode === 'tag_team' && challenge.challengerTagTeamId && challenge.challengedTagTeamId) {
-      const [challengerTeamResult, challengedTeamResult] = await Promise.all([
-        dynamoDb.get({ TableName: TableNames.TAG_TEAMS, Key: { tagTeamId: challenge.challengerTagTeamId as string } }),
-        dynamoDb.get({ TableName: TableNames.TAG_TEAMS, Key: { tagTeamId: challenge.challengedTagTeamId as string } }),
+      const [challengerTeam, challengedTeam] = await Promise.all([
+        tagTeams.findById(challenge.challengerTagTeamId),
+        tagTeams.findById(challenge.challengedTagTeamId),
       ]);
-
-      const challengerTeam = challengerTeamResult.Item;
-      const challengedTeam = challengedTeamResult.Item;
 
       if (challengerTeam && challengedTeam) {
         // Fetch all 4 tag team member players in parallel
-        const [crP1Result, crP2Result, cdP1Result, cdP2Result] = await Promise.all([
-          dynamoDb.get({ TableName: TableNames.PLAYERS, Key: { playerId: challengerTeam.player1Id as string } }),
-          dynamoDb.get({ TableName: TableNames.PLAYERS, Key: { playerId: challengerTeam.player2Id as string } }),
-          dynamoDb.get({ TableName: TableNames.PLAYERS, Key: { playerId: challengedTeam.player1Id as string } }),
-          dynamoDb.get({ TableName: TableNames.PLAYERS, Key: { playerId: challengedTeam.player2Id as string } }),
+        const [crP1, crP2, cdP1, cdP2] = await Promise.all([
+          players.findById(challengerTeam.player1Id),
+          players.findById(challengerTeam.player2Id),
+          players.findById(challengedTeam.player1Id),
+          players.findById(challengedTeam.player2Id),
         ]);
 
-        const buildPlayerInfo = (item: Record<string, unknown> | undefined) => ({
-          playerId: item ? (item.playerId as string) : undefined,
-          playerName: item ? (item.name as string) : 'Unknown',
-          wrestlerName: item ? (item.currentWrestler as string) : 'Unknown',
-          imageUrl: item ? (item.imageUrl as string | undefined) : undefined,
+        const buildPlayerInfo = (player: { playerId: string; name: string; currentWrestler: string; imageUrl?: string } | null) => ({
+          playerId: player ? player.playerId : undefined,
+          playerName: player ? player.name : 'Unknown',
+          wrestlerName: player ? player.currentWrestler : 'Unknown',
+          imageUrl: player ? player.imageUrl : undefined,
         });
 
-        enriched.challengerTagTeamId = challenge.challengerTagTeamId as string;
-        enriched.challengedTagTeamId = challenge.challengedTagTeamId as string;
+        enriched.challengerTagTeamId = challenge.challengerTagTeamId;
+        enriched.challengedTagTeamId = challenge.challengedTagTeamId;
         enriched.challengerTagTeam = {
-          tagTeamId: challenge.challengerTagTeamId as string,
-          tagTeamName: challengerTeam.name as string,
-          player1: buildPlayerInfo(crP1Result.Item),
-          player2: buildPlayerInfo(crP2Result.Item),
+          tagTeamId: challenge.challengerTagTeamId,
+          tagTeamName: challengerTeam.name,
+          player1: buildPlayerInfo(crP1),
+          player2: buildPlayerInfo(crP2),
         };
         enriched.challengedTagTeam = {
-          tagTeamId: challenge.challengedTagTeamId as string,
-          tagTeamName: challengedTeam.name as string,
-          player1: buildPlayerInfo(cdP1Result.Item),
-          player2: buildPlayerInfo(cdP2Result.Item),
+          tagTeamId: challenge.challengedTagTeamId,
+          tagTeamName: challengedTeam.name,
+          player1: buildPlayerInfo(cdP1),
+          player2: buildPlayerInfo(cdP2),
         };
       }
     }

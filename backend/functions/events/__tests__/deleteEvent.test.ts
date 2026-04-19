@@ -1,26 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
-// ─── Mocks ───────────────────────────────────────────────────────────
-
-const { mockGet, mockDelete, mockQuery } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-  mockDelete: vi.fn(),
-  mockQuery: vi.fn(),
-}));
-
-vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: {
-    get: mockGet, put: vi.fn(), scan: vi.fn(), query: mockQuery,
-    update: vi.fn(), delete: mockDelete, scanAll: vi.fn(), queryAll: vi.fn(),
-  },
-  TableNames: { EVENTS: 'Events', MATCHES: 'Matches' },
-}));
+import { buildInMemoryRepositories } from '../../../lib/repositories/inMemory';
+import {
+  setRepositoriesForTesting,
+  resetRepositoriesForTesting,
+  type Repositories,
+} from '../../../lib/repositories';
 
 import { handler as deleteEvent } from '../deleteEvent';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
+let repos: Repositories;
 const ctx = {} as Context;
 const cb: Callback = () => {};
 
@@ -30,15 +22,21 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     isBase64Encoded: false, path: '/', pathParameters: null,
     queryStringParameters: null, multiValueQueryStringParameters: null,
     stageVariables: null, resource: '',
-    requestContext: { authorizer: {} } as any, ...overrides,
+    requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
+    ...overrides,
   };
 }
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  resetRepositoriesForTesting();
+  repos = buildInMemoryRepositories();
+  setRepositoriesForTesting(repos);
+});
 
 // ─── Tests ───────────────────────────────────────────────────────────
 
 describe('deleteEvent', () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it('returns 400 when eventId path parameter is missing', async () => {
     const result = await deleteEvent(makeEvent({ pathParameters: null }), ctx, cb);
 
@@ -47,7 +45,6 @@ describe('deleteEvent', () => {
   });
 
   it('returns 404 when event does not exist', async () => {
-    mockGet.mockResolvedValue({ Item: undefined });
     const event = makeEvent({ pathParameters: { eventId: 'nonexistent' } });
 
     const result = await deleteEvent(event, ctx, cb);
@@ -57,24 +54,25 @@ describe('deleteEvent', () => {
   });
 
   it('deletes event with empty matchCards and returns 204', async () => {
-    mockGet.mockResolvedValue({
-      Item: { eventId: 'e1', name: 'Test', matchCards: [] },
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'Test', eventType: 'ppv', date: '2024-01-01',
     });
-    mockDelete.mockResolvedValue({});
-    const event = makeEvent({ pathParameters: { eventId: 'e1' } });
+    await repos.leagueOps.events.update(eventItem.eventId, { matchCards: [] });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
     const result = await deleteEvent(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
-    expect(mockDelete).toHaveBeenCalledWith(
-      expect.objectContaining({ Key: { eventId: 'e1' } })
-    );
+    expect(await repos.leagueOps.events.findById(eventItem.eventId)).toBeNull();
   });
 
   it('deletes event when matchCards property is undefined', async () => {
-    mockGet.mockResolvedValue({ Item: { eventId: 'e1', name: 'Test' } });
-    mockDelete.mockResolvedValue({});
-    const event = makeEvent({ pathParameters: { eventId: 'e1' } });
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'Test', eventType: 'ppv', date: '2024-01-01',
+    });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
     const result = await deleteEvent(event, ctx, cb);
 
@@ -82,11 +80,14 @@ describe('deleteEvent', () => {
   });
 
   it('deletes event when matchCards have no matchId values', async () => {
-    mockGet.mockResolvedValue({
-      Item: { eventId: 'e1', matchCards: [{ position: 1, designation: 'TBD' }] },
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'Test', eventType: 'ppv', date: '2024-01-01',
     });
-    mockDelete.mockResolvedValue({});
-    const event = makeEvent({ pathParameters: { eventId: 'e1' } });
+    await repos.leagueOps.events.update(eventItem.eventId, {
+      matchCards: [{ position: 1, designation: 'pre-show' } as { position: number; matchId: string; designation: 'pre-show' }],
+    });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
     const result = await deleteEvent(event, ctx, cb);
 
@@ -94,43 +95,46 @@ describe('deleteEvent', () => {
   });
 
   it('deletes event when associated matches are not completed', async () => {
-    mockGet.mockResolvedValueOnce({
-      Item: {
-        eventId: 'e1',
-        matchCards: [
-          { position: 1, matchId: 'm1', designation: 'Main Event' },
-          { position: 2, matchId: 'm2', designation: 'Opener' },
-        ],
-      },
+    await repos.competition.matches.create({
+      matchId: 'm1', date: '2024-01-01', status: 'scheduled',
+      participants: [], createdAt: new Date().toISOString(),
     });
-    mockQuery
-      .mockResolvedValueOnce({ Items: [{ matchId: 'm1', status: 'scheduled' }] })
-      .mockResolvedValueOnce({ Items: [{ matchId: 'm2', status: 'in-progress' }] });
-    mockDelete.mockResolvedValue({});
-    const event = makeEvent({ pathParameters: { eventId: 'e1' } });
+    await repos.competition.matches.create({
+      matchId: 'm2', date: '2024-01-01', status: 'in-progress',
+      participants: [], createdAt: new Date().toISOString(),
+    });
+
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'Test', eventType: 'ppv', date: '2024-01-01',
+    });
+    await repos.leagueOps.events.update(eventItem.eventId, {
+      matchCards: [
+        { position: 1, matchId: 'm1', designation: 'main-event' as const },
+        { position: 2, matchId: 'm2', designation: 'opener' as const },
+      ],
+    });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
     const result = await deleteEvent(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
-    expect(mockDelete).toHaveBeenCalledOnce();
-    expect(mockQuery).toHaveBeenCalledWith(
-      expect.objectContaining({
-        TableName: 'Matches',
-        KeyConditionExpression: 'matchId = :matchId',
-        Limit: 1,
-      })
-    );
   });
 
   it('returns 409 when event has a completed match', async () => {
-    mockGet.mockResolvedValueOnce({
-      Item: {
-        eventId: 'e1',
-        matchCards: [{ position: 1, matchId: 'm1', designation: 'Main Event' }],
-      },
+    await repos.competition.matches.create({
+      matchId: 'm1', date: '2024-01-01', status: 'completed',
+      participants: [], createdAt: new Date().toISOString(),
     });
-    mockQuery.mockResolvedValueOnce({ Items: [{ matchId: 'm1', status: 'completed' }] });
-    const event = makeEvent({ pathParameters: { eventId: 'e1' } });
+
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'Test', eventType: 'ppv', date: '2024-01-01',
+    });
+    await repos.leagueOps.events.update(eventItem.eventId, {
+      matchCards: [{ position: 1, matchId: 'm1', designation: 'main-event' as const }],
+    });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
     const result = await deleteEvent(event, ctx, cb);
 
@@ -140,21 +144,31 @@ describe('deleteEvent', () => {
   });
 
   it('returns 409 with correct count for multiple completed matches', async () => {
-    mockGet.mockResolvedValueOnce({
-      Item: {
-        eventId: 'e1',
-        matchCards: [
-          { position: 1, matchId: 'm1', designation: 'Main' },
-          { position: 2, matchId: 'm2', designation: 'Co-Main' },
-          { position: 3, matchId: 'm3', designation: 'Opener' },
-        ],
-      },
+    await repos.competition.matches.create({
+      matchId: 'm1', date: '2024-01-01', status: 'completed',
+      participants: [], createdAt: new Date().toISOString(),
     });
-    mockQuery
-      .mockResolvedValueOnce({ Items: [{ matchId: 'm1', status: 'completed' }] })
-      .mockResolvedValueOnce({ Items: [{ matchId: 'm2', status: 'completed' }] })
-      .mockResolvedValueOnce({ Items: [{ matchId: 'm3', status: 'scheduled' }] });
-    const event = makeEvent({ pathParameters: { eventId: 'e1' } });
+    await repos.competition.matches.create({
+      matchId: 'm2', date: '2024-01-02', status: 'completed',
+      participants: [], createdAt: new Date().toISOString(),
+    });
+    await repos.competition.matches.create({
+      matchId: 'm3', date: '2024-01-03', status: 'scheduled',
+      participants: [], createdAt: new Date().toISOString(),
+    });
+
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'Test', eventType: 'ppv', date: '2024-01-01',
+    });
+    await repos.leagueOps.events.update(eventItem.eventId, {
+      matchCards: [
+        { position: 1, matchId: 'm1', designation: 'main-event' as const },
+        { position: 2, matchId: 'm2', designation: 'co-main' as const },
+        { position: 3, matchId: 'm3', designation: 'opener' as const },
+      ],
+    });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
     const result = await deleteEvent(event, ctx, cb);
 
@@ -162,24 +176,23 @@ describe('deleteEvent', () => {
     expect(JSON.parse(result!.body).message).toContain('2 completed match(es)');
   });
 
-  it('allows deletion when match lookup returns no Item', async () => {
-    mockGet.mockResolvedValueOnce({
-      Item: {
-        eventId: 'e1',
-        matchCards: [{ position: 1, matchId: 'm-deleted', designation: 'Match' }],
-      },
+  it('allows deletion when match lookup returns no match', async () => {
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'Test', eventType: 'ppv', date: '2024-01-01',
     });
-    mockQuery.mockResolvedValueOnce({ Items: [] });
-    mockDelete.mockResolvedValue({});
-    const event = makeEvent({ pathParameters: { eventId: 'e1' } });
+    await repos.leagueOps.events.update(eventItem.eventId, {
+      matchCards: [{ position: 1, matchId: 'm-deleted', designation: 'midcard' as const }],
+    });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
 
     const result = await deleteEvent(event, ctx, cb);
 
     expect(result!.statusCode).toBe(204);
   });
 
-  it('returns 500 when DynamoDB fails', async () => {
-    mockGet.mockRejectedValue(new Error('DynamoDB error'));
+  it('returns 500 when repository fails', async () => {
+    vi.spyOn(repos.leagueOps.events, 'findById').mockRejectedValue(new Error('DB error'));
     const event = makeEvent({ pathParameters: { eventId: 'e1' } });
 
     const result = await deleteEvent(event, ctx, cb);
