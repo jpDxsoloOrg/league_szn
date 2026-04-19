@@ -44,23 +44,36 @@ export default function MatchCardBuilder() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Load events and scheduled matches on mount
   useEffect(() => {
     const loadData = async () => {
-      try {
-        const [eventsList, matches, players] = await Promise.all([
-          eventsApi.getAll(),
-          matchesApi.getAll({ status: 'scheduled' }),
-          playersApi.getAll(),
-        ]);
-        const playerMap = new Map<string, Player>(
-          players.map((p) => [p.playerId, p])
-        );
+      const errors: string[] = [];
 
-        setEvents(eventsList);
+      const [eventsResult, matchesResult, playersResult] = await Promise.allSettled([
+        eventsApi.getAll(),
+        matchesApi.getAll({ status: 'scheduled' }),
+        playersApi.getAll(),
+      ]);
 
-        const available: AvailableMatch[] = matches.map((match) => {
+      if (eventsResult.status === 'fulfilled') {
+        setEvents(eventsResult.value);
+      } else {
+        errors.push(`Events: ${eventsResult.reason}`);
+      }
+
+      const players = playersResult.status === 'fulfilled' ? playersResult.value : [];
+      if (playersResult.status === 'rejected') {
+        errors.push(`Players: ${playersResult.reason}`);
+      }
+
+      const playerMap = new Map<string, Player>(
+        players.map((p) => [p.playerId, p])
+      );
+
+      if (matchesResult.status === 'fulfilled') {
+        const available: AvailableMatch[] = matchesResult.value.map((match) => {
           const participantNames = match.participants
             .map((id) => playerMap.get(id)?.name ?? 'Unknown')
             .join(' vs ');
@@ -72,11 +85,14 @@ export default function MatchCardBuilder() {
           };
         });
         setAvailableMatches(available);
-      } catch {
-        // Will show empty list on error
-      } finally {
-        setLoading(false);
+      } else {
+        errors.push(`Matches: ${matchesResult.reason}`);
       }
+
+      if (errors.length > 0) {
+        setLoadError(errors.join('; '));
+      }
+      setLoading(false);
     };
     loadData();
   }, []);
@@ -202,6 +218,12 @@ export default function MatchCardBuilder() {
       <p className="config-subtitle" style={{ marginBottom: '1rem', color: '#9ca3af', fontSize: '0.85rem' }}>
         {t('events.admin.matchCardBuilderHint', 'Reorder matches, change designations, or add unassigned matches to an event card. Matches can be assigned to events when scheduling them.')}
       </p>
+
+      {loadError && (
+        <div className="save-error-msg" style={{ color: '#f87171', marginBottom: '1rem' }}>
+          {loadError}
+        </div>
+      )}
 
       {/* Event Selector */}
       <div className="builder-event-selector" style={{ marginBottom: '1rem' }}>
