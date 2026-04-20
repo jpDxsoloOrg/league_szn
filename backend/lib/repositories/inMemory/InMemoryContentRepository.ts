@@ -56,7 +56,7 @@ class AnnouncementsImpl implements AnnouncementsMethods {
       title: input.title.trim(),
       body: input.body.trim(),
       priority: typeof input.priority === 'number' ? input.priority : 1,
-      isActive: input.isActive === false ? 'false' : 'true',
+      isActive: input.isActive === false || (input.isActive as unknown) === 'false' ? 'false' : 'true',
       createdBy: input.createdBy,
       createdAt: now,
       updatedAt: now,
@@ -78,7 +78,9 @@ class AnnouncementsImpl implements AnnouncementsMethods {
     if (patch.title !== undefined) updated.title = patch.title;
     if (patch.body !== undefined) updated.body = patch.body;
     if (patch.priority !== undefined) updated.priority = patch.priority;
-    if (patch.isActive !== undefined) updated.isActive = patch.isActive ? 'true' : 'false';
+    if (patch.isActive !== undefined) {
+      updated.isActive = patch.isActive === false || (patch.isActive as unknown) === 'false' ? 'false' : 'true';
+    }
     if (patch.expiresAt === null) {
       delete updated.expiresAt;
     } else if (patch.expiresAt !== undefined) {
