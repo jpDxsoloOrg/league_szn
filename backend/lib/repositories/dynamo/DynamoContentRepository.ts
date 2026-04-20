@@ -73,7 +73,7 @@ function buildAnnouncementsMethods(): AnnouncementsCrud {
         title: input.title.trim(),
         body: input.body.trim(),
         priority: typeof input.priority === 'number' ? input.priority : 1,
-        isActive: input.isActive === false ? 'false' : 'true',
+        isActive: input.isActive === false || (input.isActive as unknown) === 'false' ? 'false' : 'true',
         createdBy: input.createdBy,
         createdAt: now,
         updatedAt: now,
@@ -98,13 +98,14 @@ function buildAnnouncementsMethods(): AnnouncementsCrud {
       if (patch.title !== undefined) fields.title = patch.title;
       if (patch.body !== undefined) fields.body = patch.body;
       if (patch.priority !== undefined) fields.priority = patch.priority;
-      if (patch.isActive !== undefined) fields.isActive = patch.isActive ? 'true' : 'false';
+      if (patch.isActive !== undefined) {
+        fields.isActive = patch.isActive === false || (patch.isActive as unknown) === 'false' ? 'false' : 'true';
+      }
       if (patch.expiresAt !== undefined && patch.expiresAt !== null) {
         fields.expiresAt = patch.expiresAt;
       }
 
       const now = new Date().toISOString();
-      fields.updatedAt = now;
 
       const expr = buildUpdateExpression(fields, now);
 
