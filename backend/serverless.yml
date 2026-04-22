@@ -344,54 +344,6 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Division Transfer Requests
-  transfers:
-    handler: functions/transfers/handler.handler
-    events:
-      - http:
-          path: transfers
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: transfers/me
-          method: get
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: admin/transfers
-          method: get
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: admin/transfers/{requestId}
-          method: put
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-
-  storylineRequests:
-    handler: functions/storylineRequests/handler.handler
-    events:
-      - http:
-          path: storyline-requests
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: storyline-requests/me
-          method: get
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: admin/storyline-requests
-          method: get
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: admin/storyline-requests/{requestId}
-          method: put
-          cors: *corsConfig
-          authorizer: adminAuthorizer
 
   # Matches (Phase 3 consolidated: getMatches, scheduleMatch, recordResult)
   matches:
@@ -492,15 +444,6 @@ functions:
           method: get
           cors: *corsConfig
 
-  # Activity feed (news feed / activity timeline)
-  activity:
-    handler: functions/activity/handler.handler
-    events:
-      - http:
-          path: activity
-          method: get
-          cors: *corsConfig
-
   # Seasons (Phase 1 consolidated: getSeasons, createSeason, updateSeason, deleteSeason)
   seasons:
     handler: functions/seasons/handler.handler
@@ -544,10 +487,16 @@ functions:
           cors: *corsConfig
           authorizer: adminAuthorizer
 
-  # Companies (CRUD for wrestling companies)
-  companies:
-    handler: functions/companies/handler.handler
+  # League config: dispatcher Lambda that routes to companies / shows / divisions /
+  # stipulations / match-types / videos domain handlers. Consolidated to free
+  # CloudFormation root-stack slots (each separate Lambda costs ~2 root
+  # resources: the Function and its LogGroup). The sub-handlers under
+  # backend/functions/{companies,shows,divisions,stipulations,matchTypes,videos}/
+  # are unchanged — only the Lambda boundary moved.
+  leagueConfig:
+    handler: functions/leagueConfig/handler.handler
     events:
+      # Companies
       - http:
           path: companies
           method: get
@@ -571,11 +520,7 @@ functions:
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  # Shows (CRUD for wrestling shows, linked to companies)
-  shows:
-    handler: functions/shows/handler.handler
-    events:
+      # Shows
       - http:
           path: shows
           method: get
@@ -599,11 +544,7 @@ functions:
           method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
-
-  # Divisions (Phase 1 consolidated: getDivisions, createDivision, updateDivision, deleteDivision)
-  divisions:
-    handler: functions/divisions/handler.handler
-    events:
+      # Divisions
       - http:
           path: divisions
           method: get
@@ -621,6 +562,122 @@ functions:
       - http:
           path: divisions/{divisionId}
           method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      # Stipulations
+      - http:
+          path: stipulations
+          method: get
+          cors: *corsConfig
+      - http:
+          path: stipulations
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: stipulations/{stipulationId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: stipulations/{stipulationId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      # Match Types
+      - http:
+          path: match-types
+          method: get
+          cors: *corsConfig
+      - http:
+          path: match-types
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: match-types/{matchTypeId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: match-types/{matchTypeId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      # Videos (public + admin routes)
+      - http:
+          path: videos
+          method: get
+          cors: *corsConfig
+      - http:
+          path: videos/{videoId}
+          method: get
+          cors: *corsConfig
+      - http:
+          path: admin/videos
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/videos
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/videos/{videoId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/videos/{videoId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      # Activity (public feed)
+      - http:
+          path: activity
+          method: get
+          cors: *corsConfig
+      # Transfers (division transfer requests — user + admin)
+      - http:
+          path: transfers
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: transfers/me
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/transfers
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/transfers/{requestId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      # Storyline requests (user + admin)
+      - http:
+          path: storyline-requests
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: storyline-requests/me
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/storyline-requests
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/storyline-requests/{requestId}
+          method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
 
@@ -654,54 +711,6 @@ functions:
       - http:
           path: wrestlers/import
           method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-
-  # Stipulations (Phase 1 consolidated: getStipulations, createStipulation, updateStipulation, deleteStipulation)
-  stipulations:
-    handler: functions/stipulations/handler.handler
-    events:
-      - http:
-          path: stipulations
-          method: get
-          cors: *corsConfig
-      - http:
-          path: stipulations
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: stipulations/{stipulationId}
-          method: put
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: stipulations/{stipulationId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-
-  # Match Types (Phase 1 consolidated: getMatchTypes, createMatchType, updateMatchType, deleteMatchType)
-  matchTypes:
-    handler: functions/matchTypes/handler.handler
-    events:
-      - http:
-          path: match-types
-          method: get
-          cors: *corsConfig
-      - http:
-          path: match-types
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: match-types/{matchTypeId}
-          method: put
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: match-types/{matchTypeId}
-          method: delete
           cors: *corsConfig
           authorizer: adminAuthorizer
 
@@ -1149,38 +1158,6 @@ functions:
           authorizer: adminAuthorizer
 
   # Announcements (consolidated: getActive, adminList, create, update, delete)
-  videos:
-    handler: functions/videos/handler.handler
-    events:
-      - http:
-          path: videos
-          method: get
-          cors: *corsConfig
-      - http:
-          path: videos/{videoId}
-          method: get
-          cors: *corsConfig
-      - http:
-          path: admin/videos
-          method: get
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: admin/videos
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: admin/videos/{videoId}
-          method: put
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: admin/videos/{videoId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-
   announcements:
     handler: functions/announcements/handler.handler
     events:
