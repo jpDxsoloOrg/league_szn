@@ -36,51 +36,61 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/stables',
     method: 'POST',
     handler: createStableHandler,
+    requireAuth: true,
   },
   {
     resource: '/stables/{stableId}',
     method: 'PUT',
     handler: updateStableHandler,
+    requireAuth: true,
   },
   {
     resource: '/stables/{stableId}/approve',
     method: 'POST',
     handler: approveStableHandler,
+    requireAuth: true,
   },
   {
     resource: '/stables/{stableId}/reject',
     method: 'POST',
     handler: rejectStableHandler,
+    requireAuth: true,
   },
   {
     resource: '/stables/{stableId}/invitations',
     method: 'GET',
     handler: getInvitationsHandler,
+    requireAuth: true,
   },
   {
     resource: '/stables/{stableId}/invitations',
     method: 'POST',
     handler: inviteToStableHandler,
+    requireAuth: true,
   },
   {
     resource: '/stables/{stableId}/invitations/{invitationId}/respond',
     method: 'POST',
     handler: respondToInvitationHandler,
+    requireAuth: true,
   },
   {
     resource: '/stables/{stableId}/disband',
     method: 'POST',
     handler: disbandStableHandler,
+    requireAuth: true,
   },
   {
     resource: '/stables/{stableId}/remove-member',
     method: 'POST',
     handler: removeMemberHandler,
+    requireAuth: true,
   },
   {
     resource: '/stables/{stableId}',
     method: 'DELETE',
     handler: deleteStableHandler,
+    requireAuth: true,
   },
 ];
 
