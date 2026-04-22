@@ -82,4 +82,166 @@ describe('createRouter', () => {
     expect(result?.statusCode).toBe(200);
     expect(getByTemplateHandler).toHaveBeenCalledTimes(1);
   });
+
+  describe('behind /{proxy+} integration', () => {
+    it('resolves route from event.path and sets pathParameters', async () => {
+      const getByIdHandler = vi
+        .fn()
+        .mockImplementation(async (event: APIGatewayProxyEvent) => ({
+          statusCode: 200,
+          body: JSON.stringify({ playerId: event.pathParameters?.playerId, resource: event.resource }),
+        }));
+      const routes: ReadonlyArray<RouteConfig> = [
+        { method: 'GET', resource: '/players', handler: vi.fn() as RouteConfig['handler'] },
+        { method: 'GET', resource: '/players/{playerId}', handler: getByIdHandler as RouteConfig['handler'] },
+      ];
+      const handler = createRouter(routes);
+
+      const result = await handler(
+        makeEvent({
+          httpMethod: 'GET',
+          path: '/players/abc123',
+          resource: '/players/{proxy+}',
+          pathParameters: { proxy: 'abc123' },
+        }),
+        ctx,
+        cb
+      );
+
+      expect(result?.statusCode).toBe(200);
+      expect(JSON.parse(result!.body)).toEqual({ playerId: 'abc123', resource: '/players/{playerId}' });
+      expect(getByIdHandler).toHaveBeenCalledTimes(1);
+    });
+
+    it('prefers the most specific route when static and parametric templates both match', async () => {
+      const meHandler = vi.fn().mockResolvedValue({ statusCode: 200, body: '{"me":true}' });
+      const byIdHandler = vi.fn().mockResolvedValue({ statusCode: 200, body: '{"byId":true}' });
+      const routes: ReadonlyArray<RouteConfig> = [
+        { method: 'GET', resource: '/players/{playerId}', handler: byIdHandler as RouteConfig['handler'] },
+        { method: 'GET', resource: '/players/me', handler: meHandler as RouteConfig['handler'] },
+      ];
+      const handler = createRouter(routes);
+
+      const result = await handler(
+        makeEvent({
+          httpMethod: 'GET',
+          path: '/players/me',
+          resource: '/players/{proxy+}',
+        }),
+        ctx,
+        cb
+      );
+
+      expect(result?.statusCode).toBe(200);
+      expect(meHandler).toHaveBeenCalledTimes(1);
+      expect(byIdHandler).not.toHaveBeenCalled();
+    });
+
+    it('returns 405 when path matches a registered route but method does not', async () => {
+      const routes: ReadonlyArray<RouteConfig> = [
+        { method: 'GET', resource: '/players/{playerId}', handler: vi.fn() as RouteConfig['handler'] },
+      ];
+      const handler = createRouter(routes);
+
+      const result = await handler(
+        makeEvent({
+          httpMethod: 'DELETE',
+          path: '/players/abc123',
+          resource: '/players/{proxy+}',
+        }),
+        ctx,
+        cb
+      );
+
+      expect(result?.statusCode).toBe(405);
+    });
+
+    it('returns 404 when no registered route matches the path', async () => {
+      const routes: ReadonlyArray<RouteConfig> = [
+        { method: 'GET', resource: '/players', handler: vi.fn() as RouteConfig['handler'] },
+      ];
+      const handler = createRouter(routes);
+
+      const result = await handler(
+        makeEvent({
+          httpMethod: 'GET',
+          path: '/players/abc/unknown',
+          resource: '/players/{proxy+}',
+        }),
+        ctx,
+        cb
+      );
+
+      expect(result?.statusCode).toBe(404);
+    });
+
+    it('returns 401 when requireAuth route has no bearer token (offline=false)', async () => {
+      const originalOffline = process.env.IS_OFFLINE;
+      process.env.IS_OFFLINE = 'false';
+      try {
+        const protectedHandler = vi.fn().mockResolvedValue({ statusCode: 200, body: '{}' });
+        const routes: ReadonlyArray<RouteConfig> = [
+          {
+            method: 'POST',
+            resource: '/players',
+            handler: protectedHandler as RouteConfig['handler'],
+            requireAuth: true,
+          },
+        ];
+        const handler = createRouter(routes);
+
+        const result = await handler(
+          makeEvent({
+            httpMethod: 'POST',
+            path: '/players',
+            resource: '/players',
+          }),
+          ctx,
+          cb
+        );
+
+        expect(result?.statusCode).toBe(401);
+        expect(protectedHandler).not.toHaveBeenCalled();
+      } finally {
+        process.env.IS_OFFLINE = originalOffline;
+      }
+    });
+
+    it('dispatches requireAuth routes in offline mode without a token', async () => {
+      const originalOffline = process.env.IS_OFFLINE;
+      process.env.IS_OFFLINE = 'true';
+      try {
+        const protectedHandler = vi
+          .fn()
+          .mockImplementation(async (event: APIGatewayProxyEvent) => ({
+            statusCode: 200,
+            body: JSON.stringify({ groups: event.requestContext.authorizer?.groups }),
+          }));
+        const routes: ReadonlyArray<RouteConfig> = [
+          {
+            method: 'POST',
+            resource: '/players',
+            handler: protectedHandler as RouteConfig['handler'],
+            requireAuth: true,
+          },
+        ];
+        const handler = createRouter(routes);
+
+        const result = await handler(
+          makeEvent({
+            httpMethod: 'POST',
+            path: '/players',
+            resource: '/players',
+          }),
+          ctx,
+          cb
+        );
+
+        expect(result?.statusCode).toBe(200);
+        expect(JSON.parse(result!.body)).toEqual({ groups: 'Admin' });
+      } finally {
+        process.env.IS_OFFLINE = originalOffline;
+      }
+    });
+  });
 });

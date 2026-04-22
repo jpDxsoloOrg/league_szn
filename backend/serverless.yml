@@ -282,43 +282,19 @@ functions:
   # Players (Phase 2 consolidated: getPlayers, createPlayer, updatePlayer, deletePlayer, getMyProfile, updateMyProfile)
   players:
     handler: functions/players/handler.handler
+    # Fronted by a single /{proxy+} route; internal routing + Cognito JWT
+    # verification live in functions/players/handler.ts via lib/router.ts.
+    # Collapses 8 API Gateway methods into 2 (ANY /players + ANY /players/{proxy+}),
+    # dropping CloudFormation stack resources and keeping the public API shape
+    # unchanged for the frontend.
     events:
       - http:
-          path: players/me
-          method: get
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: players/me
-          method: put
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
           path: players
-          method: get
+          method: any
           cors: *corsConfig
       - http:
-          path: players
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: players/{playerId}
-          method: put
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: players/{playerId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: players/{playerId}
-          method: get
-          cors: *corsConfig
-      - http:
-          path: players/{playerId}/statistics
-          method: get
+          path: players/{proxy+}
+          method: any
           cors: *corsConfig
 
   # Overalls (Wrestler Overalls: submit, get own, admin get all)
