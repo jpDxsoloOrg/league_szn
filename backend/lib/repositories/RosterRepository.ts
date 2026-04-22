@@ -8,6 +8,11 @@ import type {
   StableInvitation,
   WrestlerOverall,
   TransferRequest,
+  Wrestler,
+  WrestlerCreateInput,
+  WrestlerPatch,
+  WrestlerPromotion,
+  WrestlerImportResult,
 } from './types';
 
 // ─── Player input types ─────────────────────────────────────────────
@@ -153,6 +158,14 @@ export interface TransfersMethods {
   review(requestId: string, input: TransferReviewInput): Promise<TransferRequest>;
 }
 
+export interface WrestlersMethods
+  extends CrudRepository<Wrestler, WrestlerCreateInput, WrestlerPatch> {
+  listByPromotion(promotion: WrestlerPromotion): Promise<Wrestler[]>;
+  listAvailable(): Promise<Wrestler[]>;
+  findByName(promotion: WrestlerPromotion, name: string): Promise<Wrestler | null>;
+  bulkCreate(inputs: WrestlerCreateInput[]): Promise<WrestlerImportResult>;
+}
+
 // ─── Aggregate interface ────────────────────────────────────────────
 
 export interface RosterRepository {
@@ -166,4 +179,5 @@ export interface RosterRepository {
   stables: StablesMethods;
   overalls: OverallsMethods;
   transfers: TransfersMethods;
+  wrestlers: WrestlersMethods;
 }

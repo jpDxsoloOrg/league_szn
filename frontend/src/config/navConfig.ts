@@ -102,6 +102,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     items: [
       { path: '/admin/players', i18nKey: 'admin.panel.tabs.managePlayers' },
       { path: '/admin/divisions', i18nKey: 'admin.panel.tabs.divisions' },
+      { path: '/admin/wrestlers', i18nKey: 'admin.panel.tabs.wrestlers' },
       { path: '/admin/transfers', i18nKey: 'admin.panel.tabs.transfers' },
       { path: '/admin/seasons', i18nKey: 'admin.panel.tabs.seasons' },
       { path: '/admin/season-awards', i18nKey: 'admin.panel.tabs.seasonAwards' },
@@ -173,7 +174,7 @@ export function getUserGroupForPath(pathname: string): string | null {
 /** Path → admin group key */
 export function getAdminGroupForPath(pathname: string): string | null {
   const matchDay = ['/admin/schedule', '/admin/events', '/admin/standalone-matches', '/admin/match-config'];
-  const rosterSeasons = ['/admin/players', '/admin/divisions', '/admin/transfers', '/admin/seasons', '/admin/season-awards'];
+  const rosterSeasons = ['/admin/players', '/admin/divisions', '/admin/wrestlers', '/admin/transfers', '/admin/seasons', '/admin/season-awards'];
   const titlesTournaments = ['/admin/championships', '/admin/tournaments', '/admin/companies', '/admin/shows'];
   const adminRankings = ['/admin/contender-config', '/admin/contender-overrides'];
   const content = ['/admin/announcements', '/admin/videos', '/admin/storyline-requests', '/admin/promos'];
