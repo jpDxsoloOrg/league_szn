@@ -22,6 +22,15 @@ import type {
   StableInvitation,
   WrestlerOverall,
   TransferRequest,
+  Wrestler,
+  WrestlerCreateInput,
+  WrestlerPromotion,
+  WrestlerImportResult,
+} from '../types';
+import {
+  WRESTLER_PROMOTIONS,
+  OVERALL_CAP_MIN,
+  OVERALL_CAP_MAX,
 } from '../types';
 
 export class InMemoryRosterRepository implements RosterRepository {
@@ -33,6 +42,7 @@ export class InMemoryRosterRepository implements RosterRepository {
   readonly invitationsStore = new Map<string, StableInvitation>();
   readonly overallsStore = new Map<string, WrestlerOverall>();
   readonly transfersStore = new Map<string, TransferRequest>();
+  readonly wrestlersStore = new Map<string, Wrestler>();
 
   // ─── players ────────────────────────────────────────────────────────
 
@@ -389,6 +399,164 @@ export class InMemoryRosterRepository implements RosterRepository {
 
       this.transfersStore.set(requestId, updated);
       return updated;
+    },
+  };
+
+  // ─── wrestlers ──────────────────────────────────────────────────────
+  //
+  // In-memory store uses a native boolean for isInUse. The dynamo
+  // implementation persists it as a string due to the GSI constraint.
+
+  private validateWrestlerInput(
+    input: WrestlerCreateInput,
+  ): { ok: true } | { ok: false; reason: string } {
+    if (
+      typeof input.promotion !== 'string' ||
+      !(WRESTLER_PROMOTIONS as readonly string[]).includes(input.promotion)
+    ) {
+      return {
+        ok: false,
+        reason: `promotion must be one of: ${WRESTLER_PROMOTIONS.join(', ')}`,
+      };
+    }
+    if (
+      typeof input.name !== 'string' ||
+      input.name.trim().length === 0 ||
+      input.name.length > 128
+    ) {
+      return {
+        ok: false,
+        reason: 'name must be a non-empty string up to 128 chars',
+      };
+    }
+    if (
+      typeof input.overallCap !== 'number' ||
+      !Number.isInteger(input.overallCap) ||
+      input.overallCap < OVERALL_CAP_MIN ||
+      input.overallCap > OVERALL_CAP_MAX
+    ) {
+      return {
+        ok: false,
+        reason: `overallCap must be an integer between ${OVERALL_CAP_MIN} and ${OVERALL_CAP_MAX}`,
+      };
+    }
+    return { ok: true };
+  }
+
+  wrestlers: RosterRepository['wrestlers'] = {
+    findById: async (wrestlerId: string): Promise<Wrestler | null> => {
+      return this.wrestlersStore.get(wrestlerId) ?? null;
+    },
+
+    list: async (): Promise<Wrestler[]> => {
+      const items = Array.from(this.wrestlersStore.values());
+      items.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      return items;
+    },
+
+    create: async (input: WrestlerCreateInput): Promise<Wrestler> => {
+      const now = new Date().toISOString();
+      const item: Wrestler = {
+        wrestlerId: uuidv4(),
+        promotion: input.promotion,
+        name: input.name,
+        overallCap: input.overallCap,
+        isInUse: false,
+        createdAt: now,
+        updatedAt: now,
+      };
+      this.wrestlersStore.set(item.wrestlerId, item);
+      return item;
+    },
+
+    update: async (wrestlerId, patch): Promise<Wrestler> => {
+      const existing = this.wrestlersStore.get(wrestlerId);
+      if (!existing) throw new NotFoundError('Wrestler', wrestlerId);
+      const updated: Wrestler = {
+        ...existing,
+        ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)),
+        updatedAt: new Date().toISOString(),
+      };
+      this.wrestlersStore.set(wrestlerId, updated);
+      return updated;
+    },
+
+    delete: async (wrestlerId: string): Promise<void> => {
+      this.wrestlersStore.delete(wrestlerId);
+    },
+
+    listByPromotion: async (promotion: WrestlerPromotion): Promise<Wrestler[]> => {
+      const items = Array.from(this.wrestlersStore.values()).filter(
+        (w) => w.promotion === promotion,
+      );
+      items.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      return items;
+    },
+
+    listAvailable: async (): Promise<Wrestler[]> => {
+      const items = Array.from(this.wrestlersStore.values()).filter((w) => !w.isInUse);
+      items.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      return items;
+    },
+
+    findByName: async (
+      promotion: WrestlerPromotion,
+      name: string,
+    ): Promise<Wrestler | null> => {
+      const target = name.toLowerCase();
+      for (const w of this.wrestlersStore.values()) {
+        if (w.promotion === promotion && w.name.toLowerCase() === target) {
+          return w;
+        }
+      }
+      return null;
+    },
+
+    bulkCreate: async (
+      inputs: WrestlerCreateInput[],
+    ): Promise<WrestlerImportResult> => {
+      const result: WrestlerImportResult = {
+        created: 0,
+        skipped: 0,
+        errors: [],
+      };
+
+      const seenInPayload = new Set<string>();
+
+      for (let row = 0; row < inputs.length; row++) {
+        const input = inputs[row];
+        const validation = this.validateWrestlerInput(input);
+        if (!validation.ok) {
+          result.errors.push({ row, reason: validation.reason });
+          continue;
+        }
+
+        const key = `${input.promotion}::${input.name.toLowerCase()}`;
+        if (seenInPayload.has(key)) {
+          result.skipped += 1;
+          result.errors.push({
+            row,
+            reason: 'duplicate within payload (same promotion + name, case-insensitive)',
+          });
+          continue;
+        }
+
+        const existing = await this.wrestlers.findByName(input.promotion, input.name);
+        if (existing) {
+          result.skipped += 1;
+          result.errors.push({
+            row,
+            reason: 'a wrestler with this promotion + name already exists',
+          });
+          continue;
+        }
+
+        seenInPayload.add(key);
+        await this.wrestlers.create(input);
+        result.created += 1;
+      }
+
+      return result;
     },
   };
 }

@@ -4,6 +4,7 @@ import { Navigate } from 'react-router-dom';
 
 import ManagePlayers from './ManagePlayers';
 import ManageDivisions from './ManageDivisions';
+import ManageWrestlers from './ManageWrestlers';
 import ManageMatchConfig from './ManageMatchConfig';
 import ScheduleMatch from './ScheduleMatch';
 import ManageChampionships from './ManageChampionships';
@@ -32,9 +33,9 @@ import ManageOveralls from './ManageOveralls';
 import ManageTransfers from './ManageTransfers';
 import ManageStorylineRequests from './ManageStorylineRequests';
 
-type AdminTab = 'players' | 'divisions' | 'match-config' | 'schedule' | 'championships' | 'tournaments' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'contender-overrides' | 'companies' | 'shows' | 'stables' | 'tag-teams' | 'announcements' | 'videos' | 'overalls' | 'transfers' | 'storyline-requests' | 'danger' | 'users' | 'features';
+type AdminTab = 'players' | 'divisions' | 'wrestlers' | 'match-config' | 'schedule' | 'championships' | 'tournaments' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'contender-overrides' | 'companies' | 'shows' | 'stables' | 'tag-teams' | 'announcements' | 'videos' | 'overalls' | 'transfers' | 'storyline-requests' | 'danger' | 'users' | 'features';
 
-const VALID_TABS: AdminTab[] = ['players', 'divisions', 'match-config', 'schedule', 'championships', 'tournaments', 'promos', 'seasons', 'season-awards', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'contender-overrides', 'companies', 'shows', 'stables', 'tag-teams', 'announcements', 'videos', 'overalls', 'transfers', 'storyline-requests', 'danger', 'users', 'features'];
+const VALID_TABS: AdminTab[] = ['players', 'divisions', 'wrestlers', 'match-config', 'schedule', 'championships', 'tournaments', 'promos', 'seasons', 'season-awards', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'contender-overrides', 'companies', 'shows', 'stables', 'tag-teams', 'announcements', 'videos', 'overalls', 'transfers', 'storyline-requests', 'danger', 'users', 'features'];
 
 
 export default function AdminPanel() {
@@ -75,6 +76,7 @@ export default function AdminPanel() {
     features: <ManageFeatures />,
     players: <ManagePlayers />,
     divisions: <ManageDivisions />,
+    wrestlers: <ManageWrestlers />,
     'match-config': <ManageMatchConfig />,
     schedule: <ScheduleMatch />,
     championships: <ManageChampionships />,

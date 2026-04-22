@@ -31,6 +31,7 @@ export { companiesApi } from './companies.api';
 export { showsApi } from './shows.api';
 export { stablesApi } from './stables.api';
 export { tagTeamsApi } from './tagTeams.api';
+export { wrestlersApi } from './wrestlers.api';
 export { videosApi } from './videos.api';
 export { announcementsApi } from './announcements.api';
 export { notificationsApi } from './notifications.api';

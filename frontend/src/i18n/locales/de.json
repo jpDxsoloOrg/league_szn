@@ -480,6 +480,7 @@
       "tabs": {
         "managePlayers": "Spieler verwalten",
         "divisions": "Divisionen",
+        "wrestlers": "Wrestler verwalten",
         "stipulations": "Stipulationen",
         "matchConfig": "Match-Konfiguration",
         "scheduleMatch": "Kampf planen",

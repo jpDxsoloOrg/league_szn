@@ -42,6 +42,7 @@ provider:
     ANNOUNCEMENTS_TABLE: ${self:service}-announcements-${self:provider.stage}
     NOTIFICATIONS_TABLE: ${self:service}-notifications-${self:provider.stage}
     WRESTLER_OVERALLS_TABLE: ${self:service}-wrestler-overalls-${self:provider.stage}
+    WRESTLERS_TABLE: ${self:service}-wrestlers-${self:provider.stage}
     TRANSFER_REQUESTS_TABLE: ${self:service}-transfer-requests-${self:provider.stage}
     STORYLINE_REQUESTS_TABLE: ${self:service}-storyline-requests-${self:provider.stage}
     PRESENCE_TABLE: ${self:service}-presence-${self:provider.stage}
@@ -114,6 +115,8 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.NOTIFICATIONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.NOTIFICATIONS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.WRESTLER_OVERALLS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.WRESTLERS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.WRESTLERS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TRANSFER_REQUESTS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TRANSFER_REQUESTS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STORYLINE_REQUESTS_TABLE}
@@ -618,6 +621,39 @@ functions:
       - http:
           path: divisions/{divisionId}
           method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+
+  # Wrestlers (roster CRUD + bulk import)
+  wrestlers:
+    handler: functions/wrestlers/handler.handler
+    events:
+      - http:
+          path: wrestlers
+          method: get
+          cors: *corsConfig
+      - http:
+          path: wrestlers/{wrestlerId}
+          method: get
+          cors: *corsConfig
+      - http:
+          path: wrestlers
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: wrestlers/{wrestlerId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: wrestlers/{wrestlerId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: wrestlers/import
+          method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
 
@@ -1486,6 +1522,39 @@ resources:
         KeySchema:
           - AttributeName: divisionId
             KeyType: HASH
+
+    WrestlersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.WRESTLERS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: wrestlerId
+            AttributeType: S
+          - AttributeName: promotion
+            AttributeType: S
+          - AttributeName: isInUse
+            AttributeType: S
+        KeySchema:
+          - AttributeName: wrestlerId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: PromotionIndex
+            KeySchema:
+              - AttributeName: promotion
+                KeyType: HASH
+              - AttributeName: wrestlerId
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: AvailabilityIndex
+            KeySchema:
+              - AttributeName: isInUse
+                KeyType: HASH
+              - AttributeName: wrestlerId
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
 
     EventsTable:
       Type: AWS::DynamoDB::Table

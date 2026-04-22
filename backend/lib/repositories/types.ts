@@ -209,6 +209,55 @@ export interface StableInvitation {
   updatedAt: string;
 }
 
+// ─── Wrestler (roster) types ────────────────────────────────────────
+// Alphabetical with OTHER last; distinct from the Companies domain (which
+// represents other leagues).
+export const WRESTLER_PROMOTIONS = [
+  'AAA',
+  'AEW',
+  'NJPW',
+  'ROH',
+  'TNA',
+  'WCW',
+  'WWE',
+  'OTHER',
+] as const;
+export type WrestlerPromotion = (typeof WRESTLER_PROMOTIONS)[number];
+
+export const OVERALL_CAP_MIN = 70;
+export const OVERALL_CAP_MAX = 93;
+
+export interface Wrestler {
+  wrestlerId: string;
+  promotion: WrestlerPromotion;
+  name: string;
+  overallCap: number;
+  isInUse: boolean;
+  assignedPlayerId?: string;
+  assignedSlot?: 'primary' | 'alternate';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WrestlerCreateInput {
+  promotion: WrestlerPromotion;
+  name: string;
+  overallCap: number;
+}
+
+export interface WrestlerPatch {
+  promotion?: WrestlerPromotion;
+  name?: string;
+  overallCap?: number;
+  isInUse?: boolean;
+}
+
+export interface WrestlerImportResult {
+  created: number;
+  skipped: number;
+  errors: Array<{ row: number; reason: string }>;
+}
+
 export type TransferRequestStatus = 'pending' | 'approved' | 'rejected';
 
 export interface TransferRequest {
