@@ -657,55 +657,33 @@ functions:
   # Events (Phase 2 consolidated: getEvents, getEvent, createEvent, updateEvent, deleteEvent)
   events:
     handler: functions/events/handler.handler
+    # Routes consolidated to ANY-per-path; auth moved in-Lambda via lib/router
+    # requireAuth + lib/authenticate. 10 http events collapsed to 6.
     events:
       - http:
           path: events
-          method: get
+          method: any
           cors: *corsConfig
       - http:
           path: events/{eventId}
-          method: get
+          method: any
           cors: *corsConfig
-      - http:
-          path: events
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: events/{eventId}
-          method: put
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: events/{eventId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: events/{eventId}/check-in
-          method: post
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: events/{eventId}/check-in/me
           method: get
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: events/{eventId}/check-in
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: events/{eventId}/check-ins/summary
           method: get
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: events/{eventId}/check-ins
           method: get
           cors: *corsConfig
-          authorizer: adminAuthorizer
 
   # Contenders (Phase 3 consolidated: getContenders, calculateRankings)
   contenders:
@@ -981,10 +959,14 @@ functions:
   # Stables (consolidated: list, get, standings, create, update, approve, reject, invite, respond, disband, remove-member, delete)
   stables:
     handler: functions/stables/handler.handler
+    # Routes consolidated to ANY-per-path; auth moved in-Lambda via lib/router
+    # requireAuth + lib/authenticate. 13 http events collapsed to 9.
+    # (GET /stables/{stableId} previously had cors:true; now uses the shared
+    # *corsConfig, tightening the preflight Allow-Origin to the frontend.)
     events:
       - http:
           path: stables
-          method: get
+          method: any
           cors: *corsConfig
       - http:
           path: stables/standings
@@ -992,66 +974,45 @@ functions:
           cors: *corsConfig
       - http:
           path: stables/{stableId}
-          method: get
-          cors: true
-      - http:
-          path: stables
-          method: post
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: stables/{stableId}
-          method: put
-          cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: stables/{stableId}/approve
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: stables/{stableId}/reject
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: stables/{stableId}/invitations
-          method: get
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: stables/{stableId}/invitations
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: stables/{stableId}/invitations/{invitationId}/respond
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: stables/{stableId}/disband
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: stables/{stableId}/remove-member
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: stables/{stableId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
 
   # Tag Teams (consolidated: list, get, standings, create, update, respond, approve, reject, dissolve, delete)
   tagTeams:
     handler: functions/tagTeams/handler.handler
+    # Routes consolidated to ANY-per-path; auth moved in-Lambda via lib/router
+    # requireAuth + lib/authenticate. 10 http events collapsed to 7.
+    # (GET /tag-teams/{tagTeamId} previously had cors:true; now uses the
+    # shared *corsConfig, tightening the preflight Allow-Origin to the
+    # frontend.)
     events:
       - http:
           path: tag-teams
-          method: get
+          method: any
           cors: *corsConfig
       - http:
           path: tag-teams/standings
@@ -1059,43 +1020,24 @@ functions:
           cors: *corsConfig
       - http:
           path: tag-teams/{tagTeamId}
-          method: get
-          cors: true
-      - http:
-          path: tag-teams
-          method: post
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: tag-teams/{tagTeamId}
-          method: put
-          cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: tag-teams/{tagTeamId}/respond
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: tag-teams/{tagTeamId}/approve
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: tag-teams/{tagTeamId}/reject
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: tag-teams/{tagTeamId}/dissolve
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: tag-teams/{tagTeamId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
 
   # Announcements (consolidated: getActive, adminList, create, update, delete)
   videos:

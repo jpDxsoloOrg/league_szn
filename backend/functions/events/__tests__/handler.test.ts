@@ -41,6 +41,10 @@ vi.mock('../../../lib/auth', () => ({
   requireRole: () => undefined,
 }));
 
+vi.mock('../../../lib/authenticate', () => ({
+  authenticate: async () => ({ ok: true }),
+}));
+
 import { handler } from '../handler';
 
 const ctx = {} as Context;

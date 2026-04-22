@@ -33,36 +33,43 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/tag-teams',
     method: 'POST',
     handler: createTagTeamHandler,
+    requireAuth: true,
   },
   {
     resource: '/tag-teams/{tagTeamId}',
     method: 'PUT',
     handler: updateTagTeamHandler,
+    requireAuth: true,
   },
   {
     resource: '/tag-teams/{tagTeamId}/respond',
     method: 'POST',
     handler: respondToTagTeamHandler,
+    requireAuth: true,
   },
   {
     resource: '/tag-teams/{tagTeamId}/approve',
     method: 'POST',
     handler: approveTagTeamHandler,
+    requireAuth: true,
   },
   {
     resource: '/tag-teams/{tagTeamId}/reject',
     method: 'POST',
     handler: rejectTagTeamHandler,
+    requireAuth: true,
   },
   {
     resource: '/tag-teams/{tagTeamId}/dissolve',
     method: 'POST',
     handler: dissolveTagTeamHandler,
+    requireAuth: true,
   },
   {
     resource: '/tag-teams/{tagTeamId}',
     method: 'DELETE',
     handler: deleteTagTeamHandler,
+    requireAuth: true,
   },
 ];
 

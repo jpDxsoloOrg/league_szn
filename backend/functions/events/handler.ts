@@ -25,41 +25,49 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/events',
     method: 'POST',
     handler: createEventHandler,
+    requireAuth: true,
   },
   {
     resource: '/events/{eventId}',
     method: 'PUT',
     handler: updateEventHandler,
+    requireAuth: true,
   },
   {
     resource: '/events/{eventId}',
     method: 'DELETE',
     handler: deleteEventHandler,
+    requireAuth: true,
   },
   {
     resource: '/events/{eventId}/check-in',
     method: 'POST',
     handler: checkInHandler,
+    requireAuth: true,
   },
   {
     resource: '/events/{eventId}/check-in/me',
     method: 'GET',
     handler: getMyCheckInHandler,
+    requireAuth: true,
   },
   {
     resource: '/events/{eventId}/check-in',
     method: 'DELETE',
     handler: deleteCheckInHandler,
+    requireAuth: true,
   },
   {
     resource: '/events/{eventId}/check-ins/summary',
     method: 'GET',
     handler: getCheckInSummaryHandler,
+    requireAuth: true,
   },
   {
     resource: '/events/{eventId}/check-ins',
     method: 'GET',
     handler: getCheckInsHandler,
+    requireAuth: true,
   },
 ];
 export const handler = createRouter(routes);
