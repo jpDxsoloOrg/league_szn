@@ -30,12 +30,7 @@ Wenn dein Account Wrestler-Zugriff hat:
 - [Herausforderungen](challenges)
 - [Promos](promos)
 
-## 5) Optionale Fantasy-Funktionen (falls aktiviert)
-
-Wenn Fantasy für deine Rolle aktiviert ist:
-- [Fantasy](fantasy), um Picks abzugeben und die Rangliste zu verfolgen
-
-## 6) Schnell Hilfe finden
+## 5) Schnell Hilfe finden
 
 - [FAQs](faqs) durchsuchen
 - [Tipps](tips) nutzen

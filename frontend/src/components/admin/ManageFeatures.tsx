@@ -4,10 +4,6 @@ import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import './ManageFeatures.css';
 
 const FEATURE_LABELS: Record<keyof SiteFeatures, { name: string; description: string }> = {
-  fantasy: {
-    name: 'Fantasy League',
-    description: 'Fantasy picks, leaderboards, wrestler costs, and dashboard',
-  },
   challenges: {
     name: 'Challenges',
     description: 'Wrestler challenge board, issuing and managing challenges',

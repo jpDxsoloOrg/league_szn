@@ -140,7 +140,7 @@ describe('updateEvent', () => {
       pathParameters: { eventId: 'e1' },
       body: JSON.stringify({
         name: 'Updated', venue: 'Arena', status: 'in-progress',
-        attendance: 50000, rating: 4.5, fantasyEnabled: false, fantasyLocked: true,
+        attendance: 50000, rating: 4.5,
       }),
     });
 
@@ -153,8 +153,6 @@ describe('updateEvent', () => {
     expect(call.UpdateExpression).toContain('#status = :status');
     expect(call.UpdateExpression).toContain('#attendance = :attendance');
     expect(call.UpdateExpression).toContain('#rating = :rating');
-    expect(call.UpdateExpression).toContain('#fantasyEnabled = :fantasyEnabled');
-    expect(call.UpdateExpression).toContain('#fantasyLocked = :fantasyLocked');
     expect(call.UpdateExpression).toContain('#updatedAt = :updatedAt');
   });
 
@@ -174,24 +172,6 @@ describe('updateEvent', () => {
 
     expect(result!.statusCode).toBe(200);
     expect(mockUpdate.mock.calls[0][0].ExpressionAttributeValues[':matchCards']).toEqual(matchCards);
-  });
-
-  it('updates fantasy budget and picks per division', async () => {
-    mockGet.mockResolvedValue({ Item: { eventId: 'e1' } });
-    mockUpdate.mockResolvedValue({
-      Attributes: { eventId: 'e1', fantasyBudget: 1000, fantasyPicksPerDivision: 5 },
-    });
-    const event = makeEvent({
-      pathParameters: { eventId: 'e1' },
-      body: JSON.stringify({ fantasyBudget: 1000, fantasyPicksPerDivision: 5 }),
-    });
-
-    const result = await updateEvent(event, ctx, cb);
-
-    expect(result!.statusCode).toBe(200);
-    const call = mockUpdate.mock.calls[0][0];
-    expect(call.ExpressionAttributeValues[':fantasyBudget']).toBe(1000);
-    expect(call.ExpressionAttributeValues[':fantasyPicksPerDivision']).toBe(5);
   });
 
   it('accepts all valid status values', async () => {

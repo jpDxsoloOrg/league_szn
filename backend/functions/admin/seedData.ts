@@ -19,7 +19,6 @@ export const SEED_MODULE_IDS = [
   'tournaments',
   'events',
   'contenders',
-  'fantasy',
   'config',
 ] as const;
 type SeedModuleId = (typeof SEED_MODULE_IDS)[number];
@@ -33,7 +32,6 @@ export const SEED_MODULE_ORDER: readonly string[] = [
   'tournaments',
   'events',
   'contenders',
-  'fantasy',
   'config',
 ];
 
@@ -554,7 +552,6 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         themeColor: '#FFD700',
         status: 'upcoming',
         seasonId: season.seasonId,
-        fantasyEnabled: true,
         matchCards: scheduledMatches.slice(0, 3).map((m, idx) => {
           const card: Record<string, unknown> = {
             position: idx + 1,
@@ -577,7 +574,6 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         description: 'The longest running weekly episodic television show',
         status: 'completed',
         seasonId: season.seasonId,
-        fantasyEnabled: true,
         matchCards: completedMatches.slice(0, 3).map((m, idx) => ({
           position: idx + 1,
           matchId: m.matchId,
@@ -596,7 +592,6 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         themeColor: '#1E90FF',
         status: 'upcoming',
         seasonId: season.seasonId,
-        fantasyEnabled: true,
         matchCards: [],
         createdAt: now,
         updatedAt: now,
@@ -724,59 +719,6 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       });
     }
 
-    // ── Fantasy Config ─────────────────────────────────────────
-    console.log('Creating fantasy config...');
-    const fantasyConfigItems: Record<string, unknown>[] = [
-      {
-        configKey: 'GLOBAL',
-        defaultBudget: 500,
-        defaultPicksPerDivision: 2,
-        baseWinPoints: 10,
-        championshipBonus: 5,
-        titleWinBonus: 10,
-        titleDefenseBonus: 5,
-        costFluctuationEnabled: true,
-        costChangePerWin: 10,
-        costChangePerLoss: 5,
-        costResetStrategy: 'reset',
-        underdogMultiplier: 1.5,
-        perfectPickBonus: 50,
-        streakBonusThreshold: 5,
-        streakBonusPoints: 25,
-      },
-    ];
-
-    // ── Wrestler Costs ─────────────────────────────────────────
-    console.log('Creating wrestler costs...');
-    const wrestlerCostsItems: Record<string, unknown>[] = [];
-    for (const player of players) {
-      const totalMatches = player.wins + player.losses + player.draws;
-      const winRate = totalMatches > 0 ? Math.round((player.wins / totalMatches) * 100) : 0;
-      const baseCost = 100;
-      const costAdjustment = Math.round((winRate - 50) * 1.5);
-      const currentCost = Math.max(50, baseCost + costAdjustment);
-
-      wrestlerCostsItems.push({
-        playerId: player.playerId,
-        baseCost,
-        currentCost,
-        costHistory: [
-          {
-            date: daysAgo(7).toISOString().split('T')[0],
-            cost: baseCost,
-            reason: 'Initial cost set',
-          },
-          {
-            date: new Date().toISOString().split('T')[0],
-            cost: currentCost,
-            reason: 'Performance adjustment',
-          },
-        ],
-        winRate30Days: winRate,
-        recentRecord: `${player.wins}-${player.losses}-${player.draws}`,
-        updatedAt: now,
-      });
-    }
 
     // ── Challenges ────────────────────────────────────────────
     console.log('Creating challenges...');
@@ -977,7 +919,6 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       {
         configKey: 'features',
         features: {
-          fantasy: true,
           challenges: true,
           promos: true,
           contenders: true,
@@ -1013,9 +954,6 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       contenderRankings: contenderRankingsItems,
       contenderOverrides: contenderOverridesItems,
       rankingHistory: rankingHistoryItems,
-      fantasyConfig: fantasyConfigItems,
-      wrestlerCosts: wrestlerCostsItems,
-      fantasyPicks: [],
       siteConfig: siteConfigItems,
       challenges: challengeItems,
       promos: promoItems,

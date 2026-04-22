@@ -95,9 +95,6 @@ function createEventsSubRepo(): EventsCrud {
         companyIds: input.companyIds,
         showId: input.showId,
         matchCards: [],
-        fantasyEnabled: input.fantasyEnabled,
-        fantasyBudget: input.fantasyBudget,
-        fantasyPicksPerDivision: input.fantasyPicksPerDivision,
         createdAt: now,
         updatedAt: now,
       };

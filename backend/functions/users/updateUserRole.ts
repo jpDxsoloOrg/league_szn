@@ -13,7 +13,7 @@ import { getRepositories } from '../../lib/repositories';
 const cognitoClient = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
 
-const VALID_ROLES = ['Admin', 'Moderator', 'Wrestler', 'Fantasy'] as const;
+const VALID_ROLES = ['Admin', 'Moderator', 'Wrestler'] as const;
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Admin');
@@ -56,20 +56,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         })
       );
 
-      // If promoting to Wrestler, also ensure they're in Fantasy
       if (role === 'Wrestler') {
-        try {
-          await cognitoClient.send(
-            new AdminAddUserToGroupCommand({
-              UserPoolId: USER_POOL_ID,
-              Username: username,
-              GroupName: 'Fantasy',
-            })
-          );
-        } catch {
-          // May already be in Fantasy group
-        }
-
         // Auto-create a Player record for this Wrestler if one doesn't exist
         try {
           const userResult = await cognitoClient.send(

@@ -4,7 +4,7 @@
 #
 # This script:
 #   1. Adds the custom:wrestler_name attribute
-#   2. Attaches the PostConfirmation Lambda trigger (auto-assign Fantasy group)
+#   2. Attaches the PostConfirmation Lambda trigger (auto-assign Wrestler group)
 #   3. Migrates existing users to the Admin group
 #
 # Usage:

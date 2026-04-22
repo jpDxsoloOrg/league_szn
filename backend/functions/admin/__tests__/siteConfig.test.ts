@@ -16,7 +16,6 @@ const ctx = {} as Context;
 const cb: Callback = () => {};
 
 const DEFAULT_FEATURES = {
-  fantasy: true,
   challenges: true,
   promos: true,
   contenders: true,
@@ -77,7 +76,6 @@ describe('getSiteConfig', () => {
 
   it('returns features from existing config', async () => {
     await siteConfigRepo.updateFeatures({
-      fantasy: false,
       challenges: true,
       promos: false,
       contenders: true,
@@ -90,7 +88,6 @@ describe('getSiteConfig', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body.features).toEqual({
-      fantasy: false,
       challenges: true,
       promos: false,
       contenders: true,
@@ -105,7 +102,7 @@ describe('getSiteConfig', () => {
 describe('updateSiteConfig', () => {
   it('returns 403 when user is not Admin', async () => {
     const event = withAuth(
-      makeEvent({ body: JSON.stringify({ features: { fantasy: false } }) }),
+      makeEvent({ body: JSON.stringify({ features: { challenges: false } }) }),
       'Wrestler',
     );
 
@@ -117,7 +114,7 @@ describe('updateSiteConfig', () => {
 
   it('returns 403 when user is Moderator (not full Admin)', async () => {
     const event = withAuth(
-      makeEvent({ body: JSON.stringify({ features: { fantasy: false } }) }),
+      makeEvent({ body: JSON.stringify({ features: { challenges: false } }) }),
       'Moderator',
     );
 
@@ -174,19 +171,18 @@ describe('updateSiteConfig', () => {
 
   it('returns 400 when a feature value is not a boolean', async () => {
     const event = withAuth(
-      makeEvent({ body: JSON.stringify({ features: { fantasy: 'yes' } }) }),
+      makeEvent({ body: JSON.stringify({ features: { challenges: 'yes' } }) }),
       'Admin',
     );
 
     const result = await updateSiteConfig(event, ctx, cb);
 
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('Feature value for fantasy must be a boolean');
+    expect(JSON.parse(result!.body).message).toBe('Feature value for challenges must be a boolean');
   });
 
   it('merges new features with existing config and returns updated features', async () => {
     await siteConfigRepo.updateFeatures({
-      fantasy: true,
       challenges: true,
       promos: true,
       contenders: true,
@@ -195,7 +191,7 @@ describe('updateSiteConfig', () => {
     });
 
     const event = withAuth(
-      makeEvent({ body: JSON.stringify({ features: { fantasy: false, promos: false } }) }),
+      makeEvent({ body: JSON.stringify({ features: { challenges: false, promos: false } }) }),
       'Admin',
     );
 
@@ -204,8 +200,7 @@ describe('updateSiteConfig', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body.features).toEqual({
-      fantasy: false,
-      challenges: true,
+      challenges: false,
       promos: false,
       contenders: true,
       statistics: true,
@@ -224,7 +219,6 @@ describe('updateSiteConfig', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     expect(body.features).toEqual({
-      fantasy: true,
       challenges: true,
       promos: true,
       contenders: true,

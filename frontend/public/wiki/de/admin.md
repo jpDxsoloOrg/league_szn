@@ -6,7 +6,7 @@
 
 - [Schnellstart](admin-quickstart) — Liga von Grund auf einrichten
 - [Match-Konfiguration](admin-match-config) — Match-Typen und Stipulations für die Planung verwalten
-- [Benutzerverwaltung](admin-user-management) — Rollen und Zuweisung von Wrestler, Fantasy, Admin, Moderator
+- [Benutzerverwaltung](admin-user-management) — Rollen und Zuweisung von Wrestler, Admin, Moderator
 - [Divisionen](admin-divisions) — Divisionen anlegen und verwalten, Spieler zuweisen
 - [Spieler verwalten](admin-manage-players) — Wrestler, Bilder, Divisionen bearbeiten; Spieler löschen
 - [Saisons](admin-seasons) — Saisons anlegen, beenden und löschen; Saison-Tabellen
@@ -28,7 +28,5 @@
 
 ## Daten & Ablauf
 
-- [Fantasy Shows](admin-fantasy-shows) — Event-spezifische Fantasy-Sperren, Budgets und Picks/Division
-- [Fantasy-Konfiguration](admin-fantasy-config) — Globale Fantasy-Punkte, Defaults und Kostenlogik
 - [Datenverwaltung](admin-data-management) — Gefahrenzone: Beispieldaten, Alles löschen (nur Super-Admin)
 - [Typischer Wochenablauf](admin-workflow) — Vorgeschlagene Reihenfolge für den Liga-Betrieb

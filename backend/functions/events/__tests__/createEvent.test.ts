@@ -68,7 +68,7 @@ describe('createEvent', () => {
         name: 'Royal Rumble', eventType: 'ppv', date: '2025-01-25',
         venue: 'Lucas Oil Stadium', description: 'Annual Rumble event',
         imageUrl: 'https://example.com/image.png', themeColor: '#FF0000',
-        seasonId: 'season-1', fantasyBudget: 500, fantasyPicksPerDivision: 3,
+        seasonId: 'season-1',
       }),
     });
 
@@ -81,8 +81,6 @@ describe('createEvent', () => {
     expect(body.imageUrl).toBe('https://example.com/image.png');
     expect(body.themeColor).toBe('#FF0000');
     expect(body.seasonId).toBe('season-1');
-    expect(body.fantasyBudget).toBe(500);
-    expect(body.fantasyPicksPerDivision).toBe(3);
   });
 
   it('returns 400 when request body is missing', async () => {

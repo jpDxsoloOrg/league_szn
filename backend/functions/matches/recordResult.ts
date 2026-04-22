@@ -4,7 +4,6 @@ import type { Match, Championship } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { invokeAsync } from '../../lib/asyncLambda';
 import { parseBody } from '../../lib/parseBody';
-import { calculateFantasyPoints } from '../fantasy/calculateFantasyPoints';
 import { updateGroupStats } from './updateGroupStats';
 
 interface RecordResultBody {
@@ -144,11 +143,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     } catch (err) {
       console.warn('Failed to invoke calculateRankings async:', err);
     }
-    try {
-      await invokeAsync('fantasy', { source: 'recordResult' });
-    } catch (err) {
-      console.warn('Failed to invoke recalculateWrestlerCosts async:', err);
-    }
 
     const returnedMatch = {
       ...match,
@@ -194,8 +188,8 @@ async function handleChampionshipResult(
       JSON.stringify([...oldChampion].sort()) === JSON.stringify([...newChampion].sort()))
   );
 
-  // Store isTitleDefense flag on match for downstream consumers (fantasy scoring)
-  // This is a standalone update, not part of any transaction
+  // Store isTitleDefense flag on match for downstream consumers (season awards, UI).
+  // This is a standalone update, not part of any transaction.
   const matchForUpdate = await matchesRepo.findByIdWithDate(match.matchId);
   if (matchForUpdate) {
     // Use a simple UoW for this single update
@@ -437,12 +431,6 @@ async function autoCompleteEvent(matchId: string): Promise<void> {
     if (allCompleted) {
       await events.update(eventItem.eventId, { status: 'completed' });
       console.log(`Event ${eventItem.eventId} auto-completed: all ${matchIds.length} matches finished`);
-
-      try {
-        await calculateFantasyPoints(eventItem.eventId);
-      } catch (err) {
-        console.warn('Fantasy points calculation failed:', err);
-      }
     } else if (eventItem.status === 'upcoming') {
       await events.update(eventItem.eventId, { status: 'in-progress' });
       console.log(`Event ${eventItem.eventId} marked as in-progress`);

@@ -90,12 +90,12 @@ describe('generateUploadUrl — auth & validation', () => {
     expect(JSON.parse(result!.body).message).toContain('permission');
   });
 
-  it('returns 403 when user only has Fantasy role', async () => {
+  it('returns 403 when user has no role', async () => {
     const event = withAuth(
       makeEvent({
         body: JSON.stringify({ fileName: 'photo.jpg', fileType: 'image/jpeg', folder: 'wrestlers' }),
       }),
-      'Fantasy',
+      '',
     );
 
     const result = await generateUploadUrl(event, ctx, cb);

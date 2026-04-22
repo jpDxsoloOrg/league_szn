@@ -4,7 +4,7 @@ New admin? Follow these steps to set up your league from scratch.
 
 ## Steps
 
-1. **Manage Users** — Go to **User Management** and assign roles to your league members. Give wrestlers the **Wrestler** role so they get profile pages, and optionally assign the **Fantasy** role to those participating in the fantasy league.
+1. **Manage Users** — Go to **User Management** and assign roles to your league members. Give wrestlers the **Wrestler** role so they get profile pages.
 
 2. **Create Divisions** — Go to **Divisions** and create divisions (e.g., Heavyweight, Cruiserweight, or Main Event, Jobbers). Divisions organize players by weight class or tier and can lock contender rankings to that division.
 
@@ -25,8 +25,6 @@ New admin? Follow these steps to set up your league from scratch.
 10. **Configure Contenders** — Go to **Contender Config** to set up automatic #1 contender rankings for each championship. Configure ranking period, minimum matches, division restrictions, and recalculate as needed.
 
 11. **Set Match Config** — Go to **Match Config** and define your match types and stipulations so schedulers use consistent options.
-
-12. **Optional Fantasy Setup** — If your league uses fantasy features, configure global rules in **Fantasy Config** and event-specific settings in **Fantasy Shows**.
 
 ## Quick Demo Mode
 

@@ -63,11 +63,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     } catch (err) {
       console.warn('Failed to invoke contenders recalc:', err);
     }
-    try {
-      await invokeAsync('fantasy', { source: 'deleteMatch' });
-    } catch (err) {
-      console.warn('Failed to invoke fantasy recalc:', err);
-    }
 
     return success({ message: 'Match deleted', matchId });
   } catch (err) {

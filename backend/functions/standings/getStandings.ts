@@ -73,7 +73,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       // Get all player details with pagination support
       const allPlayers = await players.list();
 
-      // Only include players who have a wrestler assigned (exclude Fantasy-only users)
+      // Only include players who have a wrestler assigned.
       const filteredPlayers = allPlayers.filter((p) => p.currentWrestler);
 
       // Build a map of season standings by playerId
@@ -118,7 +118,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Default: get all-time standings from Players table with pagination support
     const allPlayers = await players.list();
 
-    // Only include players who have a wrestler assigned (exclude Fantasy-only users)
+    // Only include players who have a wrestler assigned.
     const wrestlers = allPlayers.filter((p) => p.currentWrestler);
 
     // Sort players by wins descending, then by losses ascending

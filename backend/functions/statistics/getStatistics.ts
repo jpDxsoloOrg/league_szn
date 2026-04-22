@@ -152,7 +152,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       matchesRepo.list(),
     ]);
 
-    // Only include players who have a wrestler assigned (exclude Fantasy-only users)
+    // Only include players who have a wrestler assigned.
     const players = allPlayers.filter((p) => p.currentWrestler);
     const allCompletedMatches = allMatches.filter((m) => m.status === 'completed');
     const completedMatches = seasonId ? allCompletedMatches.filter((m) => m.seasonId === seasonId) : allCompletedMatches;

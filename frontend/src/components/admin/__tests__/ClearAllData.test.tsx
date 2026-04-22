@@ -215,7 +215,6 @@ describe('ClearAllData', () => {
         'tournaments',
         'events',
         'contenders',
-        'fantasy',
         'config',
       ],
     });

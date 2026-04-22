@@ -185,40 +185,6 @@ const tables = [
     ],
   },
   {
-    TableName: `wwe-2k-league-api-fantasy-config-${STAGE}`,
-    KeySchema: [{ AttributeName: 'configKey', KeyType: 'HASH' }],
-    AttributeDefinitions: [{ AttributeName: 'configKey', AttributeType: 'S' }],
-    BillingMode: 'PAY_PER_REQUEST',
-  },
-  {
-    TableName: `wwe-2k-league-api-wrestler-costs-${STAGE}`,
-    KeySchema: [{ AttributeName: 'playerId', KeyType: 'HASH' }],
-    AttributeDefinitions: [{ AttributeName: 'playerId', AttributeType: 'S' }],
-    BillingMode: 'PAY_PER_REQUEST',
-  },
-  {
-    TableName: `wwe-2k-league-api-fantasy-picks-${STAGE}`,
-    KeySchema: [
-      { AttributeName: 'eventId', KeyType: 'HASH' },
-      { AttributeName: 'fantasyUserId', KeyType: 'RANGE' },
-    ],
-    AttributeDefinitions: [
-      { AttributeName: 'eventId', AttributeType: 'S' },
-      { AttributeName: 'fantasyUserId', AttributeType: 'S' },
-    ],
-    BillingMode: 'PAY_PER_REQUEST',
-    GlobalSecondaryIndexes: [
-      {
-        IndexName: 'FantasyUserIndex',
-        KeySchema: [
-          { AttributeName: 'fantasyUserId', KeyType: 'HASH' },
-          { AttributeName: 'eventId', KeyType: 'RANGE' },
-        ],
-        Projection: { ProjectionType: 'ALL' },
-      },
-    ],
-  },
-  {
     TableName: `wwe-2k-league-api-site-config-${STAGE}`,
     KeySchema: [{ AttributeName: 'configKey', KeyType: 'HASH' }],
     AttributeDefinitions: [{ AttributeName: 'configKey', AttributeType: 'S' }],

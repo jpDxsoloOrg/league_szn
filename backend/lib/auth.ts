@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { forbidden } from './response';
 
-export type UserRole = 'Admin' | 'Moderator' | 'Wrestler' | 'Fantasy';
+export type UserRole = 'Admin' | 'Moderator' | 'Wrestler';
 
 export interface AuthContext {
   username: string;

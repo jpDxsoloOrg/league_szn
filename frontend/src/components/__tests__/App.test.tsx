@@ -48,12 +48,6 @@ vi.mock('../statistics/TaleOfTheTape', () => ({ default: () => <div>TaleOfTape</
 vi.mock('../statistics/Achievements', () => ({ default: () => <div>Achievements</div> }));
 vi.mock('../contenders/ContenderRankings', () => ({ default: () => <div>ContenderRankings</div> }));
 vi.mock('../contenders/MyContenderStatus', () => ({ default: () => <div>MyContenderStatus</div> }));
-vi.mock('../fantasy/FantasyLanding', () => ({ default: () => <div data-testid="fantasy-landing">FantasyLanding</div> }));
-vi.mock('../fantasy/FantasyDashboard', () => ({ default: () => <div>FantasyDashboard</div> }));
-vi.mock('../fantasy/MakePicks', () => ({ default: () => <div>MakePicks</div> }));
-vi.mock('../fantasy/FantasyLeaderboard', () => ({ default: () => <div>FantasyLeaderboard</div> }));
-vi.mock('../fantasy/WrestlerCosts', () => ({ default: () => <div>WrestlerCosts</div> }));
-vi.mock('../fantasy/ShowResults', () => ({ default: () => <div>ShowResults</div> }));
 vi.mock('../events/EventsCalendar', () => ({ default: () => <div data-testid="events">Events</div> }));
 vi.mock('../events/EventDetail', () => ({ default: () => <div>EventDetail</div> }));
 vi.mock('../events/EventResults', () => ({ default: () => <div>EventResults</div> }));
@@ -89,7 +83,6 @@ vi.mock('react-router-dom', async () => {
 import App from '../../App';
 
 const ALL_FEATURES = {
-  fantasy: true,
   challenges: true,
   promos: true,
   contenders: true,
@@ -104,7 +97,6 @@ function authenticatedAuth(overrides = {}) {
     isSuperAdmin: false,
     isModerator: false,
     isWrestler: true,
-    isFantasy: true,
     groups: ['Admin', 'Wrestler'],
     email: 'test@example.com',
     playerId: 'p1',
@@ -124,7 +116,6 @@ function unauthenticatedAuth() {
     isAdminOrModerator: false,
     isSuperAdmin: false,
     isWrestler: false,
-    isFantasy: false,
     groups: [],
     email: null,
     playerId: null,

@@ -31,7 +31,6 @@ vi.mock('react-router-dom', async () => {
 import FeatureRoute from '../FeatureRoute';
 
 const ALL_FEATURES_ENABLED = {
-  fantasy: true,
   challenges: true,
   promos: true,
   contenders: true,
@@ -67,11 +66,11 @@ describe('FeatureRoute', () => {
 
   it('redirects to home when the feature is disabled', () => {
     mockUseSiteConfig.mockReturnValue({
-      features: { ...ALL_FEATURES_ENABLED, fantasy: false },
+      features: { ...ALL_FEATURES_ENABLED, challenges: false },
       isLoading: false,
     });
 
-    renderFeatureRoute('fantasy');
+    renderFeatureRoute('challenges');
 
     expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/');
     expect(screen.queryByTestId('feature-content')).not.toBeInTheDocument();

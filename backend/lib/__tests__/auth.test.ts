@@ -84,7 +84,7 @@ describe('hasRole', () => {
   });
 
   it('returns false when user lacks the required role', () => {
-    const ctx: AuthContext = { username: 'u', email: 'e', sub: 's', groups: ['Fantasy'] };
+    const ctx: AuthContext = { username: 'u', email: 'e', sub: 's', groups: [] };
 
     expect(hasRole(ctx, 'Wrestler')).toBe(false);
   });
@@ -94,7 +94,6 @@ describe('hasRole', () => {
 
     expect(hasRole(ctx, 'Wrestler')).toBe(true);
     expect(hasRole(ctx, 'Moderator')).toBe(true);
-    expect(hasRole(ctx, 'Fantasy')).toBe(true);
     expect(hasRole(ctx, 'Admin')).toBe(true);
   });
 
@@ -102,7 +101,6 @@ describe('hasRole', () => {
     const ctx: AuthContext = { username: 'u', email: 'e', sub: 's', groups: ['Moderator'] };
 
     expect(hasRole(ctx, 'Wrestler')).toBe(true);
-    expect(hasRole(ctx, 'Fantasy')).toBe(true);
     expect(hasRole(ctx, 'Moderator')).toBe(true);
   });
 
@@ -115,13 +113,13 @@ describe('hasRole', () => {
   it('returns true when user has any one of multiple required roles', () => {
     const ctx: AuthContext = { username: 'u', email: 'e', sub: 's', groups: ['Wrestler'] };
 
-    expect(hasRole(ctx, 'Fantasy', 'Wrestler')).toBe(true);
+    expect(hasRole(ctx, 'Moderator', 'Wrestler')).toBe(true);
   });
 
   it('returns false for empty groups', () => {
     const ctx: AuthContext = { username: 'u', email: 'e', sub: 's', groups: [] };
 
-    expect(hasRole(ctx, 'Fantasy')).toBe(false);
+    expect(hasRole(ctx, 'Wrestler')).toBe(false);
   });
 });
 
@@ -141,7 +139,7 @@ describe('isSuperAdmin', () => {
   });
 
   it('returns false for non-admin roles', () => {
-    const ctx: AuthContext = { username: 'u', email: 'e', sub: 's', groups: ['Wrestler', 'Fantasy'] };
+    const ctx: AuthContext = { username: 'u', email: 'e', sub: 's', groups: ['Wrestler'] };
 
     expect(isSuperAdmin(ctx)).toBe(false);
   });
@@ -166,7 +164,7 @@ describe('requireRole', () => {
       username: 'player',
       email: 'p@b.com',
       principalId: 'sub-2',
-      groups: 'Fantasy',
+      groups: 'Wrestler',
     });
 
     const result = requireRole(event, 'Admin');

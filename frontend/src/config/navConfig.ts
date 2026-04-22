@@ -8,9 +8,9 @@ export type NavItem = {
   path: string;
   i18nKey: string;
   /** When set, link is only shown when this feature is enabled */
-  feature?: 'challenges' | 'promos' | 'contenders' | 'statistics' | 'fantasy' | 'stables';
+  feature?: 'challenges' | 'promos' | 'contenders' | 'statistics' | 'stables';
   /** When set, link is only shown when user has this role (and feature if any) */
-  role?: 'Wrestler' | 'Fantasy';
+  role?: 'Wrestler';
   /** Disabled label key when role not met (e.g. "Wrestler Only") */
   roleLockedLabel?: string;
   /** Coming soon label when feature/role not met */
@@ -75,15 +75,8 @@ export const USER_NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-/** Standalone user links (no subgroup): Fantasy, Help */
-export const USER_NAV_STANDALONE: (NavItem & { type: 'fantasy' | 'link' })[] = [
-  {
-    type: 'fantasy',
-    path: '/fantasy',
-    i18nKey: 'nav.fantasy',
-    feature: 'fantasy',
-    comingSoonLabel: 'Coming Soon',
-  },
+/** Standalone user links (no subgroup): Help */
+export const USER_NAV_STANDALONE: (NavItem & { type: 'link' })[] = [
   {
     type: 'link',
     path: '/guide',
@@ -151,14 +144,6 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    key: 'fantasy',
-    i18nKey: 'admin.panel.groups.fantasy',
-    items: [
-      { path: '/admin/fantasy-shows', i18nKey: 'admin.panel.tabs.fantasyShows' },
-      { path: '/admin/fantasy-config', i18nKey: 'admin.panel.tabs.fantasyConfig' },
-    ],
-  },
-  {
     key: 'system',
     i18nKey: 'admin.panel.groups.system',
     items: [
@@ -193,7 +178,6 @@ export function getAdminGroupForPath(pathname: string): string | null {
   const adminRankings = ['/admin/contender-config', '/admin/contender-overrides'];
   const content = ['/admin/announcements', '/admin/videos', '/admin/storyline-requests', '/admin/promos'];
   const adminFactions = ['/admin/stables', '/admin/tag-teams'];
-  const fantasy = ['/admin/fantasy-shows', '/admin/fantasy-config'];
   const system = ['/admin/users', '/admin/features', '/admin/danger'];
   if (matchDay.some((p) => pathname === p)) return 'matchDay';
   if (rosterSeasons.some((p) => pathname === p)) return 'rosterSeasons';
@@ -201,7 +185,6 @@ export function getAdminGroupForPath(pathname: string): string | null {
   if (adminRankings.some((p) => pathname === p)) return 'adminRankings';
   if (content.some((p) => pathname === p)) return 'content';
   if (adminFactions.some((p) => pathname === p)) return 'adminFactions';
-  if (fantasy.some((p) => pathname === p)) return 'fantasy';
   if (system.some((p) => pathname === p)) return 'system';
   return null;
 }

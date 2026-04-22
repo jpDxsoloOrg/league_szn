@@ -8,7 +8,7 @@ export const handler = createHandlerFactory<EventCreateInput, LeagueEvent>({
   repo: () => getRepositories().leagueOps.events,
   entityName: 'event',
   requiredFields: ['name', 'eventType', 'date'],
-  optionalFields: ['companyIds', 'showId', 'seasonId', 'venue', 'description', 'imageUrl', 'themeColor', 'fantasyBudget', 'fantasyPicksPerDivision', 'fantasyEnabled'],
+  optionalFields: ['companyIds', 'showId', 'seasonId', 'venue', 'description', 'imageUrl', 'themeColor'],
   validate: async (body) => {
     if (body.eventType !== 'ppv' && body.eventType !== 'weekly' && body.eventType !== 'special' && body.eventType !== 'house') {
       return badRequest('eventType must be one of ppv, weekly, special, or house');
