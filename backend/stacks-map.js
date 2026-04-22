@@ -7,24 +7,35 @@
 //
 // Why this file exists:
 //   The root CloudFormation template hit 512 resources — above AWS's 500-per-stack
-//   hard limit. The plugin's default perType map moves ApiGateway methods, Lambda
-//   permissions, and Lambda versions into nested stacks, but CloudWatch LogGroups
-//   stay in root. With ~50 Lambda functions, that's 50 slots we can reclaim by
-//   grouping LogGroups into a dedicated nested stack.
+//   hard limit. The plugin's default `perType` map moves ApiGateway Resources,
+//   Lambda Permissions, and Lambda Versions into nested stacks, but leaves
+//   ApiGateway Methods (306 of them here) in root. This file extends that map
+//   so Methods also migrate into the existing APINestedStack, freeing enough
+//   slots to land this feature and absorb several more before the next rework.
 //
 // About `force: true`:
-//   Required to migrate resources that already exist in the root stack. Without
-//   force, only future (net-new) LogGroups would move; the existing 50 would
-//   remain in root and we'd still be over the limit. Force triggers a
-//   CloudFormation delete-and-recreate for each LogGroup on the first deploy
-//   after this change lands. The physical log group names stay the same (they
-//   follow the `/aws/lambda/{service}-{stage}-{function}` convention), but log
-//   events prior to that deploy are dropped. Acceptable for devtest; the same
-//   one-time reset applies to prod on its first deploy after merge.
+//   Required to migrate resources that already exist in the deployed stack.
+//   Without force, only future (net-new) resources would move; existing ones
+//   remain in root and the 500-limit problem stays unsolved. Force triggers a
+//   CloudFormation delete-and-recreate of each matched resource on the first
+//   deploy after this change lands.
+//
+//   For `AWS::ApiGateway::Method`, the delete→create cycle is purely
+//   CloudFormation-managed — no external system auto-recreates a Method with a
+//   conflicting name, so the migration is deterministic (unlike LogGroups,
+//   which Lambda auto-creates on any invocation and therefore cannot be moved
+//   safely in a live service). The cost is a brief window during the deploy
+//   where individual endpoints may 404 while their Method is being replaced.
+//   Acceptable in devtest; schedule as a low-traffic window in prod.
+//
+//   After the first successful deploy on each stage, Methods live in
+//   APINestedStack and subsequent deploys are normal. The `force: true` flag
+//   only triggers migration for resources that are already in a *different*
+//   stack than their intended destination, so it is effectively a one-shot.
 
 module.exports = {
-  'AWS::Logs::LogGroup': {
-    destination: 'Logs',
+  'AWS::ApiGateway::Method': {
+    destination: 'API',
     force: true,
   },
 };
