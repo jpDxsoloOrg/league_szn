@@ -7,6 +7,10 @@ const mockCalculateRankings = vi.fn();
 vi.mock('../getContenders', () => ({ handler: (...args: unknown[]) => mockGetContenders(...args) }));
 vi.mock('../calculateRankings', () => ({ handler: (...args: unknown[]) => mockCalculateRankings(...args) }));
 
+vi.mock('../../../lib/authenticate', () => ({
+  authenticate: async () => ({ ok: true }),
+}));
+
 import { handler } from '../handler';
 
 const ctx = {} as Context;

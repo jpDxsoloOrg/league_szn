@@ -26,26 +26,31 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/challenges',
     method: 'POST',
     handler: createChallengeHandler,
+    requireAuth: true,
   },
   {
     resource: '/challenges/{challengeId}/respond',
     method: 'POST',
     handler: respondToChallengeHandler,
+    requireAuth: true,
   },
   {
     resource: '/challenges/{challengeId}/cancel',
     method: 'POST',
     handler: cancelChallengeHandler,
+    requireAuth: true,
   },
   {
     resource: '/challenges/{challengeId}',
     method: 'DELETE',
     handler: deleteChallengeHandler,
+    requireAuth: true,
   },
   {
     resource: '/challenges/bulk-delete',
     method: 'POST',
     handler: bulkDeleteChallengesHandler,
+    requireAuth: true,
   },
 ];
 

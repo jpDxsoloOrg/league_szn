@@ -21,21 +21,25 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/admin/videos',
     method: 'GET',
     handler: listVideosHandler,
+    requireAuth: true,
   },
   {
     resource: '/admin/videos',
     method: 'POST',
     handler: createVideoHandler,
+    requireAuth: true,
   },
   {
     resource: '/admin/videos/{videoId}',
     method: 'PUT',
     handler: updateVideoHandler,
+    requireAuth: true,
   },
   {
     resource: '/admin/videos/{videoId}',
     method: 'DELETE',
     handler: deleteVideoHandler,
+    requireAuth: true,
   },
 ];
 

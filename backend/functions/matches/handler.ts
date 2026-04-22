@@ -19,21 +19,25 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/matches',
     method: 'POST',
     handler: scheduleMatchHandler,
+    requireAuth: true,
   },
   {
     resource: '/matches/{matchId}/result',
     method: 'PUT',
     handler: recordResultHandler,
+    requireAuth: true,
   },
   {
     resource: '/matches/{matchId}',
     method: 'PUT',
     handler: updateMatchHandler,
+    requireAuth: true,
   },
   {
     resource: '/matches/{matchId}',
     method: 'DELETE',
     handler: deleteMatchHandler,
+    requireAuth: true,
   },
 ];
 

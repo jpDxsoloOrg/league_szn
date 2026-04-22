@@ -40,6 +40,10 @@ vi.mock('../../../lib/auth', () => ({
   hasRole: () => true,
 }));
 
+vi.mock('../../../lib/authenticate', () => ({
+  authenticate: async () => ({ ok: true }),
+}));
+
 vi.mock('../../../lib/parseBody', () => ({
   parseBody: (event: { body: string | null }) => {
     if (!event.body) return { data: null, error: { statusCode: 400, body: JSON.stringify({ message: 'Bad' }) } };

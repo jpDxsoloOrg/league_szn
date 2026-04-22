@@ -373,28 +373,16 @@ functions:
     events:
       - http:
           path: matches
-          method: get
+          method: any
           cors: *corsConfig
-      - http:
-          path: matches
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: matches/{matchId}/result
           method: put
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: matches/{matchId}
-          method: put
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: matches/{matchId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
 
   # Championships (Phase 2 consolidated: getChampionships, createChampionship, getChampionshipHistory, updateChampionship, deleteChampionship, vacateChampionship)
   championships:
@@ -402,32 +390,20 @@ functions:
     events:
       - http:
           path: championships
-          method: get
+          method: any
           cors: *corsConfig
-      - http:
-          path: championships
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: championships/{championshipId}/history
           method: get
           cors: *corsConfig
       - http:
           path: championships/{championshipId}
-          method: put
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: championships/{championshipId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: championships/{championshipId}/vacate
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
 
   # Tournaments (Phase 3 consolidated: getTournaments, createTournament, updateTournament)
   tournaments:
@@ -524,27 +500,12 @@ functions:
     events:
       - http:
           path: companies
-          method: get
-          cors: *corsConfig
-      - http:
-          path: companies
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: companies/{companyId}
-          method: get
+          method: any
           cors: *corsConfig
       - http:
           path: companies/{companyId}
-          method: put
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: companies/{companyId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
 
   # Shows (CRUD for wrestling shows, linked to companies)
   shows:
@@ -552,27 +513,12 @@ functions:
     events:
       - http:
           path: shows
-          method: get
-          cors: *corsConfig
-      - http:
-          path: shows
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: shows/{showId}
-          method: get
+          method: any
           cors: *corsConfig
       - http:
           path: shows/{showId}
-          method: put
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: shows/{showId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
 
   # Divisions (Phase 1 consolidated: getDivisions, createDivision, updateDivision, deleteDivision)
   divisions:
@@ -628,23 +574,12 @@ functions:
     events:
       - http:
           path: match-types
-          method: get
+          method: any
           cors: *corsConfig
-      - http:
-          path: match-types
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: match-types/{matchTypeId}
-          method: put
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: match-types/{matchTypeId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
 
   # Events (Phase 2 consolidated: getEvents, getEvent, createEvent, updateEvent, deleteEvent)
   events:
@@ -690,22 +625,14 @@ functions:
           path: admin/contenders/recalculate
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: admin/contenders/overrides
-          method: post
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: admin/contenders/overrides/{championshipId}/{playerId}
           method: delete
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: admin/contenders/overrides
-          method: get
-          cors: *corsConfig
-          authorizer: adminAuthorizer
 
   # Images
   generateUploadUrl:
@@ -759,37 +686,24 @@ functions:
     events:
       - http:
           path: challenges
-          method: get
+          method: any
           cors: *corsConfig
       - http:
           path: challenges/{challengeId}
-          method: get
-          cors: true
-      - http:
-          path: challenges
-          method: post
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: challenges/{challengeId}/respond
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: challenges/{challengeId}/cancel
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: challenges/{challengeId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: challenges/bulk-delete
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
 
   # Matchmaking (consolidated: heartbeat, presence, queue join/leave/list, online, invite, invitations list/accept/decline)
   matchmaking:
@@ -852,37 +766,24 @@ functions:
     events:
       - http:
           path: promos
-          method: get
+          method: any
           cors: *corsConfig
       - http:
           path: promos/{promoId}
           method: get
           cors: *corsConfig
       - http:
-          path: promos
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
           path: promos/{promoId}/react
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: admin/promos/{promoId}
-          method: put
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: admin/promos/{promoId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: admin/promos/bulk-delete
           method: post
           cors: *corsConfig
-          authorizer: adminAuthorizer
 
   # Stables (consolidated: list, get, standings, create, update, approve, reject, invite, respond, disband, remove-member, delete)
   stables:
@@ -981,24 +882,12 @@ functions:
           cors: *corsConfig
       - http:
           path: admin/videos
-          method: get
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: admin/videos
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: admin/videos/{videoId}
-          method: put
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: admin/videos/{videoId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
 
   announcements:
     handler: functions/announcements/handler.handler
@@ -1009,24 +898,12 @@ functions:
           cors: *corsConfig
       - http:
           path: admin/announcements
-          method: get
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: admin/announcements
-          method: post
-          cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: admin/announcements/{announcementId}
-          method: put
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: admin/announcements/{announcementId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
 
   # Notifications (consolidated: list, unreadCount, markRead, markAllRead)
   notifications:

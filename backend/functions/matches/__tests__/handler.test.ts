@@ -9,6 +9,10 @@ vi.mock('../getMatches', () => ({ handler: (...args: unknown[]) => mockGetMatche
 vi.mock('../scheduleMatch', () => ({ handler: (...args: unknown[]) => mockScheduleMatch(...args) }));
 vi.mock('../recordResult', () => ({ handler: (...args: unknown[]) => mockRecordResult(...args) }));
 
+vi.mock('../../../lib/authenticate', () => ({
+  authenticate: async () => ({ ok: true }),
+}));
+
 import { handler } from '../handler';
 
 const ctx = {} as Context;
