@@ -282,39 +282,24 @@ functions:
   # Players (Phase 2 consolidated: getPlayers, createPlayer, updatePlayer, deletePlayer, getMyProfile, updateMyProfile)
   players:
     handler: functions/players/handler.handler
+    # Single Lambda that routes all /players traffic. Per-path methods are
+    # collapsed to ANY (8 http events -> 4) and the gateway-level authorizer
+    # is removed -- JWT verification + role checks happen in-Lambda via
+    # lib/router.ts + lib/authenticate.ts + requireRole. This trims
+    # CloudFormation method/permission resources without introducing a
+    # {proxy+} sibling to {playerId}, which API Gateway rejects.
     events:
       - http:
-          path: players/me
-          method: get
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: players/me
-          method: put
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
           path: players
-          method: get
+          method: any
           cors: *corsConfig
       - http:
-          path: players
-          method: post
+          path: players/me
+          method: any
           cors: *corsConfig
-          authorizer: adminAuthorizer
       - http:
           path: players/{playerId}
-          method: put
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: players/{playerId}
-          method: delete
-          cors: *corsConfig
-          authorizer: adminAuthorizer
-      - http:
-          path: players/{playerId}
-          method: get
+          method: any
           cors: *corsConfig
       - http:
           path: players/{playerId}/statistics
