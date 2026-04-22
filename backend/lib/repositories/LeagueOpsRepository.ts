@@ -22,9 +22,6 @@ export interface EventCreateInput {
   seasonId?: string;
   companyIds?: string[];
   showId?: string;
-  fantasyEnabled?: boolean;
-  fantasyBudget?: number;
-  fantasyPicksPerDivision?: number;
 }
 
 export interface EventPatch {
@@ -42,10 +39,6 @@ export interface EventPatch {
   matchCards?: LeagueEvent['matchCards'];
   attendance?: number;
   rating?: number;
-  fantasyEnabled?: boolean;
-  fantasyLocked?: boolean;
-  fantasyBudget?: number;
-  fantasyPicksPerDivision?: number;
 }
 
 // ─── Show input types ───────────────────────────────────────────────

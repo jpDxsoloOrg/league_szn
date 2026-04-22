@@ -76,7 +76,6 @@ vi.mock('../../../contexts/AuthContext', () => ({
     isSuperAdmin: false,
     isModerator: false,
     isWrestler: false,
-    isFantasy: false,
     hasRole: () => false,
     signIn: vi.fn(),
     signUp: vi.fn(),

@@ -1,7 +1,6 @@
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
 export interface SiteFeatures {
-  fantasy: boolean;
   challenges: boolean;
   promos: boolean;
   contenders: boolean;

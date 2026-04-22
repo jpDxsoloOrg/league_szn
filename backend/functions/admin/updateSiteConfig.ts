@@ -4,7 +4,7 @@ import { success, badRequest, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 
-const VALID_FEATURES = ['fantasy', 'challenges', 'promos', 'contenders', 'statistics', 'stables'];
+const VALID_FEATURES = ['challenges', 'promos', 'contenders', 'statistics', 'stables'];
 
 interface UpdateSiteConfigBody {
   features: Record<string, boolean>;

@@ -21,7 +21,6 @@ interface AuthContextType extends AuthState {
   isSuperAdmin: boolean;
   isModerator: boolean;
   isWrestler: boolean;
-  isFantasy: boolean;
   hasRole: (role: UserRole) => boolean;
 }
 
@@ -206,7 +205,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isSuperAdmin: state.groups.includes('Admin'),
     isModerator: state.groups.includes('Moderator'),
     isWrestler: state.groups.includes('Wrestler'),
-    isFantasy: hasRole('Fantasy'),
     hasRole,
   };
 

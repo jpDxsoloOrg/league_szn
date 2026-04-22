@@ -422,7 +422,7 @@ describe('deletePlayer', () => {
 
 describe('getMyProfile', () => {
   it('returns 403 if not Wrestler role', async () => {
-    const event = withAuth(makeEvent(), 'Fantasy');
+    const event = withAuth(makeEvent(), '');
 
     const result = await getMyProfile(event, ctx, cb);
 
@@ -492,7 +492,7 @@ describe('getMyProfile', () => {
 
 describe('updateMyProfile', () => {
   it('returns 403 if not Wrestler role', async () => {
-    const event = withAuth(makeEvent({ body: JSON.stringify({ name: 'X' }) }), 'Fantasy');
+    const event = withAuth(makeEvent({ body: JSON.stringify({ name: 'X' }) }), '');
 
     const result = await updateMyProfile(event, ctx, cb);
 

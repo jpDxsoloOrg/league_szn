@@ -12,8 +12,6 @@ import CreateTournament from './CreateTournament';
 import AdminPromos from './AdminPromos';
 import ManageSeasons from './ManageSeasons';
 import MatchCardBuilder from './MatchCardBuilder';
-import ManageFantasyShows from './ManageFantasyShows';
-import FantasyConfig from './FantasyConfig';
 import ClearAllData from './ClearAllData';
 import ManageUsers from './ManageUsers';
 import ManageFeatures from './ManageFeatures';
@@ -32,9 +30,9 @@ import ManageOveralls from './ManageOveralls';
 import ManageTransfers from './ManageTransfers';
 import ManageStorylineRequests from './ManageStorylineRequests';
 
-type AdminTab = 'players' | 'divisions' | 'match-config' | 'schedule' | 'championships' | 'tournaments' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'fantasy-shows' | 'fantasy-config' | 'contender-config' | 'contender-overrides' | 'companies' | 'shows' | 'stables' | 'tag-teams' | 'announcements' | 'videos' | 'overalls' | 'transfers' | 'storyline-requests' | 'danger' | 'users' | 'features';
+type AdminTab = 'players' | 'divisions' | 'match-config' | 'schedule' | 'championships' | 'tournaments' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'contender-config' | 'contender-overrides' | 'companies' | 'shows' | 'stables' | 'tag-teams' | 'announcements' | 'videos' | 'overalls' | 'transfers' | 'storyline-requests' | 'danger' | 'users' | 'features';
 
-const VALID_TABS: AdminTab[] = ['players', 'divisions', 'match-config', 'schedule', 'championships', 'tournaments', 'promos', 'seasons', 'season-awards', 'events', 'fantasy-shows', 'fantasy-config', 'contender-config', 'contender-overrides', 'companies', 'shows', 'stables', 'tag-teams', 'announcements', 'videos', 'overalls', 'transfers', 'storyline-requests', 'danger', 'users', 'features'];
+const VALID_TABS: AdminTab[] = ['players', 'divisions', 'match-config', 'schedule', 'championships', 'tournaments', 'promos', 'seasons', 'season-awards', 'events', 'contender-config', 'contender-overrides', 'companies', 'shows', 'stables', 'tag-teams', 'announcements', 'videos', 'overalls', 'transfers', 'storyline-requests', 'danger', 'users', 'features'];
 
 
 export default function AdminPanel() {
@@ -83,8 +81,6 @@ export default function AdminPanel() {
     seasons: <ManageSeasons />,
     'season-awards': <ManageSeasonAwards />,
     events: <MatchCardBuilder />,
-    'fantasy-shows': <ManageFantasyShows />,
-    'fantasy-config': <FantasyConfig />,
     'contender-config': <AdminContenderConfig />,
     'contender-overrides': <AdminContenderOverrides />,
     companies: <ManageCompanies />,

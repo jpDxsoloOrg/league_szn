@@ -30,12 +30,7 @@ If your account has wrestler access:
 - [Challenges](challenges)
 - [Promos](promos)
 
-## 5) Optional fantasy features (if enabled)
-
-If fantasy is enabled for your role:
-- [Fantasy](fantasy) to make picks and track leaderboard progress
-
-## 6) Need help fast?
+## 5) Need help fast?
 
 - Browse [FAQs](faqs)
 - Use [Tips](tips)

@@ -22,5 +22,4 @@ Willkommen auf der WWE-2K-Liga-Website. Diese kurze Anleitung hilft Ihnen bei de
 ## Nächste Schritte
 
 - Wenn Sie **Wrestler** sind, melden Sie sich an, um Ihr Profil zu sehen, Herausforderungen zu stellen oder zu beantworten und Promos zu posten.
-- Wenn **Fantasy** aktiviert ist, melden Sie sich mit einem Fantasy-Konto an, um Tipps abzugeben und Ranglisten zu sehen.
 - Nutzen Sie **Statistiken**, um Ranglisten, Rekorde und Direktvergleiche zu erkunden (wenn die Funktion aktiv ist).

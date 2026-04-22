@@ -267,10 +267,6 @@ export interface LeagueEvent {
   matchCards: MatchCardEntry[];
   attendance?: number;
   rating?: number;
-  fantasyEnabled?: boolean;
-  fantasyLocked?: boolean;
-  fantasyBudget?: number;
-  fantasyPicksPerDivision?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -11,9 +11,6 @@ export type ExportDatasetKey =
   | 'contenderRankings'
   | 'contenderOverrides'
   | 'rankingHistory'
-  | 'fantasyConfig'
-  | 'wrestlerCosts'
-  | 'fantasyPicks'
   | 'siteConfig'
   | 'challenges'
   | 'promos'
@@ -26,8 +23,7 @@ export const EXPORT_SCHEMA_VERSION = 1;
 export const EXPORT_DATASET_KEYS: readonly string[] = [
   'divisions', 'players', 'seasons', 'seasonStandings', 'championships',
   'championshipHistory', 'matches', 'tournaments', 'events',
-  'contenderRankings', 'contenderOverrides', 'rankingHistory',
-  'fantasyConfig', 'wrestlerCosts', 'fantasyPicks', 'siteConfig',
+  'contenderRankings', 'contenderOverrides', 'rankingHistory', 'siteConfig',
   'challenges', 'promos', 'stipulations', 'matchTypes', 'seasonAwards',
 ];
 

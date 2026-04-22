@@ -23,7 +23,6 @@ vi.mock('../ManageFeatures.css', () => ({}));
 import ManageFeatures from '../ManageFeatures';
 
 const ALL_FEATURES = {
-  fantasy: true,
   challenges: true,
   promos: true,
   contenders: true,
@@ -48,7 +47,6 @@ describe('ManageFeatures', () => {
     render(<ManageFeatures />);
 
     expect(screen.getByText('Feature Management')).toBeInTheDocument();
-    expect(screen.getByText('Fantasy League')).toBeInTheDocument();
     expect(screen.getByText('Challenges')).toBeInTheDocument();
     expect(screen.getByText('Promos')).toBeInTheDocument();
     expect(screen.getByText('Contender Rankings')).toBeInTheDocument();
@@ -56,7 +54,7 @@ describe('ManageFeatures', () => {
 
     // Promos is disabled, rest are enabled
     expect(screen.getByLabelText('Enable Promos')).toHaveTextContent('Disabled');
-    expect(screen.getByLabelText('Disable Fantasy League')).toHaveTextContent('Enabled');
+    expect(screen.getByLabelText('Disable Challenges')).toHaveTextContent('Enabled');
   });
 
   it('toggles a feature flag and calls API then refreshes config', async () => {
@@ -87,7 +85,7 @@ describe('ManageFeatures', () => {
     const user = userEvent.setup();
     render(<ManageFeatures />);
 
-    await user.click(screen.getByLabelText('Disable Fantasy League'));
+    await user.click(screen.getByLabelText('Disable Challenges'));
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent('Network failure');

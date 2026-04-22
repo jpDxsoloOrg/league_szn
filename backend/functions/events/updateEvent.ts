@@ -18,10 +18,6 @@ interface UpdateEventBody {
   matchCards?: EventPatch['matchCards'];
   attendance?: number;
   rating?: number;
-  fantasyEnabled?: boolean;
-  fantasyLocked?: boolean;
-  fantasyBudget?: number;
-  fantasyPicksPerDivision?: number;
   companyIds?: string[];
   showId?: string;
 }
@@ -83,10 +79,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (body.matchCards !== undefined) patch.matchCards = body.matchCards;
     if (body.attendance !== undefined) patch.attendance = body.attendance;
     if (body.rating !== undefined) patch.rating = body.rating;
-    if (body.fantasyEnabled !== undefined) patch.fantasyEnabled = body.fantasyEnabled;
-    if (body.fantasyLocked !== undefined) patch.fantasyLocked = body.fantasyLocked;
-    if (body.fantasyBudget !== undefined) patch.fantasyBudget = body.fantasyBudget;
-    if (body.fantasyPicksPerDivision !== undefined) patch.fantasyPicksPerDivision = body.fantasyPicksPerDivision;
     if (body.companyIds !== undefined) patch.companyIds = body.companyIds;
     if (body.showId !== undefined) patch.showId = body.showId;
 

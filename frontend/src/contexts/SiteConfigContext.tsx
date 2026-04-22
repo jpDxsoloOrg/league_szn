@@ -8,7 +8,6 @@ interface SiteConfigContextType {
 }
 
 const DEFAULT_FEATURES: SiteFeatures = {
-  fantasy: true,
   challenges: true,
   promos: true,
   contenders: true,

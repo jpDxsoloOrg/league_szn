@@ -121,7 +121,7 @@ describe('AuthContext', () => {
     });
 
     it('does not fetch player profile for non-Wrestlers', async () => {
-      mockAuthenticatedUser(['Fantasy']);
+      mockAuthenticatedUser(['Admin']);
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -186,24 +186,14 @@ describe('AuthContext', () => {
       expect(result.current.isModerator).toBe(true);
     });
 
-    it('isWrestler and isFantasy return correct values for Wrestler group', async () => {
+    it('isWrestler returns correct values for Wrestler group', async () => {
       mockAuthenticatedUser(['Wrestler'], { playerId: 'p-1' });
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       expect(result.current.isWrestler).toBe(true);
-      expect(result.current.isFantasy).toBe(false);
       expect(result.current.isAdminOrModerator).toBe(false);
       expect(result.current.isModerator).toBe(false);
-    });
-
-    it('isFantasy returns true for Fantasy group', async () => {
-      mockAuthenticatedUser(['Fantasy']);
-      const { result } = renderHook(() => useAuth(), { wrapper });
-      await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-      expect(result.current.isFantasy).toBe(true);
-      expect(result.current.isWrestler).toBe(false);
     });
 
     it('hasRole checks role hierarchy -- Admin has all roles', async () => {
@@ -214,7 +204,6 @@ describe('AuthContext', () => {
       expect(result.current.hasRole('Admin')).toBe(true);
       expect(result.current.hasRole('Moderator')).toBe(true);
       expect(result.current.hasRole('Wrestler')).toBe(true);
-      expect(result.current.hasRole('Fantasy')).toBe(true);
     });
 
     it('hasRole -- Moderator has all roles except Admin', async () => {
@@ -225,7 +214,6 @@ describe('AuthContext', () => {
       expect(result.current.hasRole('Admin')).toBe(false);
       expect(result.current.hasRole('Moderator')).toBe(true);
       expect(result.current.hasRole('Wrestler')).toBe(true);
-      expect(result.current.hasRole('Fantasy')).toBe(true);
     });
   });
 

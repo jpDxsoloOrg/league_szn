@@ -28,8 +28,6 @@ export default function TopBar() {
         challenges: t('admin.panel.tabs.challenges'),
         promos: t('admin.panel.tabs.promos'),
         'contender-config': t('admin.panel.tabs.contenderConfig'),
-        'fantasy-shows': t('admin.panel.tabs.fantasyShows'),
-        'fantasy-config': t('admin.panel.tabs.fantasyConfig'),
         users: t('admin.panel.tabs.users'),
         features: t('admin.panel.tabs.features'),
         danger: t('admin.panel.tabs.dangerZone'),
@@ -58,8 +56,6 @@ export default function TopBar() {
         promos: t('admin.panel.groups.content'),
         stables: t('admin.panel.groups.factions'),
         'tag-teams': t('admin.panel.groups.factions'),
-        'fantasy-shows': t('admin.panel.groups.fantasy'),
-        'fantasy-config': t('admin.panel.groups.fantasy'),
         users: t('admin.panel.groups.system'),
         features: t('admin.panel.groups.system'),
         danger: t('admin.panel.groups.system'),
@@ -83,24 +79,6 @@ export default function TopBar() {
     // Contender sub-routes
     if (path === '/contenders/my-status') {
       return { title: t('contenders.myStatus.title'), parent: t('nav.contenders') };
-    }
-
-    // Fantasy sub-routes
-    if (path.startsWith('/fantasy/')) {
-      const segment = path.split('/')[2] ?? '';
-      const fantasyMap: Record<string, string> = {
-        login: t('fantasy.auth.loginTitle'),
-        signup: t('fantasy.auth.signupTitle'),
-        dashboard: t('fantasy.dashboard.welcome', { username: '' }).replace(', !', ''),
-        picks: t('fantasy.picks.title'),
-        leaderboard: t('fantasy.leaderboard.title'),
-        costs: t('fantasy.costs.title'),
-        shows: t('fantasy.results.yourPoints'),
-      };
-      return {
-        title: fantasyMap[segment] || t('nav.fantasy'),
-        parent: t('nav.fantasy'),
-      };
     }
 
     // Stats sub-routes
@@ -150,7 +128,6 @@ export default function TopBar() {
       '/challenges': t('nav.challenges'),
       '/promos': t('nav.promos'),
       '/stats': t('statistics.playerStats.title'),
-      '/fantasy': t('nav.fantasy'),
       '/guide': t('nav.help'),
     };
 

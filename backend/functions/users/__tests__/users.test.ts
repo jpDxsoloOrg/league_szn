@@ -91,7 +91,7 @@ describe('listUsers', () => {
           UserStatus: 'CONFIRMED', Enabled: true, UserCreateDate: created,
         }],
       })
-      .mockResolvedValueOnce({ Groups: [{ GroupName: 'Wrestler' }, { GroupName: 'Fantasy' }] });
+      .mockResolvedValueOnce({ Groups: [{ GroupName: 'Wrestler' }] });
 
     const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
 
@@ -101,7 +101,7 @@ describe('listUsers', () => {
     expect(b.users[0]).toMatchObject({
       username: 'john', sub: 'sub-1', email: 'john@test.com', name: 'John Doe',
       wrestlerName: 'The Rock', status: 'CONFIRMED', enabled: true,
-      groups: ['Wrestler', 'Fantasy'],
+      groups: ['Wrestler'],
     });
     expect(b.users[0].created).toBe(created.toISOString());
   });
@@ -133,7 +133,7 @@ describe('toggleUserEnabled', () => {
     withAuth(makeEvent({ body: b ? JSON.stringify(b) : null }), groups);
 
   it('returns 403 if caller is not Admin', async () => {
-    const result = await toggleUserEnabled(ev({ username: 'u', enabled: true }, 'Fantasy'), ctx, cb);
+    const result = await toggleUserEnabled(ev({ username: 'u', enabled: true }, 'Wrestler'), ctx, cb);
     expect(result!.statusCode).toBe(403);
   });
 
@@ -184,7 +184,7 @@ describe('updateUserRole', () => {
     withAuth(makeEvent({ body: b ? JSON.stringify(b) : null }), groups);
 
   it('returns 403 if caller is not Admin', async () => {
-    const result = await updateUserRole(ev({ username: 'u', role: 'Wrestler', action: 'promote' }, 'Fantasy'), ctx, cb);
+    const result = await updateUserRole(ev({ username: 'u', role: 'Wrestler', action: 'promote' }, 'Wrestler'), ctx, cb);
     expect(result!.statusCode).toBe(403);
   });
 
@@ -221,12 +221,12 @@ describe('updateUserRole', () => {
   it('promotes user to a non-Wrestler role and returns updated groups', async () => {
     mockSend
       .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ Groups: [{ GroupName: 'Fantasy' }] });
+      .mockResolvedValueOnce({ Groups: [{ GroupName: 'Moderator' }] });
 
-    const result = await updateUserRole(ev({ username: 'jane', role: 'Fantasy', action: 'promote' }), ctx, cb);
+    const result = await updateUserRole(ev({ username: 'jane', role: 'Moderator', action: 'promote' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
-    expect(body(result).message).toBe('User jane added to Fantasy group');
-    expect(body(result).groups).toEqual(['Fantasy']);
+    expect(body(result).message).toBe('User jane added to Moderator group');
+    expect(body(result).groups).toEqual(['Moderator']);
   });
 
   it('demotes user and returns updated groups', async () => {
@@ -240,17 +240,16 @@ describe('updateUserRole', () => {
     expect(body(result).groups).toEqual([]);
   });
 
-  it('promotes to Wrestler: auto-adds Fantasy and creates Player record', async () => {
+  it('promotes to Wrestler and creates Player record', async () => {
     mockSend
       .mockResolvedValueOnce({}) // Add to Wrestler group
-      .mockResolvedValueOnce({}) // Add to Fantasy group
       .mockResolvedValueOnce({   // AdminGetUserCommand
         UserAttributes: [
           { Name: 'sub', Value: 'user-cognito-sub' },
           { Name: 'custom:wrestler_name', Value: 'Stone Cold' },
         ],
       })
-      .mockResolvedValueOnce({ Groups: [{ GroupName: 'Wrestler' }, { GroupName: 'Fantasy' }] });
+      .mockResolvedValueOnce({ Groups: [{ GroupName: 'Wrestler' }] });
     mockPlayersFindByUserId.mockResolvedValueOnce(null);
     mockPlayersCreate.mockResolvedValueOnce({
       playerId: 'test-uuid-1234',
@@ -274,7 +273,6 @@ describe('updateUserRole', () => {
   it('promotes to Wrestler but skips Player creation if player exists', async () => {
     mockSend
       .mockResolvedValueOnce({}) // Wrestler group
-      .mockResolvedValueOnce({}) // Fantasy group
       .mockResolvedValueOnce({ UserAttributes: [{ Name: 'sub', Value: 'existing-sub' }] })
       .mockResolvedValueOnce({ Groups: [{ GroupName: 'Wrestler' }] });
     mockPlayersFindByUserId.mockResolvedValueOnce({ playerId: 'existing-player' });
@@ -287,7 +285,6 @@ describe('updateUserRole', () => {
   it('promotes to Wrestler: player creation failure is non-blocking', async () => {
     mockSend
       .mockResolvedValueOnce({}) // Wrestler group
-      .mockResolvedValueOnce({}) // Fantasy group
       .mockRejectedValueOnce(new Error('AdminGetUser failed'))
       .mockResolvedValueOnce({ Groups: [{ GroupName: 'Wrestler' }] });
 
@@ -298,7 +295,7 @@ describe('updateUserRole', () => {
 
   it('returns 500 on unexpected top-level error', async () => {
     mockSend.mockRejectedValueOnce(new Error('unexpected'));
-    const result = await updateUserRole(ev({ username: 'u', role: 'Fantasy', action: 'promote' }), ctx, cb);
+    const result = await updateUserRole(ev({ username: 'u', role: 'Moderator', action: 'promote' }), ctx, cb);
     expect(result!.statusCode).toBe(500);
     expect(body(result).message).toBe('Failed to update user role');
   });

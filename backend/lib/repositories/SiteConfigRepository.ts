@@ -1,5 +1,4 @@
 export interface FeatureFlags {
-  fantasy: boolean;
   challenges: boolean;
   promos: boolean;
   contenders: boolean;
@@ -8,7 +7,6 @@ export interface FeatureFlags {
 }
 
 export const DEFAULT_FEATURES: FeatureFlags = {
-  fantasy: true,
   challenges: true,
   promos: true,
   contenders: true,

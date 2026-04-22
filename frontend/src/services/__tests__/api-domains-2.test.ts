@@ -179,7 +179,7 @@ describe('usersApi', () => {
 // ---------------------------------------------------------------------------
 describe('siteConfigApi', () => {
   it('getFeatures calls GET /site-config', async () => {
-    const data = { features: { fantasy: true, challenges: true, promos: true, contenders: true, statistics: true } };
+    const data = { features: { challenges: true, promos: true, contenders: true, statistics: true } };
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse(data));
 
     const result = await siteConfigApi.getFeatures();
@@ -188,19 +188,19 @@ describe('siteConfigApi', () => {
       `${API_BASE}/site-config`,
       expect.any(Object),
     );
-    expect(result.features.fantasy).toBe(true);
+    expect(result.features.challenges).toBe(true);
   });
 
   it('updateFeatures sends PUT to /admin/site-config with features payload', async () => {
-    const updated = { features: { fantasy: false, challenges: true, promos: true, contenders: true, statistics: true } };
+    const updated = { features: { challenges: false, promos: true, contenders: true, statistics: true } };
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse(updated));
 
-    await siteConfigApi.updateFeatures({ fantasy: false });
+    await siteConfigApi.updateFeatures({ challenges: false });
 
     const [url, opts] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(url).toBe(`${API_BASE}/admin/site-config`);
     expect(opts.method).toBe('PUT');
-    expect(JSON.parse(opts.body)).toEqual({ features: { fantasy: false } });
+    expect(JSON.parse(opts.body)).toEqual({ features: { challenges: false } });
   });
 });
 

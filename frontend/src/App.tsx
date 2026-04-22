@@ -45,13 +45,6 @@ import MatchTypeLeaderboards from './components/statistics/MatchTypeLeaderboards
 // Contender components
 import ContenderRankings from './components/contenders/ContenderRankings';
 import MyContenderStatus from './components/contenders/MyContenderStatus';
-// Fantasy components
-import FantasyLanding from './components/fantasy/FantasyLanding';
-import FantasyDashboard from './components/fantasy/FantasyDashboard';
-import MakePicks from './components/fantasy/MakePicks';
-import FantasyLeaderboard from './components/fantasy/FantasyLeaderboard';
-import WrestlerCosts from './components/fantasy/WrestlerCosts';
-import ShowResults from './components/fantasy/ShowResults';
 // Events components
 import EventsCalendar from './components/events/EventsCalendar';
 import EventDetail from './components/events/EventDetail';
@@ -261,46 +254,6 @@ function AppLayout() {
             } />
             <Route path="/contenders/my-status" element={
               <FeatureRoute feature="contenders"><MyContenderStatus /></FeatureRoute>
-            } />
-
-            {/* Fantasy Routes - feature-gated, Fantasy role required for interactive features */}
-            <Route path="/fantasy" element={
-              <FeatureRoute feature="fantasy"><FantasyLanding /></FeatureRoute>
-            } />
-            <Route path="/fantasy/dashboard" element={
-              <FeatureRoute feature="fantasy">
-                <ProtectedRoute requiredRole="Fantasy">
-                  <FantasyDashboard />
-                </ProtectedRoute>
-              </FeatureRoute>
-            } />
-            <Route path="/fantasy/picks/:eventId" element={
-              <FeatureRoute feature="fantasy">
-                <ProtectedRoute requiredRole="Fantasy">
-                  <MakePicks />
-                </ProtectedRoute>
-              </FeatureRoute>
-            } />
-            <Route path="/fantasy/leaderboard" element={
-              <FeatureRoute feature="fantasy">
-                <ProtectedRoute requiredRole="Fantasy">
-                  <FantasyLeaderboard />
-                </ProtectedRoute>
-              </FeatureRoute>
-            } />
-            <Route path="/fantasy/costs" element={
-              <FeatureRoute feature="fantasy">
-                <ProtectedRoute requiredRole="Fantasy">
-                  <WrestlerCosts />
-                </ProtectedRoute>
-              </FeatureRoute>
-            } />
-            <Route path="/fantasy/events/:eventId/results" element={
-              <FeatureRoute feature="fantasy">
-                <ProtectedRoute requiredRole="Fantasy">
-                  <ShowResults />
-                </ProtectedRoute>
-              </FeatureRoute>
             } />
 
             {/* Catch-all 404 */}

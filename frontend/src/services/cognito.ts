@@ -2,7 +2,7 @@ import { Amplify } from 'aws-amplify';
 import { signIn, signUp, signOut, confirmSignUp, fetchAuthSession, getCurrentUser, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
 import { logger } from '../utils/logger';
 
-export type UserRole = 'Admin' | 'Moderator' | 'Wrestler' | 'Fantasy';
+export type UserRole = 'Admin' | 'Moderator' | 'Wrestler';
 
 // Cognito configuration from environment variables
 const cognitoConfig = {
@@ -55,7 +55,7 @@ function decodeJwtPayload(token: string): Record<string, unknown> {
 export function getGroupsFromToken(accessToken: string): UserRole[] {
   const payload = decodeJwtPayload(accessToken);
   const groups = (payload['cognito:groups'] as string[]) || [];
-  return groups.filter((g): g is UserRole => ['Admin', 'Moderator', 'Wrestler', 'Fantasy'].includes(g));
+  return groups.filter((g): g is UserRole => ['Admin', 'Moderator', 'Wrestler'].includes(g));
 }
 
 export const cognitoAuth = {

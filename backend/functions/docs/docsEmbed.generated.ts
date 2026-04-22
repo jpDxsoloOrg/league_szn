@@ -4,7 +4,7 @@ export const OPENAPI_YAML = `openapi: 3.0.3
 info:
   title: WWE 2K League API
   version: 1.0.0
-  description: Serverless API for managing a WWE 2K league (standings, championships, matches, tournaments, events, fantasy, challenges, promos, statistics). Authenticated endpoints require a JWT Bearer token (AWS Cognito).
+  description: Serverless API for managing a WWE 2K league (standings, championships, matches, tournaments, events, challenges, promos, statistics). Authenticated endpoints require a JWT Bearer token (AWS Cognito).
   license:
     name: Unlicense
     url: https://unlicense.org
@@ -38,7 +38,6 @@ tags:
   - name: Contenders
   - name: Images
   - name: Admin
-  - name: Fantasy
   - name: Challenges
   - name: Promos
   - name: Statistics
@@ -246,10 +245,6 @@ components:
         matchCards: { type: array, items: { $ref: '#/components/schemas/MatchCardEntry' } }
         attendance: { type: integer }
         rating: { type: number }
-        fantasyEnabled: { type: boolean }
-        fantasyLocked: { type: boolean }
-        fantasyBudget: { type: integer }
-        fantasyPicksPerDivision: { type: integer }
         createdAt: { type: string }
         updatedAt: { type: string }
 
@@ -280,10 +275,6 @@ components:
         imageUrl: { type: string }
         themeColor: { type: string }
         seasonId: { type: string }
-        fantasyEnabled: { type: boolean }
-        fantasyBudget: { type: integer }
-        fantasyPicksPerDivision: { type: integer }
-
     UpdateEventInput:
       type: object
       properties:
@@ -295,11 +286,6 @@ components:
         matchCards: { type: array, items: { $ref: '#/components/schemas/MatchCardEntry' } }
         attendance: { type: integer }
         rating: { type: number }
-        fantasyEnabled: { type: boolean }
-        fantasyLocked: { type: boolean }
-        fantasyBudget: { type: integer }
-        fantasyPicksPerDivision: { type: integer }
-
     Challenge:
       type: object
       properties:
@@ -399,80 +385,6 @@ components:
       properties:
         reactionType: { type: string, enum: [fire, mic, trash, mind-blown, clap] }
 
-    FantasyConfig:
-      type: object
-      properties:
-        configKey: { type: string }
-        defaultBudget: { type: integer }
-        defaultPicksPerDivision: { type: integer }
-        baseWinPoints: { type: number }
-        championshipBonus: { type: number }
-        titleWinBonus: { type: number }
-        titleDefenseBonus: { type: number }
-        costFluctuationEnabled: { type: boolean }
-        costChangePerWin: { type: number }
-        costChangePerLoss: { type: number }
-        costResetStrategy: { type: string }
-        underdogMultiplier: { type: number }
-        perfectPickBonus: { type: number }
-        streakBonusThreshold: { type: integer }
-        streakBonusPoints: { type: number }
-
-    WrestlerCost:
-      type: object
-      properties:
-        playerId: { type: string }
-        currentCost: { type: integer }
-        baseCost: { type: integer }
-        costHistory: { type: array }
-        winRate30Days: { type: number }
-        updatedAt: { type: string }
-
-    WrestlerWithCost:
-      allOf:
-        - { $ref: '#/components/schemas/WrestlerCost' }
-        - type: object
-          properties:
-            name: { type: string }
-            currentWrestler: { type: string }
-            divisionId: { type: string }
-            imageUrl: { type: string }
-            costTrend: { type: string, enum: [up, down, stable] }
-            recentRecord: { type: string }
-
-    FantasyPicks:
-      type: object
-      properties:
-        eventId: { type: string }
-        fantasyUserId: { type: string }
-        picks: { type: object }
-        totalSpent: { type: integer }
-        pointsEarned: { type: number }
-        createdAt: { type: string }
-        updatedAt: { type: string }
-
-    FantasyLeaderboardEntry:
-      type: object
-      properties:
-        rank: { type: integer }
-        fantasyUserId: { type: string }
-        username: { type: string }
-        totalPoints: { type: number }
-        currentSeasonPoints: { type: number }
-        perfectPicks: { type: integer }
-        currentStreak: { type: integer }
-
-    SubmitPicksInput:
-      type: object
-      required: [picks]
-      properties:
-        picks: { type: object }
-
-    UpdateWrestlerCostInput:
-      type: object
-      properties:
-        currentCost: { type: integer }
-
     ChampionshipContenders:
       type: object
       properties:
@@ -485,7 +397,6 @@ components:
     SiteFeatures:
       type: object
       properties:
-        fantasy: { type: boolean }
         challenges: { type: boolean }
         promos: { type: boolean }
         contenders: { type: boolean }
@@ -1332,7 +1243,7 @@ paths:
       description: |
         Supports two modes:
         - Default seed mode (when \`mode\` is omitted or not \`import\`): generates sample seed data.
-          Optional request body can specify \`modules\` (core, championships, matches, standings, tournaments, events, contenders, fantasy, config).
+          Optional request body can specify \`modules\` (core, championships, matches, standings, tournaments, events, contenders, config).
         - Import mode (\`mode: "import"\`): validates and imports a previously exported payload from \`GET /admin/export-data\`.
           Import mode validates required table keys in all records before any destructive clear, then clears relevant tables and inserts records.
       security: [{ BearerAuth: [] }]
@@ -1395,145 +1306,6 @@ paths:
       responses:
         '200': { description: 'Statistics (shape varies by section param)' }
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /fantasy/config:
-    get:
-      tags: [Fantasy]
-      summary: Get fantasy config
-      responses:
-        '200': { description: Fantasy config }
-
-  /admin/fantasy/config:
-    put:
-      tags: [Fantasy]
-      summary: Update fantasy config
-      security: [{ BearerAuth: [] }]
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/FantasyConfig' }
-      responses:
-        '200': { description: Updated }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /fantasy/wrestlers/costs:
-    get:
-      tags: [Fantasy]
-      summary: Get wrestler costs
-      responses:
-        '200': { description: Wrestler costs }
-
-  /admin/fantasy/wrestlers/costs/initialize:
-    post:
-      tags: [Fantasy]
-      summary: Initialize wrestler costs
-      security: [{ BearerAuth: [] }]
-      responses:
-        '200': { description: Initialized }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /admin/fantasy/wrestlers/costs/recalculate:
-    post:
-      tags: [Fantasy]
-      summary: Recalculate wrestler costs
-      security: [{ BearerAuth: [] }]
-      responses:
-        '200': { description: Recalculated }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /admin/fantasy/wrestlers/{playerId}/cost:
-    put:
-      tags: [Fantasy]
-      summary: Update wrestler cost
-      security: [{ BearerAuth: [] }]
-      parameters:
-        - name: playerId
-          in: path
-          required: true
-          schema: { type: string }
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/UpdateWrestlerCostInput' }
-      responses:
-        '200': { description: Updated }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-        '404': { description: 'Not found', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /fantasy/leaderboard:
-    get:
-      tags: [Fantasy]
-      summary: Get fantasy leaderboard
-      security: [{ BearerAuth: [] }]
-      responses:
-        '200': { description: Leaderboard }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /fantasy/score:
-    post:
-      tags: [Fantasy]
-      summary: Score completed events
-      security: [{ BearerAuth: [] }]
-      responses:
-        '200': { description: Scored }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-        '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /fantasy/picks/{eventId}:
-    get:
-      tags: [Fantasy]
-      summary: Get my picks for event
-      security: [{ BearerAuth: [] }]
-      parameters:
-        - name: eventId
-          in: path
-          required: true
-          schema: { type: string }
-      responses:
-        '200': { description: Picks }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-    post:
-      tags: [Fantasy]
-      summary: Submit picks
-      security: [{ BearerAuth: [] }]
-      parameters:
-        - name: eventId
-          in: path
-          required: true
-          schema: { type: string }
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/SubmitPicksInput' }
-      responses:
-        '200': { description: Submitted }
-        '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-    delete:
-      tags: [Fantasy]
-      summary: Clear picks for event
-      security: [{ BearerAuth: [] }]
-      parameters:
-        - name: eventId
-          in: path
-          required: true
-          schema: { type: string }
-      responses:
-        '204': { description: Cleared }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-
-  /fantasy/me/picks:
-    get:
-      tags: [Fantasy]
-      summary: Get all my picks
-      security: [{ BearerAuth: [] }]
-      responses:
-        '200': { description: All picks }
-        '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 
   /challenges:
     get:

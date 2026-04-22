@@ -6,7 +6,7 @@ export const handler: APIGatewayProxyHandler = async () => {
   try {
     const players = await getRepositories().roster.players.list();
 
-    // Only include players who have a wrestler assigned (exclude Fantasy-only users)
+    // Only include players who have a wrestler assigned.
     const wrestlers = players.filter((p) => p.currentWrestler);
 
     return success(wrestlers);

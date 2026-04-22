@@ -87,9 +87,6 @@ vi.mock('../../../lib/asyncLambda', () => ({
 vi.mock('../updateGroupStats', () => ({
   updateGroupStats: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock('../../fantasy/calculateFantasyPoints', () => ({
-  calculateFantasyPoints: vi.fn().mockResolvedValue(undefined),
-}));
 
 import { handler as recordResult } from '../recordResult';
 

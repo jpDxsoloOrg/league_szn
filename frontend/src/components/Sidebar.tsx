@@ -19,15 +19,11 @@ import './Sidebar.css';
 function isUserItemVisible(
   item: NavItem,
   features: SiteFeatures,
-  isWrestler: boolean,
-  isFantasy: boolean
+  isWrestler: boolean
 ): { show: boolean; disabled: boolean; disabledLabel?: string } {
   if (item.feature && !features[item.feature]) return { show: false, disabled: false };
   if (item.role === 'Wrestler') {
     return { show: true, disabled: !isWrestler, disabledLabel: item.roleLockedLabel };
-  }
-  if (item.role === 'Fantasy' || (item as { type?: string }).type === 'fantasy') {
-    return { show: true, disabled: !isFantasy, disabledLabel: (item as { comingSoonLabel?: string }).comingSoonLabel };
   }
   return { show: true, disabled: false };
 }
@@ -35,15 +31,14 @@ function isUserItemVisible(
 function shouldShowGroup(
   group: { key: string; items: NavItem[] },
   features: SiteFeatures,
-  isWrestler: boolean,
-  isFantasy: boolean
+  isWrestler: boolean
 ): boolean {
   if (group.key === 'wrestler') {
     return isWrestler || features.challenges || features.promos;
   }
   // Hide group if every item is feature-gated and none are enabled
   return group.items.some((item) => {
-    const { show } = isUserItemVisible(item, features, isWrestler, isFantasy);
+    const { show } = isUserItemVisible(item, features, isWrestler);
     return show;
   });
 }
@@ -51,7 +46,7 @@ function shouldShowGroup(
 export default function Sidebar() {
   const { t } = useTranslation();
   const location = useLocation();
-  const { isAuthenticated, isAdminOrModerator, isSuperAdmin, isWrestler, isFantasy, signOut } = useAuth();
+  const { isAuthenticated, isAdminOrModerator, isSuperAdmin, isWrestler, signOut } = useAuth();
   const { features } = useSiteConfig();
   const [adminExpanded, setAdminExpanded] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ league: true });
@@ -142,7 +137,7 @@ export default function Sidebar() {
       <nav className="sidebar-nav">
         <div className="nav-section">
           {USER_NAV_GROUPS.map((group) => {
-            if (!shouldShowGroup(group, features, isWrestler, isFantasy)) return null;
+            if (!shouldShowGroup(group, features, isWrestler)) return null;
             return (
               <div key={group.key} className="nav-subgroup user-nav-subgroup">
                 <button
@@ -157,7 +152,7 @@ export default function Sidebar() {
                 {expandedGroups[group.key] && (
                   <div className="nav-subgroup-items user-nav-items">
                     {group.items.map((item) => {
-                      const { show, disabled, disabledLabel } = isUserItemVisible(item, features, isWrestler, isFantasy);
+                      const { show, disabled, disabledLabel } = isUserItemVisible(item, features, isWrestler);
                       if (!show) return null;
                       if (disabled && disabledLabel) {
                         return (
@@ -180,30 +175,11 @@ export default function Sidebar() {
             );
           })}
 
-          {USER_NAV_STANDALONE.map((item) => {
-            if (item.type === 'fantasy' && !features.fantasy) return null;
-            if (item.type === 'link') {
-              return (
-                <Link key={item.path} to={item.path} className={isActive(item.path) ? 'active' : ''}>
-                  {t(item.i18nKey)}
-                </Link>
-              );
-            }
-            const { show, disabled, disabledLabel } = isUserItemVisible(item, features, isWrestler, isFantasy);
-            if (!show) return null;
-            if (disabled && disabledLabel) {
-              return (
-                <span key={item.path} className="nav-disabled">
-                  {t(item.i18nKey)} <span className="coming-soon">{disabledLabel}</span>
-                </span>
-              );
-            }
-            return (
-              <Link key={item.path} to={item.path} className={location.pathname.startsWith(item.path) ? 'active' : ''}>
-                {t(item.i18nKey)}
-              </Link>
-            );
-          })}
+          {USER_NAV_STANDALONE.map((item) => (
+            <Link key={item.path} to={item.path} className={isActive(item.path) ? 'active' : ''}>
+              {t(item.i18nKey)}
+            </Link>
+          ))}
         </div>
 
         {isAdminOrModerator && (

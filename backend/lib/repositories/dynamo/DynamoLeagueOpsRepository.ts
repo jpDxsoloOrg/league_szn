@@ -145,9 +145,6 @@ export class DynamoLeagueOpsRepository implements LeagueOpsRepository {
         companyIds: input.companyIds,
         showId: input.showId,
         matchCards: [],
-        fantasyEnabled: input.fantasyEnabled,
-        fantasyBudget: input.fantasyBudget,
-        fantasyPicksPerDivision: input.fantasyPicksPerDivision,
         createdAt: now,
         updatedAt: now,
       };

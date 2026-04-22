@@ -72,7 +72,7 @@ describe('seedData', () => {
       divisions: 3, players: 12, seasons: 1, seasonStandings: 12,
       championships: 4, championshipHistory: 4, matches: 12, tournaments: 2,
       events: 3, contenderRankings: 8, rankingHistory: 9,
-      fantasyConfig: 1, wrestlerCosts: 12, challenges: 6, promos: 7, siteConfig: 1,
+      challenges: 6, promos: 7, siteConfig: 1,
     });
 
     const result = await seedData(makeEvent(), ctx, cb);
@@ -93,8 +93,6 @@ describe('seedData', () => {
     expect(body.createdCounts.events).toBe(3);
     expect(body.createdCounts.contenderRankings).toBe(8);
     expect(body.createdCounts.rankingHistory).toBe(9);
-    expect(body.createdCounts.fantasyConfig).toBe(1);
-    expect(body.createdCounts.wrestlerCosts).toBe(12);
     expect(body.createdCounts.challenges).toBe(6);
     expect(body.createdCounts.promos).toBe(7);
     expect(body.createdCounts.siteConfig).toBe(1);
@@ -120,7 +118,7 @@ describe('seedData', () => {
       divisions: 3, players: 12, seasons: 1, seasonStandings: 12,
       championships: 4, championshipHistory: 4, matches: 12, tournaments: 2,
       events: 3, contenderRankings: 8, rankingHistory: 9,
-      fantasyConfig: 1, wrestlerCosts: 12, challenges: 6, promos: 7, siteConfig: 1,
+      challenges: 6, promos: 7, siteConfig: 1,
     });
 
     const result = await seedData(
@@ -140,7 +138,7 @@ describe('seedData', () => {
       divisions: 3, players: 12, seasons: 1, seasonStandings: 12,
       championships: 4, championshipHistory: 4, matches: 12, tournaments: 2,
       events: 3, contenderRankings: 8, rankingHistory: 9,
-      fantasyConfig: 1, wrestlerCosts: 12, challenges: 6, promos: 7, siteConfig: 1,
+      challenges: 6, promos: 7, siteConfig: 1,
     });
 
     const resultEmptyBody = await seedData(makeEvent({ body: '{}' }), ctx, cb);

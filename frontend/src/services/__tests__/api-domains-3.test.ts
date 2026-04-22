@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fantasyApi, challengesApi, promosApi, imagesApi } from '../api';
+import { challengesApi, promosApi, imagesApi } from '../api';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 type FetchMock = ReturnType<typeof vi.fn>;
@@ -23,102 +23,6 @@ beforeEach(() => {
   global.fetch = vi.fn();
 });
 afterEach(() => { sessionStorage.clear(); });
-
-// ---------------------------------------------------------------------------
-// fantasyApi (12 functions)
-// ---------------------------------------------------------------------------
-describe('fantasyApi', () => {
-  it('getConfig calls GET /fantasy/config', async () => {
-    fetchMock().mockResolvedValue(mockRes({ budgetPerEvent: 100 }));
-    await fantasyApi.getConfig();
-    expect(callUrl()).toBe(`${API_BASE}/fantasy/config`);
-  });
-
-  it('updateConfig sends PUT to /admin/fantasy/config', async () => {
-    fetchMock().mockResolvedValue(mockRes({ budgetPerEvent: 200 }));
-    // @ts-expect-error partial input for test
-    await fantasyApi.updateConfig({ budgetPerEvent: 200 });
-    expect(callUrl()).toBe(`${API_BASE}/admin/fantasy/config`);
-    expect(callOpts().method).toBe('PUT');
-    expect(callBody()).toEqual({ budgetPerEvent: 200 });
-  });
-
-  it('getWrestlerCosts calls GET /fantasy/wrestlers/costs', async () => {
-    fetchMock().mockResolvedValue(mockRes([]));
-    await fantasyApi.getWrestlerCosts();
-    expect(callUrl()).toBe(`${API_BASE}/fantasy/wrestlers/costs`);
-  });
-
-  it('initializeWrestlerCosts sends POST with optional baseCost', async () => {
-    fetchMock()
-      .mockResolvedValueOnce(mockRes({ message: 'ok', count: 10 }))
-      .mockResolvedValueOnce(mockRes({ message: 'ok', count: 10 }));
-    await fantasyApi.initializeWrestlerCosts();
-    expect(callBody(0)).toEqual({});
-    await fantasyApi.initializeWrestlerCosts(500);
-    expect(callBody(1)).toEqual({ baseCost: 500 });
-    expect(callUrl(1)).toBe(`${API_BASE}/admin/fantasy/wrestlers/costs/initialize`);
-  });
-
-  it('recalculateWrestlerCosts sends POST to admin endpoint', async () => {
-    fetchMock().mockResolvedValue(mockRes({ message: 'ok', playersUpdated: 5 }));
-    await fantasyApi.recalculateWrestlerCosts();
-    expect(callUrl()).toBe(`${API_BASE}/admin/fantasy/wrestlers/costs/recalculate`);
-    expect(callOpts().method).toBe('POST');
-  });
-
-  it('updateWrestlerCost sends PUT with cost and optional reason', async () => {
-    fetchMock().mockResolvedValue(mockRes({ playerId: 'p1', currentCost: 750 }));
-    await fantasyApi.updateWrestlerCost('p1', 750, 'manual adjustment');
-    expect(callUrl()).toBe(`${API_BASE}/admin/fantasy/wrestlers/p1/cost`);
-    expect(callOpts().method).toBe('PUT');
-    expect(callBody()).toEqual({ currentCost: 750, reason: 'manual adjustment' });
-  });
-
-  it('getLeaderboard calls GET /fantasy/leaderboard with optional seasonId', async () => {
-    fetchMock().mockResolvedValueOnce(mockRes([])).mockResolvedValueOnce(mockRes([]));
-    await fantasyApi.getLeaderboard();
-    expect(callUrl(0)).toBe(`${API_BASE}/fantasy/leaderboard`);
-    await fantasyApi.getLeaderboard('s1');
-    expect(callUrl(1)).toBe(`${API_BASE}/fantasy/leaderboard?seasonId=s1`);
-  });
-
-  it('scoreCompletedEvents sends POST to /fantasy/score', async () => {
-    fetchMock().mockResolvedValue(mockRes({ message: 'ok', scoredEventIds: ['e1'] }));
-    await fantasyApi.scoreCompletedEvents();
-    expect(callUrl()).toBe(`${API_BASE}/fantasy/score`);
-    expect(callOpts().method).toBe('POST');
-  });
-
-  it('submitPicks sends POST to /fantasy/picks/:eventId with picks body', async () => {
-    const picks = { match1: ['p1', 'p2'] };
-    fetchMock().mockResolvedValue(mockRes({ eventId: 'e1', picks }));
-    await fantasyApi.submitPicks('e1', picks);
-    expect(callUrl()).toBe(`${API_BASE}/fantasy/picks/e1`);
-    expect(callOpts().method).toBe('POST');
-    expect(callBody()).toEqual({ picks });
-  });
-
-  it('getUserPicks calls GET /fantasy/picks/:eventId', async () => {
-    fetchMock().mockResolvedValue(mockRes({ eventId: 'e1', picks: {} }));
-    await fantasyApi.getUserPicks('e1');
-    expect(callUrl()).toBe(`${API_BASE}/fantasy/picks/e1`);
-    expect(callOpts().method).toBeUndefined();
-  });
-
-  it('getAllMyPicks calls GET /fantasy/me/picks', async () => {
-    fetchMock().mockResolvedValue(mockRes([]));
-    await fantasyApi.getAllMyPicks();
-    expect(callUrl()).toBe(`${API_BASE}/fantasy/me/picks`);
-  });
-
-  it('clearPicks sends DELETE to /fantasy/picks/:eventId', async () => {
-    fetchMock().mockResolvedValue(mockRes(undefined, 204));
-    await fantasyApi.clearPicks('e1');
-    expect(callUrl()).toBe(`${API_BASE}/fantasy/picks/e1`);
-    expect(callOpts().method).toBe('DELETE');
-  });
-});
 
 // ---------------------------------------------------------------------------
 // challengesApi

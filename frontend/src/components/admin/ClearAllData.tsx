@@ -10,7 +10,6 @@ const SEED_MODULES: { id: string; label: string }[] = [
   { id: 'tournaments', label: 'Tournaments' },
   { id: 'events', label: 'Events' },
   { id: 'contenders', label: 'Contenders' },
-  { id: 'fantasy', label: 'Fantasy' },
   { id: 'config', label: 'Config (Site, Stipulations, Match Types)' },
 ];
 

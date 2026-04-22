@@ -131,12 +131,6 @@
   border: 1px solid rgba(255, 193, 7, 0.4);
 }
 
-.role-fantasy {
-  background: rgba(76, 175, 80, 0.2);
-  color: #81c784;
-  border: 1px solid rgba(76, 175, 80, 0.4);
-}
-
 .status-badge {
   display: inline-block;
   padding: 0.15rem 0.5rem;

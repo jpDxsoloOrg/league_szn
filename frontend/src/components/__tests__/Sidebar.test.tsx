@@ -32,7 +32,6 @@ import Sidebar from '../Sidebar';
 
 // --- Helpers ---
 const ALL_FEATURES = {
-  fantasy: true,
   challenges: true,
   promos: true,
   contenders: true,
@@ -40,7 +39,6 @@ const ALL_FEATURES = {
 };
 
 const NO_FEATURES = {
-  fantasy: false,
   challenges: false,
   promos: false,
   contenders: false,
@@ -53,7 +51,6 @@ function baseAuth(overrides = {}) {
     isAdminOrModerator: false,
     isSuperAdmin: false,
     isWrestler: false,
-    isFantasy: false,
     signOut: vi.fn(),
     ...overrides,
   };
@@ -110,7 +107,6 @@ describe('Sidebar', () => {
     expect(screen.getByText('admin.panel.groups.rosterSeasons')).toBeInTheDocument();
     expect(screen.getByText('admin.panel.groups.titlesTournaments')).toBeInTheDocument();
     expect(screen.getByText('admin.panel.groups.content')).toBeInTheDocument();
-    expect(screen.getByText('admin.panel.groups.fantasy')).toBeInTheDocument();
     expect(screen.getByText('admin.panel.groups.system')).toBeInTheDocument();
 
     // Roster & Seasons auto-expands because route is /admin/players
@@ -146,7 +142,6 @@ describe('Sidebar', () => {
     expect(screen.queryByText('nav.promos')).not.toBeInTheDocument();
     expect(screen.queryByText('nav.contenders')).not.toBeInTheDocument();
     expect(screen.queryByText('nav.statistics')).not.toBeInTheDocument();
-    expect(screen.queryByText('nav.fantasy')).not.toBeInTheDocument();
   });
 
   it('toggles admin section expand/collapse', async () => {

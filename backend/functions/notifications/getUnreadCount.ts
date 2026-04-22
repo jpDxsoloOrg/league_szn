@@ -6,7 +6,7 @@ import { getAuthContext, hasRole } from '../../lib/auth';
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const auth = getAuthContext(event);
-    if (!hasRole(auth, 'Fantasy')) {
+    if (!hasRole(auth, 'Wrestler')) {
       return forbidden('You do not have permission to perform this action');
     }
 
