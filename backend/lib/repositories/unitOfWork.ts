@@ -68,6 +68,22 @@ export interface UnitOfWork {
   /** Stage a match field update. */
   updateMatch(matchId: string, date: string, patch: Record<string, unknown>): void;
 
+  /**
+   * Stage assigning a wrestler to a player's primary or alternate slot.
+   * Sets `isInUse=true` (string on-disk), `assignedPlayerId`, `assignedSlot`.
+   */
+  assignWrestlerToPlayer(params: {
+    wrestlerId: string;
+    playerId: string;
+    slot: 'primary' | 'alternate';
+  }): void;
+
+  /**
+   * Stage releasing a wrestler from its current player assignment.
+   * Sets `isInUse=false` (string on-disk), REMOVEs `assignedPlayerId`, `assignedSlot`.
+   */
+  releaseWrestlerFromPlayer(params: { wrestlerId: string }): void;
+
   /** Flush all staged operations. */
   commit(): Promise<void>;
 

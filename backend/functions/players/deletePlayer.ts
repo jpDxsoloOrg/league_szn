@@ -105,6 +105,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       );
     }
 
+    // Release any assigned wrestlers so the roster entries become available
+    // again. Done before the player delete so the wrestler rows are freed
+    // even if the delete call surfaces an error later.
+    const toRelease: string[] = [];
+    if (player.currentWrestlerId) toRelease.push(player.currentWrestlerId);
+    if (player.alternateWrestlerId) toRelease.push(player.alternateWrestlerId);
+    if (toRelease.length > 0) {
+      const { runInTransaction } = getRepositories();
+      await runInTransaction(async (tx) => {
+        for (const wrestlerId of toRelease) {
+          tx.releaseWrestlerFromPlayer({ wrestlerId });
+        }
+      });
+    }
+
     // Delete the player
     await players.delete(playerId);
 

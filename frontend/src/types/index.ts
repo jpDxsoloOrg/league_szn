@@ -4,6 +4,9 @@ export interface Player {
   name: string;
   currentWrestler: string;
   alternateWrestler?: string;
+  /** FK to Wrestlers table (P1 of #294). Denormalized name fields above remain as the display cache. */
+  currentWrestlerId?: string;
+  alternateWrestlerId?: string;
   wins: number;
   losses: number;
   draws: number;

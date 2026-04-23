@@ -273,6 +273,46 @@ export class DynamoUnitOfWork implements UnitOfWork {
     });
   }
 
+  // ── Wrestlers ────────────────────────────────────────────────────
+  //
+  // `isInUse` is persisted as string "true"/"false" because DynamoDB GSI keys
+  // cannot be Boolean; the repository boundary converts back to boolean on
+  // read. See DynamoRosterRepository wrestlers.* for the read path.
+  assignWrestlerToPlayer(params: {
+    wrestlerId: string;
+    playerId: string;
+    slot: 'primary' | 'alternate';
+  }): void {
+    const now = new Date().toISOString();
+    this.staged.push({
+      Update: {
+        TableName: TableNames.WRESTLERS,
+        Key: { wrestlerId: params.wrestlerId },
+        UpdateExpression:
+          'SET isInUse = :isInUse, assignedPlayerId = :playerId, assignedSlot = :slot, updatedAt = :now',
+        ExpressionAttributeValues: {
+          ':isInUse': 'true',
+          ':playerId': params.playerId,
+          ':slot': params.slot,
+          ':now': now,
+        },
+      },
+    });
+  }
+
+  releaseWrestlerFromPlayer(params: { wrestlerId: string }): void {
+    const now = new Date().toISOString();
+    this.staged.push({
+      Update: {
+        TableName: TableNames.WRESTLERS,
+        Key: { wrestlerId: params.wrestlerId },
+        UpdateExpression:
+          'SET isInUse = :isInUse, updatedAt = :now REMOVE assignedPlayerId, assignedSlot',
+        ExpressionAttributeValues: { ':isInUse': 'false', ':now': now },
+      },
+    });
+  }
+
   // ── Matches ──────────────────────────────────────────────────────
   updateMatch(matchId: string, date: string, patch: Record<string, unknown>): void {
     const now = new Date().toISOString();

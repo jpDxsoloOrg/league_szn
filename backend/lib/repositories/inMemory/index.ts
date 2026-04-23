@@ -24,6 +24,7 @@ export function buildInMemoryRepositories(): Repositories {
       challenges: user.challengesStore as unknown as Map<string, Record<string, unknown>>,
       seasonStandings: season.standingsStore as unknown as Array<Record<string, unknown>>,
       matches: competition.matchesStore as unknown as Map<string, Record<string, unknown>>,
+      wrestlers: roster.wrestlersStore as unknown as Map<string, Record<string, unknown>>,
     });
     try {
       const result = await fn(uow);

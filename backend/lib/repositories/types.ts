@@ -124,6 +124,11 @@ export interface Player {
   name: string;
   currentWrestler: string;
   alternateWrestler?: string;
+  // FK to Wrestlers table (P1). The denormalized `currentWrestler` / `alternateWrestler`
+  // string fields remain as a display cache so existing read paths (Standings, Dashboard,
+  // PublicProfile) stay untouched.
+  currentWrestlerId?: string;
+  alternateWrestlerId?: string;
   wins: number;
   losses: number;
   draws: number;
@@ -250,6 +255,9 @@ export interface WrestlerPatch {
   name?: string;
   overallCap?: number;
   isInUse?: boolean;
+  // P1 assignment fields. Null clears the field (REMOVE).
+  assignedPlayerId?: string | null;
+  assignedSlot?: 'primary' | 'alternate' | null;
 }
 
 export interface WrestlerImportResult {
