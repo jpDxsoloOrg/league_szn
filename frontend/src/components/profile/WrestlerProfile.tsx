@@ -1,6 +1,6 @@
-import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import { useState, useEffect, FormEvent, ChangeEvent, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { profileApi, imagesApi, overallsApi, transfersApi, divisionsApi, storylineRequestsApi, playersApi } from '../../services/api';
+import { profileApi, imagesApi, overallsApi, transfersApi, divisionsApi, storylineRequestsApi, playersApi, wrestlersApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
@@ -10,10 +10,47 @@ import {
   applyImageFallback,
   resolveImageSrc,
 } from '../../constants/imageFallbacks';
-import { useSiteConfig } from '../../contexts/SiteConfigContext'; 
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import   EmbeddedPlayerStats   from "../statistics/EmbeddedPlayerStats";
-import type { Player, WrestlerOverall, TransferRequestWithDetails, Division, MyStorylineRequest, StorylineRequestType } from '../../types';
+import type { Player, WrestlerOverall, TransferRequestWithDetails, Division, MyStorylineRequest, StorylineRequestType, Wrestler, WrestlerPromotion } from '../../types';
 import './WrestlerProfile.css';
+
+type WrestlerSlotOptions = ReadonlyArray<{
+  promotion: WrestlerPromotion;
+  wrestlers: Wrestler[];
+}>;
+
+/**
+ * Build `<optgroup>`s for a wrestler dropdown. Mirrors the same helper in
+ * ManagePlayers: the user's current pick is always shown even if marked
+ * in-use, the other slot's pick is excluded so a user can't double-claim,
+ * and remaining options are filtered to wrestlers that aren't in use.
+ */
+function buildWrestlerOptionGroups(
+  allWrestlers: Wrestler[],
+  selectedWrestlerId: string | undefined,
+  excludeWrestlerId: string | undefined,
+): WrestlerSlotOptions {
+  const visible = allWrestlers.filter((w) => {
+    if (w.wrestlerId === excludeWrestlerId) return false;
+    if (!w.isInUse) return true;
+    return w.wrestlerId === selectedWrestlerId;
+  });
+
+  const byPromotion = new Map<WrestlerPromotion, Wrestler[]>();
+  for (const w of visible) {
+    const bucket = byPromotion.get(w.promotion) ?? [];
+    bucket.push(w);
+    byPromotion.set(w.promotion, bucket);
+  }
+
+  return Array.from(byPromotion.entries())
+    .map(([promotion, wrestlers]) => ({
+      promotion,
+      wrestlers: wrestlers.sort((a, b) => a.name.localeCompare(b.name)),
+    }))
+    .sort((a, b) => a.promotion.localeCompare(b.promotion));
+}
 
 interface SeasonRecord {
   seasonId: string;
@@ -64,15 +101,21 @@ export default function WrestlerProfile() {
   const [storylineError, setStorylineError] = useState<string | null>(null);
   const [storylineSuccess, setStorylineSuccess] = useState<string | null>(null);
 
-  // Form state
+  // Form state — FK-backed (P2 of #294). The legacy `currentWrestler` /
+  // `alternateWrestler` strings remain as the display cache; the wrestler
+  // is picked from the curated roster and the backend denormalizes the
+  // name from the selected row.
   const [formData, setFormData] = useState({
     name: '',
-    currentWrestler: '',
-    alternateWrestler: '',
+    currentWrestlerId: '',
+    alternateWrestlerId: '',
     imageUrl: '',
     psnId: '',
     alignment: '' as '' | 'face' | 'heel' | 'neutral',
   });
+
+  // Roster (for the wrestler dropdowns).
+  const [wrestlers, setWrestlers] = useState<Wrestler[]>([]);
 
   // Image upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -85,6 +128,7 @@ export default function WrestlerProfile() {
     loadDivisions();
     loadStorylineRequests();
     loadAllPlayers();
+    loadWrestlers();
   }, []);
 
   const loadProfile = async () => {
@@ -95,8 +139,8 @@ export default function WrestlerProfile() {
       setPlayer(profile);
       setFormData({
         name: profile.name,
-        currentWrestler: profile.currentWrestler,
-        alternateWrestler: profile.alternateWrestler || '',
+        currentWrestlerId: profile.currentWrestlerId || '',
+        alternateWrestlerId: profile.alternateWrestlerId || '',
         imageUrl: profile.imageUrl || '',
         psnId: profile.psnId || '',
         alignment: profile.alignment || '',
@@ -109,6 +153,16 @@ export default function WrestlerProfile() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadWrestlers = async () => {
+    try {
+      const data = await wrestlersApi.getAll();
+      setWrestlers(data);
+    } catch {
+      // Roster is optional — without it the dropdowns will just be empty
+      // and the user sees the "no wrestlers in roster yet" hint.
     }
   };
 
@@ -278,12 +332,45 @@ export default function WrestlerProfile() {
     }
   };
 
+  const currentWrestlerOptions = useMemo(
+    () =>
+      buildWrestlerOptionGroups(
+        wrestlers,
+        formData.currentWrestlerId || undefined,
+        formData.alternateWrestlerId || undefined,
+      ),
+    [wrestlers, formData.currentWrestlerId, formData.alternateWrestlerId],
+  );
+
+  const alternateWrestlerOptions = useMemo(
+    () =>
+      buildWrestlerOptionGroups(
+        wrestlers,
+        formData.alternateWrestlerId || undefined,
+        formData.currentWrestlerId || undefined,
+      ),
+    [wrestlers, formData.currentWrestlerId, formData.alternateWrestlerId],
+  );
+
+  const renderWrestlerOptions = (groups: WrestlerSlotOptions) =>
+    groups.map((group) => (
+      <optgroup key={group.promotion} label={group.promotion}>
+        {group.wrestlers.map((w) => (
+          <option key={w.wrestlerId} value={w.wrestlerId}>
+            {w.name} — OVR {w.overallCap}
+          </option>
+        ))}
+      </optgroup>
+    ));
+
+  const rosterEmpty = wrestlers.length === 0;
+
   const handleEdit = () => {
     if (player) {
       setFormData({
         name: player.name,
-        currentWrestler: player.currentWrestler,
-        alternateWrestler: player.alternateWrestler || '',
+        currentWrestlerId: player.currentWrestlerId || '',
+        alternateWrestlerId: player.alternateWrestlerId || '',
         imageUrl: player.imageUrl || '',
         psnId: player.psnId || '',
         alignment: player.alignment || '',
@@ -304,8 +391,8 @@ export default function WrestlerProfile() {
     if (player) {
       setFormData({
         name: player.name,
-        currentWrestler: player.currentWrestler,
-        alternateWrestler: player.alternateWrestler || '',
+        currentWrestlerId: player.currentWrestlerId || '',
+        alternateWrestlerId: player.alternateWrestlerId || '',
         imageUrl: player.imageUrl || '',
         psnId: player.psnId || '',
         alignment: player.alignment || '',
@@ -325,23 +412,30 @@ export default function WrestlerProfile() {
       const imageUrl = await uploadImage();
 
       const sanitizedName = sanitizeName(formData.name, VALIDATION.MAX_NAME_LENGTH);
-      const sanitizedWrestler = sanitizeName(formData.currentWrestler, VALIDATION.MAX_NAME_LENGTH);
 
       if (!sanitizedName) {
         setError('Player name cannot be empty');
         return;
       }
-
-      const updates: { name?: string; currentWrestler?: string; alternateWrestler?: string; imageUrl?: string; psnId?: string; alignment?: 'face' | 'heel' | 'neutral' | '' } = {
-        name: sanitizedName,
-      };
-
-      if (sanitizedWrestler) {
-        updates.currentWrestler = sanitizedWrestler;
+      if (!formData.currentWrestlerId) {
+        setError('Please pick a wrestler from the roster');
+        return;
       }
 
-      // Send empty string to clear, or trimmed value to set
-      updates.alternateWrestler = formData.alternateWrestler.trim();
+      const updates: {
+        name?: string;
+        currentWrestlerId?: string;
+        alternateWrestlerId?: string;
+        imageUrl?: string;
+        psnId?: string;
+        alignment?: 'face' | 'heel' | 'neutral' | '';
+      } = {
+        name: sanitizedName,
+        currentWrestlerId: formData.currentWrestlerId,
+        // Empty string clears the FK server-side (matches the
+        // ManagePlayers contract).
+        alternateWrestlerId: formData.alternateWrestlerId || '',
+      };
 
       if (imageUrl) {
         updates.imageUrl = imageUrl;
@@ -494,26 +588,38 @@ export default function WrestlerProfile() {
               />
             </div>
 
+            {rosterEmpty && (
+              <div className="error-message">
+                The wrestler roster is empty — ask an admin to add wrestlers
+                before updating your profile.
+              </div>
+            )}
+
             <div className="form-group">
               <label htmlFor="profile-wrestler">Current Wrestler</label>
-              <input
-                type="text"
+              <select
                 id="profile-wrestler"
-                value={formData.currentWrestler}
-                onChange={(e) => setFormData({ ...formData, currentWrestler: e.target.value })}
-                placeholder="The wrestler you play as"
-              />
+                value={formData.currentWrestlerId}
+                onChange={(e) => setFormData({ ...formData, currentWrestlerId: e.target.value })}
+                required
+                disabled={rosterEmpty}
+              >
+                <option value="">Pick from the roster…</option>
+                {renderWrestlerOptions(currentWrestlerOptions)}
+              </select>
             </div>
 
             <div className="form-group">
               <label htmlFor="profile-alternate-wrestler">Alternate Wrestler</label>
-              <input
-                type="text"
+              <select
                 id="profile-alternate-wrestler"
-                value={formData.alternateWrestler}
-                onChange={(e) => setFormData({ ...formData, alternateWrestler: e.target.value })}
-                placeholder="Your backup wrestler"
-              />
+                value={formData.alternateWrestlerId}
+                onChange={(e) => setFormData({ ...formData, alternateWrestlerId: e.target.value })}
+                disabled={rosterEmpty}
+              >
+                <option value="">None</option>
+                {renderWrestlerOptions(alternateWrestlerOptions)}
+              </select>
             </div>
 
             <div className="form-group">
