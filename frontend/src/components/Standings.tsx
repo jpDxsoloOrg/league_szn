@@ -283,7 +283,17 @@ export default function Standings() {
                     </span>
                   )}
                 </td>
-                <td className="wrestler-name">{player.currentWrestler}</td>
+                <td className="wrestler-name">
+                  {player.currentWrestler}
+                  {!player.currentWrestlerId && (
+                    <span
+                      className="needs-wrestler-pill"
+                      title={t('auth.needsWrestlerBannerBody')}
+                    >
+                      {t('auth.needsWrestlerBadge')}
+                    </span>
+                  )}
+                </td>
                 <td className="overall-cell">
                   {player.mainOverall !== undefined ? (
                     <span className="overall-badge-sm">{player.mainOverall}</span>

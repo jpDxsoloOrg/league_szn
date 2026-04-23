@@ -34,7 +34,11 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
     // Don't throw - we don't want to block account confirmation
   }
 
-  // Auto-create a Player record from signup attributes
+  // Auto-create a Player record from signup attributes. When the picked
+  // wrestler matches a row in the curated roster (Wrestlers table), also
+  // link the Player.currentWrestlerId FK and flip that wrestler to
+  // isInUse=true inside the same UoW — best-effort, so a failure here
+  // never blocks confirmation.
   try {
     const sub = attrs['sub'];
     const wrestlerName = attrs['custom:wrestler_name'] || '';
@@ -42,7 +46,8 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
     const psnId = attrs['custom:psn_id'] || '';
 
     if (sub) {
-      const { roster: { players } } = getRepositories();
+      const { roster, runInTransaction } = getRepositories();
+      const { players, wrestlers } = roster;
       const existingPlayer = await players.findByUserId(sub);
 
       if (!existingPlayer) {
@@ -51,7 +56,45 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
           currentWrestler: wrestlerName,
           psnId: psnId || undefined,
         });
-        await players.update(newPlayer.playerId, { userId: sub });
+
+        let linked = false;
+        if (wrestlerName.trim().length > 0) {
+          const target = wrestlerName.trim().toLowerCase();
+          const all = await wrestlers.list();
+          const match = all.find(
+            (w) => w.name.toLowerCase() === target && !w.isInUse,
+          );
+          if (match) {
+            try {
+              await runInTransaction(async (tx) => {
+                tx.assignWrestlerToPlayer({
+                  wrestlerId: match.wrestlerId,
+                  playerId: newPlayer.playerId,
+                  slot: 'primary',
+                });
+                tx.updatePlayer(newPlayer.playerId, {
+                  userId: sub,
+                  currentWrestlerId: match.wrestlerId,
+                });
+              });
+              linked = true;
+              console.log(
+                `Player ${newPlayer.playerId} linked to wrestler ${match.wrestlerId} (${match.name})`,
+              );
+            } catch (linkErr) {
+              // Transaction failed (e.g., concurrent claim) — fall through
+              // to the unlinked branch so the userId still gets set.
+              console.warn(
+                `Failed to link wrestler for user ${username}:`,
+                linkErr,
+              );
+            }
+          }
+        }
+
+        if (!linked) {
+          await players.update(newPlayer.playerId, { userId: sub });
+        }
         console.log(`Player record created for user ${username}: ${newPlayer.playerId}`);
       }
     }

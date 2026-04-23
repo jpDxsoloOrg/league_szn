@@ -24,6 +24,7 @@ import StandaloneMatches from './components/admin/StandaloneMatches';
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
 import ForgotPassword from './components/auth/ForgotPassword';
+import PostSignupWelcome from './components/auth/PostSignupWelcome';
 // Challenge components
 import ChallengeDetail from './components/challenges/ChallengeDetail';
 // IssueChallenge kept as a component but route redirects to PromoEditor in call-out mode
@@ -99,6 +100,7 @@ function AppLayout() {
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/welcome" element={<PostSignupWelcome />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* Public Routes */}

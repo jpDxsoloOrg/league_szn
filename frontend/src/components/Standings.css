@@ -417,3 +417,20 @@
   min-width: 2rem;
   text-align: center;
 }
+
+/* Small pill shown next to a player's wrestler name when they haven't
+   claimed a roster entry yet. */
+.needs-wrestler-pill {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-warning-text, #6b4e00);
+  background: var(--color-warning-bg, #fff5d9);
+  border: 1px solid var(--color-warning, #d4a400);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+}

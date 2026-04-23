@@ -162,3 +162,57 @@
   color: var(--color-danger);
   margin-bottom: 0.5rem;
 }
+
+/* Post-signup welcome */
+.post-signup-welcome {
+  max-width: 520px;
+  text-align: left;
+}
+
+.post-signup-welcome h2,
+.post-signup-welcome h3 {
+  text-align: left;
+}
+
+.welcome-pending {
+  background: var(--color-warning-bg, #fff5d9);
+  border: 1px solid var(--color-warning, #d4a400);
+  color: var(--color-warning-text, #6b4e00);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+
+.welcome-pending strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.welcome-pending p {
+  margin: 0;
+}
+
+.welcome-rules {
+  padding-left: 1.25rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.welcome-rules li {
+  margin-bottom: 0.35rem;
+}
+
+.welcome-rules-link {
+  font-size: 0.95rem;
+  color: var(--color-text-muted, #666);
+}
+
+.welcome-footer {
+  border-top: none;
+  padding-top: 1rem;
+  text-align: center;
+}
+
+.welcome-cta {
+  display: inline-block;
+  text-decoration: none;
+}

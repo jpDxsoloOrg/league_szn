@@ -418,10 +418,18 @@ export default function WrestlerProfile() {
     );
   }
 
+  const needsWrestlerPick = !player.currentWrestlerId;
+
   return (
     <div className={`wrestler-profile ${editing ? 'edit-mode' : 'view-mode'}`}>
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
+      {needsWrestlerPick && !editing && (
+        <div className="needs-wrestler-banner" role="status">
+          <strong>{t('auth.needsWrestlerBannerTitle')}</strong>
+          <p>{t('auth.needsWrestlerBannerBody')}</p>
+        </div>
+      )}
 
       {/* Profile Header */}
       <div className="profile-header">
