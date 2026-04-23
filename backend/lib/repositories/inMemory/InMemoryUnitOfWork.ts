@@ -15,6 +15,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       challenges: Map<string, Record<string, unknown>>;
       seasonStandings: Array<Record<string, unknown>>;
       matches: Map<string, Record<string, unknown>>;
+      wrestlers: Map<string, Record<string, unknown>>;
     },
   ) {}
 
@@ -156,6 +157,34 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       const existing = this.stores.matches.get(matchId);
       if (existing) {
         this.stores.matches.set(matchId, { ...existing, ...patch, updatedAt: new Date().toISOString() });
+      }
+    });
+  }
+
+  assignWrestlerToPlayer(params: {
+    wrestlerId: string;
+    playerId: string;
+    slot: 'primary' | 'alternate';
+  }): void {
+    this.staged.push(() => {
+      const existing = this.stores.wrestlers.get(params.wrestlerId);
+      if (existing) {
+        existing.isInUse = true;
+        existing.assignedPlayerId = params.playerId;
+        existing.assignedSlot = params.slot;
+        existing.updatedAt = new Date().toISOString();
+      }
+    });
+  }
+
+  releaseWrestlerFromPlayer(params: { wrestlerId: string }): void {
+    this.staged.push(() => {
+      const existing = this.stores.wrestlers.get(params.wrestlerId);
+      if (existing) {
+        existing.isInUse = false;
+        delete existing.assignedPlayerId;
+        delete existing.assignedSlot;
+        existing.updatedAt = new Date().toISOString();
       }
     });
   }

@@ -21,6 +21,11 @@ export interface PlayerCreateInput {
   name: string;
   currentWrestler: string;
   alternateWrestler?: string;
+  // P1 FK fields. When present, handlers validate the wrestler exists and is
+  // available, then transactionally assign it. The denormalized name string
+  // is populated from the wrestler's `name` so reads stay cheap.
+  currentWrestlerId?: string;
+  alternateWrestlerId?: string;
   imageUrl?: string;
   psnId?: string;
   divisionId?: string;
@@ -32,6 +37,8 @@ export interface PlayerPatch {
   name?: string;
   currentWrestler?: string;
   alternateWrestler?: string;
+  currentWrestlerId?: string | null;
+  alternateWrestlerId?: string | null;
   imageUrl?: string;
   psnId?: string;
   divisionId?: string;

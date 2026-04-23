@@ -62,6 +62,8 @@ export class InMemoryRosterRepository implements RosterRepository {
         name: input.name,
         currentWrestler: input.currentWrestler,
         ...(input.alternateWrestler !== undefined ? { alternateWrestler: input.alternateWrestler } : {}),
+        ...(input.currentWrestlerId !== undefined ? { currentWrestlerId: input.currentWrestlerId } : {}),
+        ...(input.alternateWrestlerId !== undefined ? { alternateWrestlerId: input.alternateWrestlerId } : {}),
         ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
         ...(input.psnId !== undefined ? { psnId: input.psnId } : {}),
         ...(input.divisionId !== undefined ? { divisionId: input.divisionId } : {}),
