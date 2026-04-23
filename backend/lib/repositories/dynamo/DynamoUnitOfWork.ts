@@ -22,24 +22,36 @@ export class DynamoUnitOfWork implements UnitOfWork {
   // ── Players ──────────────────────────────────────────────────────
   updatePlayer(playerId: string, patch: Record<string, unknown>): void {
     const now = new Date().toISOString();
-    const sets: string[] = ['updatedAt = :updatedAt'];
-    const names: Record<string, string> = {};
+    const sets: string[] = ['#fUpdatedAt = :updatedAt'];
+    const removes: string[] = [];
+    const names: Record<string, string> = { '#fUpdatedAt': 'updatedAt' };
     const values: Record<string, unknown> = { ':updatedAt': now };
     let i = 0;
     for (const [key, val] of Object.entries(patch)) {
       const nameKey = `#f${i}`;
-      const valKey = `:v${i}`;
       names[nameKey] = key;
-      values[valKey] = val;
-      sets.push(`${nameKey} = ${valKey}`);
+      if (val === undefined || val === null) {
+        // Clear the attribute instead of storing a DynamoDB NULL — matches
+        // the semantics of `buildUpdateExpression` used by the non-tx repo
+        // `players.update()` path, so both paths produce identical items.
+        removes.push(nameKey);
+      } else {
+        const valKey = `:v${i}`;
+        values[valKey] = val;
+        sets.push(`${nameKey} = ${valKey}`);
+      }
       i++;
+    }
+    let expr = `SET ${sets.join(', ')}`;
+    if (removes.length > 0) {
+      expr += ` REMOVE ${removes.join(', ')}`;
     }
     this.staged.push({
       Update: {
         TableName: TableNames.PLAYERS,
         Key: { playerId },
-        UpdateExpression: `SET ${sets.join(', ')}`,
-        ExpressionAttributeNames: Object.keys(names).length > 0 ? names : undefined,
+        UpdateExpression: expr,
+        ExpressionAttributeNames: names,
         ExpressionAttributeValues: values,
       },
     });

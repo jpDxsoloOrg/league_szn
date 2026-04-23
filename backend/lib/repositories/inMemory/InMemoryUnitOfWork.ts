@@ -24,9 +24,18 @@ export class InMemoryUnitOfWork implements UnitOfWork {
   updatePlayer(playerId: string, patch: Record<string, unknown>): void {
     this.staged.push(() => {
       const existing = this.stores.players.get(playerId);
-      if (existing) {
-        this.stores.players.set(playerId, { ...existing, ...patch, updatedAt: new Date().toISOString() });
+      if (!existing) return;
+      // Match DynamoUnitOfWork.updatePlayer semantics: undefined/null = REMOVE.
+      const next: Record<string, unknown> = { ...existing };
+      for (const [key, val] of Object.entries(patch)) {
+        if (val === undefined || val === null) {
+          delete next[key];
+        } else {
+          next[key] = val;
+        }
       }
+      next.updatedAt = new Date().toISOString();
+      this.stores.players.set(playerId, next);
     });
   }
 
