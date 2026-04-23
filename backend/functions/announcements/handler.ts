@@ -20,21 +20,25 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/admin/announcements',
     method: 'GET',
     handler: listAnnouncementsHandler,
+    requireAuth: true,
   },
   {
     resource: '/admin/announcements',
     method: 'POST',
     handler: createAnnouncementHandler,
+    requireAuth: true,
   },
   {
     resource: '/admin/announcements/{announcementId}',
     method: 'PUT',
     handler: updateAnnouncementHandler,
+    requireAuth: true,
   },
   {
     resource: '/admin/announcements/{announcementId}',
     method: 'DELETE',
     handler: deleteAnnouncementHandler,
+    requireAuth: true,
   },
 ];
 

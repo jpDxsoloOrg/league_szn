@@ -26,26 +26,31 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/promos',
     method: 'POST',
     handler: createPromoHandler,
+    requireAuth: true,
   },
   {
     resource: '/promos/{promoId}/react',
     method: 'POST',
     handler: reactToPromoHandler,
+    requireAuth: true,
   },
   {
     resource: '/admin/promos/{promoId}',
     method: 'PUT',
     handler: adminUpdatePromoHandler,
+    requireAuth: true,
   },
   {
     resource: '/admin/promos/{promoId}',
     method: 'DELETE',
     handler: deletePromoHandler,
+    requireAuth: true,
   },
   {
     resource: '/admin/promos/bulk-delete',
     method: 'POST',
     handler: bulkDeletePromosHandler,
+    requireAuth: true,
   },
 ];
 

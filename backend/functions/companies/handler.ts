@@ -15,6 +15,7 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/companies',
     method: 'POST',
     handler: createCompanyHandler,
+    requireAuth: true,
   },
   {
     resource: '/companies/{companyId}',
@@ -25,11 +26,13 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/companies/{companyId}',
     method: 'PUT',
     handler: updateCompanyHandler,
+    requireAuth: true,
   },
   {
     resource: '/companies/{companyId}',
     method: 'DELETE',
     handler: deleteCompanyHandler,
+    requireAuth: true,
   },
 ];
 export const handler = createRouter(routes);

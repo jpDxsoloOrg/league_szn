@@ -20,6 +20,7 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/championships',
     method: 'POST',
     handler: createChampionshipHandler,
+    requireAuth: true,
   },
   {
     resource: '/championships/{championshipId}/history',
@@ -30,16 +31,19 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/championships/{championshipId}',
     method: 'PUT',
     handler: updateChampionshipHandler,
+    requireAuth: true,
   },
   {
     resource: '/championships/{championshipId}',
     method: 'DELETE',
     handler: deleteChampionshipHandler,
+    requireAuth: true,
   },
   {
     resource: '/championships/{championshipId}/vacate',
     method: 'POST',
     handler: vacateChampionshipHandler,
+    requireAuth: true,
   },
 ];
 

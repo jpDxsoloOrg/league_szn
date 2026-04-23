@@ -15,6 +15,7 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/shows',
     method: 'POST',
     handler: createShowHandler,
+    requireAuth: true,
   },
   {
     resource: '/shows/{showId}',
@@ -25,11 +26,13 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/shows/{showId}',
     method: 'PUT',
     handler: updateShowHandler,
+    requireAuth: true,
   },
   {
     resource: '/shows/{showId}',
     method: 'DELETE',
     handler: deleteShowHandler,
+    requireAuth: true,
   },
 ];
 export const handler = createRouter(routes);
