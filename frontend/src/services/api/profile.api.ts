@@ -46,6 +46,8 @@ export const profileApi = {
     name?: string;
     currentWrestler?: string;
     alternateWrestler?: string;
+    currentWrestlerId?: string;
+    alternateWrestlerId?: string;
     imageUrl?: string;
     psnId?: string;
     alignment?: 'face' | 'heel' | 'neutral' | '';
