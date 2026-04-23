@@ -1,8 +1,36 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, useMemo, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
+import { wrestlersApi } from '../../services/api';
+import type { Wrestler, WrestlerPromotion } from '../../types';
 import './Auth.css';
+
+type WrestlerSlotOptions = ReadonlyArray<{
+  promotion: WrestlerPromotion;
+  wrestlers: Wrestler[];
+}>;
+
+/**
+ * Group the available (not in-use) wrestlers by promotion for an optgroup
+ * dropdown. Mirrors the helper used in ManagePlayers / WrestlerProfile so
+ * that "available" has the same definition everywhere a roster pick is made.
+ */
+function buildAvailableOptionGroups(all: Wrestler[]): WrestlerSlotOptions {
+  const available = all.filter((w) => !w.isInUse);
+  const byPromotion = new Map<WrestlerPromotion, Wrestler[]>();
+  for (const w of available) {
+    const bucket = byPromotion.get(w.promotion) ?? [];
+    bucket.push(w);
+    byPromotion.set(w.promotion, bucket);
+  }
+  return Array.from(byPromotion.entries())
+    .map(([promotion, wrestlers]) => ({
+      promotion,
+      wrestlers: wrestlers.sort((a, b) => a.name.localeCompare(b.name)),
+    }))
+    .sort((a, b) => a.promotion.localeCompare(b.promotion));
+}
 
 export default function Signup() {
   const { t } = useTranslation();
@@ -13,11 +41,41 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [psnId, setPsnId] = useState('');
-  const [wrestlerName, setWrestlerName] = useState('');
+  const [wrestlerId, setWrestlerId] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [step, setStep] = useState<'signup' | 'verify'>('signup');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [wrestlers, setWrestlers] = useState<Wrestler[]>([]);
+  const [loadingWrestlers, setLoadingWrestlers] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    wrestlersApi
+      .getAll()
+      .then((data) => {
+        if (!cancelled) setWrestlers(data);
+      })
+      .catch(() => {
+        // Roster unreachable — dropdown will just be empty and show the hint.
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingWrestlers(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const wrestlerOptions = useMemo(
+    () => buildAvailableOptionGroups(wrestlers),
+    [wrestlers],
+  );
+
+  const pickedWrestler = useMemo(
+    () => wrestlers.find((w) => w.wrestlerId === wrestlerId),
+    [wrestlers, wrestlerId],
+  );
 
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
@@ -27,6 +85,10 @@ export default function Signup() {
       setError(t('auth.passwordsDoNotMatch'));
       return;
     }
+    if (!pickedWrestler) {
+      setError(t('auth.wrestlerRequired'));
+      return;
+    }
 
     setLoading(true);
 
@@ -34,11 +96,14 @@ export default function Signup() {
       const result = await signUp(email, password, {
         playerName,
         psnId,
-        wrestlerName,
+        // Pass the wrestler's display name so the existing Cognito schema /
+        // postConfirmation path keeps working. postConfirmation will look
+        // the name back up against the roster and set the FK on the Player.
+        wrestlerName: pickedWrestler.name,
       });
 
       if (result.isConfirmed) {
-        navigate('/login');
+        navigate('/welcome');
       } else {
         setStep('verify');
       }
@@ -57,7 +122,7 @@ export default function Signup() {
 
     try {
       await confirmSignUp(email, verificationCode);
-      navigate('/login');
+      navigate('/welcome');
     } catch (err) {
       const message = err instanceof Error ? err.message : t('auth.verificationFailed');
       setError(message);
@@ -114,6 +179,8 @@ export default function Signup() {
     );
   }
 
+  const rosterEmpty = !loadingWrestlers && wrestlerOptions.length === 0;
+
   return (
     <div className="auth-container">
       <div className="auth-card">
@@ -162,14 +229,30 @@ export default function Signup() {
 
           <div className="form-group">
             <label htmlFor="wrestlerName">{t('auth.wrestlerName')}</label>
-            <input
-              type="text"
+            <select
               id="wrestlerName"
-              value={wrestlerName}
-              onChange={(e) => setWrestlerName(e.target.value)}
-              placeholder={t('auth.wrestlerPlaceholder')}
+              value={wrestlerId}
+              onChange={(e) => setWrestlerId(e.target.value)}
               required
-            />
+              disabled={loadingWrestlers || rosterEmpty}
+            >
+              <option value="">
+                {loadingWrestlers
+                  ? t('auth.loadingRoster')
+                  : rosterEmpty
+                    ? t('auth.rosterEmpty')
+                    : t('auth.pickFromRoster')}
+              </option>
+              {wrestlerOptions.map((group) => (
+                <optgroup key={group.promotion} label={group.promotion}>
+                  {group.wrestlers.map((w) => (
+                    <option key={w.wrestlerId} value={w.wrestlerId}>
+                      {w.name} — OVR {w.overallCap}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
             <p className="field-hint">{t('auth.wrestlerHintRequired')}</p>
           </div>
 
@@ -207,7 +290,7 @@ export default function Signup() {
             </div>
           )}
 
-          <button type="submit" className="btn-submit" disabled={loading} aria-busy={loading}>
+          <button type="submit" className="btn-submit" disabled={loading || loadingWrestlers || rosterEmpty} aria-busy={loading}>
             {loading ? t('auth.creatingAccount') : t('auth.createAccountBtn')}
           </button>
         </form>

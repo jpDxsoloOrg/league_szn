@@ -883,3 +883,22 @@ label:focus-visible {
   color: #dc3545;
   border: 1px solid rgba(220, 53, 69, 0.3);
 }
+
+/* Banner shown when the user hasn't picked a wrestler from the roster yet. */
+.needs-wrestler-banner {
+  background: var(--color-warning-bg, #fff5d9);
+  border: 1px solid var(--color-warning, #d4a400);
+  color: var(--color-warning-text, #6b4e00);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+
+.needs-wrestler-banner strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.needs-wrestler-banner p {
+  margin: 0;
+}
