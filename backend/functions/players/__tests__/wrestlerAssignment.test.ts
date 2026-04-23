@@ -271,6 +271,49 @@ describe('updatePlayer FK transitions', () => {
     expect(result!.statusCode).toBe(409);
   });
 
+  it('accepts the full ManagePlayers form payload with blank alternate/division/alignment', async () => {
+    // Regression test for the devtest "Failed to Update Player" bug:
+    // ManagePlayers sends a full object on every submit, including empty
+    // strings for slots the admin left blank. The backend has to translate
+    // those into REMOVEs on the underlying item — NOT SET-to-undefined,
+    // which DynamoDB rejects as an invalid ExpressionAttributeValue.
+    const rock = await seedWrestler('The Rock');
+    const cena = await seedWrestler('John Cena');
+    const createRes = await createPlayer(
+      makeEvent({ body: JSON.stringify({ name: 'X', currentWrestlerId: rock.wrestlerId }) }),
+      ctx,
+      cb,
+    );
+    const playerId = JSON.parse(createRes!.body).playerId;
+
+    const result = await updatePlayer(
+      makeEvent({
+        httpMethod: 'PUT',
+        pathParameters: { playerId },
+        body: JSON.stringify({
+          name: 'Updated Name',
+          currentWrestlerId: cena.wrestlerId,
+          alternateWrestlerId: '',
+          divisionId: '',
+          alignment: '',
+        }),
+      }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(200);
+    const after = JSON.parse(result!.body);
+    expect(after.name).toBe('Updated Name');
+    expect(after.currentWrestlerId).toBe(cena.wrestlerId);
+    // Cleared fields should not round-trip back as `undefined` keys on
+    // the object; they should be absent.
+    expect(after).not.toHaveProperty('alternateWrestlerId');
+    expect(after).not.toHaveProperty('alternateWrestler');
+    expect(after).not.toHaveProperty('divisionId');
+    expect(after).not.toHaveProperty('alignment');
+  });
+
   it('allows idempotent re-assignment of the same wrestler to same slot', async () => {
     const rock = await seedWrestler('The Rock');
     const createRes = await createPlayer(
