@@ -22,11 +22,32 @@ export default function PostSignupWelcome() {
         </div>
 
         <h3>{t('auth.welcomeRulesTitle')}</h3>
+
+        <h4>{t('auth.rulesSectionMatchConduct')}</h4>
         <ul className="welcome-rules">
-          <li>{t('auth.ruleShowUp')}</li>
+          <li>{t('auth.ruleFinToWin')}</li>
+          <li>{t('auth.ruleRefBump')}</li>
+          <li>{t('auth.ruleNoCheesing')}</li>
+        </ul>
+
+        <h4>{t('auth.rulesSectionWrestler')}</h4>
+        <ul className="welcome-rules">
+          <li>{t('auth.ruleOverallMatch')}</li>
+          <li>{t('auth.ruleSeasonLock')}</li>
+          <li>{t('auth.ruleAlternate')}</li>
+        </ul>
+
+        <h4>{t('auth.rulesSectionBooking')}</h4>
+        <ul className="welcome-rules">
+          <li>{t('auth.ruleClickAvailable')}</li>
+          <li>{t('auth.rulePreShow')}</li>
+          <li>{t('auth.ruleNoShow')}</li>
+        </ul>
+
+        <h4>{t('auth.rulesSectionBasics')}</h4>
+        <ul className="welcome-rules">
           <li>{t('auth.ruleReportResults')}</li>
           <li>{t('auth.ruleRespect')}</li>
-          <li>{t('auth.ruleOneWrestler')}</li>
           <li>{t('auth.ruleAskAdmin')}</li>
         </ul>
 
