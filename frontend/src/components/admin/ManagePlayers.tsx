@@ -1,6 +1,11 @@
-import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import { useState, useEffect, FormEvent, ChangeEvent, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { playersApi, imagesApi, divisionsApi } from '../../services/api';
+import {
+  playersApi,
+  imagesApi,
+  divisionsApi,
+  wrestlersApi,
+} from '../../services/api';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
 import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
@@ -9,12 +14,55 @@ import {
   applyImageFallback,
   resolveImageSrc,
 } from '../../constants/imageFallbacks';
-import type { Player, Division } from '../../types';
+import type {
+  Player,
+  Division,
+  Wrestler,
+  WrestlerPromotion,
+} from '../../types';
 import './ManagePlayers.css';
+
+type WrestlerSlotOptions = ReadonlyArray<{
+  promotion: WrestlerPromotion;
+  wrestlers: Wrestler[];
+}>;
+
+/**
+ * Build `<optgroup>`s of wrestlers for a dropdown. The selected wrestler (if
+ * any) is always included so the edit form renders its current pick even
+ * when that wrestler is `isInUse=true`. Other in-use wrestlers are hidden to
+ * prevent double-assignment.
+ */
+function buildOptionGroups(
+  allWrestlers: Wrestler[],
+  selectedWrestlerId: string | undefined,
+  excludeWrestlerId: string | undefined,
+): WrestlerSlotOptions {
+  const visible = allWrestlers.filter((w) => {
+    if (w.wrestlerId === excludeWrestlerId) return false; // never show the other-slot pick
+    if (!w.isInUse) return true;
+    return w.wrestlerId === selectedWrestlerId;
+  });
+
+  const byPromotion = new Map<WrestlerPromotion, Wrestler[]>();
+  for (const w of visible) {
+    const bucket = byPromotion.get(w.promotion) ?? [];
+    bucket.push(w);
+    byPromotion.set(w.promotion, bucket);
+  }
+
+  return Array.from(byPromotion.entries())
+    .map(([promotion, wrestlers]) => ({
+      promotion,
+      wrestlers: wrestlers.sort((a, b) => a.name.localeCompare(b.name)),
+    }))
+    .sort((a, b) => a.promotion.localeCompare(b.promotion));
+}
 
 export default function ManagePlayers() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
+  const [wrestlers, setWrestlers] = useState<Wrestler[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -24,11 +72,13 @@ export default function ManagePlayers() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Form state
+  // Form state — FK-backed. The legacy `currentWrestler` / `alternateWrestler`
+  // string inputs are gone; the backend denormalizes the name from the
+  // selected wrestler's roster row.
   const [formData, setFormData] = useState({
     name: '',
-    currentWrestler: '',
-    alternateWrestler: '',
+    currentWrestlerId: '',
+    alternateWrestlerId: '',
     imageUrl: '',
     divisionId: '',
     psnId: '',
@@ -46,12 +96,14 @@ export default function ManagePlayers() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [playersData, divisionsData] = await Promise.all([
+      const [playersData, divisionsData, wrestlersData] = await Promise.all([
         playersApi.getAll(),
         divisionsApi.getAll(),
+        wrestlersApi.getAll(),
       ]);
       setPlayers(playersData);
       setDivisions(divisionsData);
+      setWrestlers(wrestlersData);
     } catch (_err) {
       setError('Failed to load data');
     } finally {
@@ -64,6 +116,26 @@ export default function ManagePlayers() {
     const division = divisions.find(d => d.divisionId === divisionId);
     return division?.name || 'Unknown';
   };
+
+  const currentWrestlerOptions = useMemo(
+    () =>
+      buildOptionGroups(
+        wrestlers,
+        formData.currentWrestlerId || undefined,
+        formData.alternateWrestlerId || undefined,
+      ),
+    [wrestlers, formData.currentWrestlerId, formData.alternateWrestlerId],
+  );
+
+  const alternateWrestlerOptions = useMemo(
+    () =>
+      buildOptionGroups(
+        wrestlers,
+        formData.alternateWrestlerId || undefined,
+        formData.currentWrestlerId || undefined,
+      ),
+    [wrestlers, formData.currentWrestlerId, formData.alternateWrestlerId],
+  );
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -140,6 +212,16 @@ export default function ManagePlayers() {
     }
   };
 
+  const resetFormData = () => ({
+    name: '',
+    currentWrestlerId: '',
+    alternateWrestlerId: '',
+    imageUrl: '',
+    divisionId: '',
+    psnId: '',
+    alignment: '' as '' | 'face' | 'heel' | 'neutral',
+  });
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (submitting || uploading) return; // Prevent double submission
@@ -151,20 +233,24 @@ export default function ManagePlayers() {
       // Upload image first if one is selected
       const imageUrl = await uploadImage();
 
-      // Sanitize inputs before sending to API
       const sanitizedName = sanitizeName(formData.name, VALIDATION.MAX_NAME_LENGTH);
-      const sanitizedWrestler = sanitizeName(formData.currentWrestler, VALIDATION.MAX_NAME_LENGTH);
 
-      if (!sanitizedName || !sanitizedWrestler) {
-        setError('Name and wrestler fields cannot be empty');
+      if (!sanitizedName) {
+        setError('Player name cannot be empty');
+        return;
+      }
+      if (!formData.currentWrestlerId) {
+        setError('Please pick a wrestler from the roster');
         return;
       }
 
       if (editingPlayer) {
         await playersApi.update(editingPlayer.playerId, {
           name: sanitizedName,
-          currentWrestler: sanitizedWrestler,
-          alternateWrestler: formData.alternateWrestler.trim() || undefined,
+          currentWrestlerId: formData.currentWrestlerId,
+          // Empty string clears the FK server-side (mirrors how divisionId
+          // and alignment are cleared on this same endpoint).
+          alternateWrestlerId: formData.alternateWrestlerId || '',
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || '',
           psnId: formData.psnId.trim() || undefined,
@@ -173,8 +259,13 @@ export default function ManagePlayers() {
       } else {
         await playersApi.create({
           name: sanitizedName,
-          currentWrestler: sanitizedWrestler,
-          alternateWrestler: formData.alternateWrestler.trim() || undefined,
+          // Kept to satisfy the legacy Player type; backend overwrites this
+          // from the selected wrestler's name.
+          currentWrestler: '',
+          currentWrestlerId: formData.currentWrestlerId,
+          ...(formData.alternateWrestlerId
+            ? { alternateWrestlerId: formData.alternateWrestlerId }
+            : {}),
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || undefined,
           psnId: formData.psnId.trim() || undefined,
@@ -185,7 +276,7 @@ export default function ManagePlayers() {
         });
       }
 
-      setFormData({ name: '', currentWrestler: '', alternateWrestler: '', imageUrl: '', divisionId: '', psnId: '', alignment: '' });
+      setFormData(resetFormData());
       setSelectedFile(null);
       setImagePreview(null);
       setShowAddForm(false);
@@ -203,8 +294,8 @@ export default function ManagePlayers() {
     setEditingPlayer(player);
     setFormData({
       name: player.name,
-      currentWrestler: player.currentWrestler,
-      alternateWrestler: player.alternateWrestler || '',
+      currentWrestlerId: player.currentWrestlerId || '',
+      alternateWrestlerId: player.alternateWrestlerId || '',
       imageUrl: player.imageUrl || '',
       divisionId: player.divisionId || '',
       psnId: player.psnId || '',
@@ -216,7 +307,7 @@ export default function ManagePlayers() {
   };
 
   const handleCancel = () => {
-    setFormData({ name: '', currentWrestler: '', alternateWrestler: '', imageUrl: '', divisionId: '', psnId: '', alignment: '' });
+    setFormData(resetFormData());
     setSelectedFile(null);
     setImagePreview(null);
     setShowAddForm(false);
@@ -247,6 +338,19 @@ export default function ManagePlayers() {
     return <div className="loading">Loading players...</div>;
   }
 
+  const renderWrestlerOptions = (groups: WrestlerSlotOptions) =>
+    groups.map((group) => (
+      <optgroup key={group.promotion} label={group.promotion}>
+        {group.wrestlers.map((w) => (
+          <option key={w.wrestlerId} value={w.wrestlerId}>
+            {w.name} — OVR {w.overallCap}
+          </option>
+        ))}
+      </optgroup>
+    ));
+
+  const rosterEmpty = wrestlers.length === 0;
+
   return (
     <div className="manage-players">
       <div className="players-header">
@@ -265,6 +369,12 @@ export default function ManagePlayers() {
       {showAddForm && (
         <div className="player-form-container">
           <h3>{editingPlayer ? 'Edit Player' : 'Add New Player'}</h3>
+          {rosterEmpty && (
+            <div className="error-message">
+              No wrestlers in the roster yet. Add wrestlers via{' '}
+              <Link to="/admin/wrestlers">Manage Wrestlers</Link> before creating players.
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="player-form">
             <div className="form-group">
               <label htmlFor="name">Player Name</label>
@@ -280,25 +390,33 @@ export default function ManagePlayers() {
 
             <div className="form-group">
               <label htmlFor="wrestler">Wrestler</label>
-              <input
-                type="text"
+              <select
                 id="wrestler"
-                value={formData.currentWrestler}
-                onChange={(e) => setFormData({ ...formData, currentWrestler: e.target.value })}
+                value={formData.currentWrestlerId}
+                onChange={(e) =>
+                  setFormData({ ...formData, currentWrestlerId: e.target.value })
+                }
                 required
-                placeholder="Stone Cold Steve Austin"
-              />
+                disabled={rosterEmpty}
+              >
+                <option value="">Pick from the roster…</option>
+                {renderWrestlerOptions(currentWrestlerOptions)}
+              </select>
             </div>
 
             <div className="form-group">
               <label htmlFor="alternateWrestler">Alternate Wrestler</label>
-              <input
-                type="text"
+              <select
                 id="alternateWrestler"
-                value={formData.alternateWrestler}
-                onChange={(e) => setFormData({ ...formData, alternateWrestler: e.target.value })}
-                placeholder="Backup wrestler (optional)"
-              />
+                value={formData.alternateWrestlerId}
+                onChange={(e) =>
+                  setFormData({ ...formData, alternateWrestlerId: e.target.value })
+                }
+                disabled={rosterEmpty}
+              >
+                <option value="">None</option>
+                {renderWrestlerOptions(alternateWrestlerOptions)}
+              </select>
             </div>
 
             <div className="form-group">
@@ -371,7 +489,7 @@ export default function ManagePlayers() {
             </div>
 
             <div className="form-actions">
-              <button type="submit" disabled={submitting || uploading}>
+              <button type="submit" disabled={submitting || uploading || rosterEmpty}>
                 {submitting ? 'Saving...' : uploading ? 'Uploading...' : editingPlayer ? 'Update Player' : 'Add Player'}
               </button>
               <button type="button" onClick={handleCancel} className="cancel-btn" disabled={submitting || uploading}>
