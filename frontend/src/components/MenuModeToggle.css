@@ -26,8 +26,8 @@
   --input-out-of-focus: #ccc;
   position: relative;
   display: inline-block;
-  width: 70px;
-  height: 36px;
+  width: 56px;
+  height: 30px;
   flex-shrink: 0;
 }
 
@@ -43,7 +43,7 @@
   box-sizing: border-box;
   border-radius: 100px;
   border: 2px solid var(--main-color);
-  box-shadow: 4px 4px var(--main-color);
+  box-shadow: 3px 3px var(--main-color);
   position: absolute;
   cursor: pointer;
   top: 0;
@@ -60,8 +60,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 28px;
-  width: 28px;
+  height: 22px;
+  width: 22px;
   position: absolute;
   left: 2px;
   top: 2px;
@@ -70,7 +70,7 @@
   background-color: var(--bg-color);
   color: var(--main-color);
   font-family: inherit;
-  font-size: 0.65rem;
+  font-size: 0.55rem;
   font-weight: 700;
   text-transform: lowercase;
   transition: transform 0.3s, content 0.3s;
@@ -82,7 +82,7 @@
 
 .menu-mode-toggle-input:checked ~ .menu-mode-slider::before {
   content: "on";
-  transform: translateX(34px);
+  transform: translateX(26px);
   color: var(--input-focus);
 }
 
