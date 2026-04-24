@@ -222,7 +222,12 @@
     "switchToTopMenu": "Top menu",
     "switchToSidebar": "Sidebar menu",
     "switchToBasic": "Switch to basic menu",
-    "switchToAdvanced": "Switch to advanced menu"
+    "switchToAdvanced": "Switch to advanced menu",
+    "basicMenu": "Basic menu",
+    "advancedMenu": "Advanced menu",
+    "basicMenuShort": "Basic",
+    "advancedMenuShort": "Advanced",
+    "menuModeToggleLabel": "Menu mode"
   },
   "header": {
     "title": "WWE 2K League"

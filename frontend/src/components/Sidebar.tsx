@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
 import { useMenuMode } from '../contexts/menuModeContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import MenuModeToggle from './MenuModeToggle';
 import NotificationBell from './NotificationBell';
 import {
   USER_NAV_GROUPS,
@@ -50,7 +51,7 @@ export default function Sidebar() {
   const location = useLocation();
   const { isAuthenticated, isAdminOrModerator, isSuperAdmin, isWrestler, signOut } = useAuth();
   const { features } = useSiteConfig();
-  const { mode: menuMode, toggleMode: toggleMenuMode } = useMenuMode();
+  const { mode: menuMode } = useMenuMode();
   const [adminExpanded, setAdminExpanded] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ league: true });
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -153,6 +154,7 @@ export default function Sidebar() {
         <div className="sidebar-header-actions">
           <NotificationBell />
           <LanguageSwitcher />
+          <MenuModeToggle />
         </div>
       </div>
 
@@ -238,17 +240,6 @@ export default function Sidebar() {
             )}
           </div>
         )}
-
-        <div className="nav-section menu-mode-section">
-          <button
-            type="button"
-            className="menu-mode-toggle"
-            onClick={toggleMenuMode}
-            aria-label={menuMode === 'basic' ? t('nav.switchToAdvanced') : t('nav.switchToBasic')}
-          >
-            {menuMode === 'basic' ? t('nav.switchToAdvanced') : t('nav.switchToBasic')}
-          </button>
-        </div>
 
         <div className="nav-section auth-section">
           {isAuthenticated ? (

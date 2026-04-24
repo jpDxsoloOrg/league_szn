@@ -16,7 +16,7 @@ export function readStoredMenuMode(): MenuMode {
   } catch {
     // ignore
   }
-  return 'advanced';
+  return 'basic';
 }
 
 export function useMenuMode(): MenuModeContextType {

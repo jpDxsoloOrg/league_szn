@@ -1,0 +1,32 @@
+.menu-mode-toggle {
+  display: inline-flex;
+  border: 1px solid #444;
+  border-radius: 999px;
+  padding: 2px;
+  background-color: #1a1a1a;
+  overflow: hidden;
+}
+
+.menu-mode-option {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: #aaa;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  cursor: pointer;
+  line-height: 1;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.menu-mode-option:hover {
+  color: #fff;
+}
+
+.menu-mode-option.active {
+  background-color: var(--color-primary, #d4af37);
+  color: #000;
+}
