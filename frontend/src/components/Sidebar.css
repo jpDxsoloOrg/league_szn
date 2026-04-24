@@ -288,10 +288,25 @@
   background-color: var(--color-primary-hover) !important;
 }
 
+.menu-mode-section {
+  margin-top: auto;
+  border-top: 1px solid #333;
+  padding: 0.25rem 0;
+}
+
 .auth-section {
   border-top: 1px solid #333;
-  margin-top: auto;
   padding-top: 0.5rem;
+}
+
+.nav-basic-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-basic-items > a,
+.nav-basic-items > span {
+  display: block;
 }
 
 /* Hamburger button — hidden on desktop */

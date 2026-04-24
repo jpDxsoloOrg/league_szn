@@ -84,6 +84,32 @@ export const USER_NAV_STANDALONE: (NavItem & { type: 'link' })[] = [
   },
 ];
 
+/** Basic (simplified) user nav: flat list of essential pages, rendered without groups. */
+export const BASIC_NAV_PATHS: string[] = [
+  '/',
+  '/standings',
+  '/events',
+  '/profile',
+  '/promos',
+  '/contenders',
+];
+
+/** Returns the full NavItem objects for basic mode in display order. */
+export function getBasicNavItems(): NavItem[] {
+  const byPath = new Map<string, NavItem>();
+  for (const group of USER_NAV_GROUPS) {
+    for (const item of group.items) {
+      byPath.set(item.path, item);
+    }
+  }
+  const result: NavItem[] = [];
+  for (const path of BASIC_NAV_PATHS) {
+    const item = byPath.get(path);
+    if (item) result.push(item);
+  }
+  return result;
+}
+
 /** Admin nav: sub-groups with items */
 export const ADMIN_NAV_GROUPS: NavGroup[] = [
   {

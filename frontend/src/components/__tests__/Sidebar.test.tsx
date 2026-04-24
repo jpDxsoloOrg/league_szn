@@ -17,6 +17,10 @@ vi.mock('../../contexts/SiteConfigContext', () => ({
   useSiteConfig: mockUseSiteConfig,
 }));
 
+vi.mock('../../contexts/menuModeContext', () => ({
+  useMenuMode: () => ({ mode: 'advanced', setMode: vi.fn(), toggleMode: vi.fn() }),
+}));
+
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),

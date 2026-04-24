@@ -3,7 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
+import { useMenuMode } from '../contexts/menuModeContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import MenuModeToggle from './MenuModeToggle';
 import NotificationBell from './NotificationBell';
 import {
   USER_NAV_GROUPS,
@@ -11,6 +13,7 @@ import {
   ADMIN_NAV_GROUPS,
   getUserGroupForPath,
   getAdminGroupForPath,
+  getBasicNavItems,
   type NavItem,
 } from '../config/navConfig';
 import type { SiteFeatures } from '../services/api';
@@ -48,6 +51,7 @@ export default function Sidebar() {
   const location = useLocation();
   const { isAuthenticated, isAdminOrModerator, isSuperAdmin, isWrestler, signOut } = useAuth();
   const { features } = useSiteConfig();
+  const { mode: menuMode } = useMenuMode();
   const [adminExpanded, setAdminExpanded] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ league: true });
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -107,6 +111,25 @@ export default function Sidebar() {
   const isActive = (path: string) => location.pathname === path;
   const isActivePrefix = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
 
+  const renderUserItem = (item: NavItem) => {
+    const { show, disabled, disabledLabel } = isUserItemVisible(item, features, isWrestler);
+    if (!show) return null;
+    if (disabled && disabledLabel) {
+      return (
+        <span key={item.path} className="nav-disabled">
+          {t(item.i18nKey)} <span className={item.role === 'Wrestler' ? 'role-locked' : 'coming-soon'}>{disabledLabel}</span>
+        </span>
+      );
+    }
+    const usePrefix = ['/stats', '/events', '/contenders'].includes(item.path);
+    const active = usePrefix ? isActivePrefix(item.path) : (item.path === '/' ? isActive('/') : isActive(item.path));
+    return (
+      <Link key={item.path} to={item.path} className={active ? 'active' : ''}>
+        {t(item.i18nKey)}
+      </Link>
+    );
+  };
+
   return (
     <>
     <button
@@ -136,44 +159,33 @@ export default function Sidebar() {
 
       <nav className="sidebar-nav">
         <div className="nav-section">
-          {USER_NAV_GROUPS.map((group) => {
-            if (!shouldShowGroup(group, features, isWrestler)) return null;
-            return (
-              <div key={group.key} className="nav-subgroup user-nav-subgroup">
-                <button
-                  type="button"
-                  className="nav-subgroup-toggle user-nav-toggle"
-                  onClick={() => toggleGroup(group.key)}
-                  aria-expanded={!!expandedGroups[group.key]}
-                >
-                  <span>{t(group.i18nKey)}</span>
-                  <span className="toggle-arrow">{expandedGroups[group.key] ? '\u25BE' : '\u25B8'}</span>
-                </button>
-                {expandedGroups[group.key] && (
-                  <div className="nav-subgroup-items user-nav-items">
-                    {group.items.map((item) => {
-                      const { show, disabled, disabledLabel } = isUserItemVisible(item, features, isWrestler);
-                      if (!show) return null;
-                      if (disabled && disabledLabel) {
-                        return (
-                          <span key={item.path} className="nav-disabled">
-                            {t(item.i18nKey)} <span className={item.role === 'Wrestler' ? 'role-locked' : 'coming-soon'}>{disabledLabel}</span>
-                          </span>
-                        );
-                      }
-                      const usePrefix = ['/stats', '/events', '/contenders'].includes(item.path);
-                      const active = usePrefix ? isActivePrefix(item.path) : (item.path === '/' ? isActive('/') : isActive(item.path));
-                      return (
-                        <Link key={item.path} to={item.path} className={active ? 'active' : ''}>
-                          {t(item.i18nKey)}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {menuMode === 'basic' ? (
+            <div className="nav-basic-items">
+              {getBasicNavItems().map((item) => renderUserItem(item))}
+            </div>
+          ) : (
+            USER_NAV_GROUPS.map((group) => {
+              if (!shouldShowGroup(group, features, isWrestler)) return null;
+              return (
+                <div key={group.key} className="nav-subgroup user-nav-subgroup">
+                  <button
+                    type="button"
+                    className="nav-subgroup-toggle user-nav-toggle"
+                    onClick={() => toggleGroup(group.key)}
+                    aria-expanded={!!expandedGroups[group.key]}
+                  >
+                    <span>{t(group.i18nKey)}</span>
+                    <span className="toggle-arrow">{expandedGroups[group.key] ? '▾' : '▸'}</span>
+                  </button>
+                  {expandedGroups[group.key] && (
+                    <div className="nav-subgroup-items user-nav-items">
+                      {group.items.map((item) => renderUserItem(item))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
 
           {USER_NAV_STANDALONE.map((item) => (
             <Link key={item.path} to={item.path} className={isActive(item.path) ? 'active' : ''}>
@@ -189,7 +201,7 @@ export default function Sidebar() {
               onClick={() => setAdminExpanded(!adminExpanded)}
             >
               <span>{t('nav.admin')}</span>
-              <span className="toggle-arrow">{adminExpanded ? '\u25B2' : '\u25BC'}</span>
+              <span className="toggle-arrow">{adminExpanded ? '▲' : '▼'}</span>
             </button>
 
             {adminExpanded && (
@@ -203,7 +215,7 @@ export default function Sidebar() {
                       aria-expanded={!!expandedGroups[group.key]}
                     >
                       <span>{t(group.i18nKey)}</span>
-                      <span className="toggle-arrow">{expandedGroups[group.key] ? '\u25BE' : '\u25B8'}</span>
+                      <span className="toggle-arrow">{expandedGroups[group.key] ? '▾' : '▸'}</span>
                     </button>
                     {expandedGroups[group.key] && (
                       <div className="nav-subgroup-items">
@@ -227,6 +239,10 @@ export default function Sidebar() {
             )}
           </div>
         )}
+
+        <div className="nav-section menu-mode-section">
+          <MenuModeToggle />
+        </div>
 
         <div className="nav-section auth-section">
           {isAuthenticated ? (
