@@ -18,8 +18,7 @@ import type {
   TransferRequestsTable,
 } from './schema';
 
-function toIso(value: string | Date | null): string {
-  if (value === null) return '';
+function toIso(value: string | Date): string {
   return value instanceof Date ? value.toISOString() : value;
 }
 
@@ -31,7 +30,9 @@ export function rowToPlayer(row: Selectable<PlayersTable>): Player {
   return {
     playerId: row.player_id,
     name: row.name,
-    currentWrestler: row.current_wrestler,
+    // `current_wrestler` is nullable in the real schema; the domain type
+    // requires a string, so coerce null → '' at the boundary.
+    currentWrestler: row.current_wrestler ?? '',
     wins: row.wins,
     losses: row.losses,
     draws: row.draws,
@@ -48,7 +49,6 @@ export function rowToPlayer(row: Selectable<PlayersTable>): Player {
     ...optional('stableId', row.stable_id),
     ...optional('tagTeamId', row.tag_team_id),
     ...(row.alignment ? { alignment: row.alignment } : {}),
-    ...(row.main_overall !== null ? { mainOverall: row.main_overall } : {}),
   };
 }
 
@@ -137,8 +137,8 @@ export function rowToTransfer(
   return {
     requestId: row.request_id,
     playerId: row.player_id,
-    fromDivisionId: row.from_division_id ?? '',
-    toDivisionId: row.to_division_id ?? '',
+    fromDivisionId: row.from_division_id,
+    toDivisionId: row.to_division_id,
     reason: row.reason,
     status: row.status,
     createdAt: toIso(row.created_at),

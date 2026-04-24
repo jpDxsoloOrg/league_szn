@@ -95,6 +95,7 @@ export class PostgresRosterRepository implements RosterRepository {
     },
 
     create: async (input: PlayerCreateInput) => {
+      // wins/losses/draws/created_at/updated_at have DB defaults.
       const row = await this.db
         .insertInto('players')
         .values({
@@ -109,10 +110,6 @@ export class PostgresRosterRepository implements RosterRepository {
           division_id: input.divisionId ?? null,
           company_id: input.companyId ?? null,
           alignment: input.alignment ?? null,
-          user_id: null,
-          stable_id: null,
-          tag_team_id: null,
-          main_overall: null,
         })
         .returningAll()
         .executeTakeFirstOrThrow();
