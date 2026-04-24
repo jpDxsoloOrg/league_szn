@@ -6,23 +6,22 @@ export default function MenuModeToggle() {
   const { t } = useTranslation();
   const { mode, setMode } = useMenuMode();
   const isAdvanced = mode === 'advanced';
-  const labelId = 'menu-mode-toggle-label';
 
   return (
-    <div className="menu-mode-row">
-      <span id={labelId} className="menu-mode-row-label">
-        {t('nav.advancedMenu')}
+    <label className="menu-mode-row">
+      <span className="menu-mode-row-label">{t('nav.advancedMenu')}</span>
+      <span className="menu-mode-switch">
+        <input
+          type="checkbox"
+          className="menu-mode-switch-input"
+          checked={isAdvanced}
+          onChange={(e) => setMode(e.target.checked ? 'advanced' : 'basic')}
+          aria-label={t('nav.advancedMenu')}
+        />
+        <span className="menu-mode-switch-track">
+          <span className="menu-mode-switch-thumb" />
+        </span>
       </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={isAdvanced}
-        aria-labelledby={labelId}
-        className={`menu-mode-switch ${isAdvanced ? 'on' : 'off'}`}
-        onClick={() => setMode(isAdvanced ? 'basic' : 'advanced')}
-      >
-        <span className="menu-mode-switch-thumb" />
-      </button>
-    </div>
+    </label>
   );
 }
