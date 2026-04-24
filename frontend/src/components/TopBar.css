@@ -2,11 +2,13 @@
   position: fixed;
   top: 0;
   left: 260px;
-  transition: left 0.2s ease;
+  transition: left var(--transition-base);
   right: 0;
   height: 56px;
-  background-color: #1a1a1a;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  background-color: rgba(17, 17, 19, 0.72);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid var(--color-border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -16,44 +18,51 @@
 
 .top-bar-layout-toggle {
   flex-shrink: 0;
-  padding: 0.5rem 0.85rem;
-  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--color-primary);
-  background: none !important;
-  border: 1px solid var(--color-primary);
-  border-radius: 4px;
+  color: var(--color-text-secondary);
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   margin-left: 0.5rem;
+  transition: all var(--transition-fast);
 }
 
 .top-bar-layout-toggle:hover {
-  color: var(--color-primary-hover);
-  border-color: var(--color-primary-hover);
-  background-color: rgba(212, 175, 55, 0.1) !important;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-soft) !important;
 }
 
 .top-bar-breadcrumb {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .top-bar-parent {
-  font-size: 0.875rem;
-  font-weight: 400;
-  color: #999;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  letter-spacing: -0.01em;
 }
 
 .top-bar-separator {
-  font-size: 0.875rem;
-  color: rgba(212, 175, 55, 0.4);
+  font-size: 0.75rem;
+  color: var(--color-text-dim);
 }
 
 .top-bar-title {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #fff;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
 }
 
 @media (max-width: 768px) {
@@ -63,14 +72,14 @@
   }
 
   .top-bar-title {
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .top-bar-parent {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
 
   .top-bar-breadcrumb {
