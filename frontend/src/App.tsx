@@ -3,6 +3,7 @@ import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
 import { PresenceProvider } from './contexts/PresenceContext';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
+import { MenuModeProvider } from './contexts/MenuModeContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
 import NotFound from './components/NotFound';
@@ -79,7 +80,9 @@ function App() {
         <AuthProvider>
           <PresenceProvider>
             <SiteConfigProvider>
-              <AppLayout />
+              <MenuModeProvider>
+                <AppLayout />
+              </MenuModeProvider>
             </SiteConfigProvider>
           </PresenceProvider>
         </AuthProvider>

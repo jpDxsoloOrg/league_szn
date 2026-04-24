@@ -290,8 +290,43 @@
 
 .auth-section {
   border-top: 1px solid #333;
-  margin-top: auto;
   padding-top: 0.5rem;
+}
+
+.menu-mode-section {
+  margin-top: auto;
+  border-top: 1px solid #333;
+  padding-top: 0.5rem;
+}
+
+.menu-mode-toggle {
+  display: block;
+  width: calc(100% - 2rem);
+  margin: 0.5rem 1rem;
+  padding: 0.4rem 0.75rem;
+  background-color: transparent;
+  color: var(--color-text-secondary, #ccc);
+  border: 1px solid #444;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-align: center;
+}
+
+.menu-mode-toggle:hover {
+  background-color: #1f1f1f;
+  color: #fff;
+  border-color: #666;
+}
+
+.nav-basic-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-basic-items > a,
+.nav-basic-items > span {
+  display: block;
 }
 
 /* Hamburger button — hidden on desktop */

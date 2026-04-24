@@ -220,7 +220,9 @@
       "extras": "Mehr"
     },
     "switchToTopMenu": "Obere Menüleiste",
-    "switchToSidebar": "Seitenmenü"
+    "switchToSidebar": "Seitenmenü",
+    "switchToBasic": "Zum einfachen Menü wechseln",
+    "switchToAdvanced": "Zum erweiterten Menü wechseln"
   },
   "header": {
     "title": "WWE 2K Liga"
