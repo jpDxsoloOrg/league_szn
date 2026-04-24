@@ -1,7 +1,6 @@
 /* ===========================
-   Modern utility layer
-   Reusable design primitives that any component can opt into.
-   Import after component CSS so these utilities win with equal specificity.
+   HUD utility layer
+   Reusable gaming-UI primitives.
    =========================== */
 
 /* ---- Surfaces ---- */
@@ -14,19 +13,18 @@
 .surface-raised {
   background: var(--gradient-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  clip-path: var(--clip-hud-md);
 }
 
 .surface-elevated {
   background: var(--gradient-elevated);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-strong);
+  clip-path: var(--clip-hud-md);
   box-shadow: var(--shadow-md), var(--shadow-inset);
 }
 
 .surface-glass {
-  background: rgba(29, 29, 33, 0.6);
+  background: rgba(22, 32, 51, 0.55);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
   backdrop-filter: blur(14px) saturate(180%);
@@ -34,30 +32,32 @@
 }
 
 /* ---- Cards (hover-lift) ---- */
-.card-modern {
+.card-hud {
   background: var(--gradient-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  clip-path: var(--clip-hud-md);
   padding: 1.25rem;
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-base), border-color var(--transition-base),
-    box-shadow var(--transition-base);
+  position: relative;
+  transition: transform var(--transition-base), border-color var(--transition-base);
 }
 
-.card-modern:hover {
+.card-hud::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-primary-glow), transparent);
+}
+
+.card-hud:hover {
   transform: translateY(-2px);
-  border-color: var(--color-border-strong);
-  box-shadow: var(--shadow-md);
-}
-
-.card-interactive {
-  cursor: pointer;
-}
-
-.card-interactive:hover {
   border-color: var(--color-primary);
-  box-shadow: var(--shadow-md), 0 0 0 1px var(--color-primary-glow);
+  box-shadow: 0 0 0 1px var(--color-primary-glow), 0 6px 20px rgba(0, 0, 0, 0.45);
 }
+
+.card-interactive { cursor: pointer; }
 
 /* ---- Badges / Pills / Chips ---- */
 .badge {
@@ -65,16 +65,18 @@
   align-items: center;
   gap: 0.375rem;
   padding: 0.2rem 0.625rem;
-  font-size: 0.6875rem;
+  font-family: var(--font-display);
+  font-size: 0.625rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  border-radius: var(--radius-pill);
+  border-radius: 0;
+  clip-path: var(--clip-hud-sm);
   line-height: 1;
   border: 1px solid transparent;
 }
 
-.badge-gold {
+.badge-primary {
   background: var(--color-primary-soft);
   color: var(--color-primary);
   border-color: var(--color-primary-glow);
@@ -84,6 +86,12 @@
   background: var(--color-accent-soft);
   color: var(--color-accent-hover);
   border-color: var(--color-accent-glow);
+}
+
+.badge-lime {
+  background: var(--color-lime-soft);
+  color: var(--color-lime);
+  border-color: var(--color-lime-glow);
 }
 
 .badge-success {
@@ -116,7 +124,7 @@
   background: var(--gradient-accent);
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 0 12px var(--color-accent-glow);
+  box-shadow: 0 0 14px var(--color-accent-glow);
 }
 
 .badge-live::before {
@@ -133,10 +141,13 @@
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.375rem 0.75rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  border-radius: var(--radius-pill);
+  padding: 0.375rem 0.875rem;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  clip-path: var(--clip-hud-sm);
   background: var(--color-surface);
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
@@ -146,15 +157,16 @@
 }
 
 .chip:hover {
-  border-color: var(--color-border-strong);
-  color: var(--color-text);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .chip-active {
   background: var(--color-primary-soft);
   color: var(--color-primary);
-  border-color: var(--color-primary-glow);
-  font-weight: 600;
+  border-color: var(--color-primary);
+  font-weight: 700;
+  box-shadow: 0 0 10px var(--color-primary-glow);
 }
 
 /* ---- Dividers ---- */
@@ -165,15 +177,16 @@
   margin: 1.5rem 0;
 }
 
-.divider-gradient {
+.divider-neon {
   height: 1px;
   border: none;
-  background: linear-gradient(90deg, transparent, var(--color-border-strong) 20%, var(--color-border-strong) 80%, transparent);
+  background: linear-gradient(90deg, transparent, var(--color-primary-glow) 20%, var(--color-accent-glow) 80%, transparent);
+  box-shadow: 0 0 12px var(--color-primary-glow);
   margin: 1.5rem 0;
 }
 
 /* ---- Text utilities ---- */
-.text-gradient-gold {
+.text-gradient-primary {
   background: var(--gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -187,19 +200,52 @@
   background-clip: text;
 }
 
+.text-gradient-accent {
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .text-muted { color: var(--color-text-muted); }
 .text-secondary { color: var(--color-text-secondary); }
 .text-dim { color: var(--color-text-dim); }
 .text-primary { color: var(--color-primary); }
 .text-accent { color: var(--color-accent); }
+.text-lime { color: var(--color-lime); }
 
 .text-label {
+  font-family: var(--font-display);
   font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   color: var(--color-text-muted);
 }
+
+.text-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.text-display {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ---- Glow helpers ---- */
+.glow-primary { box-shadow: 0 0 0 1px var(--color-primary-glow), 0 0 20px var(--color-primary-glow); }
+.glow-accent { box-shadow: 0 0 0 1px var(--color-accent-glow), 0 0 20px var(--color-accent-glow); }
+.glow-lime { box-shadow: 0 0 0 1px var(--color-lime-glow), 0 0 20px var(--color-lime-glow); }
+
+.text-glow-primary { text-shadow: 0 0 10px var(--color-primary-glow); }
+.text-glow-accent { text-shadow: 0 0 10px var(--color-accent-glow); }
+
+/* ---- Clip helpers ---- */
+.clip-hud-sm { clip-path: var(--clip-hud-sm); }
+.clip-hud-md { clip-path: var(--clip-hud-md); }
+.clip-hud-lg { clip-path: var(--clip-hud-lg); }
 
 /* ---- Shimmer loading effect ---- */
 .shimmer {
@@ -215,7 +261,7 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.04) 50%,
+    rgba(34, 211, 238, 0.08) 50%,
     transparent 100%
   );
   animation: shimmer-slide 1.5s infinite;
@@ -236,9 +282,38 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ---- Focus ring helper for custom interactive elements ---- */
+/* ---- Focus ring helper ---- */
 .focus-ring:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: inherit;
+}
+
+/* ---- HUD corner ornaments (optional decorative markers on panels) ---- */
+.hud-corners {
+  position: relative;
+}
+
+.hud-corners::before,
+.hud-corners::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--color-primary);
+  border-style: solid;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.hud-corners::before {
+  top: 6px;
+  left: 6px;
+  border-width: 1px 0 0 1px;
+}
+
+.hud-corners::after {
+  bottom: 6px;
+  right: 6px;
+  border-width: 0 1px 1px 0;
 }

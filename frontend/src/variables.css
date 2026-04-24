@@ -1,43 +1,56 @@
 :root {
-  /* === Brand colors — refined gold with more luminosity === */
-  --color-primary: #e5c158;
-  --color-primary-hover: #f2d275;
-  --color-primary-dim: #b8941f;
-  --color-primary-soft: rgba(229, 193, 88, 0.12);
-  --color-primary-glow: rgba(229, 193, 88, 0.35);
+  /* ====================================================
+     ELECTRIC ESPORTS HUD — a complete pivot from the
+     previous dark+gold look. Cool slate base, electric
+     cyan + hot magenta + neon lime accents.
+     ==================================================== */
 
-  /* === Secondary accent — crimson (WWE red + gold pairing) === */
-  --color-accent: #e11d48;
-  --color-accent-hover: #f43f5e;
-  --color-accent-soft: rgba(225, 29, 72, 0.12);
-  --color-accent-glow: rgba(225, 29, 72, 0.3);
+  /* === Brand: electric cyan === */
+  --color-primary: #22d3ee;
+  --color-primary-hover: #67e8f9;
+  --color-primary-dim: #0891b2;
+  --color-primary-soft: rgba(34, 211, 238, 0.12);
+  --color-primary-glow: rgba(34, 211, 238, 0.4);
+  --color-primary-glow-strong: rgba(34, 211, 238, 0.6);
 
-  /* === Surfaces — deeper, warmer blacks with subtle layering === */
-  --color-bg: #0a0a0b;
-  --color-bg-elevated: #111113;
-  --color-surface: #17171a;
-  --color-surface-raised: #1d1d21;
-  --color-surface-hover: #24242a;
-  --color-surface-active: #2d2d34;
-  --color-overlay: rgba(10, 10, 11, 0.72);
+  /* === Accent: hot magenta === */
+  --color-accent: #ec4899;
+  --color-accent-hover: #f472b6;
+  --color-accent-soft: rgba(236, 72, 153, 0.12);
+  --color-accent-glow: rgba(236, 72, 153, 0.4);
 
-  /* === Borders — softer and more refined === */
-  --color-border: #2a2a30;
-  --color-border-strong: #3a3a42;
-  --color-border-subtle: rgba(255, 255, 255, 0.06);
+  /* === Tertiary: neon lime (for highlights / victories) === */
+  --color-lime: #a3e635;
+  --color-lime-soft: rgba(163, 230, 53, 0.12);
+  --color-lime-glow: rgba(163, 230, 53, 0.4);
 
-  /* === Text — improved hierarchy === */
-  --color-text: #f5f5f7;
-  --color-text-secondary: #b8b8c0;
-  --color-text-muted: #7a7a85;
-  --color-text-dim: #55555e;
+  /* === Surfaces — cool slate (no more warm black) === */
+  --color-bg: #07090f;
+  --color-bg-elevated: #0c111b;
+  --color-surface: #111827;
+  --color-surface-raised: #162033;
+  --color-surface-hover: #1e2a41;
+  --color-surface-active: #273449;
+  --color-overlay: rgba(7, 9, 15, 0.75);
 
-  /* === Status colors — modern, desaturated === */
-  --color-success: #4ade80;
-  --color-success-soft: rgba(74, 222, 128, 0.12);
-  --color-danger: #ef4444;
-  --color-danger-alt: #f87171;
-  --color-danger-soft: rgba(239, 68, 68, 0.12);
+  /* === Borders — cool and precise === */
+  --color-border: #1f2a40;
+  --color-border-strong: #334155;
+  --color-border-subtle: rgba(148, 163, 184, 0.08);
+  --color-border-glow: rgba(34, 211, 238, 0.22);
+
+  /* === Text — cool slate scale === */
+  --color-text: #f1f5f9;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #94a3b8;
+  --color-text-dim: #64748b;
+
+  /* === Status colors — neon-forward === */
+  --color-success: #a3e635;
+  --color-success-soft: rgba(163, 230, 53, 0.12);
+  --color-danger: #f43f5e;
+  --color-danger-alt: #fb7185;
+  --color-danger-soft: rgba(244, 63, 94, 0.12);
   --color-warning: #fbbf24;
   --color-warning-soft: rgba(251, 191, 36, 0.12);
   --color-info: #38bdf8;
@@ -45,44 +58,60 @@
   --color-neutral: #6b7280;
   --color-neutral-light: #9ca3af;
 
-  /* === Gradients — modern depth === */
-  --gradient-primary: linear-gradient(135deg, #f2d275 0%, #e5c158 50%, #b8941f 100%);
-  --gradient-surface: linear-gradient(180deg, #1d1d21 0%, #17171a 100%);
-  --gradient-elevated: linear-gradient(180deg, #24242a 0%, #1a1a1e 100%);
-  --gradient-border-gold: linear-gradient(135deg, rgba(229, 193, 88, 0.4), rgba(229, 193, 88, 0.05));
-  --gradient-hero: radial-gradient(ellipse at top, rgba(229, 193, 88, 0.08), transparent 60%),
-    radial-gradient(ellipse at bottom left, rgba(225, 29, 72, 0.05), transparent 50%);
-  --gradient-accent: linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #9f1239 100%);
-  --gradient-dual: linear-gradient(135deg, #e5c158 0%, #e11d48 100%);
+  /* === Gradients — electric === */
+  --gradient-primary: linear-gradient(135deg, #67e8f9 0%, #22d3ee 50%, #0891b2 100%);
+  --gradient-accent: linear-gradient(135deg, #f472b6 0%, #ec4899 50%, #be185d 100%);
+  --gradient-dual: linear-gradient(135deg, #22d3ee 0%, #ec4899 100%);
+  --gradient-lime: linear-gradient(135deg, #bef264 0%, #a3e635 50%, #65a30d 100%);
 
-  /* === Shadows — layered, modern elevation === */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45), 0 4px 8px rgba(0, 0, 0, 0.25);
-  --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.55), 0 8px 16px rgba(0, 0, 0, 0.3);
-  --shadow-glow: 0 0 0 1px rgba(229, 193, 88, 0.2), 0 4px 20px rgba(229, 193, 88, 0.15);
-  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --gradient-surface: linear-gradient(180deg, #162033 0%, #111827 100%);
+  --gradient-elevated: linear-gradient(180deg, #1e2a41 0%, #141c2c 100%);
+  --gradient-border-neon: linear-gradient(135deg, rgba(34, 211, 238, 0.6), rgba(236, 72, 153, 0.4));
 
-  /* === Border radius === */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  /* Background ambience: grid + radial glows */
+  --gradient-hero:
+    radial-gradient(ellipse 1200px 600px at 20% 0%, rgba(34, 211, 238, 0.08), transparent 60%),
+    radial-gradient(ellipse 900px 500px at 80% 30%, rgba(236, 72, 153, 0.06), transparent 60%);
+
+  /* Subtle grid pattern used as body overlay */
+  --pattern-grid:
+    linear-gradient(rgba(148, 163, 184, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
+  --pattern-grid-size: 32px 32px;
+
+  /* === Shadows — cool + neon glow === */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.55), 0 6px 12px rgba(0, 0, 0, 0.35);
+  --shadow-xl: 0 28px 56px rgba(0, 0, 0, 0.6), 0 10px 20px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 0 1px var(--color-primary-glow), 0 0 24px var(--color-primary-glow);
+  --shadow-glow-accent: 0 0 0 1px var(--color-accent-glow), 0 0 24px var(--color-accent-glow);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  /* === Geometry — sharper + angular === */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
   --radius-pill: 999px;
 
-  /* === Motion — modern easing curves === */
+  /* Clipped HUD corners (polygonal) */
+  --clip-hud-sm: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  --clip-hud-md: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  --clip-hud-lg: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+
+  /* === Motion === */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --transition-fast: 150ms var(--ease-out);
-  --transition-base: 220ms var(--ease-out);
+  --transition-fast: 120ms var(--ease-out);
+  --transition-base: 200ms var(--ease-out);
   --transition-slow: 400ms var(--ease-out);
 
-  /* === Typography === */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', sans-serif;
-  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', Menlo, Monaco, Consolas, monospace;
+  /* === Typography — gaming/esports display === */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Rajdhani', 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', Menlo, monospace;
 }

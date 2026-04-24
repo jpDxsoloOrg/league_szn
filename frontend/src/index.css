@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import './variables.css';
 
 html {
@@ -10,7 +11,7 @@ html {
 body {
   margin: 0;
   font-family: var(--font-sans);
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -21,7 +22,7 @@ body {
   color: var(--color-text);
 }
 
-/* Modern, subtle scrollbars */
+/* Modern cool scrollbars */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -46,24 +47,35 @@ body {
   scrollbar-color: var(--color-border-strong) transparent;
 }
 
-/* Refined text selection */
+/* Electric selection */
 ::selection {
   background: var(--color-primary-glow);
   color: var(--color-text);
 }
 
-/* Modern focus ring (keyboard only) */
+/* Cyan focus ring (keyboard-only) */
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: var(--radius-xs);
 }
 
-code {
+code, kbd {
   font-family: var(--font-mono);
   font-size: 0.9em;
   background: var(--color-surface);
-  padding: 0.15em 0.4em;
-  border-radius: var(--radius-xs);
+  padding: 0.15em 0.45em;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
+  color: var(--color-primary);
+}
+
+/* Numeric / data — tabular figures for score columns */
+.tabular-nums,
+.db-stat-value,
+.db-hero-stat-value,
+.season-ring-value,
+.db-event-countdown {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
 }
