@@ -5,30 +5,23 @@ import './MenuModeToggle.css';
 export default function MenuModeToggle() {
   const { t } = useTranslation();
   const { mode, setMode } = useMenuMode();
+  const isAdvanced = mode === 'advanced';
+  const labelId = 'menu-mode-toggle-label';
 
   return (
-    <div
-      className="menu-mode-toggle"
-      role="group"
-      aria-label={t('nav.menuModeToggleLabel')}
-    >
+    <div className="menu-mode-row">
+      <span id={labelId} className="menu-mode-row-label">
+        {t('nav.advancedMenu')}
+      </span>
       <button
         type="button"
-        className={`menu-mode-option ${mode === 'basic' ? 'active' : ''}`}
-        onClick={() => setMode('basic')}
-        aria-pressed={mode === 'basic'}
-        title={t('nav.basicMenu')}
+        role="switch"
+        aria-checked={isAdvanced}
+        aria-labelledby={labelId}
+        className={`menu-mode-switch ${isAdvanced ? 'on' : 'off'}`}
+        onClick={() => setMode(isAdvanced ? 'basic' : 'advanced')}
       >
-        {t('nav.basicMenuShort')}
-      </button>
-      <button
-        type="button"
-        className={`menu-mode-option ${mode === 'advanced' ? 'active' : ''}`}
-        onClick={() => setMode('advanced')}
-        aria-pressed={mode === 'advanced'}
-        title={t('nav.advancedMenu')}
-      >
-        {t('nav.advancedMenuShort')}
+        <span className="menu-mode-switch-thumb" />
       </button>
     </div>
   );

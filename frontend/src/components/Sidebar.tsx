@@ -154,7 +154,6 @@ export default function Sidebar() {
         <div className="sidebar-header-actions">
           <NotificationBell />
           <LanguageSwitcher />
-          <MenuModeToggle />
         </div>
       </div>
 
@@ -240,6 +239,10 @@ export default function Sidebar() {
             )}
           </div>
         )}
+
+        <div className="nav-section menu-mode-section">
+          <MenuModeToggle />
+        </div>
 
         <div className="nav-section auth-section">
           {isAuthenticated ? (

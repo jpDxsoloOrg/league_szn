@@ -288,9 +288,14 @@
   background-color: var(--color-primary-hover) !important;
 }
 
+.menu-mode-section {
+  margin-top: auto;
+  border-top: 1px solid #333;
+  padding: 0.25rem 0;
+}
+
 .auth-section {
   border-top: 1px solid #333;
-  margin-top: auto;
   padding-top: 0.5rem;
 }
 
