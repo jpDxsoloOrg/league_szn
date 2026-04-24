@@ -17,6 +17,8 @@
     "notify-pending-invites": "ts-node scripts/notify-pending-invites.ts",
     "notify-pending-invites:prod": "AWS_PROFILE=league-szn DYNAMODB_ENDPOINT=https://dynamodb.us-east-1.amazonaws.com SERVICE_NAME=wwe-2k-league-api STAGE=dev ts-node scripts/notify-pending-invites.ts",
     "migrate:wrestlers-roster": "ts-node scripts/migrate-wrestlers-roster.ts",
+    "migrate:postgres": "ts-node scripts/migrate-postgres.ts",
+    "smoke:postgres": "ts-node scripts/smoke-test-postgres.ts",
     "lint": "eslint functions/ lib/",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -29,12 +31,15 @@
     "@aws-sdk/lib-dynamodb": "^3.982.0",
     "@aws-sdk/s3-request-presigner": "^3.982.0",
     "aws-jwt-verify": "^5.1.1",
+    "kysely": "^0.28.16",
+    "pg": "^8.20.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@types/aws-lambda": "^8.10.130",
     "@types/node": "^20.10.5",
+    "@types/pg": "^8.20.0",
     "@types/uuid": "^9.0.7",
     "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.39.2",

@@ -1,5 +1,6 @@
 import './dynamo';
 import './inMemory';
+import './postgres';
 
 export {
   registerDriver,
