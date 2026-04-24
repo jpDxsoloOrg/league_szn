@@ -13,14 +13,12 @@ export default function MenuModeToggle() {
       <span className="menu-mode-switch">
         <input
           type="checkbox"
-          className="menu-mode-switch-input"
+          className="menu-mode-toggle-input"
           checked={isAdvanced}
           onChange={(e) => setMode(e.target.checked ? 'advanced' : 'basic')}
           aria-label={t('nav.advancedMenu')}
         />
-        <span className="menu-mode-switch-track">
-          <span className="menu-mode-switch-thumb" />
-        </span>
+        <span className="menu-mode-slider" />
       </span>
     </label>
   );
