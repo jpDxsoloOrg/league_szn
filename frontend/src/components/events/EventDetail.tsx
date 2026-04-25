@@ -272,6 +272,19 @@ export default function EventDetail() {
     return map;
   }, [scheduledMatches]);
 
+  const bookedPlayerIds = useMemo(() => {
+    const ids = new Set<string>();
+    const matches = eventData?.enrichedMatches ?? [];
+    for (const match of matches) {
+      for (const participant of match.matchData.participants) {
+        if (participant.playerId) {
+          ids.add(participant.playerId);
+        }
+      }
+    }
+    return ids;
+  }, [eventData?.enrichedMatches]);
+
   if (loading) {
     return (
       <div className="event-detail-page">
@@ -600,7 +613,10 @@ export default function EventDetail() {
       </div>
 
       {isAdminOrModerator && eventId && (
-        <EventCheckInRosterPanel eventId={eventId} />
+        <EventCheckInRosterPanel
+          eventId={eventId}
+          bookedPlayerIds={bookedPlayerIds}
+        />
       )}
     </div>
   );

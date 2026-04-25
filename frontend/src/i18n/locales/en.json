@@ -1065,6 +1065,7 @@
         "unavailable": "Unavailable",
         "noResponse": "No Response",
         "unassigned": "Unassigned",
+        "booked": "Booked",
         "copy": "Copy as text",
         "refresh": "Refresh",
         "copySuccess": "Copied!",
