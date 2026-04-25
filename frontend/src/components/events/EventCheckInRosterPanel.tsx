@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { eventsApi } from '../../services/api/events.api';
+import { divisionsApi } from '../../services/api/divisions.api';
+import type { Division } from '../../types';
 import type {
   EventCheckInRoster,
   EventCheckInPlayerSummary,
@@ -23,6 +25,14 @@ const BUCKET_ORDER: BucketKey[] = [
 
 const FALLBACK_AVATAR =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23444"/><text x="50%25" y="55%25" dominant-baseline="middle" text-anchor="middle" fill="%23fff" font-size="16" font-family="sans-serif">?</text></svg>';
+
+const UNASSIGNED_KEY = '__unassigned__';
+
+interface AvailableDivisionGroup {
+  id: string;
+  name: string;
+  players: EventCheckInPlayerSummary[];
+}
 
 function PlayerChip({ player }: { player: EventCheckInPlayerSummary }) {
   return (
@@ -51,9 +61,66 @@ export default function EventCheckInRosterPanel({
 }: EventCheckInRosterPanelProps) {
   const { t } = useTranslation();
   const [roster, setRoster] = useState<EventCheckInRoster | null>(null);
+  const [divisions, setDivisions] = useState<Division[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    divisionsApi
+      .getAll()
+      .then((data) => {
+        if (!cancelled) setDivisions(data);
+      })
+      .catch(() => {
+        // Silently fall back to a flat list if divisions can't be loaded
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const availableGroups = useMemo<AvailableDivisionGroup[] | null>(() => {
+    if (!roster) return null;
+    if (divisions.length === 0) return null;
+    const divisionNames = new Map(divisions.map((d) => [d.divisionId, d.name]));
+    const buckets = new Map<string, EventCheckInPlayerSummary[]>();
+    for (const player of roster.available) {
+      const key =
+        player.divisionId && divisionNames.has(player.divisionId)
+          ? player.divisionId
+          : UNASSIGNED_KEY;
+      const list = buckets.get(key);
+      if (list) {
+        list.push(player);
+      } else {
+        buckets.set(key, [player]);
+      }
+    }
+    const ordered: AvailableDivisionGroup[] = [];
+    for (const division of divisions) {
+      const players = buckets.get(division.divisionId);
+      if (players && players.length > 0) {
+        ordered.push({
+          id: division.divisionId,
+          name: division.name,
+          players,
+        });
+      }
+    }
+    const unassigned = buckets.get(UNASSIGNED_KEY);
+    if (unassigned && unassigned.length > 0) {
+      ordered.push({
+        id: UNASSIGNED_KEY,
+        name: t('events.checkIn.roster.unassigned', {
+          defaultValue: 'Unassigned',
+        }),
+        players: unassigned,
+      });
+    }
+    return ordered;
+  }, [roster, divisions, t]);
 
   const fetchRoster = useCallback(async () => {
     setLoading(true);
@@ -145,6 +212,21 @@ export default function EventCheckInRosterPanel({
               defaultValue: 'No check-ins yet.',
             })}
           </p>
+        ) : availableGroups ? (
+          <div className="checkin-roster-division-groups">
+            {availableGroups.map((group) => (
+              <div key={group.id} className="checkin-roster-division-group">
+                <h5 className="checkin-roster-division-title">
+                  {group.name} ({group.players.length})
+                </h5>
+                <ul className="checkin-roster-list">
+                  {group.players.map((player) => (
+                    <PlayerChip key={player.playerId} player={player} />
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         ) : (
           <ul className="checkin-roster-list">
             {roster.available.map((player) => (
@@ -209,16 +291,40 @@ export default function EventCheckInRosterPanel({
                   ? 'No Response'
                   : key.charAt(0).toUpperCase() + key.slice(1),
             });
+            const showGrouped = key === 'available' && availableGroups;
             return (
               <div key={key} className="checkin-roster-column">
                 <h4 className="checkin-roster-column-title">
                   {label} ({bucket.length})
                 </h4>
-                <ul className="checkin-roster-list">
-                  {bucket.map((player) => (
-                    <PlayerChip key={player.playerId} player={player} />
-                  ))}
-                </ul>
+                {showGrouped ? (
+                  <div className="checkin-roster-division-groups">
+                    {availableGroups.map((group) => (
+                      <div
+                        key={group.id}
+                        className="checkin-roster-division-group"
+                      >
+                        <h5 className="checkin-roster-division-title">
+                          {group.name} ({group.players.length})
+                        </h5>
+                        <ul className="checkin-roster-list">
+                          {group.players.map((player) => (
+                            <PlayerChip
+                              key={player.playerId}
+                              player={player}
+                            />
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <ul className="checkin-roster-list">
+                    {bucket.map((player) => (
+                      <PlayerChip key={player.playerId} player={player} />
+                    ))}
+                  </ul>
+                )}
               </div>
             );
           })}

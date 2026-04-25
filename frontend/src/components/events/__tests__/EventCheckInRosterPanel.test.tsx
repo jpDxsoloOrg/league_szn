@@ -4,13 +4,20 @@ import userEvent from '@testing-library/user-event';
 import type { EventCheckInRoster } from '../../../types/event';
 
 // --- Hoisted mocks ---
-const { mockGetCheckIns } = vi.hoisted(() => ({
+const { mockGetCheckIns, mockGetDivisions } = vi.hoisted(() => ({
   mockGetCheckIns: vi.fn(),
+  mockGetDivisions: vi.fn(),
 }));
 
 vi.mock('../../../services/api/events.api', () => ({
   eventsApi: {
     getCheckIns: mockGetCheckIns,
+  },
+}));
+
+vi.mock('../../../services/api/divisions.api', () => ({
+  divisionsApi: {
+    getAll: mockGetDivisions,
   },
 }));
 
@@ -66,6 +73,8 @@ describe('EventCheckInRosterPanel', () => {
   beforeEach(() => {
     mockGetCheckIns.mockReset();
     mockGetCheckIns.mockResolvedValue(sampleRoster);
+    mockGetDivisions.mockReset();
+    mockGetDivisions.mockResolvedValue([]);
   });
 
   it('calls getCheckIns on mount with the correct eventId', async () => {
@@ -161,5 +170,39 @@ describe('EventCheckInRosterPanel', () => {
         screen.getByText('Failed to load check-in roster.')
       ).toBeInTheDocument();
     });
+  });
+
+  it('groups available wrestlers by division when divisions are loaded', async () => {
+    mockGetCheckIns.mockResolvedValue({
+      available: [
+        { playerId: 'p1', name: 'Alice', currentWrestler: 'Alpha', divisionId: 'd1' },
+        { playerId: 'p2', name: 'Bob', currentWrestler: 'Bravo', divisionId: 'd2' },
+        { playerId: 'p3', name: 'Frank', currentWrestler: 'Foxtrot' },
+      ],
+      tentative: [],
+      unavailable: [],
+      noResponse: [
+        { playerId: 'p4', name: 'Dave', currentWrestler: 'Delta', divisionId: 'd1' },
+      ],
+    });
+    mockGetDivisions.mockResolvedValue([
+      { divisionId: 'd1', name: 'Heavyweight', createdAt: '', updatedAt: '' },
+      { divisionId: 'd2', name: 'Cruiserweight', createdAt: '', updatedAt: '' },
+    ]);
+
+    render(<EventCheckInRosterPanel eventId="evt-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Heavyweight \(1\)/)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Cruiserweight \(1\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Unassigned \(1\)/)).toBeInTheDocument();
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+    expect(screen.getByText('Bob')).toBeInTheDocument();
+    expect(screen.getByText('Frank')).toBeInTheDocument();
+    // Other buckets are not grouped: Dave (in noResponse, divisionId d1) should
+    // appear without a Heavyweight subheader inside that column.
+    expect(screen.getByText('Dave')).toBeInTheDocument();
+    expect(screen.getAllByText(/Heavyweight \(1\)/)).toHaveLength(1);
   });
 });
