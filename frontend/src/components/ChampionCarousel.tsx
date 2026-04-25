@@ -150,7 +150,7 @@ export default function ChampionCarousel({
               <button
                 key={c.championshipId}
                 type="button"
-                className="db-hero-other"
+                className="db-hero-other btn-unstyled"
                 onClick={() => setCurrentIndex(idx)}
                 aria-label={`${c.championshipName} — ${c.championName}`}
               >
