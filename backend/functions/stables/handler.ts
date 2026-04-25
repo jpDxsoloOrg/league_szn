@@ -9,6 +9,7 @@ import { handler as inviteToStableHandler } from './inviteToStable';
 import { handler as getInvitationsHandler } from './getInvitations';
 import { handler as respondToInvitationHandler } from './respondToInvitation';
 import { handler as disbandStableHandler } from './disbandStable';
+import { handler as reactivateStableHandler } from './reactivateStable';
 import { handler as removeMemberHandler } from './removeMember';
 import { handler as deleteStableHandler } from './deleteStable';
 import { createRouter, type RouteConfig } from '../../lib/router';
@@ -78,6 +79,12 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/stables/{stableId}/disband',
     method: 'POST',
     handler: disbandStableHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/stables/{stableId}/reactivate',
+    method: 'POST',
+    handler: reactivateStableHandler,
     requireAuth: true,
   },
   {

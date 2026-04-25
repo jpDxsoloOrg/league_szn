@@ -75,6 +75,20 @@ export const stablesApi = {
     });
   },
 
+  reactivate: async (
+    stableId: string,
+  ): Promise<{
+    message: string;
+    stableId: string;
+    status: 'active';
+    restoredMemberIds: string[];
+    skippedMembers: { playerId: string; reason: 'not-found' | 'in-other-stable' }[];
+  }> => {
+    return fetchWithAuth(`${API_BASE_URL}/stables/${stableId}/reactivate`, {
+      method: 'POST',
+    });
+  },
+
   removeMember: async (stableId: string, playerId: string): Promise<Stable> => {
     return fetchWithAuth(`${API_BASE_URL}/stables/${stableId}/members/${playerId}`, {
       method: 'DELETE',

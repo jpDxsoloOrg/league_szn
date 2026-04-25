@@ -98,6 +98,35 @@ export default function ManageStables() {
     }
   };
 
+  const handleReactivate = async (stable: Stable) => {
+    const confirmMsg = t(
+      'stables.admin.confirmReactivate',
+      'Reactivate "{{name}}"? Members who have since joined another stable will be skipped.',
+      { name: stable.name },
+    );
+    if (!window.confirm(confirmMsg)) return;
+    setSubmitting(stable.stableId);
+    try {
+      const result = await stablesApi.reactivate(stable.stableId);
+      const skipped = result.skippedMembers.length;
+      const restored = result.restoredMemberIds.length;
+      const base = t('stables.admin.reactivated', 'Reactivated') + `: ${stable.name}`;
+      const detail =
+        skipped > 0
+          ? ` (${restored} restored, ${skipped} skipped)`
+          : ` (${restored} restored)`;
+      showFeedback(base + detail, 'success');
+      await loadStables();
+    } catch (err) {
+      showFeedback(
+        err instanceof Error ? err.message : 'Failed to reactivate stable',
+        'error',
+      );
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
   const handleDelete = async (stable: Stable) => {
     setSubmitting(stable.stableId);
     try {
@@ -243,6 +272,18 @@ export default function ManageStables() {
                         {submitting === stable.stableId
                           ? '...'
                           : t('stables.admin.disband', 'Disband')}
+                      </button>
+                    )}
+                    {stable.status === 'disbanded' && (
+                      <button
+                        type="button"
+                        className="admin-btn-reactivate"
+                        onClick={() => handleReactivate(stable)}
+                        disabled={submitting === stable.stableId}
+                      >
+                        {submitting === stable.stableId
+                          ? '...'
+                          : t('stables.admin.reactivate', 'Reactivate')}
                       </button>
                     )}
                     <button

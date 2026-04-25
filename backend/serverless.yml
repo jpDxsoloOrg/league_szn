@@ -848,6 +848,10 @@ functions:
           method: post
           cors: *corsConfig
       - http:
+          path: stables/{stableId}/reactivate
+          method: post
+          cors: *corsConfig
+      - http:
           path: stables/{stableId}/remove-member
           method: post
           cors: *corsConfig
