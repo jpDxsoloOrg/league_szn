@@ -170,6 +170,15 @@
   background-color: #4b5563 !important;
 }
 
+.admin-btn-reactivate {
+  background-color: #2563eb !important;
+  color: #fff !important;
+}
+
+.admin-btn-reactivate:hover {
+  background-color: #1d4ed8 !important;
+}
+
 .admin-stables-empty {
   text-align: center;
   padding: 3rem 1rem;
