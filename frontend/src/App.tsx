@@ -62,6 +62,7 @@ import MyTagTeam from './components/tagTeams/MyTagTeam';
 // Profile components
 import WrestlerProfile from './components/profile/WrestlerProfile';
 import PublicProfile from './components/profile/PublicProfile';
+import MyVideos from './components/profile/MyVideos';
 // Matchmaking components
 import FindMatchPage from './components/matchmaking/FindMatchPage';
 // Route guard
@@ -133,6 +134,13 @@ function AppLayout() {
             <Route path="/profile" element={
               <ProtectedRoute requiredRole="Wrestler">
                 <WrestlerProfile />
+              </ProtectedRoute>
+            } />
+
+            {/* Wrestler Video Submissions - gated server-side by canUploadVideos */}
+            <Route path="/my-videos" element={
+              <ProtectedRoute requiredRole="Wrestler">
+                <MyVideos />
               </ProtectedRoute>
             } />
 

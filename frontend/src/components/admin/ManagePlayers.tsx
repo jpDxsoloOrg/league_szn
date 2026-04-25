@@ -83,6 +83,7 @@ export default function ManagePlayers() {
     divisionId: '',
     psnId: '',
     alignment: '' as '' | 'face' | 'heel' | 'neutral',
+    canUploadVideos: false,
   });
 
   // Image upload state
@@ -220,6 +221,7 @@ export default function ManagePlayers() {
     divisionId: '',
     psnId: '',
     alignment: '' as '' | 'face' | 'heel' | 'neutral',
+    canUploadVideos: false,
   });
 
   const handleSubmit = async (e: FormEvent) => {
@@ -255,6 +257,7 @@ export default function ManagePlayers() {
           divisionId: formData.divisionId || '',
           psnId: formData.psnId.trim() || undefined,
           alignment: formData.alignment || '',
+          canUploadVideos: formData.canUploadVideos,
         });
       } else {
         await playersApi.create({
@@ -300,6 +303,7 @@ export default function ManagePlayers() {
       divisionId: player.divisionId || '',
       psnId: player.psnId || '',
       alignment: player.alignment || '',
+      canUploadVideos: player.canUploadVideos ?? false,
     });
     setImagePreview(player.imageUrl || null);
     setSelectedFile(null);
@@ -458,6 +462,18 @@ export default function ManagePlayers() {
                 <option value="neutral">⚖️ Neutral</option>
                 <option value="heel">😈 Heel</option>
               </select>
+            </div>
+
+            <div className="form-group form-checkbox">
+              <label htmlFor="canUploadVideos">
+                <input
+                  type="checkbox"
+                  id="canUploadVideos"
+                  checked={formData.canUploadVideos}
+                  onChange={(e) => setFormData({ ...formData, canUploadVideos: e.target.checked })}
+                />
+                {' '}Allow video uploads (wrestler can submit drafts via /my-videos)
+              </label>
             </div>
 
             <div className="form-group">

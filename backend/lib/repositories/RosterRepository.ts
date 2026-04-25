@@ -47,6 +47,7 @@ export interface PlayerPatch {
   tagTeamId?: string | null;
   alignment?: 'face' | 'heel' | 'neutral';
   userId?: string;
+  canUploadVideos?: boolean;
 }
 
 // ─── Tag Team input types ───────────────────────────────────────────
