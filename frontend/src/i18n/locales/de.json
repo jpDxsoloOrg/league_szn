@@ -1063,6 +1063,7 @@
         "tentative": "Vielleicht",
         "unavailable": "Nicht verfügbar",
         "noResponse": "Keine Antwort",
+        "unassigned": "Keine Division",
         "copy": "Als Text kopieren",
         "refresh": "Aktualisieren",
         "copySuccess": "Kopiert!",
