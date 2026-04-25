@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -6,12 +6,12 @@ import { dashboardApi } from '../services/api';
 import type { DashboardData, DashboardEvent, DashboardMatch } from '../types';
 import {
   DEFAULT_CHAMPIONSHIP_IMAGE,
-  DEFAULT_WRESTLER_IMAGE,
   applyImageFallback,
   resolveImageSrc,
 } from '../constants/imageFallbacks';
 import Skeleton from './ui/Skeleton';
 import FindMatchWidget from './matchmaking/FindMatchWidget';
+import ChampionCarousel from './ChampionCarousel';
 import './Dashboard.css';
 
 function renderStarRating(rating: number): string {
@@ -39,12 +39,6 @@ function formatCountdown(dateStr: string, currentTime: number, t: (key: string) 
   parts.push(`${h}${t('dashboard.countdown.hours')}`);
   parts.push(`${m}${t('dashboard.countdown.minutes')}`);
   return parts.join(' ');
-}
-
-function computeReignDays(wonDate?: string): number | null {
-  if (!wonDate) return null;
-  const diff = Date.now() - new Date(wonDate).getTime();
-  return Math.max(0, Math.floor(diff / 86400000));
 }
 
 function SeasonProgressRing({ startDate, endDate, label }: { startDate?: string; endDate?: string; label: string }) {
@@ -125,25 +119,6 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const featuredChampion = useMemo(() => {
-    if (!data || data.currentChampions.length === 0) return null;
-    const worldHeavyweight = data.currentChampions.find(c =>
-      c.championshipName.toLowerCase().includes('world heavyweight')
-    );
-    if (worldHeavyweight) return worldHeavyweight;
-    const sorted = [...data.currentChampions].sort((a, b) => {
-      const daysA = computeReignDays(a.wonDate) ?? 0;
-      const daysB = computeReignDays(b.wonDate) ?? 0;
-      return daysB - daysA;
-    });
-    return sorted[0];
-  }, [data]);
-
-  const otherChampions = useMemo(() => {
-    if (!data || !featuredChampion) return [];
-    return data.currentChampions.filter(c => c.championshipId !== featuredChampion.championshipId);
-  }, [data, featuredChampion]);
-
   if (loading && !data) {
     return (
       <div className="dashboard">
@@ -167,69 +142,11 @@ export default function Dashboard() {
 
   if (!data) return null;
 
-  const reignDays = featuredChampion ? computeReignDays(featuredChampion.wonDate) : null;
-
   return (
     <div className="dashboard">
 
-      {/* ROW 1 — Hero: Featured Champion */}
-      {featuredChampion ? (
-        <section className="db-hero">
-          <div className="db-hero-image">
-            <img
-              src={resolveImageSrc(featuredChampion.championImageUrl, DEFAULT_WRESTLER_IMAGE)}
-              onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-              alt={featuredChampion.championName}
-            />
-          </div>
-          <div className="db-hero-content">
-            <span className="db-hero-belt">{featuredChampion.championshipName}</span>
-            <h2 className="db-hero-name">{featuredChampion.championName}</h2>
-            {reignDays !== null && (
-              <div className="db-hero-stats">
-                <span className="db-hero-stat">
-                  <span className="db-hero-stat-value">{reignDays}</span>
-                  <span className="db-hero-stat-label">{t('dashboard.daysReign', 'Day Reign')}</span>
-                </span>
-                {featuredChampion.defenses != null && (
-                  <span className="db-hero-stat">
-                    <span className="db-hero-stat-value">{featuredChampion.defenses}</span>
-                    <span className="db-hero-stat-label">{t('dashboard.defenses', 'Defenses')}</span>
-                  </span>
-                )}
-              </div>
-            )}
-            <Link to="/championships" className="db-hero-link">
-              {t('dashboard.viewAllChampions', 'View All Champions')} &rarr;
-            </Link>
-          </div>
-          {/* Secondary champions strip */}
-          {otherChampions.length > 0 && (
-            <div className="db-hero-others">
-              {otherChampions.map((c) => (
-                <div key={c.championshipId} className="db-hero-other">
-                  <img
-                    src={resolveImageSrc(c.championImageUrl, DEFAULT_WRESTLER_IMAGE)}
-                    onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-                    alt={c.championName}
-                  />
-                  <div className="db-hero-other-info">
-                    <span className="db-hero-other-belt">{c.championshipName}</span>
-                    <span className="db-hero-other-name">{c.championName}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      ) : (
-        <section className="db-hero db-hero--empty">
-          <p className="db-empty-text">{t('dashboard.noChampions')}</p>
-          <Link className="db-empty-action" to="/championships">
-            {t('dashboard.emptyActions.viewChampionships', 'View championships')}
-          </Link>
-        </section>
-      )}
+      {/* ROW 1 — Hero: Champion Carousel */}
+      <ChampionCarousel champions={data.currentChampions} />
 
       {/* ROW 2 — Events + Quick Stats */}
       <div className="db-row-2">

@@ -1,0 +1,47 @@
+/* ===========================
+   Champion Carousel
+   Reuses .db-hero* base styles from Dashboard.css.
+   Visual design intentionally matches the original static hero — the
+   carousel only adds (a) gentle fade on slide change and (b) clickable
+   styling on the right-side champion strip.
+   =========================== */
+
+.champion-carousel .db-hero-image,
+.champion-carousel .db-hero-content {
+  animation: champion-carousel-fade 320ms ease-out;
+}
+
+@keyframes champion-carousel-fade {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Right-side champion list — buttons styled to look like the original
+   static rows. No background, no active highlight. */
+.champion-carousel .db-hero-others .db-hero-other {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  transition: opacity 150ms ease;
+}
+
+.champion-carousel .db-hero-others .db-hero-other:hover,
+.champion-carousel .db-hero-others .db-hero-other:focus-visible {
+  opacity: 0.85;
+  outline: none;
+}
+
+.champion-carousel .db-hero-others .db-hero-other:focus-visible .db-hero-other-name {
+  text-decoration: underline;
+}
