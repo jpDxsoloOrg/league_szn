@@ -17,6 +17,8 @@ export interface Player {
   tagTeamId?: string;
   alignment?: 'face' | 'heel' | 'neutral';
   mainOverall?: number;
+  /** Admin-managed flag granting access to wrestler video submissions. */
+  canUploadVideos?: boolean;
   createdAt: string;
   updatedAt: string;
   /** Last 5 match results (newest first): W win, L loss, D draw */

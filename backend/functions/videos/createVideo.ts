@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { created, badRequest, serverError } from '../../lib/response';
-import { getAuthContext, requireRole } from '../../lib/auth';
+import { created, badRequest, forbidden, serverError } from '../../lib/response';
+import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 
 interface CreateVideoBody {
@@ -15,10 +15,27 @@ interface CreateVideoBody {
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
-  const denied = requireRole(event, 'Admin', 'Moderator');
-  if (denied) return denied;
-
   try {
+    const auth = getAuthContext(event);
+    const isStaff = hasRole(auth, 'Admin', 'Moderator');
+    const isOffline = process.env.IS_OFFLINE === 'true';
+
+    const { roster: { players }, content: { videos } } = getRepositories();
+
+    // Wrestlers may submit videos only when their player record has the
+    // canUploadVideos flag set. Their submissions are always created as drafts.
+    let wrestlerPlayerId: string | undefined;
+    if (!isStaff && !isOffline) {
+      if (!hasRole(auth, 'Wrestler')) {
+        return forbidden('You do not have permission to perform this action');
+      }
+      const player = auth.sub ? await players.findByUserId(auth.sub) : null;
+      if (!player || !player.canUploadVideos) {
+        return forbidden('Your account is not permitted to upload videos');
+      }
+      wrestlerPlayerId = player.playerId;
+    }
+
     const { data: body, error: parseError } = parseBody<CreateVideoBody>(event);
     if (parseError) return parseError;
 
@@ -34,9 +51,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('category must be "match", "highlight", "promo", or "other"');
     }
 
-    const auth = getAuthContext(event);
-    const { content: { videos } } = getRepositories();
-
     const video = await videos.create({
       title,
       description,
@@ -44,8 +58,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       thumbnailUrl,
       category,
       tags,
-      isPublished,
-      uploadedBy: auth.username || auth.sub,
+      // Wrestler uploads are always drafts pending admin moderation.
+      isPublished: wrestlerPlayerId ? false : isPublished,
+      uploadedBy: wrestlerPlayerId ?? (auth.username || auth.sub),
     });
 
     return created(video);

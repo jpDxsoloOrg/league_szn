@@ -140,6 +140,8 @@ export interface Player {
   tagTeamId?: string;
   alignment?: 'face' | 'heel' | 'neutral';
   mainOverall?: number;
+  /** When true, this wrestler may submit videos via /my-videos. Admin-managed. */
+  canUploadVideos?: boolean;
   createdAt: string;
   updatedAt: string;
 }

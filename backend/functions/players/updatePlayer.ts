@@ -52,6 +52,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       hasChanges = true;
     }
 
+    if (body.canUploadVideos !== undefined) {
+      if (typeof body.canUploadVideos !== 'boolean') {
+        return badRequest('canUploadVideos must be a boolean');
+      }
+      patch.canUploadVideos = body.canUploadVideos;
+      hasChanges = true;
+    }
+
     if (body.alignment !== undefined) {
       if (body.alignment === '' || body.alignment === null) {
         patch.alignment = undefined;
