@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import type { DashboardChampion } from '../types';
@@ -54,7 +54,6 @@ export default function ChampionCarousel({
     pickInitialIndex(champions, initialChampionshipId)
   );
   const [isPaused, setIsPaused] = useState(false);
-  const regionRef = useRef<HTMLElement | null>(null);
 
   // Reset index when champions list changes (e.g., a champion is removed).
   useEffect(() => {
@@ -70,14 +69,6 @@ export default function ChampionCarousel({
     setCurrentIndex((i) => (total === 0 ? 0 : (i + 1) % total));
   }, [total]);
 
-  const goPrev = useCallback(() => {
-    setCurrentIndex((i) => (total === 0 ? 0 : (i - 1 + total) % total));
-  }, [total]);
-
-  const goTo = useCallback((idx: number) => {
-    setCurrentIndex(idx);
-  }, []);
-
   // Auto-advance
   useEffect(() => {
     if (autoPlayInterval <= 0 || isPaused || total <= 1) return;
@@ -89,23 +80,14 @@ export default function ChampionCarousel({
     return () => window.clearInterval(id);
   }, [autoPlayInterval, isPaused, total, goNext]);
 
-  // Keyboard nav (when carousel region has focus)
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLElement>) => {
-      if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        goNext();
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        goPrev();
-      }
-    },
-    [goNext, goPrev]
-  );
-
   const reignDays = useMemo(
     () => (current ? computeReignDays(current.wonDate) : null),
     [current]
+  );
+
+  const others = useMemo(
+    () => champions.filter((_, idx) => idx !== currentIndex),
+    [champions, currentIndex]
   );
 
   if (total === 0 || !current) {
@@ -119,121 +101,71 @@ export default function ChampionCarousel({
     );
   }
 
-  const showControls = total > 1;
-
   return (
     <section
-      ref={regionRef}
       className="db-hero champion-carousel"
-      role="region"
       aria-roledescription="carousel"
       aria-label={t('dashboard.viewAllChampions', 'View All Champions')}
-      tabIndex={0}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      onFocus={() => setIsPaused(true)}
-      onBlur={() => setIsPaused(false)}
-      onKeyDown={onKeyDown}
     >
-      {showControls && (
-        <button
-          type="button"
-          className="champion-carousel-arrow champion-carousel-arrow--prev"
-          onClick={goPrev}
-          aria-label={t('common.previous', 'Previous')}
-        >
-          &#8249;
-        </button>
-      )}
-
-      <div
-        className="champion-carousel-slide"
-        aria-live="polite"
-        aria-atomic="true"
-        key={current.championshipId}
-      >
-        <div className="db-hero-image">
-          <img
-            src={resolveImageSrc(current.championImageUrl, DEFAULT_WRESTLER_IMAGE)}
-            onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-            alt={current.championName}
-          />
-        </div>
-        <div className="db-hero-content">
-          <span className="db-hero-belt">{current.championshipName}</span>
-          <h2 className="db-hero-name">{current.championName}</h2>
-          {reignDays !== null && (
-            <div className="db-hero-stats">
+      <div className="db-hero-image" key={`img-${current.championshipId}`}>
+        <img
+          src={resolveImageSrc(current.championImageUrl, DEFAULT_WRESTLER_IMAGE)}
+          onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+          alt={current.championName}
+        />
+      </div>
+      <div className="db-hero-content" aria-live="polite" aria-atomic="true">
+        <span className="db-hero-belt">{current.championshipName}</span>
+        <h2 className="db-hero-name">{current.championName}</h2>
+        {reignDays !== null && (
+          <div className="db-hero-stats">
+            <span className="db-hero-stat">
+              <span className="db-hero-stat-value">{reignDays}</span>
+              <span className="db-hero-stat-label">
+                {t('dashboard.daysReign', 'Day Reign')}
+              </span>
+            </span>
+            {current.defenses != null && (
               <span className="db-hero-stat">
-                <span className="db-hero-stat-value">{reignDays}</span>
+                <span className="db-hero-stat-value">{current.defenses}</span>
                 <span className="db-hero-stat-label">
-                  {t('dashboard.daysReign', 'Day Reign')}
+                  {t('dashboard.defenses', 'Defenses')}
                 </span>
               </span>
-              {current.defenses != null && (
-                <span className="db-hero-stat">
-                  <span className="db-hero-stat-value">{current.defenses}</span>
-                  <span className="db-hero-stat-label">
-                    {t('dashboard.defenses', 'Defenses')}
-                  </span>
-                </span>
-              )}
-            </div>
-          )}
-          <Link to="/championships" className="db-hero-link">
-            {t('dashboard.viewAllChampions', 'View All Champions')} &rarr;
-          </Link>
-        </div>
+            )}
+          </div>
+        )}
+        <Link to="/championships" className="db-hero-link">
+          {t('dashboard.viewAllChampions', 'View All Champions')} &rarr;
+        </Link>
       </div>
 
-      {showControls && (
-        <div className="champion-carousel-thumbs" role="tablist">
-          {champions.map((c, idx) => {
-            const isActive = idx === currentIndex;
+      {others.length > 0 && (
+        <div className="db-hero-others">
+          {others.map((c) => {
+            const idx = champions.findIndex((x) => x.championshipId === c.championshipId);
             return (
               <button
                 key={c.championshipId}
                 type="button"
-                role="tab"
-                aria-selected={isActive}
+                className="db-hero-other"
+                onClick={() => setCurrentIndex(idx)}
                 aria-label={`${c.championshipName} — ${c.championName}`}
-                className={`champion-carousel-thumb${isActive ? ' is-active' : ''}`}
-                onClick={() => goTo(idx)}
               >
                 <img
                   src={resolveImageSrc(c.championImageUrl, DEFAULT_WRESTLER_IMAGE)}
                   onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
                   alt=""
                 />
-                <div className="champion-carousel-thumb-info">
-                  <span className="champion-carousel-thumb-belt">{c.championshipName}</span>
-                  <span className="champion-carousel-thumb-name">{c.championName}</span>
+                <div className="db-hero-other-info">
+                  <span className="db-hero-other-belt">{c.championshipName}</span>
+                  <span className="db-hero-other-name">{c.championName}</span>
                 </div>
               </button>
             );
           })}
-        </div>
-      )}
-
-      {showControls && (
-        <button
-          type="button"
-          className="champion-carousel-arrow champion-carousel-arrow--next"
-          onClick={goNext}
-          aria-label={t('common.next', 'Next')}
-        >
-          &#8250;
-        </button>
-      )}
-
-      {showControls && (
-        <div className="champion-carousel-dots" aria-hidden="true">
-          {champions.map((c, idx) => (
-            <span
-              key={c.championshipId}
-              className={`champion-carousel-dot${idx === currentIndex ? ' is-active' : ''}`}
-            />
-          ))}
         </div>
       )}
     </section>

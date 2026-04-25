@@ -68,35 +68,28 @@ describe('ChampionCarousel', () => {
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Swerve Strickland');
   });
 
-  it('cycles to next champion when next arrow clicked', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+  it('excludes the currently featured champion from the right-side strip', () => {
     renderCarousel();
-
-    await user.click(screen.getByRole('button', { name: 'Next' }));
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('MJF & Kazuchika Okada');
-
-    await user.click(screen.getByRole('button', { name: 'Next' }));
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Ricky Saints');
+    // Swerve is featured (heading), so he should NOT be in the right strip buttons.
+    const buttons = screen.queryAllByRole('button');
+    const labels = buttons.map((b) => b.getAttribute('aria-label'));
+    expect(labels).not.toContain('World Heavyweight Championship — Swerve Strickland');
+    expect(labels).toContain('Tag Team Championship — MJF & Kazuchika Okada');
+    expect(labels).toContain('Mid Card Championship — Ricky Saints');
   });
 
-  it('wraps around when going past the end', async () => {
+  it('switches to a champion when their right-side row is clicked', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderCarousel();
 
-    // From idx 0 → click prev → wraps to last
-    await user.click(screen.getByRole('button', { name: 'Previous' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Mid Card Championship — Ricky Saints' })
+    );
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Ricky Saints');
-  });
-
-  it('jumps to a champion when its thumbnail is clicked', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    renderCarousel();
-
-    const thumb = screen.getByRole('tab', {
-      name: 'Mid Card Championship — Ricky Saints',
-    });
-    await user.click(thumb);
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Ricky Saints');
+    // The newly featured champion is now removed from the strip
+    expect(
+      screen.queryByRole('button', { name: 'Mid Card Championship — Ricky Saints' })
+    ).not.toBeInTheDocument();
   });
 
   it('auto-advances at the given interval', () => {
@@ -123,27 +116,13 @@ describe('ChampionCarousel', () => {
     expect(screen.getByText('No active champions')).toBeInTheDocument();
   });
 
-  it('hides arrows and dots when only one champion is present', () => {
+  it('hides the right-side strip when only one champion is present', () => {
     render(
       <MemoryRouter>
         <ChampionCarousel champions={[champions[0]]} autoPlayInterval={0} />
       </MemoryRouter>
     );
-    expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Previous' })).not.toBeInTheDocument();
-  });
-
-  it('responds to keyboard arrow keys', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    renderCarousel();
-
-    const region = screen.getByRole('region');
-    region.focus();
-
-    await user.keyboard('{ArrowRight}');
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('MJF & Kazuchika Okada');
-
-    await user.keyboard('{ArrowLeft}');
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Swerve Strickland');
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
 });
