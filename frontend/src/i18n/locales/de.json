@@ -1064,6 +1064,7 @@
         "unavailable": "Nicht verfügbar",
         "noResponse": "Keine Antwort",
         "unassigned": "Keine Division",
+        "booked": "Gebucht",
         "copy": "Als Text kopieren",
         "refresh": "Aktualisieren",
         "copySuccess": "Kopiert!",

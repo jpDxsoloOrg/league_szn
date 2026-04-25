@@ -205,4 +205,37 @@ describe('EventCheckInRosterPanel', () => {
     expect(screen.getByText('Dave')).toBeInTheDocument();
     expect(screen.getAllByText(/Heavyweight \(1\)/)).toHaveLength(1);
   });
+
+  it('marks available wrestlers as Booked when their playerId is in bookedPlayerIds', async () => {
+    mockGetCheckIns.mockResolvedValue({
+      available: [
+        { playerId: 'p1', name: 'Alice', currentWrestler: 'Alpha' },
+        { playerId: 'p2', name: 'Bob', currentWrestler: 'Bravo' },
+      ],
+      tentative: [],
+      unavailable: [],
+      noResponse: [
+        // Carol is in noResponse AND in the booked set; should NOT show "Booked"
+        // since the indicator only applies to the Available column.
+        { playerId: 'p3', name: 'Carol', currentWrestler: 'Charlie' },
+      ],
+    });
+
+    const booked = new Set(['p1', 'p3']);
+    render(
+      <EventCheckInRosterPanel eventId="evt-123" bookedPlayerIds={booked} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+    });
+
+    // Exactly one "Booked" badge — for Alice, in Available
+    const badges = screen.getAllByText('Booked');
+    expect(badges).toHaveLength(1);
+    // Bob (available, not booked) should not have a badge near him
+    expect(screen.getByText('Bob')).toBeInTheDocument();
+    // Carol (noResponse, booked) should NOT show a Booked indicator
+    expect(screen.getByText('Carol')).toBeInTheDocument();
+  });
 });

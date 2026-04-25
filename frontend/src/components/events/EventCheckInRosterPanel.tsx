@@ -12,6 +12,7 @@ import './EventCheckInRosterPanel.css';
 interface EventCheckInRosterPanelProps {
   eventId: string;
   compact?: boolean;
+  bookedPlayerIds?: ReadonlySet<string>;
 }
 
 type BucketKey = 'available' | 'tentative' | 'unavailable' | 'noResponse';
@@ -34,9 +35,19 @@ interface AvailableDivisionGroup {
   players: EventCheckInPlayerSummary[];
 }
 
-function PlayerChip({ player }: { player: EventCheckInPlayerSummary }) {
+function PlayerChip({
+  player,
+  isBooked = false,
+  bookedLabel,
+}: {
+  player: EventCheckInPlayerSummary;
+  isBooked?: boolean;
+  bookedLabel?: string;
+}) {
   return (
-    <li className="checkin-roster-chip">
+    <li
+      className={`checkin-roster-chip${isBooked ? ' checkin-roster-chip--booked' : ''}`}
+    >
       <img
         className="checkin-roster-chip-avatar"
         src={player.imageUrl || FALLBACK_AVATAR}
@@ -51,6 +62,15 @@ function PlayerChip({ player }: { player: EventCheckInPlayerSummary }) {
           {player.currentWrestler}
         </span>
       </div>
+      {isBooked && (
+        <span
+          className="checkin-roster-chip-booked"
+          title={bookedLabel}
+          aria-label={bookedLabel}
+        >
+          {bookedLabel}
+        </span>
+      )}
     </li>
   );
 }
@@ -58,6 +78,7 @@ function PlayerChip({ player }: { player: EventCheckInPlayerSummary }) {
 export default function EventCheckInRosterPanel({
   eventId,
   compact = false,
+  bookedPlayerIds,
 }: EventCheckInRosterPanelProps) {
   const { t } = useTranslation();
   const [roster, setRoster] = useState<EventCheckInRoster | null>(null);
@@ -121,6 +142,10 @@ export default function EventCheckInRosterPanel({
     }
     return ordered;
   }, [roster, divisions, t]);
+
+  const bookedLabel = t('events.checkIn.roster.booked', {
+    defaultValue: 'Booked',
+  });
 
   const fetchRoster = useCallback(async () => {
     setLoading(true);
@@ -221,7 +246,12 @@ export default function EventCheckInRosterPanel({
                 </h5>
                 <ul className="checkin-roster-list">
                   {group.players.map((player) => (
-                    <PlayerChip key={player.playerId} player={player} />
+                    <PlayerChip
+                      key={player.playerId}
+                      player={player}
+                      isBooked={bookedPlayerIds?.has(player.playerId)}
+                      bookedLabel={bookedLabel}
+                    />
                   ))}
                 </ul>
               </div>
@@ -230,7 +260,12 @@ export default function EventCheckInRosterPanel({
         ) : (
           <ul className="checkin-roster-list">
             {roster.available.map((player) => (
-              <PlayerChip key={player.playerId} player={player} />
+              <PlayerChip
+                key={player.playerId}
+                player={player}
+                isBooked={bookedPlayerIds?.has(player.playerId)}
+                bookedLabel={bookedLabel}
+              />
             ))}
           </ul>
         )}
@@ -312,6 +347,8 @@ export default function EventCheckInRosterPanel({
                             <PlayerChip
                               key={player.playerId}
                               player={player}
+                              isBooked={bookedPlayerIds?.has(player.playerId)}
+                              bookedLabel={bookedLabel}
                             />
                           ))}
                         </ul>
@@ -321,7 +358,16 @@ export default function EventCheckInRosterPanel({
                 ) : (
                   <ul className="checkin-roster-list">
                     {bucket.map((player) => (
-                      <PlayerChip key={player.playerId} player={player} />
+                      <PlayerChip
+                        key={player.playerId}
+                        player={player}
+                        isBooked={
+                          key === 'available'
+                            ? bookedPlayerIds?.has(player.playerId)
+                            : false
+                        }
+                        bookedLabel={bookedLabel}
+                      />
                     ))}
                   </ul>
                 )}

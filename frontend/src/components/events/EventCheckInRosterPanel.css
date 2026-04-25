@@ -128,6 +128,24 @@
   border-radius: 6px;
 }
 
+.checkin-roster-chip--booked {
+  background: #1d2a1f;
+  border: 1px solid #2f6b3a;
+}
+
+.checkin-roster-chip-booked {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #052e0d;
+  background: #4ade80;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+
 .checkin-roster-chip-avatar {
   width: 28px;
   height: 28px;
