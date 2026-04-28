@@ -7,7 +7,6 @@ import './AdminContenderConfig.css';
 
 const defaultConfig = (championshipId: string): ContenderConfig => ({
   championshipId,
-  rankingPeriodDays: 90,
   minimumMatches: 5,
   maxContenders: 8,
   includeDraws: false,
@@ -59,7 +58,6 @@ export default function AdminContenderConfig() {
       setRecalculating(true);
       setMessage(null);
       const result = await contendersApi.recalculate(selectedChampionshipId || undefined, {
-        rankingPeriodDays: config.rankingPeriodDays,
         minimumMatches: config.minimumMatches,
         maxContenders: config.maxContenders,
         includeDraws: config.includeDraws,
@@ -121,21 +119,7 @@ export default function AdminContenderConfig() {
 
       {/* Configuration Fields */}
       <div className="config-fields">
-        <div className="config-field">
-          <label className="config-label" htmlFor="ranking-period">
-            {t('contenders.admin.rankingPeriodDays')}
-          </label>
-          <input
-            id="ranking-period"
-            type="number"
-            className="config-input"
-            value={config.rankingPeriodDays}
-            onChange={(e) => handleNumberChange('rankingPeriodDays', e.target.value)}
-            min={7}
-            max={365}
-          />
-          <span className="config-hint">{t('contenders.admin.rankingPeriodHint')}</span>
-        </div>
+        <p className="config-hint">{t('contenders.admin.currentSeasonNote')}</p>
 
         <div className="config-field">
           <label className="config-label" htmlFor="minimum-matches">

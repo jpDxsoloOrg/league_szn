@@ -26,7 +26,6 @@ export interface RankingMovement {
 
 export interface ContenderConfig {
   championshipId: string;
-  rankingPeriodDays: number;
   minimumMatches: number;
   maxContenders: number;
   includeDraws: boolean;

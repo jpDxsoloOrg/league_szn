@@ -9,7 +9,6 @@ import type {
 export const mockContenderConfigs: ContenderConfig[] = [
   {
     championshipId: 'champ-001',
-    rankingPeriodDays: 90,
     minimumMatches: 5,
     maxContenders: 8,
     includeDraws: false,
@@ -17,7 +16,6 @@ export const mockContenderConfigs: ContenderConfig[] = [
   },
   {
     championshipId: 'champ-002',
-    rankingPeriodDays: 60,
     minimumMatches: 4,
     maxContenders: 6,
     includeDraws: false,
@@ -25,7 +23,6 @@ export const mockContenderConfigs: ContenderConfig[] = [
   },
   {
     championshipId: 'champ-003',
-    rankingPeriodDays: 90,
     minimumMatches: 5,
     maxContenders: 6,
     includeDraws: false,
