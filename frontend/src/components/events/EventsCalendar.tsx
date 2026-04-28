@@ -19,6 +19,7 @@ const eventTypeColors: Record<string, string> = {
 };
 
 const showColor = '#60a5fa';
+const ppvShowColor = '#d4af37';
 
 type FilterTab = 'all' | EventType;
 
@@ -37,6 +38,7 @@ interface ShowCalendarEntry {
   show: Show;
   companyName: string;
   date: string; // ISO date for this specific occurrence
+  eventType: 'weekly' | 'ppv';
 }
 
 export default function EventsCalendar() {
@@ -77,7 +79,10 @@ export default function EventsCalendar() {
           showId: e.showId,
         }));
         setCalendarEntries(entries);
-        setShows(showsData.filter((s) => s.schedule === 'weekly' && s.dayOfWeek));
+        setShows(showsData.filter((s) =>
+          (s.schedule === 'weekly' && s.dayOfWeek) ||
+          (s.schedule === 'ppv' && s.ppvDate)
+        ));
         const names: Record<string, string> = {};
         companiesData.forEach((c) => { names[c.companyId] = c.name; });
         setCompanyNames(names);
@@ -132,40 +137,56 @@ export default function EventsCalendar() {
     });
   }, [filteredEntries, currentMonth, currentYear]);
 
-  // Generate weekly show entries for the current month
+  // Generate weekly + PPV show entries for the current month
   const showEntriesByDay = useMemo(() => {
-    if (activeFilter !== 'all' && activeFilter !== 'weekly') return {};
-
     const map: Record<number, ShowCalendarEntry[]> = {};
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
+    const eventExistsForShowOnDate = (showId: string, date: Date) =>
+      calendarEntries.some((e) => {
+        if (e.showId !== showId) return false;
+        const eDate = new Date(e.date);
+        return eDate.getFullYear() === date.getFullYear() &&
+          eDate.getMonth() === date.getMonth() &&
+          eDate.getDate() === date.getDate();
+      });
+
     shows.forEach((show) => {
-      if (!show.dayOfWeek) return;
-      const targetDay = dayOfWeekToNumber[show.dayOfWeek];
-      if (targetDay === undefined) return;
+      // Weekly recurring shows
+      if (show.schedule === 'weekly' && show.dayOfWeek) {
+        if (activeFilter !== 'all' && activeFilter !== 'weekly') return;
+        const targetDay = dayOfWeekToNumber[show.dayOfWeek];
+        if (targetDay === undefined) return;
 
-      for (let d = 1; d <= daysInMonth; d++) {
-        const date = new Date(currentYear, currentMonth, d);
-        if (date.getDay() === targetDay) {
-          const dateStr = date.toISOString();
-          // Check if an event already exists for this show on this date
-          const existingEvent = calendarEntries.find((e) => {
-            if (e.showId !== show.showId) return false;
-            const eDate = new Date(e.date);
-            return eDate.getFullYear() === date.getFullYear() &&
-              eDate.getMonth() === date.getMonth() &&
-              eDate.getDate() === date.getDate();
+        for (let d = 1; d <= daysInMonth; d++) {
+          const date = new Date(currentYear, currentMonth, d);
+          if (date.getDay() !== targetDay) continue;
+          if (eventExistsForShowOnDate(show.showId, date)) continue;
+          const arr = map[d] ?? (map[d] = []);
+          arr.push({
+            show,
+            companyName: companyNames[show.companyId] || '',
+            date: date.toISOString(),
+            eventType: 'weekly',
           });
-
-          if (!existingEvent) {
-            const arr = map[d] ?? (map[d] = []);
-            arr.push({
-              show,
-              companyName: companyNames[show.companyId] || '',
-              date: dateStr,
-            });
-          }
         }
+        return;
+      }
+
+      // PPV shows pinned to a specific date
+      if (show.schedule === 'ppv' && show.ppvDate) {
+        if (activeFilter !== 'all' && activeFilter !== 'ppv') return;
+        const ppvDate = new Date(show.ppvDate);
+        if (ppvDate.getFullYear() !== currentYear || ppvDate.getMonth() !== currentMonth) return;
+        if (eventExistsForShowOnDate(show.showId, ppvDate)) return;
+        const d = ppvDate.getDate();
+        const arr = map[d] ?? (map[d] = []);
+        arr.push({
+          show,
+          companyName: companyNames[show.companyId] || '',
+          date: ppvDate.toISOString(),
+          eventType: 'ppv',
+        });
       }
     });
     return map;
@@ -243,7 +264,7 @@ export default function EventsCalendar() {
     try {
       const event = await eventsApi.create({
         name: entry.show.name,
-        eventType: 'weekly',
+        eventType: entry.eventType,
         date: entry.date,
         showId: entry.show.showId,
         companyIds: [entry.show.companyId],
@@ -375,10 +396,12 @@ export default function EventsCalendar() {
                           )}
                         </Link>
                       ))}
-                      {dayShows?.map((entry) =>
-                        isAdminOrModerator ? (
+                      {dayShows?.map((entry) => {
+                        const barColor = entry.eventType === 'ppv' ? ppvShowColor : showColor;
+                        const itemKey = `show-${entry.show.showId}-${entry.date}`;
+                        return isAdminOrModerator ? (
                           <button
-                            key={`show-${entry.show.showId}`}
+                            key={itemKey}
                             className="calendar-item"
                             title={`${entry.show.name} (${entry.companyName})`}
                             aria-label={entry.show.name}
@@ -388,27 +411,27 @@ export default function EventsCalendar() {
                             {entry.show.imageUrl ? (
                               <img src={entry.show.imageUrl} alt={entry.show.name} className="calendar-item-img" />
                             ) : (
-                              <div className="calendar-item-bar" style={{ backgroundColor: showColor }}>
+                              <div className="calendar-item-bar" style={{ backgroundColor: barColor }}>
                                 <span className="calendar-item-label">{entry.show.name}</span>
                               </div>
                             )}
                           </button>
                         ) : (
                           <div
-                            key={`show-${entry.show.showId}`}
+                            key={itemKey}
                             className="calendar-item calendar-item-static"
                             title={entry.show.name}
                           >
                             {entry.show.imageUrl ? (
                               <img src={entry.show.imageUrl} alt={entry.show.name} className="calendar-item-img" />
                             ) : (
-                              <div className="calendar-item-bar" style={{ backgroundColor: showColor }}>
+                              <div className="calendar-item-bar" style={{ backgroundColor: barColor }}>
                                 <span className="calendar-item-label">{entry.show.name}</span>
                               </div>
                             )}
                           </div>
-                        )
-                      )}
+                        );
+                      })}
                     </div>
                   </>
                 )}

@@ -7,7 +7,7 @@ export const handler = createHandlerFactory<ShowCreateInput, unknown>({
   repo: () => getRepositories().leagueOps.shows,
   entityName: 'show',
   requiredFields: ['name', 'companyId'],
-  optionalFields: ['description', 'schedule', 'dayOfWeek', 'imageUrl'],
+  optionalFields: ['description', 'schedule', 'dayOfWeek', 'ppvDate', 'imageUrl'],
   validate: async (body) => {
     if (body.companyId) {
       const { leagueOps: { companies } } = getRepositories();

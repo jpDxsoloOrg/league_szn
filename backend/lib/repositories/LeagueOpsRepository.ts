@@ -49,6 +49,7 @@ export interface ShowCreateInput {
   description?: string;
   schedule?: string;
   dayOfWeek?: string;
+  ppvDate?: string;
   imageUrl?: string;
 }
 
@@ -58,6 +59,7 @@ export interface ShowPatch {
   description?: string;
   schedule?: string;
   dayOfWeek?: string;
+  ppvDate?: string;
   imageUrl?: string;
 }
 

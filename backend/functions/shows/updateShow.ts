@@ -9,6 +9,7 @@ interface UpdateShowBody {
   description?: string;
   schedule?: string;
   dayOfWeek?: string;
+  ppvDate?: string;
   imageUrl?: string;
 }
 
