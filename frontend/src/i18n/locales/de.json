@@ -1222,6 +1222,8 @@
     "selectCompany": "Unternehmen auswählen",
     "dayOfWeek": "Wochentag",
     "selectDay": "Wochentag auswählen",
+    "ppvDate": "PPV-Datum",
+    "selectPpvDate": "Bitte wähle ein Datum für dieses PPV",
     "image": "Show-Bild",
     "uploadImage": "Bild hochladen",
     "removeImage": "Bild entfernen",

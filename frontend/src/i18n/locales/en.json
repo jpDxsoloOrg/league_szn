@@ -1223,6 +1223,8 @@
     "selectCompany": "Select a company",
     "dayOfWeek": "Day of Week",
     "selectDay": "Select day of week",
+    "ppvDate": "PPV Date",
+    "selectPpvDate": "Please select a date for this PPV",
     "image": "Show Image",
     "uploadImage": "Upload Image",
     "removeImage": "Remove Image",

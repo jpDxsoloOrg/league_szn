@@ -27,6 +27,7 @@ export default function ManageShows() {
     companyId: '',
     schedule: '' as '' | 'weekly' | 'ppv' | 'special',
     dayOfWeek: '' as '' | DayOfWeek,
+    ppvDate: '',
     description: '',
     imageUrl: '',
   });
@@ -123,12 +124,22 @@ export default function ManageShows() {
     try {
       const imageUrl = await uploadImage();
 
+      if (formData.schedule === 'ppv' && !formData.ppvDate) {
+        setError(t('shows.selectPpvDate'));
+        return;
+      }
+
+      const ppvDateIso = (formData.schedule === 'ppv' && formData.ppvDate)
+        ? new Date(formData.ppvDate).toISOString()
+        : undefined;
+
       if (editingShow) {
         await showsApi.update(editingShow.showId, {
           name: formData.name,
           companyId: formData.companyId,
           schedule: formData.schedule || undefined,
           dayOfWeek: (formData.schedule === 'weekly' && formData.dayOfWeek) ? formData.dayOfWeek : undefined,
+          ppvDate: ppvDateIso,
           description: formData.description || undefined,
           imageUrl: imageUrl || undefined,
         });
@@ -139,6 +150,7 @@ export default function ManageShows() {
           companyId: formData.companyId,
           schedule: formData.schedule || undefined,
           dayOfWeek: (formData.schedule === 'weekly' && formData.dayOfWeek) ? formData.dayOfWeek : undefined,
+          ppvDate: ppvDateIso,
           description: formData.description || undefined,
           imageUrl: imageUrl || undefined,
         });
@@ -153,7 +165,7 @@ export default function ManageShows() {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', companyId: '', schedule: '', dayOfWeek: '', description: '', imageUrl: '' });
+    setFormData({ name: '', companyId: '', schedule: '', dayOfWeek: '', ppvDate: '', description: '', imageUrl: '' });
     setSelectedFile(null);
     setImagePreview(null);
     setShowAddForm(false);
@@ -167,6 +179,7 @@ export default function ManageShows() {
       companyId: show.companyId,
       schedule: show.schedule || '',
       dayOfWeek: show.dayOfWeek || '',
+      ppvDate: show.ppvDate ? show.ppvDate.slice(0, 10) : '',
       description: show.description || '',
       imageUrl: show.imageUrl || '',
     });
@@ -261,6 +274,15 @@ export default function ManageShows() {
               </div>
             )}
 
+            {formData.schedule === 'ppv' && (
+              <div className="form-group">
+                <label htmlFor="show-ppv-date">{t('shows.ppvDate')}</label>
+                <input type="date" id="show-ppv-date" value={formData.ppvDate}
+                  onChange={(e) => setFormData({ ...formData, ppvDate: e.target.value })}
+                  required />
+              </div>
+            )}
+
             <div className="form-group">
               <label htmlFor="show-description">{t('shows.description')}</label>
               <textarea id="show-description" value={formData.description}
@@ -327,6 +349,9 @@ export default function ManageShows() {
                         <span className="show-schedule-badge">{getScheduleLabel(show.schedule)}</span>
                         {show.dayOfWeek && show.schedule === 'weekly' && (
                           <span className="show-day-badge">{t(`shows.${show.dayOfWeek}`)}</span>
+                        )}
+                        {show.ppvDate && show.schedule === 'ppv' && (
+                          <span className="show-day-badge">{new Date(show.ppvDate).toLocaleDateString()}</span>
                         )}
                       </div>
                       {show.description && <p className="show-description">{show.description}</p>}

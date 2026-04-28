@@ -82,6 +82,7 @@ export class DynamoLeagueOpsRepository implements LeagueOpsRepository {
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(input.schedule !== undefined ? { schedule: input.schedule } : {}),
       ...(input.dayOfWeek !== undefined ? { dayOfWeek: input.dayOfWeek } : {}),
+      ...(input.ppvDate !== undefined ? { ppvDate: input.ppvDate } : {}),
       ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
       createdAt: now,
       updatedAt: now,

@@ -232,6 +232,7 @@ export interface Show {
   description?: string;
   schedule?: 'weekly' | 'ppv' | 'special';
   dayOfWeek?: DayOfWeek;
+  ppvDate?: string;
   imageUrl?: string;
   createdAt: string;
   updatedAt: string;
