@@ -9,7 +9,7 @@ export interface RankingCalculationParams {
   championshipType: 'singles' | 'tag';
   currentChampion: string | string[] | undefined;
   divisionId?: string;
-  periodDays: number;
+  seasonId: string;
   minimumMatches: number;
   maxContenders: number;
 }
@@ -49,10 +49,17 @@ interface PlayerStats {
 // ---------------------------------------------------------------------------
 
 /**
+ * Fixed exponential-decay constant (in days) used for the recency component
+ * of the ranking score. Independent of season length so the decay shape stays
+ * the same regardless of how long the active season is.
+ */
+const RECENCY_DECAY_DAYS = 30;
+
+/**
  * Calculate contender rankings for a given championship.
  *
- * The algorithm evaluates every player who has completed matches within the
- * ranking period by combining four weighted scoring components:
+ * The algorithm evaluates every player who has completed matches in the
+ * active season by combining four weighted scoring components:
  *   - Base win percentage   (40%)
  *   - Current streak bonus  (20%)
  *   - Quality of wins       (25%)
@@ -67,7 +74,7 @@ export async function calculateRankingsForChampionship(
   const {
     currentChampion,
     divisionId,
-    periodDays = 30,
+    seasonId,
     minimumMatches = 3,
     maxContenders = 10,
   } = params;
@@ -88,22 +95,17 @@ export async function calculateRankingsForChampionship(
   }
 
   // ------------------------------------------------------------------
-  // 1b. Fetch all completed matches within the ranking period
+  // 1b. Fetch all completed matches in the active season
   // ------------------------------------------------------------------
-  const periodStart = new Date();
-  periodStart.setDate(periodStart.getDate() - periodDays);
-  const periodStartISO = periodStart.toISOString();
-
   const allMatches = await dynamoDb.scanAll({
     TableName: TableNames.MATCHES,
-    FilterExpression: '#status = :completed AND #date >= :periodStart',
+    FilterExpression: '#status = :completed AND seasonId = :seasonId',
     ExpressionAttributeNames: {
       '#status': 'status',
-      '#date': 'date',
     },
     ExpressionAttributeValues: {
       ':completed': 'completed',
-      ':periodStart': periodStartISO,
+      ':seasonId': seasonId,
     },
   });
 
@@ -178,7 +180,7 @@ export async function calculateRankingsForChampionship(
       continue;
     }
 
-    const score = calculatePlayerScore(playerId, playerMatches, playerStats, periodDays);
+    const score = calculatePlayerScore(playerId, playerMatches, playerStats);
     scoredPlayers.push(score);
   }
 
@@ -214,7 +216,6 @@ export function calculatePlayerScore(
   playerId: string,
   playerMatches: MatchRecord[],
   allPlayers: Map<string, PlayerStats>,
-  periodDays: number,
 ): RankingResult {
   const wins = playerMatches.filter((m) => m.winners.includes(playerId));
   const totalMatches = playerMatches.length;
@@ -271,7 +272,7 @@ export function calculatePlayerScore(
       (now.getTime() - matchDate.getTime()) / (1000 * 60 * 60 * 24),
       0,
     );
-    const weight = Math.exp(-daysSinceMatch / periodDays);
+    const weight = Math.exp(-daysSinceMatch / RECENCY_DECAY_DAYS);
 
     const isWin = match.winners.includes(playerId) ? 1 : 0;
     weightedWinSum += isWin * weight;

@@ -27,7 +27,6 @@ function buildWeekKey(championshipId: string): string {
 }
 
 interface ConfigOverrides {
-  periodDays?: number;
   minimumMatches?: number;
   maxContenders?: number;
   divisionRestricted?: boolean;
@@ -35,7 +34,22 @@ interface ConfigOverrides {
 
 async function calculateAllRankings(requestedChampionshipId?: string, configOverrides?: ConfigOverrides): Promise<RankingResultSummary> {
   const now = new Date().toISOString();
-  const { competition: { championships: champRepo, contenders } } = getRepositories();
+  const {
+    competition: { championships: champRepo, contenders },
+    season: { seasons },
+  } = getRepositories();
+
+  // Rankings are scoped to the current (active) season. If there is no
+  // active season, there is nothing to rank.
+  const activeSeason = await seasons.findActive();
+  if (!activeSeason) {
+    return {
+      message: 'No active season — rankings cannot be calculated',
+      championshipsProcessed: 0,
+      championships: [],
+      totalRankings: 0,
+    };
+  }
 
   // 1. Determine which championships to recalculate
   let championships: Array<{
@@ -94,7 +108,7 @@ async function calculateAllRankings(requestedChampionshipId?: string, configOver
       championshipType: championship.type,
       currentChampion: championship.currentChampion,
       divisionId: useDivisionId,
-      periodDays: configOverrides?.periodDays ?? 30,
+      seasonId: activeSeason.seasonId,
       minimumMatches: configOverrides?.minimumMatches ?? 3,
       maxContenders: configOverrides?.maxContenders ?? 10,
     });
@@ -186,7 +200,6 @@ export const handler: Handler = async (event) => {
       : (event.body ? JSON.parse(event.body) : {});
     const requestedChampionshipId: string | undefined = body.championshipId;
     const configOverrides: ConfigOverrides = {
-      periodDays: typeof body.rankingPeriodDays === 'number' ? body.rankingPeriodDays : undefined,
       minimumMatches: typeof body.minimumMatches === 'number' ? body.minimumMatches : undefined,
       maxContenders: typeof body.maxContenders === 'number' ? body.maxContenders : undefined,
       divisionRestricted: typeof body.divisionRestricted === 'boolean' ? body.divisionRestricted : undefined,

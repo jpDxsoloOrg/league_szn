@@ -9,7 +9,6 @@ export const contendersApi = {
   recalculate: async (
     championshipId?: string,
     config?: {
-      rankingPeriodDays?: number;
       minimumMatches?: number;
       maxContenders?: number;
       includeDraws?: boolean;

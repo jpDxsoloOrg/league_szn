@@ -30,6 +30,7 @@ function makeMatch(overrides: {
   participants?: string[];
   winners?: string[];
   losers?: string[];
+  seasonId?: string;
 }) {
   return {
     matchId: overrides.matchId ?? 'match-1',
@@ -38,6 +39,7 @@ function makeMatch(overrides: {
     winners: overrides.winners ?? [],
     losers: overrides.losers ?? [],
     status: 'completed',
+    seasonId: overrides.seasonId ?? 'season-1',
   };
 }
 
@@ -117,7 +119,7 @@ describe('calculatePlayerScore', () => {
       ['p3', { wins: 0, losses: 1, total: 1 }],
     ]);
 
-    const result = calculatePlayerScore('p1', matches, allPlayers, 30);
+    const result = calculatePlayerScore('p1', matches, allPlayers);
 
     expect(result.playerId).toBe('p1');
     expect(result.matchesInPeriod).toBe(3);
@@ -138,7 +140,7 @@ describe('calculatePlayerScore', () => {
       ['p2', { wins: 0, losses: 1, total: 1 }],
     ]);
 
-    const result = calculatePlayerScore('p1', matches, allPlayers, 30);
+    const result = calculatePlayerScore('p1', matches, allPlayers);
 
     // winPercentage = 100, contributes 100 * 0.4 = 40 to the score
     expect(result.winPercentage).toBe(100);
@@ -163,7 +165,7 @@ describe('calculatePlayerScore', () => {
       ['p2', { wins: 0, losses: 12, total: 12 }],
     ]);
 
-    const result = calculatePlayerScore('p1', matches, allPlayers, 30);
+    const result = calculatePlayerScore('p1', matches, allPlayers);
 
     expect(result.currentStreak).toBe(12);
     // Streak bonus capped at 100, contributing 100 * 0.2 = 20 max
@@ -182,7 +184,7 @@ describe('calculatePlayerScore', () => {
       ['strong', { wins: 8, losses: 2, total: 10 }],
     ]);
 
-    const result = calculatePlayerScore('p1', matches, allPlayers, 30);
+    const result = calculatePlayerScore('p1', matches, allPlayers);
 
     // Quality = avg opponent win rate * 100 = 80
     expect(result.qualityScore).toBeCloseTo(80, 0);
@@ -200,7 +202,7 @@ describe('calculatePlayerScore', () => {
       ['p3', { wins: 1, losses: 0, total: 1 }],
     ]);
 
-    const result = calculatePlayerScore('p1', matches, allPlayers, 30);
+    const result = calculatePlayerScore('p1', matches, allPlayers);
 
     expect(result.currentStreak).toBe(-2);
     // 0% win rate, 0 streak bonus, 0 quality (no wins), low recency
@@ -226,8 +228,8 @@ describe('calculatePlayerScore', () => {
       ['x', { wins: 2, losses: 2, total: 4 }],
     ]);
 
-    const recent = calculatePlayerScore('r', recentPlayer, stats, 30);
-    const old = calculatePlayerScore('o', oldPlayer, stats, 30);
+    const recent = calculatePlayerScore('r', recentPlayer, stats);
+    const old = calculatePlayerScore('o', oldPlayer, stats);
 
     // Recent win is weighted more heavily than old win
     expect(recent.recencyScore).toBeGreaterThan(old.recencyScore);
@@ -257,7 +259,7 @@ describe('calculateRankingsForChampionship', () => {
       championshipId: 'champ-1',
       championshipType: 'singles',
       currentChampion: undefined,
-      periodDays: 30,
+      seasonId: 'season-1',
       minimumMatches: 3,
       maxContenders: 10,
     });
@@ -285,7 +287,7 @@ describe('calculateRankingsForChampionship', () => {
       championshipId: 'champ-1',
       championshipType: 'singles',
       currentChampion: 'champ',
-      periodDays: 30,
+      seasonId: 'season-1',
       minimumMatches: 3,
       maxContenders: 10,
     });
@@ -305,7 +307,7 @@ describe('calculateRankingsForChampionship', () => {
       championshipId: 'champ-1',
       championshipType: 'tag',
       currentChampion: ['t1a', 't1b'],
-      periodDays: 30,
+      seasonId: 'season-1',
       minimumMatches: 3,
       maxContenders: 10,
     });
@@ -327,7 +329,7 @@ describe('calculateRankingsForChampionship', () => {
       championshipId: 'champ-1',
       championshipType: 'singles',
       currentChampion: undefined,
-      periodDays: 30,
+      seasonId: 'season-1',
       minimumMatches: 3,
       maxContenders: 10,
     });
@@ -357,7 +359,7 @@ describe('calculateRankingsForChampionship', () => {
       championshipType: 'singles',
       currentChampion: undefined,
       divisionId: 'div-1',
-      periodDays: 30,
+      seasonId: 'season-1',
       minimumMatches: 3,
       maxContenders: 10,
     });
@@ -389,7 +391,7 @@ describe('calculateRankingsForChampionship', () => {
       championshipId: 'champ-1',
       championshipType: 'singles',
       currentChampion: undefined,
-      periodDays: 30,
+      seasonId: 'season-1',
       minimumMatches: 3,
       maxContenders: 3, // limit to 3
     });
@@ -404,7 +406,7 @@ describe('calculateRankingsForChampionship', () => {
       championshipId: 'champ-1',
       championshipType: 'singles',
       currentChampion: undefined,
-      periodDays: 30,
+      seasonId: 'season-1',
       minimumMatches: 3,
       maxContenders: 10,
     });

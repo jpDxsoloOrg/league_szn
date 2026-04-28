@@ -33,6 +33,10 @@ const mockPlayersRepo = {
   delete: vi.fn(),
 };
 
+const mockSeasonsRepo = {
+  findActive: vi.fn(),
+};
+
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
     competition: {
@@ -41,6 +45,9 @@ vi.mock('../../../lib/repositories', () => ({
     },
     roster: {
       players: mockPlayersRepo,
+    },
+    season: {
+      seasons: mockSeasonsRepo,
     },
   }),
 }));
@@ -124,6 +131,14 @@ describe('calculateRankings', () => {
     mockContendersRepo.writeHistory.mockResolvedValue({});
     mockContendersRepo.deleteAllForChampionship.mockResolvedValue(undefined);
     mockContendersRepo.listActiveOverrides.mockResolvedValue([]);
+    mockSeasonsRepo.findActive.mockResolvedValue({
+      seasonId: 'season-1',
+      name: 'Season 1',
+      startDate: '2025-01-01T00:00:00Z',
+      status: 'active',
+      createdAt: '2025-01-01T00:00:00Z',
+      updatedAt: '2025-01-01T00:00:00Z',
+    });
   });
 
   it('calculates rankings via rankingCalculator and writes results', async () => {
