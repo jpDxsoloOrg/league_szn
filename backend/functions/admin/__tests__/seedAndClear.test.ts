@@ -100,7 +100,7 @@ describe('seedData', () => {
     // Verify importAllData was called with data
     expect(mockImportAllData).toHaveBeenCalledOnce();
     const importData = mockImportAllData.mock.calls[0][0];
-    expect(importData.divisions).toHaveLength(3);
+    expect(importData.divisions).toHaveLength(4);
     expect(importData.players).toHaveLength(12);
   });
 

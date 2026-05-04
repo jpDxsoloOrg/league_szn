@@ -1,27 +1,33 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { PostConfirmationTriggerEvent, Context, Callback } from 'aws-lambda';
 
-// Mock the Cognito SDK
-const { mockSend, mockPlayers, mockWrestlers, mockRunInTransaction } = vi.hoisted(() => ({
-  mockSend: vi.fn(),
-  mockPlayers: {
-    findByUserId: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-  },
-  mockWrestlers: {
-    list: vi.fn(),
-  },
-  mockRunInTransaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
+// Mock the Cognito SDK + repositories
+const { mockSend, mockPlayers, mockWrestlers, mockDivisions, mockRunInTransaction } = vi.hoisted(() => {
+  const runInTransactionFn = vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
     const tx = {
       assignWrestlerToPlayer: vi.fn(),
       updatePlayer: vi.fn(),
     };
     // Capture the tx calls so tests can assert on them.
-    (mockRunInTransaction as unknown as { lastTx?: typeof tx }).lastTx = tx;
+    (runInTransactionFn as unknown as { lastTx?: typeof tx }).lastTx = tx;
     return fn(tx);
-  }),
-}));
+  });
+  return {
+    mockSend: vi.fn(),
+    mockPlayers: {
+      findByUserId: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
+    mockWrestlers: {
+      list: vi.fn(),
+    },
+    mockDivisions: {
+      list: vi.fn(),
+    },
+    mockRunInTransaction: runInTransactionFn,
+  };
+});
 
 vi.mock('@aws-sdk/client-cognito-identity-provider', () => ({
   CognitoIdentityProviderClient: vi.fn(() => ({ send: mockSend })),
@@ -31,6 +37,7 @@ vi.mock('@aws-sdk/client-cognito-identity-provider', () => ({
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
     roster: { players: mockPlayers, wrestlers: mockWrestlers },
+    leagueOps: { divisions: mockDivisions },
     runInTransaction: mockRunInTransaction,
   }),
 }));
@@ -54,6 +61,9 @@ function makePostConfirmationEvent(
       userAttributes: {
         sub: 'sub-123',
         email: 'test@example.com',
+        'custom:wrestler_name': 'Stone Cold Steve Austin',
+        'custom:player_name': 'TestPlayer',
+        'custom:psn_id': 'PSN_123',
       },
     },
     response: {},
@@ -67,10 +77,12 @@ const dummyCallback: Callback = () => {};
 describe('postConfirmation handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Defaults: no existing player, no wrestlers seeded, no divisions seeded.
     mockPlayers.findByUserId.mockResolvedValue(null);
     mockPlayers.create.mockResolvedValue({ playerId: 'p-new' });
     mockPlayers.update.mockResolvedValue({ playerId: 'p-new' });
     mockWrestlers.list.mockResolvedValue([]);
+    mockDivisions.list.mockResolvedValue([]);
   });
 
   it('adds user to Wrestler group and returns the event', async () => {
@@ -232,5 +244,51 @@ describe('postConfirmation handler', () => {
 
     expect(mockRunInTransaction).not.toHaveBeenCalled();
     expect(mockPlayers.update).toHaveBeenCalledWith('p-new', { userId: 'sub-123' });
+  });
+
+  it('assigns the Young Boys division when it exists (case-insensitive)', async () => {
+    mockSend.mockResolvedValue({});
+    mockDivisions.list.mockResolvedValue([
+      { divisionId: 'div-raw', name: 'Raw' },
+      { divisionId: 'div-young-boys', name: 'YOUNG BOYS' },
+      { divisionId: 'div-nxt', name: 'NXT' },
+    ]);
+
+    await handler(makePostConfirmationEvent(), dummyContext, dummyCallback);
+
+    expect(mockPlayers.create).toHaveBeenCalledWith(
+      expect.objectContaining({ divisionId: 'div-young-boys' })
+    );
+  });
+
+  it('falls back to no division when Young Boys is not seeded', async () => {
+    mockSend.mockResolvedValue({});
+    mockDivisions.list.mockResolvedValue([{ divisionId: 'div-raw', name: 'Raw' }]);
+
+    await handler(makePostConfirmationEvent(), dummyContext, dummyCallback);
+
+    expect(mockPlayers.create).toHaveBeenCalledWith(
+      expect.objectContaining({ divisionId: undefined })
+    );
+  });
+
+  it('still creates the player when divisions.list throws', async () => {
+    mockSend.mockResolvedValue({});
+    mockDivisions.list.mockRejectedValue(new Error('Dynamo down'));
+
+    await handler(makePostConfirmationEvent(), dummyContext, dummyCallback);
+
+    expect(mockPlayers.create).toHaveBeenCalledWith(
+      expect.objectContaining({ divisionId: undefined })
+    );
+  });
+
+  it('does not create a duplicate player when one already exists for the sub', async () => {
+    mockSend.mockResolvedValue({});
+    mockPlayers.findByUserId.mockResolvedValue({ playerId: 'existing' });
+
+    await handler(makePostConfirmationEvent(), dummyContext, dummyCallback);
+
+    expect(mockPlayers.create).not.toHaveBeenCalled();
   });
 });

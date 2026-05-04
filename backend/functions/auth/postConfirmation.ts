@@ -46,15 +46,29 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
     const psnId = attrs['custom:psn_id'] || '';
 
     if (sub) {
-      const { roster, runInTransaction } = getRepositories();
+      const { roster, leagueOps, runInTransaction } = getRepositories();
       const { players, wrestlers } = roster;
+      const { divisions } = leagueOps;
       const existingPlayer = await players.findByUserId(sub);
 
       if (!existingPlayer) {
+        // Default new wrestlers to the "Young Boys" division if it exists.
+        let divisionId: string | undefined;
+        try {
+          const allDivisions = await divisions.list();
+          const youngBoys = allDivisions.find(
+            (d) => d.name.toLowerCase() === 'young boys'
+          );
+          divisionId = youngBoys?.divisionId;
+        } catch (divisionError) {
+          console.error(`Failed to resolve default division for ${username}:`, divisionError);
+        }
+
         const newPlayer = await players.create({
           name: playerName,
           currentWrestler: wrestlerName,
           psnId: psnId || undefined,
+          divisionId,
         });
 
         let linked = false;
@@ -82,8 +96,6 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
                 `Player ${newPlayer.playerId} linked to wrestler ${match.wrestlerId} (${match.name})`,
               );
             } catch (linkErr) {
-              // Transaction failed (e.g., concurrent claim) — fall through
-              // to the unlinked branch so the userId still gets set.
               console.warn(
                 `Failed to link wrestler for user ${username}:`,
                 linkErr,
@@ -95,7 +107,10 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
         if (!linked) {
           await players.update(newPlayer.playerId, { userId: sub });
         }
-        console.log(`Player record created for user ${username}: ${newPlayer.playerId}`);
+        console.log(
+          `Player record created for user ${username}: ${newPlayer.playerId}` +
+            (divisionId ? ` (division=${divisionId})` : ' (no default division)')
+        );
       }
     }
   } catch (error) {

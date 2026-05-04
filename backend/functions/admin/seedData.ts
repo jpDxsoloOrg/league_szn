@@ -312,6 +312,13 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         createdAt: now,
         updatedAt: now,
       },
+      {
+        divisionId: uuidv4(),
+        name: 'Young Boys',
+        description: 'Default starting division for new wrestlers',
+        createdAt: now,
+        updatedAt: now,
+      },
     ];
 
     // ── Players ────────────────────────────────────────────────
