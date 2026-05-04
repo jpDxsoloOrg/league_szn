@@ -26,6 +26,7 @@ export default function MyStable() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [disbanding, setDisbanding] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   const loadData = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
@@ -110,6 +111,30 @@ export default function MyStable() {
       setTimeout(() => setActionFeedback(null), 3000);
     }
   }, [stable, t]);
+
+  const handleLeave = useCallback(async () => {
+    if (!stable || !profile) return;
+    const confirmed = window.confirm(
+      t('stables.my.leaveConfirm', 'Are you sure you want to leave this stable?')
+    );
+    if (!confirmed) return;
+
+    setLeaving(true);
+    try {
+      await stablesApi.leave(stable.stableId, profile.playerId);
+      setActionFeedback(t('stables.my.left', 'You have left the stable.'));
+      setStable(null);
+      const updatedProfile = await profileApi.getMyProfile();
+      setProfile(updatedProfile);
+    } catch (err) {
+      setActionFeedback(
+        `Error: ${err instanceof Error ? err.message : t('common.error', 'Failed')}`
+      );
+    } finally {
+      setLeaving(false);
+      setTimeout(() => setActionFeedback(null), 3000);
+    }
+  }, [stable, profile, t]);
 
   const handleRespondToInvitation = useCallback(async (
     stableId: string,
@@ -332,6 +357,21 @@ export default function MyStable() {
                 {disbanding
                   ? t('common.processing', 'Processing...')
                   : t('stables.my.disband', 'Disband Stable')}
+              </button>
+            </div>
+          )}
+
+          {/* Member actions (non-leader) */}
+          {!isLeader && isApprovedOrActive && (
+            <div className="my-stable__member-actions">
+              <button
+                className="btn-danger"
+                onClick={handleLeave}
+                disabled={leaving}
+              >
+                {leaving
+                  ? t('common.processing', 'Processing...')
+                  : t('stables.my.leave', 'Leave Stable')}
               </button>
             </div>
           )}

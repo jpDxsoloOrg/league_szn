@@ -90,8 +90,16 @@ export const stablesApi = {
   },
 
   removeMember: async (stableId: string, playerId: string): Promise<Stable> => {
-    return fetchWithAuth(`${API_BASE_URL}/stables/${stableId}/members/${playerId}`, {
-      method: 'DELETE',
+    return fetchWithAuth(`${API_BASE_URL}/stables/${stableId}/remove-member`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId }),
+    });
+  },
+
+  leave: async (stableId: string, playerId: string): Promise<Stable> => {
+    return fetchWithAuth(`${API_BASE_URL}/stables/${stableId}/remove-member`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId }),
     });
   },
 
