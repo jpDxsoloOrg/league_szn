@@ -64,12 +64,48 @@ aws lambda add-permission \
   --region "$REGION" \
   2>/dev/null && echo "  Lambda permission added" || echo "  Permission already exists (skipping)"
 
-# Update the User Pool to use the PostConfirmation trigger
-aws cognito-idp update-user-pool \
+# Update the User Pool to use the PostConfirmation trigger.
+#
+# IMPORTANT: aws cognito-idp update-user-pool is *destructive* — any
+# parameter not present in the request is reset to its default value
+# (e.g. AutoVerifiedAttributes back to [], EmailConfiguration cleared,
+# AdminCreateUserConfig reset). To avoid wiping the pool's config on
+# every deploy, we read the current state with describe-user-pool,
+# merge in the new LambdaConfig, and pass the full payload back.
+echo "  Reading current User Pool config to preserve settings…"
+CURRENT_POOL=$(aws cognito-idp describe-user-pool \
   --user-pool-id "$USER_POOL_ID" \
-  --lambda-config "PostConfirmation=$LAMBDA_ARN" \
+  --region "$REGION")
+
+UPDATE_PAYLOAD=$(echo "$CURRENT_POOL" | jq \
+  --arg lambdaArn "$LAMBDA_ARN" \
+  --arg userPoolId "$USER_POOL_ID" \
+  '{
+    UserPoolId: $userPoolId,
+    Policies: .UserPool.Policies,
+    DeletionProtection: .UserPool.DeletionProtection,
+    LambdaConfig: ((.UserPool.LambdaConfig // {}) | .PostConfirmation = $lambdaArn),
+    AutoVerifiedAttributes: .UserPool.AutoVerifiedAttributes,
+    SmsVerificationMessage: .UserPool.SmsVerificationMessage,
+    EmailVerificationMessage: .UserPool.EmailVerificationMessage,
+    EmailVerificationSubject: .UserPool.EmailVerificationSubject,
+    VerificationMessageTemplate: .UserPool.VerificationMessageTemplate,
+    SmsAuthenticationMessage: .UserPool.SmsAuthenticationMessage,
+    UserAttributeUpdateSettings: .UserPool.UserAttributeUpdateSettings,
+    MfaConfiguration: .UserPool.MfaConfiguration,
+    DeviceConfiguration: .UserPool.DeviceConfiguration,
+    EmailConfiguration: .UserPool.EmailConfiguration,
+    SmsConfiguration: .UserPool.SmsConfiguration,
+    UserPoolTags: .UserPool.UserPoolTags,
+    AdminCreateUserConfig: .UserPool.AdminCreateUserConfig,
+    UserPoolAddOns: .UserPool.UserPoolAddOns,
+    AccountRecoverySetting: .UserPool.AccountRecoverySetting
+  } | with_entries(select(.value != null))')
+
+aws cognito-idp update-user-pool \
+  --cli-input-json "$UPDATE_PAYLOAD" \
   --region "$REGION"
-echo "  PostConfirmation trigger attached"
+echo "  PostConfirmation trigger attached (preserving existing pool config)"
 
 # Step 3: (Optional, opt-in) Migrate existing users to Admin group.
 # Skipped by default — see header comment.
