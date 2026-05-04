@@ -274,18 +274,18 @@ describe('Standings', () => {
     expect(seasonOptions[1]).toHaveTextContent('Season 1');
     expect(seasonOptions[2]).toHaveTextContent('Season 2 (Active)');
 
-    // Switch to Season 2
+    // Active season (s2) is selected by default; switch to Season 1
     mockGetStandings.mockResolvedValue({
       players: [mockPlayers[0]],
-      seasonId: 's2',
+      seasonId: 's1',
       sortedByWins: true,
     });
 
-    await user.selectOptions(seasonSelect, 's2');
+    await user.selectOptions(seasonSelect, 's1');
 
     // Verify the API was called with the season ID
     await waitFor(() => {
-      expect(mockGetStandings).toHaveBeenCalledWith('s2', expect.any(AbortSignal));
+      expect(mockGetStandings).toHaveBeenCalledWith('s1', expect.any(AbortSignal));
     });
 
     // Season badge appears
