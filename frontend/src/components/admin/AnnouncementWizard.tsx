@@ -445,7 +445,7 @@ function generateMediaPackageHtml(data: MediaPackageData): string {
   <div style="width: 60px; height: 2px; background: linear-gradient(90deg, #d4af37, #c0392b); margin: 14px auto 0; border-radius: 2px;"></div>
 </div>`;
 
-  const imageSrc = toMediaUrl(data.mediaUrl.trim());
+  const imageSrc = data.mediaUrl.trim();
   const imageAlt = data.title.trim() || 'Poster';
 
   const imageBlock = `
@@ -1451,7 +1451,10 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
                   </div>
                   {mediaPackageData.mediaUrl && !uploadingMedia && (
                     <span className="wizard-field-hint">
-                      Resolved: {toMediaUrl(mediaPackageData.mediaUrl)}
+                      Resolved:{' '}
+                      {mediaPackageData.format === 'video'
+                        ? toMediaUrl(mediaPackageData.mediaUrl)
+                        : mediaPackageData.mediaUrl}
                     </span>
                   )}
                 </div>
