@@ -32,11 +32,7 @@ export default function EventCard({ event }: EventCardProps) {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-  });
-
-  const formattedTime = new Date(event.date).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
+    timeZone: 'UTC',
   });
 
   return (
@@ -64,7 +60,7 @@ export default function EventCard({ event }: EventCardProps) {
         <div className="event-card-details">
           <div className="event-card-date">
             <span className="event-card-icon">&#128197;</span>
-            <span>{formattedDate} - {formattedTime}</span>
+            <span>{formattedDate}</span>
           </div>
 
           <div className="event-card-meta">
