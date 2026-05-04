@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { announcementsApi } from '../../services/api';
+import { useRef, useState } from 'react';
+import { announcementsApi, imagesApi } from '../../services/api';
+import { toMediaUrl } from '../../utils/mediaUrl';
 import './AnnouncementWizard.css';
 
 interface AnnouncementWizardProps {
@@ -9,7 +10,8 @@ interface AnnouncementWizardProps {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type WizardMode = 'select' | 'match-card' | 'breaking-news';
+type WizardMode = 'select' | 'match-card' | 'breaking-news' | 'media-package';
+type MediaFormat = 'video' | 'poster';
 
 interface Participant {
   username: string;
@@ -51,6 +53,15 @@ interface BreakingNewsData {
   footerTagline: string;
 }
 
+interface MediaPackageData {
+  format: MediaFormat;
+  title: string;
+  subtitle: string;
+  dateText: string;
+  mediaUrl: string;
+  posterArtCredit: string;
+}
+
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
 const DEFAULT_MATCH_CARD: MatchCardData = {
@@ -79,6 +90,32 @@ const DEFAULT_BREAKING_NEWS: BreakingNewsData = {
   quote: '',
   quoteAttribution: 'GM JP',
   footerTagline: 'Zero tolerance. No exceptions.',
+};
+
+function ordinalSuffix(n: number): string {
+  if (n >= 11 && n <= 13) return 'th';
+  switch (n % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
+}
+
+function formatDateOrdinal(d: Date): string {
+  const month = d.toLocaleString('en-US', { month: 'long' });
+  const day = d.getDate();
+  const year = d.getFullYear();
+  return `${month} ${day}${ordinalSuffix(day)}, ${year}`;
+}
+
+const DEFAULT_MEDIA_PACKAGE: MediaPackageData = {
+  format: 'video',
+  title: '',
+  subtitle: '',
+  dateText: formatDateOrdinal(new Date()),
+  mediaUrl: '',
+  posterArtCredit: '',
 };
 
 function newMatch(): MatchSlot {
@@ -358,10 +395,83 @@ ${subjectSection}${bodyHtml}${infoBox}${quoteSection}
 </div>`;
 }
 
+function generateMediaPackageHtml(data: MediaPackageData): string {
+  if (data.format === 'video') {
+    const banner = `
+<div style="text-align: center; margin-bottom: 20px;">
+  <span style="background: linear-gradient(135deg, #c0392b, #8e1a1a); color: #fff; padding: 6px 24px; border-radius: 4px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; display: inline-block;">&#9888; Video Package &#9888;</span>
+</div>`;
+
+    const header = `
+<div style="text-align: center; padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid rgba(192, 57, 43, 0.2);">
+  <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 5px; color: #c0392b; margin-bottom: 12px;">League SZN Exclusive</div>
+  <h1 style="margin: 0; font-size: 26px; text-transform: uppercase; letter-spacing: 2px; color: #fff; line-height: 1.3;">${esc(data.title)}</h1>
+  ${data.dateText.trim() ? `<div style="font-size: 13px; color: #999; margin-top: 12px; letter-spacing: 1.5px; text-transform: uppercase;">${esc(data.dateText)}</div>` : ''}
+  <div style="width: 60px; height: 2px; background: linear-gradient(90deg, #c0392b, #d4af37); margin: 14px auto 0; border-radius: 2px;"></div>
+</div>`;
+
+    const videoSrc = toMediaUrl(data.mediaUrl.trim());
+
+    const videoBox = `
+<div style="background: linear-gradient(135deg, rgba(192, 57, 43, 0.08), rgba(0, 0, 0, 0.2)); border: 1px solid rgba(192, 57, 43, 0.2); border-radius: 10px; padding: 24px; margin-top: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+  <div style="border-radius: 8px; overflow: hidden; margin: 0; border: 1px solid rgba(212, 175, 55, 0.2);">
+    <video width="100%" controls playsinline preload="metadata" style="display: block; border-radius: 8px; margin: 0 auto; background: #000;">
+      <source src="${esc(videoSrc)}">
+    </video>
+  </div>
+</div>`;
+
+    const footer = `
+<div style="text-align: center; margin-top: 28px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
+  <p style="color: #555; font-size: 11px; margin-top: 14px; letter-spacing: 1px; text-transform: uppercase;">League SZN Official &mdash; Office of the General Manager</p>
+</div>`;
+
+    return `<div style="font-family: 'Segoe UI', Arial, sans-serif; color: #e8e8e8; max-width: 620px; margin: 0 auto; background: linear-gradient(180deg, #0d0d0d 0%, #1a1018 50%, #0d0d0d 100%); border-radius: 12px; padding: 32px; border: 1px solid rgba(192, 57, 43, 0.3);">${banner}${header}${videoBox}${footer}
+</div>`;
+  }
+
+  // Poster format
+  const banner = `
+<div style="text-align: center; margin-bottom: 20px;">
+  <span style="background: linear-gradient(135deg, #d4af37, #8b6914); color: #fff; padding: 6px 24px; border-radius: 4px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; display: inline-block;">&#9888; OFFICIAL ANNOUNCEMENT &#9888;</span>
+</div>`;
+
+  const header = `
+<div style="text-align: center; padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid rgba(212, 175, 55, 0.2);">
+  <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 5px; color: #d4af37; margin-bottom: 12px;">League SZN Official Statement</div>
+  <h1 style="margin: 0; font-size: 26px; text-transform: uppercase; letter-spacing: 2px; color: #fff; line-height: 1.3;">${esc(data.title)}</h1>
+  ${data.subtitle.trim() ? `<div style="font-size: 18px; color: #d4af37; margin-top: 8px; letter-spacing: 2px; text-transform: uppercase; font-weight: bold;">${esc(data.subtitle)}</div>` : ''}
+  ${data.dateText.trim() ? `<div style="font-size: 13px; color: #999; margin-top: 12px; letter-spacing: 1.5px; text-transform: uppercase;">${esc(data.dateText)}</div>` : ''}
+  <div style="width: 60px; height: 2px; background: linear-gradient(90deg, #d4af37, #c0392b); margin: 14px auto 0; border-radius: 2px;"></div>
+</div>`;
+
+  const imageSrc = toMediaUrl(data.mediaUrl.trim());
+  const imageAlt = data.title.trim() || 'Poster';
+
+  const imageBlock = `
+<div style="text-align: center; margin: 0 0 24px;">
+  <img src="${esc(imageSrc)}" alt="${esc(imageAlt)}" style="max-width: 100%; height: auto; border-radius: 10px; border: 2px solid rgba(212, 175, 55, 0.4); box-shadow: 0 8px 30px rgba(212, 175, 55, 0.2), 0 4px 20px rgba(0,0,0,0.5);">
+</div>`;
+
+  const credit = data.posterArtCredit.trim()
+    ? `<p style="font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin: 0; color: #d4af37;">Poster Art by ${esc(data.posterArtCredit)}</p>`
+    : '';
+
+  const footer = `
+<div style="text-align: center; margin-top: 28px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
+  ${credit}
+  <p style="color: #555; font-size: 11px; margin-top: 14px; letter-spacing: 1px; text-transform: uppercase;">League SZN Official | Office of the Commissioner</p>
+</div>`;
+
+  return `<div style="font-family: 'Segoe UI', Arial, sans-serif; color: #e8e8e8; max-width: 620px; margin: 0 auto; background: linear-gradient(180deg, #0d0d0d 0%, #1a1018 50%, #0d0d0d 100%); border-radius: 12px; padding: 32px; border: 1px solid rgba(212, 175, 55, 0.3);">${banner}${header}${imageBlock}${footer}
+</div>`;
+}
+
 // ─── Step Configs ─────────────────────────────────────────────────────────────
 
 const MATCH_CARD_STEPS = ['Show Details', 'GM Intro', 'Matches', 'Preview & Publish'];
 const BREAKING_NEWS_STEPS = ['Headline & Subject', 'Story Body', 'Preview & Publish'];
+const MEDIA_PACKAGE_STEPS = ['Media Details', 'Preview & Publish'];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -376,27 +486,71 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
     ...DEFAULT_BREAKING_NEWS,
   });
 
+  const [mediaPackageData, setMediaPackageData] = useState<MediaPackageData>({
+    ...DEFAULT_MEDIA_PACKAGE,
+  });
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+
   const [priority, setPriority] = useState(3);
   const [expiresAt, setExpiresAt] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
-  const totalSteps = mode === 'match-card' ? MATCH_CARD_STEPS.length : BREAKING_NEWS_STEPS.length;
-  const stepLabels = mode === 'match-card' ? MATCH_CARD_STEPS : BREAKING_NEWS_STEPS;
+  const totalSteps =
+    mode === 'match-card'
+      ? MATCH_CARD_STEPS.length
+      : mode === 'breaking-news'
+      ? BREAKING_NEWS_STEPS.length
+      : MEDIA_PACKAGE_STEPS.length;
+  const stepLabels =
+    mode === 'match-card'
+      ? MATCH_CARD_STEPS
+      : mode === 'breaking-news'
+      ? BREAKING_NEWS_STEPS
+      : MEDIA_PACKAGE_STEPS;
 
   const generatedHtml =
     mode === 'match-card'
       ? generateMatchCardHtml(matchCardData, matches)
       : mode === 'breaking-news'
       ? generateBreakingNewsHtml(breakingNewsData)
+      : mode === 'media-package'
+      ? generateMediaPackageHtml(mediaPackageData)
       : '';
 
-  function selectMode(chosen: 'match-card' | 'breaking-news') {
+  function selectMode(chosen: 'match-card' | 'breaking-news' | 'media-package') {
     setMode(chosen);
     setStep(1);
     setError(null);
     setShowPreview(false);
+  }
+
+  async function handleMediaFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setUploadingMedia(true);
+    try {
+      const folder = mediaPackageData.format === 'video' ? 'videos' : 'shows';
+      const { uploadUrl, imageUrl } = await imagesApi.generateUploadUrl(
+        file.name,
+        file.type,
+        folder
+      );
+      if (mediaPackageData.format === 'video') {
+        await imagesApi.uploadVideoToS3(uploadUrl, file);
+      } else {
+        await imagesApi.uploadToS3(uploadUrl, file);
+      }
+      setMediaPackageData((d) => ({ ...d, mediaUrl: imageUrl }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload file.');
+    } finally {
+      setUploadingMedia(false);
+      if (mediaInputRef.current) mediaInputRef.current.value = '';
+    }
   }
 
   function goNext() {
@@ -493,10 +647,19 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
     const title =
       mode === 'match-card'
         ? matchCardData.showName || "Tonight's Card"
-        : breakingNewsData.headline || 'Breaking News';
+        : mode === 'breaking-news'
+        ? breakingNewsData.headline || 'Breaking News'
+        : mediaPackageData.title ||
+          (mediaPackageData.format === 'video' ? 'Video Package' : 'Official Announcement');
 
     if (!title.trim() || !generatedHtml.trim()) {
       setError('Please complete the required fields before publishing.');
+      return;
+    }
+
+    if (mode === 'media-package' && !mediaPackageData.mediaUrl.trim()) {
+      const noun = mediaPackageData.format === 'video' ? 'video' : 'image';
+      setError(`Please provide a ${noun} URL or upload a ${noun} file.`);
       return;
     }
 
@@ -547,6 +710,13 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
                 Suspension, title vacancy, official statement
               </span>
             </button>
+            <button className="wizard-mode-card" onClick={() => selectMode('media-package')}>
+              <span className="wizard-mode-icon">🎬</span>
+              <span className="wizard-mode-label">Video / Poster</span>
+              <span className="wizard-mode-desc">
+                Promo video package or official poster announcement
+              </span>
+            </button>
           </div>
 
           <div className="wizard-footer-actions">
@@ -565,7 +735,11 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
         {/* Header */}
         <div className="wizard-header">
           <h2 className="wizard-title">
-            {mode === 'match-card' ? 'Match Card Wizard' : 'Breaking News Wizard'}
+            {mode === 'match-card'
+              ? 'Match Card Wizard'
+              : mode === 'breaking-news'
+              ? 'Breaking News Wizard'
+              : 'Video / Poster Wizard'}
           </h2>
           <button className="wizard-close" onClick={onClose} aria-label="Close wizard">
             ✕
@@ -1132,6 +1306,195 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
                     <label htmlFor="bn-expires">Expires <span className="wizard-optional">(optional)</span></label>
                     <input
                       id="bn-expires"
+                      type="date"
+                      value={expiresAt}
+                      onChange={(e) => setExpiresAt(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  className={`wizard-preview-toggle ${showPreview ? 'wizard-preview-toggle--open' : ''}`}
+                  onClick={() => setShowPreview((v) => !v)}
+                >
+                  {showPreview ? '▼ Hide Preview' : '▶ Show Preview'}
+                </button>
+
+                {showPreview && (
+                  <div className="wizard-preview-container">
+                    <div
+                      className="wizard-preview-render"
+                      dangerouslySetInnerHTML={{ __html: generatedHtml }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Media Package Steps ── */}
+        {mode === 'media-package' && (
+          <>
+            {step === 1 && (
+              <div className="wizard-body">
+                <h3 className="wizard-section-title">Media Details</h3>
+
+                <div className="form-group">
+                  <label>Format</label>
+                  <div className="wizard-tags-row">
+                    <label className="wizard-checkbox-label">
+                      <input
+                        type="radio"
+                        name="mp-format"
+                        checked={mediaPackageData.format === 'video'}
+                        onChange={() =>
+                          setMediaPackageData((d) => ({ ...d, format: 'video', mediaUrl: '' }))
+                        }
+                      />
+                      Video Package
+                    </label>
+                    <label className="wizard-checkbox-label">
+                      <input
+                        type="radio"
+                        name="mp-format"
+                        checked={mediaPackageData.format === 'poster'}
+                        onChange={() =>
+                          setMediaPackageData((d) => ({ ...d, format: 'poster', mediaUrl: '' }))
+                        }
+                      />
+                      Poster / Image
+                    </label>
+                  </div>
+                  <span className="wizard-field-hint">
+                    {mediaPackageData.format === 'video'
+                      ? 'Embeds an mp4 in a red Video Package frame.'
+                      : 'Embeds an image in a gold Official Announcement frame.'}
+                  </span>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="mp-title">Title *</label>
+                  <input
+                    id="mp-title"
+                    type="text"
+                    value={mediaPackageData.title}
+                    onChange={(e) =>
+                      setMediaPackageData((d) => ({ ...d, title: e.target.value }))
+                    }
+                    placeholder={
+                      mediaPackageData.format === 'video'
+                        ? 'e.g. CM Punk Promo'
+                        : 'e.g. Open Weight Title Match Set'
+                    }
+                    maxLength={150}
+                  />
+                </div>
+
+                {mediaPackageData.format === 'poster' && (
+                  <div className="form-group">
+                    <label htmlFor="mp-subtitle">Subtitle <span className="wizard-optional">(optional)</span></label>
+                    <input
+                      id="mp-subtitle"
+                      type="text"
+                      value={mediaPackageData.subtitle}
+                      onChange={(e) =>
+                        setMediaPackageData((d) => ({ ...d, subtitle: e.target.value }))
+                      }
+                      placeholder="e.g. CM Punk vs Bron Breakker"
+                    />
+                    <span className="wizard-field-hint">Shown in gold beneath the title.</span>
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label htmlFor="mp-date">Date Text</label>
+                  <input
+                    id="mp-date"
+                    type="text"
+                    value={mediaPackageData.dateText}
+                    onChange={(e) =>
+                      setMediaPackageData((d) => ({ ...d, dateText: e.target.value }))
+                    }
+                    placeholder="e.g. May 1st, 2026"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="mp-url">
+                    {mediaPackageData.format === 'video' ? 'Video URL *' : 'Image URL *'}
+                  </label>
+                  <input
+                    id="mp-url"
+                    type="text"
+                    value={mediaPackageData.mediaUrl}
+                    onChange={(e) =>
+                      setMediaPackageData((d) => ({ ...d, mediaUrl: e.target.value }))
+                    }
+                    placeholder={
+                      mediaPackageData.format === 'video'
+                        ? 'https://... or paste an existing /videos/... path'
+                        : 'https://... link to image file'
+                    }
+                  />
+                  <div className="wizard-tags-row" style={{ marginTop: 8 }}>
+                    <input
+                      ref={mediaInputRef}
+                      type="file"
+                      accept={mediaPackageData.format === 'video' ? 'video/*' : 'image/*'}
+                      onChange={handleMediaFileChange}
+                      disabled={uploadingMedia}
+                    />
+                    {uploadingMedia && (
+                      <span className="wizard-field-hint">Uploading…</span>
+                    )}
+                  </div>
+                  {mediaPackageData.mediaUrl && !uploadingMedia && (
+                    <span className="wizard-field-hint">
+                      Resolved: {toMediaUrl(mediaPackageData.mediaUrl)}
+                    </span>
+                  )}
+                </div>
+
+                {mediaPackageData.format === 'poster' && (
+                  <div className="form-group">
+                    <label htmlFor="mp-credit">Poster Art Credit <span className="wizard-optional">(optional)</span></label>
+                    <input
+                      id="mp-credit"
+                      type="text"
+                      value={mediaPackageData.posterArtCredit}
+                      onChange={(e) =>
+                        setMediaPackageData((d) => ({ ...d, posterArtCredit: e.target.value }))
+                      }
+                      placeholder="e.g. Kai"
+                    />
+                    <span className="wizard-field-hint">Renders as “Poster Art by [name]”.</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="wizard-body">
+                <h3 className="wizard-section-title">Preview & Publish</h3>
+
+                <div className="wizard-publish-settings">
+                  <div className="form-group">
+                    <label htmlFor="mp-priority">Priority</label>
+                    <select
+                      id="mp-priority"
+                      value={priority}
+                      onChange={(e) => setPriority(Number(e.target.value))}
+                    >
+                      <option value={1}>Low</option>
+                      <option value={2}>Medium</option>
+                      <option value={3}>High</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="mp-expires">Expires <span className="wizard-optional">(optional)</span></label>
+                    <input
+                      id="mp-expires"
                       type="date"
                       value={expiresAt}
                       onChange={(e) => setExpiresAt(e.target.value)}
