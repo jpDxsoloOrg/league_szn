@@ -26,6 +26,7 @@ export default function Standings() {
   const [selectedAlignment, setSelectedAlignment] = useState<string>('all');
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>('');
+  const [defaultsResolved, setDefaultsResolved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,11 +56,19 @@ export default function Standings() {
         if (!abortController.signal.aborted) {
           setSeasons(seasonsData);
           setDivisions(divisionsData);
+          const activeSeason = seasonsData.find(s => s.status === 'active');
+          if (activeSeason) setSelectedSeasonId(activeSeason.seasonId);
+          const heavyweight = divisionsData.find(
+            d => d.name.toLowerCase() === 'heavyweight'
+          );
+          if (heavyweight) setSelectedDivision(heavyweight.divisionId);
+          setDefaultsResolved(true);
         }
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
           logger.error('Failed to load initial standings data');
         }
+        if (!abortController.signal.aborted) setDefaultsResolved(true);
       }
     };
 
@@ -68,6 +77,7 @@ export default function Standings() {
   }, []);
 
   useEffect(() => {
+    if (!defaultsResolved) return;
     const abortController = new AbortController();
 
     const fetchStandings = async () => {
@@ -91,7 +101,7 @@ export default function Standings() {
 
     fetchStandings();
     return () => abortController.abort();
-  }, [selectedSeasonId]);
+  }, [selectedSeasonId, defaultsResolved]);
 
   // Memoize filtered players to avoid recalculation on every render
   const filteredPlayers = useMemo((): Player[] => {

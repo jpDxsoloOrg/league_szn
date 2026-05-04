@@ -1,14 +1,18 @@
 #!/bin/bash
 # Post-deploy setup for Cognito User Pool.
-# Run this ONCE per environment after deploying the stack.
+# Safe to run on every deploy — steps 1 and 2 are idempotent.
 #
 # This script:
-#   1. Adds the custom:wrestler_name attribute
-#   2. Attaches the PostConfirmation Lambda trigger (auto-assign Wrestler group)
-#   3. Migrates existing users to the Admin group
+#   1. Adds the custom:wrestler_name attribute (idempotent)
+#   2. Attaches the PostConfirmation Lambda trigger (idempotent)
+#   3. (OPTIONAL) Migrates ALL existing users into the Admin group.
+#      Only runs when MIGRATE_USERS_TO_ADMIN=true. Skipped by default
+#      because CI runs the script on every deploy and bulk-promoting
+#      every wrestler to Admin would be a security regression.
 #
 # Usage:
 #   ./scripts/setup-cognito.sh <USER_POOL_ID> <STAGE>
+#   MIGRATE_USERS_TO_ADMIN=true ./scripts/setup-cognito.sh <USER_POOL_ID> <STAGE>
 #
 # Example:
 #   ./scripts/setup-cognito.sh us-east-1_o0xMTyzI5 devtest
@@ -60,36 +64,80 @@ aws lambda add-permission \
   --region "$REGION" \
   2>/dev/null && echo "  Lambda permission added" || echo "  Permission already exists (skipping)"
 
-# Update the User Pool to use the PostConfirmation trigger
-aws cognito-idp update-user-pool \
+# Update the User Pool to use the PostConfirmation trigger.
+#
+# IMPORTANT: aws cognito-idp update-user-pool is *destructive* — any
+# parameter not present in the request is reset to its default value
+# (e.g. AutoVerifiedAttributes back to [], EmailConfiguration cleared,
+# AdminCreateUserConfig reset). To avoid wiping the pool's config on
+# every deploy, we read the current state with describe-user-pool,
+# merge in the new LambdaConfig, and pass the full payload back.
+echo "  Reading current User Pool config to preserve settings…"
+CURRENT_POOL=$(aws cognito-idp describe-user-pool \
   --user-pool-id "$USER_POOL_ID" \
-  --lambda-config "PostConfirmation=$LAMBDA_ARN" \
-  --region "$REGION"
-echo "  PostConfirmation trigger attached"
-
-# Step 3: Migrate existing users to Admin group
-echo ""
-echo "Step 3: Migrating existing users to Admin group..."
-
-USERS=$(aws cognito-idp list-users \
-  --user-pool-id "$USER_POOL_ID" \
-  --query 'Users[].Username' \
-  --output text \
   --region "$REGION")
 
+UPDATE_PAYLOAD=$(echo "$CURRENT_POOL" | jq \
+  --arg lambdaArn "$LAMBDA_ARN" \
+  --arg userPoolId "$USER_POOL_ID" \
+  '{
+    UserPoolId: $userPoolId,
+    Policies: .UserPool.Policies,
+    DeletionProtection: .UserPool.DeletionProtection,
+    LambdaConfig: ((.UserPool.LambdaConfig // {}) | .PostConfirmation = $lambdaArn),
+    AutoVerifiedAttributes: .UserPool.AutoVerifiedAttributes,
+    SmsVerificationMessage: .UserPool.SmsVerificationMessage,
+    EmailVerificationMessage: .UserPool.EmailVerificationMessage,
+    EmailVerificationSubject: .UserPool.EmailVerificationSubject,
+    VerificationMessageTemplate: .UserPool.VerificationMessageTemplate,
+    SmsAuthenticationMessage: .UserPool.SmsAuthenticationMessage,
+    UserAttributeUpdateSettings: .UserPool.UserAttributeUpdateSettings,
+    MfaConfiguration: .UserPool.MfaConfiguration,
+    DeviceConfiguration: .UserPool.DeviceConfiguration,
+    EmailConfiguration: .UserPool.EmailConfiguration,
+    SmsConfiguration: .UserPool.SmsConfiguration,
+    UserPoolTags: .UserPool.UserPoolTags,
+    AdminCreateUserConfig: .UserPool.AdminCreateUserConfig,
+    UserPoolAddOns: .UserPool.UserPoolAddOns,
+    AccountRecoverySetting: .UserPool.AccountRecoverySetting
+  } | with_entries(select(.value != null))')
+
+aws cognito-idp update-user-pool \
+  --cli-input-json "$UPDATE_PAYLOAD" \
+  --region "$REGION"
+echo "  PostConfirmation trigger attached (preserving existing pool config)"
+
+# Step 3: (Optional, opt-in) Migrate existing users to Admin group.
+# Skipped by default — see header comment.
 COUNT=0
-for USERNAME in $USERS; do
-  aws cognito-idp admin-add-user-to-group \
+if [ "${MIGRATE_USERS_TO_ADMIN:-false}" = "true" ]; then
+  echo ""
+  echo "Step 3: MIGRATE_USERS_TO_ADMIN=true — migrating existing users to Admin group..."
+
+  USERS=$(aws cognito-idp list-users \
     --user-pool-id "$USER_POOL_ID" \
-    --username "$USERNAME" \
-    --group-name "Admin" \
-    --region "$REGION" \
-    2>/dev/null && echo "  Added $USERNAME to Admin" || echo "  Failed to add $USERNAME"
-  COUNT=$((COUNT + 1))
-done
+    --query 'Users[].Username' \
+    --output text \
+    --region "$REGION")
+
+  for USERNAME in $USERS; do
+    aws cognito-idp admin-add-user-to-group \
+      --user-pool-id "$USER_POOL_ID" \
+      --username "$USERNAME" \
+      --group-name "Admin" \
+      --region "$REGION" \
+      2>/dev/null && echo "  Added $USERNAME to Admin" || echo "  Failed to add $USERNAME"
+    COUNT=$((COUNT + 1))
+  done
+else
+  echo ""
+  echo "Step 3: Skipped (MIGRATE_USERS_TO_ADMIN not set to true)."
+fi
 
 echo ""
 echo "=== Setup complete ==="
 echo "  Custom attribute: wrestler_name"
 echo "  PostConfirmation trigger: attached"
-echo "  Users migrated to Admin: $COUNT"
+if [ "${MIGRATE_USERS_TO_ADMIN:-false}" = "true" ]; then
+  echo "  Users migrated to Admin: $COUNT"
+fi

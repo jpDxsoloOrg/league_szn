@@ -97,6 +97,14 @@ jobs:
           echo "Cognito User Pool ID: $USER_POOL_ID"
           echo "Cognito Client ID: $CLIENT_ID"
 
+      - name: Wire Cognito post-confirmation trigger
+        # Idempotent — attaches the PostConfirmation Lambda to the User Pool so
+        # new signups auto-receive the Wrestler role + Player record + default
+        # division. CloudFormation can't wire this itself due to a circular
+        # dependency between the Lambda and the User Pool.
+        working-directory: backend
+        run: ./scripts/setup-cognito.sh "${{ steps.cognito.outputs.user_pool_id }}" devtest
+
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci

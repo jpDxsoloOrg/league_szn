@@ -312,11 +312,7 @@ export default function EventDetail() {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  });
-
-  const formattedTime = new Date(eventData.date).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
+    timeZone: 'UTC',
   });
 
   // Separate pre-show and main card matches
@@ -491,7 +487,7 @@ export default function EventDetail() {
         <div className="event-detail-info">
           <div className="event-detail-info-item">
             <span className="info-label">{t('events.detail.date')}:</span>
-            <span>{formattedDate} - {formattedTime}</span>
+            <span>{formattedDate}</span>
           </div>
           {eventData.venue && (
             <div className="event-detail-info-item">

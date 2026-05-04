@@ -1020,6 +1020,15 @@ resources:
       Type: AWS::Cognito::UserPool
       Properties:
         UserPoolName: ${self:service}-pool-v3-${self:provider.stage}
+        # Tag bumped on 2026-05-03 to force CloudFormation to re-apply the
+        # full User Pool config after a destructive update-user-pool call
+        # in setup-cognito.sh wiped AutoVerifiedAttributes (verification
+        # emails stopped sending). Once dev + prod are healed this can stay
+        # in place — it's harmless and gives us a knob to force-reapply
+        # config in the future.
+        UserPoolTags:
+          ManagedBy: ServerlessStack
+          ConfigVersion: '2'
         AdminCreateUserConfig:
           AllowAdminCreateUserOnly: false
         AutoVerifiedAttributes:
