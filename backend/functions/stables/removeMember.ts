@@ -36,17 +36,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return notFound('Stable not found');
     }
 
-    // Only leader or Admin can remove members
+    // Allowed callers: super admin, the stable leader, or a member removing themselves
     if (!isSuperAdmin(auth)) {
       const callerPlayer = await playersRepo.findByUserId(auth.sub);
-      if (!callerPlayer || callerPlayer.playerId !== stable.leaderId) {
-        return badRequest('Only the stable leader or an admin can remove members');
+      const isLeader = callerPlayer?.playerId === stable.leaderId;
+      const isSelfRemoval = callerPlayer?.playerId === playerId;
+      if (!callerPlayer || (!isLeader && !isSelfRemoval)) {
+        return badRequest('Only the stable leader, an admin, or the member themselves can remove a member');
       }
     }
 
-    // Cannot remove the leader
+    // The leader cannot leave or be removed via this endpoint — they must disband
     if (playerId === stable.leaderId) {
-      return badRequest('Cannot remove the leader. Disband the stable instead.');
+      return badRequest('The leader cannot leave the stable. Disband it instead.');
     }
 
     // Verify player is a member
