@@ -297,3 +297,163 @@ describe('scheduleMatch', () => {
     }));
   });
 });
+
+// ---- Slot-mode (MSL-01) ----------------------------------------------------
+
+function slotBody(overrides: Record<string, unknown> = {}) {
+  return JSON.stringify({
+    matchFormat: 'Singles',
+    isChampionship: false,
+    date: '2024-06-01T00:00:00Z',
+    slotsRequired: 2,
+    slots: [
+      { position: 1 },
+      { position: 2 },
+    ],
+    ...overrides,
+  });
+}
+
+describe('scheduleMatch (slot-mode)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('creates an open-signups match when all slots are open', async () => {
+    mockMatchesCreate.mockResolvedValue({});
+    const r = await scheduleMatch(ev({ body: slotBody() }), ctx, cb);
+    expect(r!.statusCode).toBe(201);
+    const b = JSON.parse(r!.body);
+    expect(b.status).toBe('open-signups');
+    expect(b.participants).toEqual([]);
+    expect(b.slotsRequired).toBe(2);
+    expect(b.slots).toHaveLength(2);
+    expect(b.slots[0].position).toBe(1);
+    expect(b.slots[0].playerId).toBeUndefined();
+    expect(typeof b.slots[0].slotId).toBe('string');
+    // No player lookups needed when all slots open
+    expect(mockPlayersFindById).not.toHaveBeenCalled();
+  });
+
+  it('creates a scheduled match when all slots are pre-filled', async () => {
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockMatchesCreate.mockResolvedValue({});
+    const r = await scheduleMatch(ev({
+      body: slotBody({
+        slots: [
+          { position: 1, playerId: 'p1' },
+          { position: 2, playerId: 'p2' },
+        ],
+      }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(201);
+    const b = JSON.parse(r!.body);
+    expect(b.status).toBe('scheduled');
+    expect(b.participants).toEqual(['p1', 'p2']);
+    expect(b.slots[0].playerId).toBe('p1');
+    expect(b.slots[0].claimedAt).toBeDefined();
+  });
+
+  it('creates an open-signups match when some slots are pre-filled and some open (mixed)', async () => {
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockMatchesCreate.mockResolvedValue({});
+    const r = await scheduleMatch(ev({
+      body: slotBody({
+        slotsRequired: 3,
+        slots: [
+          { position: 1, playerId: 'p1', lockedByAdmin: true },
+          { position: 2 },
+          { position: 3 },
+        ],
+      }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(201);
+    const b = JSON.parse(r!.body);
+    expect(b.status).toBe('open-signups');
+    expect(b.participants).toEqual(['p1']);
+    expect(b.slots[0].lockedByAdmin).toBe(true);
+    expect(b.slots[1].playerId).toBeUndefined();
+  });
+
+  it('rejects mixed payload (slots + participants)', async () => {
+    const r = await scheduleMatch(ev({
+      body: JSON.stringify({
+        matchFormat: 'Singles',
+        isChampionship: false,
+        date: '2024-06-01T00:00:00Z',
+        slotsRequired: 2,
+        slots: [{ position: 1 }, { position: 2 }],
+        participants: ['p1', 'p2'],
+      }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(JSON.parse(r!.body).message).toContain('mix');
+  });
+
+  it('rejects duplicate playerId across slots', async () => {
+    const r = await scheduleMatch(ev({
+      body: slotBody({
+        slots: [
+          { position: 1, playerId: 'p1' },
+          { position: 2, playerId: 'p1' },
+        ],
+      }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(JSON.parse(r!.body).message).toContain('Duplicate playerId');
+  });
+
+  it('rejects non-contiguous slot positions', async () => {
+    const r = await scheduleMatch(ev({
+      body: slotBody({
+        slots: [
+          { position: 1 },
+          { position: 3 },
+        ],
+      }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(JSON.parse(r!.body).message).toContain('1..N contiguous');
+  });
+
+  it('rejects when slots length does not match slotsRequired', async () => {
+    const r = await scheduleMatch(ev({
+      body: slotBody({
+        slotsRequired: 3,
+        slots: [{ position: 1 }, { position: 2 }],
+      }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(JSON.parse(r!.body).message).toContain('slots length must equal');
+  });
+
+  it('rejects when slotsRequired < 2', async () => {
+    const r = await scheduleMatch(ev({
+      body: slotBody({ slotsRequired: 1, slots: [{ position: 1 }] }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(JSON.parse(r!.body).message).toContain('>= 2');
+  });
+
+  it('enforces championship division on a pre-filled slot', async () => {
+    mockPlayersFindById.mockImplementation(async (id: string) => {
+      if (id === 'p1') return { playerId: 'p1', divisionId: 'div-A' };
+      if (id === 'p2') return { playerId: 'p2', divisionId: 'div-B' };
+      return null;
+    });
+    mockChampionshipsFindById.mockResolvedValue({
+      championshipId: 'c1',
+      divisionId: 'div-A',
+    });
+    const r = await scheduleMatch(ev({
+      body: slotBody({
+        isChampionship: true,
+        championshipId: 'c1',
+        slots: [
+          { position: 1, playerId: 'p1' },
+          { position: 2, playerId: 'p2' },
+        ],
+      }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(JSON.parse(r!.body).message).toContain('division');
+  });
+});

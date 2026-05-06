@@ -3,6 +3,9 @@ import { handler as scheduleMatchHandler } from './scheduleMatch';
 import { handler as recordResultHandler } from './recordResult';
 import { handler as updateMatchHandler } from './updateMatch';
 import { handler as deleteMatchHandler } from './deleteMatch';
+import { handler as claimSlotHandler } from './claimSlot';
+import { handler as releaseSlotHandler } from './releaseSlot';
+import { handler as adminUpdateSlotHandler } from './adminUpdateSlot';
 import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
@@ -25,6 +28,24 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/matches/{matchId}/result',
     method: 'PUT',
     handler: recordResultHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/matches/{matchId}/slots/{slotId}/claim',
+    method: 'POST',
+    handler: claimSlotHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/matches/{matchId}/slots/{slotId}/claim',
+    method: 'DELETE',
+    handler: releaseSlotHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/matches/{matchId}/slots/{slotId}',
+    method: 'PUT',
+    handler: adminUpdateSlotHandler,
     requireAuth: true,
   },
   {

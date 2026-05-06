@@ -27,6 +27,34 @@ export interface Player {
   currentStreak?: { type: 'W' | 'L' | 'D'; count: number };
 }
 
+export type MatchStatus = 'scheduled' | 'completed' | 'cancelled' | 'open-signups';
+
+export interface MatchSlot {
+  slotId: string;
+  position: number;
+  playerId?: string;
+  claimedAt?: string;
+  lockedByAdmin?: boolean;
+  teamLabel?: string;
+}
+
+/**
+ * Slot enriched by the backend read paths (getEvent / getMatches).
+ * playerName + wrestlerName are present only when the slot is filled.
+ */
+export interface HydratedMatchSlot extends MatchSlot {
+  playerName?: string;
+  wrestlerName?: string;
+}
+
+/** Input for one slot when scheduling a match in slot mode. */
+export interface SlotInput {
+  position: number;
+  playerId?: string;
+  lockedByAdmin?: boolean;
+  teamLabel?: string;
+}
+
 export interface Match {
   matchId: string;
   date: string;
@@ -43,7 +71,9 @@ export interface Match {
   championshipId?: string;
   tournamentId?: string;
   seasonId?: string;
-  status: 'scheduled' | 'completed';
+  status: MatchStatus;
+  slots?: MatchSlot[];
+  slotsRequired?: number;
   createdAt: string;
   challengeId?: string;
   promoId?: string;
@@ -52,11 +82,15 @@ export interface Match {
 }
 
 // Input type for scheduling a new match (uses new field names, backend handles legacy fields)
+// Either supply legacy `participants` OR the slot-mode pair (`slots` + `slotsRequired`).
+// Mixed payloads are rejected by the backend.
 export interface ScheduleMatchInput {
   date?: string;
   matchFormat: string;
   stipulationId?: string;
-  participants: string[];
+  participants?: string[];
+  slots?: SlotInput[];
+  slotsRequired?: number;
   teams?: string[][];
   isChampionship: boolean;
   championshipId?: string;

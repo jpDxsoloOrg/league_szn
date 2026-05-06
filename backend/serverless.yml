@@ -383,6 +383,14 @@ functions:
           method: put
           cors: *corsConfig
       - http:
+          path: matches/{matchId}/slots/{slotId}/claim
+          method: any
+          cors: *corsConfig
+      - http:
+          path: matches/{matchId}/slots/{slotId}
+          method: any
+          cors: *corsConfig
+      - http:
           path: matches/{matchId}
           method: any
           cors: *corsConfig

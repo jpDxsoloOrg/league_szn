@@ -157,6 +157,14 @@
   gap: 0;
 }
 
+/* When slots follow a match card, drop the match-entry's bottom rounding so
+ * the slot section reads as a flush footer of the same card. */
+.match-entry-with-actions.has-slots .match-entry {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  padding-bottom: 14px;
+}
+
 .match-entry-actions {
   display: flex;
   gap: 8px;

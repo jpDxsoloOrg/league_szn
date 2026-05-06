@@ -442,6 +442,32 @@
     "matchOfTheNightBadge": "Match of the Night",
     "clearRating": "Clear rating"
   },
+  "matches": {
+    "slots": {
+      "claim": "Claim spot",
+      "claiming": "Claiming…",
+      "release": "Release",
+      "releasing": "Releasing…",
+      "locked": "Locked",
+      "open": "Open spot",
+      "openOption": "— Open spot —",
+      "openCountBadge": "{{open}} of {{total}} spots open",
+      "adminEdit": "Edit",
+      "editTitle": "Edit slot {{position}}",
+      "editPlayerLabel": "Player",
+      "editClear": "Clear slot",
+      "lockToggle": "Lock",
+      "teamLabel": "Team label",
+      "teamLabelPlaceholder": "Team (optional)",
+      "signupModeToggle": "Open match for signups",
+      "slotsRequiredLabel": "Number of spots",
+      "editorLabel": "Slots",
+      "openSpotsHeader": "Open spots",
+      "spotsHeader": "Spots",
+      "alreadyBookedOnEvent": "You already have a slot in another match on this event — release that one first",
+      "alreadyBookedTooltip": "You already have a slot in another match on this event"
+    }
+  },
   "matchSearch": {
     "title": "Match Search",
     "filtersLabel": "Match filters",

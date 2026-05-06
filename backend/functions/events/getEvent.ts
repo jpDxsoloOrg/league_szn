@@ -1,6 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
+import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { hydrateMatchSlots } from '../matches/hydrateSlots';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -46,11 +48,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           };
         }
 
-        // Fetch participant player data via repository
+        // Fetch participant player data via repository. The same lookup also
+        // feeds slot hydration below, since slot playerIds are a subset of
+        // participants in slot-mode matches.
         const participantData: { playerId: string; playerName: string; wrestlerName: string }[] = [];
+        const playerLookup = new Map<string, Player>();
         if (Array.isArray(match.participants) && match.participants.length > 0) {
           const playerPromises = (match.participants as string[]).map(async (playerId: string) => {
             const player = await players.findById(playerId);
+            if (player) playerLookup.set(playerId, player);
             return {
               playerId,
               playerName: player?.name || 'Unknown Player',
@@ -59,6 +65,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           });
           participantData.push(...(await Promise.all(playerPromises)));
         }
+
+        // Slot hydration (pure read enrichment, no persistence).
+        const slots = match.slots as MatchSlot[] | undefined;
+        const hydratedSlots = slots && slots.length > 0
+          ? hydrateMatchSlots(slots, playerLookup)
+          : undefined;
 
         // Fetch championship name via repository
         let championshipName: string | undefined;
@@ -90,6 +102,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             isChampionship: match.isChampionship || false,
             championshipName,
             status: match.status,
+            ...(hydratedSlots && { slots: hydratedSlots, slotsRequired: match.slotsRequired }),
             ...(match.starRating != null && { starRating: match.starRating }),
             ...(match.matchOfTheNight != null && { matchOfTheNight: match.matchOfTheNight }),
           },

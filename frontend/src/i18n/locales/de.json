@@ -442,6 +442,32 @@
     "matchOfTheNightBadge": "Match of the Night",
     "clearRating": "Bewertung löschen"
   },
+  "matches": {
+    "slots": {
+      "claim": "Platz beanspruchen",
+      "claiming": "Wird beansprucht…",
+      "release": "Freigeben",
+      "releasing": "Wird freigegeben…",
+      "locked": "Gesperrt",
+      "open": "Freier Platz",
+      "openOption": "— Freier Platz —",
+      "openCountBadge": "{{open}} von {{total}} Plätzen frei",
+      "adminEdit": "Bearbeiten",
+      "editTitle": "Platz {{position}} bearbeiten",
+      "editPlayerLabel": "Spieler",
+      "editClear": "Platz leeren",
+      "lockToggle": "Sperren",
+      "teamLabel": "Team-Label",
+      "teamLabelPlaceholder": "Team (optional)",
+      "signupModeToggle": "Match für Anmeldungen öffnen",
+      "slotsRequiredLabel": "Anzahl der Plätze",
+      "editorLabel": "Plätze",
+      "openSpotsHeader": "Freie Plätze",
+      "spotsHeader": "Plätze",
+      "alreadyBookedOnEvent": "Du hast bereits einen Platz in einem anderen Match dieser Veranstaltung — gib ihn erst frei",
+      "alreadyBookedTooltip": "Du hast bereits einen Platz in einem anderen Match dieser Veranstaltung"
+    }
+  },
   "matchSearch": {
     "title": "Kampf-Suche",
     "filtersLabel": "Kampffilter",

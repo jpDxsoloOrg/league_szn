@@ -1,6 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
+import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, serverError } from '../../lib/response';
+import { collectSlotPlayerIds, hydrateMatchSlots } from './hydrateSlots';
 
 const MATCH_TYPE_ALIAS_GROUPS: string[][] = [
   ['single', 'singles'],
@@ -95,7 +97,38 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return new Date(b.date as string).getTime() - new Date(a.date as string).getTime();
     });
 
-    return success(sortedMatches);
+    // Slot hydration: collect every unique playerId across all slot-mode matches,
+    // batch-fetch them in parallel, then enrich each match's slots with playerName /
+    // wrestlerName. Pure read enrichment — never persisted.
+    const allSlotPlayerIds = new Set<string>();
+    for (const m of sortedMatches) {
+      const slots = m.slots as MatchSlot[] | undefined;
+      if (slots && slots.length > 0) {
+        for (const id of collectSlotPlayerIds(slots)) {
+          allSlotPlayerIds.add(id);
+        }
+      }
+    }
+
+    let playerLookup = new Map<string, Player>();
+    if (allSlotPlayerIds.size > 0) {
+      const { roster: { players } } = getRepositories();
+      const fetched = await Promise.all(
+        [...allSlotPlayerIds].map(async (id) => {
+          const p = await players.findById(id);
+          return p ? ([id, p] as const) : null;
+        }),
+      );
+      playerLookup = new Map(fetched.filter((entry): entry is readonly [string, Player] => entry !== null));
+    }
+
+    const hydratedMatches = sortedMatches.map((m) => {
+      const slots = m.slots as MatchSlot[] | undefined;
+      if (!slots || slots.length === 0) return m;
+      return { ...m, slots: hydrateMatchSlots(slots, playerLookup) };
+    });
+
+    return success(hydratedMatches);
   } catch (err) {
     console.error('Error fetching matches:', err);
     return serverError('Failed to fetch matches');
