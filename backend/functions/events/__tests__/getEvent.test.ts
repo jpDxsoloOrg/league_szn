@@ -223,4 +223,92 @@ describe('getEvent', () => {
     expect(result!.statusCode).toBe(500);
     expect(JSON.parse(result!.body).message).toBe('Failed to fetch event');
   });
+
+  it('participants[].wrestlerName uses slot wrestlerNameSnapshot when present (MSL-03)', async () => {
+    // Regression: a player who claimed a slot with their alternate must show
+    // up as that alternate name in BOTH the slot row and the match-card
+    // header (which reads from participants[].wrestlerName). Previously the
+    // header always rendered the player's currentWrestler regardless.
+    const player = await repos.roster.players.create({
+      name: 'JPAdmin',
+      currentWrestler: 'Raquel Rodriguez',
+      alternateWrestler: 'Diamond Dallas Page',
+    });
+
+    const match = await repos.competition.matches.create({
+      matchId: 'm-snap',
+      date: '2024-01-01',
+      matchFormat: 'singles',
+      participants: [player.playerId],
+      slots: [
+        {
+          slotId: 's1',
+          position: 1,
+          playerId: player.playerId,
+          claimedAt: '2024-01-01T00:00:00Z',
+          wrestlerChoice: 'alternate',
+          wrestlerNameSnapshot: 'Diamond Dallas Page',
+        },
+      ],
+      slotsRequired: 2,
+      isChampionship: false,
+      status: 'open-signups',
+      createdAt: new Date().toISOString(),
+    });
+
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'Raw', eventType: 'weekly', date: '2024-01-01',
+    });
+    await repos.leagueOps.events.update(eventItem.eventId, {
+      matchCards: [
+        { position: 1, matchId: match.matchId, designation: 'midcard' as const },
+      ],
+    });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
+    const result = await getEvent(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    const md = body.enrichedMatches[0].matchData;
+    // The header / participants list shows the alternate, not the live main.
+    expect(md.participants[0].wrestlerName).toBe('Diamond Dallas Page');
+    // Slot row also shows the alternate (existing MSL-03 hydration).
+    expect(md.slots[0].wrestlerName).toBe('Diamond Dallas Page');
+  });
+
+  it('participants[].wrestlerName falls back to currentWrestler when no snapshot is set', async () => {
+    // Legacy path: a slot claimed before MSL-03 has no wrestlerNameSnapshot.
+    // The header should fall back to the player's currentWrestler.
+    const player = await repos.roster.players.create({
+      name: 'JPAdmin',
+      currentWrestler: 'Stone Cold',
+    });
+    const match = await repos.competition.matches.create({
+      matchId: 'm-legacy',
+      date: '2024-01-01',
+      matchFormat: 'singles',
+      participants: [player.playerId],
+      slots: [
+        { slotId: 's1', position: 1, playerId: player.playerId },
+      ],
+      slotsRequired: 2,
+      isChampionship: false,
+      status: 'open-signups',
+      createdAt: new Date().toISOString(),
+    });
+    const eventItem = await repos.leagueOps.events.create({
+      name: 'Raw', eventType: 'weekly', date: '2024-01-01',
+    });
+    await repos.leagueOps.events.update(eventItem.eventId, {
+      matchCards: [{ position: 1, matchId: match.matchId, designation: 'midcard' as const }],
+    });
+
+    const event = makeEvent({ pathParameters: { eventId: eventItem.eventId } });
+    const result = await getEvent(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.enrichedMatches[0].matchData.participants[0].wrestlerName).toBe('Stone Cold');
+  });
 });

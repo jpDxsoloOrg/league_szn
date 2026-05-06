@@ -48,6 +48,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           };
         }
 
+        // Build a playerId → wrestlerNameSnapshot lookup from this match's
+        // slots so the participants list (used by the match-card header) shows
+        // the wrestler the player actually claimed with — not their live
+        // currentWrestler. Without this, a player who claimed with their
+        // alternate would still display as their main in the header even
+        // though the slot row below correctly shows the alternate.
+        const slots = match.slots as MatchSlot[] | undefined;
+        const slotSnapshotByPlayer = new Map<string, string>();
+        if (slots) {
+          for (const s of slots) {
+            if (s.playerId && s.wrestlerNameSnapshot && !slotSnapshotByPlayer.has(s.playerId)) {
+              slotSnapshotByPlayer.set(s.playerId, s.wrestlerNameSnapshot);
+            }
+          }
+        }
+
         // Fetch participant player data via repository. The same lookup also
         // feeds slot hydration below, since slot playerIds are a subset of
         // participants in slot-mode matches.
@@ -57,17 +73,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           const playerPromises = (match.participants as string[]).map(async (playerId: string) => {
             const player = await players.findById(playerId);
             if (player) playerLookup.set(playerId, player);
+            const snapshot = slotSnapshotByPlayer.get(playerId);
             return {
               playerId,
               playerName: player?.name || 'Unknown Player',
-              wrestlerName: player?.currentWrestler || 'Unknown Wrestler',
+              wrestlerName: snapshot ?? player?.currentWrestler ?? 'Unknown Wrestler',
             };
           });
           participantData.push(...(await Promise.all(playerPromises)));
         }
 
         // Slot hydration (pure read enrichment, no persistence).
-        const slots = match.slots as MatchSlot[] | undefined;
         const hydratedSlots = slots && slots.length > 0
           ? hydrateMatchSlots(slots, playerLookup)
           : undefined;
