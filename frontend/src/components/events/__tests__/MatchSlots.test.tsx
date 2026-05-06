@@ -214,4 +214,65 @@ describe('MatchSlots', () => {
     });
     expect(screen.getByRole('button', { name: 'Release' })).not.toBeDisabled();
   });
+
+  // ── MSL-03: wrestler chooser ────────────────────────────────────────────
+
+  it('claims directly without a chooser when the player has no alternate', async () => {
+    const onClaim = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderSlots({
+      slots: [open()],
+      isAuthenticated: true,
+      onClaim,
+      currentPlayerCurrentWrestler: 'Stone Cold',
+      currentPlayerAlternateWrestler: null,
+    });
+    await user.click(screen.getByRole('button', { name: 'Claim spot' }));
+    await waitFor(() => expect(onClaim).toHaveBeenCalled());
+    // Called with just the slotId (no chooser, so no options arg).
+    expect(onClaim.mock.calls[0][0]).toBe('s2');
+    expect(onClaim.mock.calls[0][1]).toBeUndefined();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('opens the chooser when the player has both wrestlers and submits the choice', async () => {
+    const onClaim = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderSlots({
+      slots: [open()],
+      isAuthenticated: true,
+      onClaim,
+      currentPlayerCurrentWrestler: 'Stone Cold',
+      currentPlayerAlternateWrestler: 'The Rock',
+    });
+    await user.click(screen.getByRole('button', { name: 'Claim spot' }));
+
+    // Chooser is open, default selection is 'main'
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(onClaim).not.toHaveBeenCalled();
+
+    // Pick alternate, confirm
+    await user.click(screen.getByRole('radio', { name: /Use alternate/i }));
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    await waitFor(() =>
+      expect(onClaim).toHaveBeenCalledWith('s2', { wrestlerChoice: 'alternate' }),
+    );
+  });
+
+  it('cancel on the chooser does not call onClaim', async () => {
+    const onClaim = vi.fn();
+    const user = userEvent.setup();
+    renderSlots({
+      slots: [open()],
+      isAuthenticated: true,
+      onClaim,
+      currentPlayerCurrentWrestler: 'Stone Cold',
+      currentPlayerAlternateWrestler: 'The Rock',
+    });
+    await user.click(screen.getByRole('button', { name: 'Claim spot' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onClaim).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
 });
