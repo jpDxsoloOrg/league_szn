@@ -31,6 +31,7 @@ provider:
     MATCH_TYPES_TABLE: ${self:service}-match-types-${self:provider.stage}
     SEASON_AWARDS_TABLE: ${self:service}-season-awards-${self:provider.stage}
     COMPANIES_TABLE: ${self:service}-companies-${self:provider.stage}
+    LOCATIONS_TABLE: ${self:service}-locations-${self:provider.stage}
     SHOWS_TABLE: ${self:service}-shows-${self:provider.stage}
     STABLES_TABLE: ${self:service}-stables-${self:provider.stage}
     TAG_TEAMS_TABLE: ${self:service}-tag-teams-${self:provider.stage}
@@ -93,6 +94,7 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_TYPES_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SEASON_AWARDS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.COMPANIES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.LOCATIONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SHOWS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SHOWS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STABLES_TABLE}
@@ -530,6 +532,39 @@ functions:
           path: shows/{showId}
           method: any
           cors: *corsConfig
+
+  # Locations (CRUD + bulk import for venue records used by events)
+  locations:
+    handler: functions/locations/handler.handler
+    events:
+      - http:
+          path: locations
+          method: get
+          cors: *corsConfig
+      - http:
+          path: locations
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: locations/bulk
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: locations/{locationId}
+          method: get
+          cors: *corsConfig
+      - http:
+          path: locations/{locationId}
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: locations/{locationId}
+          method: delete
+          cors: *corsConfig
+          authorizer: adminAuthorizer
 
   # Divisions (Phase 1 consolidated: getDivisions, createDivision, updateDivision, deleteDivision)
   divisions:
@@ -1604,6 +1639,18 @@ resources:
             AttributeType: S
         KeySchema:
           - AttributeName: companyId
+            KeyType: HASH
+
+    LocationsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.LOCATIONS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: locationId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: locationId
             KeyType: HASH
 
     StablesTable:
