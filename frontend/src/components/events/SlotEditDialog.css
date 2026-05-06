@@ -105,3 +105,14 @@
 .slot-edit-dialog-save:hover:not(:disabled) {
   background: #1d4ed8 !important;
 }
+
+.slot-edit-dialog-wrestler-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slot-edit-dialog-wrestler-options .slot-edit-dialog-checkbox {
+  flex-direction: row;
+  align-items: center;
+}

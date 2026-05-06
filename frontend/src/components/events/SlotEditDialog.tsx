@@ -16,6 +16,7 @@ export interface SlotEditDialogProps {
     playerId?: string | null;
     lockedByAdmin?: boolean;
     teamLabel?: string | null;
+    wrestlerChoice?: 'main' | 'alternate';
   }) => Promise<void>;
   onClose: () => void;
 }
@@ -25,6 +26,7 @@ export default function SlotEditDialog({ slot, players, onSave, onClose }: SlotE
   const [playerId, setPlayerId] = useState<string>('');
   const [locked, setLocked] = useState(false);
   const [teamLabel, setTeamLabel] = useState<string>('');
+  const [wrestlerChoice, setWrestlerChoice] = useState<'main' | 'alternate'>('main');
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -34,17 +36,30 @@ export default function SlotEditDialog({ slot, players, onSave, onClose }: SlotE
     setPlayerId(slot.playerId ?? '');
     setLocked(!!slot.lockedByAdmin);
     setTeamLabel(slot.teamLabel ?? '');
+    setWrestlerChoice(slot.wrestlerChoice ?? 'main');
     setErrorMsg(null);
   }, [slot]);
 
   if (!slot) return null;
 
+  // Show the Wrestler radio only when the picked player has an alternate set.
+  const pickedPlayer = playerId
+    ? players.find((p) => p.playerId === playerId)
+    : undefined;
+  const showWrestlerRadio = !!pickedPlayer?.alternateWrestler;
+
   const buildPatch = (): {
     playerId?: string | null;
     lockedByAdmin?: boolean;
     teamLabel?: string | null;
+    wrestlerChoice?: 'main' | 'alternate';
   } => {
-    const patch: { playerId?: string | null; lockedByAdmin?: boolean; teamLabel?: string | null } = {};
+    const patch: {
+      playerId?: string | null;
+      lockedByAdmin?: boolean;
+      teamLabel?: string | null;
+      wrestlerChoice?: 'main' | 'alternate';
+    } = {};
     const trimmedLabel = teamLabel.trim();
     const originalLabel = slot.teamLabel ?? '';
 
@@ -57,6 +72,16 @@ export default function SlotEditDialog({ slot, players, onSave, onClose }: SlotE
     }
     if (trimmedLabel !== originalLabel) {
       patch.teamLabel = trimmedLabel === '' ? null : trimmedLabel;
+    }
+    // wrestlerChoice: include when re-assigning (so backend can default to
+    // 'main' or honor 'alternate'), or when explicitly switching the radio
+    // on an existing claimant. Hidden + omitted when the player has no alt.
+    if (showWrestlerRadio) {
+      const reassigning = patch.playerId !== undefined && patch.playerId !== null;
+      const choiceChanged = wrestlerChoice !== (slot.wrestlerChoice ?? 'main');
+      if (reassigning || choiceChanged) {
+        patch.wrestlerChoice = wrestlerChoice;
+      }
     }
     return patch;
   };
@@ -124,6 +149,44 @@ export default function SlotEditDialog({ slot, players, onSave, onClose }: SlotE
             ))}
           </select>
         </div>
+
+        {showWrestlerRadio && pickedPlayer && (
+          <div className="slot-edit-dialog-row">
+            <label>
+              {t('matches.slots.editWrestlerLabel', { defaultValue: 'Wrestler' })}
+            </label>
+            <div className="slot-edit-dialog-wrestler-options">
+              <label className="slot-edit-dialog-checkbox">
+                <input
+                  type="radio"
+                  name="slot-edit-wrestler-choice"
+                  value="main"
+                  checked={wrestlerChoice === 'main'}
+                  disabled={saving}
+                  onChange={() => setWrestlerChoice('main')}
+                />
+                {t('matches.slots.useMain', {
+                  name: pickedPlayer.currentWrestler,
+                  defaultValue: `Use main: ${pickedPlayer.currentWrestler}`,
+                })}
+              </label>
+              <label className="slot-edit-dialog-checkbox">
+                <input
+                  type="radio"
+                  name="slot-edit-wrestler-choice"
+                  value="alternate"
+                  checked={wrestlerChoice === 'alternate'}
+                  disabled={saving}
+                  onChange={() => setWrestlerChoice('alternate')}
+                />
+                {t('matches.slots.useAlternate', {
+                  name: pickedPlayer.alternateWrestler,
+                  defaultValue: `Use alternate: ${pickedPlayer.alternateWrestler}`,
+                })}
+              </label>
+            </div>
+          </div>
+        )}
 
         <div className="slot-edit-dialog-row">
           <label className="slot-edit-dialog-checkbox">
