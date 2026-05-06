@@ -1,16 +1,25 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
 import { getRepositories } from '../../lib/repositories';
-import type { MatchDesignation, MatchCardEntry } from '../../lib/repositories/types';
+import type { MatchDesignation, MatchCardEntry, MatchSlot, MatchStatus } from '../../lib/repositories/types';
 import { created, badRequest, notFound, serverError, error as errorResponse } from '../../lib/response';
 import { createNotifications } from '../../lib/notifications';
 import { parseBody } from '../../lib/parseBody';
+
+export interface SlotInput {
+  position: number;
+  playerId?: string;
+  lockedByAdmin?: boolean;
+  teamLabel?: string;
+}
 
 export interface ScheduleMatchInput {
   date?: string;
   matchFormat: string; // "singles", "tag", "triple-threat", etc.
   stipulationId?: string;
-  participants: string[];
+  participants?: string[];
+  slots?: SlotInput[];
+  slotsRequired?: number;
   teams?: string[][];
   isChampionship: boolean;
   championshipId?: string;
@@ -28,6 +37,8 @@ export interface ScheduleMatchResult {
   matchFormat: string;
   stipulationId?: string;
   participants: string[];
+  slots?: MatchSlot[];
+  slotsRequired?: number;
   teams?: string[][];
   isChampionship: boolean;
   championshipId?: string;
@@ -36,7 +47,7 @@ export interface ScheduleMatchResult {
   eventId?: string;
   challengeId?: string;
   promoId?: string;
-  status: 'scheduled';
+  status: MatchStatus;
   createdAt: string;
 }
 
@@ -71,8 +82,71 @@ export async function scheduleMatchInternal(
   const repos = getRepositories();
   const { competition, roster, season: seasonAggregate, leagueOps, user, content } = repos;
 
-  if (!input.matchFormat || !input.participants || input.participants.length < 2) {
-    throw new ScheduleMatchError(400, 'matchFormat and at least 2 participants are required');
+  if (!input.matchFormat) {
+    throw new ScheduleMatchError(400, 'matchFormat is required');
+  }
+
+  // Detect slot-mode vs legacy-participants payload
+  const isSlotMode = input.slots !== undefined || input.slotsRequired !== undefined;
+  const hasLegacyParticipants = Array.isArray(input.participants) && input.participants.length > 0;
+  if (isSlotMode && hasLegacyParticipants) {
+    throw new ScheduleMatchError(400, 'Cannot mix slot-based payload with participants array');
+  }
+
+  const now = new Date().toISOString();
+
+  // resolvedSlots: server-shaped slots with generated slotIds; only set in slot-mode
+  // derivedParticipants: union of filled slot playerIds (slot-mode) or input.participants (legacy)
+  let resolvedSlots: MatchSlot[] | undefined;
+  let derivedParticipants: string[];
+
+  if (isSlotMode) {
+    if (typeof input.slotsRequired !== 'number' || input.slotsRequired < 2) {
+      throw new ScheduleMatchError(400, 'slotsRequired must be a number >= 2');
+    }
+    if (!Array.isArray(input.slots) || input.slots.length !== input.slotsRequired) {
+      throw new ScheduleMatchError(
+        400,
+        `slots length must equal slotsRequired (${input.slotsRequired})`,
+      );
+    }
+    // Positions must be 1..N contiguous (no gaps, no duplicates)
+    const sortedPositions = input.slots.map((s) => s.position).sort((a, b) => a - b);
+    for (let i = 0; i < sortedPositions.length; i += 1) {
+      if (sortedPositions[i] !== i + 1) {
+        throw new ScheduleMatchError(400, 'Slot positions must be 1..N contiguous');
+      }
+    }
+    const filledIds = input.slots
+      .map((s) => s.playerId)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0);
+    if (new Set(filledIds).size !== filledIds.length) {
+      throw new ScheduleMatchError(400, 'Duplicate playerId across slots is not allowed');
+    }
+    derivedParticipants = filledIds;
+    resolvedSlots = input.slots.map((s) => {
+      const slot: MatchSlot = {
+        slotId: uuidv4(),
+        position: s.position,
+      };
+      if (s.playerId) {
+        slot.playerId = s.playerId;
+        slot.claimedAt = now;
+      }
+      if (s.lockedByAdmin) slot.lockedByAdmin = true;
+      if (s.teamLabel) slot.teamLabel = s.teamLabel;
+      return slot;
+    });
+  } else {
+    if (!Array.isArray(input.participants) || input.participants.length < 2) {
+      throw new ScheduleMatchError(400, 'at least 2 participants are required');
+    }
+    // Check for duplicate participants
+    const uniqueParticipants = new Set(input.participants);
+    if (uniqueParticipants.size !== input.participants.length) {
+      throw new ScheduleMatchError(400, 'Duplicate participants are not allowed');
+    }
+    derivedParticipants = input.participants;
   }
 
   // Resolve date: use provided date, or event date if eventId given, or today
@@ -84,21 +158,16 @@ export async function scheduleMatchInternal(
     }
   }
   if (!resolvedDate) {
-    resolvedDate = new Date().toISOString();
+    resolvedDate = now;
   }
 
   if (input.isChampionship && !input.championshipId) {
     throw new ScheduleMatchError(400, 'Championship ID is required for championship matches');
   }
 
-  // Check for duplicate participants
-  const uniqueParticipants = new Set(input.participants);
-  if (uniqueParticipants.size !== input.participants.length) {
-    throw new ScheduleMatchError(400, 'Duplicate participants are not allowed');
-  }
-
-  // Validate all participants exist
-  const playerValidationPromises = input.participants.map(async (playerId) => {
+  // Validate all (filled) participants exist. In slot-mode this is filled slots only;
+  // in legacy mode it's the full participants array.
+  const playerValidationPromises = derivedParticipants.map(async (playerId) => {
     const player = await roster.players.findById(playerId);
     return { playerId, exists: !!player, player: player as unknown as Record<string, unknown> | null };
   });
@@ -170,20 +239,29 @@ export async function scheduleMatchInternal(
     }
   }
 
-  const now = new Date().toISOString();
+  // Status: open-signups when slot-mode has any unfilled slot; scheduled otherwise.
+  const hasOpenSlot = resolvedSlots
+    ? resolvedSlots.some((s) => !s.playerId)
+    : false;
+  const status: MatchStatus = hasOpenSlot ? 'open-signups' : 'scheduled';
+
   const match: Record<string, unknown> = {
     matchId: uuidv4(),
     date: resolvedDate,
     matchFormat: input.matchFormat,
     stipulationId: input.stipulationId,
-    participants: input.participants,
+    participants: derivedParticipants,
     isChampionship: input.isChampionship,
     championshipId: input.championshipId,
     tournamentId: input.tournamentId,
     seasonId: input.seasonId,
-    status: 'scheduled',
+    status,
     createdAt: now,
   };
+  if (resolvedSlots) {
+    match.slots = resolvedSlots;
+    match.slotsRequired = input.slotsRequired;
+  }
   if (input.eventId) match.eventId = input.eventId;
   if (input.teams && input.teams.length > 0) match.teams = input.teams;
   if (input.challengeId) match.challengeId = input.challengeId;
