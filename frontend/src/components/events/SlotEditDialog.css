@@ -1,0 +1,107 @@
+.slot-edit-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.slot-edit-dialog {
+  background: #1f1f1f;
+  color: #eaeaea;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 22px 24px;
+  min-width: 340px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+.slot-edit-dialog h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+}
+
+.slot-edit-dialog-row {
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slot-edit-dialog-row label {
+  font-size: 0.85rem;
+  color: #c0c0c0;
+}
+
+.slot-edit-dialog-row select,
+.slot-edit-dialog-row input[type="text"] {
+  padding: 8px 10px;
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.slot-edit-dialog-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.slot-edit-dialog-error {
+  margin-top: 8px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  color: #fecaca;
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  border-radius: 4px;
+}
+
+.slot-edit-dialog-actions {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.slot-edit-dialog-actions button {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #333;
+  color: #eaeaea;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.slot-edit-dialog-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.slot-edit-dialog-clear {
+  margin-right: auto;
+  color: #fca5a5 !important;
+  border-color: rgba(252, 165, 165, 0.4) !important;
+  background: rgba(252, 165, 165, 0.08) !important;
+}
+
+.slot-edit-dialog-save {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: white !important;
+}
+
+.slot-edit-dialog-save:hover:not(:disabled) {
+  background: #1d4ed8 !important;
+}

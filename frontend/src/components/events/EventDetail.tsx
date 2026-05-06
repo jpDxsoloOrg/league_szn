@@ -18,6 +18,8 @@ import MatchEditForm from './MatchEditForm';
 import EventCheckIn from './EventCheckIn';
 import EventCheckInRosterPanel from './EventCheckInRosterPanel';
 import MatchSlots from './MatchSlots';
+import SlotEditDialog from './SlotEditDialog';
+import type { HydratedMatchSlot } from '../../types';
 import './EventDetail.css';
 
 const eventTypeColors: Record<string, string> = {
@@ -148,6 +150,24 @@ export default function EventDetail() {
     const returnUrl = encodeURIComponent(`/events/${eventId}`);
     navigate(`/login?returnUrl=${returnUrl}`);
   }, [eventId, navigate]);
+
+  // ── Admin slot-edit dialog ────────────────────────────────────────────────
+  const [editingSlot, setEditingSlot] = useState<{ matchId: string; slot: HydratedMatchSlot } | null>(null);
+
+  const handleAdminEditSlot = useCallback((matchId: string, slot: HydratedMatchSlot) => {
+    setEditingSlot({ matchId, slot });
+  }, []);
+
+  const handleSlotEditSave = useCallback(async (
+    patch: { playerId?: string | null; lockedByAdmin?: boolean; teamLabel?: string | null },
+  ) => {
+    if (!editingSlot) return;
+    try {
+      await matchesApi.adminUpdateSlot(editingSlot.matchId, editingSlot.slot.slotId, patch);
+    } finally {
+      await loadEvent();
+    }
+  }, [editingSlot, loadEvent]);
 
   const handleStatusChange = async (newStatus: string) => {
     if (!eventData || !eventId || newStatus === eventData.status) return;
@@ -427,6 +447,9 @@ export default function EventDetail() {
             onClaim={(slotId) => handleClaimSlot(match.matchId, slotId)}
             onRelease={(slotId) => handleReleaseSlot(match.matchId, slotId)}
             onLoginRequired={handleLoginRequired}
+            onAdminEdit={isAdminOrModerator
+              ? (slot) => handleAdminEditSlot(match.matchId, slot)
+              : undefined}
           />
         )}
         {isRecording && rawMatch && (
@@ -662,6 +685,13 @@ export default function EventDetail() {
           bookedPlayerIds={bookedPlayerIds}
         />
       )}
+
+      <SlotEditDialog
+        slot={editingSlot?.slot ?? null}
+        players={players}
+        onSave={handleSlotEditSave}
+        onClose={() => setEditingSlot(null)}
+      />
     </div>
   );
 }
