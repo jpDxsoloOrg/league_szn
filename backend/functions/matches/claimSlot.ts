@@ -79,16 +79,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return conflict('You already occupy another slot in this match');
     }
 
-    // Event-level gate: reject claims on events that are past, completed, or cancelled.
+    // Event-level gate: trust the admin-controlled status. We do NOT reject
+    // based on `event.date` being in the past — date-only strings parse as
+    // midnight UTC, so a same-day event would be falsely blocked anywhere
+    // east of UTC after midnight local time. The admin advances status to
+    // 'in-progress' / 'completed' to lock signups; that's authoritative.
     if (match.eventId) {
       const linkedEvent = await eventsRepo.findById(match.eventId);
-      if (linkedEvent) {
-        if (linkedEvent.status === 'completed' || linkedEvent.status === 'cancelled') {
-          return conflict('Event is no longer accepting signups');
-        }
-        if (linkedEvent.date && new Date(linkedEvent.date).getTime() < Date.now()) {
-          return conflict('Event has already started');
-        }
+      if (linkedEvent && (linkedEvent.status === 'completed' || linkedEvent.status === 'cancelled')) {
+        return conflict('Event is no longer accepting signups');
       }
     }
 

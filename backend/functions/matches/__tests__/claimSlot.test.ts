@@ -227,20 +227,22 @@ describe('claimSlot', () => {
     expect(r!.statusCode).toBe(403);
   });
 
-  it('returns 409 when linked event has already started (past date)', async () => {
+  it('allows claim on an upcoming event even if its date is in the past', async () => {
+    // Date-only ISO strings parse as midnight UTC; a same-day event would
+    // be falsely blocked by a naive past-date check. We trust the
+    // admin-controlled status instead — only completed/cancelled gates.
     mockMatchesFindByIdWithDate.mockResolvedValue(
       makeMatch({ eventId: 'e1' }),
     );
     mockEventsFindById.mockResolvedValue({
       eventId: 'e1',
       status: 'upcoming',
-      date: '2000-01-01T00:00:00Z', // far past
+      date: '2000-01-01T00:00:00Z',
     });
     captureTx();
 
     const r = await claimSlot(ev(), ctx, cb);
-    expect(r!.statusCode).toBe(409);
-    expect(JSON.parse(r!.body).message).toContain('already started');
+    expect(r!.statusCode).toBe(200);
   });
 
   it('returns 409 when linked event is completed', async () => {
