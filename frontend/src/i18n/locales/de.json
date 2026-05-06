@@ -463,7 +463,9 @@
       "slotsRequiredLabel": "Anzahl der Plätze",
       "editorLabel": "Plätze",
       "openSpotsHeader": "Freie Plätze",
-      "spotsHeader": "Plätze"
+      "spotsHeader": "Plätze",
+      "alreadyBookedOnEvent": "Du hast bereits einen Platz in einem anderen Match dieser Veranstaltung — gib ihn erst frei",
+      "alreadyBookedTooltip": "Du hast bereits einen Platz in einem anderen Match dieser Veranstaltung"
     }
   },
   "matchSearch": {

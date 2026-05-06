@@ -5,11 +5,13 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 const {
   mockMatchesFindByIdWithDate,
+  mockMatchesFindById,
   mockPlayersFindByUserId,
   mockEventsFindById,
   mockRunInTransaction,
 } = vi.hoisted(() => ({
   mockMatchesFindByIdWithDate: vi.fn(),
+  mockMatchesFindById: vi.fn(),
   mockPlayersFindByUserId: vi.fn(),
   mockEventsFindById: vi.fn(),
   mockRunInTransaction: vi.fn(),
@@ -18,7 +20,10 @@ const {
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
     competition: {
-      matches: { findByIdWithDate: mockMatchesFindByIdWithDate },
+      matches: {
+        findByIdWithDate: mockMatchesFindByIdWithDate,
+        findById: mockMatchesFindById,
+      },
     },
     leagueOps: {
       events: { findById: mockEventsFindById },
@@ -262,5 +267,110 @@ describe('claimSlot', () => {
 
     const r = await claimSlot(ev(), ctx, cb);
     expect(r!.statusCode).toBe(409);
+  });
+
+  // ── MSL-04: one slot per event card ────────────────────────────────────
+
+  it('rejects a claim when caller already occupies a slot on another match of the same event', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(
+      makeMatch({ eventId: 'e1', matchId: 'm-target' }),
+    );
+    mockEventsFindById.mockResolvedValue({
+      eventId: 'e1',
+      status: 'upcoming',
+      date: '2999-01-01T00:00:00Z',
+      matchCards: [
+        { matchId: 'm-target', position: 1, designation: 'midcard' },
+        { matchId: 'm-other', position: 2, designation: 'midcard' },
+      ],
+    });
+    mockMatchesFindById.mockImplementation(async (id: string) => {
+      if (id === 'm-other') {
+        return {
+          matchId: 'm-other',
+          slots: [
+            { slotId: 'o1', position: 1, playerId: 'p-caller', claimedAt: '2024-05-30T00:00:00Z' },
+            { slotId: 'o2', position: 2 },
+          ],
+        };
+      }
+      return null;
+    });
+    captureTx();
+
+    const r = await claimSlot(
+      ev({ pathParameters: { matchId: 'm-target', slotId: 's1' } }),
+      ctx,
+      cb,
+    );
+    expect(r!.statusCode).toBe(409);
+    expect(JSON.parse(r!.body).message).toContain('another match');
+    expect(mockRunInTransaction).not.toHaveBeenCalled();
+  });
+
+  it('allows a claim when caller occupies a slot on a different event', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(
+      makeMatch({ eventId: 'e1' }),
+    );
+    mockEventsFindById.mockResolvedValue({
+      eventId: 'e1',
+      status: 'upcoming',
+      date: '2999-01-01T00:00:00Z',
+      matchCards: [
+        // Only this match — no siblings on this event card.
+        { matchId: 'm1', position: 1, designation: 'midcard' },
+      ],
+    });
+    captureTx();
+
+    const r = await claimSlot(ev(), ctx, cb);
+    expect(r!.statusCode).toBe(200);
+    expect(mockMatchesFindById).not.toHaveBeenCalled();
+  });
+
+  it('allows a claim when sibling matches have no slots (legacy match in same event)', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(
+      makeMatch({ eventId: 'e1', matchId: 'm-target' }),
+    );
+    mockEventsFindById.mockResolvedValue({
+      eventId: 'e1',
+      status: 'upcoming',
+      date: '2999-01-01T00:00:00Z',
+      matchCards: [
+        { matchId: 'm-target', position: 1, designation: 'midcard' },
+        { matchId: 'm-legacy', position: 2, designation: 'midcard' },
+      ],
+    });
+    mockMatchesFindById.mockResolvedValue({
+      matchId: 'm-legacy',
+      slots: undefined, // legacy non-slot match
+    });
+    captureTx();
+
+    const r = await claimSlot(
+      ev({ pathParameters: { matchId: 'm-target', slotId: 's1' } }),
+      ctx,
+      cb,
+    );
+    expect(r!.statusCode).toBe(200);
+  });
+
+  it('idempotent re-claim short-circuits before the cross-match check (no event load)', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(
+      makeMatch({
+        eventId: 'e1',
+        slots: [
+          { slotId: 's1', position: 1, playerId: 'p-caller', claimedAt: '2024-05-30T00:00:00Z' },
+          { slotId: 's2', position: 2 },
+        ],
+        participants: ['p-caller'],
+      }),
+    );
+
+    const r = await claimSlot(ev(), ctx, cb);
+    expect(r!.statusCode).toBe(200);
+    expect(mockEventsFindById).not.toHaveBeenCalled();
+    expect(mockMatchesFindById).not.toHaveBeenCalled();
+    expect(mockRunInTransaction).not.toHaveBeenCalled();
   });
 });

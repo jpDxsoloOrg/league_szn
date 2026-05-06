@@ -26,6 +26,14 @@ export interface MatchSlotsProps {
   loading?: boolean;
   /** Number of skeleton rows when loading. Defaults to slots.length or 2. */
   loadingCount?: number;
+  /**
+   * When true, disable the Claim button for every slot in this match
+   * (MSL-04: one slot per event card). Release on the user's own slot is
+   * unaffected — they need to be able to give up their existing claim.
+   */
+  claimDisabled?: boolean;
+  /** Tooltip / hint shown on the disabled Claim button. */
+  disableClaimReason?: string;
 }
 
 /**
@@ -47,6 +55,8 @@ export default function MatchSlots(props: MatchSlotsProps) {
     onLoginRequired,
     loading = false,
     loadingCount,
+    claimDisabled = false,
+    disableClaimReason,
   } = props;
   const { t } = useTranslation();
   const [busySlotId, setBusySlotId] = useState<string | null>(null);
@@ -183,7 +193,8 @@ export default function MatchSlots(props: MatchSlotsProps) {
                   <button
                     type="button"
                     className="match-slot-btn match-slot-claim"
-                    disabled={busy}
+                    disabled={busy || claimDisabled}
+                    title={claimDisabled ? disableClaimReason : undefined}
                     onClick={() => handleClaim(slot.slotId)}
                   >
                     {busy
