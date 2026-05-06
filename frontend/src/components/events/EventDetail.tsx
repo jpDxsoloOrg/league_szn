@@ -377,6 +377,18 @@ export default function EventDetail() {
     (m) => m.designation !== 'pre-show'
   );
 
+  // MSL-04: a wrestler can only hold one slot across the whole event card.
+  // If the viewing user already occupies a slot in any match on this event,
+  // we record that matchId so we can disable the Claim button on every
+  // OTHER match. The user's own match keeps Claim enabled (idempotent
+  // re-claim is a no-op, and matters for the rare case where they want to
+  // move within the same match — though MSL-01 already prevents that).
+  const userOccupiedMatchId: string | null = playerId
+    ? (enrichedMatches.find((m) =>
+        m.matchData?.slots?.some((s) => s.playerId === playerId),
+      )?.matchId ?? null)
+    : null;
+
   const renderStarRating = (rating: number) => {
     const full = Math.floor(rating);
     const half = rating % 1 >= 0.5;
@@ -454,6 +466,12 @@ export default function EventDetail() {
             onAdminEdit={isAdminOrModerator
               ? (slot) => handleAdminEditSlot(match.matchId, slot)
               : undefined}
+            claimDisabled={
+              !!userOccupiedMatchId && userOccupiedMatchId !== match.matchId
+            }
+            disableClaimReason={t('matches.slots.alreadyBookedTooltip', {
+              defaultValue: 'You already have a slot in another match on this event',
+            })}
           />
         )}
         {isRecording && rawMatch && (
