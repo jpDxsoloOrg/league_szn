@@ -179,4 +179,39 @@ describe('MatchSlots', () => {
       's-third',
     ]);
   });
+
+  // ── MSL-04: one slot per event card ────────────────────────────────────
+
+  it('disables Claim and exposes the reason as a tooltip when claimDisabled is true', async () => {
+    const onClaim = vi.fn();
+    const user = userEvent.setup();
+    renderSlots({
+      slots: [open()],
+      isAuthenticated: true,
+      onClaim,
+      claimDisabled: true,
+      disableClaimReason: 'You already have a slot in another match on this event',
+    });
+    const btn = screen.getByRole('button', { name: 'Claim spot' });
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute(
+      'title',
+      'You already have a slot in another match on this event',
+    );
+    await user.click(btn);
+    expect(onClaim).not.toHaveBeenCalled();
+  });
+
+  it('still allows Release on the user\'s own slot even when claimDisabled is true', () => {
+    renderSlots({
+      slots: [
+        filled({ slotId: 's-mine', playerId: 'me', playerName: 'Me', wrestlerName: 'X' }),
+      ],
+      currentPlayerId: 'me',
+      isAuthenticated: true,
+      claimDisabled: true,
+      disableClaimReason: 'unused',
+    });
+    expect(screen.getByRole('button', { name: 'Release' })).not.toBeDisabled();
+  });
 });
