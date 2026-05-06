@@ -1,0 +1,259 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
+
+// ---- Mocks ----------------------------------------------------------------
+
+const {
+  mockMatchesFindByIdWithDate,
+  mockPlayersFindByUserId,
+  mockEventsFindById,
+  mockRunInTransaction,
+} = vi.hoisted(() => ({
+  mockMatchesFindByIdWithDate: vi.fn(),
+  mockPlayersFindByUserId: vi.fn(),
+  mockEventsFindById: vi.fn(),
+  mockRunInTransaction: vi.fn(),
+}));
+
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    competition: {
+      matches: { findByIdWithDate: mockMatchesFindByIdWithDate },
+    },
+    leagueOps: {
+      events: { findById: mockEventsFindById },
+    },
+    roster: {
+      players: { findByUserId: mockPlayersFindByUserId },
+    },
+    runInTransaction: mockRunInTransaction,
+  }),
+}));
+
+import { handler as claimSlot } from '../claimSlot';
+
+// ---- Helpers ---------------------------------------------------------------
+
+const ctx = {} as Context;
+const cb: Callback = () => {};
+
+function ev(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent {
+  return {
+    body: null,
+    headers: {},
+    multiValueHeaders: {},
+    httpMethod: 'POST',
+    isBase64Encoded: false,
+    path: '/',
+    pathParameters: { matchId: 'm1', slotId: 's1' },
+    queryStringParameters: null,
+    multiValueQueryStringParameters: null,
+    stageVariables: null,
+    resource: '',
+    requestContext: {
+      authorizer: { groups: 'Wrestler', principalId: 'sub-1', username: 't', email: 't@t' },
+    } as unknown as APIGatewayProxyEvent['requestContext'],
+    ...overrides,
+  };
+}
+
+function makeMatch(overrides: Record<string, unknown> = {}) {
+  return {
+    matchId: 'm1',
+    date: '2024-06-01T00:00:00Z',
+    matchFormat: 'Singles',
+    status: 'open-signups',
+    participants: [],
+    slots: [
+      { slotId: 's1', position: 1 },
+      { slotId: 's2', position: 2 },
+    ],
+    slotsRequired: 2,
+    ...overrides,
+  };
+}
+
+interface FakeTx { updateMatch: ReturnType<typeof vi.fn>; }
+function captureTx(): FakeTx {
+  const tx: FakeTx = { updateMatch: vi.fn() };
+  mockRunInTransaction.mockImplementation(async (fn: (tx: FakeTx) => Promise<unknown>) => {
+    await fn(tx);
+  });
+  return tx;
+}
+
+// ---- Tests -----------------------------------------------------------------
+
+describe('claimSlot', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPlayersFindByUserId.mockResolvedValue({ playerId: 'p-caller' });
+  });
+
+  it('claims an open slot and stays open-signups when other slots remain', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch());
+    const tx = captureTx();
+
+    const r = await claimSlot(ev(), ctx, cb);
+
+    expect(r!.statusCode).toBe(200);
+    const b = JSON.parse(r!.body);
+    expect(b.status).toBe('open-signups');
+    expect(b.participants).toEqual(['p-caller']);
+    expect(b.slots[0].playerId).toBe('p-caller');
+    expect(b.slots[0].claimedAt).toBeDefined();
+    expect(tx.updateMatch).toHaveBeenCalledWith(
+      'm1',
+      '2024-06-01T00:00:00Z',
+      expect.objectContaining({ status: 'open-signups' }),
+    );
+  });
+
+  it('flips status to scheduled when claiming the last open slot', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(
+      makeMatch({
+        slots: [
+          { slotId: 's1', position: 1 },
+          { slotId: 's2', position: 2, playerId: 'p-other', claimedAt: '2024-05-31T00:00:00Z' },
+        ],
+        participants: ['p-other'],
+      }),
+    );
+    const tx = captureTx();
+
+    const r = await claimSlot(ev(), ctx, cb);
+
+    expect(r!.statusCode).toBe(200);
+    const b = JSON.parse(r!.body);
+    expect(b.status).toBe('scheduled');
+    expect(b.participants).toEqual(['p-caller', 'p-other']);
+    expect(tx.updateMatch).toHaveBeenCalledWith(
+      'm1',
+      expect.any(String),
+      expect.objectContaining({ status: 'scheduled' }),
+    );
+  });
+
+  it('idempotent re-claim by current occupant returns 200 without writing', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(
+      makeMatch({
+        slots: [
+          { slotId: 's1', position: 1, playerId: 'p-caller', claimedAt: '2024-05-30T00:00:00Z' },
+          { slotId: 's2', position: 2 },
+        ],
+        participants: ['p-caller'],
+      }),
+    );
+
+    const r = await claimSlot(ev(), ctx, cb);
+
+    expect(r!.statusCode).toBe(200);
+    expect(mockRunInTransaction).not.toHaveBeenCalled();
+  });
+
+  it('returns 409 when the slot is locked by an admin', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(
+      makeMatch({
+        slots: [
+          { slotId: 's1', position: 1, lockedByAdmin: true },
+          { slotId: 's2', position: 2 },
+        ],
+      }),
+    );
+
+    const r = await claimSlot(ev(), ctx, cb);
+    expect(r!.statusCode).toBe(409);
+    expect(JSON.parse(r!.body).message).toContain('locked');
+  });
+
+  it('returns 409 when the slot is already claimed by someone else', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(
+      makeMatch({
+        slots: [
+          { slotId: 's1', position: 1, playerId: 'p-other', claimedAt: '2024-05-30T00:00:00Z' },
+          { slotId: 's2', position: 2 },
+        ],
+        participants: ['p-other'],
+      }),
+    );
+
+    const r = await claimSlot(ev(), ctx, cb);
+    expect(r!.statusCode).toBe(409);
+    expect(JSON.parse(r!.body).message).toContain('already claimed');
+  });
+
+  it('returns 409 when match status is not open-signups', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(
+      makeMatch({ status: 'scheduled' }),
+    );
+
+    const r = await claimSlot(ev(), ctx, cb);
+    expect(r!.statusCode).toBe(409);
+    expect(JSON.parse(r!.body).message).toContain('not open');
+  });
+
+  it('returns 409 when caller already occupies another slot in this match', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(
+      makeMatch({
+        slots: [
+          { slotId: 's1', position: 1 },
+          { slotId: 's2', position: 2, playerId: 'p-caller', claimedAt: '2024-05-30T00:00:00Z' },
+        ],
+        participants: ['p-caller'],
+      }),
+    );
+
+    const r = await claimSlot(ev(), ctx, cb);
+    expect(r!.statusCode).toBe(409);
+    expect(JSON.parse(r!.body).message).toContain('another slot');
+  });
+
+  it('returns 404 when match is not found', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(null);
+    const r = await claimSlot(ev(), ctx, cb);
+    expect(r!.statusCode).toBe(404);
+  });
+
+  it('returns 404 when slot is not found', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch());
+    const r = await claimSlot(ev({ pathParameters: { matchId: 'm1', slotId: 'unknown' } }), ctx, cb);
+    expect(r!.statusCode).toBe(404);
+  });
+
+  it('returns 403 when the caller has no linked player profile', async () => {
+    mockPlayersFindByUserId.mockResolvedValue(null);
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch());
+    const r = await claimSlot(ev(), ctx, cb);
+    expect(r!.statusCode).toBe(403);
+  });
+
+  it('returns 409 when linked event has already started (past date)', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(
+      makeMatch({ eventId: 'e1' }),
+    );
+    mockEventsFindById.mockResolvedValue({
+      eventId: 'e1',
+      status: 'upcoming',
+      date: '2000-01-01T00:00:00Z', // far past
+    });
+    captureTx();
+
+    const r = await claimSlot(ev(), ctx, cb);
+    expect(r!.statusCode).toBe(409);
+    expect(JSON.parse(r!.body).message).toContain('already started');
+  });
+
+  it('returns 409 when linked event is completed', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(
+      makeMatch({ eventId: 'e1' }),
+    );
+    mockEventsFindById.mockResolvedValue({
+      eventId: 'e1',
+      status: 'completed',
+      date: '2999-01-01T00:00:00Z',
+    });
+
+    const r = await claimSlot(ev(), ctx, cb);
+    expect(r!.statusCode).toBe(409);
+  });
+});
