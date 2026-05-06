@@ -8,6 +8,10 @@ interface AuthState {
   groups: UserRole[];
   email: string | null;
   playerId: string | null;
+  /** The signed-in player's main wrestler name. Used by the slot-claim chooser. */
+  currentWrestler: string | null;
+  /** The signed-in player's alternate wrestler name (if set). */
+  alternateWrestler: string | null;
 }
 
 interface AuthContextType extends AuthState {
@@ -33,6 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     groups: cognitoAuth.getUserGroups(),
     email: null,
     playerId: null,
+    currentWrestler: null,
+    alternateWrestler: null,
   });
 
   // Initialize auth state on mount
@@ -54,6 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               groups,
               email: `${(player.name as string).toLowerCase().replace(/\s/g, '.')}@dev.local`,
               playerId: player.playerId,
+              currentWrestler: null,
+              alternateWrestler: null,
             });
             return;
           } catch {
@@ -75,11 +83,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           // Fetch player profile if user is in the Wrestler group
           let playerId: string | null = null;
+          let currentWrestler: string | null = null;
+          let alternateWrestler: string | null = null;
           if (groups.includes('Wrestler')) {
             try {
               const profile = await profileApi.getMyProfile();
               if (!mounted) return;
               playerId = profile.playerId;
+              currentWrestler = profile.currentWrestler ?? null;
+              alternateWrestler = profile.alternateWrestler ?? null;
             } catch {
               // Profile may not exist yet
             }
@@ -92,6 +104,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             groups,
             email: user.signInDetails?.loginId || user.username || null,
             playerId,
+            currentWrestler,
+            alternateWrestler,
           });
         } else {
           setState({
@@ -100,6 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             groups: [],
             email: null,
             playerId: null,
+            currentWrestler: null,
+            alternateWrestler: null,
           });
         }
       } catch {
@@ -110,6 +126,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           groups: [],
           email: null,
           playerId: null,
+          currentWrestler: null,
+          alternateWrestler: null,
         });
       }
     };
@@ -125,10 +143,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Fetch player profile if user is in the Wrestler group
     let playerId: string | null = null;
+    let currentWrestler: string | null = null;
+    let alternateWrestler: string | null = null;
     if (result.groups.includes('Wrestler')) {
       try {
         const profile = await profileApi.getMyProfile();
         playerId = profile.playerId;
+        currentWrestler = profile.currentWrestler ?? null;
+        alternateWrestler = profile.alternateWrestler ?? null;
       } catch {
         // Profile may not exist yet
       }
@@ -140,6 +162,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       groups: result.groups,
       email,
       playerId,
+      currentWrestler,
+      alternateWrestler,
     });
   }, []);
 
@@ -160,13 +184,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       groups: [],
       email: null,
       playerId: null,
+      currentWrestler: null,
+      alternateWrestler: null,
     });
   }, []);
 
   const refreshProfile = useCallback(async () => {
     try {
       const profile = await profileApi.getMyProfile();
-      setState(prev => ({ ...prev, playerId: profile.playerId }));
+      setState(prev => ({
+        ...prev,
+        playerId: profile.playerId,
+        currentWrestler: profile.currentWrestler ?? null,
+        alternateWrestler: profile.alternateWrestler ?? null,
+      }));
     } catch {
       // Profile may not exist
     }
@@ -190,6 +221,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       groups,
       email: `${player.name.toLowerCase().replace(/\s/g, '.')}@dev.local`,
       playerId: player.playerId,
+      currentWrestler: null,
+      alternateWrestler: null,
     });
   }, []);
 

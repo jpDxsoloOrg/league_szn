@@ -58,7 +58,14 @@ export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isAdminOrModerator, isAuthenticated, isWrestler, playerId } = useAuth();
+  const {
+    isAdminOrModerator,
+    isAuthenticated,
+    isWrestler,
+    playerId,
+    currentWrestler,
+    alternateWrestler,
+  } = useAuth();
   const [eventData, setEventData] = useState<EventWithMatches | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,10 +130,14 @@ export default function EventDetail() {
   // Non-optimistic: the per-slot button shows "Claiming…/Releasing…" while the
   // request is in flight, and we refetch the event on both success and failure.
   // The refetch on failure acts as the rollback (per MSL-02 spec).
-  const handleClaimSlot = useCallback(async (matchId: string, slotId: string) => {
+  const handleClaimSlot = useCallback(async (
+    matchId: string,
+    slotId: string,
+    options?: { wrestlerChoice?: 'main' | 'alternate' },
+  ) => {
     setMatchActionError(null);
     try {
-      await matchesApi.claimSlot(matchId, slotId);
+      await matchesApi.claimSlot(matchId, slotId, options);
     } catch (err) {
       setMatchActionError(err instanceof Error ? err.message : 'Failed to claim slot');
     } finally {
@@ -460,7 +471,7 @@ export default function EventDetail() {
             currentPlayerId={playerId ?? undefined}
             isAdmin={isAdminOrModerator}
             isAuthenticated={isAuthenticated}
-            onClaim={(slotId) => handleClaimSlot(match.matchId, slotId)}
+            onClaim={(slotId, options) => handleClaimSlot(match.matchId, slotId, options)}
             onRelease={(slotId) => handleReleaseSlot(match.matchId, slotId)}
             onLoginRequired={handleLoginRequired}
             onAdminEdit={isAdminOrModerator
@@ -472,6 +483,8 @@ export default function EventDetail() {
             disableClaimReason={t('matches.slots.alreadyBookedTooltip', {
               defaultValue: 'You already have a slot in another match on this event',
             })}
+            currentPlayerCurrentWrestler={currentWrestler}
+            currentPlayerAlternateWrestler={alternateWrestler}
           />
         )}
         {isRecording && rawMatch && (

@@ -14,8 +14,15 @@ export interface MatchSlotsProps {
   isAdmin?: boolean;
   /** True when a JWT is available. False = guest; clicking Claim triggers `onLoginRequired`. */
   isAuthenticated?: boolean;
-  /** Called when an authenticated wrestler clicks Claim on an open slot. */
-  onClaim: (slotId: string) => Promise<void>;
+  /**
+   * Called when an authenticated wrestler clicks Claim on an open slot. The
+   * second arg carries the player's wrestler choice when MSL-03's chooser
+   * was used; otherwise undefined and the backend defaults to 'main'.
+   */
+  onClaim: (
+    slotId: string,
+    options?: { wrestlerChoice?: 'main' | 'alternate' },
+  ) => Promise<void>;
   /** Called when the slot's current claimant clicks Release, or admin releases. */
   onRelease: (slotId: string) => Promise<void>;
   /** Optional admin hook — opens whatever slot-edit dialog the parent provides. */
@@ -34,6 +41,14 @@ export interface MatchSlotsProps {
   claimDisabled?: boolean;
   /** Tooltip / hint shown on the disabled Claim button. */
   disableClaimReason?: string;
+  /**
+   * The signed-in player's main wrestler name. When BOTH this and
+   * `currentPlayerAlternateWrestler` are set, clicking Claim opens the
+   * MSL-03 chooser instead of submitting immediately.
+   */
+  currentPlayerCurrentWrestler?: string | null;
+  /** The signed-in player's alternate wrestler name (if any). */
+  currentPlayerAlternateWrestler?: string | null;
 }
 
 /**
@@ -57,9 +72,14 @@ export default function MatchSlots(props: MatchSlotsProps) {
     loadingCount,
     claimDisabled = false,
     disableClaimReason,
+    currentPlayerCurrentWrestler,
+    currentPlayerAlternateWrestler,
   } = props;
   const { t } = useTranslation();
   const [busySlotId, setBusySlotId] = useState<string | null>(null);
+  // MSL-03: when the player has both wrestlers, the Claim button opens this
+  // chooser. The slotId being chosen for is what closes the modal.
+  const [chooserSlotId, setChooserSlotId] = useState<string | null>(null);
 
   const sortedSlots = useMemo(
     () => [...slots].sort((a, b) => a.position - b.position),
@@ -84,7 +104,20 @@ export default function MatchSlots(props: MatchSlotsProps) {
       onLoginRequired?.();
       return;
     }
+    // MSL-03: open the chooser when the player has both a main and alt set.
+    // No alternate → claim immediately and let the backend default to 'main'.
+    if (currentPlayerCurrentWrestler && currentPlayerAlternateWrestler) {
+      setChooserSlotId(slotId);
+      return;
+    }
     void runWithBusy(slotId, () => onClaim(slotId));
+  };
+
+  const handleChooserConfirm = (choice: 'main' | 'alternate') => {
+    const slotId = chooserSlotId;
+    if (!slotId) return;
+    setChooserSlotId(null);
+    void runWithBusy(slotId, () => onClaim(slotId, { wrestlerChoice: choice }));
   };
 
   const handleRelease = (slotId: string) => {
@@ -228,6 +261,87 @@ export default function MatchSlots(props: MatchSlotsProps) {
           );
         })}
         </ol>
+      </div>
+
+      {/* MSL-03 wrestler chooser */}
+      {chooserSlotId && currentPlayerCurrentWrestler && currentPlayerAlternateWrestler && (
+        <WrestlerChooserDialog
+          mainName={currentPlayerCurrentWrestler}
+          alternateName={currentPlayerAlternateWrestler}
+          onConfirm={handleChooserConfirm}
+          onCancel={() => setChooserSlotId(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+interface WrestlerChooserDialogProps {
+  mainName: string;
+  alternateName: string;
+  onConfirm: (choice: 'main' | 'alternate') => void;
+  onCancel: () => void;
+}
+
+function WrestlerChooserDialog({
+  mainName,
+  alternateName,
+  onConfirm,
+  onCancel,
+}: WrestlerChooserDialogProps) {
+  const { t } = useTranslation();
+  const [choice, setChoice] = useState<'main' | 'alternate'>('main');
+
+  return (
+    <div
+      className="wrestler-chooser-overlay"
+      role="dialog"
+      aria-modal="true"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+    >
+      <div className="wrestler-chooser">
+        <h3>{t('matches.slots.chooseWrestler', { defaultValue: 'Choose your wrestler' })}</h3>
+        <label className="wrestler-chooser-option">
+          <input
+            type="radio"
+            name="wrestler-chooser"
+            value="main"
+            checked={choice === 'main'}
+            onChange={() => setChoice('main')}
+          />
+          <span>
+            {t('matches.slots.useMain', { name: mainName, defaultValue: `Use main: ${mainName}` })}
+          </span>
+        </label>
+        <label className="wrestler-chooser-option">
+          <input
+            type="radio"
+            name="wrestler-chooser"
+            value="alternate"
+            checked={choice === 'alternate'}
+            onChange={() => setChoice('alternate')}
+          />
+          <span>
+            {t('matches.slots.useAlternate', {
+              name: alternateName,
+              defaultValue: `Use alternate: ${alternateName}`,
+            })}
+          </span>
+        </label>
+        <div className="wrestler-chooser-actions">
+          <button type="button" className="wrestler-chooser-cancel" onClick={onCancel}>
+            {t('common.cancel', { defaultValue: 'Cancel' })}
+          </button>
+          <button
+            type="button"
+            className="wrestler-chooser-confirm"
+            onClick={() => onConfirm(choice)}
+          >
+            {t('matches.slots.confirmChoice', { defaultValue: 'Confirm' })}
+          </button>
+        </div>
       </div>
     </div>
   );
