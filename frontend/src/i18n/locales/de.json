@@ -465,7 +465,12 @@
       "openSpotsHeader": "Freie Plätze",
       "spotsHeader": "Plätze",
       "alreadyBookedOnEvent": "Du hast bereits einen Platz in einem anderen Match dieser Veranstaltung — gib ihn erst frei",
-      "alreadyBookedTooltip": "Du hast bereits einen Platz in einem anderen Match dieser Veranstaltung"
+      "alreadyBookedTooltip": "Du hast bereits einen Platz in einem anderen Match dieser Veranstaltung",
+      "chooseWrestler": "Wähle deinen Wrestler",
+      "useMain": "Hauptwrestler verwenden: {{name}}",
+      "useAlternate": "Alternativen verwenden: {{name}}",
+      "confirmChoice": "Bestätigen",
+      "editWrestlerLabel": "Wrestler"
     }
   },
   "matchSearch": {
