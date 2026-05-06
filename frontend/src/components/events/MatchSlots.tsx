@@ -85,33 +85,47 @@ export default function MatchSlots(props: MatchSlotsProps) {
     const rows = loadingCount ?? Math.max(slots.length, 2);
     return (
       <div className="match-slots" data-match-id={matchId} role="status" aria-busy="true">
-        <ol className="match-slots-list">
-          {Array.from({ length: rows }, (_, i) => (
-            <li key={i} className="match-slot match-slot-skeleton">
-              <span className="match-slot-position">·</span>
-              <span className="match-slot-content">
-                <span className="match-slot-skeleton-bar" />
-              </span>
-            </li>
-          ))}
-        </ol>
+        <div className="match-slots-inner">
+          <ol className="match-slots-list">
+            {Array.from({ length: rows }, (_, i) => (
+              <li key={i} className="match-slot match-slot-skeleton">
+                <span className="match-slot-position">·</span>
+                <span className="match-slot-content">
+                  <span className="match-slot-skeleton-bar" />
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
     );
   }
 
+  const isOpenSignups = matchStatus === 'open-signups';
+  const headerLabel = isOpenSignups
+    ? t('matches.slots.openSpotsHeader', { defaultValue: 'Open spots' })
+    : t('matches.slots.spotsHeader', { defaultValue: 'Spots' });
+
   return (
     <div className="match-slots" data-match-id={matchId}>
-      {matchStatus === 'open-signups' && (
-        <div className="match-slots-badge" role="status">
-          {t('matches.slots.openCountBadge', {
-            open: openCount,
-            total: sortedSlots.length,
-            defaultValue: `${openCount} of ${sortedSlots.length} spots open`,
-          })}
+      <div className="match-slots-inner">
+        <div className="match-slots-header">
+          <span className="match-slots-header-label">
+            {isOpenSignups && <span className="match-slots-header-dot" aria-hidden="true" />}
+            {headerLabel}
+          </span>
+          {isOpenSignups && (
+            <span className="match-slots-badge" role="status">
+              {t('matches.slots.openCountBadge', {
+                open: openCount,
+                total: sortedSlots.length,
+                defaultValue: `${openCount} of ${sortedSlots.length} spots open`,
+              })}
+            </span>
+          )}
         </div>
-      )}
 
-      <ol className="match-slots-list">
+        <ol className="match-slots-list">
         {sortedSlots.map((slot) => {
           const filled = !!slot.playerId;
           const isMine = filled && slot.playerId === currentPlayerId;
@@ -202,7 +216,8 @@ export default function MatchSlots(props: MatchSlotsProps) {
             </li>
           );
         })}
-      </ol>
+        </ol>
+      </div>
     </div>
   );
 }

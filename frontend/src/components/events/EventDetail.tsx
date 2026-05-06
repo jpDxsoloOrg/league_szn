@@ -412,9 +412,13 @@ export default function EventDetail() {
     const rawMatch = scheduledMatchesById.get(match.matchId);
 
     const slots = match.matchData?.slots;
+    const hasSlots = !!(slots && slots.length > 0);
 
     return (
-      <div key={match.matchId} className="match-entry-with-actions">
+      <div
+        key={match.matchId}
+        className={`match-entry-with-actions${hasSlots ? ' has-slots' : ''}`}
+      >
         <MatchEntry
           match={match}
           isCompleted={match.matchData?.status === 'completed'}

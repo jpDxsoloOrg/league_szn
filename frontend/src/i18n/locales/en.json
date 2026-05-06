@@ -461,7 +461,9 @@
       "teamLabelPlaceholder": "Team (optional)",
       "signupModeToggle": "Open match for signups",
       "slotsRequiredLabel": "Number of spots",
-      "editorLabel": "Slots"
+      "editorLabel": "Slots",
+      "openSpotsHeader": "Open spots",
+      "spotsHeader": "Spots"
     }
   },
   "matchSearch": {

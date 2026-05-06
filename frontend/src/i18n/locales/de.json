@@ -461,7 +461,9 @@
       "teamLabelPlaceholder": "Team (optional)",
       "signupModeToggle": "Match für Anmeldungen öffnen",
       "slotsRequiredLabel": "Anzahl der Plätze",
-      "editorLabel": "Plätze"
+      "editorLabel": "Plätze",
+      "openSpotsHeader": "Freie Plätze",
+      "spotsHeader": "Plätze"
     }
   },
   "matchSearch": {
