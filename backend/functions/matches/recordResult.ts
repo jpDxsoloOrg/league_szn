@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { Match, Championship } from '../../lib/repositories';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { success, badRequest, conflict, notFound, serverError } from '../../lib/response';
 import { invokeAsync } from '../../lib/asyncLambda';
 import { parseBody } from '../../lib/parseBody';
 import { updateGroupStats } from './updateGroupStats';
@@ -58,6 +58,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     if (match.status === 'completed') {
       return badRequest('Match has already been completed');
+    }
+
+    if (match.status === 'open-signups') {
+      return conflict('Cannot record result on a match with open signups — fill all slots first');
     }
 
     const isDraw = body.isDraw === true;
