@@ -107,6 +107,11 @@ describe('claimSlot', () => {
       '2024-06-01T00:00:00Z',
       expect.objectContaining({ status: 'open-signups' }),
     );
+    // Regression: DynamoUnitOfWork.updateMatch appends updatedAt itself, so
+    // including it in the patch would set the same path twice and DynamoDB
+    // rejects the UpdateExpression.
+    const patch = (tx.updateMatch as ReturnType<typeof vi.fn>).mock.calls[0][2];
+    expect(patch).not.toHaveProperty('updatedAt');
   });
 
   it('flips status to scheduled when claiming the last open slot', async () => {

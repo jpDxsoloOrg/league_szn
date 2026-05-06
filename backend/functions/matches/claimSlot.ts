@@ -107,12 +107,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       ? 'open-signups'
       : 'scheduled';
 
+    // Note: don't pass `updatedAt` in the patch — DynamoUnitOfWork.updateMatch
+    // appends it automatically and DynamoDB rejects an UpdateExpression that
+    // sets the same path twice with a ValidationException.
     await runInTransaction(async (tx) => {
       tx.updateMatch(matchId, match.date, {
         slots: updatedSlots,
         participants: updatedParticipants,
         status: newStatus,
-        updatedAt: now,
       });
     });
 
