@@ -17,6 +17,14 @@ interface AdminUpdateSlotBody {
   lockedByAdmin?: boolean;
   /** undefined = no change; null = clear; string = set. */
   teamLabel?: string | null;
+  /**
+   * MSL-03: which of the assigned player's wrestlers to use for this match.
+   * Silent default 'main' when assigning a new player and the body omits
+   * this — admins shouldn't be forced through a radio for every scripted
+   * booking. Honored when explicitly set, including switching the radio on
+   * an existing claimant without changing the player.
+   */
+  wrestlerChoice?: 'main' | 'alternate';
 }
 
 /**
@@ -57,16 +65,57 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const slotIndex = slots.findIndex((s) => s.slotId === slotId);
     if (slotIndex < 0) return notFound('Slot not found');
 
-    // Validate player exists when explicitly assigning. Null clears; undefined
-    // leaves the existing playerId untouched.
-    if (typeof body.playerId === 'string') {
-      const player = await players.findById(body.playerId);
-      if (!player) return notFound(`Player not found: ${body.playerId}`);
-    }
-
     const now = new Date().toISOString();
     const original = slots[slotIndex];
-    const updatedSlot = applySlotPatch(original, body, now);
+
+    // ── Wrestler-choice resolution (MSL-03) ─────────────────────────────
+    // - Clear (playerId: null): wipe playerId, claimedAt, wrestlerChoice,
+    //   wrestlerNameSnapshot — the slot becomes a fresh open spot.
+    // - Re-assign (playerId is a string): fetch that player; resolve choice
+    //   from the body or default silently to 'main'; snapshot the matching
+    //   wrestler name.
+    // - Switch radio only (playerId omitted, wrestlerChoice provided):
+    //   re-fetch the existing claimant's player to recompute the snapshot.
+    // - No relevant change: preserve original.
+    const isClearing = body.playerId === null;
+    const newPlayerId = typeof body.playerId === 'string' ? body.playerId : null;
+
+    let resolvedPlayerId: string | undefined = original.playerId;
+    let resolvedClaimedAt: string | undefined = original.claimedAt;
+    let resolvedChoice: 'main' | 'alternate' | undefined = original.wrestlerChoice;
+    let resolvedSnapshot: string | undefined = original.wrestlerNameSnapshot;
+
+    if (isClearing) {
+      resolvedPlayerId = undefined;
+      resolvedClaimedAt = undefined;
+      resolvedChoice = undefined;
+      resolvedSnapshot = undefined;
+    } else if (newPlayerId !== null) {
+      const player = await players.findById(newPlayerId);
+      if (!player) return notFound(`Player not found: ${newPlayerId}`);
+      resolvedPlayerId = newPlayerId;
+      resolvedClaimedAt = now;
+      resolvedChoice = body.wrestlerChoice === 'alternate' ? 'alternate' : 'main';
+      resolvedSnapshot =
+        resolvedChoice === 'alternate' && player.alternateWrestler
+          ? player.alternateWrestler
+          : player.currentWrestler;
+    } else if (body.wrestlerChoice && original.playerId) {
+      const player = await players.findById(original.playerId);
+      if (!player) return notFound(`Player not found: ${original.playerId}`);
+      resolvedChoice = body.wrestlerChoice === 'alternate' ? 'alternate' : 'main';
+      resolvedSnapshot =
+        resolvedChoice === 'alternate' && player.alternateWrestler
+          ? player.alternateWrestler
+          : player.currentWrestler;
+    }
+
+    const updatedSlot = buildUpdatedSlot(original, body, {
+      playerId: resolvedPlayerId,
+      claimedAt: resolvedClaimedAt,
+      wrestlerChoice: resolvedChoice,
+      wrestlerNameSnapshot: resolvedSnapshot,
+    });
 
     const updatedSlots: MatchSlot[] = slots.map((s, i) => (i === slotIndex ? updatedSlot : s));
     const updatedParticipants = dedupeFilledPlayerIds(updatedSlots);
@@ -105,26 +154,29 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   }
 };
 
-function applySlotPatch(
+interface ResolvedWrestlerFields {
+  playerId: string | undefined;
+  claimedAt: string | undefined;
+  wrestlerChoice: 'main' | 'alternate' | undefined;
+  wrestlerNameSnapshot: string | undefined;
+}
+
+function buildUpdatedSlot(
   original: MatchSlot,
   body: AdminUpdateSlotBody,
-  now: string,
+  resolved: ResolvedWrestlerFields,
 ): MatchSlot {
   const next: MatchSlot = {
     slotId: original.slotId,
     position: original.position,
   };
 
-  // playerId / claimedAt
-  if (body.playerId === null) {
-    // explicit clear
-  } else if (typeof body.playerId === 'string') {
-    next.playerId = body.playerId;
-    next.claimedAt = now;
-  } else if (original.playerId) {
-    next.playerId = original.playerId;
-    if (original.claimedAt) next.claimedAt = original.claimedAt;
-  }
+  // Wrestler fields are pre-resolved (clear / reassign / radio-only / preserve)
+  // — only emit when there's a value, so we don't write `undefined` into Dynamo.
+  if (resolved.playerId) next.playerId = resolved.playerId;
+  if (resolved.claimedAt) next.claimedAt = resolved.claimedAt;
+  if (resolved.wrestlerChoice) next.wrestlerChoice = resolved.wrestlerChoice;
+  if (resolved.wrestlerNameSnapshot) next.wrestlerNameSnapshot = resolved.wrestlerNameSnapshot;
 
   // lockedByAdmin
   if (body.lockedByAdmin === true) {

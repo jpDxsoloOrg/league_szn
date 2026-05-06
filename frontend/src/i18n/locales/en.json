@@ -465,7 +465,12 @@
       "openSpotsHeader": "Open spots",
       "spotsHeader": "Spots",
       "alreadyBookedOnEvent": "You already have a slot in another match on this event — release that one first",
-      "alreadyBookedTooltip": "You already have a slot in another match on this event"
+      "alreadyBookedTooltip": "You already have a slot in another match on this event",
+      "chooseWrestler": "Choose your wrestler",
+      "useMain": "Use main: {{name}}",
+      "useAlternate": "Use alternate: {{name}}",
+      "confirmChoice": "Confirm",
+      "editWrestlerLabel": "Wrestler"
     }
   },
   "matchSearch": {

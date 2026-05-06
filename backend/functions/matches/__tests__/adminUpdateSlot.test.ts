@@ -229,4 +229,103 @@ describe('adminUpdateSlot', () => {
     expect(b.status).toBe('completed');
     expect(b.slots[0].teamLabel).toBe('A');
   });
+
+  // ── MSL-03: wrestler choice + snapshot ─────────────────────────────────
+
+  it('force-assigns with silent main default when wrestlerChoice omitted', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch());
+    mockPlayersFindById.mockResolvedValue({
+      playerId: 'p1',
+      currentWrestler: 'Stone Cold',
+      alternateWrestler: 'The Rock',
+    });
+    captureTx();
+
+    const r = await adminUpdateSlot(ev({ playerId: 'p1' }), ctx, cb);
+    expect(r!.statusCode).toBe(200);
+    const b = JSON.parse(r!.body);
+    expect(b.slots[0].wrestlerChoice).toBe('main');
+    expect(b.slots[0].wrestlerNameSnapshot).toBe('Stone Cold');
+  });
+
+  it('force-assigns with explicit wrestlerChoice="alternate"', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch());
+    mockPlayersFindById.mockResolvedValue({
+      playerId: 'p1',
+      currentWrestler: 'Stone Cold',
+      alternateWrestler: 'The Rock',
+    });
+    captureTx();
+
+    const r = await adminUpdateSlot(
+      ev({ playerId: 'p1', wrestlerChoice: 'alternate' }),
+      ctx,
+      cb,
+    );
+    expect(r!.statusCode).toBe(200);
+    const b = JSON.parse(r!.body);
+    expect(b.slots[0].wrestlerChoice).toBe('alternate');
+    expect(b.slots[0].wrestlerNameSnapshot).toBe('The Rock');
+  });
+
+  it('clearing a slot wipes wrestlerChoice and wrestlerNameSnapshot', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(
+      makeMatch({
+        status: 'scheduled',
+        slots: [
+          {
+            slotId: 's1',
+            position: 1,
+            playerId: 'p1',
+            claimedAt: '2024-05-30T00:00:00Z',
+            wrestlerChoice: 'alternate',
+            wrestlerNameSnapshot: 'The Rock',
+          },
+          { slotId: 's2', position: 2, playerId: 'p2', claimedAt: '2024-05-30T00:00:00Z' },
+        ],
+        participants: ['p1', 'p2'],
+      }),
+    );
+    captureTx();
+
+    const r = await adminUpdateSlot(ev({ playerId: null }), ctx, cb);
+    expect(r!.statusCode).toBe(200);
+    const b = JSON.parse(r!.body);
+    expect(b.slots[0].playerId).toBeUndefined();
+    expect(b.slots[0].wrestlerChoice).toBeUndefined();
+    expect(b.slots[0].wrestlerNameSnapshot).toBeUndefined();
+  });
+
+  it('switching wrestlerChoice without changing playerId recomputes the snapshot', async () => {
+    mockMatchesFindByIdWithDate.mockResolvedValue(
+      makeMatch({
+        status: 'scheduled',
+        slots: [
+          {
+            slotId: 's1',
+            position: 1,
+            playerId: 'p1',
+            claimedAt: '2024-05-30T00:00:00Z',
+            wrestlerChoice: 'main',
+            wrestlerNameSnapshot: 'Stone Cold',
+          },
+          { slotId: 's2', position: 2, playerId: 'p2', claimedAt: '2024-05-30T00:00:00Z' },
+        ],
+        participants: ['p1', 'p2'],
+      }),
+    );
+    mockPlayersFindById.mockResolvedValue({
+      playerId: 'p1',
+      currentWrestler: 'Stone Cold',
+      alternateWrestler: 'The Rock',
+    });
+    captureTx();
+
+    const r = await adminUpdateSlot(ev({ wrestlerChoice: 'alternate' }), ctx, cb);
+    expect(r!.statusCode).toBe(200);
+    const b = JSON.parse(r!.body);
+    expect(b.slots[0].playerId).toBe('p1'); // unchanged
+    expect(b.slots[0].wrestlerChoice).toBe('alternate');
+    expect(b.slots[0].wrestlerNameSnapshot).toBe('The Rock');
+  });
 });

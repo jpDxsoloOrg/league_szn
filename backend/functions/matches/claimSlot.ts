@@ -11,6 +11,24 @@ import {
 } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
 
+interface ClaimSlotBody {
+  wrestlerChoice?: 'main' | 'alternate';
+}
+
+/**
+ * Parse an optional JSON body. Empty / missing body → empty object (the body
+ * is optional for claimSlot — a player with no alternate doesn't need to
+ * choose a wrestler). Malformed JSON → null so the caller can 400.
+ */
+function parseOptionalBody(rawBody: string | null | undefined): ClaimSlotBody | null {
+  if (!rawBody) return {};
+  try {
+    return JSON.parse(rawBody) as ClaimSlotBody;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * POST /matches/{matchId}/slots/{slotId}/claim
  *
@@ -28,6 +46,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!matchId) return badRequest('matchId is required');
     if (!slotId) return badRequest('slotId is required');
 
+    const body = parseOptionalBody(event.body);
+    if (body === null) {
+      return badRequest('Invalid JSON in request body');
+    }
+
     const { sub } = getAuthContext(event);
     const {
       competition: { matches },
@@ -41,6 +64,28 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return forbidden('No player profile is linked to this account');
     }
     const callerPlayerId = callerPlayer.playerId;
+
+    // MSL-03: resolve which wrestler the player is bringing.
+    // - If they have no alternate, default silently to 'main'.
+    // - If they have both, the body MUST specify a valid choice. The frontend
+    //   chooser exists precisely to avoid this 400; if it ever fires, the
+    //   chooser logic has a bug.
+    const hasAlternate = !!callerPlayer.alternateWrestler;
+    let wrestlerChoice: 'main' | 'alternate';
+    if (hasAlternate) {
+      if (body.wrestlerChoice !== 'main' && body.wrestlerChoice !== 'alternate') {
+        return badRequest(
+          'This player has both main and alternate wrestlers — specify wrestlerChoice ("main" or "alternate")',
+        );
+      }
+      wrestlerChoice = body.wrestlerChoice;
+    } else {
+      wrestlerChoice = 'main';
+    }
+    const wrestlerNameSnapshot =
+      wrestlerChoice === 'alternate' && callerPlayer.alternateWrestler
+        ? callerPlayer.alternateWrestler
+        : callerPlayer.currentWrestler;
 
     const match = await matches.findByIdWithDate(matchId);
     if (!match) return notFound('Match not found');
@@ -125,11 +170,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const now = new Date().toISOString();
     const updatedSlots: MatchSlot[] = slots.map((s, i) => {
       if (i !== slotIndex) return s;
-      return {
+      const next: MatchSlot = {
         ...s,
         playerId: callerPlayerId,
         claimedAt: now,
+        wrestlerChoice,
       };
+      // wrestlerNameSnapshot is optional — only persist when we actually have
+      // a non-empty string so we don't write `undefined` into Dynamo (the
+      // doc client isn't configured to strip undefined values).
+      if (wrestlerNameSnapshot) {
+        next.wrestlerNameSnapshot = wrestlerNameSnapshot;
+      } else {
+        delete next.wrestlerNameSnapshot;
+      }
+      return next;
     });
     const updatedParticipants = dedupeFilledPlayerIds(updatedSlots);
     const newStatus: MatchStatus = updatedSlots.some((s) => !s.playerId)

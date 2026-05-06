@@ -36,6 +36,10 @@ export interface MatchSlot {
   claimedAt?: string;
   lockedByAdmin?: boolean;
   teamLabel?: string;
+  /** Which wrestler the player is bringing: main (`currentWrestler`) or alternate. */
+  wrestlerChoice?: 'main' | 'alternate';
+  /** Display name of the chosen wrestler, pinned at claim time. */
+  wrestlerNameSnapshot?: string;
 }
 
 /**

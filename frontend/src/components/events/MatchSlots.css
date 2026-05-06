@@ -256,3 +256,76 @@
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* MSL-03 wrestler chooser */
+.wrestler-chooser-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.wrestler-chooser {
+  background: #1f1f1f;
+  color: #eaeaea;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 22px 24px;
+  min-width: 320px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+.wrestler-chooser h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.05rem;
+}
+
+.wrestler-chooser-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.wrestler-chooser-option:hover {
+  background: #333;
+}
+
+.wrestler-chooser-actions {
+  margin-top: 18px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.wrestler-chooser-actions button {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid #555;
+  background: #333;
+  color: #eaeaea;
+}
+
+.wrestler-chooser-confirm {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: white !important;
+}
+
+.wrestler-chooser-confirm:hover {
+  background: #1d4ed8 !important;
+}

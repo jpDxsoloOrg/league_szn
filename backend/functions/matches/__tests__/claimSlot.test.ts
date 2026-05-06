@@ -92,7 +92,12 @@ function captureTx(): FakeTx {
 describe('claimSlot', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPlayersFindByUserId.mockResolvedValue({ playerId: 'p-caller' });
+    // Default: caller has only a main wrestler (no alternate). Tests that need
+    // both override this resolution to add `alternateWrestler`.
+    mockPlayersFindByUserId.mockResolvedValue({
+      playerId: 'p-caller',
+      currentWrestler: 'Stone Cold',
+    });
   });
 
   it('claims an open slot and stays open-signups when other slots remain', async () => {
@@ -372,5 +377,77 @@ describe('claimSlot', () => {
     expect(mockEventsFindById).not.toHaveBeenCalled();
     expect(mockMatchesFindById).not.toHaveBeenCalled();
     expect(mockRunInTransaction).not.toHaveBeenCalled();
+  });
+
+  // ── MSL-03: wrestler choice + snapshot ─────────────────────────────────
+
+  it('defaults to main and snapshots currentWrestler when player has no alternate', async () => {
+    mockPlayersFindByUserId.mockResolvedValue({
+      playerId: 'p-caller',
+      currentWrestler: 'Stone Cold',
+      // alternateWrestler not set
+    });
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch());
+    const tx = captureTx();
+
+    const r = await claimSlot(ev(), ctx, cb);
+    expect(r!.statusCode).toBe(200);
+    const b = JSON.parse(r!.body);
+    expect(b.slots[0].wrestlerChoice).toBe('main');
+    expect(b.slots[0].wrestlerNameSnapshot).toBe('Stone Cold');
+    // Persisted patch carries the same fields
+    const patch = tx.updateMatch.mock.calls[0][2];
+    expect(patch.slots[0].wrestlerChoice).toBe('main');
+    expect(patch.slots[0].wrestlerNameSnapshot).toBe('Stone Cold');
+  });
+
+  it('honors body wrestlerChoice="alternate" and snapshots alternateWrestler', async () => {
+    mockPlayersFindByUserId.mockResolvedValue({
+      playerId: 'p-caller',
+      currentWrestler: 'Stone Cold',
+      alternateWrestler: 'The Rock',
+    });
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch());
+    captureTx();
+
+    const r = await claimSlot(
+      ev({ body: JSON.stringify({ wrestlerChoice: 'alternate' }) }),
+      ctx,
+      cb,
+    );
+    expect(r!.statusCode).toBe(200);
+    const b = JSON.parse(r!.body);
+    expect(b.slots[0].wrestlerChoice).toBe('alternate');
+    expect(b.slots[0].wrestlerNameSnapshot).toBe('The Rock');
+  });
+
+  it('rejects 400 when player has both and body is missing wrestlerChoice', async () => {
+    mockPlayersFindByUserId.mockResolvedValue({
+      playerId: 'p-caller',
+      currentWrestler: 'Stone Cold',
+      alternateWrestler: 'The Rock',
+    });
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch());
+
+    const r = await claimSlot(ev(), ctx, cb); // no body
+    expect(r!.statusCode).toBe(400);
+    expect(JSON.parse(r!.body).message).toContain('wrestlerChoice');
+    expect(mockRunInTransaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects 400 when player has both and wrestlerChoice is invalid', async () => {
+    mockPlayersFindByUserId.mockResolvedValue({
+      playerId: 'p-caller',
+      currentWrestler: 'Stone Cold',
+      alternateWrestler: 'The Rock',
+    });
+    mockMatchesFindByIdWithDate.mockResolvedValue(makeMatch());
+
+    const r = await claimSlot(
+      ev({ body: JSON.stringify({ wrestlerChoice: 'maybe' }) }),
+      ctx,
+      cb,
+    );
+    expect(r!.statusCode).toBe(400);
   });
 });
