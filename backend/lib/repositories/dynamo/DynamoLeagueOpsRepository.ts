@@ -13,6 +13,9 @@ import type {
   CompanyPatch,
   DivisionCreateInput,
   DivisionPatch,
+  LocationCreateInput,
+  LocationPatch,
+  LocationBulkImportResult,
   MatchmakingMethods,
   PresenceRecord,
   QueueRecord,
@@ -26,6 +29,7 @@ import type {
   Show,
   Company,
   Division,
+  Location,
 } from '../types';
 
 export class DynamoLeagueOpsRepository implements LeagueOpsRepository {
@@ -68,6 +72,62 @@ export class DynamoLeagueOpsRepository implements LeagueOpsRepository {
       updatedAt: now,
     }),
   });
+
+  // ─── Locations (CRUD + bulkImport) ────────────────────────────────
+
+  private _locationsCrud = new DynamoCrudRepository<
+    Location,
+    LocationCreateInput,
+    LocationPatch
+  >({
+    tableName: TableNames.LOCATIONS,
+    idField: 'locationId',
+    entityName: 'Location',
+    buildItem: (input, id, now) => ({
+      locationId: id,
+      name: input.name,
+      ...(input.city !== undefined ? { city: input.city } : {}),
+      ...(input.state !== undefined ? { state: input.state } : {}),
+      ...(input.country !== undefined ? { country: input.country } : {}),
+      ...(input.capacity !== undefined ? { capacity: input.capacity } : {}),
+      ...(input.latitude !== undefined ? { latitude: input.latitude } : {}),
+      ...(input.longitude !== undefined ? { longitude: input.longitude } : {}),
+      ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
+      ...(input.notes !== undefined ? { notes: input.notes } : {}),
+      createdAt: now,
+      updatedAt: now,
+    }),
+  });
+
+  locations: LeagueOpsRepository['locations'] = {
+    findById: (id: string) => this._locationsCrud.findById(id),
+    list: () => this._locationsCrud.list(),
+    create: (input: LocationCreateInput) => this._locationsCrud.create(input),
+    update: (id: string, patch: LocationPatch) => this._locationsCrud.update(id, patch),
+    delete: (id: string) => this._locationsCrud.delete(id),
+
+    bulkImport: async (inputs: LocationCreateInput[]): Promise<LocationBulkImportResult> => {
+      const existing = await this._locationsCrud.list();
+      const existingNames = new Set(existing.map((loc) => loc.name.toLowerCase()));
+
+      const seenInPayload = new Set<string>();
+      const skippedNames: string[] = [];
+      let created = 0;
+
+      for (const input of inputs) {
+        const key = input.name.toLowerCase();
+        if (seenInPayload.has(key) || existingNames.has(key)) {
+          skippedNames.push(input.name);
+          continue;
+        }
+        seenInPayload.add(key);
+        await this._locationsCrud.create(input);
+        created += 1;
+      }
+
+      return { created, skipped: skippedNames.length, skippedNames };
+    },
+  };
 
   // ─── Shows (CRUD + listByCompany) ────────────────────────────────
 

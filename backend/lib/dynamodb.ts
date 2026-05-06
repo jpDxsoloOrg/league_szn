@@ -139,6 +139,7 @@ export const TableNames = {
   MATCH_TYPES: process.env.MATCH_TYPES_TABLE!,
   SEASON_AWARDS: process.env.SEASON_AWARDS_TABLE!,
   COMPANIES: process.env.COMPANIES_TABLE!,
+  LOCATIONS: process.env.LOCATIONS_TABLE!,
   SHOWS: process.env.SHOWS_TABLE!,
   STABLES: process.env.STABLES_TABLE!,
   TAG_TEAMS: process.env.TAG_TEAMS_TABLE!,

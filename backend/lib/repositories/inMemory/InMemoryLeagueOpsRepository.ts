@@ -11,6 +11,10 @@ import type {
   CompanyPatch,
   DivisionCreateInput,
   DivisionPatch,
+  LocationCreateInput,
+  LocationPatch,
+  LocationBulkImportResult,
+  LocationsMethods,
   MatchmakingMethods,
   PresenceRecord,
   QueueRecord,
@@ -24,6 +28,7 @@ import type {
   Show,
   Company,
   Division,
+  Location,
 } from '../types';
 import type { CrudRepository } from '../CrudRepository';
 
@@ -189,6 +194,57 @@ class ShowsSubRepo extends InMemoryCrudRepository<Show, ShowCreateInput, ShowPat
   }
 }
 
+// ─── Locations (CRUD + bulkImport) ─────────────────────────────────
+
+class LocationsSubRepo
+  extends InMemoryCrudRepository<Location, LocationCreateInput, LocationPatch>
+  implements LocationsMethods
+{
+  constructor() {
+    super({
+      idField: 'locationId',
+      entityName: 'Location',
+      buildItem: (input: LocationCreateInput, id: string, now: string): Location => ({
+        locationId: id,
+        name: input.name,
+        ...(input.city !== undefined ? { city: input.city } : {}),
+        ...(input.state !== undefined ? { state: input.state } : {}),
+        ...(input.country !== undefined ? { country: input.country } : {}),
+        ...(input.capacity !== undefined ? { capacity: input.capacity } : {}),
+        ...(input.latitude !== undefined ? { latitude: input.latitude } : {}),
+        ...(input.longitude !== undefined ? { longitude: input.longitude } : {}),
+        ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
+        ...(input.notes !== undefined ? { notes: input.notes } : {}),
+        createdAt: now,
+        updatedAt: now,
+      }),
+    });
+  }
+
+  async bulkImport(inputs: LocationCreateInput[]): Promise<LocationBulkImportResult> {
+    const existingNames = new Set(
+      Array.from(this.store.values()).map((loc) => loc.name.toLowerCase()),
+    );
+
+    const seenInPayload = new Set<string>();
+    const skippedNames: string[] = [];
+    let created = 0;
+
+    for (const input of inputs) {
+      const key = input.name.toLowerCase();
+      if (seenInPayload.has(key) || existingNames.has(key)) {
+        skippedNames.push(input.name);
+        continue;
+      }
+      seenInPayload.add(key);
+      await this.create(input);
+      created += 1;
+    }
+
+    return { created, skipped: skippedNames.length, skippedNames };
+  }
+}
+
 // ─── Matchmaking ───────────────────────────────────────────────────
 
 function createMatchmakingSubRepo(): MatchmakingMethods {
@@ -265,6 +321,7 @@ export class InMemoryLeagueOpsRepository implements LeagueOpsRepository {
   readonly shows: ShowsCrud;
   readonly companies: InMemoryCrudRepository<Company, CompanyCreateInput, CompanyPatch>;
   readonly divisions: InMemoryCrudRepository<Division, DivisionCreateInput, DivisionPatch>;
+  readonly locations: LocationsMethods;
   readonly matchmaking: MatchmakingMethods;
 
   constructor() {
@@ -297,6 +354,8 @@ export class InMemoryLeagueOpsRepository implements LeagueOpsRepository {
         updatedAt: now,
       }),
     });
+
+    this.locations = new LocationsSubRepo();
 
     this.matchmaking = createMatchmakingSubRepo();
   }

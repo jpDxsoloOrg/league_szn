@@ -317,6 +317,7 @@ export interface LeagueEvent {
   eventType: EventType;
   date: string;
   venue?: string;
+  locationId?: string;
   description?: string;
   imageUrl?: string;
   themeColor?: string;
@@ -327,6 +328,21 @@ export interface LeagueEvent {
   matchCards: MatchCardEntry[];
   attendance?: number;
   rating?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Location {
+  locationId: string;
+  name: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  capacity?: number;
+  latitude?: number;
+  longitude?: number;
+  imageUrl?: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
