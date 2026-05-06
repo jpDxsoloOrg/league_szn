@@ -43,7 +43,7 @@ vi.mock('../../../services/api', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, fallback?: string) => {
+    t: (key: string, options?: string | Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'scheduleMatch.matchFormat': 'Match Format',
         'scheduleMatch.selectMatchFormat': 'Select Match Format',
@@ -72,8 +72,20 @@ vi.mock('react-i18next', () => ({
         'events.designations.mainEvent': 'Main Event',
         'common.unknown': 'Unknown',
         'common.delete': 'Delete',
+        'matches.slots.signupModeToggle': 'Open match for signups',
+        'matches.slots.slotsRequiredLabel': 'Number of spots',
+        'matches.slots.editorLabel': 'Slots',
+        'matches.slots.openOption': '— Open spot —',
+        'matches.slots.lockToggle': 'Lock',
+        'matches.slots.teamLabelPlaceholder': 'Team (optional)',
       };
-      return translations[key] || fallback || key;
+      if (translations[key]) return translations[key];
+      // Support both `t(key, 'fallback string')` and `t(key, { defaultValue: 'x' })`
+      if (typeof options === 'string') return options;
+      if (options && typeof options === 'object' && typeof options.defaultValue === 'string') {
+        return options.defaultValue;
+      }
+      return key;
     },
   }),
 }));
@@ -301,5 +313,73 @@ describe('ScheduleMatch', () => {
 
     // API should not have been called
     expect(mockScheduleMatch).not.toHaveBeenCalled();
+  });
+
+  // ── Slot-mode (MSL-02) ─────────────────────────────────────────────────────
+
+  it('toggling "Open match for signups" reveals slot rows', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByText('John Cena')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+
+    expect(screen.queryByLabelText('Open match for signups')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Open match for signups'));
+
+    expect(screen.getByLabelText('Number of spots')).toBeInTheDocument();
+    // Default slotsRequired = 2 ⇒ two open-spot dropdowns appear
+    expect(screen.getAllByRole('combobox', { name: '' }).length).toBeGreaterThanOrEqual(0);
+  });
+
+  it('submitting in slot mode sends { slots, slotsRequired } not participants', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockScheduleMatch.mockResolvedValue({});
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByText('John Cena')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+    await user.click(screen.getByLabelText('Open match for signups'));
+
+    // 2 slots; pre-fill the first with John Cena, leave the second open
+    const playerSelects = document.querySelectorAll<HTMLSelectElement>('.slot-mode-row-player');
+    expect(playerSelects.length).toBe(2);
+    await user.selectOptions(playerSelects[0], 'p1');
+
+    await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+    await waitFor(() => expect(mockScheduleMatch).toHaveBeenCalled());
+    const callArg = mockScheduleMatch.mock.calls[0][0];
+    expect(callArg.slotsRequired).toBe(2);
+    expect(Array.isArray(callArg.slots)).toBe(true);
+    expect(callArg.slots).toHaveLength(2);
+    expect(callArg.slots[0]).toMatchObject({ position: 1, playerId: 'p1' });
+    expect(callArg.slots[1]).toMatchObject({ position: 2 });
+    expect(callArg.slots[1].playerId).toBeUndefined();
+    expect(callArg.participants).toBeUndefined();
+  });
+
+  it('legacy participants mode still submits when slot toggle is off', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockScheduleMatch.mockResolvedValue({});
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByText('John Cena')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+
+    // Don't toggle slot mode. Pick two participants.
+    await user.click(screen.getByText('John Cena').closest('.participant-card')!);
+    await user.click(screen.getByText('Dwayne Johnson').closest('.participant-card')!);
+
+    await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+    await waitFor(() => expect(mockScheduleMatch).toHaveBeenCalled());
+    const callArg = mockScheduleMatch.mock.calls[0][0];
+    expect(callArg.participants).toEqual(['p1', 'p2']);
+    expect(callArg.slots).toBeUndefined();
+    expect(callArg.slotsRequired).toBeUndefined();
   });
 });

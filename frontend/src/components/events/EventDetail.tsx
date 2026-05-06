@@ -10,13 +10,16 @@ import type {
   EventCheckInStatus,
   EventCheckInSummary,
 } from '../../types/event';
-import type { Match, Player } from '../../types';
+import type { Match, Player, MatchStatus } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
 import Skeleton from '../ui/Skeleton';
 import MatchResultForm from './MatchResultForm';
 import MatchEditForm from './MatchEditForm';
 import EventCheckIn from './EventCheckIn';
 import EventCheckInRosterPanel from './EventCheckInRosterPanel';
+import MatchSlots from './MatchSlots';
+import SlotEditDialog from './SlotEditDialog';
+import type { HydratedMatchSlot } from '../../types';
 import './EventDetail.css';
 
 const eventTypeColors: Record<string, string> = {
@@ -115,6 +118,56 @@ export default function EventDetail() {
     setEditingMatchId(null);
     setMatchActionError(null);
   }, [loadEvent, loadAdminData]);
+
+  // ── Slot signups ──────────────────────────────────────────────────────────
+  // Non-optimistic: the per-slot button shows "Claiming…/Releasing…" while the
+  // request is in flight, and we refetch the event on both success and failure.
+  // The refetch on failure acts as the rollback (per MSL-02 spec).
+  const handleClaimSlot = useCallback(async (matchId: string, slotId: string) => {
+    setMatchActionError(null);
+    try {
+      await matchesApi.claimSlot(matchId, slotId);
+    } catch (err) {
+      setMatchActionError(err instanceof Error ? err.message : 'Failed to claim slot');
+    } finally {
+      await loadEvent();
+    }
+  }, [loadEvent]);
+
+  const handleReleaseSlot = useCallback(async (matchId: string, slotId: string) => {
+    setMatchActionError(null);
+    try {
+      await matchesApi.releaseSlot(matchId, slotId);
+    } catch (err) {
+      setMatchActionError(err instanceof Error ? err.message : 'Failed to release slot');
+    } finally {
+      await loadEvent();
+    }
+  }, [loadEvent]);
+
+  const handleLoginRequired = useCallback(() => {
+    if (!eventId) return;
+    const returnUrl = encodeURIComponent(`/events/${eventId}`);
+    navigate(`/login?returnUrl=${returnUrl}`);
+  }, [eventId, navigate]);
+
+  // ── Admin slot-edit dialog ────────────────────────────────────────────────
+  const [editingSlot, setEditingSlot] = useState<{ matchId: string; slot: HydratedMatchSlot } | null>(null);
+
+  const handleAdminEditSlot = useCallback((matchId: string, slot: HydratedMatchSlot) => {
+    setEditingSlot({ matchId, slot });
+  }, []);
+
+  const handleSlotEditSave = useCallback(async (
+    patch: { playerId?: string | null; lockedByAdmin?: boolean; teamLabel?: string | null },
+  ) => {
+    if (!editingSlot) return;
+    try {
+      await matchesApi.adminUpdateSlot(editingSlot.matchId, editingSlot.slot.slotId, patch);
+    } finally {
+      await loadEvent();
+    }
+  }, [editingSlot, loadEvent]);
 
   const handleStatusChange = async (newStatus: string) => {
     if (!eventData || !eventId || newStatus === eventData.status) return;
@@ -358,6 +411,8 @@ export default function EventDetail() {
     const isEditing = editingMatchId === match.matchId;
     const rawMatch = scheduledMatchesById.get(match.matchId);
 
+    const slots = match.matchData?.slots;
+
     return (
       <div key={match.matchId} className="match-entry-with-actions">
         <MatchEntry
@@ -381,6 +436,22 @@ export default function EventDetail() {
               : undefined
           }
         />
+        {slots && slots.length > 0 && match.matchData && (
+          <MatchSlots
+            matchId={match.matchId}
+            slots={slots}
+            matchStatus={match.matchData.status}
+            currentPlayerId={playerId ?? undefined}
+            isAdmin={isAdminOrModerator}
+            isAuthenticated={isAuthenticated}
+            onClaim={(slotId) => handleClaimSlot(match.matchId, slotId)}
+            onRelease={(slotId) => handleReleaseSlot(match.matchId, slotId)}
+            onLoginRequired={handleLoginRequired}
+            onAdminEdit={isAdminOrModerator
+              ? (slot) => handleAdminEditSlot(match.matchId, slot)
+              : undefined}
+          />
+        )}
         {isRecording && rawMatch && (
           <div className="inline-form-container">
             <MatchResultForm
@@ -614,6 +685,13 @@ export default function EventDetail() {
           bookedPlayerIds={bookedPlayerIds}
         />
       )}
+
+      <SlotEditDialog
+        slot={editingSlot?.slot ?? null}
+        players={players}
+        onSave={handleSlotEditSave}
+        onClose={() => setEditingSlot(null)}
+      />
     </div>
   );
 }
@@ -638,7 +716,7 @@ interface MatchEntryProps {
       losers?: string[];
       isChampionship: boolean;
       championshipName?: string;
-      status: 'scheduled' | 'completed';
+      status: MatchStatus;
       starRating?: number;
       matchOfTheNight?: boolean;
     } | null;

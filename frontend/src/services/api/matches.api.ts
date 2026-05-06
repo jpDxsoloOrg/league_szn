@@ -49,4 +49,27 @@ export const matchesApi = {
       method: 'DELETE',
     });
   },
+
+  claimSlot: async (matchId: string, slotId: string): Promise<Match> => {
+    return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}/slots/${slotId}/claim`, {
+      method: 'POST',
+    });
+  },
+
+  releaseSlot: async (matchId: string, slotId: string): Promise<Match> => {
+    return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}/slots/${slotId}/claim`, {
+      method: 'DELETE',
+    });
+  },
+
+  adminUpdateSlot: async (
+    matchId: string,
+    slotId: string,
+    patch: { playerId?: string | null; lockedByAdmin?: boolean; teamLabel?: string | null },
+  ): Promise<Match> => {
+    return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}/slots/${slotId}`, {
+      method: 'PUT',
+      body: JSON.stringify(patch),
+    });
+  },
 };
