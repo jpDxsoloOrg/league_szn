@@ -27,6 +27,17 @@ export interface Player {
   currentStreak?: { type: 'W' | 'L' | 'D'; count: number };
 }
 
+export type MatchStatus = 'scheduled' | 'completed' | 'cancelled' | 'open-signups';
+
+export interface MatchSlot {
+  slotId: string;
+  position: number;
+  playerId?: string;
+  claimedAt?: string;
+  lockedByAdmin?: boolean;
+  teamLabel?: string;
+}
+
 export interface Match {
   matchId: string;
   date: string;
@@ -43,7 +54,9 @@ export interface Match {
   championshipId?: string;
   tournamentId?: string;
   seasonId?: string;
-  status: 'scheduled' | 'completed';
+  status: MatchStatus;
+  slots?: MatchSlot[];
+  slotsRequired?: number;
   createdAt: string;
   challengeId?: string;
   promoId?: string;

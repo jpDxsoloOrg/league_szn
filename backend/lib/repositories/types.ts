@@ -474,6 +474,17 @@ export interface WrestlerCost {
 
 // ─── Wave 5 types ──────────────────────────────────────────────────
 
+export type MatchStatus = 'scheduled' | 'completed' | 'cancelled' | 'open-signups';
+
+export interface MatchSlot {
+  slotId: string;
+  position: number;
+  playerId?: string;
+  claimedAt?: string;
+  lockedByAdmin?: boolean;
+  teamLabel?: string;
+}
+
 export interface Match {
   matchId: string;
   date: string;
@@ -490,7 +501,9 @@ export interface Match {
   tournamentId?: string;
   seasonId?: string;
   eventId?: string;
-  status: 'scheduled' | 'completed' | 'cancelled';
+  status: MatchStatus;
+  slots?: MatchSlot[];
+  slotsRequired?: number;
   starRating?: number;
   matchOfTheNight?: boolean;
   createdAt: string;
