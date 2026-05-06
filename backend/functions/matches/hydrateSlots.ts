@@ -3,7 +3,12 @@ import type { MatchSlot, Player } from '../../lib/repositories/types';
 export interface HydratedMatchSlot extends MatchSlot {
   /** Display name of the assigned player. Only set when the slot is filled. */
   playerName?: string;
-  /** The player's currentWrestler at fetch time. Only set when the slot is filled. */
+  /**
+   * Display name of the wrestler this player is bringing. Prefers
+   * `wrestlerNameSnapshot` (pinned at claim time, immune to later renames);
+   * falls back to the player's `currentWrestler` for legacy slots that
+   * predate MSL-03's snapshot field. Only set when the slot is filled.
+   */
   wrestlerName?: string;
 }
 
@@ -20,10 +25,16 @@ export function hydrateMatchSlots(
   return slots.map((slot) => {
     if (!slot.playerId) return { ...slot };
     const player = playerLookup.get(slot.playerId);
+    // Snapshot wins over the live currentWrestler so a player renaming their
+    // gimmick doesn't retroactively rewrite what was billed for past matches.
+    const wrestlerName =
+      slot.wrestlerNameSnapshot
+      ?? player?.currentWrestler
+      ?? 'Unknown Wrestler';
     return {
       ...slot,
       playerName: player?.name ?? 'Unknown Player',
-      wrestlerName: player?.currentWrestler ?? 'Unknown Wrestler',
+      wrestlerName,
     };
   });
 }
