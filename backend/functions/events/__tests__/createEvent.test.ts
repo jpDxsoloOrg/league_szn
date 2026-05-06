@@ -161,3 +161,144 @@ describe('createEvent', () => {
     expect(JSON.parse(result!.body).message).toBe('Failed to create event');
   });
 });
+
+// ─── Random-pick (LOC-01) ────────────────────────────────────────────
+
+describe('createEvent — location random-pick', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPut.mockResolvedValue({});
+  });
+
+  it('does not stamp a location when the locations table is empty', async () => {
+    mockScan.mockResolvedValue({ Items: [] });
+    const event = makeEvent({
+      body: JSON.stringify({ name: 'Raw', eventType: 'weekly', date: '2025-02-01' }),
+    });
+
+    const result = await createEvent(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(201);
+    const body = JSON.parse(result!.body);
+    expect(body.locationId).toBeUndefined();
+    expect(body.venue).toBeUndefined();
+  });
+
+  it('picks a random location when none is supplied and stamps locationId + venue', async () => {
+    mockScan.mockResolvedValue({
+      Items: [
+        { locationId: 'l1', name: 'MSG', city: 'New York' },
+        { locationId: 'l2', name: 'Allstate Arena' },
+        { locationId: 'l3', name: 'T-Mobile Arena', city: 'Las Vegas' },
+      ],
+    });
+    // Force the picker to choose index 0 deterministically.
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    const event = makeEvent({
+      body: JSON.stringify({ name: 'SmackDown', eventType: 'weekly', date: '2025-02-07' }),
+    });
+
+    const result = await createEvent(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(201);
+    const body = JSON.parse(result!.body);
+    expect(body.locationId).toBe('l1');
+    expect(body.venue).toBe('MSG, New York');
+
+    randomSpy.mockRestore();
+  });
+
+  it('uses just the name when picked location has no city', async () => {
+    mockScan.mockResolvedValue({
+      Items: [{ locationId: 'l2', name: 'Allstate Arena' }],
+    });
+    const event = makeEvent({
+      body: JSON.stringify({ name: 'NXT', eventType: 'weekly', date: '2025-02-08' }),
+    });
+
+    const result = await createEvent(event, ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.locationId).toBe('l2');
+    expect(body.venue).toBe('Allstate Arena');
+  });
+
+  it('honors an explicit locationId by looking it up and denormalizing venue', async () => {
+    mockGet.mockResolvedValue({
+      Item: { locationId: 'l9', name: 'Tokyo Dome', city: 'Tokyo' },
+    });
+
+    const event = makeEvent({
+      body: JSON.stringify({
+        name: 'Wrestle Kingdom',
+        eventType: 'ppv',
+        date: '2026-01-04',
+        locationId: 'l9',
+      }),
+    });
+
+    const result = await createEvent(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(201);
+    const body = JSON.parse(result!.body);
+    expect(body.locationId).toBe('l9');
+    expect(body.venue).toBe('Tokyo Dome, Tokyo');
+    expect(mockScan).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 when an explicit locationId does not exist', async () => {
+    mockGet.mockResolvedValue({ Item: undefined });
+    const event = makeEvent({
+      body: JSON.stringify({
+        name: 'Mystery Show',
+        eventType: 'weekly',
+        date: '2026-02-01',
+        locationId: 'does-not-exist',
+      }),
+    });
+
+    const result = await createEvent(event, ctx, cb);
+    expect(result!.statusCode).toBe(404);
+  });
+
+  it('keeps caller-supplied venue and skips random-pick', async () => {
+    const event = makeEvent({
+      body: JSON.stringify({
+        name: 'House Show',
+        eventType: 'house',
+        date: '2025-03-01',
+        venue: 'Local Civic Center',
+      }),
+    });
+
+    const result = await createEvent(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(201);
+    const body = JSON.parse(result!.body);
+    expect(body.venue).toBe('Local Civic Center');
+    expect(body.locationId).toBeUndefined();
+    expect(mockScan).not.toHaveBeenCalled();
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
+  it('keeps caller-supplied venue even when locationId is also provided', async () => {
+    const event = makeEvent({
+      body: JSON.stringify({
+        name: 'House Show',
+        eventType: 'house',
+        date: '2025-03-01',
+        venue: 'Local Civic Center',
+        locationId: 'l1',
+      }),
+    });
+
+    const result = await createEvent(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(201);
+    const body = JSON.parse(result!.body);
+    expect(body.venue).toBe('Local Civic Center');
+    expect(body.locationId).toBe('l1');
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+});
