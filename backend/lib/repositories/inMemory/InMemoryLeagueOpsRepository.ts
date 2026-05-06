@@ -92,6 +92,7 @@ function createEventsSubRepo(): EventsCrud {
         eventType: input.eventType,
         date: input.date,
         venue: input.venue,
+        locationId: input.locationId,
         description: input.description,
         imageUrl: input.imageUrl,
         themeColor: input.themeColor,

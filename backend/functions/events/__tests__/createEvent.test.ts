@@ -3,16 +3,18 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockPut } = vi.hoisted(() => ({
+const { mockPut, mockScan, mockGet } = vi.hoisted(() => ({
   mockPut: vi.fn(),
+  mockScan: vi.fn(),
+  mockGet: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
   dynamoDb: {
-    get: vi.fn(), put: mockPut, scan: vi.fn(), query: vi.fn(),
+    get: mockGet, put: mockPut, scan: mockScan, query: vi.fn(),
     update: vi.fn(), delete: vi.fn(), scanAll: vi.fn(), queryAll: vi.fn(),
   },
-  TableNames: { EVENTS: 'Events' },
+  TableNames: { EVENTS: 'Events', LOCATIONS: 'Locations' },
 }));
 
 vi.mock('uuid', () => ({ v4: () => 'test-event-uuid' }));
@@ -37,7 +39,11 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
 // ─── Tests ───────────────────────────────────────────────────────────
 
 describe('createEvent', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Default: empty locations table — random-pick is a no-op.
+    mockScan.mockResolvedValue({ Items: [] });
+  });
 
   it('creates an event with required fields and returns 201', async () => {
     mockPut.mockResolvedValue({});
