@@ -80,12 +80,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           ? 'open-signups'
           : 'scheduled';
 
+    // DynamoUnitOfWork.updateMatch appends updatedAt itself; passing it again
+    // here would set the same path twice and fail validation.
     await runInTransaction(async (tx) => {
       tx.updateMatch(matchId, match.date, {
         slots: updatedSlots,
         participants: updatedParticipants,
         status: newStatus,
-        updatedAt: now,
       });
     });
 
