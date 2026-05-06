@@ -17,6 +17,7 @@ import MatchResultForm from './MatchResultForm';
 import MatchEditForm from './MatchEditForm';
 import EventCheckIn from './EventCheckIn';
 import EventCheckInRosterPanel from './EventCheckInRosterPanel';
+import MatchSlots from './MatchSlots';
 import './EventDetail.css';
 
 const eventTypeColors: Record<string, string> = {
@@ -115,6 +116,38 @@ export default function EventDetail() {
     setEditingMatchId(null);
     setMatchActionError(null);
   }, [loadEvent, loadAdminData]);
+
+  // ── Slot signups ──────────────────────────────────────────────────────────
+  // Non-optimistic: the per-slot button shows "Claiming…/Releasing…" while the
+  // request is in flight, and we refetch the event on both success and failure.
+  // The refetch on failure acts as the rollback (per MSL-02 spec).
+  const handleClaimSlot = useCallback(async (matchId: string, slotId: string) => {
+    setMatchActionError(null);
+    try {
+      await matchesApi.claimSlot(matchId, slotId);
+    } catch (err) {
+      setMatchActionError(err instanceof Error ? err.message : 'Failed to claim slot');
+    } finally {
+      await loadEvent();
+    }
+  }, [loadEvent]);
+
+  const handleReleaseSlot = useCallback(async (matchId: string, slotId: string) => {
+    setMatchActionError(null);
+    try {
+      await matchesApi.releaseSlot(matchId, slotId);
+    } catch (err) {
+      setMatchActionError(err instanceof Error ? err.message : 'Failed to release slot');
+    } finally {
+      await loadEvent();
+    }
+  }, [loadEvent]);
+
+  const handleLoginRequired = useCallback(() => {
+    if (!eventId) return;
+    const returnUrl = encodeURIComponent(`/events/${eventId}`);
+    navigate(`/login?returnUrl=${returnUrl}`);
+  }, [eventId, navigate]);
 
   const handleStatusChange = async (newStatus: string) => {
     if (!eventData || !eventId || newStatus === eventData.status) return;
@@ -358,6 +391,8 @@ export default function EventDetail() {
     const isEditing = editingMatchId === match.matchId;
     const rawMatch = scheduledMatchesById.get(match.matchId);
 
+    const slots = match.matchData?.slots;
+
     return (
       <div key={match.matchId} className="match-entry-with-actions">
         <MatchEntry
@@ -381,6 +416,19 @@ export default function EventDetail() {
               : undefined
           }
         />
+        {slots && slots.length > 0 && match.matchData && (
+          <MatchSlots
+            matchId={match.matchId}
+            slots={slots}
+            matchStatus={match.matchData.status}
+            currentPlayerId={playerId ?? undefined}
+            isAdmin={isAdminOrModerator}
+            isAuthenticated={isAuthenticated}
+            onClaim={(slotId) => handleClaimSlot(match.matchId, slotId)}
+            onRelease={(slotId) => handleReleaseSlot(match.matchId, slotId)}
+            onLoginRequired={handleLoginRequired}
+          />
+        )}
         {isRecording && rawMatch && (
           <div className="inline-form-container">
             <MatchResultForm
