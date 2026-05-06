@@ -483,6 +483,21 @@ export interface MatchSlot {
   claimedAt?: string;
   lockedByAdmin?: boolean;
   teamLabel?: string;
+  /**
+   * Which wrestler the player is bringing to this match: their main
+   * (`currentWrestler`) or alternate (`alternateWrestler`). Set at claim
+   * time, or by an admin force-assign. Only meaningful when `playerId` is
+   * set.
+   */
+  wrestlerChoice?: 'main' | 'alternate';
+  /**
+   * Denormalized display name of the chosen wrestler at the moment the slot
+   * was claimed/assigned. Pinned so a later rename of the player's wrestler
+   * fields doesn't retroactively change what was billed for this match.
+   * Hydration falls back to `player.currentWrestler` when this is unset
+   * (legacy slots predating MSL-03).
+   */
+  wrestlerNameSnapshot?: string;
 }
 
 export interface Match {
