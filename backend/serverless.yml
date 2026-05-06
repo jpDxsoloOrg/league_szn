@@ -387,6 +387,10 @@ functions:
           method: any
           cors: *corsConfig
       - http:
+          path: matches/{matchId}/slots/{slotId}
+          method: any
+          cors: *corsConfig
+      - http:
           path: matches/{matchId}
           method: any
           cors: *corsConfig
