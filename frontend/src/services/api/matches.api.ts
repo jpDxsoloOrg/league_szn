@@ -50,9 +50,18 @@ export const matchesApi = {
     });
   },
 
-  claimSlot: async (matchId: string, slotId: string): Promise<Match> => {
+  claimSlot: async (
+    matchId: string,
+    slotId: string,
+    options?: { wrestlerChoice?: 'main' | 'alternate' },
+  ): Promise<Match> => {
     return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}/slots/${slotId}/claim`, {
       method: 'POST',
+      // Body is optional — players with no alternate omit it; players with
+      // both must include the choice (the chooser modal pre-supplies it).
+      ...(options?.wrestlerChoice
+        ? { body: JSON.stringify({ wrestlerChoice: options.wrestlerChoice }) }
+        : {}),
     });
   },
 
@@ -65,7 +74,12 @@ export const matchesApi = {
   adminUpdateSlot: async (
     matchId: string,
     slotId: string,
-    patch: { playerId?: string | null; lockedByAdmin?: boolean; teamLabel?: string | null },
+    patch: {
+      playerId?: string | null;
+      lockedByAdmin?: boolean;
+      teamLabel?: string | null;
+      wrestlerChoice?: 'main' | 'alternate';
+    },
   ): Promise<Match> => {
     return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}/slots/${slotId}`, {
       method: 'PUT',
