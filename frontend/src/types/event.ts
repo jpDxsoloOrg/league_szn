@@ -1,3 +1,5 @@
+import type { MatchStatus, HydratedMatchSlot } from './index';
+
 export type EventType = 'ppv' | 'weekly' | 'special' | 'house';
 
 export type EventStatus = 'upcoming' | 'in-progress' | 'completed' | 'cancelled';
@@ -45,7 +47,9 @@ export interface EnrichedMatchData {
   losers?: string[];
   isChampionship: boolean;
   championshipName?: string;
-  status: 'scheduled' | 'completed';
+  status: MatchStatus;
+  slots?: HydratedMatchSlot[];
+  slotsRequired?: number;
   starRating?: number;
   matchOfTheNight?: boolean;
 }

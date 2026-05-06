@@ -10,7 +10,7 @@ import type {
   EventCheckInStatus,
   EventCheckInSummary,
 } from '../../types/event';
-import type { Match, Player } from '../../types';
+import type { Match, Player, MatchStatus } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
 import Skeleton from '../ui/Skeleton';
 import MatchResultForm from './MatchResultForm';
@@ -638,7 +638,7 @@ interface MatchEntryProps {
       losers?: string[];
       isChampionship: boolean;
       championshipName?: string;
-      status: 'scheduled' | 'completed';
+      status: MatchStatus;
       starRating?: number;
       matchOfTheNight?: boolean;
     } | null;
