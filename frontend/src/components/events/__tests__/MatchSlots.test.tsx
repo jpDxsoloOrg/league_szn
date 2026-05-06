@@ -275,4 +275,41 @@ describe('MatchSlots', () => {
     expect(onClaim).not.toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+
+  // ── Winner / loser highlight on the slot rows ───────────────────────────
+
+  it('marks the winner\'s slot with the winner class + W badge', () => {
+    renderSlots({
+      slots: [
+        filled({ slotId: 's-loser', position: 1, playerId: 'p-loser', wrestlerName: 'Loser' }),
+        filled({ slotId: 's-winner', position: 2, playerId: 'p-winner', wrestlerName: 'Winner' }),
+      ],
+      matchStatus: 'completed',
+      winnerPlayerIds: ['p-winner'],
+      loserPlayerIds: ['p-loser'],
+    });
+
+    const winnerRow = document.querySelector('.match-slot[data-slot-id="s-winner"]');
+    const loserRow = document.querySelector('.match-slot[data-slot-id="s-loser"]');
+    expect(winnerRow?.classList.contains('winner')).toBe(true);
+    expect(winnerRow?.classList.contains('loser')).toBe(false);
+    expect(loserRow?.classList.contains('loser')).toBe(true);
+    expect(winnerRow?.querySelector('.match-slot-winner-badge')).not.toBeNull();
+    expect(loserRow?.querySelector('.match-slot-winner-badge')).toBeNull();
+  });
+
+  it('does not mark a winner when winnerPlayerIds is omitted', () => {
+    renderSlots({
+      slots: [
+        filled({ slotId: 's-a', playerId: 'pa' }),
+        filled({ slotId: 's-b', position: 2, playerId: 'pb' }),
+      ],
+      matchStatus: 'scheduled',
+    });
+    const rows = document.querySelectorAll('.match-slot');
+    rows.forEach((row) => {
+      expect(row.classList.contains('winner')).toBe(false);
+      expect(row.classList.contains('loser')).toBe(false);
+    });
+  });
 });

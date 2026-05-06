@@ -49,6 +49,14 @@ export interface MatchSlotsProps {
   currentPlayerCurrentWrestler?: string | null;
   /** The signed-in player's alternate wrestler name (if any). */
   currentPlayerAlternateWrestler?: string | null;
+  /**
+   * playerIds of the match's winners. When the match is completed, slot rows
+   * for these players render with the winner highlight so the SPOTS list
+   * matches the winner styling on the match-card header.
+   */
+  winnerPlayerIds?: string[];
+  /** playerIds of the match's losers. Rendered with a subdued treatment. */
+  loserPlayerIds?: string[];
 }
 
 /**
@@ -74,6 +82,8 @@ export default function MatchSlots(props: MatchSlotsProps) {
     disableClaimReason,
     currentPlayerCurrentWrestler,
     currentPlayerAlternateWrestler,
+    winnerPlayerIds,
+    loserPlayerIds,
   } = props;
   const { t } = useTranslation();
   const [busySlotId, setBusySlotId] = useState<string | null>(null);
@@ -177,11 +187,21 @@ export default function MatchSlots(props: MatchSlotsProps) {
           const showRelease = isMine && !slot.lockedByAdmin
             && matchStatus !== 'completed' && matchStatus !== 'cancelled';
 
+          const isWinner = filled
+            && !!slot.playerId
+            && !!winnerPlayerIds?.includes(slot.playerId);
+          const isLoser = filled
+            && !!slot.playerId
+            && !isWinner
+            && !!loserPlayerIds?.includes(slot.playerId);
+
           const rowClass = [
             'match-slot',
             filled ? 'filled' : 'open',
             isMine ? 'mine' : '',
             slot.lockedByAdmin ? 'locked' : '',
+            isWinner ? 'winner' : '',
+            isLoser ? 'loser' : '',
           ].filter(Boolean).join(' ');
 
           return (
@@ -200,6 +220,9 @@ export default function MatchSlots(props: MatchSlotsProps) {
                     <span className="match-slot-wrestler">{slot.wrestlerName ?? slot.playerId}</span>
                     {slot.playerName && (
                       <span className="match-slot-player"> ({slot.playerName})</span>
+                    )}
+                    {isWinner && (
+                      <span className="match-slot-winner-badge" aria-label="Winner">W</span>
                     )}
                   </Link>
                 ) : (
