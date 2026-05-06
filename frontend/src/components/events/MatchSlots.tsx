@@ -22,6 +22,10 @@ export interface MatchSlotsProps {
   onAdminEdit?: (slot: HydratedMatchSlot) => void;
   /** Called when a guest tries to Claim. Parent typically routes to /login. */
   onLoginRequired?: () => void;
+  /** When true, renders skeleton rows instead of slot data. */
+  loading?: boolean;
+  /** Number of skeleton rows when loading. Defaults to slots.length or 2. */
+  loadingCount?: number;
 }
 
 /**
@@ -41,6 +45,8 @@ export default function MatchSlots(props: MatchSlotsProps) {
     onRelease,
     onAdminEdit,
     onLoginRequired,
+    loading = false,
+    loadingCount,
   } = props;
   const { t } = useTranslation();
   const [busySlotId, setBusySlotId] = useState<string | null>(null);
@@ -74,6 +80,24 @@ export default function MatchSlots(props: MatchSlotsProps) {
   const handleRelease = (slotId: string) => {
     void runWithBusy(slotId, () => onRelease(slotId));
   };
+
+  if (loading) {
+    const rows = loadingCount ?? Math.max(slots.length, 2);
+    return (
+      <div className="match-slots" data-match-id={matchId} role="status" aria-busy="true">
+        <ol className="match-slots-list">
+          {Array.from({ length: rows }, (_, i) => (
+            <li key={i} className="match-slot match-slot-skeleton">
+              <span className="match-slot-position">·</span>
+              <span className="match-slot-content">
+                <span className="match-slot-skeleton-bar" />
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    );
+  }
 
   return (
     <div className="match-slots" data-match-id={matchId}>

@@ -194,3 +194,28 @@
     margin-left: auto;
   }
 }
+
+.match-slot-skeleton {
+  border-style: dashed;
+  border-color: #3a3a3a;
+  background: #232323;
+}
+
+.match-slot-skeleton .match-slot-position {
+  color: #555;
+}
+
+.match-slot-skeleton-bar {
+  display: inline-block;
+  width: 60%;
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #2a2a2a 25%, #333 50%, #2a2a2a 75%);
+  background-size: 200% 100%;
+  animation: match-slot-skeleton-shine 1.4s ease-in-out infinite;
+}
+
+@keyframes match-slot-skeleton-shine {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
