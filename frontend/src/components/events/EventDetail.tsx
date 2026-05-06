@@ -130,6 +130,12 @@ export default function EventDetail() {
   // Non-optimistic: the per-slot button shows "Claiming…/Releasing…" while the
   // request is in flight, and we refetch the event on both success and failure.
   // The refetch on failure acts as the rollback (per MSL-02 spec).
+  // Slot mutations can flip a match's status between 'open-signups' and
+  // 'scheduled' (filling the last slot or releasing one), so we have to
+  // refresh BOTH eventData and the admin scheduledMatches list. Without the
+  // admin refresh, clicking Record Result on a freshly-scheduled match shows
+  // the inline "Match data is not available" error because scheduledMatches
+  // didn't include this match when it was last fetched.
   const handleClaimSlot = useCallback(async (
     matchId: string,
     slotId: string,
@@ -141,9 +147,9 @@ export default function EventDetail() {
     } catch (err) {
       setMatchActionError(err instanceof Error ? err.message : 'Failed to claim slot');
     } finally {
-      await loadEvent();
+      await Promise.all([loadEvent(), loadAdminData()]);
     }
-  }, [loadEvent]);
+  }, [loadEvent, loadAdminData]);
 
   const handleReleaseSlot = useCallback(async (matchId: string, slotId: string) => {
     setMatchActionError(null);
@@ -152,9 +158,9 @@ export default function EventDetail() {
     } catch (err) {
       setMatchActionError(err instanceof Error ? err.message : 'Failed to release slot');
     } finally {
-      await loadEvent();
+      await Promise.all([loadEvent(), loadAdminData()]);
     }
-  }, [loadEvent]);
+  }, [loadEvent, loadAdminData]);
 
   const handleLoginRequired = useCallback(() => {
     if (!eventId) return;
@@ -170,15 +176,22 @@ export default function EventDetail() {
   }, []);
 
   const handleSlotEditSave = useCallback(async (
-    patch: { playerId?: string | null; lockedByAdmin?: boolean; teamLabel?: string | null },
+    patch: {
+      playerId?: string | null;
+      lockedByAdmin?: boolean;
+      teamLabel?: string | null;
+      wrestlerChoice?: 'main' | 'alternate';
+    },
   ) => {
     if (!editingSlot) return;
     try {
       await matchesApi.adminUpdateSlot(editingSlot.matchId, editingSlot.slot.slotId, patch);
     } finally {
-      await loadEvent();
+      // adminUpdateSlot can also flip the match's status (filling the last
+      // slot, clearing one, etc.), so refresh admin data too.
+      await Promise.all([loadEvent(), loadAdminData()]);
     }
-  }, [editingSlot, loadEvent]);
+  }, [editingSlot, loadEvent, loadAdminData]);
 
   const handleStatusChange = async (newStatus: string) => {
     if (!eventData || !eventId || newStatus === eventData.status) return;
@@ -485,6 +498,8 @@ export default function EventDetail() {
             })}
             currentPlayerCurrentWrestler={currentWrestler}
             currentPlayerAlternateWrestler={alternateWrestler}
+            winnerPlayerIds={match.matchData.winners}
+            loserPlayerIds={match.matchData.losers}
           />
         )}
         {isRecording && rawMatch && (
