@@ -463,7 +463,9 @@
       "slotsRequiredLabel": "Number of spots",
       "editorLabel": "Slots",
       "openSpotsHeader": "Open spots",
-      "spotsHeader": "Spots"
+      "spotsHeader": "Spots",
+      "alreadyBookedOnEvent": "You already have a slot in another match on this event — release that one first",
+      "alreadyBookedTooltip": "You already have a slot in another match on this event"
     }
   },
   "matchSearch": {
