@@ -56,6 +56,36 @@ export default function ScheduleMatch() {
     designation: 'midcard' as MatchDesignation,
   });
 
+  // ── Slot mode (MSL-02) ────────────────────────────────────────────────────
+  // When enabled, the form submits { slots, slotsRequired } instead of
+  // participants[]. Each slot row may be open (no playerId), pre-assigned, or
+  // pre-assigned + locked to that player.
+  type SlotRow = { playerId: string; lockedByAdmin: boolean; teamLabel: string };
+  const [slotMode, setSlotMode] = useState(false);
+  const [slotsRequired, setSlotsRequired] = useState(2);
+  const [slotRows, setSlotRows] = useState<SlotRow[]>(() =>
+    Array.from({ length: 2 }, () => ({ playerId: '', lockedByAdmin: false, teamLabel: '' })),
+  );
+
+  // Keep slotRows length in sync with slotsRequired (preserve as much data as possible).
+  useEffect(() => {
+    setSlotRows((prev) => {
+      if (prev.length === slotsRequired) return prev;
+      if (prev.length < slotsRequired) {
+        const extra = Array.from(
+          { length: slotsRequired - prev.length },
+          () => ({ playerId: '', lockedByAdmin: false, teamLabel: '' }),
+        );
+        return [...prev, ...extra];
+      }
+      return prev.slice(0, slotsRequired);
+    });
+  }, [slotsRequired]);
+
+  const updateSlotRow = (index: number, patch: Partial<SlotRow>) => {
+    setSlotRows((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  };
+
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount to load options and apply pre-fill from location state
@@ -202,6 +232,60 @@ export default function ScheduleMatch() {
       } finally {
         setSubmitting(false);
       }
+    } else if (slotMode) {
+      // Slot-mode: build { slots, slotsRequired } payload.
+      const filledIds = slotRows.map((r) => r.playerId).filter(Boolean);
+      const dupCheck = new Set(filledIds);
+      if (dupCheck.size !== filledIds.length) {
+        setError(t('scheduleMatch.slotDuplicatePlayerError', {
+          defaultValue: 'A player can only occupy one slot in this match.',
+        }));
+        setSubmitting(false);
+        return;
+      }
+      const slotsPayload = slotRows.map((row, i) => {
+        const slot: { position: number; playerId?: string; lockedByAdmin?: boolean; teamLabel?: string } = {
+          position: i + 1,
+        };
+        if (row.playerId) slot.playerId = row.playerId;
+        if (row.lockedByAdmin && row.playerId) slot.lockedByAdmin = true;
+        if (row.teamLabel.trim()) slot.teamLabel = row.teamLabel.trim();
+        return slot;
+      });
+
+      try {
+        await matchesApi.schedule({
+          date: matchDate,
+          matchFormat: formData.matchFormat,
+          stipulationId: formData.stipulationId || undefined,
+          slots: slotsPayload,
+          slotsRequired,
+          isChampionship: formData.isChampionship,
+          championshipId: formData.championshipId || undefined,
+          tournamentId: formData.tournamentId || undefined,
+          seasonId: formData.seasonId || undefined,
+          eventId: formData.eventId || undefined,
+          designation: formData.eventId ? formData.designation : undefined,
+          status: 'scheduled',
+          ...(linkChallengeId ? { challengeId: linkChallengeId } : {}),
+          ...(linkPromoId ? { promoId: linkPromoId } : {}),
+        });
+
+        setSuccess(t('scheduleMatch.success'));
+        setLinkChallengeId(null);
+        setLinkPromoId(null);
+        preFillApplied.current = false;
+        if (state?.fromEvent) {
+          navigate(`/events/${state.fromEvent.eventId}`, { replace: true });
+        } else {
+          navigate('/admin/schedule', { replace: true, state: {} });
+        }
+        resetForm();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('scheduleMatch.error'));
+      } finally {
+        setSubmitting(false);
+      }
     } else {
       // Non-tag team match validation
       if (formData.participants.length < 2) {
@@ -258,6 +342,8 @@ export default function ScheduleMatch() {
       designation: 'midcard',
     });
     setTeams([[], []]);
+    setSlotMode(false);
+    setSlotsRequired(2);
   };
 
   const handleParticipantToggle = (playerId: string) => {
@@ -322,6 +408,10 @@ export default function ScheduleMatch() {
     setFormData(prev => ({ ...prev, matchFormat: newFormat, participants: [] }));
     setTeams([[], []]);
     setTagTeamSelectionMode('tag-teams');
+    // Slot mode is incompatible with tag-team formats (out of scope for v1).
+    if (newFormat.toLowerCase().includes('tag')) {
+      setSlotMode(false);
+    }
   };
 
   const handleSelectTagTeam = (teamIndex: number, tagTeamId: string) => {
@@ -522,6 +612,38 @@ export default function ScheduleMatch() {
           </div>
         )}
 
+        {/* Slot-mode toggle (MSL-02) — incompatible with tag-team formats */}
+        {!isTagTeamMatch && formData.matchFormat && (
+          <div className="form-group slot-mode-toggle">
+            <label className="slot-mode-toggle-label">
+              <input
+                type="checkbox"
+                checked={slotMode}
+                onChange={(e) => setSlotMode(e.target.checked)}
+              />
+              {t('matches.slots.signupModeToggle', { defaultValue: 'Open match for signups' })}
+            </label>
+            {slotMode && (
+              <div className="slot-mode-required-row">
+                <label htmlFor="slotsRequired">
+                  {t('matches.slots.slotsRequiredLabel', { defaultValue: 'Number of spots' })}
+                </label>
+                <input
+                  id="slotsRequired"
+                  type="number"
+                  min={2}
+                  max={8}
+                  value={slotsRequired}
+                  onChange={(e) => {
+                    const next = Number.parseInt(e.target.value, 10);
+                    if (Number.isFinite(next)) setSlotsRequired(Math.min(8, Math.max(2, next)));
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
         {isTagTeamMatch ? (
           /* Tag Team Selection UI */
           <div className="form-group">
@@ -661,6 +783,48 @@ export default function ScheduleMatch() {
                 <span key={i} className={`team-count ${team.length >= 2 ? 'valid' : 'invalid'}`}>
                   {t('scheduleMatch.tagTeam.team', 'Team')} {i + 1}: {team.length} {t('scheduleMatch.tagTeam.members', 'members')}
                 </span>
+              ))}
+            </div>
+          </div>
+        ) : slotMode ? (
+          /* Slot-mode editor (MSL-02) — replaces the participants picker */
+          <div className="form-group slot-mode-editor">
+            <label>{t('matches.slots.editorLabel', { defaultValue: 'Slots' })}</label>
+            <div className="slot-mode-rows">
+              {slotRows.map((row, index) => (
+                <div key={index} className="slot-mode-row">
+                  <span className="slot-mode-row-position">{index + 1}</span>
+                  <select
+                    className="slot-mode-row-player"
+                    value={row.playerId}
+                    onChange={(e) => updateSlotRow(index, { playerId: e.target.value })}
+                  >
+                    <option value="">
+                      {t('matches.slots.openOption', { defaultValue: '— Open spot —' })}
+                    </option>
+                    {players.map((p) => (
+                      <option key={p.playerId} value={p.playerId}>
+                        {p.currentWrestler} ({p.name})
+                      </option>
+                    ))}
+                  </select>
+                  <label className="slot-mode-row-lock">
+                    <input
+                      type="checkbox"
+                      checked={row.lockedByAdmin}
+                      disabled={!row.playerId}
+                      onChange={(e) => updateSlotRow(index, { lockedByAdmin: e.target.checked })}
+                    />
+                    {t('matches.slots.lockToggle', { defaultValue: 'Lock' })}
+                  </label>
+                  <input
+                    className="slot-mode-row-team"
+                    type="text"
+                    placeholder={t('matches.slots.teamLabelPlaceholder', { defaultValue: 'Team (optional)' })}
+                    value={row.teamLabel}
+                    onChange={(e) => updateSlotRow(index, { teamLabel: e.target.value })}
+                  />
+                </div>
               ))}
             </div>
           </div>
