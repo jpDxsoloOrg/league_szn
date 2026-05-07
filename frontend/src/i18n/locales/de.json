@@ -33,7 +33,8 @@
     "print": "Drucken",
     "accessDenied": "Zugriff verweigert",
     "back": "Zurück",
-    "backToHome": "Zurück zur Startseite"
+    "backToHome": "Zurück zur Startseite",
+    "actions": "Aktionen"
   },
   "notFound": {
     "title": "Seite nicht gefunden",
@@ -561,6 +562,7 @@
         "contenderConfig": "Herausforderer Konfig",
         "contenderOverrides": "Herausforderer Anpassungen",
         "companies": "Unternehmen",
+        "locations": "Veranstaltungsorte",
         "shows": "Shows",
         "users": "Benutzerverwaltung",
         "features": "Funktionsverwaltung",
@@ -588,6 +590,46 @@
     },
     "players": {
       "alternateWrestler": "Alternativer Wrestler"
+    },
+    "locations": {
+      "title": "Veranstaltungsorte verwalten",
+      "subtitle": "Veranstaltungsorte für Liga-Events",
+      "add": "Ort hinzufügen",
+      "edit": "Ort bearbeiten",
+      "delete": "Ort löschen",
+      "bulkImport": "Massenimport",
+      "emptyTitle": "Noch keine Veranstaltungsorte",
+      "emptyHelp": "Füge deinen ersten Veranstaltungsort hinzu oder importiere eine Liste, um Events zu starten.",
+      "confirmDelete": "\"{{name}}\" wirklich löschen?",
+      "created": "Veranstaltungsort erstellt",
+      "updated": "Veranstaltungsort aktualisiert",
+      "deleted": "Veranstaltungsort gelöscht",
+      "loadFailed": "Veranstaltungsorte konnten nicht geladen werden",
+      "saveFailed": "Veranstaltungsort konnte nicht gespeichert werden",
+      "deleteFailed": "Veranstaltungsort konnte nicht gelöscht werden",
+      "fields": {
+        "name": "Name",
+        "city": "Stadt",
+        "state": "Bundesland",
+        "country": "Land",
+        "capacity": "Kapazität",
+        "latitude": "Breitengrad",
+        "longitude": "Längengrad",
+        "imageUrl": "Bild-URL",
+        "notes": "Notizen"
+      },
+      "bulk": {
+        "title": "Veranstaltungsorte massenhaft importieren",
+        "helper": "Ein JSON-Array (bevorzugt) oder eine CSV mit Header-Zeile (name,city,state,country,capacity) einfügen. Bereits vorhandene Namen werden übersprungen. Da CSV keine maskierten Kommas unterstützt, JSON für Namen mit Komma verwenden.",
+        "inputLabel": "JSON-Array oder CSV mit Header-Zeile einfügen",
+        "import": "Importieren",
+        "summary": "{{created}} erstellt · {{skipped}} übersprungen",
+        "resultTitle": "Import-Ergebnis",
+        "showSkipped": "Übersprungene Namen anzeigen ({{count}})",
+        "hideSkipped": "Übersprungene Namen ausblenden",
+        "noRows": "Keine Zeilen zum Importieren",
+        "importFailed": "Massenimport fehlgeschlagen"
+      }
     }
   },
   "announcements": {
