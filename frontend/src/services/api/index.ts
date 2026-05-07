@@ -38,6 +38,7 @@ export { overallsApi } from './overalls.api';
 export { transfersApi } from './transfers.api';
 export { storylineRequestsApi } from './storylineRequests.api';
 export { matchmakingApi } from './matchmaking.api';
+export { locationsApi } from './locations.api';
 
 // Type/interface re-exports
 export type { SiteFeatures } from './siteConfig.api';
