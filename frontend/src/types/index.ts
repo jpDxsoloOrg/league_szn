@@ -474,3 +474,4 @@ export interface StorylineRequestWithDetails extends StorylineRequest {
 }
 
 export * from './matchmaking';
+export * from './location';

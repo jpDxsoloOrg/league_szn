@@ -33,7 +33,8 @@
     "print": "Print",
     "accessDenied": "Access Denied",
     "back": "Back",
-    "backToHome": "Back to Home"
+    "backToHome": "Back to Home",
+    "actions": "Actions"
   },
   "notFound": {
     "title": "Page Not Found",
@@ -561,6 +562,7 @@
         "contenderConfig": "Contender Config",
         "contenderOverrides": "Contender Overrides",
         "companies": "Companies",
+        "locations": "Locations",
         "shows": "Shows",
         "users": "User Management",
         "features": "Feature Management",
@@ -588,6 +590,46 @@
     },
     "players": {
       "alternateWrestler": "Alternate Wrestler"
+    },
+    "locations": {
+      "title": "Manage Locations",
+      "subtitle": "Venues used for League events",
+      "add": "Add Location",
+      "edit": "Edit Location",
+      "delete": "Delete Location",
+      "bulkImport": "Bulk Import",
+      "emptyTitle": "No locations yet",
+      "emptyHelp": "Add your first venue or bulk-import a list to seed events.",
+      "confirmDelete": "Delete \"{{name}}\"?",
+      "created": "Location created",
+      "updated": "Location updated",
+      "deleted": "Location deleted",
+      "loadFailed": "Failed to load locations",
+      "saveFailed": "Failed to save location",
+      "deleteFailed": "Failed to delete location",
+      "fields": {
+        "name": "Name",
+        "city": "City",
+        "state": "State",
+        "country": "Country",
+        "capacity": "Capacity",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+        "imageUrl": "Image URL",
+        "notes": "Notes"
+      },
+      "bulk": {
+        "title": "Bulk Import Locations",
+        "helper": "Paste a JSON array (preferred) or a CSV with a header row containing name,city,state,country,capacity. Names that already exist will be skipped. CSV does not support quoted commas — use JSON for venue names containing a comma.",
+        "inputLabel": "Paste JSON array or CSV with header row",
+        "import": "Import",
+        "summary": "Created {{created}} · Skipped {{skipped}}",
+        "resultTitle": "Import result",
+        "showSkipped": "Show skipped names ({{count}})",
+        "hideSkipped": "Hide skipped names",
+        "noRows": "No rows to import",
+        "importFailed": "Bulk import failed"
+      }
     }
   },
   "announcements": {
