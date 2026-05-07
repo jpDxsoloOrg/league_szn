@@ -7,6 +7,7 @@ import type {
   Show,
   Company,
   Division,
+  Location,
 } from './types';
 
 // ─── Event input types ──────────────────────────────────────────────
@@ -16,6 +17,7 @@ export interface EventCreateInput {
   eventType: 'ppv' | 'weekly' | 'special' | 'house';
   date: string;
   venue?: string;
+  locationId?: string;
   description?: string;
   imageUrl?: string;
   themeColor?: string;
@@ -29,6 +31,7 @@ export interface EventPatch {
   eventType?: 'ppv' | 'weekly' | 'special' | 'house';
   date?: string;
   venue?: string;
+  locationId?: string;
   description?: string;
   imageUrl?: string;
   themeColor?: string;
@@ -89,6 +92,42 @@ export interface DivisionCreateInput {
 export interface DivisionPatch {
   name?: string;
   description?: string;
+}
+
+// ─── Location input types ───────────────────────────────────────────
+
+export interface LocationCreateInput {
+  name: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  capacity?: number;
+  latitude?: number;
+  longitude?: number;
+  imageUrl?: string;
+  notes?: string;
+}
+
+export interface LocationPatch {
+  name?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  capacity?: number;
+  latitude?: number;
+  longitude?: number;
+  imageUrl?: string;
+  notes?: string;
+}
+
+export interface LocationBulkImportResult {
+  created: number;
+  skipped: number;
+  skippedNames: string[];
+}
+
+export interface LocationsMethods extends CrudRepository<Location, LocationCreateInput, LocationPatch> {
+  bulkImport(inputs: LocationCreateInput[]): Promise<LocationBulkImportResult>;
 }
 
 // ─── Matchmaking types ──────────────────────────────────────────────
@@ -163,5 +202,6 @@ export interface LeagueOpsRepository {
   };
   companies: CrudRepository<Company, CompanyCreateInput, CompanyPatch>;
   divisions: CrudRepository<Division, DivisionCreateInput, DivisionPatch>;
+  locations: LocationsMethods;
   matchmaking: MatchmakingMethods;
 }

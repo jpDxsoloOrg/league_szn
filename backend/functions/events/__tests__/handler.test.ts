@@ -32,7 +32,7 @@ vi.mock('../../../lib/dynamodb', () => ({
     scanAll: mockScanAll,
     queryAll: mockQueryAll,
   },
-  TableNames: { EVENTS: 'Events', MATCHES: 'Matches', CHAMPIONSHIPS: 'Championships', PLAYERS: 'Players', STIPULATIONS: 'Stipulations', COMPANIES: 'Companies' },
+  TableNames: { EVENTS: 'Events', MATCHES: 'Matches', CHAMPIONSHIPS: 'Championships', PLAYERS: 'Players', STIPULATIONS: 'Stipulations', COMPANIES: 'Companies', LOCATIONS: 'Locations' },
 }));
 
 vi.mock('uuid', () => ({ v4: () => 'test-uuid-1234' }));
@@ -93,6 +93,7 @@ describe('events router', () => {
 
   it('POST /events routes to createEvent and returns 201', async () => {
     mockPut.mockResolvedValue({});
+    mockScan.mockResolvedValue({ Items: [] });
     const event = makeEvent({
       httpMethod: 'POST',
       resource: '/events',
