@@ -87,20 +87,7 @@ export interface CreateEventInput {
   showId?: string;
 }
 
-export interface Location {
-  locationId: string;
-  name: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  capacity?: number;
-  latitude?: number;
-  longitude?: number;
-  imageUrl?: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+export type { Location } from './location';
 
 export interface UpdateEventInput extends Partial<CreateEventInput> {
   eventId: string;
