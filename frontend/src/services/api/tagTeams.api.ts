@@ -29,7 +29,15 @@ export const tagTeamsApi = {
     });
   },
 
-  update: async (tagTeamId: string, data: Partial<{ name: string; imageUrl: string }>): Promise<TagTeam> => {
+  update: async (
+    tagTeamId: string,
+    data: Partial<{
+      name: string;
+      imageUrl: string;
+      player1WrestlerName: string;
+      player2WrestlerName: string;
+    }>
+  ): Promise<TagTeam> => {
     return fetchWithAuth(`${API_BASE_URL}/tag-teams/${tagTeamId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
