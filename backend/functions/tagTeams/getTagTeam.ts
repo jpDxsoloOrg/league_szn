@@ -155,7 +155,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       ? {
           playerId: player1.playerId,
           playerName: player1.name,
-          wrestlerName: player1.currentWrestler,
+          wrestlerName: tagTeam.player1WrestlerName || player1.currentWrestler,
           imageUrl: player1.imageUrl,
           psnId: player1.psnId,
         }
@@ -165,7 +165,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       ? {
           playerId: player2.playerId,
           playerName: player2.name,
-          wrestlerName: player2.currentWrestler,
+          wrestlerName: tagTeam.player2WrestlerName || player2.currentWrestler,
           imageUrl: player2.imageUrl,
           psnId: player2.psnId,
         }
