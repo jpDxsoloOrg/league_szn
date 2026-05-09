@@ -9,6 +9,8 @@ export interface TagTeam {
   name: string;
   player1Id: string;
   player2Id: string;
+  player1WrestlerName?: string;
+  player2WrestlerName?: string;
   imageUrl?: string;
   status: TagTeamStatus;
   wins: number;

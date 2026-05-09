@@ -62,6 +62,8 @@ export interface TagTeamCreateInput {
 
 export interface TagTeamPatch {
   name?: string;
+  player1WrestlerName?: string;
+  player2WrestlerName?: string;
   imageUrl?: string;
   status?: TagTeamStatus;
   wins?: number;
