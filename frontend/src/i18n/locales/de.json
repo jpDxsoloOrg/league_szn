@@ -1361,7 +1361,15 @@
     "form": "Form",
     "streak": "Serie",
     "status": "Status",
-    "rank": "Rang"
+    "rank": "Rang",
+    "my": {
+      "editIdentity": "Team-Identität bearbeiten",
+      "teamName": "Tag-Team-Name",
+      "yourWrestler": "Dein Wrestler in diesem Team",
+      "partnerWrestler": "Wrestler deines Partners in diesem Team",
+      "saveIdentity": "Speichern",
+      "identitySaved": "Tag-Team-Identität gespeichert."
+    }
   },
   "contenders": {
     "title": "Herausforderer-Rangliste",

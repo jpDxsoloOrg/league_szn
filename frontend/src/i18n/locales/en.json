@@ -1362,7 +1362,15 @@
     "form": "Form",
     "streak": "Streak",
     "status": "Status",
-    "rank": "Rank"
+    "rank": "Rank",
+    "my": {
+      "editIdentity": "Edit Team Identity",
+      "teamName": "Tag Team Name",
+      "yourWrestler": "Your wrestler in this team",
+      "partnerWrestler": "Partner's wrestler in this team",
+      "saveIdentity": "Save",
+      "identitySaved": "Tag team identity saved."
+    }
   },
   "contenders": {
     "title": "Contender Rankings",
