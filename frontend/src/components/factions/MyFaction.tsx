@@ -12,6 +12,7 @@ import {
 } from '../../constants/imageFallbacks';
 import CreateFactionModal from './CreateFactionModal';
 import InviteToFactionModal from './InviteToFactionModal';
+import FactionImageUploader from './FactionImageUploader';
 import './MyFaction.css';
 
 export default function MyFaction() {
@@ -196,6 +197,10 @@ export default function MyFaction() {
     setTimeout(() => setActionFeedback(null), 3000);
   }, [t, loadData]);
 
+  const handleImageUploaded = useCallback((newImageUrl: string) => {
+    setFaction((current) => (current ? { ...current, imageUrl: newImageUrl } : current));
+  }, []);
+
   const handleCreated = useCallback(() => {
     loadData();
   }, [loadData]);
@@ -341,6 +346,19 @@ export default function MyFaction() {
               </div>
             </div>
           </div>
+
+          {/* Image upload (leader, active/approved only) */}
+          {isLeader && isApprovedOrActive && (
+            <div className="my-faction__image-upload">
+              <h4>{t('factions.my.uploadImage', 'Upload faction image')}</h4>
+              <FactionImageUploader
+                stableId={faction.stableId}
+                currentImageUrl={faction.imageUrl}
+                factionName={faction.name}
+                onUploaded={handleImageUploaded}
+              />
+            </div>
+          )}
 
           {/* Members list */}
           <div className="my-faction__members">

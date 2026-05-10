@@ -1351,7 +1351,12 @@
       "removeMemberSuccess": "{{playerName}} wurde aus der Faktion entfernt.",
       "removeMemberDisbanded": "Faktion aufgelöst — nur der Anführer war übrig.",
       "removeMemberCancel": "Abbrechen",
-      "removeMemberConfirm": "Mitglied entfernen"
+      "removeMemberConfirm": "Mitglied entfernen",
+      "uploadImage": "Faktionsbild hochladen",
+      "uploadingImage": "Wird hochgeladen…",
+      "uploadFailed": "Upload fehlgeschlagen. Bitte erneut versuchen.",
+      "uploadAcceptedTypes": "PNG, JPEG, GIF oder WebP",
+      "replaceImage": "Bild ersetzen"
     }
   },
   "tagTeams": {

@@ -1,7 +1,15 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { factionsApi } from '../../services/api';
+import { factionsApi, imagesApi } from '../../services/api';
+import {
+  DEFAULT_WRESTLER_IMAGE,
+  resolveImageSrc,
+  applyImageFallback,
+} from '../../constants/imageFallbacks';
 import './CreateFactionModal.css';
+
+const ACCEPTED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+const ACCEPT_ATTR = ACCEPTED_MIME_TYPES.join(',');
 
 interface Props {
   isOpen: boolean;
@@ -14,8 +22,42 @@ export default function CreateFactionModal({ isOpen, onClose, onCreated }: Props
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePickImage = () => {
+    if (submitting || uploading) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    if (!ACCEPTED_MIME_TYPES.includes(file.type)) {
+      setError(t('factions.my.uploadFailed', 'Upload failed. Please try again.'));
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+    try {
+      const { uploadUrl, imageUrl: uploadedUrl } = await imagesApi.generateUploadUrl(
+        file.name,
+        file.type,
+        'factions'
+      );
+      await imagesApi.uploadToS3(uploadUrl, file);
+      setImageUrl(uploadedUrl);
+    } catch {
+      setError(t('factions.my.uploadFailed', 'Upload failed. Please try again.'));
+    } finally {
+      setUploading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -90,14 +132,53 @@ export default function CreateFactionModal({ isOpen, onClose, onCreated }: Props
             </div>
 
             <div className="form-group">
-              <label htmlFor="faction-image">{t('factions.create.imageLabel', 'Image URL (optional)')}</label>
+              <label>{t('factions.my.uploadImage', 'Upload faction image')}</label>
+              <div className="create-faction-modal__upload">
+                {imageUrl.trim() && (
+                  <div className="create-faction-modal__upload-preview">
+                    <img
+                      src={resolveImageSrc(imageUrl, DEFAULT_WRESTLER_IMAGE)}
+                      onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+                      alt={name || t('factions.create.title', 'Create a Faction')}
+                    />
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handlePickImage}
+                  disabled={submitting || uploading}
+                  aria-busy={uploading}
+                >
+                  {uploading
+                    ? t('factions.my.uploadingImage', 'Uploading…')
+                    : imageUrl.trim()
+                      ? t('factions.my.replaceImage', 'Replace image')
+                      : t('factions.my.uploadImage', 'Upload faction image')}
+                </button>
+                <span className="create-faction-modal__upload-hint">
+                  {t('factions.my.uploadAcceptedTypes', 'PNG, JPEG, GIF, or WebP')}
+                </span>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={ACCEPT_ATTR}
+                  className="create-faction-modal__file-input"
+                  onChange={handleFileChange}
+                  aria-label={t('factions.my.uploadImage', 'Upload faction image')}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="faction-image">{t('factions.create.imageUrlFallbackLabel', 'Or paste a URL')}</label>
               <input
                 type="url"
                 id="faction-image"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 placeholder={t('factions.create.imagePlaceholder', 'https://...')}
-                disabled={submitting}
+                disabled={submitting || uploading}
               />
             </div>
 
@@ -117,7 +198,7 @@ export default function CreateFactionModal({ isOpen, onClose, onCreated }: Props
               <button
                 type="submit"
                 className="btn-primary"
-                disabled={submitting}
+                disabled={submitting || uploading}
                 aria-busy={submitting}
               >
                 {submitting

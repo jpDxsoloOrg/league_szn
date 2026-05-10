@@ -9,6 +9,9 @@ const {
   mockFactionsGetAll,
   mockFactionsGetInvitations,
   mockFactionsRemoveMember,
+  mockFactionsUpdate,
+  mockGenerateUploadUrl,
+  mockUploadToS3,
   mockUseAuth,
 } = vi.hoisted(() => ({
   mockGetMyProfile: vi.fn(),
@@ -16,6 +19,9 @@ const {
   mockFactionsGetAll: vi.fn(),
   mockFactionsGetInvitations: vi.fn(),
   mockFactionsRemoveMember: vi.fn(),
+  mockFactionsUpdate: vi.fn(),
+  mockGenerateUploadUrl: vi.fn(),
+  mockUploadToS3: vi.fn(),
   mockUseAuth: vi.fn(),
 }));
 
@@ -28,9 +34,14 @@ vi.mock('../../../services/api', () => ({
     getAll: mockFactionsGetAll,
     getInvitations: mockFactionsGetInvitations,
     removeMember: mockFactionsRemoveMember,
+    update: mockFactionsUpdate,
     disband: vi.fn(),
     leave: vi.fn(),
     respondToInvitation: vi.fn(),
+  },
+  imagesApi: {
+    generateUploadUrl: mockGenerateUploadUrl,
+    uploadToS3: mockUploadToS3,
   },
 }));
 
@@ -54,6 +65,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../MyFaction.css', () => ({}));
+vi.mock('../FactionImageUploader.css', () => ({}));
 vi.mock('../CreateFactionModal', () => ({ default: () => null }));
 vi.mock('../InviteToFactionModal', () => ({ default: () => null }));
 
@@ -214,5 +226,62 @@ describe('MyFaction — FAC-02 Manage Members', () => {
     expect(
       within(dialog).getByText('This will disband the faction — only the leader would remain.')
     ).toBeInTheDocument();
+  });
+});
+
+describe('MyFaction — FAC-03 Image upload', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true });
+    mockFactionsGetInvitations.mockResolvedValue([]);
+    mockFactionsGetAll.mockResolvedValue([]);
+  });
+
+  it('uploads an image and calls factionsApi.update with the resulting URL', async () => {
+    mockGetMyProfile.mockResolvedValue(leaderProfile);
+    mockFactionsGetById.mockResolvedValue(makeFaction(['leader-1', 'member-1']));
+    mockGenerateUploadUrl.mockResolvedValue({
+      uploadUrl: 'https://s3.example.com/presigned',
+      imageUrl: 'https://example.com/x.png',
+      fileKey: 'factions/x.png',
+    });
+    mockUploadToS3.mockResolvedValue(undefined);
+    mockFactionsUpdate.mockResolvedValue(undefined);
+
+    const user = userEvent.setup();
+    renderMyFaction();
+
+    const uploader = await screen.findByTestId('faction-image-uploader');
+    const fileInput = uploader.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).not.toBeNull();
+
+    const file = new File(['fake-bytes'], 'banner.png', { type: 'image/png' });
+    await user.upload(fileInput, file);
+
+    await waitFor(() => {
+      expect(mockFactionsUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    expect(mockGenerateUploadUrl).toHaveBeenCalledWith('banner.png', 'image/png', 'factions');
+    expect(mockUploadToS3).toHaveBeenCalledWith('https://s3.example.com/presigned', file);
+    expect(mockFactionsUpdate).toHaveBeenCalledWith('fac-1', { imageUrl: 'https://example.com/x.png' });
+
+    // Calls happen in the documented order: presign → upload → persist.
+    const presignOrder = mockGenerateUploadUrl.mock.invocationCallOrder[0];
+    const uploadOrder = mockUploadToS3.mock.invocationCallOrder[0];
+    const updateOrder = mockFactionsUpdate.mock.invocationCallOrder[0];
+    expect(presignOrder).toBeLessThan(uploadOrder);
+    expect(uploadOrder).toBeLessThan(updateOrder);
+  });
+
+  it('does not render the upload affordance when the caller is not the leader', async () => {
+    mockGetMyProfile.mockResolvedValue(memberProfile);
+    mockFactionsGetById.mockResolvedValue(makeFaction(['leader-1', 'member-1', 'member-2']));
+
+    renderMyFaction();
+
+    // Wait for the faction detail to load.
+    await screen.findByText('New World Order');
+    expect(screen.queryByTestId('faction-image-uploader')).toBeNull();
   });
 });
