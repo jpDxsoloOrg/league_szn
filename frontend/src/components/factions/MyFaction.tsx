@@ -27,6 +27,9 @@ export default function MyFaction() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [disbanding, setDisbanding] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<{ playerId: string; playerName: string } | null>(null);
+  const [removingMember, setRemovingMember] = useState(false);
+  const [removeMemberErrors, setRemoveMemberErrors] = useState<Record<string, string>>({});
 
   const loadData = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
@@ -135,6 +138,41 @@ export default function MyFaction() {
       setTimeout(() => setActionFeedback(null), 3000);
     }
   }, [faction, profile, t]);
+
+  const handleConfirmRemoveMember = useCallback(async () => {
+    if (!faction || !memberToRemove) return;
+    const { playerId, playerName } = memberToRemove;
+    setRemovingMember(true);
+    setRemoveMemberErrors((prev) => {
+      const { [playerId]: _omit, ...rest } = prev;
+      return rest;
+    });
+    try {
+      const result = await factionsApi.removeMember(faction.stableId, playerId) as unknown as {
+        status?: string;
+      };
+      const wasDisbanded = result?.status === 'disbanded';
+      setMemberToRemove(null);
+      if (wasDisbanded) {
+        setActionFeedback(
+          t('factions.my.removeMemberDisbanded', 'Faction disbanded — only the leader remained.')
+        );
+      } else {
+        setActionFeedback(
+          t('factions.my.removeMemberSuccess', '{{playerName}} removed from the faction.', { playerName })
+        );
+      }
+      await loadData();
+    } catch (err) {
+      setRemoveMemberErrors((prev) => ({
+        ...prev,
+        [playerId]: err instanceof Error ? err.message : t('common.error', 'Failed'),
+      }));
+    } finally {
+      setRemovingMember(false);
+      setTimeout(() => setActionFeedback(null), 3000);
+    }
+  }, [faction, memberToRemove, loadData, t]);
 
   const handleRespondToInvitation = useCallback(async (
     stableId: string,
@@ -338,6 +376,40 @@ export default function MyFaction() {
             </div>
           </div>
 
+          {/* Manage Members (leader only) */}
+          {isLeader && isApprovedOrActive && faction.members.some((m) => m.playerId !== faction.leaderId) && (
+            <div className="my-faction__manage-members" data-testid="manage-members">
+              <h4>{t('factions.my.manageMembers', 'Manage Members')}</h4>
+              <div className="my-faction__manage-members-list">
+                {faction.members
+                  .filter((member) => member.playerId !== faction.leaderId)
+                  .map((member) => (
+                    <div key={member.playerId} className="my-faction__manage-member-row">
+                      <div className="my-faction__manage-member-info">
+                        <span className="my-faction__manage-member-name">{member.playerName}</span>
+                        <span className="my-faction__manage-member-wrestler">{member.wrestlerName}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        onClick={() =>
+                          setMemberToRemove({ playerId: member.playerId, playerName: member.playerName })
+                        }
+                        disabled={removingMember}
+                      >
+                        {t('factions.my.removeMember', 'Remove')}
+                      </button>
+                      {removeMemberErrors[member.playerId] && (
+                        <div className="my-faction__manage-member-error" role="alert">
+                          {removeMemberErrors[member.playerId]}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
           {/* Leader actions */}
           {isLeader && (
             <div className="my-faction__leader-actions">
@@ -411,6 +483,53 @@ export default function MyFaction() {
           onClose={() => setShowInviteModal(false)}
           onInvited={handleInvited}
         />
+      )}
+
+      {faction && memberToRemove && (
+        <div className="my-faction__modal-overlay" role="dialog" aria-modal="true">
+          <div className="my-faction__modal">
+            <h3 className="my-faction__modal-title">
+              {t('factions.my.removeMemberConfirmTitle', 'Remove {{playerName}} from {{factionName}}?', {
+                playerName: memberToRemove.playerName,
+                factionName: faction.name,
+              })}
+            </h3>
+            {faction.members.length <= 2 && (
+              <p className="my-faction__modal-warning" role="alert">
+                {t(
+                  'factions.my.removeMemberDisbandWarning',
+                  'This will disband the faction — only the leader would remain.'
+                )}
+              </p>
+            )}
+            <p className="my-faction__modal-body">
+              {t(
+                'factions.my.removeMemberConfirmBody',
+                'They will lose access to faction-only surfaces and stop appearing in the roster.'
+              )}
+            </p>
+            <div className="my-faction__modal-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setMemberToRemove(null)}
+                disabled={removingMember}
+              >
+                {t('factions.my.removeMemberCancel', 'Cancel')}
+              </button>
+              <button
+                type="button"
+                className="btn-danger"
+                onClick={handleConfirmRemoveMember}
+                disabled={removingMember}
+              >
+                {removingMember
+                  ? t('common.processing', 'Processing...')
+                  : t('factions.my.removeMemberConfirm', 'Remove member')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

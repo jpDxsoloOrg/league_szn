@@ -406,6 +406,167 @@
   cursor: not-allowed;
 }
 
+/* Manage Members (leader-only) */
+.my-faction__manage-members {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.my-faction__manage-members h4 {
+  margin: 0 0 1rem;
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.my-faction__manage-members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.my-faction__manage-member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background-color: var(--color-bg);
+  border-radius: 6px;
+  flex-wrap: wrap;
+}
+
+.my-faction__manage-member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.my-faction__manage-member-name {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.my-faction__manage-member-wrestler {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.my-faction__manage-member-row .btn-danger {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 4px;
+  background: rgba(220, 53, 69, 0.15);
+  color: var(--color-danger-alt);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.my-faction__manage-member-row .btn-danger:hover:not(:disabled) {
+  background: rgba(220, 53, 69, 0.25);
+}
+
+.my-faction__manage-member-row .btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.my-faction__manage-member-error {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  color: var(--color-danger-alt);
+}
+
+/* Confirmation modal */
+.my-faction__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.my-faction__modal {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  max-width: 440px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.my-faction__modal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--color-text);
+}
+
+.my-faction__modal-body {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.my-faction__modal-warning {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  background-color: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.my-faction__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.my-faction__modal-actions .btn-secondary,
+.my-faction__modal-actions .btn-danger {
+  padding: 0.55rem 1.1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  transition: background-color 0.2s;
+}
+
+.my-faction__modal-actions .btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-border);
+}
+
+.my-faction__modal-actions .btn-danger {
+  background-color: rgba(220, 53, 69, 0.15);
+  border-color: rgba(220, 53, 69, 0.3);
+  color: var(--color-danger-alt);
+}
+
+.my-faction__modal-actions .btn-danger:hover:not(:disabled) {
+  background-color: rgba(220, 53, 69, 0.25);
+}
+
+.my-faction__modal-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Sent invitations */
 .my-faction__sent-invitations {
   background-color: var(--color-surface);
