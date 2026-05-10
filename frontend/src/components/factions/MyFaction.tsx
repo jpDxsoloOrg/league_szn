@@ -90,14 +90,14 @@ export default function MyFaction() {
   const handleDisband = useCallback(async () => {
     if (!faction) return;
     const confirmed = window.confirm(
-      t('stables.my.disbandConfirm', 'Are you sure you want to disband this stable? This cannot be undone.')
+      t('factions.my.disbandConfirm', 'Are you sure you want to disband this stable? This cannot be undone.')
     );
     if (!confirmed) return;
 
     setDisbanding(true);
     try {
       await factionsApi.disband(faction.stableId);
-      setActionFeedback(t('stables.my.disbanded', 'Stable has been disbanded.'));
+      setActionFeedback(t('factions.my.disbanded', 'Stable has been disbanded.'));
       setFaction(null);
       // Refresh profile
       const updatedProfile = await profileApi.getMyProfile();
@@ -115,14 +115,14 @@ export default function MyFaction() {
   const handleLeave = useCallback(async () => {
     if (!faction || !profile) return;
     const confirmed = window.confirm(
-      t('stables.my.leaveConfirm', 'Are you sure you want to leave this stable?')
+      t('factions.my.leaveConfirm', 'Are you sure you want to leave this stable?')
     );
     if (!confirmed) return;
 
     setLeaving(true);
     try {
       await factionsApi.leave(faction.stableId, profile.playerId);
-      setActionFeedback(t('stables.my.left', 'You have left the faction.'));
+      setActionFeedback(t('factions.my.left', 'You have left the faction.'));
       setFaction(null);
       const updatedProfile = await profileApi.getMyProfile();
       setProfile(updatedProfile);
@@ -145,8 +145,8 @@ export default function MyFaction() {
       await factionsApi.respondToInvitation(stableId, invitationId, action);
       setActionFeedback(
         action === 'accept'
-          ? t('stables.my.invitationAccepted', 'Invitation accepted! You have joined the faction.')
-          : t('stables.my.invitationDeclined', 'Invitation declined.')
+          ? t('factions.my.invitationAccepted', 'Invitation accepted! You have joined the faction.')
+          : t('factions.my.invitationDeclined', 'Invitation declined.')
       );
       // Refresh data
       await loadData();
@@ -174,7 +174,7 @@ export default function MyFaction() {
     return (
       <div className="my-faction">
         <div className="my-faction__empty">
-          <p>{t('stables.my.loginRequired', 'Please log in to manage your faction.')}</p>
+          <p>{t('factions.my.loginRequired', 'Please log in to manage your faction.')}</p>
         </div>
       </div>
     );
@@ -207,7 +207,7 @@ export default function MyFaction() {
   return (
     <div className="my-faction">
       <div className="my-faction__header">
-        <h2>{t('stables.my.title', 'My Stable')}</h2>
+        <h2>{t('factions.my.title', 'My Stable')}</h2>
       </div>
 
       {actionFeedback && (
@@ -218,19 +218,19 @@ export default function MyFaction() {
         /* No stable - show create button and pending invitations */
         <div className="my-faction__no-faction">
           <div className="my-faction__no-faction-info">
-            <h3>{t('stables.my.noStable', 'You are not in a stable')}</h3>
-            <p>{t('stables.my.noStableDesc', 'Create your own stable or wait for an invitation from a stable leader.')}</p>
+            <h3>{t('factions.my.noStable', 'You are not in a stable')}</h3>
+            <p>{t('factions.my.noStableDesc', 'Create your own stable or wait for an invitation from a stable leader.')}</p>
             <button
               className="btn-primary"
               onClick={() => setShowCreateModal(true)}
             >
-              {t('stables.my.createStable', 'Create a Stable')}
+              {t('factions.my.createStable', 'Create a Stable')}
             </button>
           </div>
 
           {pendingInvitations.length > 0 && (
             <div className="my-faction__invitations">
-              <h3>{t('stables.my.pendingInvitations', 'Pending Invitations')}</h3>
+              <h3>{t('factions.my.pendingInvitations', 'Pending Invitations')}</h3>
               <div className="my-faction__invitations-list">
                 {pendingInvitations.map((inv) => (
                   <div key={inv.invitationId} className="my-faction__invitation-item">
@@ -240,7 +240,7 @@ export default function MyFaction() {
                       </span>
                       {inv.invitedByPlayerName && (
                         <span className="my-faction__invitation-from">
-                          {t('stables.my.invitedBy', 'Invited by {{name}}', { name: inv.invitedByPlayerName })}
+                          {t('factions.my.invitedBy', 'Invited by {{name}}', { name: inv.invitedByPlayerName })}
                         </span>
                       )}
                       {inv.message && (
@@ -288,17 +288,17 @@ export default function MyFaction() {
                 <Link to={`/factions/${faction.stableId}`}>{faction.name}</Link>
               </h3>
               <span className={`my-faction__status my-faction__status--${faction.status}`}>
-                {t(`stables.status.${faction.status}`, faction.status)}
+                {t(`factions.status.${faction.status}`, faction.status)}
               </span>
               <div className="my-faction__stats">
                 <span className="my-faction__stat my-faction__stat--wins">
-                  {faction.wins}{t('stables.wAbbrev', 'W')}
+                  {faction.wins}{t('factions.wAbbrev', 'W')}
                 </span>
                 <span className="my-faction__stat my-faction__stat--losses">
-                  {faction.losses}{t('stables.lAbbrev', 'L')}
+                  {faction.losses}{t('factions.lAbbrev', 'L')}
                 </span>
                 <span className="my-faction__stat my-faction__stat--draws">
-                  {faction.draws}{t('stables.dAbbrev', 'D')}
+                  {faction.draws}{t('factions.dAbbrev', 'D')}
                 </span>
               </div>
             </div>
@@ -306,7 +306,7 @@ export default function MyFaction() {
 
           {/* Members list */}
           <div className="my-faction__members">
-            <h4>{t('stables.my.members', 'Members')}</h4>
+            <h4>{t('factions.my.members', 'Members')}</h4>
             <div className="my-faction__members-list">
               {faction.members.map((member) => (
                 <div key={member.playerId} className="my-faction__member-item">
@@ -330,7 +330,7 @@ export default function MyFaction() {
                   </div>
                   {member.playerId === faction.leaderId && (
                     <span className="my-faction__member-leader-badge">
-                      {t('stables.my.leader', 'Leader')}
+                      {t('factions.my.leader', 'Leader')}
                     </span>
                   )}
                 </div>
@@ -346,7 +346,7 @@ export default function MyFaction() {
                   className="btn-primary"
                   onClick={() => setShowInviteModal(true)}
                 >
-                  {t('stables.my.invitePlayer', 'Invite Player')}
+                  {t('factions.my.invitePlayer', 'Invite Player')}
                 </button>
               )}
               <button
@@ -356,7 +356,7 @@ export default function MyFaction() {
               >
                 {disbanding
                   ? t('common.processing', 'Processing...')
-                  : t('stables.my.disband', 'Disband Stable')}
+                  : t('factions.my.disband', 'Disband Stable')}
               </button>
             </div>
           )}
@@ -371,7 +371,7 @@ export default function MyFaction() {
               >
                 {leaving
                   ? t('common.processing', 'Processing...')
-                  : t('stables.my.leave', 'Leave Stable')}
+                  : t('factions.my.leave', 'Leave Stable')}
               </button>
             </div>
           )}
@@ -379,7 +379,7 @@ export default function MyFaction() {
           {/* Pending invitations sent by leader */}
           {isLeader && pendingInvitations.length > 0 && (
             <div className="my-faction__sent-invitations">
-              <h4>{t('stables.my.sentInvitations', 'Pending Invitations')}</h4>
+              <h4>{t('factions.my.sentInvitations', 'Pending Invitations')}</h4>
               <div className="my-faction__sent-invitations-list">
                 {pendingInvitations.map((inv) => (
                   <div key={inv.invitationId} className="my-faction__sent-invitation-item">
@@ -387,7 +387,7 @@ export default function MyFaction() {
                       {inv.invitedPlayerName || inv.invitedPlayerId}
                     </span>
                     <span className="my-faction__sent-invitation-status">
-                      {t('stables.invitationStatus.pending', 'Pending')}
+                      {t('factions.invitationStatus.pending', 'Pending')}
                     </span>
                   </div>
                 ))}

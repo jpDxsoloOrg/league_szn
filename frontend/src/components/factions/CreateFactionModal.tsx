@@ -25,7 +25,7 @@ export default function CreateFactionModal({ isOpen, onClose, onCreated }: Props
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setError(t('stables.create.nameRequired', 'Stable name is required'));
+      setError(t('factions.create.nameRequired', 'Stable name is required'));
       return;
     }
 
@@ -58,7 +58,7 @@ export default function CreateFactionModal({ isOpen, onClose, onCreated }: Props
     <div className="create-faction-modal-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true">
       <div className="create-faction-modal" onClick={(e) => e.stopPropagation()}>
         <div className="create-faction-modal__header">
-          <h2>{t('stables.create.title', 'Create a Stable')}</h2>
+          <h2>{t('factions.create.title', 'Create a Stable')}</h2>
           <button
             className="create-faction-modal__close"
             onClick={onClose}
@@ -71,18 +71,18 @@ export default function CreateFactionModal({ isOpen, onClose, onCreated }: Props
 
         {success ? (
           <div className="create-faction-modal__success">
-            <p>{t('stables.create.success', 'Stable request submitted! Awaiting admin approval.')}</p>
+            <p>{t('factions.create.success', 'Stable request submitted! Awaiting admin approval.')}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="create-faction-modal__form">
             <div className="form-group">
-              <label htmlFor="stable-name">{t('stables.create.nameLabel', 'Stable Name')}</label>
+              <label htmlFor="stable-name">{t('factions.create.nameLabel', 'Stable Name')}</label>
               <input
                 type="text"
                 id="stable-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={t('stables.create.namePlaceholder', 'e.g. The Shield, New Day')}
+                placeholder={t('factions.create.namePlaceholder', 'e.g. The Shield, New Day')}
                 disabled={submitting}
                 autoFocus
                 maxLength={50}
@@ -90,13 +90,13 @@ export default function CreateFactionModal({ isOpen, onClose, onCreated }: Props
             </div>
 
             <div className="form-group">
-              <label htmlFor="stable-image">{t('stables.create.imageLabel', 'Image URL (optional)')}</label>
+              <label htmlFor="stable-image">{t('factions.create.imageLabel', 'Image URL (optional)')}</label>
               <input
                 type="url"
                 id="stable-image"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
-                placeholder={t('stables.create.imagePlaceholder', 'https://...')}
+                placeholder={t('factions.create.imagePlaceholder', 'https://...')}
                 disabled={submitting}
               />
             </div>
@@ -122,7 +122,7 @@ export default function CreateFactionModal({ isOpen, onClose, onCreated }: Props
               >
                 {submitting
                   ? t('common.submitting', 'Submitting...')
-                  : t('stables.create.submit', 'Request Stable')}
+                  : t('factions.create.submit', 'Request Stable')}
               </button>
             </div>
           </form>

@@ -32,17 +32,17 @@ export default function FactionCard({ faction }: FactionCardProps) {
       <div className="faction-card__body">
         <h3 className="faction-card__name">{faction.name}</h3>
         <span className="faction-card__members">
-          {t('stables.memberCount', '{{count}} members', { count: faction.memberIds.length })}
+          {t('factions.memberCount', '{{count}} members', { count: faction.memberIds.length })}
         </span>
         <div className="faction-card__stats">
           <span className="faction-card__stat faction-card__stat--wins">
-            {faction.wins}{t('stables.wAbbrev', 'W')}
+            {faction.wins}{t('factions.wAbbrev', 'W')}
           </span>
           <span className="faction-card__stat faction-card__stat--losses">
-            {faction.losses}{t('stables.lAbbrev', 'L')}
+            {faction.losses}{t('factions.lAbbrev', 'L')}
           </span>
           <span className="faction-card__stat faction-card__stat--draws">
-            {faction.draws}{t('stables.dAbbrev', 'D')}
+            {faction.draws}{t('factions.dAbbrev', 'D')}
           </span>
           <span className="faction-card__stat faction-card__stat--winpct">
             {winPercentage}%

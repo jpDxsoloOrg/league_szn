@@ -62,8 +62,8 @@ export default function FactionStandings() {
   if (standings.length === 0) {
     return (
       <EmptyState
-        title={t('stables.standings', 'Stable Standings')}
-        description={t('stables.noStandings', 'No stable standings data yet.')}
+        title={t('factions.standings', 'Stable Standings')}
+        description={t('factions.noStandings', 'No stable standings data yet.')}
       />
     );
   }
@@ -76,8 +76,8 @@ export default function FactionStandings() {
             <tr>
               <th>{t('standings.table.rank', 'Rank')}</th>
               <th className="faction-standings-image-header">&nbsp;</th>
-              <th>{t('stables.name', 'Name')}</th>
-              <th>{t('stables.members', 'Members')}</th>
+              <th>{t('factions.name', 'Name')}</th>
+              <th>{t('factions.members', 'Members')}</th>
               <th>{t('standings.table.wins', 'W')}</th>
               <th>{t('standings.table.losses', 'L')}</th>
               <th>{t('standings.table.draws', 'D')}</th>

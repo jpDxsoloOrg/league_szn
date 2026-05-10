@@ -47,7 +47,7 @@ export default function InviteToFactionModal({
       })
       .catch((err) => {
         if (err instanceof Error && err.name !== 'AbortError') {
-          setError(t('stables.invite.loadPlayersFailed', 'Failed to load players'));
+          setError(t('factions.invite.loadPlayersFailed', 'Failed to load players'));
         }
       })
       .finally(() => setLoadingPlayers(false));
@@ -62,7 +62,7 @@ export default function InviteToFactionModal({
     setError(null);
 
     if (!selectedPlayerId) {
-      setError(t('stables.invite.selectPlayer', 'Please select a player to invite'));
+      setError(t('factions.invite.selectPlayer', 'Please select a player to invite'));
       return;
     }
 
@@ -93,7 +93,7 @@ export default function InviteToFactionModal({
     <div className="invite-faction-modal-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true">
       <div className="invite-faction-modal" onClick={(e) => e.stopPropagation()}>
         <div className="invite-faction-modal__header">
-          <h2>{t('stables.invite.title', 'Invite Player to Stable')}</h2>
+          <h2>{t('factions.invite.title', 'Invite Player to Stable')}</h2>
           <button
             className="invite-faction-modal__close"
             onClick={onClose}
@@ -106,17 +106,17 @@ export default function InviteToFactionModal({
 
         {success ? (
           <div className="invite-faction-modal__success">
-            <p>{t('stables.invite.success', 'Invitation sent successfully!')}</p>
+            <p>{t('factions.invite.success', 'Invitation sent successfully!')}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="invite-faction-modal__form">
             <div className="form-group">
-              <label htmlFor="invite-player">{t('stables.invite.playerLabel', 'Select Player')}</label>
+              <label htmlFor="invite-player">{t('factions.invite.playerLabel', 'Select Player')}</label>
               {loadingPlayers ? (
                 <p className="invite-faction-modal__loading">{t('common.loading', 'Loading...')}</p>
               ) : players.length === 0 ? (
                 <p className="invite-faction-modal__empty">
-                  {t('stables.invite.noAvailablePlayers', 'No available players to invite')}
+                  {t('factions.invite.noAvailablePlayers', 'No available players to invite')}
                 </p>
               ) : (
                 <select
@@ -125,7 +125,7 @@ export default function InviteToFactionModal({
                   onChange={(e) => setSelectedPlayerId(e.target.value)}
                   disabled={submitting}
                 >
-                  <option value="">{t('stables.invite.selectPlaceholder', '-- Select a player --')}</option>
+                  <option value="">{t('factions.invite.selectPlaceholder', '-- Select a player --')}</option>
                   {players.map((player) => (
                     <option key={player.playerId} value={player.playerId}>
                       {player.currentWrestler || player.name} ({player.name})
@@ -136,12 +136,12 @@ export default function InviteToFactionModal({
             </div>
 
             <div className="form-group">
-              <label htmlFor="invite-message">{t('stables.invite.messageLabel', 'Message (optional)')}</label>
+              <label htmlFor="invite-message">{t('factions.invite.messageLabel', 'Message (optional)')}</label>
               <textarea
                 id="invite-message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder={t('stables.invite.messagePlaceholder', 'Add a personal message...')}
+                placeholder={t('factions.invite.messagePlaceholder', 'Add a personal message...')}
                 disabled={submitting}
                 rows={3}
                 maxLength={200}
@@ -169,7 +169,7 @@ export default function InviteToFactionModal({
               >
                 {submitting
                   ? t('common.submitting', 'Submitting...')
-                  : t('stables.invite.submit', 'Send Invitation')}
+                  : t('factions.invite.submit', 'Send Invitation')}
               </button>
             </div>
           </form>

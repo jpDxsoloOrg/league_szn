@@ -20,7 +20,7 @@ export default function FactionDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useDocumentTitle(faction?.name ?? t('stables.detail', 'Stable Detail'));
+  useDocumentTitle(faction?.name ?? t('factions.detail', 'Stable Detail'));
 
   useEffect(() => {
     if (!factionId) return;
@@ -59,7 +59,7 @@ export default function FactionDetail() {
       <div className="error">
         <p>{t('common.error', 'Error')}: {error}</p>
         <Link to="/factions" className="btn btn-secondary">
-          {t('stables.backToList', 'Back to Stables')}
+          {t('factions.backToList', 'Back to Stables')}
         </Link>
       </div>
     );
@@ -68,9 +68,9 @@ export default function FactionDetail() {
   if (!faction) {
     return (
       <div className="error">
-        <p>{t('stables.notFound', 'Stable not found.')}</p>
+        <p>{t('factions.notFound', 'Stable not found.')}</p>
         <Link to="/factions" className="btn btn-secondary">
-          {t('stables.backToList', 'Back to Stables')}
+          {t('factions.backToList', 'Back to Stables')}
         </Link>
       </div>
     );
@@ -97,18 +97,18 @@ export default function FactionDetail() {
           </span>
           {faction.leaderName && (
             <p className="faction-detail__leader">
-              {t('stables.leader', 'Leader')}: <strong>{faction.leaderName}</strong>
+              {t('factions.leader', 'Leader')}: <strong>{faction.leaderName}</strong>
             </p>
           )}
           <p className="faction-detail__member-summary">
-            {t('stables.memberCount', '{{count}} members', { count: faction.members.length })}
+            {t('factions.memberCount', '{{count}} members', { count: faction.members.length })}
           </p>
         </div>
       </div>
 
       {/* Overall Stats */}
       <section className="faction-detail__section">
-        <h3>{t('stables.overallStats', 'Overall Stats')}</h3>
+        <h3>{t('factions.overallStats', 'Overall Stats')}</h3>
         <div className="faction-detail__stats-grid">
           <div className="faction-detail__stat-card">
             <span className="faction-detail__stat-value faction-detail__stat-value--wins">{faction.wins}</span>
@@ -128,7 +128,7 @@ export default function FactionDetail() {
           </div>
           <div className="faction-detail__stat-card">
             <span className="faction-detail__stat-value">{totalMatches}</span>
-            <span className="faction-detail__stat-label">{t('stables.totalMatches', 'Total Matches')}</span>
+            <span className="faction-detail__stat-label">{t('factions.totalMatches', 'Total Matches')}</span>
           </div>
         </div>
 
@@ -168,7 +168,7 @@ export default function FactionDetail() {
 
       {/* Roster */}
       <section className="faction-detail__section">
-        <h3>{t('stables.roster', 'Roster')}</h3>
+        <h3>{t('factions.roster', 'Roster')}</h3>
         <div className="faction-detail__roster-grid">
           {faction.members.map((member: StablePlayerInfo) => (
             <Link
@@ -188,7 +188,7 @@ export default function FactionDetail() {
                   {member.playerName}
                   {member.playerId === faction.leaderId && (
                     <span className="faction-detail__leader-badge">
-                      {t('stables.leaderBadge', 'Leader')}
+                      {t('factions.leaderBadge', 'Leader')}
                     </span>
                   )}
                 </span>
@@ -211,12 +211,12 @@ export default function FactionDetail() {
       {/* Match Type Breakdown */}
       {faction.matchTypeRecords.length > 0 && (
         <section className="faction-detail__section">
-          <h3>{t('stables.matchTypeBreakdown', 'Match Type Breakdown')}</h3>
+          <h3>{t('factions.matchTypeBreakdown', 'Match Type Breakdown')}</h3>
           <div className="faction-detail__table-wrapper">
             <table className="faction-detail__table">
               <thead>
                 <tr>
-                  <th>{t('stables.format', 'Format')}</th>
+                  <th>{t('factions.format', 'Format')}</th>
                   <th>{t('standings.table.wins', 'W')}</th>
                   <th>{t('standings.table.losses', 'L')}</th>
                   <th>{t('standings.table.draws', 'D')}</th>
@@ -240,12 +240,12 @@ export default function FactionDetail() {
       {/* Head to Head */}
       {faction.headToHead.length > 0 && (
         <section className="faction-detail__section">
-          <h3>{t('stables.headToHead', 'Head to Head')}</h3>
+          <h3>{t('factions.headToHead', 'Head to Head')}</h3>
           <div className="faction-detail__table-wrapper">
             <table className="faction-detail__table">
               <thead>
                 <tr>
-                  <th>{t('stables.opponent', 'Opponent')}</th>
+                  <th>{t('factions.opponent', 'Opponent')}</th>
                   <th>{t('standings.table.wins', 'W')}</th>
                   <th>{t('standings.table.losses', 'L')}</th>
                   <th>{t('standings.table.draws', 'D')}</th>
@@ -273,7 +273,7 @@ export default function FactionDetail() {
       {/* Recent Matches */}
       {faction.recentMatches.length > 0 && (
         <section className="faction-detail__section">
-          <h3>{t('stables.recentMatches', 'Recent Matches')}</h3>
+          <h3>{t('factions.recentMatches', 'Recent Matches')}</h3>
           <div className="faction-detail__recent-matches">
             {faction.recentMatches.slice(0, 10).map((match, index) => {
               const matchObj = match as Record<string, unknown>;
@@ -293,7 +293,7 @@ export default function FactionDetail() {
                   <span className="faction-detail__match-date">{matchDate}</span>
                   <span className="faction-detail__match-format">{matchFormat}</span>
                   <span className={`faction-detail__match-result ${isWin ? 'faction-detail__match-result--win' : 'faction-detail__match-result--loss'}`}>
-                    {matchStatus === 'completed' ? (isWin ? t('stables.win', 'W') : t('stables.loss', 'L')) : matchStatus}
+                    {matchStatus === 'completed' ? (isWin ? t('factions.win', 'W') : t('factions.loss', 'L')) : matchStatus}
                   </span>
                 </div>
               );
@@ -304,7 +304,7 @@ export default function FactionDetail() {
 
       <div className="faction-detail__back">
         <Link to="/factions" className="btn btn-secondary">
-          {t('stables.backToList', 'Back to Stables')}
+          {t('factions.backToList', 'Back to Stables')}
         </Link>
       </div>
     </div>

@@ -46,7 +46,7 @@ export default function ManageFactions() {
     try {
       await factionsApi.approve(faction.stableId);
       showFeedback(
-        t('stables.admin.approved', 'Approved') + `: ${faction.name}`,
+        t('factions.admin.approved', 'Approved') + `: ${faction.name}`,
         'success'
       );
       await loadFactions();
@@ -65,7 +65,7 @@ export default function ManageFactions() {
     try {
       await factionsApi.reject(faction.stableId);
       showFeedback(
-        t('stables.admin.rejected', 'Rejected') + `: ${faction.name}`,
+        t('factions.admin.rejected', 'Rejected') + `: ${faction.name}`,
         'success'
       );
       await loadFactions();
@@ -84,7 +84,7 @@ export default function ManageFactions() {
     try {
       await factionsApi.disband(faction.stableId);
       showFeedback(
-        t('stables.admin.disbanded', 'Disbanded') + `: ${faction.name}`,
+        t('factions.admin.disbanded', 'Disbanded') + `: ${faction.name}`,
         'success'
       );
       await loadFactions();
@@ -110,7 +110,7 @@ export default function ManageFactions() {
       const result = await factionsApi.reactivate(faction.stableId);
       const skipped = result.skippedMembers.length;
       const restored = result.restoredMemberIds.length;
-      const base = t('stables.admin.reactivated', 'Reactivated') + `: ${faction.name}`;
+      const base = t('factions.admin.reactivated', 'Reactivated') + `: ${faction.name}`;
       const detail =
         skipped > 0
           ? ` (${restored} restored, ${skipped} skipped)`
@@ -132,7 +132,7 @@ export default function ManageFactions() {
     try {
       await factionsApi.delete(faction.stableId);
       showFeedback(
-        t('stables.admin.deleted', 'Deleted') + `: ${faction.name}`,
+        t('factions.admin.deleted', 'Deleted') + `: ${faction.name}`,
         'success'
       );
       await loadFactions();
@@ -153,7 +153,7 @@ export default function ManageFactions() {
   if (loading) {
     return (
       <div className="admin-factions">
-        <h3>{t('stables.admin.title', 'Manage Stables')}</h3>
+        <h3>{t('factions.admin.title', 'Manage Stables')}</h3>
         <div className="admin-factions-empty"><p>Loading...</p></div>
       </div>
     );
@@ -162,7 +162,7 @@ export default function ManageFactions() {
   if (error) {
     return (
       <div className="admin-factions">
-        <h3>{t('stables.admin.title', 'Manage Stables')}</h3>
+        <h3>{t('factions.admin.title', 'Manage Stables')}</h3>
         <div className="admin-factions-feedback error">{error}</div>
         <button onClick={loadFactions}>Retry</button>
       </div>
@@ -171,21 +171,21 @@ export default function ManageFactions() {
 
   return (
     <div className="admin-factions">
-      <h3>{t('stables.admin.title', 'Manage Stables')}</h3>
+      <h3>{t('factions.admin.title', 'Manage Stables')}</h3>
 
       <div className="admin-factions-controls">
         <div className="admin-factions-filter">
-          <label>{t('stables.admin.filterByStatus', 'Filter by status')}:</label>
+          <label>{t('factions.admin.filterByStatus', 'Filter by status')}:</label>
           <select
             value={statusFilter}
             onChange={(e) =>
               setStatusFilter(e.target.value as StableStatus | 'all')
             }
           >
-            <option value="all">{t('stables.admin.all', 'All')}</option>
+            <option value="all">{t('factions.admin.all', 'All')}</option>
             {ALL_STATUSES.map((s) => (
               <option key={s} value={s}>
-                {t(`stables.status.${s}`, s.charAt(0).toUpperCase() + s.slice(1))}
+                {t(`factions.status.${s}`, s.charAt(0).toUpperCase() + s.slice(1))}
               </option>
             ))}
           </select>
@@ -203,18 +203,18 @@ export default function ManageFactions() {
 
       {filtered.length === 0 ? (
         <div className="admin-factions-empty">
-          <p>{t('stables.admin.noStables', 'No stables found')}</p>
+          <p>{t('factions.admin.noStables', 'No stables found')}</p>
         </div>
       ) : (
         <table className="admin-factions-table">
           <thead>
             <tr>
-              <th>{t('stables.admin.name', 'Name')}</th>
-              <th>{t('stables.admin.members', 'Members')}</th>
-              <th>{t('stables.admin.status', 'Status')}</th>
-              <th>{t('stables.admin.record', 'W/L/D')}</th>
-              <th>{t('stables.admin.created', 'Created')}</th>
-              <th>{t('stables.admin.actions', 'Actions')}</th>
+              <th>{t('factions.admin.name', 'Name')}</th>
+              <th>{t('factions.admin.members', 'Members')}</th>
+              <th>{t('factions.admin.status', 'Status')}</th>
+              <th>{t('factions.admin.record', 'W/L/D')}</th>
+              <th>{t('factions.admin.created', 'Created')}</th>
+              <th>{t('factions.admin.actions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -230,7 +230,7 @@ export default function ManageFactions() {
                 </td>
                 <td>
                   <span className={`factions-status-badge ${faction.status}`}>
-                    {t(`stables.status.${faction.status}`, faction.status)}
+                    {t(`factions.status.${faction.status}`, faction.status)}
                   </span>
                 </td>
                 <td>
@@ -250,7 +250,7 @@ export default function ManageFactions() {
                         >
                           {submitting === faction.stableId
                             ? '...'
-                            : t('stables.admin.approve', 'Approve')}
+                            : t('factions.admin.approve', 'Approve')}
                         </button>
                         <button
                           className="admin-btn-reject"
@@ -259,7 +259,7 @@ export default function ManageFactions() {
                         >
                           {submitting === faction.stableId
                             ? '...'
-                            : t('stables.admin.reject', 'Reject')}
+                            : t('factions.admin.reject', 'Reject')}
                         </button>
                       </>
                     )}
@@ -271,7 +271,7 @@ export default function ManageFactions() {
                       >
                         {submitting === faction.stableId
                           ? '...'
-                          : t('stables.admin.disband', 'Disband')}
+                          : t('factions.admin.disband', 'Disband')}
                       </button>
                     )}
                     {faction.status === 'disbanded' && (
@@ -283,7 +283,7 @@ export default function ManageFactions() {
                       >
                         {submitting === faction.stableId
                           ? '...'
-                          : t('stables.admin.reactivate', 'Reactivate')}
+                          : t('factions.admin.reactivate', 'Reactivate')}
                       </button>
                     )}
                     <button
@@ -291,9 +291,9 @@ export default function ManageFactions() {
                       className="admin-btn-delete"
                       onClick={() => handleDelete(faction)}
                       disabled={submitting === faction.stableId}
-                      title={t('stables.admin.delete', 'Delete')}
+                      title={t('factions.admin.delete', 'Delete')}
                     >
-                      {submitting === faction.stableId ? '...' : t('stables.admin.delete', 'Delete')}
+                      {submitting === faction.stableId ? '...' : t('factions.admin.delete', 'Delete')}
                     </button>
                   </div>
                 </td>
