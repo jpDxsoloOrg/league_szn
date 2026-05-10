@@ -5,6 +5,10 @@ import { InMemorySeasonRepository } from './InMemorySeasonRepository';
 import { InMemoryLeagueOpsRepository } from './InMemoryLeagueOpsRepository';
 import { InMemoryContentRepository } from './InMemoryContentRepository';
 import { InMemoryUserRepository } from './InMemoryUserRepository';
+import {
+  InMemoryFactionDirectMessagesRepository,
+  InMemoryFactionMessagesRepository,
+} from './InMemoryFactionMessagesRepository';
 import { InMemoryUnitOfWork } from './InMemoryUnitOfWork';
 
 export function buildInMemoryRepositories(): Repositories {
@@ -14,6 +18,8 @@ export function buildInMemoryRepositories(): Repositories {
   const leagueOps = new InMemoryLeagueOpsRepository();
   const content = new InMemoryContentRepository();
   const user = new InMemoryUserRepository();
+  const factionMessages = new InMemoryFactionMessagesRepository();
+  const factionDirectMessages = new InMemoryFactionDirectMessagesRepository();
 
   const runInTransaction: Repositories['runInTransaction'] = async <T>(fn: (tx: import('../unitOfWork').UnitOfWork) => Promise<T>): Promise<T> => {
     const uow = new InMemoryUnitOfWork({
@@ -25,6 +31,8 @@ export function buildInMemoryRepositories(): Repositories {
       seasonStandings: season.standingsStore as unknown as Array<Record<string, unknown>>,
       matches: competition.matchesStore as unknown as Map<string, Record<string, unknown>>,
       wrestlers: roster.wrestlersStore as unknown as Map<string, Record<string, unknown>>,
+      factionMessages: factionMessages.store,
+      factionDirectMessages: factionDirectMessages.store,
     });
     try {
       const result = await fn(uow);
@@ -43,6 +51,8 @@ export function buildInMemoryRepositories(): Repositories {
     leagueOps,
     content,
     user,
+    factionMessages,
+    factionDirectMessages,
     runInTransaction,
     clearAllData: async () => {
       const counts: Record<string, { deleted: number; errors: number }> = {};
@@ -104,4 +114,8 @@ export { InMemorySeasonRepository } from './InMemorySeasonRepository';
 export { InMemoryLeagueOpsRepository } from './InMemoryLeagueOpsRepository';
 export { InMemoryContentRepository } from './InMemoryContentRepository';
 export { InMemoryUserRepository } from './InMemoryUserRepository';
+export {
+  InMemoryFactionMessagesRepository,
+  InMemoryFactionDirectMessagesRepository,
+} from './InMemoryFactionMessagesRepository';
 export { InMemoryUnitOfWork } from './InMemoryUnitOfWork';

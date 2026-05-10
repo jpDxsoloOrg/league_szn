@@ -106,3 +106,17 @@ export type {
 // SiteConfigRepository kept for FeatureFlags and DEFAULT_FEATURES
 export type { FeatureFlags } from './SiteConfigRepository';
 export { DEFAULT_FEATURES } from './SiteConfigRepository';
+
+export type {
+  FactionMessage,
+  FactionMessageType,
+  FactionMessagePostInput,
+  FactionDirectMessage,
+  FactionDirectMessagePostInput,
+  FactionDirectThreadSummary,
+  FactionMessagesRepository,
+  FactionDirectMessagesRepository,
+  ListPage,
+  ListPageOptions,
+} from './factionMessages';
+export { buildThreadKey } from './factionMessages';
