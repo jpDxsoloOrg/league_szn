@@ -222,7 +222,7 @@ describe('generateUploadUrl — auth & validation', () => {
     const result = await generateUploadUrl(event, ctx, cb);
 
     expect(result!.statusCode).toBe(400);
-    expect(JSON.parse(result!.body).message).toBe('folder must be "wrestlers", "championships", "shows", or "videos"');
+    expect(JSON.parse(result!.body).message).toBe('folder must be "wrestlers", "championships", "shows", "videos", or "factions"');
   });
 
   it('accepts "wrestlers" as a valid folder', async () => {
@@ -249,6 +249,36 @@ describe('generateUploadUrl — auth & validation', () => {
     const result = await generateUploadUrl(event, ctx, cb);
 
     expect(result!.statusCode).toBe(200);
+  });
+
+  it('accepts "factions" as a valid folder and prefixes the file key with factions/', async () => {
+    const event = withAuth(
+      makeEvent({
+        body: JSON.stringify({ fileName: 'banner.png', fileType: 'image/png', folder: 'factions' }),
+      }),
+      'Wrestler',
+    );
+
+    const result = await generateUploadUrl(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const responseBody = JSON.parse(result!.body) as { fileKey: string; imageUrl: string };
+    expect(responseBody.fileKey.startsWith('factions/')).toBe(true);
+    expect(responseBody.imageUrl).toContain('/factions/');
+  });
+
+  it('rejects disallowed file types when folder is "factions"', async () => {
+    const event = withAuth(
+      makeEvent({
+        body: JSON.stringify({ fileName: 'doc.pdf', fileType: 'application/pdf', folder: 'factions' }),
+      }),
+      'Wrestler',
+    );
+
+    const result = await generateUploadUrl(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toContain('Only JPEG, PNG, GIF, and WebP');
   });
 
   // ─── File type validation ─────────────────────────────────────
