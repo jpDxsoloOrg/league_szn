@@ -36,20 +36,20 @@ export default function MyFaction() {
       const myProfile = await profileApi.getMyProfile(signal);
       setProfile(myProfile);
 
-      // If user has a stable, fetch stable details and invitations
+      // If user has a faction, fetch faction details and invitations
       if (myProfile.stableId) {
-        const [stableDetail, invitations] = await Promise.all([
+        const [factionDetail, invitations] = await Promise.all([
           factionsApi.getById(myProfile.stableId, signal),
           factionsApi.getInvitations(myProfile.stableId, signal).catch(() => [] as StableInvitationWithDetails[]),
         ]);
-        setFaction(stableDetail);
+        setFaction(factionDetail);
         setPendingInvitations(invitations.filter((inv) => inv.status === 'pending'));
       } else {
         setFaction(null);
         setPendingInvitations([]);
 
-        // Check all stables for pending invitations sent to this player
-        // Since there's no direct "my invitations" endpoint, we look through all stables
+        // Check all factions for pending invitations sent to this player
+        // Since there's no direct "my invitations" endpoint, we look through all factions
         // This is a best-effort approach; a dedicated endpoint would be more efficient
         try {
           const allStables = await factionsApi.getAll(undefined, signal);
@@ -62,7 +62,7 @@ export default function MyFaction() {
               );
               myInvitations.push(...pending);
             } catch {
-              // Skip stables we can't access invitations for
+              // Skip factions we can't access invitations for
             }
           }
           setPendingInvitations(myInvitations);
@@ -90,14 +90,14 @@ export default function MyFaction() {
   const handleDisband = useCallback(async () => {
     if (!faction) return;
     const confirmed = window.confirm(
-      t('factions.my.disbandConfirm', 'Are you sure you want to disband this stable? This cannot be undone.')
+      t('factions.my.disbandConfirm', 'Are you sure you want to disband this faction? This cannot be undone.')
     );
     if (!confirmed) return;
 
     setDisbanding(true);
     try {
       await factionsApi.disband(faction.stableId);
-      setActionFeedback(t('factions.my.disbanded', 'Stable has been disbanded.'));
+      setActionFeedback(t('factions.my.disbanded', 'Faction has been disbanded.'));
       setFaction(null);
       // Refresh profile
       const updatedProfile = await profileApi.getMyProfile();
@@ -115,7 +115,7 @@ export default function MyFaction() {
   const handleLeave = useCallback(async () => {
     if (!faction || !profile) return;
     const confirmed = window.confirm(
-      t('factions.my.leaveConfirm', 'Are you sure you want to leave this stable?')
+      t('factions.my.leaveConfirm', 'Are you sure you want to leave this faction?')
     );
     if (!confirmed) return;
 
@@ -207,7 +207,7 @@ export default function MyFaction() {
   return (
     <div className="my-faction">
       <div className="my-faction__header">
-        <h2>{t('factions.my.title', 'My Stable')}</h2>
+        <h2>{t('factions.my.title', 'My Faction')}</h2>
       </div>
 
       {actionFeedback && (
@@ -215,16 +215,16 @@ export default function MyFaction() {
       )}
 
       {!faction && !profile?.stableId ? (
-        /* No stable - show create button and pending invitations */
+        /* No faction - show create button and pending invitations */
         <div className="my-faction__no-faction">
           <div className="my-faction__no-faction-info">
-            <h3>{t('factions.my.noStable', 'You are not in a stable')}</h3>
-            <p>{t('factions.my.noStableDesc', 'Create your own stable or wait for an invitation from a stable leader.')}</p>
+            <h3>{t('factions.my.noStable', 'You are not in a faction')}</h3>
+            <p>{t('factions.my.noStableDesc', 'Create your own faction or wait for an invitation from a faction leader.')}</p>
             <button
               className="btn-primary"
               onClick={() => setShowCreateModal(true)}
             >
-              {t('factions.my.createStable', 'Create a Stable')}
+              {t('factions.my.createStable', 'Create a Faction')}
             </button>
           </div>
 
@@ -270,7 +270,7 @@ export default function MyFaction() {
           )}
         </div>
       ) : faction ? (
-        /* Has a stable - show details */
+        /* Has a faction - show details */
         <div className="my-faction__detail">
           <div className="my-faction__info-card">
             {faction.imageUrl && (
@@ -356,7 +356,7 @@ export default function MyFaction() {
               >
                 {disbanding
                   ? t('common.processing', 'Processing...')
-                  : t('factions.my.disband', 'Disband Stable')}
+                  : t('factions.my.disband', 'Disband Faction')}
               </button>
             </div>
           )}
@@ -371,7 +371,7 @@ export default function MyFaction() {
               >
                 {leaving
                   ? t('common.processing', 'Processing...')
-                  : t('factions.my.leave', 'Leave Stable')}
+                  : t('factions.my.leave', 'Leave Faction')}
               </button>
             </div>
           )}

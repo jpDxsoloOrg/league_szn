@@ -32,8 +32,8 @@ export default function FactionStandings() {
         }
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
-          logger.error('Failed to load stable standings');
-          setError(err.message || 'Failed to load stable standings');
+          logger.error('Failed to load faction standings');
+          setError(err.message || 'Failed to load faction standings');
         }
       } finally {
         if (!abortController.signal.aborted) {
@@ -62,8 +62,8 @@ export default function FactionStandings() {
   if (standings.length === 0) {
     return (
       <EmptyState
-        title={t('factions.standings', 'Stable Standings')}
-        description={t('factions.noStandings', 'No stable standings data yet.')}
+        title={t('factions.standings', 'Faction Standings')}
+        description={t('factions.noStandings', 'No faction standings data yet.')}
       />
     );
   }

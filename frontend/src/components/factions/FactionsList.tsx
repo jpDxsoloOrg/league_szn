@@ -15,7 +15,7 @@ type ViewMode = 'list' | 'standings';
 
 export default function FactionsList() {
   const { t } = useTranslation();
-  useDocumentTitle(t('factions.title', 'Stables'));
+  useDocumentTitle(t('factions.title', 'Factions'));
 
   const [searchParams, setSearchParams] = useSearchParams();
   const viewParam = searchParams.get('view');
@@ -79,7 +79,7 @@ export default function FactionsList() {
   return (
     <div className="factions-list-container">
       <div className="factions-list-header">
-        <h2>{t('factions.title', 'Stables')}</h2>
+        <h2>{t('factions.title', 'Factions')}</h2>
         <div className="factions-view-toggle">
           <button
             type="button"
@@ -104,8 +104,8 @@ export default function FactionsList() {
         <>
           {factions.length === 0 ? (
             <EmptyState
-              title={t('factions.title', 'Stables')}
-              description={t('factions.noStables', 'No active stables yet.')}
+              title={t('factions.title', 'Factions')}
+              description={t('factions.noStables', 'No active factions yet.')}
             />
           ) : (
             <div className="factions-grid">

@@ -21,8 +21,8 @@ const FEATURE_LABELS: Record<keyof SiteFeatures, { name: string; description: st
     description: 'Player stats, head-to-head, leaderboards, records, and achievements',
   },
   stables: {
-    name: 'Stables & Tag Teams',
-    description: 'Stables, tag teams, group standings, and invitation system',
+    name: 'Factions & Tag Teams',
+    description: 'Factions, tag teams, group standings, and invitation system',
   },
   notifications: {
     name: 'Notifications',

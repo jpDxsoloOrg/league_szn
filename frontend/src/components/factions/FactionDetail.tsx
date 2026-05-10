@@ -20,7 +20,7 @@ export default function FactionDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useDocumentTitle(faction?.name ?? t('factions.detail', 'Stable Detail'));
+  useDocumentTitle(faction?.name ?? t('factions.detail', 'Faction Detail'));
 
   useEffect(() => {
     if (!factionId) return;
@@ -36,8 +36,8 @@ export default function FactionDetail() {
         }
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
-          logger.error('Failed to load stable detail');
-          setError(err.message || 'Failed to load stable');
+          logger.error('Failed to load faction detail');
+          setError(err.message || 'Failed to load faction');
         }
       } finally {
         if (!abortController.signal.aborted) {
@@ -59,7 +59,7 @@ export default function FactionDetail() {
       <div className="error">
         <p>{t('common.error', 'Error')}: {error}</p>
         <Link to="/factions" className="btn btn-secondary">
-          {t('factions.backToList', 'Back to Stables')}
+          {t('factions.backToList', 'Back to Factions')}
         </Link>
       </div>
     );
@@ -68,9 +68,9 @@ export default function FactionDetail() {
   if (!faction) {
     return (
       <div className="error">
-        <p>{t('factions.notFound', 'Stable not found.')}</p>
+        <p>{t('factions.notFound', 'Faction not found.')}</p>
         <Link to="/factions" className="btn btn-secondary">
-          {t('factions.backToList', 'Back to Stables')}
+          {t('factions.backToList', 'Back to Factions')}
         </Link>
       </div>
     );
@@ -304,7 +304,7 @@ export default function FactionDetail() {
 
       <div className="faction-detail__back">
         <Link to="/factions" className="btn btn-secondary">
-          {t('factions.backToList', 'Back to Stables')}
+          {t('factions.backToList', 'Back to Factions')}
         </Link>
       </div>
     </div>

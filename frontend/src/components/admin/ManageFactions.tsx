@@ -21,7 +21,7 @@ export default function ManageFactions() {
       const data = await factionsApi.getAll();
       setFactions(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load stables');
+      setError(err instanceof Error ? err.message : 'Failed to load factions');
     } finally {
       setLoading(false);
     }
@@ -52,7 +52,7 @@ export default function ManageFactions() {
       await loadFactions();
     } catch (err) {
       showFeedback(
-        err instanceof Error ? err.message : 'Failed to approve stable',
+        err instanceof Error ? err.message : 'Failed to approve faction',
         'error'
       );
     } finally {
@@ -71,7 +71,7 @@ export default function ManageFactions() {
       await loadFactions();
     } catch (err) {
       showFeedback(
-        err instanceof Error ? err.message : 'Failed to reject stable',
+        err instanceof Error ? err.message : 'Failed to reject faction',
         'error'
       );
     } finally {
@@ -90,7 +90,7 @@ export default function ManageFactions() {
       await loadFactions();
     } catch (err) {
       showFeedback(
-        err instanceof Error ? err.message : 'Failed to disband stable',
+        err instanceof Error ? err.message : 'Failed to disband faction',
         'error'
       );
     } finally {
@@ -100,8 +100,8 @@ export default function ManageFactions() {
 
   const handleReactivate = async (faction: Stable) => {
     const confirmMsg = t(
-      'stables.admin.confirmReactivate',
-      'Reactivate "{{name}}"? Members who have since joined another stable will be skipped.',
+      'factions.admin.confirmReactivate',
+      'Reactivate "{{name}}"? Members who have since joined another faction will be skipped.',
       { name: faction.name },
     );
     if (!window.confirm(confirmMsg)) return;
@@ -119,7 +119,7 @@ export default function ManageFactions() {
       await loadFactions();
     } catch (err) {
       showFeedback(
-        err instanceof Error ? err.message : 'Failed to reactivate stable',
+        err instanceof Error ? err.message : 'Failed to reactivate faction',
         'error',
       );
     } finally {
@@ -138,7 +138,7 @@ export default function ManageFactions() {
       await loadFactions();
     } catch (err) {
       showFeedback(
-        err instanceof Error ? err.message : 'Failed to delete stable',
+        err instanceof Error ? err.message : 'Failed to delete faction',
         'error'
       );
     } finally {
@@ -153,7 +153,7 @@ export default function ManageFactions() {
   if (loading) {
     return (
       <div className="admin-factions">
-        <h3>{t('factions.admin.title', 'Manage Stables')}</h3>
+        <h3>{t('factions.admin.title', 'Manage Factions')}</h3>
         <div className="admin-factions-empty"><p>Loading...</p></div>
       </div>
     );
@@ -162,7 +162,7 @@ export default function ManageFactions() {
   if (error) {
     return (
       <div className="admin-factions">
-        <h3>{t('factions.admin.title', 'Manage Stables')}</h3>
+        <h3>{t('factions.admin.title', 'Manage Factions')}</h3>
         <div className="admin-factions-feedback error">{error}</div>
         <button onClick={loadFactions}>Retry</button>
       </div>
@@ -171,7 +171,7 @@ export default function ManageFactions() {
 
   return (
     <div className="admin-factions">
-      <h3>{t('factions.admin.title', 'Manage Stables')}</h3>
+      <h3>{t('factions.admin.title', 'Manage Factions')}</h3>
 
       <div className="admin-factions-controls">
         <div className="admin-factions-filter">
@@ -191,7 +191,7 @@ export default function ManageFactions() {
           </select>
         </div>
         <span className="admin-factions-count">
-          {filtered.length} {filtered.length === 1 ? 'stable' : 'stables'}
+          {filtered.length} {filtered.length === 1 ? 'faction' : 'factions'}
         </span>
       </div>
 
@@ -203,7 +203,7 @@ export default function ManageFactions() {
 
       {filtered.length === 0 ? (
         <div className="admin-factions-empty">
-          <p>{t('factions.admin.noStables', 'No stables found')}</p>
+          <p>{t('factions.admin.noStables', 'No factions found')}</p>
         </div>
       ) : (
         <table className="admin-factions-table">

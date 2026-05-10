@@ -93,7 +93,7 @@ export default function InviteToFactionModal({
     <div className="invite-faction-modal-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true">
       <div className="invite-faction-modal" onClick={(e) => e.stopPropagation()}>
         <div className="invite-faction-modal__header">
-          <h2>{t('factions.invite.title', 'Invite Player to Stable')}</h2>
+          <h2>{t('factions.invite.title', 'Invite Player to Faction')}</h2>
           <button
             className="invite-faction-modal__close"
             onClick={onClose}
