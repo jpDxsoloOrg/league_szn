@@ -1352,7 +1352,12 @@
       "removeMemberSuccess": "{{playerName}} removed from the faction.",
       "removeMemberDisbanded": "Faction disbanded — only the leader remained.",
       "removeMemberCancel": "Cancel",
-      "removeMemberConfirm": "Remove member"
+      "removeMemberConfirm": "Remove member",
+      "uploadImage": "Upload faction image",
+      "uploadingImage": "Uploading…",
+      "uploadFailed": "Upload failed. Please try again.",
+      "uploadAcceptedTypes": "PNG, JPEG, GIF, or WebP",
+      "replaceImage": "Replace image"
     }
   },
   "tagTeams": {
