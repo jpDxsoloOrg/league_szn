@@ -5,15 +5,15 @@ import { stablesApi } from '../../services/api';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { logger } from '../../utils/logger';
 import type { Stable } from '../../types/stable';
-import StableCard from './StableCard';
-import StableStandings from './StableStandings';
+import FactionCard from './FactionCard';
+import FactionStandings from './FactionStandings';
 import Skeleton from '../ui/Skeleton';
 import EmptyState from '../ui/EmptyState';
-import './StablesList.css';
+import './FactionsList.css';
 
 type ViewMode = 'list' | 'standings';
 
-export default function StablesList() {
+export default function FactionsList() {
   const { t } = useTranslation();
   useDocumentTitle(t('stables.title', 'Stables'));
 
@@ -21,28 +21,28 @@ export default function StablesList() {
   const viewParam = searchParams.get('view');
   const activeView: ViewMode = viewParam === 'standings' ? 'standings' : 'list';
 
-  const [stables, setStables] = useState<Stable[]>([]);
+  const [factions, setFactions] = useState<Stable[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const abortController = new AbortController();
 
-    const fetchStables = async () => {
+    const fetchFactions = async () => {
       try {
         setLoading(true);
         setError(null);
         const data = await stablesApi.getAll(undefined, abortController.signal);
         if (!abortController.signal.aborted) {
-          const visibleStables = data.filter(
+          const visibleFactions = data.filter(
             (s) => s.status === 'active' || s.status === 'approved'
           );
-          setStables(visibleStables);
+          setFactions(visibleFactions);
         }
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
-          logger.error('Failed to load stables');
-          setError(err.message || 'Failed to load stables');
+          logger.error('Failed to load factions');
+          setError(err.message || 'Failed to load factions');
         }
       } finally {
         if (!abortController.signal.aborted) {
@@ -51,7 +51,7 @@ export default function StablesList() {
       }
     };
 
-    fetchStables();
+    fetchFactions();
     return () => abortController.abort();
   }, []);
 
@@ -64,7 +64,7 @@ export default function StablesList() {
   };
 
   if (loading && activeView === 'list') {
-    return <Skeleton variant="cards" count={6} className="stables-skeleton" />;
+    return <Skeleton variant="cards" count={6} className="factions-skeleton" />;
   }
 
   if (error && activeView === 'list') {
@@ -77,20 +77,20 @@ export default function StablesList() {
   }
 
   return (
-    <div className="stables-list-container">
-      <div className="stables-list-header">
+    <div className="factions-list-container">
+      <div className="factions-list-header">
         <h2>{t('stables.title', 'Stables')}</h2>
-        <div className="stables-view-toggle">
+        <div className="factions-view-toggle">
           <button
             type="button"
-            className={`stables-toggle-btn ${activeView === 'list' ? 'stables-toggle-btn--active' : ''}`}
+            className={`factions-toggle-btn ${activeView === 'list' ? 'factions-toggle-btn--active' : ''}`}
             onClick={() => switchView('list')}
           >
             {t('stables.viewList', 'List')}
           </button>
           <button
             type="button"
-            className={`stables-toggle-btn ${activeView === 'standings' ? 'stables-toggle-btn--active' : ''}`}
+            className={`factions-toggle-btn ${activeView === 'standings' ? 'factions-toggle-btn--active' : ''}`}
             onClick={() => switchView('standings')}
           >
             {t('stables.viewStandings', 'Standings')}
@@ -99,18 +99,18 @@ export default function StablesList() {
       </div>
 
       {activeView === 'standings' ? (
-        <StableStandings />
+        <FactionStandings />
       ) : (
         <>
-          {stables.length === 0 ? (
+          {factions.length === 0 ? (
             <EmptyState
               title={t('stables.title', 'Stables')}
               description={t('stables.noStables', 'No active stables yet.')}
             />
           ) : (
-            <div className="stables-grid">
-              {stables.map((stable) => (
-                <StableCard key={stable.stableId} stable={stable} />
+            <div className="factions-grid">
+              {factions.map((faction) => (
+                <FactionCard key={faction.stableId} faction={faction} />
               ))}
             </div>
           )}

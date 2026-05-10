@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { stablesApi } from '../../services/api';
-import './CreateStableModal.css';
+import './CreateFactionModal.css';
 
 interface Props {
   isOpen: boolean;
@@ -9,7 +9,7 @@ interface Props {
   onCreated: () => void;
 }
 
-export default function CreateStableModal({ isOpen, onClose, onCreated }: Props) {
+export default function CreateFactionModal({ isOpen, onClose, onCreated }: Props) {
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -55,12 +55,12 @@ export default function CreateStableModal({ isOpen, onClose, onCreated }: Props)
   };
 
   return (
-    <div className="create-stable-modal-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true">
-      <div className="create-stable-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="create-stable-modal__header">
+    <div className="create-faction-modal-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true">
+      <div className="create-faction-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="create-faction-modal__header">
           <h2>{t('stables.create.title', 'Create a Stable')}</h2>
           <button
-            className="create-stable-modal__close"
+            className="create-faction-modal__close"
             onClick={onClose}
             disabled={submitting}
             aria-label={t('common.close', 'Close')}
@@ -70,11 +70,11 @@ export default function CreateStableModal({ isOpen, onClose, onCreated }: Props)
         </div>
 
         {success ? (
-          <div className="create-stable-modal__success">
+          <div className="create-faction-modal__success">
             <p>{t('stables.create.success', 'Stable request submitted! Awaiting admin approval.')}</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="create-stable-modal__form">
+          <form onSubmit={handleSubmit} className="create-faction-modal__form">
             <div className="form-group">
               <label htmlFor="stable-name">{t('stables.create.nameLabel', 'Stable Name')}</label>
               <input
@@ -102,10 +102,10 @@ export default function CreateStableModal({ isOpen, onClose, onCreated }: Props)
             </div>
 
             {error && (
-              <div className="create-stable-modal__error" role="alert">{error}</div>
+              <div className="create-faction-modal__error" role="alert">{error}</div>
             )}
 
-            <div className="create-stable-modal__actions">
+            <div className="create-faction-modal__actions">
               <button
                 type="button"
                 className="btn-secondary"

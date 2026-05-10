@@ -1,4 +1,4 @@
-.invite-stable-modal-overlay {
+.invite-faction-modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
@@ -9,7 +9,7 @@
   padding: 1rem;
 }
 
-.invite-stable-modal {
+.invite-faction-modal {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 12px;
@@ -19,20 +19,20 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-.invite-stable-modal__header {
+.invite-faction-modal__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
 }
 
-.invite-stable-modal__header h2 {
+.invite-faction-modal__header h2 {
   margin: 0;
   font-size: 1.4rem;
   color: var(--color-text);
 }
 
-.invite-stable-modal__close {
+.invite-faction-modal__close {
   background: none;
   border: none;
   color: var(--color-text-secondary);
@@ -43,15 +43,15 @@
   transition: color 0.2s;
 }
 
-.invite-stable-modal__close:hover:not(:disabled) {
+.invite-faction-modal__close:hover:not(:disabled) {
   color: var(--color-text);
 }
 
-.invite-stable-modal__form .form-group {
+.invite-faction-modal__form .form-group {
   margin-bottom: 1rem;
 }
 
-.invite-stable-modal__form label {
+.invite-faction-modal__form label {
   display: block;
   margin-bottom: 0.4rem;
   color: var(--color-text-secondary);
@@ -59,8 +59,8 @@
   font-weight: 500;
 }
 
-.invite-stable-modal__form select,
-.invite-stable-modal__form textarea {
+.invite-faction-modal__form select,
+.invite-faction-modal__form textarea {
   width: 100%;
   padding: 0.6rem 0.8rem;
   border: 1px solid var(--color-border);
@@ -72,32 +72,32 @@
   font-family: inherit;
 }
 
-.invite-stable-modal__form select:focus,
-.invite-stable-modal__form textarea:focus {
+.invite-faction-modal__form select:focus,
+.invite-faction-modal__form textarea:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
 }
 
-.invite-stable-modal__form select:disabled,
-.invite-stable-modal__form textarea:disabled {
+.invite-faction-modal__form select:disabled,
+.invite-faction-modal__form textarea:disabled {
   opacity: 0.6;
 }
 
-.invite-stable-modal__form textarea {
+.invite-faction-modal__form textarea {
   resize: vertical;
   min-height: 60px;
 }
 
-.invite-stable-modal__loading,
-.invite-stable-modal__empty {
+.invite-faction-modal__loading,
+.invite-faction-modal__empty {
   color: var(--color-text-muted);
   font-size: 0.9rem;
   margin: 0;
   padding: 0.5rem 0;
 }
 
-.invite-stable-modal__error {
+.invite-faction-modal__error {
   background: rgba(220, 53, 69, 0.1);
   border: 1px solid rgba(220, 53, 69, 0.3);
   color: var(--color-danger-alt);
@@ -107,25 +107,25 @@
   margin-bottom: 1rem;
 }
 
-.invite-stable-modal__success {
+.invite-faction-modal__success {
   text-align: center;
   padding: 2rem 1rem;
 }
 
-.invite-stable-modal__success p {
+.invite-faction-modal__success p {
   color: var(--color-success);
   font-size: 1rem;
   font-weight: 500;
   margin: 0;
 }
 
-.invite-stable-modal__actions {
+.invite-faction-modal__actions {
   display: flex;
   gap: 0.75rem;
   margin-top: 1.5rem;
 }
 
-.invite-stable-modal__actions .btn-secondary {
+.invite-faction-modal__actions .btn-secondary {
   flex: 1;
   padding: 0.65rem;
   border: 1px solid var(--color-border);
@@ -137,11 +137,11 @@
   transition: background-color 0.2s;
 }
 
-.invite-stable-modal__actions .btn-secondary:hover:not(:disabled) {
+.invite-faction-modal__actions .btn-secondary:hover:not(:disabled) {
   background: var(--color-surface-hover, rgba(255, 255, 255, 0.05));
 }
 
-.invite-stable-modal__actions .btn-primary {
+.invite-faction-modal__actions .btn-primary {
   flex: 1;
   padding: 0.65rem;
   border: none;
@@ -154,22 +154,22 @@
   transition: background-color 0.2s;
 }
 
-.invite-stable-modal__actions .btn-primary:hover:not(:disabled) {
+.invite-faction-modal__actions .btn-primary:hover:not(:disabled) {
   background: var(--color-primary-hover);
 }
 
-.invite-stable-modal__actions .btn-primary:disabled,
-.invite-stable-modal__actions .btn-secondary:disabled {
+.invite-faction-modal__actions .btn-primary:disabled,
+.invite-faction-modal__actions .btn-secondary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
 @media (max-width: 480px) {
-  .invite-stable-modal {
+  .invite-faction-modal {
     padding: 1.5rem;
   }
 
-  .invite-stable-modal__actions {
+  .invite-faction-modal__actions {
     flex-direction: column;
   }
 }

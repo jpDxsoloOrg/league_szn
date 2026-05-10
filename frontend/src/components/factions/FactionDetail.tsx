@@ -11,28 +11,28 @@ import {
   applyImageFallback,
 } from '../../constants/imageFallbacks';
 import Skeleton from '../ui/Skeleton';
-import './StableDetail.css';
+import './FactionDetail.css';
 
-export default function StableDetail() {
+export default function FactionDetail() {
   const { t } = useTranslation();
   const { stableId } = useParams<{ stableId: string }>();
-  const [stable, setStable] = useState<StableDetailResponse | null>(null);
+  const [faction, setFaction] = useState<StableDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useDocumentTitle(stable?.name ?? t('stables.detail', 'Stable Detail'));
+  useDocumentTitle(faction?.name ?? t('stables.detail', 'Stable Detail'));
 
   useEffect(() => {
     if (!stableId) return;
     const abortController = new AbortController();
 
-    const fetchStable = async () => {
+    const fetchFaction = async () => {
       try {
         setLoading(true);
         setError(null);
         const data = await stablesApi.getById(stableId, abortController.signal);
         if (!abortController.signal.aborted) {
-          setStable(data);
+          setFaction(data);
         }
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
@@ -46,12 +46,12 @@ export default function StableDetail() {
       }
     };
 
-    fetchStable();
+    fetchFaction();
     return () => abortController.abort();
   }, [stableId]);
 
   if (loading) {
-    return <Skeleton variant="block" count={4} className="stable-detail-skeleton" />;
+    return <Skeleton variant="block" count={4} className="faction-detail-skeleton" />;
   }
 
   if (error) {
@@ -65,7 +65,7 @@ export default function StableDetail() {
     );
   }
 
-  if (!stable) {
+  if (!faction) {
     return (
       <div className="error">
         <p>{t('stables.notFound', 'Stable not found.')}</p>
@@ -76,69 +76,69 @@ export default function StableDetail() {
     );
   }
 
-  const totalMatches = stable.wins + stable.losses + stable.draws;
+  const totalMatches = faction.wins + faction.losses + faction.draws;
 
   return (
-    <div className="stable-detail">
+    <div className="faction-detail">
       {/* Header */}
-      <div className="stable-detail__header">
-        <div className="stable-detail__header-image-wrapper">
+      <div className="faction-detail__header">
+        <div className="faction-detail__header-image-wrapper">
           <img
-            src={resolveImageSrc(stable.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+            src={resolveImageSrc(faction.imageUrl, DEFAULT_WRESTLER_IMAGE)}
             onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-            alt={stable.name}
-            className="stable-detail__header-image"
+            alt={faction.name}
+            className="faction-detail__header-image"
           />
         </div>
-        <div className="stable-detail__header-info">
-          <h2 className="stable-detail__name">{stable.name}</h2>
-          <span className={`stable-detail__status stable-detail__status--${stable.status}`}>
-            {stable.status}
+        <div className="faction-detail__header-info">
+          <h2 className="faction-detail__name">{faction.name}</h2>
+          <span className={`faction-detail__status faction-detail__status--${faction.status}`}>
+            {faction.status}
           </span>
-          {stable.leaderName && (
-            <p className="stable-detail__leader">
-              {t('stables.leader', 'Leader')}: <strong>{stable.leaderName}</strong>
+          {faction.leaderName && (
+            <p className="faction-detail__leader">
+              {t('stables.leader', 'Leader')}: <strong>{faction.leaderName}</strong>
             </p>
           )}
-          <p className="stable-detail__member-summary">
-            {t('stables.memberCount', '{{count}} members', { count: stable.members.length })}
+          <p className="faction-detail__member-summary">
+            {t('stables.memberCount', '{{count}} members', { count: faction.members.length })}
           </p>
         </div>
       </div>
 
       {/* Overall Stats */}
-      <section className="stable-detail__section">
+      <section className="faction-detail__section">
         <h3>{t('stables.overallStats', 'Overall Stats')}</h3>
-        <div className="stable-detail__stats-grid">
-          <div className="stable-detail__stat-card">
-            <span className="stable-detail__stat-value stable-detail__stat-value--wins">{stable.wins}</span>
-            <span className="stable-detail__stat-label">{t('standings.table.wins', 'Wins')}</span>
+        <div className="faction-detail__stats-grid">
+          <div className="faction-detail__stat-card">
+            <span className="faction-detail__stat-value faction-detail__stat-value--wins">{faction.wins}</span>
+            <span className="faction-detail__stat-label">{t('standings.table.wins', 'Wins')}</span>
           </div>
-          <div className="stable-detail__stat-card">
-            <span className="stable-detail__stat-value stable-detail__stat-value--losses">{stable.losses}</span>
-            <span className="stable-detail__stat-label">{t('standings.table.losses', 'Losses')}</span>
+          <div className="faction-detail__stat-card">
+            <span className="faction-detail__stat-value faction-detail__stat-value--losses">{faction.losses}</span>
+            <span className="faction-detail__stat-label">{t('standings.table.losses', 'Losses')}</span>
           </div>
-          <div className="stable-detail__stat-card">
-            <span className="stable-detail__stat-value stable-detail__stat-value--draws">{stable.draws}</span>
-            <span className="stable-detail__stat-label">{t('standings.table.draws', 'Draws')}</span>
+          <div className="faction-detail__stat-card">
+            <span className="faction-detail__stat-value faction-detail__stat-value--draws">{faction.draws}</span>
+            <span className="faction-detail__stat-label">{t('standings.table.draws', 'Draws')}</span>
           </div>
-          <div className="stable-detail__stat-card">
-            <span className="stable-detail__stat-value">{stable.standings.winPercentage.toFixed(1)}%</span>
-            <span className="stable-detail__stat-label">{t('standings.table.winPercent', 'Win%')}</span>
+          <div className="faction-detail__stat-card">
+            <span className="faction-detail__stat-value">{faction.standings.winPercentage.toFixed(1)}%</span>
+            <span className="faction-detail__stat-label">{t('standings.table.winPercent', 'Win%')}</span>
           </div>
-          <div className="stable-detail__stat-card">
-            <span className="stable-detail__stat-value">{totalMatches}</span>
-            <span className="stable-detail__stat-label">{t('stables.totalMatches', 'Total Matches')}</span>
+          <div className="faction-detail__stat-card">
+            <span className="faction-detail__stat-value">{totalMatches}</span>
+            <span className="faction-detail__stat-label">{t('stables.totalMatches', 'Total Matches')}</span>
           </div>
         </div>
 
         {/* Form & Streak */}
-        <div className="stable-detail__form-streak">
-          <div className="stable-detail__form">
-            <span className="stable-detail__form-label">{t('standings.table.form', 'Form')}:</span>
-            {stable.standings.recentForm.length > 0 ? (
-              <span className="form-dots" aria-label={stable.standings.recentForm.join(', ')}>
-                {stable.standings.recentForm.map((result, i) => (
+        <div className="faction-detail__form-streak">
+          <div className="faction-detail__form">
+            <span className="faction-detail__form-label">{t('standings.table.form', 'Form')}:</span>
+            {faction.standings.recentForm.length > 0 ? (
+              <span className="form-dots" aria-label={faction.standings.recentForm.join(', ')}>
+                {faction.standings.recentForm.map((result, i) => (
                   <span
                     key={i}
                     className={`form-dot ${result === 'W' ? 'win' : result === 'L' ? 'loss' : 'draw'}`}
@@ -150,14 +150,14 @@ export default function StableDetail() {
               <span className="form-empty">-</span>
             )}
           </div>
-          <div className="stable-detail__streak">
-            <span className="stable-detail__streak-label">{t('standings.table.streak', 'Streak')}:</span>
-            {stable.standings.currentStreak.count >= 3 ? (
+          <div className="faction-detail__streak">
+            <span className="faction-detail__streak-label">{t('standings.table.streak', 'Streak')}:</span>
+            {faction.standings.currentStreak.count >= 3 ? (
               <span
-                className={`streak-badge ${stable.standings.currentStreak.type === 'W' ? 'hot' : stable.standings.currentStreak.type === 'L' ? 'cold' : 'neutral'}`}
+                className={`streak-badge ${faction.standings.currentStreak.type === 'W' ? 'hot' : faction.standings.currentStreak.type === 'L' ? 'cold' : 'neutral'}`}
               >
-                {stable.standings.currentStreak.count}
-                {stable.standings.currentStreak.type === 'W' ? 'W' : stable.standings.currentStreak.type === 'L' ? 'L' : 'D'}
+                {faction.standings.currentStreak.count}
+                {faction.standings.currentStreak.type === 'W' ? 'W' : faction.standings.currentStreak.type === 'L' ? 'L' : 'D'}
               </span>
             ) : (
               <span className="streak-empty">-</span>
@@ -167,35 +167,35 @@ export default function StableDetail() {
       </section>
 
       {/* Roster */}
-      <section className="stable-detail__section">
+      <section className="faction-detail__section">
         <h3>{t('stables.roster', 'Roster')}</h3>
-        <div className="stable-detail__roster-grid">
-          {stable.members.map((member: StablePlayerInfo) => (
+        <div className="faction-detail__roster-grid">
+          {faction.members.map((member: StablePlayerInfo) => (
             <Link
               key={member.playerId}
               to={`/stats/player/${member.playerId}`}
-              className="stable-detail__member-card"
+              className="faction-detail__member-card"
             >
               <img
                 src={resolveImageSrc(member.imageUrl, DEFAULT_WRESTLER_IMAGE)}
                 onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
                 alt={member.wrestlerName}
-                className="stable-detail__member-image"
+                className="faction-detail__member-image"
               />
-              <div className="stable-detail__member-info">
-                <span className="stable-detail__member-wrestler">{member.wrestlerName}</span>
-                <span className="stable-detail__member-player">
+              <div className="faction-detail__member-info">
+                <span className="faction-detail__member-wrestler">{member.wrestlerName}</span>
+                <span className="faction-detail__member-player">
                   {member.playerName}
-                  {member.playerId === stable.leaderId && (
-                    <span className="stable-detail__leader-badge">
+                  {member.playerId === faction.leaderId && (
+                    <span className="faction-detail__leader-badge">
                       {t('stables.leaderBadge', 'Leader')}
                     </span>
                   )}
                 </span>
                 {member.psnId && (
-                  <span className="stable-detail__member-psn">PSN: {member.psnId}</span>
+                  <span className="faction-detail__member-psn">PSN: {member.psnId}</span>
                 )}
-                <span className="stable-detail__member-record">
+                <span className="faction-detail__member-record">
                   <span className="wins">{member.wins}W</span>
                   {' '}
                   <span className="losses">{member.losses}L</span>
@@ -209,11 +209,11 @@ export default function StableDetail() {
       </section>
 
       {/* Match Type Breakdown */}
-      {stable.matchTypeRecords.length > 0 && (
-        <section className="stable-detail__section">
+      {faction.matchTypeRecords.length > 0 && (
+        <section className="faction-detail__section">
           <h3>{t('stables.matchTypeBreakdown', 'Match Type Breakdown')}</h3>
-          <div className="stable-detail__table-wrapper">
-            <table className="stable-detail__table">
+          <div className="faction-detail__table-wrapper">
+            <table className="faction-detail__table">
               <thead>
                 <tr>
                   <th>{t('stables.format', 'Format')}</th>
@@ -223,9 +223,9 @@ export default function StableDetail() {
                 </tr>
               </thead>
               <tbody>
-                {stable.matchTypeRecords.map((record: StableMatchTypeRecord) => (
+                {faction.matchTypeRecords.map((record: StableMatchTypeRecord) => (
                   <tr key={record.matchFormat}>
-                    <td className="stable-detail__format-name">{record.matchFormat}</td>
+                    <td className="faction-detail__format-name">{record.matchFormat}</td>
                     <td className="wins">{record.wins}</td>
                     <td className="losses">{record.losses}</td>
                     <td className="draws">{record.draws}</td>
@@ -238,11 +238,11 @@ export default function StableDetail() {
       )}
 
       {/* Head to Head */}
-      {stable.headToHead.length > 0 && (
-        <section className="stable-detail__section">
+      {faction.headToHead.length > 0 && (
+        <section className="faction-detail__section">
           <h3>{t('stables.headToHead', 'Head to Head')}</h3>
-          <div className="stable-detail__table-wrapper">
-            <table className="stable-detail__table">
+          <div className="faction-detail__table-wrapper">
+            <table className="faction-detail__table">
               <thead>
                 <tr>
                   <th>{t('stables.opponent', 'Opponent')}</th>
@@ -252,9 +252,9 @@ export default function StableDetail() {
                 </tr>
               </thead>
               <tbody>
-                {stable.headToHead.map((h2h: StableHeadToHead) => (
+                {faction.headToHead.map((h2h: StableHeadToHead) => (
                   <tr key={h2h.opponentStableId}>
-                    <td className="stable-detail__opponent-name">
+                    <td className="faction-detail__opponent-name">
                       <Link to={`/stables/${h2h.opponentStableId}`}>
                         {h2h.opponentStableName}
                       </Link>
@@ -271,11 +271,11 @@ export default function StableDetail() {
       )}
 
       {/* Recent Matches */}
-      {stable.recentMatches.length > 0 && (
-        <section className="stable-detail__section">
+      {faction.recentMatches.length > 0 && (
+        <section className="faction-detail__section">
           <h3>{t('stables.recentMatches', 'Recent Matches')}</h3>
-          <div className="stable-detail__recent-matches">
-            {stable.recentMatches.slice(0, 10).map((match, index) => {
+          <div className="faction-detail__recent-matches">
+            {faction.recentMatches.slice(0, 10).map((match, index) => {
               const matchObj = match as Record<string, unknown>;
               const matchDate = typeof matchObj['date'] === 'string'
                 ? new Date(matchObj['date']).toLocaleDateString()
@@ -289,10 +289,10 @@ export default function StableDetail() {
               const isWin = matchStatus === 'completed' && Array.isArray(matchObj['winners']);
 
               return (
-                <div key={index} className="stable-detail__match-item">
-                  <span className="stable-detail__match-date">{matchDate}</span>
-                  <span className="stable-detail__match-format">{matchFormat}</span>
-                  <span className={`stable-detail__match-result ${isWin ? 'stable-detail__match-result--win' : 'stable-detail__match-result--loss'}`}>
+                <div key={index} className="faction-detail__match-item">
+                  <span className="faction-detail__match-date">{matchDate}</span>
+                  <span className="faction-detail__match-format">{matchFormat}</span>
+                  <span className={`faction-detail__match-result ${isWin ? 'faction-detail__match-result--win' : 'faction-detail__match-result--loss'}`}>
                     {matchStatus === 'completed' ? (isWin ? t('stables.win', 'W') : t('stables.loss', 'L')) : matchStatus}
                   </span>
                 </div>
@@ -302,7 +302,7 @@ export default function StableDetail() {
         </section>
       )}
 
-      <div className="stable-detail__back">
+      <div className="faction-detail__back">
         <Link to="/stables" className="btn btn-secondary">
           {t('stables.backToList', 'Back to Stables')}
         </Link>

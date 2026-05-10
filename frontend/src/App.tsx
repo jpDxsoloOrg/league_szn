@@ -51,10 +51,10 @@ import MyContenderStatus from './components/contenders/MyContenderStatus';
 import EventsCalendar from './components/events/EventsCalendar';
 import EventDetail from './components/events/EventDetail';
 import EventResults from './components/events/EventResults';
-// Stables components
-import StablesList from './components/stables/StablesList';
-import StableDetail from './components/stables/StableDetail';
-import MyStable from './components/stables/MyStable';
+// Factions components
+import FactionsList from './components/factions/FactionsList';
+import FactionDetail from './components/factions/FactionDetail';
+import MyFaction from './components/factions/MyFaction';
 // Tag Teams components
 import TagTeamsList from './components/tagTeams/TagTeamsList';
 import TagTeamDetail from './components/tagTeams/TagTeamDetail';
@@ -231,17 +231,17 @@ function AppLayout() {
             <Route path="/events/:eventId" element={<EventDetail />} />
             <Route path="/events/:eventId/results" element={<EventResults />} />
 
-            {/* Stables Routes - feature-gated */}
+            {/* Factions Routes - feature-gated */}
             <Route path="/stables" element={
-              <FeatureRoute feature="stables"><StablesList /></FeatureRoute>
+              <FeatureRoute feature="stables"><FactionsList /></FeatureRoute>
             } />
             <Route path="/stables/:stableId" element={
-              <FeatureRoute feature="stables"><StableDetail /></FeatureRoute>
+              <FeatureRoute feature="stables"><FactionDetail /></FeatureRoute>
             } />
             <Route path="/my-stable" element={
               <FeatureRoute feature="stables">
                 <ProtectedRoute requiredRole="Wrestler">
-                  <MyStable />
+                  <MyFaction />
                 </ProtectedRoute>
               </FeatureRoute>
             } />

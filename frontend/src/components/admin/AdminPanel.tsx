@@ -24,7 +24,7 @@ import AdminContenderOverrides from './AdminContenderOverrides';
 import ManageCompanies from './ManageCompanies';
 import ManageLocations from './ManageLocations';
 import ManageShows from './ManageShows';
-import ManageStables from './ManageStables';
+import ManageFactions from './ManageFactions';
 import ManageTagTeams from './ManageTagTeams';
 import ManageAnnouncements from './ManageAnnouncements';
 import ManageVideos from './ManageVideos';
@@ -89,7 +89,7 @@ export default function AdminPanel() {
     companies: <ManageCompanies />,
     locations: <ManageLocations />,
     shows: <ManageShows />,
-    stables: <ManageStables />,
+    stables: <ManageFactions />,
     'tag-teams': <ManageTagTeams />,
     announcements: <ManageAnnouncements />,
     videos: <ManageVideos />,

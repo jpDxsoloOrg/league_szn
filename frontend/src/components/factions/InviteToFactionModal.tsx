@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { stablesApi, playersApi } from '../../services/api';
 import type { Player } from '../../types';
-import './InviteToStableModal.css';
+import './InviteToFactionModal.css';
 
 interface Props {
   isOpen: boolean;
@@ -12,7 +12,7 @@ interface Props {
   onInvited: () => void;
 }
 
-export default function InviteToStableModal({
+export default function InviteToFactionModal({
   isOpen,
   stableId,
   currentMemberIds,
@@ -90,12 +90,12 @@ export default function InviteToStableModal({
   };
 
   return (
-    <div className="invite-stable-modal-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true">
-      <div className="invite-stable-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="invite-stable-modal__header">
+    <div className="invite-faction-modal-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true">
+      <div className="invite-faction-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="invite-faction-modal__header">
           <h2>{t('stables.invite.title', 'Invite Player to Stable')}</h2>
           <button
-            className="invite-stable-modal__close"
+            className="invite-faction-modal__close"
             onClick={onClose}
             disabled={submitting}
             aria-label={t('common.close', 'Close')}
@@ -105,17 +105,17 @@ export default function InviteToStableModal({
         </div>
 
         {success ? (
-          <div className="invite-stable-modal__success">
+          <div className="invite-faction-modal__success">
             <p>{t('stables.invite.success', 'Invitation sent successfully!')}</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="invite-stable-modal__form">
+          <form onSubmit={handleSubmit} className="invite-faction-modal__form">
             <div className="form-group">
               <label htmlFor="invite-player">{t('stables.invite.playerLabel', 'Select Player')}</label>
               {loadingPlayers ? (
-                <p className="invite-stable-modal__loading">{t('common.loading', 'Loading...')}</p>
+                <p className="invite-faction-modal__loading">{t('common.loading', 'Loading...')}</p>
               ) : players.length === 0 ? (
-                <p className="invite-stable-modal__empty">
+                <p className="invite-faction-modal__empty">
                   {t('stables.invite.noAvailablePlayers', 'No available players to invite')}
                 </p>
               ) : (
@@ -149,10 +149,10 @@ export default function InviteToStableModal({
             </div>
 
             {error && (
-              <div className="invite-stable-modal__error" role="alert">{error}</div>
+              <div className="invite-faction-modal__error" role="alert">{error}</div>
             )}
 
-            <div className="invite-stable-modal__actions">
+            <div className="invite-faction-modal__actions">
               <button
                 type="button"
                 className="btn-secondary"

@@ -2,24 +2,24 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { stablesApi } from '../../services/api/stables.api';
 import type { Stable, StableStatus } from '../../types/stable';
-import './ManageStables.css';
+import './ManageFactions.css';
 
 const ALL_STATUSES: StableStatus[] = ['pending', 'approved', 'active', 'disbanded'];
 
-export default function ManageStables() {
+export default function ManageFactions() {
   const { t } = useTranslation();
-  const [stables, setStables] = useState<Stable[]>([]);
+  const [factions, setFactions] = useState<Stable[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StableStatus | 'all'>('all');
   const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
 
-  const loadStables = useCallback(async () => {
+  const loadFactions = useCallback(async () => {
     try {
       setError(null);
       const data = await stablesApi.getAll();
-      setStables(data);
+      setFactions(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load stables');
     } finally {
@@ -28,28 +28,28 @@ export default function ManageStables() {
   }, []);
 
   useEffect(() => {
-    loadStables();
-  }, [loadStables]);
+    loadFactions();
+  }, [loadFactions]);
 
   const filtered = useMemo(() => {
-    if (statusFilter === 'all') return stables;
-    return stables.filter((s) => s.status === statusFilter);
-  }, [stables, statusFilter]);
+    if (statusFilter === 'all') return factions;
+    return factions.filter((s) => s.status === statusFilter);
+  }, [factions, statusFilter]);
 
   const showFeedback = (message: string, type: 'success' | 'error') => {
     setFeedback({ message, type });
     setTimeout(() => setFeedback(null), 3000);
   };
 
-  const handleApprove = async (stable: Stable) => {
-    setSubmitting(stable.stableId);
+  const handleApprove = async (faction: Stable) => {
+    setSubmitting(faction.stableId);
     try {
-      await stablesApi.approve(stable.stableId);
+      await stablesApi.approve(faction.stableId);
       showFeedback(
-        t('stables.admin.approved', 'Approved') + `: ${stable.name}`,
+        t('stables.admin.approved', 'Approved') + `: ${faction.name}`,
         'success'
       );
-      await loadStables();
+      await loadFactions();
     } catch (err) {
       showFeedback(
         err instanceof Error ? err.message : 'Failed to approve stable',
@@ -60,15 +60,15 @@ export default function ManageStables() {
     }
   };
 
-  const handleReject = async (stable: Stable) => {
-    setSubmitting(stable.stableId);
+  const handleReject = async (faction: Stable) => {
+    setSubmitting(faction.stableId);
     try {
-      await stablesApi.reject(stable.stableId);
+      await stablesApi.reject(faction.stableId);
       showFeedback(
-        t('stables.admin.rejected', 'Rejected') + `: ${stable.name}`,
+        t('stables.admin.rejected', 'Rejected') + `: ${faction.name}`,
         'success'
       );
-      await loadStables();
+      await loadFactions();
     } catch (err) {
       showFeedback(
         err instanceof Error ? err.message : 'Failed to reject stable',
@@ -79,15 +79,15 @@ export default function ManageStables() {
     }
   };
 
-  const handleDisband = async (stable: Stable) => {
-    setSubmitting(stable.stableId);
+  const handleDisband = async (faction: Stable) => {
+    setSubmitting(faction.stableId);
     try {
-      await stablesApi.disband(stable.stableId);
+      await stablesApi.disband(faction.stableId);
       showFeedback(
-        t('stables.admin.disbanded', 'Disbanded') + `: ${stable.name}`,
+        t('stables.admin.disbanded', 'Disbanded') + `: ${faction.name}`,
         'success'
       );
-      await loadStables();
+      await loadFactions();
     } catch (err) {
       showFeedback(
         err instanceof Error ? err.message : 'Failed to disband stable',
@@ -98,25 +98,25 @@ export default function ManageStables() {
     }
   };
 
-  const handleReactivate = async (stable: Stable) => {
+  const handleReactivate = async (faction: Stable) => {
     const confirmMsg = t(
       'stables.admin.confirmReactivate',
       'Reactivate "{{name}}"? Members who have since joined another stable will be skipped.',
-      { name: stable.name },
+      { name: faction.name },
     );
     if (!window.confirm(confirmMsg)) return;
-    setSubmitting(stable.stableId);
+    setSubmitting(faction.stableId);
     try {
-      const result = await stablesApi.reactivate(stable.stableId);
+      const result = await stablesApi.reactivate(faction.stableId);
       const skipped = result.skippedMembers.length;
       const restored = result.restoredMemberIds.length;
-      const base = t('stables.admin.reactivated', 'Reactivated') + `: ${stable.name}`;
+      const base = t('stables.admin.reactivated', 'Reactivated') + `: ${faction.name}`;
       const detail =
         skipped > 0
           ? ` (${restored} restored, ${skipped} skipped)`
           : ` (${restored} restored)`;
       showFeedback(base + detail, 'success');
-      await loadStables();
+      await loadFactions();
     } catch (err) {
       showFeedback(
         err instanceof Error ? err.message : 'Failed to reactivate stable',
@@ -127,15 +127,15 @@ export default function ManageStables() {
     }
   };
 
-  const handleDelete = async (stable: Stable) => {
-    setSubmitting(stable.stableId);
+  const handleDelete = async (faction: Stable) => {
+    setSubmitting(faction.stableId);
     try {
-      await stablesApi.delete(stable.stableId);
+      await stablesApi.delete(faction.stableId);
       showFeedback(
-        t('stables.admin.deleted', 'Deleted') + `: ${stable.name}`,
+        t('stables.admin.deleted', 'Deleted') + `: ${faction.name}`,
         'success'
       );
-      await loadStables();
+      await loadFactions();
     } catch (err) {
       showFeedback(
         err instanceof Error ? err.message : 'Failed to delete stable',
@@ -152,29 +152,29 @@ export default function ManageStables() {
 
   if (loading) {
     return (
-      <div className="admin-stables">
+      <div className="admin-factions">
         <h3>{t('stables.admin.title', 'Manage Stables')}</h3>
-        <div className="admin-stables-empty"><p>Loading...</p></div>
+        <div className="admin-factions-empty"><p>Loading...</p></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="admin-stables">
+      <div className="admin-factions">
         <h3>{t('stables.admin.title', 'Manage Stables')}</h3>
-        <div className="admin-stables-feedback error">{error}</div>
-        <button onClick={loadStables}>Retry</button>
+        <div className="admin-factions-feedback error">{error}</div>
+        <button onClick={loadFactions}>Retry</button>
       </div>
     );
   }
 
   return (
-    <div className="admin-stables">
+    <div className="admin-factions">
       <h3>{t('stables.admin.title', 'Manage Stables')}</h3>
 
-      <div className="admin-stables-controls">
-        <div className="admin-stables-filter">
+      <div className="admin-factions-controls">
+        <div className="admin-factions-filter">
           <label>{t('stables.admin.filterByStatus', 'Filter by status')}:</label>
           <select
             value={statusFilter}
@@ -190,23 +190,23 @@ export default function ManageStables() {
             ))}
           </select>
         </div>
-        <span className="admin-stables-count">
+        <span className="admin-factions-count">
           {filtered.length} {filtered.length === 1 ? 'stable' : 'stables'}
         </span>
       </div>
 
       {feedback && (
-        <div className={`admin-stables-feedback ${feedback.type}`}>
+        <div className={`admin-factions-feedback ${feedback.type}`}>
           {feedback.message}
         </div>
       )}
 
       {filtered.length === 0 ? (
-        <div className="admin-stables-empty">
+        <div className="admin-factions-empty">
           <p>{t('stables.admin.noStables', 'No stables found')}</p>
         </div>
       ) : (
-        <table className="admin-stables-table">
+        <table className="admin-factions-table">
           <thead>
             <tr>
               <th>{t('stables.admin.name', 'Name')}</th>
@@ -218,70 +218,70 @@ export default function ManageStables() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((stable) => (
-              <tr key={stable.stableId}>
+            {filtered.map((faction) => (
+              <tr key={faction.stableId}>
                 <td>
-                  <span className="admin-stables-name">{stable.name}</span>
+                  <span className="admin-factions-name">{faction.name}</span>
                 </td>
                 <td>
-                  <span className="admin-stables-member-count">
-                    {stable.memberIds.length} {stable.memberIds.length === 1 ? 'member' : 'members'}
+                  <span className="admin-factions-member-count">
+                    {faction.memberIds.length} {faction.memberIds.length === 1 ? 'member' : 'members'}
                   </span>
                 </td>
                 <td>
-                  <span className={`stables-status-badge ${stable.status}`}>
-                    {t(`stables.status.${stable.status}`, stable.status)}
+                  <span className={`factions-status-badge ${faction.status}`}>
+                    {t(`stables.status.${faction.status}`, faction.status)}
                   </span>
                 </td>
                 <td>
-                  <span className="admin-stables-record">
-                    {stable.wins}-{stable.losses}-{stable.draws}
+                  <span className="admin-factions-record">
+                    {faction.wins}-{faction.losses}-{faction.draws}
                   </span>
                 </td>
-                <td>{formatDate(stable.createdAt)}</td>
+                <td>{formatDate(faction.createdAt)}</td>
                 <td>
-                  <div className="admin-stables-actions">
-                    {stable.status === 'pending' && (
+                  <div className="admin-factions-actions">
+                    {faction.status === 'pending' && (
                       <>
                         <button
                           className="admin-btn-approve"
-                          onClick={() => handleApprove(stable)}
-                          disabled={submitting === stable.stableId}
+                          onClick={() => handleApprove(faction)}
+                          disabled={submitting === faction.stableId}
                         >
-                          {submitting === stable.stableId
+                          {submitting === faction.stableId
                             ? '...'
                             : t('stables.admin.approve', 'Approve')}
                         </button>
                         <button
                           className="admin-btn-reject"
-                          onClick={() => handleReject(stable)}
-                          disabled={submitting === stable.stableId}
+                          onClick={() => handleReject(faction)}
+                          disabled={submitting === faction.stableId}
                         >
-                          {submitting === stable.stableId
+                          {submitting === faction.stableId
                             ? '...'
                             : t('stables.admin.reject', 'Reject')}
                         </button>
                       </>
                     )}
-                    {(stable.status === 'approved' || stable.status === 'active') && (
+                    {(faction.status === 'approved' || faction.status === 'active') && (
                       <button
                         className="admin-btn-disband"
-                        onClick={() => handleDisband(stable)}
-                        disabled={submitting === stable.stableId}
+                        onClick={() => handleDisband(faction)}
+                        disabled={submitting === faction.stableId}
                       >
-                        {submitting === stable.stableId
+                        {submitting === faction.stableId
                           ? '...'
                           : t('stables.admin.disband', 'Disband')}
                       </button>
                     )}
-                    {stable.status === 'disbanded' && (
+                    {faction.status === 'disbanded' && (
                       <button
                         type="button"
                         className="admin-btn-reactivate"
-                        onClick={() => handleReactivate(stable)}
-                        disabled={submitting === stable.stableId}
+                        onClick={() => handleReactivate(faction)}
+                        disabled={submitting === faction.stableId}
                       >
-                        {submitting === stable.stableId
+                        {submitting === faction.stableId
                           ? '...'
                           : t('stables.admin.reactivate', 'Reactivate')}
                       </button>
@@ -289,11 +289,11 @@ export default function ManageStables() {
                     <button
                       type="button"
                       className="admin-btn-delete"
-                      onClick={() => handleDelete(stable)}
-                      disabled={submitting === stable.stableId}
+                      onClick={() => handleDelete(faction)}
+                      disabled={submitting === faction.stableId}
                       title={t('stables.admin.delete', 'Delete')}
                     >
-                      {submitting === stable.stableId ? '...' : t('stables.admin.delete', 'Delete')}
+                      {submitting === faction.stableId ? '...' : t('stables.admin.delete', 'Delete')}
                     </button>
                   </div>
                 </td>

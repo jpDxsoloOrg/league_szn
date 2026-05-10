@@ -11,9 +11,9 @@ import {
 } from '../../constants/imageFallbacks';
 import Skeleton from '../ui/Skeleton';
 import EmptyState from '../ui/EmptyState';
-import './StableStandings.css';
+import './FactionStandings.css';
 
-export default function StableStandings() {
+export default function FactionStandings() {
   const { t } = useTranslation();
   const [standings, setStandings] = useState<StableStanding[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +47,7 @@ export default function StableStandings() {
   }, []);
 
   if (loading) {
-    return <Skeleton variant="table" count={6} className="stable-standings-skeleton" />;
+    return <Skeleton variant="table" count={6} className="faction-standings-skeleton" />;
   }
 
   if (error) {
@@ -69,13 +69,13 @@ export default function StableStandings() {
   }
 
   return (
-    <div className="stable-standings-container">
-      <div className="stable-standings-table-wrapper">
-        <table className="stable-standings-table">
+    <div className="faction-standings-container">
+      <div className="faction-standings-table-wrapper">
+        <table className="faction-standings-table">
           <thead>
             <tr>
               <th>{t('standings.table.rank', 'Rank')}</th>
-              <th className="stable-standings-image-header">&nbsp;</th>
+              <th className="faction-standings-image-header">&nbsp;</th>
               <th>{t('stables.name', 'Name')}</th>
               <th>{t('stables.members', 'Members')}</th>
               <th>{t('standings.table.wins', 'W')}</th>
@@ -90,20 +90,20 @@ export default function StableStandings() {
             {standings.map((standing, index) => (
               <tr key={standing.stableId}>
                 <td className="rank">{index + 1}</td>
-                <td className="stable-standings-image-cell">
+                <td className="faction-standings-image-cell">
                   <img
                     src={resolveImageSrc(standing.imageUrl, DEFAULT_WRESTLER_IMAGE)}
                     onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
                     alt={standing.name}
-                    className="stable-standings-thumbnail"
+                    className="faction-standings-thumbnail"
                   />
                 </td>
-                <td className="stable-standings-name">
-                  <Link to={`/stables/${standing.stableId}`} className="stable-standings-name-link">
+                <td className="faction-standings-name">
+                  <Link to={`/stables/${standing.stableId}`} className="faction-standings-name-link">
                     {standing.name}
                   </Link>
                 </td>
-                <td className="stable-standings-member-count">{standing.memberCount}</td>
+                <td className="faction-standings-member-count">{standing.memberCount}</td>
                 <td className="wins">{standing.wins}</td>
                 <td className="losses">{standing.losses}</td>
                 <td className="draws">{standing.draws}</td>
