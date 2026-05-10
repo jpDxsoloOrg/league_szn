@@ -1,6 +1,7 @@
 import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
 import { dynamoDb, TableNames } from '../../dynamodb';
 import type { UnitOfWork, RecordDelta } from '../unitOfWork';
+import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 
 interface TransactWriteItem {
   Put?: { TableName: string; Item: Record<string, unknown>; ConditionExpression?: string };
@@ -355,6 +356,43 @@ export class DynamoUnitOfWork implements UnitOfWork {
         UpdateExpression: `SET ${sets.join(', ')}`,
         ExpressionAttributeNames: names,
         ExpressionAttributeValues: values,
+      },
+    });
+  }
+
+  // ── Faction messaging ────────────────────────────────────────────
+  appendFactionMessage(message: FactionMessage): void {
+    this.staged.push({
+      Put: {
+        TableName: TableNames.FACTION_MESSAGES,
+        Item: {
+          factionId: message.factionId,
+          createdAtMessageId: `${message.createdAt}#${message.messageId}`,
+          messageId: message.messageId,
+          authorPlayerId: message.authorPlayerId,
+          body: message.body,
+          messageType: message.messageType,
+          createdAt: message.createdAt,
+        },
+      },
+    });
+  }
+
+  appendFactionDirectMessage(message: FactionDirectMessage): void {
+    this.staged.push({
+      Put: {
+        TableName: TableNames.FACTION_DIRECT_MESSAGES,
+        Item: {
+          factionThreadKey: `${message.factionId}#${message.threadKey}`,
+          createdAtMessageId: `${message.createdAt}#${message.messageId}`,
+          factionId: message.factionId,
+          threadKey: message.threadKey,
+          messageId: message.messageId,
+          senderPlayerId: message.senderPlayerId,
+          recipientPlayerId: message.recipientPlayerId,
+          body: message.body,
+          createdAt: message.createdAt,
+        },
       },
     });
   }

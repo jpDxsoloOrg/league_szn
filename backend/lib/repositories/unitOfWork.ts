@@ -1,3 +1,5 @@
+import type { FactionMessage, FactionDirectMessage } from './factionMessages';
+
 /**
  * Record delta for player/season standings.
  * Positive values increment; negative decrement.
@@ -67,6 +69,20 @@ export interface UnitOfWork {
 
   /** Stage a match field update. */
   updateMatch(matchId: string, date: string, patch: Record<string, unknown>): void;
+
+  /**
+   * Stage a PUT into the faction-channel messages table.
+   * Caller is responsible for generating `messageId` and `createdAt` and for
+   * verifying that the author is an active member of the faction.
+   */
+  appendFactionMessage(message: FactionMessage): void;
+
+  /**
+   * Stage a PUT into the faction direct-messages table.
+   * Caller passes a fully-built record (including `threadKey` from
+   * `buildThreadKey(...)`). The UoW does not validate membership.
+   */
+  appendFactionDirectMessage(message: FactionDirectMessage): void;
 
   /**
    * Stage assigning a wrestler to a player's primary or alternate slot.

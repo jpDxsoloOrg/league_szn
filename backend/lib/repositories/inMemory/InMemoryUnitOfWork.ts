@@ -1,4 +1,5 @@
 import type { UnitOfWork, RecordDelta } from '../unitOfWork';
+import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
 
 type StagedOp = () => void;
 
@@ -16,6 +17,8 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       seasonStandings: Array<Record<string, unknown>>;
       matches: Map<string, Record<string, unknown>>;
       wrestlers: Map<string, Record<string, unknown>>;
+      factionMessages: FactionMessage[];
+      factionDirectMessages: FactionDirectMessage[];
     },
   ) {}
 
@@ -195,6 +198,18 @@ export class InMemoryUnitOfWork implements UnitOfWork {
         delete existing.assignedSlot;
         existing.updatedAt = new Date().toISOString();
       }
+    });
+  }
+
+  appendFactionMessage(message: FactionMessage): void {
+    this.staged.push(() => {
+      this.stores.factionMessages.push({ ...message });
+    });
+  }
+
+  appendFactionDirectMessage(message: FactionDirectMessage): void {
+    this.staged.push(() => {
+      this.stores.factionDirectMessages.push({ ...message });
     });
   }
 

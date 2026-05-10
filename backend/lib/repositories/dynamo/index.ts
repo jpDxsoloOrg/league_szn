@@ -5,6 +5,10 @@ import { DynamoSeasonRepository } from './DynamoSeasonRepository';
 import { DynamoLeagueOpsRepository } from './DynamoLeagueOpsRepository';
 import { DynamoContentRepository } from './DynamoContentRepository';
 import { DynamoUserRepository } from './DynamoUserRepository';
+import {
+  DynamoFactionDirectMessagesRepository,
+  DynamoFactionMessagesRepository,
+} from './DynamoFactionMessagesRepository';
 import { createDynamoUnitOfWorkFactory } from './DynamoUnitOfWork';
 import { dynamoClearAllData, dynamoExportAllData, dynamoImportAllData } from './adminOps';
 
@@ -15,6 +19,8 @@ registerDriver('dynamo', (): Repositories => ({
   leagueOps: new DynamoLeagueOpsRepository(),
   content: new DynamoContentRepository(),
   user: new DynamoUserRepository(),
+  factionMessages: new DynamoFactionMessagesRepository(),
+  factionDirectMessages: new DynamoFactionDirectMessagesRepository(),
   runInTransaction: createDynamoUnitOfWorkFactory(),
   clearAllData: dynamoClearAllData,
   exportAllData: dynamoExportAllData,
