@@ -12,6 +12,8 @@ import { handler as disbandStableHandler } from './disbandStable';
 import { handler as reactivateStableHandler } from './reactivateStable';
 import { handler as removeMemberHandler } from './removeMember';
 import { handler as deleteStableHandler } from './deleteStable';
+import { handler as postMessageHandler } from './postMessage';
+import { handler as getMessagesHandler } from './getMessages';
 import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
@@ -91,6 +93,18 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/stables/{stableId}/remove-member',
     method: 'POST',
     handler: removeMemberHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/stables/{stableId}/messages',
+    method: 'GET',
+    handler: getMessagesHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/stables/{stableId}/messages',
+    method: 'POST',
+    handler: postMessageHandler,
     requireAuth: true,
   },
   {

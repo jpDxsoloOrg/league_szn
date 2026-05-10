@@ -904,6 +904,10 @@ functions:
           path: stables/{stableId}/remove-member
           method: post
           cors: *corsConfig
+      - http:
+          path: stables/{stableId}/messages
+          method: any
+          cors: *corsConfig
 
   # Tag Teams (consolidated: list, get, standings, create, update, respond, approve, reject, dissolve, delete)
   tagTeams:
