@@ -7,6 +7,8 @@ import { parseBody } from '../../lib/parseBody';
 interface UpdateTagTeamBody {
   name?: string;
   imageUrl?: string;
+  player1WrestlerName?: string;
+  player2WrestlerName?: string;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -23,7 +25,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { data: body, error: parseError } = parseBody<UpdateTagTeamBody>(event);
     if (parseError) return parseError;
-    const { name, imageUrl } = body;
+    const { name, imageUrl, player1WrestlerName, player2WrestlerName } = body;
 
     const { roster: { tagTeams: tagTeamsRepo, players: playersRepo } } = getRepositories();
 
@@ -51,6 +53,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const updateFields: Record<string, unknown> = {};
     if (name !== undefined) updateFields.name = name;
     if (imageUrl !== undefined) updateFields.imageUrl = imageUrl;
+    // Empty/whitespace input is treated as "leave unchanged" — read-side
+    // falls back to player.currentWrestler when the override is unset.
+    if (player1WrestlerName !== undefined && player1WrestlerName.trim() !== '') {
+      updateFields.player1WrestlerName = player1WrestlerName.trim();
+    }
+    if (player2WrestlerName !== undefined && player2WrestlerName.trim() !== '') {
+      updateFields.player2WrestlerName = player2WrestlerName.trim();
+    }
 
     if (Object.keys(updateFields).length === 0) {
       return badRequest('No fields to update');

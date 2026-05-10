@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -25,6 +25,12 @@ export default function MyTagTeam() {
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [dissolving, setDissolving] = useState(false);
+
+  // Edit-identity form state (TTP-01)
+  const [identityName, setIdentityName] = useState('');
+  const [identityMyWrestler, setIdentityMyWrestler] = useState('');
+  const [identityPartnerWrestler, setIdentityPartnerWrestler] = useState('');
+  const [savingIdentity, setSavingIdentity] = useState(false);
 
   const loadData = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
@@ -82,6 +88,24 @@ export default function MyTagTeam() {
     return () => controller.abort();
   }, [isAuthenticated, loadData]);
 
+  // Seed the edit-identity form whenever the tag team or current player changes.
+  useEffect(() => {
+    if (!tagTeam || !profile) {
+      setIdentityName('');
+      setIdentityMyWrestler('');
+      setIdentityPartnerWrestler('');
+      return;
+    }
+    const isPlayer1 = tagTeam.player1.playerId === profile.playerId;
+    const myOverride = isPlayer1 ? tagTeam.player1WrestlerName : tagTeam.player2WrestlerName;
+    const partnerOverride = isPlayer1 ? tagTeam.player2WrestlerName : tagTeam.player1WrestlerName;
+    const myFallback = isPlayer1 ? tagTeam.player1.wrestlerName : tagTeam.player2.wrestlerName;
+    const partnerFallback = isPlayer1 ? tagTeam.player2.wrestlerName : tagTeam.player1.wrestlerName;
+    setIdentityName(tagTeam.name ?? '');
+    setIdentityMyWrestler(myOverride ?? myFallback ?? '');
+    setIdentityPartnerWrestler(partnerOverride ?? partnerFallback ?? '');
+  }, [tagTeam, profile]);
+
   const handleRespond = useCallback(async (tagTeamId: string, action: 'accept' | 'decline') => {
     try {
       await tagTeamsApi.respond(tagTeamId, action);
@@ -126,6 +150,32 @@ export default function MyTagTeam() {
   const handleCreated = useCallback(() => {
     loadData();
   }, [loadData]);
+
+  const handleSaveIdentity = useCallback(async (event: FormEvent) => {
+    event.preventDefault();
+    if (!tagTeam || !profile) return;
+    const isPlayer1 = tagTeam.player1.playerId === profile.playerId;
+    const myField = isPlayer1 ? 'player1WrestlerName' : 'player2WrestlerName';
+    const partnerField = isPlayer1 ? 'player2WrestlerName' : 'player1WrestlerName';
+
+    setSavingIdentity(true);
+    try {
+      await tagTeamsApi.update(tagTeam.tagTeamId, {
+        name: identityName,
+        [myField]: identityMyWrestler,
+        [partnerField]: identityPartnerWrestler,
+      });
+      setActionFeedback(t('tagTeams.my.identitySaved', 'Tag team identity saved.'));
+      await loadData();
+    } catch (err) {
+      setActionFeedback(
+        `Error: ${err instanceof Error ? err.message : t('common.error', 'Failed')}`
+      );
+    } finally {
+      setSavingIdentity(false);
+      setTimeout(() => setActionFeedback(null), 3000);
+    }
+  }, [tagTeam, profile, identityName, identityMyWrestler, identityPartnerWrestler, t, loadData]);
 
   if (!isAuthenticated) {
     return (
@@ -353,6 +403,54 @@ export default function MyTagTeam() {
                 )}
               </div>
             </div>
+          )}
+
+          {/* Edit team identity (TTP-01) */}
+          {tagTeam.status === 'active' && (
+            <form
+              className="my-tag-team__identity"
+              onSubmit={handleSaveIdentity}
+            >
+              <h4>{t('tagTeams.my.editIdentity', 'Edit Team Identity')}</h4>
+              <div className="my-tag-team__identity-fields">
+                <label className="my-tag-team__identity-field">
+                  <span>{t('tagTeams.my.teamName', 'Tag Team Name')}</span>
+                  <input
+                    type="text"
+                    value={identityName}
+                    onChange={(e) => setIdentityName(e.target.value)}
+                    disabled={savingIdentity}
+                  />
+                </label>
+                <label className="my-tag-team__identity-field">
+                  <span>{t('tagTeams.my.yourWrestler', 'Your wrestler in this team')}</span>
+                  <input
+                    type="text"
+                    value={identityMyWrestler}
+                    onChange={(e) => setIdentityMyWrestler(e.target.value)}
+                    disabled={savingIdentity}
+                  />
+                </label>
+                <label className="my-tag-team__identity-field">
+                  <span>{t('tagTeams.my.partnerWrestler', "Partner's wrestler in this team")}</span>
+                  <input
+                    type="text"
+                    value={identityPartnerWrestler}
+                    onChange={(e) => setIdentityPartnerWrestler(e.target.value)}
+                    disabled={savingIdentity}
+                  />
+                </label>
+              </div>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={savingIdentity}
+              >
+                {savingIdentity
+                  ? t('common.saving', 'Saving...')
+                  : t('tagTeams.my.saveIdentity', 'Save')}
+              </button>
+            </form>
           )}
 
           {/* Actions */}

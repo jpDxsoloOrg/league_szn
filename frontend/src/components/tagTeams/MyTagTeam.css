@@ -420,6 +420,77 @@
   color: #fbbf24;
 }
 
+/* Edit team identity (TTP-01) */
+.my-tag-team__identity {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.my-tag-team__identity h4 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.my-tag-team__identity-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.my-tag-team__identity-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.my-tag-team__identity-field span {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.my-tag-team__identity-field input {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.my-tag-team__identity-field input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.my-tag-team__identity .btn-primary {
+  align-self: flex-start;
+  padding: 0.6rem 1.4rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-primary);
+  color: #000;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.my-tag-team__identity .btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.my-tag-team__identity .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Actions */
 .my-tag-team__actions {
   display: flex;
