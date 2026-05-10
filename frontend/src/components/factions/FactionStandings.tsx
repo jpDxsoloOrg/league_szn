@@ -99,7 +99,7 @@ export default function FactionStandings() {
                   />
                 </td>
                 <td className="faction-standings-name">
-                  <Link to={`/stables/${standing.stableId}`} className="faction-standings-name-link">
+                  <Link to={`/factions/${standing.stableId}`} className="faction-standings-name-link">
                     {standing.name}
                   </Link>
                 </td>

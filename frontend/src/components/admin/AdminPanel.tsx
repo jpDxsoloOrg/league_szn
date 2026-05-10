@@ -32,9 +32,9 @@ import ManageOveralls from './ManageOveralls';
 import ManageTransfers from './ManageTransfers';
 import ManageStorylineRequests from './ManageStorylineRequests';
 
-type AdminTab = 'players' | 'divisions' | 'wrestlers' | 'match-config' | 'schedule' | 'championships' | 'tournaments' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'contender-config' | 'contender-overrides' | 'companies' | 'locations' | 'shows' | 'stables' | 'tag-teams' | 'announcements' | 'videos' | 'overalls' | 'transfers' | 'storyline-requests' | 'danger' | 'users' | 'features';
+type AdminTab = 'players' | 'divisions' | 'wrestlers' | 'match-config' | 'schedule' | 'championships' | 'tournaments' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'contender-config' | 'contender-overrides' | 'companies' | 'locations' | 'shows' | 'factions' | 'tag-teams' | 'announcements' | 'videos' | 'overalls' | 'transfers' | 'storyline-requests' | 'danger' | 'users' | 'features';
 
-const VALID_TABS: AdminTab[] = ['players', 'divisions', 'wrestlers', 'match-config', 'schedule', 'championships', 'tournaments', 'promos', 'seasons', 'season-awards', 'events', 'contender-config', 'contender-overrides', 'companies', 'locations', 'shows', 'stables', 'tag-teams', 'announcements', 'videos', 'overalls', 'transfers', 'storyline-requests', 'danger', 'users', 'features'];
+const VALID_TABS: AdminTab[] = ['players', 'divisions', 'wrestlers', 'match-config', 'schedule', 'championships', 'tournaments', 'promos', 'seasons', 'season-awards', 'events', 'contender-config', 'contender-overrides', 'companies', 'locations', 'shows', 'factions', 'tag-teams', 'announcements', 'videos', 'overalls', 'transfers', 'storyline-requests', 'danger', 'users', 'features'];
 
 
 export default function AdminPanel() {
@@ -89,7 +89,7 @@ export default function AdminPanel() {
     companies: <ManageCompanies />,
     locations: <ManageLocations />,
     shows: <ManageShows />,
-    stables: <ManageFactions />,
+    factions: <ManageFactions />,
     'tag-teams': <ManageTagTeams />,
     announcements: <ManageAnnouncements />,
     videos: <ManageVideos />,

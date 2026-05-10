@@ -285,7 +285,7 @@ export default function MyFaction() {
             )}
             <div className="my-faction__info">
               <h3 className="my-faction__name">
-                <Link to={`/stables/${faction.stableId}`}>{faction.name}</Link>
+                <Link to={`/factions/${faction.stableId}`}>{faction.name}</Link>
               </h3>
               <span className={`my-faction__status my-faction__status--${faction.status}`}>
                 {t(`stables.status.${faction.status}`, faction.status)}

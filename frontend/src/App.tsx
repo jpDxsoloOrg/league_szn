@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
 import { PresenceProvider } from './contexts/PresenceContext';
@@ -72,6 +72,11 @@ import ProfileCompletionModal from './components/ProfileCompletionModal';
 import Highlights from './components/Highlights';
 import AnnouncementModal from './components/AnnouncementModal';
 import './App.css';
+
+function LegacyFactionDetailRedirect() {
+  const { stableId } = useParams<{ stableId: string }>();
+  return <Navigate to={stableId ? `/factions/${stableId}` : '/factions'} replace />;
+}
 
 function App() {
   return (
@@ -232,19 +237,25 @@ function AppLayout() {
             <Route path="/events/:eventId/results" element={<EventResults />} />
 
             {/* Factions Routes - feature-gated */}
-            <Route path="/stables" element={
+            <Route path="/factions" element={
               <FeatureRoute feature="stables"><FactionsList /></FeatureRoute>
             } />
-            <Route path="/stables/:stableId" element={
+            <Route path="/factions/:factionId" element={
               <FeatureRoute feature="stables"><FactionDetail /></FeatureRoute>
             } />
-            <Route path="/my-stable" element={
+            <Route path="/my-faction" element={
               <FeatureRoute feature="stables">
                 <ProtectedRoute requiredRole="Wrestler">
                   <MyFaction />
                 </ProtectedRoute>
               </FeatureRoute>
             } />
+
+            {/* Legacy redirects: stables -> factions */}
+            <Route path="/stables" element={<Navigate to="/factions" replace />} />
+            <Route path="/stables/:stableId" element={<LegacyFactionDetailRedirect />} />
+            <Route path="/my-stable" element={<Navigate to="/my-faction" replace />} />
+            <Route path="/admin/stables" element={<Navigate to="/admin/factions" replace />} />
 
             {/* Tag Teams Routes - feature-gated */}
             <Route path="/tag-teams" element={

@@ -20,7 +20,7 @@ export default function FactionCard({ faction }: FactionCardProps) {
     : '0.0';
 
   return (
-    <Link to={`/stables/${faction.stableId}`} className="faction-card">
+    <Link to={`/factions/${faction.stableId}`} className="faction-card">
       <div className="faction-card__image-wrapper">
         <img
           src={resolveImageSrc(faction.imageUrl, DEFAULT_WRESTLER_IMAGE)}

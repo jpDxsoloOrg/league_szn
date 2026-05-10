@@ -59,7 +59,7 @@ export const USER_NAV_GROUPS: NavGroup[] = [
     key: 'factions',
     i18nKey: 'nav.groups.factions',
     items: [
-      { path: '/stables', i18nKey: 'nav.stables', feature: 'stables' },
+      { path: '/factions', i18nKey: 'nav.factions', feature: 'stables' },
       { path: '/tag-teams', i18nKey: 'nav.tagTeams', feature: 'stables' },
     ],
   },
@@ -70,7 +70,7 @@ export const USER_NAV_GROUPS: NavGroup[] = [
       { path: '/profile', i18nKey: 'nav.profile', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
       { path: '/my-videos', i18nKey: 'nav.myVideos', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
       { path: '/promos', i18nKey: 'nav.promos', feature: 'promos' },
-      { path: '/my-stable', i18nKey: 'nav.myStable', feature: 'stables', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
+      { path: '/my-faction', i18nKey: 'nav.myFaction', feature: 'stables', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
       { path: '/my-tag-team', i18nKey: 'nav.myTagTeam', feature: 'stables', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
     ],
   },
@@ -168,7 +168,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     key: 'adminFactions',
     i18nKey: 'admin.panel.groups.factions',
     items: [
-      { path: '/admin/stables', i18nKey: 'admin.panel.tabs.stables' },
+      { path: '/admin/factions', i18nKey: 'admin.panel.tabs.factions' },
       { path: '/admin/tag-teams', i18nKey: 'admin.panel.tabs.tagTeams' },
     ],
   },
@@ -188,8 +188,8 @@ export function getUserGroupForPath(pathname: string): string | null {
   const league = ['/', '/standings', '/activity'];
   const competition = ['/championships', '/events', '/matches', '/tournaments', '/awards'];
   const rankings = ['/contenders', '/stats', '/highlights'];
-  const factions = ['/stables', '/tag-teams'];
-  const wrestler = ['/profile', '/my-videos', '/promos', '/my-stable', '/my-tag-team'];
+  const factions = ['/factions', '/tag-teams'];
+  const wrestler = ['/profile', '/my-videos', '/promos', '/my-faction', '/my-tag-team'];
 
   if (league.some((p) => pathname === p)) return 'league';
   if (competition.some((p) => pathname === p || pathname.startsWith(p + '/'))) return 'competition';
@@ -206,7 +206,7 @@ export function getAdminGroupForPath(pathname: string): string | null {
   const titlesTournaments = ['/admin/championships', '/admin/tournaments', '/admin/companies', '/admin/locations', '/admin/shows'];
   const adminRankings = ['/admin/contender-config', '/admin/contender-overrides'];
   const content = ['/admin/announcements', '/admin/videos', '/admin/storyline-requests', '/admin/promos'];
-  const adminFactions = ['/admin/stables', '/admin/tag-teams'];
+  const adminFactions = ['/admin/factions', '/admin/tag-teams'];
   const system = ['/admin/users', '/admin/features', '/admin/danger'];
   if (matchDay.some((p) => pathname === p)) return 'matchDay';
   if (rosterSeasons.some((p) => pathname === p)) return 'rosterSeasons';

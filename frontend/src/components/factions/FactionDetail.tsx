@@ -15,7 +15,7 @@ import './FactionDetail.css';
 
 export default function FactionDetail() {
   const { t } = useTranslation();
-  const { stableId } = useParams<{ stableId: string }>();
+  const { factionId } = useParams<{ factionId: string }>();
   const [faction, setFaction] = useState<StableDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,14 +23,14 @@ export default function FactionDetail() {
   useDocumentTitle(faction?.name ?? t('stables.detail', 'Stable Detail'));
 
   useEffect(() => {
-    if (!stableId) return;
+    if (!factionId) return;
     const abortController = new AbortController();
 
     const fetchFaction = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await factionsApi.getById(stableId, abortController.signal);
+        const data = await factionsApi.getById(factionId, abortController.signal);
         if (!abortController.signal.aborted) {
           setFaction(data);
         }
@@ -48,7 +48,7 @@ export default function FactionDetail() {
 
     fetchFaction();
     return () => abortController.abort();
-  }, [stableId]);
+  }, [factionId]);
 
   if (loading) {
     return <Skeleton variant="block" count={4} className="faction-detail-skeleton" />;
@@ -58,7 +58,7 @@ export default function FactionDetail() {
     return (
       <div className="error">
         <p>{t('common.error', 'Error')}: {error}</p>
-        <Link to="/stables" className="btn btn-secondary">
+        <Link to="/factions" className="btn btn-secondary">
           {t('stables.backToList', 'Back to Stables')}
         </Link>
       </div>
@@ -69,7 +69,7 @@ export default function FactionDetail() {
     return (
       <div className="error">
         <p>{t('stables.notFound', 'Stable not found.')}</p>
-        <Link to="/stables" className="btn btn-secondary">
+        <Link to="/factions" className="btn btn-secondary">
           {t('stables.backToList', 'Back to Stables')}
         </Link>
       </div>
@@ -255,7 +255,7 @@ export default function FactionDetail() {
                 {faction.headToHead.map((h2h: StableHeadToHead) => (
                   <tr key={h2h.opponentStableId}>
                     <td className="faction-detail__opponent-name">
-                      <Link to={`/stables/${h2h.opponentStableId}`}>
+                      <Link to={`/factions/${h2h.opponentStableId}`}>
                         {h2h.opponentStableName}
                       </Link>
                     </td>
@@ -303,7 +303,7 @@ export default function FactionDetail() {
       )}
 
       <div className="faction-detail__back">
-        <Link to="/stables" className="btn btn-secondary">
+        <Link to="/factions" className="btn btn-secondary">
           {t('stables.backToList', 'Back to Stables')}
         </Link>
       </div>
