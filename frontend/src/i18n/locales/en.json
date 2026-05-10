@@ -1342,7 +1342,18 @@
     "streak": "Streak",
     "leader": "Leader",
     "status": "Status",
-    "rank": "Rank"
+    "rank": "Rank",
+    "my": {
+      "manageMembers": "Manage Members",
+      "removeMember": "Remove",
+      "removeMemberConfirmTitle": "Remove {{playerName}} from {{factionName}}?",
+      "removeMemberConfirmBody": "They will lose access to faction-only surfaces and stop appearing in the roster.",
+      "removeMemberDisbandWarning": "This will disband the faction — only the leader would remain.",
+      "removeMemberSuccess": "{{playerName}} removed from the faction.",
+      "removeMemberDisbanded": "Faction disbanded — only the leader remained.",
+      "removeMemberCancel": "Cancel",
+      "removeMemberConfirm": "Remove member"
+    }
   },
   "tagTeams": {
     "title": "Tag Teams",

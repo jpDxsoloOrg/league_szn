@@ -1341,7 +1341,18 @@
     "streak": "Serie",
     "leader": "Anführer",
     "status": "Status",
-    "rank": "Rang"
+    "rank": "Rang",
+    "my": {
+      "manageMembers": "Mitglieder verwalten",
+      "removeMember": "Entfernen",
+      "removeMemberConfirmTitle": "{{playerName}} aus {{factionName}} entfernen?",
+      "removeMemberConfirmBody": "Sie verlieren den Zugang zu fraktionsexklusiven Bereichen und erscheinen nicht mehr in der Mitgliederliste.",
+      "removeMemberDisbandWarning": "Die Faktion wird aufgelöst — nur der Anführer würde übrig bleiben.",
+      "removeMemberSuccess": "{{playerName}} wurde aus der Faktion entfernt.",
+      "removeMemberDisbanded": "Faktion aufgelöst — nur der Anführer war übrig.",
+      "removeMemberCancel": "Abbrechen",
+      "removeMemberConfirm": "Mitglied entfernen"
+    }
   },
   "tagTeams": {
     "title": "Tag Teams",

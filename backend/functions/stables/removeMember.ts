@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { success, badRequest, forbidden, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole, isSuperAdmin } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 
@@ -12,7 +12,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const auth = getAuthContext(event);
     if (!hasRole(auth, 'Wrestler')) {
-      return badRequest('Insufficient permissions');
+      return forbidden('Insufficient permissions');
     }
 
     const stableId = event.pathParameters?.stableId;
@@ -42,7 +42,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const isLeader = callerPlayer?.playerId === stable.leaderId;
       const isSelfRemoval = callerPlayer?.playerId === playerId;
       if (!callerPlayer || (!isLeader && !isSelfRemoval)) {
-        return badRequest('Only the stable leader, an admin, or the member themselves can remove a member');
+        return forbidden('Only the stable leader, an admin, or the member themselves can remove a member');
       }
     }
 
@@ -51,9 +51,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('The leader cannot leave the stable. Disband it instead.');
     }
 
-    // Verify player is a member
+    // Idempotent: if the player is already not a member (e.g. a concurrent
+    // remove already completed), report success without mutating anything.
     if (!stable.memberIds.includes(playerId)) {
-      return badRequest('Player is not a member of this stable');
+      return success({
+        message: 'Player is not a member of this stable',
+        stableId,
+        removedPlayerId: playerId,
+        remainingMembers: stable.memberIds.length,
+      });
     }
 
     const updatedMemberIds = stable.memberIds.filter((id) => id !== playerId);
