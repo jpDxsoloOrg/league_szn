@@ -1,4 +1,4 @@
-.stable-detail {
+.faction-detail {
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -6,13 +6,13 @@
 }
 
 /* Header */
-.stable-detail__header {
+.faction-detail__header {
   display: flex;
   gap: 1.5rem;
   align-items: flex-start;
 }
 
-.stable-detail__header-image-wrapper {
+.faction-detail__header-image-wrapper {
   width: 160px;
   height: 160px;
   flex-shrink: 0;
@@ -22,24 +22,24 @@
   background-color: var(--color-bg);
 }
 
-.stable-detail__header-image {
+.faction-detail__header-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.stable-detail__header-info {
+.faction-detail__header-info {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.stable-detail__name {
+.faction-detail__name {
   margin: 0;
   font-size: 1.75rem;
 }
 
-.stable-detail__status {
+.faction-detail__status {
   display: inline-block;
   padding: 0.2em 0.6em;
   border-radius: 4px;
@@ -50,58 +50,58 @@
   width: fit-content;
 }
 
-.stable-detail__status--active {
+.faction-detail__status--active {
   background-color: var(--color-success);
   color: #000;
 }
 
-.stable-detail__status--pending {
+.faction-detail__status--pending {
   background-color: var(--color-warning);
   color: #000;
 }
 
-.stable-detail__status--approved {
+.faction-detail__status--approved {
   background-color: var(--color-info);
   color: #fff;
 }
 
-.stable-detail__status--disbanded {
+.faction-detail__status--disbanded {
   background-color: var(--color-text-muted);
   color: #fff;
 }
 
-.stable-detail__leader {
+.faction-detail__leader {
   color: var(--color-text-secondary);
   font-size: 0.95rem;
 }
 
-.stable-detail__member-summary {
+.faction-detail__member-summary {
   color: var(--color-text-muted);
   font-size: 0.85rem;
 }
 
 /* Sections */
-.stable-detail__section {
+.faction-detail__section {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 1.5rem;
 }
 
-.stable-detail__section h3 {
+.faction-detail__section h3 {
   margin: 0 0 1rem 0;
   color: var(--color-primary);
   font-size: 1.1rem;
 }
 
 /* Stats Grid */
-.stable-detail__stats-grid {
+.faction-detail__stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 1rem;
 }
 
-.stable-detail__stat-card {
+.faction-detail__stat-card {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -112,24 +112,24 @@
   border: 1px solid var(--color-border);
 }
 
-.stable-detail__stat-value {
+.faction-detail__stat-value {
   font-size: 1.5rem;
   font-weight: 700;
 }
 
-.stable-detail__stat-value--wins {
+.faction-detail__stat-value--wins {
   color: var(--color-success);
 }
 
-.stable-detail__stat-value--losses {
+.faction-detail__stat-value--losses {
   color: var(--color-danger-alt);
 }
 
-.stable-detail__stat-value--draws {
+.faction-detail__stat-value--draws {
   color: var(--color-warning);
 }
 
-.stable-detail__stat-label {
+.faction-detail__stat-label {
   font-size: 0.8rem;
   color: var(--color-text-muted);
   text-transform: uppercase;
@@ -137,7 +137,7 @@
 }
 
 /* Form & Streak */
-.stable-detail__form-streak {
+.faction-detail__form-streak {
   display: flex;
   gap: 2rem;
   margin-top: 1rem;
@@ -145,28 +145,28 @@
   flex-wrap: wrap;
 }
 
-.stable-detail__form,
-.stable-detail__streak {
+.faction-detail__form,
+.faction-detail__streak {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.stable-detail__form-label,
-.stable-detail__streak-label {
+.faction-detail__form-label,
+.faction-detail__streak-label {
   color: var(--color-text-secondary);
   font-size: 0.875rem;
   font-weight: 600;
 }
 
 /* Roster Grid */
-.stable-detail__roster-grid {
+.faction-detail__roster-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
 }
 
-.stable-detail__member-card {
+.faction-detail__member-card {
   display: flex;
   gap: 0.75rem;
   align-items: center;
@@ -179,11 +179,11 @@
   transition: border-color 0.2s;
 }
 
-.stable-detail__member-card:hover {
+.faction-detail__member-card:hover {
   border-color: var(--color-primary);
 }
 
-.stable-detail__member-image {
+.faction-detail__member-image {
   width: 48px;
   height: 48px;
   border-radius: 4px;
@@ -192,14 +192,14 @@
   border: 1px solid var(--color-border);
 }
 
-.stable-detail__member-info {
+.faction-detail__member-info {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
   min-width: 0;
 }
 
-.stable-detail__member-player {
+.faction-detail__member-player {
   font-weight: 700;
   font-size: 0.9rem;
   display: flex;
@@ -208,7 +208,7 @@
   flex-wrap: wrap;
 }
 
-.stable-detail__leader-badge {
+.faction-detail__leader-badge {
   font-size: 0.65rem;
   padding: 0.1em 0.4em;
   border-radius: 3px;
@@ -219,7 +219,7 @@
   letter-spacing: 0.05em;
 }
 
-.stable-detail__member-wrestler {
+.faction-detail__member-wrestler {
   font-size: 0.8rem;
   color: var(--color-text-secondary);
   white-space: nowrap;
@@ -227,36 +227,36 @@
   text-overflow: ellipsis;
 }
 
-.stable-detail__member-record {
+.faction-detail__member-record {
   font-size: 0.75rem;
 }
 
-.stable-detail__member-record .wins {
+.faction-detail__member-record .wins {
   color: var(--color-success);
   font-weight: 600;
 }
 
-.stable-detail__member-record .losses {
+.faction-detail__member-record .losses {
   color: var(--color-danger-alt);
   font-weight: 600;
 }
 
-.stable-detail__member-record .draws {
+.faction-detail__member-record .draws {
   color: var(--color-warning);
 }
 
 /* Tables (Match Type Breakdown, Head to Head) */
-.stable-detail__table-wrapper {
+.faction-detail__table-wrapper {
   overflow-x: auto;
 }
 
-.stable-detail__table {
+.faction-detail__table {
   width: 100%;
   min-width: 300px;
   border-collapse: collapse;
 }
 
-.stable-detail__table th {
+.faction-detail__table th {
   text-align: center;
   padding: 0.75rem;
   border-bottom: 2px solid var(--color-border);
@@ -266,54 +266,54 @@
   letter-spacing: 0.05em;
 }
 
-.stable-detail__table td {
+.faction-detail__table td {
   text-align: center;
   padding: 0.6rem 0.75rem;
   border-bottom: 1px solid var(--color-border);
 }
 
-.stable-detail__table tbody tr:hover {
+.faction-detail__table tbody tr:hover {
   background-color: var(--color-surface-hover, rgba(255, 255, 255, 0.03));
 }
 
-.stable-detail__format-name,
-.stable-detail__opponent-name {
+.faction-detail__format-name,
+.faction-detail__opponent-name {
   text-align: left;
   font-weight: 600;
 }
 
-.stable-detail__opponent-name a {
+.faction-detail__opponent-name a {
   color: inherit;
   text-decoration: none;
 }
 
-.stable-detail__opponent-name a:hover {
+.faction-detail__opponent-name a:hover {
   color: var(--color-primary);
   text-decoration: underline;
 }
 
-.stable-detail__table .wins {
+.faction-detail__table .wins {
   color: var(--color-success);
   font-weight: bold;
 }
 
-.stable-detail__table .losses {
+.faction-detail__table .losses {
   color: var(--color-danger-alt);
   font-weight: bold;
 }
 
-.stable-detail__table .draws {
+.faction-detail__table .draws {
   color: var(--color-warning);
 }
 
 /* Recent Matches */
-.stable-detail__recent-matches {
+.faction-detail__recent-matches {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.stable-detail__match-item {
+.faction-detail__match-item {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -323,74 +323,74 @@
   border: 1px solid var(--color-border);
 }
 
-.stable-detail__match-date {
+.faction-detail__match-date {
   font-size: 0.8rem;
   color: var(--color-text-muted);
   min-width: 90px;
 }
 
-.stable-detail__match-format {
+.faction-detail__match-format {
   font-size: 0.85rem;
   color: var(--color-text-secondary);
   flex: 1;
 }
 
-.stable-detail__match-result {
+.faction-detail__match-result {
   font-size: 0.8rem;
   font-weight: 700;
   padding: 0.15em 0.5em;
   border-radius: 3px;
 }
 
-.stable-detail__match-result--win {
+.faction-detail__match-result--win {
   background-color: var(--color-success);
   color: #000;
 }
 
-.stable-detail__match-result--loss {
+.faction-detail__match-result--loss {
   background-color: var(--color-danger-alt);
   color: #fff;
 }
 
 /* Back link */
-.stable-detail__back {
+.faction-detail__back {
   margin-top: 1rem;
 }
 
 @media (max-width: 768px) {
-  .stable-detail__header {
+  .faction-detail__header {
     flex-direction: column;
     align-items: center;
     text-align: center;
   }
 
-  .stable-detail__header-image-wrapper {
+  .faction-detail__header-image-wrapper {
     width: 120px;
     height: 120px;
   }
 
-  .stable-detail__header-info {
+  .faction-detail__header-info {
     align-items: center;
   }
 
-  .stable-detail__stats-grid {
+  .faction-detail__stats-grid {
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   }
 
-  .stable-detail__roster-grid {
+  .faction-detail__roster-grid {
     grid-template-columns: 1fr;
   }
 
-  .stable-detail__section {
+  .faction-detail__section {
     padding: 1rem;
   }
 
-  .stable-detail__match-item {
+  .faction-detail__match-item {
     flex-wrap: wrap;
     gap: 0.5rem;
   }
 
-  .stable-detail__match-date {
+  .faction-detail__match-date {
     min-width: auto;
   }
 }

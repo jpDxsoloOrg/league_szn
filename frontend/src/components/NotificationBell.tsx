@@ -48,7 +48,7 @@ function getNavigationPath(notification: AppNotification, playerId: string | nul
       if (playerId) params.set('playerId', playerId);
       return `/matches?${params.toString()}`;
     }
-    case 'stable': return '/my-stable';
+    case 'stable': return '/my-faction';
     case 'tag_team': return '/my-tag-team';
     case 'match_invitation': return '/';
     case 'match_invitation_declined': return '/';

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { playersApi, standingsApi, divisionsApi, stablesApi, tagTeamsApi } from '../../services/api';
+import { playersApi, standingsApi, divisionsApi, factionsApi, tagTeamsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import {
@@ -77,7 +77,7 @@ export default function PublicProfile() {
           playersApi.getById(playerId, signal),
           standingsApi.get(undefined, signal),
           divisionsApi.getAll(signal),
-          stablesApi.getAll(undefined, signal).catch(() => [] as Stable[]),
+          factionsApi.getAll(undefined, signal).catch(() => [] as Stable[]),
           tagTeamsApi.getAll(undefined, signal).catch(() => [] as TagTeam[]),
         ]);
 

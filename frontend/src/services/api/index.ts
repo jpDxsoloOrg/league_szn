@@ -28,7 +28,7 @@ export { activityApi } from './activity.api';
 export { seasonAwardsApi } from './seasonAwards.api';
 export { companiesApi } from './companies.api';
 export { showsApi } from './shows.api';
-export { stablesApi } from './stables.api';
+export { factionsApi } from './factions.api';
 export { tagTeamsApi } from './tagTeams.api';
 export { wrestlersApi } from './wrestlers.api';
 export { videosApi } from './videos.api';

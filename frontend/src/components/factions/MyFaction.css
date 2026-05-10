@@ -1,36 +1,36 @@
-.my-stable {
+.my-faction {
   width: 100%;
 }
 
-.my-stable__header {
+.my-faction__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
 }
 
-.my-stable__header h2 {
+.my-faction__header h2 {
   margin: 0;
   color: var(--color-text);
 }
 
-.my-stable__loading {
+.my-faction__loading {
   text-align: center;
   padding: 3rem 1rem;
   color: var(--color-text-muted);
 }
 
-.my-stable__error {
+.my-faction__error {
   text-align: center;
   padding: 2rem 1rem;
   color: var(--color-danger-alt);
 }
 
-.my-stable__error p {
+.my-faction__error p {
   margin-bottom: 1rem;
 }
 
-.my-stable__feedback {
+.my-faction__feedback {
   background-color: rgba(74, 222, 128, 0.15);
   color: #4ade80;
   padding: 0.6rem 1rem;
@@ -41,20 +41,20 @@
   font-size: 0.9rem;
 }
 
-.my-stable__empty {
+.my-faction__empty {
   text-align: center;
   padding: 3rem 1rem;
   color: var(--color-text-muted);
 }
 
-/* No stable state */
-.my-stable__no-stable {
+/* No faction state */
+.my-faction__no-faction {
   display: flex;
   flex-direction: column;
   gap: 2rem;
 }
 
-.my-stable__no-stable-info {
+.my-faction__no-faction-info {
   text-align: center;
   padding: 2rem;
   background-color: var(--color-surface);
@@ -62,18 +62,18 @@
   border-radius: 8px;
 }
 
-.my-stable__no-stable-info h3 {
+.my-faction__no-faction-info h3 {
   margin: 0 0 0.5rem;
   color: var(--color-text);
 }
 
-.my-stable__no-stable-info p {
+.my-faction__no-faction-info p {
   color: var(--color-text-secondary);
   margin-bottom: 1.5rem;
   font-size: 0.95rem;
 }
 
-.my-stable__no-stable-info .btn-primary {
+.my-faction__no-faction-info .btn-primary {
   padding: 0.7rem 1.5rem;
   border: none;
   border-radius: 6px;
@@ -85,31 +85,31 @@
   transition: background-color 0.2s;
 }
 
-.my-stable__no-stable-info .btn-primary:hover {
+.my-faction__no-faction-info .btn-primary:hover {
   background: var(--color-primary-hover);
 }
 
 /* Pending invitations */
-.my-stable__invitations {
+.my-faction__invitations {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 1.5rem;
 }
 
-.my-stable__invitations h3 {
+.my-faction__invitations h3 {
   margin: 0 0 1rem;
   color: var(--color-text);
   font-size: 1.1rem;
 }
 
-.my-stable__invitations-list {
+.my-faction__invitations-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.my-stable__invitation-item {
+.my-faction__invitation-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -121,36 +121,36 @@
   gap: 0.75rem;
 }
 
-.my-stable__invitation-info {
+.my-faction__invitation-info {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-.my-stable__invitation-stable {
+.my-faction__invitation-faction {
   font-weight: 600;
   color: var(--color-text);
   font-size: 1rem;
 }
 
-.my-stable__invitation-from {
+.my-faction__invitation-from {
   font-size: 0.85rem;
   color: var(--color-text-secondary);
 }
 
-.my-stable__invitation-message {
+.my-faction__invitation-message {
   font-size: 0.85rem;
   color: var(--color-text-muted);
   font-style: italic;
   margin-top: 0.25rem;
 }
 
-.my-stable__invitation-actions {
+.my-faction__invitation-actions {
   display: flex;
   gap: 0.5rem;
 }
 
-.my-stable__invitation-actions .btn-sm-accept {
+.my-faction__invitation-actions .btn-sm-accept {
   padding: 0.4rem 0.9rem;
   border-radius: 4px;
   font-size: 0.85rem;
@@ -162,11 +162,11 @@
   transition: background-color 0.2s;
 }
 
-.my-stable__invitation-actions .btn-sm-accept:hover {
+.my-faction__invitation-actions .btn-sm-accept:hover {
   background-color: #22c55e;
 }
 
-.my-stable__invitation-actions .btn-sm-decline {
+.my-faction__invitation-actions .btn-sm-decline {
   padding: 0.4rem 0.9rem;
   border-radius: 4px;
   font-size: 0.85rem;
@@ -178,18 +178,18 @@
   transition: background-color 0.2s;
 }
 
-.my-stable__invitation-actions .btn-sm-decline:hover {
+.my-faction__invitation-actions .btn-sm-decline:hover {
   background-color: #ef4444;
 }
 
-/* Stable detail view */
-.my-stable__detail {
+/* Faction detail view */
+.my-faction__detail {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-.my-stable__info-card {
+.my-faction__info-card {
   display: flex;
   gap: 1.5rem;
   background-color: var(--color-surface);
@@ -199,7 +199,7 @@
   align-items: flex-start;
 }
 
-.my-stable__image-wrapper {
+.my-faction__image-wrapper {
   width: 120px;
   height: 80px;
   border-radius: 6px;
@@ -208,34 +208,34 @@
   background-color: var(--color-bg);
 }
 
-.my-stable__image {
+.my-faction__image {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.my-stable__info {
+.my-faction__info {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.my-stable__name {
+.my-faction__name {
   margin: 0;
   font-size: 1.3rem;
 }
 
-.my-stable__name a {
+.my-faction__name a {
   color: var(--color-text);
   text-decoration: none;
   transition: color 0.2s;
 }
 
-.my-stable__name a:hover {
+.my-faction__name a:hover {
   color: var(--color-primary);
 }
 
-.my-stable__status {
+.my-faction__status {
   font-size: 0.8rem;
   font-weight: 600;
   padding: 0.2rem 0.6rem;
@@ -245,69 +245,69 @@
   text-transform: capitalize;
 }
 
-.my-stable__status--pending {
+.my-faction__status--pending {
   background-color: rgba(251, 191, 36, 0.15);
   color: #fbbf24;
 }
 
-.my-stable__status--approved {
+.my-faction__status--approved {
   background-color: rgba(96, 165, 250, 0.15);
   color: #60a5fa;
 }
 
-.my-stable__status--active {
+.my-faction__status--active {
   background-color: rgba(74, 222, 128, 0.15);
   color: #4ade80;
 }
 
-.my-stable__status--disbanded {
+.my-faction__status--disbanded {
   background-color: rgba(156, 163, 175, 0.15);
   color: #9ca3af;
 }
 
-.my-stable__stats {
+.my-faction__stats {
   display: flex;
   gap: 0.75rem;
 }
 
-.my-stable__stat {
+.my-faction__stat {
   font-size: 0.9rem;
   font-weight: 600;
 }
 
-.my-stable__stat--wins {
+.my-faction__stat--wins {
   color: var(--color-success);
 }
 
-.my-stable__stat--losses {
+.my-faction__stat--losses {
   color: var(--color-danger-alt);
 }
 
-.my-stable__stat--draws {
+.my-faction__stat--draws {
   color: var(--color-warning);
 }
 
 /* Members */
-.my-stable__members {
+.my-faction__members {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 1.5rem;
 }
 
-.my-stable__members h4 {
+.my-faction__members h4 {
   margin: 0 0 1rem;
   color: var(--color-text);
   font-size: 1rem;
 }
 
-.my-stable__members-list {
+.my-faction__members-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.my-stable__member-item {
+.my-faction__member-item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -316,11 +316,11 @@
   transition: background-color 0.2s;
 }
 
-.my-stable__member-item:hover {
+.my-faction__member-item:hover {
   background-color: var(--color-bg);
 }
 
-.my-stable__member-avatar {
+.my-faction__member-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -329,30 +329,30 @@
   background-color: var(--color-bg);
 }
 
-.my-stable__member-avatar img {
+.my-faction__member-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.my-stable__member-info {
+.my-faction__member-info {
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 
-.my-stable__member-wrestler {
+.my-faction__member-wrestler {
   font-weight: 600;
   font-size: 0.95rem;
   color: var(--color-text);
 }
 
-.my-stable__member-player {
+.my-faction__member-player {
   font-size: 0.8rem;
   color: var(--color-text-muted);
 }
 
-.my-stable__member-leader-badge {
+.my-faction__member-leader-badge {
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.15rem 0.5rem;
@@ -362,13 +362,13 @@
 }
 
 /* Leader actions */
-.my-stable__leader-actions {
+.my-faction__leader-actions {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
 }
 
-.my-stable__leader-actions .btn-primary {
+.my-faction__leader-actions .btn-primary {
   padding: 0.65rem 1.2rem;
   border: none;
   border-radius: 6px;
@@ -380,11 +380,11 @@
   transition: background-color 0.2s;
 }
 
-.my-stable__leader-actions .btn-primary:hover {
+.my-faction__leader-actions .btn-primary:hover {
   background: var(--color-primary-hover);
 }
 
-.my-stable__leader-actions .btn-danger {
+.my-faction__leader-actions .btn-danger {
   padding: 0.65rem 1.2rem;
   border: none;
   border-radius: 6px;
@@ -397,36 +397,36 @@
   transition: all 0.2s;
 }
 
-.my-stable__leader-actions .btn-danger:hover:not(:disabled) {
+.my-faction__leader-actions .btn-danger:hover:not(:disabled) {
   background: rgba(220, 53, 69, 0.25);
 }
 
-.my-stable__leader-actions .btn-danger:disabled {
+.my-faction__leader-actions .btn-danger:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
 /* Sent invitations */
-.my-stable__sent-invitations {
+.my-faction__sent-invitations {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 1.5rem;
 }
 
-.my-stable__sent-invitations h4 {
+.my-faction__sent-invitations h4 {
   margin: 0 0 1rem;
   color: var(--color-text);
   font-size: 1rem;
 }
 
-.my-stable__sent-invitations-list {
+.my-faction__sent-invitations-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.my-stable__sent-invitation-item {
+.my-faction__sent-invitation-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -435,47 +435,47 @@
   border-radius: 6px;
 }
 
-.my-stable__sent-invitation-player {
+.my-faction__sent-invitation-player {
   font-size: 0.9rem;
   color: var(--color-text);
   font-weight: 500;
 }
 
-.my-stable__sent-invitation-status {
+.my-faction__sent-invitation-status {
   font-size: 0.8rem;
   color: #fbbf24;
   font-weight: 500;
 }
 
 @media (max-width: 768px) {
-  .my-stable__info-card {
+  .my-faction__info-card {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .my-stable__image-wrapper {
+  .my-faction__image-wrapper {
     width: 100%;
     height: 160px;
   }
 
-  .my-stable__invitation-item {
+  .my-faction__invitation-item {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .my-stable__invitation-actions {
+  .my-faction__invitation-actions {
     width: 100%;
   }
 
-  .my-stable__invitation-actions button {
+  .my-faction__invitation-actions button {
     flex: 1;
   }
 
-  .my-stable__leader-actions {
+  .my-faction__leader-actions {
     flex-direction: column;
   }
 
-  .my-stable__leader-actions button {
+  .my-faction__leader-actions button {
     width: 100%;
   }
 }

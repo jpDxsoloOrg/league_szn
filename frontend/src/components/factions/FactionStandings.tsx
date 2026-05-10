@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { stablesApi } from '../../services/api';
+import { factionsApi } from '../../services/api';
 import { logger } from '../../utils/logger';
 import type { StableStanding } from '../../types/stable';
 import {
@@ -11,9 +11,9 @@ import {
 } from '../../constants/imageFallbacks';
 import Skeleton from '../ui/Skeleton';
 import EmptyState from '../ui/EmptyState';
-import './StableStandings.css';
+import './FactionStandings.css';
 
-export default function StableStandings() {
+export default function FactionStandings() {
   const { t } = useTranslation();
   const [standings, setStandings] = useState<StableStanding[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,14 +26,14 @@ export default function StableStandings() {
       try {
         setLoading(true);
         setError(null);
-        const data = await stablesApi.getStandings(abortController.signal);
+        const data = await factionsApi.getStandings(abortController.signal);
         if (!abortController.signal.aborted) {
           setStandings(data);
         }
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
-          logger.error('Failed to load stable standings');
-          setError(err.message || 'Failed to load stable standings');
+          logger.error('Failed to load faction standings');
+          setError(err.message || 'Failed to load faction standings');
         }
       } finally {
         if (!abortController.signal.aborted) {
@@ -47,7 +47,7 @@ export default function StableStandings() {
   }, []);
 
   if (loading) {
-    return <Skeleton variant="table" count={6} className="stable-standings-skeleton" />;
+    return <Skeleton variant="table" count={6} className="faction-standings-skeleton" />;
   }
 
   if (error) {
@@ -62,22 +62,22 @@ export default function StableStandings() {
   if (standings.length === 0) {
     return (
       <EmptyState
-        title={t('stables.standings', 'Stable Standings')}
-        description={t('stables.noStandings', 'No stable standings data yet.')}
+        title={t('factions.standings', 'Faction Standings')}
+        description={t('factions.noStandings', 'No faction standings data yet.')}
       />
     );
   }
 
   return (
-    <div className="stable-standings-container">
-      <div className="stable-standings-table-wrapper">
-        <table className="stable-standings-table">
+    <div className="faction-standings-container">
+      <div className="faction-standings-table-wrapper">
+        <table className="faction-standings-table">
           <thead>
             <tr>
               <th>{t('standings.table.rank', 'Rank')}</th>
-              <th className="stable-standings-image-header">&nbsp;</th>
-              <th>{t('stables.name', 'Name')}</th>
-              <th>{t('stables.members', 'Members')}</th>
+              <th className="faction-standings-image-header">&nbsp;</th>
+              <th>{t('factions.name', 'Name')}</th>
+              <th>{t('factions.members', 'Members')}</th>
               <th>{t('standings.table.wins', 'W')}</th>
               <th>{t('standings.table.losses', 'L')}</th>
               <th>{t('standings.table.draws', 'D')}</th>
@@ -90,20 +90,20 @@ export default function StableStandings() {
             {standings.map((standing, index) => (
               <tr key={standing.stableId}>
                 <td className="rank">{index + 1}</td>
-                <td className="stable-standings-image-cell">
+                <td className="faction-standings-image-cell">
                   <img
                     src={resolveImageSrc(standing.imageUrl, DEFAULT_WRESTLER_IMAGE)}
                     onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
                     alt={standing.name}
-                    className="stable-standings-thumbnail"
+                    className="faction-standings-thumbnail"
                   />
                 </td>
-                <td className="stable-standings-name">
-                  <Link to={`/stables/${standing.stableId}`} className="stable-standings-name-link">
+                <td className="faction-standings-name">
+                  <Link to={`/factions/${standing.stableId}`} className="faction-standings-name-link">
                     {standing.name}
                   </Link>
                 </td>
-                <td className="stable-standings-member-count">{standing.memberCount}</td>
+                <td className="faction-standings-member-count">{standing.memberCount}</td>
                 <td className="wins">{standing.wins}</td>
                 <td className="losses">{standing.losses}</td>
                 <td className="draws">{standing.draws}</td>

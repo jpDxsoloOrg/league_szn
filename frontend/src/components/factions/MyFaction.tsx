@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { profileApi, stablesApi } from '../../services/api';
+import { profileApi, factionsApi } from '../../services/api';
 import type { Player } from '../../types';
 import type { StableDetailResponse, StableInvitationWithDetails } from '../../types/stable';
 import {
@@ -10,15 +10,15 @@ import {
   resolveImageSrc,
   applyImageFallback,
 } from '../../constants/imageFallbacks';
-import CreateStableModal from './CreateStableModal';
-import InviteToStableModal from './InviteToStableModal';
-import './MyStable.css';
+import CreateFactionModal from './CreateFactionModal';
+import InviteToFactionModal from './InviteToFactionModal';
+import './MyFaction.css';
 
-export default function MyStable() {
+export default function MyFaction() {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [profile, setProfile] = useState<Player | null>(null);
-  const [stable, setStable] = useState<StableDetailResponse | null>(null);
+  const [faction, setFaction] = useState<StableDetailResponse | null>(null);
   const [pendingInvitations, setPendingInvitations] = useState<StableInvitationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,33 +36,33 @@ export default function MyStable() {
       const myProfile = await profileApi.getMyProfile(signal);
       setProfile(myProfile);
 
-      // If user has a stable, fetch stable details and invitations
+      // If user has a faction, fetch faction details and invitations
       if (myProfile.stableId) {
-        const [stableDetail, invitations] = await Promise.all([
-          stablesApi.getById(myProfile.stableId, signal),
-          stablesApi.getInvitations(myProfile.stableId, signal).catch(() => [] as StableInvitationWithDetails[]),
+        const [factionDetail, invitations] = await Promise.all([
+          factionsApi.getById(myProfile.stableId, signal),
+          factionsApi.getInvitations(myProfile.stableId, signal).catch(() => [] as StableInvitationWithDetails[]),
         ]);
-        setStable(stableDetail);
+        setFaction(factionDetail);
         setPendingInvitations(invitations.filter((inv) => inv.status === 'pending'));
       } else {
-        setStable(null);
+        setFaction(null);
         setPendingInvitations([]);
 
-        // Check all stables for pending invitations sent to this player
-        // Since there's no direct "my invitations" endpoint, we look through all stables
+        // Check all factions for pending invitations sent to this player
+        // Since there's no direct "my invitations" endpoint, we look through all factions
         // This is a best-effort approach; a dedicated endpoint would be more efficient
         try {
-          const allStables = await stablesApi.getAll(undefined, signal);
+          const allStables = await factionsApi.getAll(undefined, signal);
           const myInvitations: StableInvitationWithDetails[] = [];
           for (const s of allStables) {
             try {
-              const invs = await stablesApi.getInvitations(s.stableId, signal);
+              const invs = await factionsApi.getInvitations(s.stableId, signal);
               const pending = invs.filter(
                 (inv) => inv.invitedPlayerId === myProfile.playerId && inv.status === 'pending'
               );
               myInvitations.push(...pending);
             } catch {
-              // Skip stables we can't access invitations for
+              // Skip factions we can't access invitations for
             }
           }
           setPendingInvitations(myInvitations);
@@ -88,17 +88,17 @@ export default function MyStable() {
   }, [isAuthenticated, loadData]);
 
   const handleDisband = useCallback(async () => {
-    if (!stable) return;
+    if (!faction) return;
     const confirmed = window.confirm(
-      t('stables.my.disbandConfirm', 'Are you sure you want to disband this stable? This cannot be undone.')
+      t('factions.my.disbandConfirm', 'Are you sure you want to disband this faction? This cannot be undone.')
     );
     if (!confirmed) return;
 
     setDisbanding(true);
     try {
-      await stablesApi.disband(stable.stableId);
-      setActionFeedback(t('stables.my.disbanded', 'Stable has been disbanded.'));
-      setStable(null);
+      await factionsApi.disband(faction.stableId);
+      setActionFeedback(t('factions.my.disbanded', 'Faction has been disbanded.'));
+      setFaction(null);
       // Refresh profile
       const updatedProfile = await profileApi.getMyProfile();
       setProfile(updatedProfile);
@@ -110,20 +110,20 @@ export default function MyStable() {
       setDisbanding(false);
       setTimeout(() => setActionFeedback(null), 3000);
     }
-  }, [stable, t]);
+  }, [faction, t]);
 
   const handleLeave = useCallback(async () => {
-    if (!stable || !profile) return;
+    if (!faction || !profile) return;
     const confirmed = window.confirm(
-      t('stables.my.leaveConfirm', 'Are you sure you want to leave this stable?')
+      t('factions.my.leaveConfirm', 'Are you sure you want to leave this faction?')
     );
     if (!confirmed) return;
 
     setLeaving(true);
     try {
-      await stablesApi.leave(stable.stableId, profile.playerId);
-      setActionFeedback(t('stables.my.left', 'You have left the stable.'));
-      setStable(null);
+      await factionsApi.leave(faction.stableId, profile.playerId);
+      setActionFeedback(t('factions.my.left', 'You have left the faction.'));
+      setFaction(null);
       const updatedProfile = await profileApi.getMyProfile();
       setProfile(updatedProfile);
     } catch (err) {
@@ -134,7 +134,7 @@ export default function MyStable() {
       setLeaving(false);
       setTimeout(() => setActionFeedback(null), 3000);
     }
-  }, [stable, profile, t]);
+  }, [faction, profile, t]);
 
   const handleRespondToInvitation = useCallback(async (
     stableId: string,
@@ -142,11 +142,11 @@ export default function MyStable() {
     action: 'accept' | 'decline'
   ) => {
     try {
-      await stablesApi.respondToInvitation(stableId, invitationId, action);
+      await factionsApi.respondToInvitation(stableId, invitationId, action);
       setActionFeedback(
         action === 'accept'
-          ? t('stables.my.invitationAccepted', 'Invitation accepted! You have joined the stable.')
-          : t('stables.my.invitationDeclined', 'Invitation declined.')
+          ? t('factions.my.invitationAccepted', 'Invitation accepted! You have joined the faction.')
+          : t('factions.my.invitationDeclined', 'Invitation declined.')
       );
       // Refresh data
       await loadData();
@@ -163,18 +163,18 @@ export default function MyStable() {
   }, [loadData]);
 
   const handleInvited = useCallback(() => {
-    if (stable) {
-      stablesApi.getInvitations(stable.stableId)
+    if (faction) {
+      factionsApi.getInvitations(faction.stableId)
         .then((invs) => setPendingInvitations(invs.filter((inv) => inv.status === 'pending')))
         .catch(() => { /* ignore */ });
     }
-  }, [stable]);
+  }, [faction]);
 
   if (!isAuthenticated) {
     return (
-      <div className="my-stable">
-        <div className="my-stable__empty">
-          <p>{t('stables.my.loginRequired', 'Please log in to manage your stable.')}</p>
+      <div className="my-faction">
+        <div className="my-faction__empty">
+          <p>{t('factions.my.loginRequired', 'Please log in to manage your faction.')}</p>
         </div>
       </div>
     );
@@ -182,16 +182,16 @@ export default function MyStable() {
 
   if (loading) {
     return (
-      <div className="my-stable">
-        <div className="my-stable__loading">{t('common.loading', 'Loading...')}</div>
+      <div className="my-faction">
+        <div className="my-faction__loading">{t('common.loading', 'Loading...')}</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="my-stable">
-        <div className="my-stable__error">
+      <div className="my-faction">
+        <div className="my-faction__error">
           <p>{error}</p>
           <button onClick={() => loadData()} className="btn-primary">
             {t('common.retry', 'Retry')}
@@ -201,55 +201,55 @@ export default function MyStable() {
     );
   }
 
-  const isLeader = stable && profile && stable.leaderId === profile.playerId;
-  const isApprovedOrActive = stable && (stable.status === 'approved' || stable.status === 'active');
+  const isLeader = faction && profile && faction.leaderId === profile.playerId;
+  const isApprovedOrActive = faction && (faction.status === 'approved' || faction.status === 'active');
 
   return (
-    <div className="my-stable">
-      <div className="my-stable__header">
-        <h2>{t('stables.my.title', 'My Stable')}</h2>
+    <div className="my-faction">
+      <div className="my-faction__header">
+        <h2>{t('factions.my.title', 'My Faction')}</h2>
       </div>
 
       {actionFeedback && (
-        <div className="my-stable__feedback">{actionFeedback}</div>
+        <div className="my-faction__feedback">{actionFeedback}</div>
       )}
 
-      {!stable && !profile?.stableId ? (
-        /* No stable - show create button and pending invitations */
-        <div className="my-stable__no-stable">
-          <div className="my-stable__no-stable-info">
-            <h3>{t('stables.my.noStable', 'You are not in a stable')}</h3>
-            <p>{t('stables.my.noStableDesc', 'Create your own stable or wait for an invitation from a stable leader.')}</p>
+      {!faction && !profile?.stableId ? (
+        /* No faction - show create button and pending invitations */
+        <div className="my-faction__no-faction">
+          <div className="my-faction__no-faction-info">
+            <h3>{t('factions.my.noStable', 'You are not in a faction')}</h3>
+            <p>{t('factions.my.noStableDesc', 'Create your own faction or wait for an invitation from a faction leader.')}</p>
             <button
               className="btn-primary"
               onClick={() => setShowCreateModal(true)}
             >
-              {t('stables.my.createStable', 'Create a Stable')}
+              {t('factions.my.createStable', 'Create a Faction')}
             </button>
           </div>
 
           {pendingInvitations.length > 0 && (
-            <div className="my-stable__invitations">
-              <h3>{t('stables.my.pendingInvitations', 'Pending Invitations')}</h3>
-              <div className="my-stable__invitations-list">
+            <div className="my-faction__invitations">
+              <h3>{t('factions.my.pendingInvitations', 'Pending Invitations')}</h3>
+              <div className="my-faction__invitations-list">
                 {pendingInvitations.map((inv) => (
-                  <div key={inv.invitationId} className="my-stable__invitation-item">
-                    <div className="my-stable__invitation-info">
-                      <span className="my-stable__invitation-stable">
+                  <div key={inv.invitationId} className="my-faction__invitation-item">
+                    <div className="my-faction__invitation-info">
+                      <span className="my-faction__invitation-faction">
                         {inv.stableName}
                       </span>
                       {inv.invitedByPlayerName && (
-                        <span className="my-stable__invitation-from">
-                          {t('stables.my.invitedBy', 'Invited by {{name}}', { name: inv.invitedByPlayerName })}
+                        <span className="my-faction__invitation-from">
+                          {t('factions.my.invitedBy', 'Invited by {{name}}', { name: inv.invitedByPlayerName })}
                         </span>
                       )}
                       {inv.message && (
-                        <span className="my-stable__invitation-message">
+                        <span className="my-faction__invitation-message">
                           &ldquo;{inv.message}&rdquo;
                         </span>
                       )}
                     </div>
-                    <div className="my-stable__invitation-actions">
+                    <div className="my-faction__invitation-actions">
                       <button
                         className="btn-sm-accept"
                         onClick={() => handleRespondToInvitation(inv.stableId, inv.invitationId, 'accept')}
@@ -269,68 +269,68 @@ export default function MyStable() {
             </div>
           )}
         </div>
-      ) : stable ? (
-        /* Has a stable - show details */
-        <div className="my-stable__detail">
-          <div className="my-stable__info-card">
-            {stable.imageUrl && (
-              <div className="my-stable__image-wrapper">
+      ) : faction ? (
+        /* Has a faction - show details */
+        <div className="my-faction__detail">
+          <div className="my-faction__info-card">
+            {faction.imageUrl && (
+              <div className="my-faction__image-wrapper">
                 <img
-                  src={resolveImageSrc(stable.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+                  src={resolveImageSrc(faction.imageUrl, DEFAULT_WRESTLER_IMAGE)}
                   onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-                  alt={stable.name}
-                  className="my-stable__image"
+                  alt={faction.name}
+                  className="my-faction__image"
                 />
               </div>
             )}
-            <div className="my-stable__info">
-              <h3 className="my-stable__name">
-                <Link to={`/stables/${stable.stableId}`}>{stable.name}</Link>
+            <div className="my-faction__info">
+              <h3 className="my-faction__name">
+                <Link to={`/factions/${faction.stableId}`}>{faction.name}</Link>
               </h3>
-              <span className={`my-stable__status my-stable__status--${stable.status}`}>
-                {t(`stables.status.${stable.status}`, stable.status)}
+              <span className={`my-faction__status my-faction__status--${faction.status}`}>
+                {t(`factions.status.${faction.status}`, faction.status)}
               </span>
-              <div className="my-stable__stats">
-                <span className="my-stable__stat my-stable__stat--wins">
-                  {stable.wins}{t('stables.wAbbrev', 'W')}
+              <div className="my-faction__stats">
+                <span className="my-faction__stat my-faction__stat--wins">
+                  {faction.wins}{t('factions.wAbbrev', 'W')}
                 </span>
-                <span className="my-stable__stat my-stable__stat--losses">
-                  {stable.losses}{t('stables.lAbbrev', 'L')}
+                <span className="my-faction__stat my-faction__stat--losses">
+                  {faction.losses}{t('factions.lAbbrev', 'L')}
                 </span>
-                <span className="my-stable__stat my-stable__stat--draws">
-                  {stable.draws}{t('stables.dAbbrev', 'D')}
+                <span className="my-faction__stat my-faction__stat--draws">
+                  {faction.draws}{t('factions.dAbbrev', 'D')}
                 </span>
               </div>
             </div>
           </div>
 
           {/* Members list */}
-          <div className="my-stable__members">
-            <h4>{t('stables.my.members', 'Members')}</h4>
-            <div className="my-stable__members-list">
-              {stable.members.map((member) => (
-                <div key={member.playerId} className="my-stable__member-item">
-                  <div className="my-stable__member-avatar">
+          <div className="my-faction__members">
+            <h4>{t('factions.my.members', 'Members')}</h4>
+            <div className="my-faction__members-list">
+              {faction.members.map((member) => (
+                <div key={member.playerId} className="my-faction__member-item">
+                  <div className="my-faction__member-avatar">
                     <img
                       src={resolveImageSrc(member.imageUrl, DEFAULT_WRESTLER_IMAGE)}
                       onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
                       alt={member.wrestlerName}
                     />
                   </div>
-                  <div className="my-stable__member-info">
-                    <span className="my-stable__member-wrestler">
+                  <div className="my-faction__member-info">
+                    <span className="my-faction__member-wrestler">
                       {member.wrestlerName}
                     </span>
-                    <span className="my-stable__member-player">
+                    <span className="my-faction__member-player">
                       {member.playerName}
                     </span>
                     {member.psnId && (
-                      <span className="my-stable__member-psn">PSN: {member.psnId}</span>
+                      <span className="my-faction__member-psn">PSN: {member.psnId}</span>
                     )}
                   </div>
-                  {member.playerId === stable.leaderId && (
-                    <span className="my-stable__member-leader-badge">
-                      {t('stables.my.leader', 'Leader')}
+                  {member.playerId === faction.leaderId && (
+                    <span className="my-faction__member-leader-badge">
+                      {t('factions.my.leader', 'Leader')}
                     </span>
                   )}
                 </div>
@@ -340,13 +340,13 @@ export default function MyStable() {
 
           {/* Leader actions */}
           {isLeader && (
-            <div className="my-stable__leader-actions">
+            <div className="my-faction__leader-actions">
               {isApprovedOrActive && (
                 <button
                   className="btn-primary"
                   onClick={() => setShowInviteModal(true)}
                 >
-                  {t('stables.my.invitePlayer', 'Invite Player')}
+                  {t('factions.my.invitePlayer', 'Invite Player')}
                 </button>
               )}
               <button
@@ -356,14 +356,14 @@ export default function MyStable() {
               >
                 {disbanding
                   ? t('common.processing', 'Processing...')
-                  : t('stables.my.disband', 'Disband Stable')}
+                  : t('factions.my.disband', 'Disband Faction')}
               </button>
             </div>
           )}
 
           {/* Member actions (non-leader) */}
           {!isLeader && isApprovedOrActive && (
-            <div className="my-stable__member-actions">
+            <div className="my-faction__member-actions">
               <button
                 className="btn-danger"
                 onClick={handleLeave}
@@ -371,23 +371,23 @@ export default function MyStable() {
               >
                 {leaving
                   ? t('common.processing', 'Processing...')
-                  : t('stables.my.leave', 'Leave Stable')}
+                  : t('factions.my.leave', 'Leave Faction')}
               </button>
             </div>
           )}
 
           {/* Pending invitations sent by leader */}
           {isLeader && pendingInvitations.length > 0 && (
-            <div className="my-stable__sent-invitations">
-              <h4>{t('stables.my.sentInvitations', 'Pending Invitations')}</h4>
-              <div className="my-stable__sent-invitations-list">
+            <div className="my-faction__sent-invitations">
+              <h4>{t('factions.my.sentInvitations', 'Pending Invitations')}</h4>
+              <div className="my-faction__sent-invitations-list">
                 {pendingInvitations.map((inv) => (
-                  <div key={inv.invitationId} className="my-stable__sent-invitation-item">
-                    <span className="my-stable__sent-invitation-player">
+                  <div key={inv.invitationId} className="my-faction__sent-invitation-item">
+                    <span className="my-faction__sent-invitation-player">
                       {inv.invitedPlayerName || inv.invitedPlayerId}
                     </span>
-                    <span className="my-stable__sent-invitation-status">
-                      {t('stables.invitationStatus.pending', 'Pending')}
+                    <span className="my-faction__sent-invitation-status">
+                      {t('factions.invitationStatus.pending', 'Pending')}
                     </span>
                   </div>
                 ))}
@@ -397,17 +397,17 @@ export default function MyStable() {
         </div>
       ) : null}
 
-      <CreateStableModal
+      <CreateFactionModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCreated={handleCreated}
       />
 
-      {stable && (
-        <InviteToStableModal
+      {faction && (
+        <InviteToFactionModal
           isOpen={showInviteModal}
-          stableId={stable.stableId}
-          currentMemberIds={stable.memberIds}
+          stableId={faction.stableId}
+          currentMemberIds={faction.memberIds}
           onClose={() => setShowInviteModal(false)}
           onInvited={handleInvited}
         />

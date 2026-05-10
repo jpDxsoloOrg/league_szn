@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { stablesApi } from '../../services/api';
-import './CreateStableModal.css';
+import { factionsApi } from '../../services/api';
+import './CreateFactionModal.css';
 
 interface Props {
   isOpen: boolean;
@@ -9,7 +9,7 @@ interface Props {
   onCreated: () => void;
 }
 
-export default function CreateStableModal({ isOpen, onClose, onCreated }: Props) {
+export default function CreateFactionModal({ isOpen, onClose, onCreated }: Props) {
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -25,13 +25,13 @@ export default function CreateStableModal({ isOpen, onClose, onCreated }: Props)
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setError(t('stables.create.nameRequired', 'Stable name is required'));
+      setError(t('factions.create.nameRequired', 'Faction name is required'));
       return;
     }
 
     setSubmitting(true);
     try {
-      await stablesApi.create({
+      await factionsApi.create({
         name: trimmedName,
         ...(imageUrl.trim() ? { imageUrl: imageUrl.trim() } : {}),
       });
@@ -55,12 +55,12 @@ export default function CreateStableModal({ isOpen, onClose, onCreated }: Props)
   };
 
   return (
-    <div className="create-stable-modal-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true">
-      <div className="create-stable-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="create-stable-modal__header">
-          <h2>{t('stables.create.title', 'Create a Stable')}</h2>
+    <div className="create-faction-modal-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true">
+      <div className="create-faction-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="create-faction-modal__header">
+          <h2>{t('factions.create.title', 'Create a Faction')}</h2>
           <button
-            className="create-stable-modal__close"
+            className="create-faction-modal__close"
             onClick={onClose}
             disabled={submitting}
             aria-label={t('common.close', 'Close')}
@@ -70,19 +70,19 @@ export default function CreateStableModal({ isOpen, onClose, onCreated }: Props)
         </div>
 
         {success ? (
-          <div className="create-stable-modal__success">
-            <p>{t('stables.create.success', 'Stable request submitted! Awaiting admin approval.')}</p>
+          <div className="create-faction-modal__success">
+            <p>{t('factions.create.success', 'Faction request submitted! Awaiting admin approval.')}</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="create-stable-modal__form">
+          <form onSubmit={handleSubmit} className="create-faction-modal__form">
             <div className="form-group">
-              <label htmlFor="stable-name">{t('stables.create.nameLabel', 'Stable Name')}</label>
+              <label htmlFor="faction-name">{t('factions.create.nameLabel', 'Faction Name')}</label>
               <input
                 type="text"
-                id="stable-name"
+                id="faction-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={t('stables.create.namePlaceholder', 'e.g. The Shield, New Day')}
+                placeholder={t('factions.create.namePlaceholder', 'e.g. The Shield, New Day')}
                 disabled={submitting}
                 autoFocus
                 maxLength={50}
@@ -90,22 +90,22 @@ export default function CreateStableModal({ isOpen, onClose, onCreated }: Props)
             </div>
 
             <div className="form-group">
-              <label htmlFor="stable-image">{t('stables.create.imageLabel', 'Image URL (optional)')}</label>
+              <label htmlFor="faction-image">{t('factions.create.imageLabel', 'Image URL (optional)')}</label>
               <input
                 type="url"
-                id="stable-image"
+                id="faction-image"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
-                placeholder={t('stables.create.imagePlaceholder', 'https://...')}
+                placeholder={t('factions.create.imagePlaceholder', 'https://...')}
                 disabled={submitting}
               />
             </div>
 
             {error && (
-              <div className="create-stable-modal__error" role="alert">{error}</div>
+              <div className="create-faction-modal__error" role="alert">{error}</div>
             )}
 
-            <div className="create-stable-modal__actions">
+            <div className="create-faction-modal__actions">
               <button
                 type="button"
                 className="btn-secondary"
@@ -122,7 +122,7 @@ export default function CreateStableModal({ isOpen, onClose, onCreated }: Props)
               >
                 {submitting
                   ? t('common.submitting', 'Submitting...')
-                  : t('stables.create.submit', 'Request Stable')}
+                  : t('factions.create.submit', 'Request Faction')}
               </button>
             </div>
           </form>

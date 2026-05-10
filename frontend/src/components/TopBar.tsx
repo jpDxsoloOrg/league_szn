@@ -56,7 +56,7 @@ export default function TopBar() {
         'storyline-requests': t('admin.panel.groups.content'),
         challenges: t('admin.panel.groups.content'),
         promos: t('admin.panel.groups.content'),
-        stables: t('admin.panel.groups.factions'),
+        factions: t('admin.panel.groups.factions'),
         'tag-teams': t('admin.panel.groups.factions'),
         users: t('admin.panel.groups.system'),
         features: t('admin.panel.groups.system'),

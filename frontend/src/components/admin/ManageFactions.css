@@ -1,13 +1,13 @@
-.admin-stables {
+.admin-factions {
   width: 100%;
 }
 
-.admin-stables h3 {
+.admin-factions h3 {
   color: #d4af37;
   margin-bottom: 1.25rem;
 }
 
-.admin-stables-controls {
+.admin-factions-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -16,18 +16,18 @@
   gap: 1rem;
 }
 
-.admin-stables-filter {
+.admin-factions-filter {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
-.admin-stables-filter label {
+.admin-factions-filter label {
   color: #bbb;
   font-size: 0.9rem;
 }
 
-.admin-stables-filter select {
+.admin-factions-filter select {
   background-color: #1a1a1a;
   color: #fff;
   border: 1px solid #444;
@@ -36,22 +36,22 @@
   font-size: 0.9rem;
 }
 
-.admin-stables-filter select:focus {
+.admin-factions-filter select:focus {
   outline: none;
   border-color: #d4af37;
 }
 
-.admin-stables-count {
+.admin-factions-count {
   color: #888;
   font-size: 0.9rem;
 }
 
-.admin-stables-table {
+.admin-factions-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.admin-stables-table th {
+.admin-factions-table th {
   background-color: #1a1a1a;
   color: #d4af37;
   font-weight: 600;
@@ -64,7 +64,7 @@
   white-space: nowrap;
 }
 
-.admin-stables-table td {
+.admin-factions-table td {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid #333;
   font-size: 0.9rem;
@@ -72,28 +72,28 @@
   vertical-align: middle;
 }
 
-.admin-stables-table tr:hover {
+.admin-factions-table tr:hover {
   background-color: #1a1a1a;
 }
 
-.admin-stables-name {
+.admin-factions-name {
   font-weight: 600;
   color: #fff;
   font-size: 0.9rem;
 }
 
-.admin-stables-member-count {
+.admin-factions-member-count {
   color: #aaa;
   font-size: 0.85rem;
 }
 
-.admin-stables-record {
+.admin-factions-record {
   font-weight: 500;
   color: #ccc;
   font-size: 0.9rem;
 }
 
-.stables-status-badge {
+.factions-status-badge {
   display: inline-block;
   padding: 0.2rem 0.6rem;
   border-radius: 12px;
@@ -103,36 +103,36 @@
   letter-spacing: 0.3px;
 }
 
-.stables-status-badge.pending {
+.factions-status-badge.pending {
   background-color: rgba(234, 179, 8, 0.15);
   color: #eab308;
   border: 1px solid rgba(234, 179, 8, 0.3);
 }
 
-.stables-status-badge.approved {
+.factions-status-badge.approved {
   background-color: rgba(59, 130, 246, 0.15);
   color: #3b82f6;
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
-.stables-status-badge.active {
+.factions-status-badge.active {
   background-color: rgba(34, 197, 94, 0.15);
   color: #22c55e;
   border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
-.stables-status-badge.disbanded {
+.factions-status-badge.disbanded {
   background-color: rgba(107, 114, 128, 0.15);
   color: #9ca3af;
   border: 1px solid rgba(107, 114, 128, 0.3);
 }
 
-.admin-stables-actions {
+.admin-factions-actions {
   display: flex;
   gap: 0.4rem;
 }
 
-.admin-stables-actions button {
+.admin-factions-actions button {
   padding: 0.35rem 0.75rem;
   border-radius: 4px;
   font-size: 0.8rem;
@@ -179,14 +179,14 @@
   background-color: #1d4ed8 !important;
 }
 
-.admin-stables-empty {
+.admin-factions-empty {
   text-align: center;
   padding: 3rem 1rem;
   color: #888;
   font-size: 1rem;
 }
 
-.admin-stables-feedback {
+.admin-factions-feedback {
   background-color: rgba(74, 222, 128, 0.15);
   color: #4ade80;
   padding: 0.6rem 1rem;
@@ -197,18 +197,18 @@
   font-size: 0.9rem;
 }
 
-.admin-stables-feedback.error {
+.admin-factions-feedback.error {
   background-color: rgba(239, 68, 68, 0.15);
   color: #ef4444;
 }
 
 @media (max-width: 768px) {
-  .admin-stables-table {
+  .admin-factions-table {
     display: block;
     overflow-x: auto;
   }
 
-  .admin-stables-controls {
+  .admin-factions-controls {
     flex-direction: column;
     align-items: flex-start;
   }
