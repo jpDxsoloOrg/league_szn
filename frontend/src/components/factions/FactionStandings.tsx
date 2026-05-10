@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { stablesApi } from '../../services/api';
+import { factionsApi } from '../../services/api';
 import { logger } from '../../utils/logger';
 import type { StableStanding } from '../../types/stable';
 import {
@@ -26,7 +26,7 @@ export default function FactionStandings() {
       try {
         setLoading(true);
         setError(null);
-        const data = await stablesApi.getStandings(abortController.signal);
+        const data = await factionsApi.getStandings(abortController.signal);
         if (!abortController.signal.aborted) {
           setStandings(data);
         }

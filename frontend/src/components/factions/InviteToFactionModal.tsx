@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { stablesApi, playersApi } from '../../services/api';
+import { factionsApi, playersApi } from '../../services/api';
 import type { Player } from '../../types';
 import './InviteToFactionModal.css';
 
@@ -68,7 +68,7 @@ export default function InviteToFactionModal({
 
     setSubmitting(true);
     try {
-      await stablesApi.invite(stableId, {
+      await factionsApi.invite(stableId, {
         playerId: selectedPlayerId,
         ...(message.trim() ? { message: message.trim() } : {}),
       });

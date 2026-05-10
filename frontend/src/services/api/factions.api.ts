@@ -9,7 +9,7 @@ import type {
 } from '../../types/stable';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
-export const stablesApi = {
+export const factionsApi = {
   getAll: async (filters?: { status?: string }, signal?: AbortSignal): Promise<Stable[]> => {
     const params = new URLSearchParams();
     if (filters?.status) params.set('status', filters.status);

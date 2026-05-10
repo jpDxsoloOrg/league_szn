@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
-import { stablesApi } from '../../services/api';
+import { factionsApi } from '../../services/api';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { logger } from '../../utils/logger';
 import type { Stable } from '../../types/stable';
@@ -32,7 +32,7 @@ export default function FactionsList() {
       try {
         setLoading(true);
         setError(null);
-        const data = await stablesApi.getAll(undefined, abortController.signal);
+        const data = await factionsApi.getAll(undefined, abortController.signal);
         if (!abortController.signal.aborted) {
           const visibleFactions = data.filter(
             (s) => s.status === 'active' || s.status === 'approved'

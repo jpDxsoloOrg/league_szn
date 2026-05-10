@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { stablesApi } from '../../services/api';
+import { factionsApi } from '../../services/api';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { logger } from '../../utils/logger';
 import type { StableDetailResponse, StablePlayerInfo, StableHeadToHead, StableMatchTypeRecord } from '../../types/stable';
@@ -30,7 +30,7 @@ export default function FactionDetail() {
       try {
         setLoading(true);
         setError(null);
-        const data = await stablesApi.getById(stableId, abortController.signal);
+        const data = await factionsApi.getById(stableId, abortController.signal);
         if (!abortController.signal.aborted) {
           setFaction(data);
         }

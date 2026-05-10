@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { profileApi, stablesApi } from '../../services/api';
+import { profileApi, factionsApi } from '../../services/api';
 import type { Player } from '../../types';
 import type { StableDetailResponse, StableInvitationWithDetails } from '../../types/stable';
 import {
@@ -39,8 +39,8 @@ export default function MyFaction() {
       // If user has a stable, fetch stable details and invitations
       if (myProfile.stableId) {
         const [stableDetail, invitations] = await Promise.all([
-          stablesApi.getById(myProfile.stableId, signal),
-          stablesApi.getInvitations(myProfile.stableId, signal).catch(() => [] as StableInvitationWithDetails[]),
+          factionsApi.getById(myProfile.stableId, signal),
+          factionsApi.getInvitations(myProfile.stableId, signal).catch(() => [] as StableInvitationWithDetails[]),
         ]);
         setFaction(stableDetail);
         setPendingInvitations(invitations.filter((inv) => inv.status === 'pending'));
@@ -52,11 +52,11 @@ export default function MyFaction() {
         // Since there's no direct "my invitations" endpoint, we look through all stables
         // This is a best-effort approach; a dedicated endpoint would be more efficient
         try {
-          const allStables = await stablesApi.getAll(undefined, signal);
+          const allStables = await factionsApi.getAll(undefined, signal);
           const myInvitations: StableInvitationWithDetails[] = [];
           for (const s of allStables) {
             try {
-              const invs = await stablesApi.getInvitations(s.stableId, signal);
+              const invs = await factionsApi.getInvitations(s.stableId, signal);
               const pending = invs.filter(
                 (inv) => inv.invitedPlayerId === myProfile.playerId && inv.status === 'pending'
               );
@@ -96,7 +96,7 @@ export default function MyFaction() {
 
     setDisbanding(true);
     try {
-      await stablesApi.disband(faction.stableId);
+      await factionsApi.disband(faction.stableId);
       setActionFeedback(t('stables.my.disbanded', 'Stable has been disbanded.'));
       setFaction(null);
       // Refresh profile
@@ -121,7 +121,7 @@ export default function MyFaction() {
 
     setLeaving(true);
     try {
-      await stablesApi.leave(faction.stableId, profile.playerId);
+      await factionsApi.leave(faction.stableId, profile.playerId);
       setActionFeedback(t('stables.my.left', 'You have left the faction.'));
       setFaction(null);
       const updatedProfile = await profileApi.getMyProfile();
@@ -142,7 +142,7 @@ export default function MyFaction() {
     action: 'accept' | 'decline'
   ) => {
     try {
-      await stablesApi.respondToInvitation(stableId, invitationId, action);
+      await factionsApi.respondToInvitation(stableId, invitationId, action);
       setActionFeedback(
         action === 'accept'
           ? t('stables.my.invitationAccepted', 'Invitation accepted! You have joined the faction.')
@@ -164,7 +164,7 @@ export default function MyFaction() {
 
   const handleInvited = useCallback(() => {
     if (faction) {
-      stablesApi.getInvitations(faction.stableId)
+      factionsApi.getInvitations(faction.stableId)
         .then((invs) => setPendingInvitations(invs.filter((inv) => inv.status === 'pending')))
         .catch(() => { /* ignore */ });
     }

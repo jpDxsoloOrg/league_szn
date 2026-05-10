@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { stablesApi } from '../../services/api';
+import { factionsApi } from '../../services/api';
 import './CreateFactionModal.css';
 
 interface Props {
@@ -31,7 +31,7 @@ export default function CreateFactionModal({ isOpen, onClose, onCreated }: Props
 
     setSubmitting(true);
     try {
-      await stablesApi.create({
+      await factionsApi.create({
         name: trimmedName,
         ...(imageUrl.trim() ? { imageUrl: imageUrl.trim() } : {}),
       });

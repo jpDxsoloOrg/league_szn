@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { stablesApi } from '../../services/api/stables.api';
+import { factionsApi } from "../../services/api/factions.api";
 import type { Stable, StableStatus } from '../../types/stable';
 import './ManageFactions.css';
 
@@ -18,7 +18,7 @@ export default function ManageFactions() {
   const loadFactions = useCallback(async () => {
     try {
       setError(null);
-      const data = await stablesApi.getAll();
+      const data = await factionsApi.getAll();
       setFactions(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load stables');
@@ -44,7 +44,7 @@ export default function ManageFactions() {
   const handleApprove = async (faction: Stable) => {
     setSubmitting(faction.stableId);
     try {
-      await stablesApi.approve(faction.stableId);
+      await factionsApi.approve(faction.stableId);
       showFeedback(
         t('stables.admin.approved', 'Approved') + `: ${faction.name}`,
         'success'
@@ -63,7 +63,7 @@ export default function ManageFactions() {
   const handleReject = async (faction: Stable) => {
     setSubmitting(faction.stableId);
     try {
-      await stablesApi.reject(faction.stableId);
+      await factionsApi.reject(faction.stableId);
       showFeedback(
         t('stables.admin.rejected', 'Rejected') + `: ${faction.name}`,
         'success'
@@ -82,7 +82,7 @@ export default function ManageFactions() {
   const handleDisband = async (faction: Stable) => {
     setSubmitting(faction.stableId);
     try {
-      await stablesApi.disband(faction.stableId);
+      await factionsApi.disband(faction.stableId);
       showFeedback(
         t('stables.admin.disbanded', 'Disbanded') + `: ${faction.name}`,
         'success'
@@ -107,7 +107,7 @@ export default function ManageFactions() {
     if (!window.confirm(confirmMsg)) return;
     setSubmitting(faction.stableId);
     try {
-      const result = await stablesApi.reactivate(faction.stableId);
+      const result = await factionsApi.reactivate(faction.stableId);
       const skipped = result.skippedMembers.length;
       const restored = result.restoredMemberIds.length;
       const base = t('stables.admin.reactivated', 'Reactivated') + `: ${faction.name}`;
@@ -130,7 +130,7 @@ export default function ManageFactions() {
   const handleDelete = async (faction: Stable) => {
     setSubmitting(faction.stableId);
     try {
-      await stablesApi.delete(faction.stableId);
+      await factionsApi.delete(faction.stableId);
       showFeedback(
         t('stables.admin.deleted', 'Deleted') + `: ${faction.name}`,
         'success'
