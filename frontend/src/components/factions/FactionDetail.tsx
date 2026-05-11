@@ -29,6 +29,18 @@ function clampHeat(count: number | undefined): number {
   return Math.min(HEAT_FLAME_COUNT, Math.floor(count));
 }
 
+// FAC-22: defensive against legacy / mis-typed records where wins/losses/draws
+// could be undefined or negative. The backend now computes these from match
+// outcomes, but this guard keeps "-1-1-0"-style renders out of the UI regardless.
+function safeCount(n: number | null | undefined): number {
+  if (typeof n !== 'number' || !Number.isFinite(n) || n < 0) return 0;
+  return Math.floor(n);
+}
+
+function formatRecord(wins: number | null | undefined, losses: number | null | undefined, draws: number | null | undefined): string {
+  return `${safeCount(wins)}-${safeCount(losses)}-${safeCount(draws)}`;
+}
+
 function FlameIcon({ lit }: { lit: boolean }) {
   return (
     <svg
@@ -178,7 +190,7 @@ export default function FactionDetail() {
                 {t('factions.recordLabel', 'RECORD')}
               </span>
               <span className="faction-detail__hero-record-value">
-                {faction.wins}-{faction.losses}-{faction.draws}
+                {formatRecord(faction.wins, faction.losses, faction.draws)}
               </span>
             </div>
             <div
