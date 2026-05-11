@@ -1,6 +1,10 @@
 import { getRepositories } from '../../lib/repositories';
+import {
+  computeRecentFormAndStreak,
+  type FormResult as SharedFormResult,
+} from '../../lib/stats/recentFormAndStreak';
 
-export type FormResult = 'W' | 'L' | 'D';
+export type FormResult = SharedFormResult;
 
 export interface MatchRecord {
   matchId: string;
@@ -116,20 +120,7 @@ export function computeFormAndStreak(
     return bTime - aTime;
   });
 
-  const recentForm: FormResult[] = sorted.slice(0, limit).map((r) => r.result);
-
-  if (recentForm.length === 0) {
-    return { recentForm: [], currentStreak: { type: 'W', count: 0 } };
-  }
-
-  const first = recentForm[0];
-  let count = 0;
-  for (const r of recentForm) {
-    if (r !== first) break;
-    count++;
-  }
-
-  return { recentForm, currentStreak: { type: first, count } };
+  return computeRecentFormAndStreak(sorted.map((r) => r.result), limit);
 }
 
 /**

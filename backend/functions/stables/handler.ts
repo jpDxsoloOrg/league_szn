@@ -17,6 +17,7 @@ import { handler as getMessagesHandler } from './getMessages';
 import { handler as postDirectMessageHandler } from './postDirectMessage';
 import { handler as getDirectMessageThreadHandler } from './getDirectMessageThread';
 import { handler as getMyDirectMessageThreadsHandler } from './getMyDirectMessageThreads';
+import { handler as getFactionStatsHandler } from './getFactionStats';
 import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
@@ -127,6 +128,11 @@ const routes: ReadonlyArray<RouteConfig> = [
     method: 'GET',
     handler: getDirectMessageThreadHandler,
     requireAuth: true,
+  },
+  {
+    resource: '/stables/{stableId}/stats',
+    method: 'GET',
+    handler: getFactionStatsHandler,
   },
   {
     resource: '/stables/{stableId}',
