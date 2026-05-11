@@ -36,6 +36,26 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../FactionDetail.css', () => ({}));
 vi.mock('../tabs/FactionOverview.css', () => ({}));
+// Stub the non-Overview tabs so the shell test stays focused on routing —
+// the tab components have their own dedicated test files.
+vi.mock('../tabs/FactionMembers', () => ({
+  default: () => <p>Members placeholder</p>,
+}));
+vi.mock('../tabs/FactionStats', () => ({
+  default: () => <p>Stats placeholder</p>,
+}));
+vi.mock('../tabs/FactionSchedule', () => ({
+  default: () => <p>Schedule placeholder</p>,
+}));
+vi.mock('../tabs/FactionPromos', () => ({
+  default: () => <p>Promos placeholder</p>,
+}));
+vi.mock('../tabs/FactionMessages', () => ({
+  default: () => <p>Messages placeholder</p>,
+}));
+vi.mock('../tabs/FactionManage', () => ({
+  default: () => <p>Manage placeholder</p>,
+}));
 
 import FactionDetail from '../FactionDetail';
 import FactionOverview from '../tabs/FactionOverview';
@@ -147,13 +167,18 @@ describe('FactionDetail shell (FAC-11)', () => {
     renderShell();
     await screen.findByRole('heading', { name: 'The Brood' });
 
-    // Only Manage is still a stub after FAC-15; navigate to it for the
-    // active-state assertion, then back to it to verify a second click.
+    // Tabs are stubbed at the top of the file so this assertion stays
+    // focused on routing — placeholders verify the right tab rendered.
     await userEvent.click(screen.getByRole('tab', { name: 'Manage' }));
     await waitFor(() => {
-      expect(screen.getByText('Manage tab — coming soon.')).toBeInTheDocument();
+      expect(screen.getByText('Manage placeholder')).toBeInTheDocument();
     });
     expect(screen.getByRole('tab', { name: 'Manage' })).toHaveAttribute('aria-current', 'page');
+
+    await userEvent.click(screen.getByRole('tab', { name: 'Members' }));
+    await waitFor(() => {
+      expect(screen.getByText('Members placeholder')).toBeInTheDocument();
+    });
   });
 
   it('renders an error state with a Retry button when the fetch fails', async () => {

@@ -10,6 +10,7 @@ import {
   applyImageFallback,
 } from '../../../constants/imageFallbacks';
 import InviteToFactionModal from '../InviteToFactionModal';
+import RemoveMemberModal from '../RemoveMemberModal';
 import type { FactionStatsResponse } from '../../../types/faction';
 import type { FactionDetailContext } from '../FactionDetail';
 import './FactionMembers.css';
@@ -710,65 +711,20 @@ export default function FactionMembers() {
         />
       )}
 
-      {/* Remove-member confirmation modal */}
+      {/* Remove-member confirmation modal — shared with the Manage tab. */}
       {memberToRemove && (
-        <div
-          className="faction-members__modal-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="remove-member-title"
-        >
-          <div className="faction-members__modal">
-            <h2 id="remove-member-title" className="faction-members__modal-title">
-              {t('factions.my.removeMemberConfirmTitle', 'Remove {{playerName}} from {{factionName}}?', {
-                playerName: memberToRemove.playerName,
-                factionName: faction.name,
-              })}
-            </h2>
-            {willDisband && (
-              <p className="faction-members__modal-warning">
-                {t(
-                  'factions.my.removeMemberDisbandWarning',
-                  'This will disband the faction — only the leader would remain.',
-                )}
-              </p>
-            )}
-            <p className="faction-members__modal-body">
-              {t(
-                'factions.members.removeBody',
-                'They will lose access to faction-only surfaces (channel, DMs, schedule).',
-              )}
-            </p>
-            {removeError && (
-              <p className="faction-members__modal-error" role="alert">
-                {removeError}
-              </p>
-            )}
-            <div className="faction-members__modal-actions">
-              <button
-                type="button"
-                className="faction-members__modal-cancel"
-                onClick={() => {
-                  setMemberToRemove(null);
-                  setRemoveError(null);
-                }}
-                disabled={removing}
-              >
-                {t('factions.my.removeMemberCancel', 'Cancel')}
-              </button>
-              <button
-                type="button"
-                className="faction-members__modal-confirm"
-                onClick={handleRemove}
-                disabled={removing}
-              >
-                {removing
-                  ? t('common.removing', 'Removing…')
-                  : t('factions.my.removeMemberConfirm', 'Remove member')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <RemoveMemberModal
+          factionName={faction.name}
+          playerName={memberToRemove.playerName}
+          willDisband={willDisband}
+          error={removeError}
+          busy={removing}
+          onCancel={() => {
+            setMemberToRemove(null);
+            setRemoveError(null);
+          }}
+          onConfirm={handleRemove}
+        />
       )}
     </div>
   );
