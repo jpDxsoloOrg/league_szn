@@ -1358,6 +1358,43 @@
       "activityTitle": "Recent Faction Activity",
       "activityEmpty": "No recent activity yet."
     },
+    "heroAlt": "{{name}} faction banner",
+    "statusLabel": "Faction status: {{status}}",
+    "recordLabel": "RECORD",
+    "detailTabs": {
+      "label": "Faction sections",
+      "overview": "Overview",
+      "members": "Members",
+      "stats": "Stats",
+      "schedule": "Schedule",
+      "promos": "Promos",
+      "messages": "Messages",
+      "manage": "Manage",
+      "stub": {
+        "members": "Members tab — coming soon.",
+        "stats": "Stats tab — coming soon.",
+        "schedule": "Schedule tab — coming soon.",
+        "promos": "Promos tab — coming soon.",
+        "messages": "Messages tab — coming soon.",
+        "manage": "Manage tab — coming soon."
+      }
+    },
+    "overview": {
+      "rosterHeading": "Member Roster at a Glance",
+      "rosterEmpty": "No members yet.",
+      "resultsHeading": "Recent Faction Results",
+      "resultsEmpty": "No recent results.",
+      "promosHeading": "Promos Involving This Faction",
+      "promosEmpty": "No promos involving this faction yet.",
+      "promosError": "Could not load promos.",
+      "streakTitle": "Streak",
+      "sparklineLabel": "Last 10 results",
+      "upcomingTitle": "Upcoming Matches ({{count}})",
+      "scheduleEmpty": "No matches scheduled in the next 60 days.",
+      "scheduleError": "Could not load schedule.",
+      "activityTitle": "Faction Activity",
+      "activityEmpty": "No recent activity."
+    },
     "members": "Members",
     "stats": "Stats",
     "headToHead": "Head to Head",

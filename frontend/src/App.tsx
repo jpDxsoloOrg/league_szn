@@ -55,6 +55,13 @@ import EventResults from './components/events/EventResults';
 import FactionsList from './components/factions/FactionsList';
 import FactionStandings from './components/factions/FactionStandings';
 import FactionDetail from './components/factions/FactionDetail';
+import FactionOverview from './components/factions/tabs/FactionOverview';
+import FactionMembers from './components/factions/tabs/FactionMembers';
+import FactionStats from './components/factions/tabs/FactionStats';
+import FactionScheduleTab from './components/factions/tabs/FactionSchedule';
+import FactionPromosTab from './components/factions/tabs/FactionPromos';
+import FactionMessages from './components/factions/tabs/FactionMessages';
+import FactionManage from './components/factions/tabs/FactionManage';
 import MyFaction from './components/factions/MyFaction';
 // Tag Teams components
 import TagTeamsList from './components/tagTeams/TagTeamsList';
@@ -246,7 +253,15 @@ function AppLayout() {
             } />
             <Route path="/factions/:factionId" element={
               <FeatureRoute feature="stables"><FactionDetail /></FeatureRoute>
-            } />
+            }>
+              <Route index element={<FactionOverview />} />
+              <Route path="members" element={<FactionMembers />} />
+              <Route path="stats" element={<FactionStats />} />
+              <Route path="schedule" element={<FactionScheduleTab />} />
+              <Route path="promos" element={<FactionPromosTab />} />
+              <Route path="messages" element={<FactionMessages />} />
+              <Route path="manage" element={<FactionManage />} />
+            </Route>
             <Route path="/my-faction" element={
               <FeatureRoute feature="stables">
                 <ProtectedRoute requiredRole="Wrestler">
