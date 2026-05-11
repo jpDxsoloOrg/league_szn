@@ -105,11 +105,17 @@ describe('postDirectMessage (FAC-06)', () => {
     const body = JSON.parse(result!.body);
     expect(body.errorKey).toBe('not_both_members');
 
-    // Nothing persisted
-    const all = repos.factionDirectMessages.store;
-    expect(all).toHaveLength(0);
-    // Ensure variable usage to keep tsc happy
-    expect(member.playerId).toBeTruthy();
+    // Nothing persisted — neither side has any threads
+    const memberThreads = await repos.factionDirectMessages.listThreadsForPlayer(
+      stable.stableId,
+      member.playerId,
+    );
+    expect(memberThreads).toEqual([]);
+    const outsiderThreads = await repos.factionDirectMessages.listThreadsForPlayer(
+      stable.stableId,
+      outsider.playerId,
+    );
+    expect(outsiderThreads).toEqual([]);
   });
 
   it('returns 403 not_both_members when the caller themselves is not in the faction', async () => {
