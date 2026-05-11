@@ -23,7 +23,12 @@ import './FactionsList.css';
 
 type StatusFilter = 'all' | 'pending' | 'active' | 'disbanded';
 
-const STATUS_FILTERS: ReadonlyArray<StatusFilter> = ['all', 'pending', 'active', 'disbanded'];
+const STATUS_FILTERS: ReadonlyArray<{ value: StatusFilter; i18nKey: string; fallback: string }> = [
+  { value: 'all', i18nKey: 'factions.hub.filterAll', fallback: 'All' },
+  { value: 'pending', i18nKey: 'factions.hub.filterPending', fallback: 'Pending Approval' },
+  { value: 'active', i18nKey: 'factions.hub.filterActive', fallback: 'Active' },
+  { value: 'disbanded', i18nKey: 'factions.hub.filterDisbanded', fallback: 'Disbanded' },
+];
 
 function matchesStatusFilter(faction: Stable, filter: StatusFilter): boolean {
   if (filter === 'all') return true;
@@ -185,19 +190,18 @@ export default function FactionsList() {
         role="tablist"
         aria-label={t('factions.hub.filterLabel', 'Filter by status')}
       >
-        {STATUS_FILTERS.map((status) => {
-          const isActive = statusFilter === status;
-          const labelKey = `filter${status.charAt(0).toUpperCase()}${status.slice(1)}`;
+        {STATUS_FILTERS.map(({ value, i18nKey, fallback }) => {
+          const isActive = statusFilter === value;
           return (
             <button
-              key={status}
+              key={value}
               type="button"
               role="tab"
               aria-pressed={isActive}
               className={`factions-hub__chip ${isActive ? 'factions-hub__chip--active' : ''}`}
-              onClick={() => setStatusFilter(status)}
+              onClick={() => setStatusFilter(value)}
             >
-              {t(`factions.hub.${labelKey}`, status)}
+              {t(i18nKey, fallback)}
             </button>
           );
         })}
