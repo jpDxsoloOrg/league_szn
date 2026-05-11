@@ -18,6 +18,8 @@ import { handler as postDirectMessageHandler } from './postDirectMessage';
 import { handler as getDirectMessageThreadHandler } from './getDirectMessageThread';
 import { handler as getMyDirectMessageThreadsHandler } from './getMyDirectMessageThreads';
 import { handler as getFactionStatsHandler } from './getFactionStats';
+import { handler as getFactionScheduleHandler } from './getFactionSchedule';
+import { handler as getFactionPromosHandler } from './getFactionPromos';
 import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
@@ -133,6 +135,16 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/stables/{stableId}/stats',
     method: 'GET',
     handler: getFactionStatsHandler,
+  },
+  {
+    resource: '/stables/{stableId}/schedule',
+    method: 'GET',
+    handler: getFactionScheduleHandler,
+  },
+  {
+    resource: '/stables/{stableId}/promos',
+    method: 'GET',
+    handler: getFactionPromosHandler,
   },
   {
     resource: '/stables/{stableId}',
