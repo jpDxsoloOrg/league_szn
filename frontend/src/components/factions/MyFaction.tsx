@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { profileApi, factionsApi } from '../../services/api';
@@ -242,6 +242,13 @@ export default function MyFaction() {
         </div>
       </div>
     );
+  }
+
+  // Members get redirected to the redesigned Faction Detail page; this
+  // route now only renders the "no faction yet / pending invitations"
+  // surface for users who don't have one.
+  if (profile?.stableId) {
+    return <Navigate to={`/factions/${profile.stableId}`} replace />;
   }
 
   const isLeader = faction && profile && faction.leaderId === profile.playerId;

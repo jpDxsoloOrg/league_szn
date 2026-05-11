@@ -234,6 +234,19 @@ export default function FactionMessages() {
   // ─── Polling ─────────────────────────────────────────────────────
   const pollOnce = useCallback(async () => {
     try {
+      // Refresh the conversation list on every tick so new DM threads from
+      // partners the user hasn't messaged yet appear without a reload, and
+      // so the channel-pin / DM-row previews + unread dots stay current
+      // even when a different conversation is active.
+      void factionsApi.directMessages
+        .listMyThreads(faction.stableId)
+        .then((list) => setThreads(list))
+        .catch((err) => {
+          if (err instanceof Error && err.name !== 'AbortError') {
+            logger.warn(`Messages tab: thread-list poll failed (${err.message})`);
+          }
+        });
+
       if (activeThread.type === 'channel') {
         const page = await factionsApi.messages.list(faction.stableId, { limit: 50 });
         setChannelMessages((prev) => {
