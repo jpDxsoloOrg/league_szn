@@ -687,9 +687,13 @@ export default function FactionMessages() {
                     }
                   >
                     <img
-                      src={resolveImageSrc(undefined, DEFAULT_WRESTLER_IMAGE)}
+                      src={resolveImageSrc(thread.partnerImageUrl ?? undefined, DEFAULT_WRESTLER_IMAGE)}
                       onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
-                      alt=""
+                      alt={
+                        thread.partnerWrestlerName ??
+                        thread.partnerPlayerName ??
+                        ''
+                      }
                       className="faction-messages__thread-avatar"
                     />
                     <div className="faction-messages__thread-body">
