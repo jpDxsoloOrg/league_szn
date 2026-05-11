@@ -24,6 +24,20 @@
   isolation: isolate;
 }
 
+/* FAC-22: when the faction has a custom banner we drop the overlay name <h1>,
+   so the hero strip doesn't need to reserve vertical space for it. Keep the
+   16:9-ish aspect ratio of the banner art and let the caption sit flush at
+   the bottom. */
+.faction-detail__hero--banner {
+  aspect-ratio: 16 / 9;
+}
+
+.faction-detail__hero--banner .faction-detail__hero-caption {
+  /* No <h1> above the caption in banner mode — remove the 12px gap that
+     was budgeted for the headline-to-caption space. */
+  margin-top: 0;
+}
+
 .faction-detail__hero-image {
   width: 100%;
   height: 100%;

@@ -146,17 +146,21 @@ beforeEach(() => {
 
 describe('FactionDetail shell (FAC-11)', () => {
   it('renders the hero with name, status, leader, record, and heat label', async () => {
+    // FAC-22: when a custom imageUrl is set, the <h1> is intentionally
+    // suppressed (banner art carries the brand). Wait on the record value
+    // as the "got past loading" signal instead. Also verify the banner
+    // image alt still announces the faction name for screen readers.
     renderShell();
-    expect(await screen.findByRole('heading', { name: 'The Brood' })).toBeInTheDocument();
+    expect(await screen.findByText('12-4-1')).toBeInTheDocument();
+    expect(screen.getByAltText('The Brood faction banner')).toBeInTheDocument();
     expect(screen.getByText('Active')).toBeInTheDocument();
     expect(screen.getByText('Led by Edge')).toBeInTheDocument();
-    expect(screen.getByText('12-4-1')).toBeInTheDocument();
     expect(screen.getByLabelText('Heat: 3 of 5')).toBeInTheDocument();
   });
 
   it('renders all seven tabs with Overview active by default', async () => {
     renderShell();
-    await screen.findByRole('heading', { name: 'The Brood' });
+    await screen.findByText('12-4-1');
     for (const label of ['Overview', 'Members', 'Stats', 'Schedule', 'Promos', 'Messages', 'Manage']) {
       expect(screen.getByRole('tab', { name: label })).toBeInTheDocument();
     }
@@ -165,7 +169,7 @@ describe('FactionDetail shell (FAC-11)', () => {
 
   it('navigates between tabs and applies the active class', async () => {
     renderShell();
-    await screen.findByRole('heading', { name: 'The Brood' });
+    await screen.findByText('12-4-1');
 
     // Tabs are stubbed at the top of the file so this assertion stays
     // focused on routing — placeholders verify the right tab rendered.
@@ -191,7 +195,60 @@ describe('FactionDetail shell (FAC-11)', () => {
     // Subsequent call succeeds — Retry recovers without a page reload.
     mockFactionsGetById.mockResolvedValueOnce(baseFaction());
     await userEvent.click(retry);
-    expect(await screen.findByRole('heading', { name: 'The Brood' })).toBeInTheDocument();
+    expect(await screen.findByText('12-4-1')).toBeInTheDocument();
+  });
+});
+
+describe('FactionDetail hero — FAC-22 record + banner-name fixes', () => {
+  it('suppresses the name <h1> when the faction has a custom banner', async () => {
+    mockFactionsGetById.mockResolvedValueOnce(
+      baseFaction({ imageUrl: '/images/brood.png' }),
+    );
+    renderShell();
+
+    // Wait for the hero to render (record is the "got past loading" signal).
+    await screen.findByText('12-4-1');
+    // The <h1> name overlay should NOT appear when a banner is set —
+    // the banner art carries the brand and we don't want the name to read
+    // twice.
+    expect(screen.queryByRole('heading', { name: 'The Brood' })).toBeNull();
+    // The banner image's alt text still announces the name for a11y.
+    expect(screen.getByAltText('The Brood faction banner')).toBeInTheDocument();
+  });
+
+  it('renders the name <h1> when the faction has no custom banner', async () => {
+    mockFactionsGetById.mockResolvedValueOnce(
+      baseFaction({ imageUrl: undefined }),
+    );
+    renderShell();
+
+    // No banner → the fallback gradient has no text of its own, so the
+    // name needs to be visible.
+    expect(
+      await screen.findByRole('heading', { name: 'The Brood' }),
+    ).toBeInTheDocument();
+  });
+
+  it('clamps undefined wins/losses/draws to 0 instead of rendering "-1"', async () => {
+    mockFactionsGetById.mockResolvedValueOnce(
+      baseFaction({ wins: undefined, losses: undefined, draws: undefined }),
+    );
+    renderShell();
+
+    // Pre-fix this would render "" + "-" + "1" + "-" + ... → "--" mess.
+    expect(await screen.findByText('0-0-0')).toBeInTheDocument();
+  });
+
+  it('clamps negative wins to 0 instead of bleeding into the record string', async () => {
+    mockFactionsGetById.mockResolvedValueOnce(
+      baseFaction({ wins: -1, losses: 1, draws: 0 }),
+    );
+    renderShell();
+
+    // The reported bug: hero showed "-1-1-0" because wins came through
+    // as -1 and JSX interpolated it raw. formatRecord should clamp.
+    expect(await screen.findByText('0-1-0')).toBeInTheDocument();
+    expect(screen.queryByText('-1-1-0')).toBeNull();
   });
 });
 

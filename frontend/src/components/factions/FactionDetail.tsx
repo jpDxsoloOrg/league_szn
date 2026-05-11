@@ -29,6 +29,18 @@ function clampHeat(count: number | undefined): number {
   return Math.min(HEAT_FLAME_COUNT, Math.floor(count));
 }
 
+// FAC-22: defensive against legacy / mis-typed records where wins/losses/draws
+// could be undefined or negative. The backend now computes these from match
+// outcomes, but this guard keeps "-1-1-0"-style renders out of the UI regardless.
+function safeCount(n: number | null | undefined): number {
+  if (typeof n !== 'number' || !Number.isFinite(n) || n < 0) return 0;
+  return Math.floor(n);
+}
+
+function formatRecord(wins: number | null | undefined, losses: number | null | undefined, draws: number | null | undefined): string {
+  return `${safeCount(wins)}-${safeCount(losses)}-${safeCount(draws)}`;
+}
+
 function FlameIcon({ lit }: { lit: boolean }) {
   return (
     <svg
@@ -145,9 +157,19 @@ export default function FactionDetail() {
 
   const outletContext: FactionDetailContext = { faction };
 
+  // FAC-22: when a faction has a custom banner the banner art usually already
+  // carries the brand (logo / name baked into the image), so we drop the
+  // overlay <h1> to avoid the name reading twice. The fallback gradient
+  // placeholder has no text, so we still need the text header in that case.
+  const hasCustomBanner = Boolean(faction.imageUrl);
+
   return (
     <div className="faction-detail">
-      <header className="faction-detail__hero">
+      <header
+        className={`faction-detail__hero ${
+          hasCustomBanner ? 'faction-detail__hero--banner' : ''
+        }`}
+      >
         <img
           src={resolveImageSrc(faction.imageUrl, DEFAULT_FACTION_IMAGE)}
           onError={(event) => applyImageFallback(event, DEFAULT_FACTION_IMAGE)}
@@ -158,7 +180,9 @@ export default function FactionDetail() {
         <div className="faction-detail__hero-overlay" aria-hidden="true" />
         <div className="faction-detail__hero-content">
           <div className="faction-detail__hero-left">
-            <h1 className="faction-detail__hero-name">{faction.name}</h1>
+            {!hasCustomBanner && (
+              <h1 className="faction-detail__hero-name">{faction.name}</h1>
+            )}
             <p className="faction-detail__hero-caption">
               <span
                 className={`faction-detail__hero-status faction-detail__hero-status--${faction.status}`}
@@ -178,7 +202,7 @@ export default function FactionDetail() {
                 {t('factions.recordLabel', 'RECORD')}
               </span>
               <span className="faction-detail__hero-record-value">
-                {faction.wins}-{faction.losses}-{faction.draws}
+                {formatRecord(faction.wins, faction.losses, faction.draws)}
               </span>
             </div>
             <div

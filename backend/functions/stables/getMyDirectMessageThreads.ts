@@ -8,6 +8,7 @@ interface ThreadRow {
   partnerPlayerId: string;
   partnerPlayerName: string | null;
   partnerWrestlerName: string | null;
+  partnerImageUrl: string | null;
   lastMessage: FactionDirectMessage;
   lastMessageAt: string;
 }
@@ -55,6 +56,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           partnerPlayerId: s.partnerPlayerId,
           partnerPlayerName: partner?.name ?? null,
           partnerWrestlerName: partner?.currentWrestler ?? null,
+          partnerImageUrl: partner?.imageUrl ?? null,
           lastMessage: s.lastMessage,
           lastMessageAt: s.lastMessage.createdAt,
         };

@@ -132,6 +132,7 @@ export interface DirectMessageThreadSummary {
   partnerPlayerId: string;
   partnerPlayerName: string | null;
   partnerWrestlerName: string | null;
+  partnerImageUrl: string | null;
   lastMessage: FactionDirectMessage;
   lastMessageAt: string;
 }
