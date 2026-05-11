@@ -131,7 +131,16 @@ export default function FactionDetail() {
     lit: litHeat,
     total: HEAT_FLAME_COUNT,
   });
-  const statusLabel = t(`factions.hub.status.${faction.status}`, faction.status);
+  const statusFallbacks: Record<string, string> = {
+    pending: 'Pending',
+    approved: 'Active',
+    active: 'Active',
+    disbanded: 'Disbanded',
+  };
+  const statusLabel = t(
+    `factions.hub.status.${faction.status}`,
+    statusFallbacks[faction.status] ?? faction.status,
+  );
   const leaderName = faction.leaderName ?? t('factions.unknownLeader', 'Unknown');
 
   const outletContext: FactionDetailContext = { faction };
