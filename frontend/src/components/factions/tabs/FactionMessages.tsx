@@ -328,8 +328,8 @@ export default function FactionMessages() {
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     userScrolledUp.current = distanceFromBottom > 80;
     // Touching the bottom counts as reading the latest message.
-    if (!userScrolledUp.current && activeFeed.length > 0) {
-      const last = activeFeed[activeFeed.length - 1];
+    const last = activeFeed[activeFeed.length - 1];
+    if (!userScrolledUp.current && last) {
       const key = activeThread.type === 'channel' ? channelKey : dmKey(activeThread.partnerPlayerId);
       writeLastRead(faction.stableId, key, last.messageId);
       setUnreadTick((tick) => tick + 1);
@@ -338,9 +338,9 @@ export default function FactionMessages() {
 
   // On feed change, also mark as read if user is currently at bottom.
   useEffect(() => {
-    if (activeFeed.length === 0) return;
-    if (userScrolledUp.current) return;
     const last = activeFeed[activeFeed.length - 1];
+    if (!last) return;
+    if (userScrolledUp.current) return;
     const key = activeThread.type === 'channel' ? channelKey : dmKey(activeThread.partnerPlayerId);
     writeLastRead(faction.stableId, key, last.messageId);
     setUnreadTick((tick) => tick + 1);
@@ -444,10 +444,10 @@ export default function FactionMessages() {
         );
         setDmMessages((prev) => {
           const next = new Map(prev);
-          const list = (next.get(partnerId) ?? []).map((m) =>
+          const list: DmDisplayMessage[] = (next.get(partnerId) ?? []).map((m) =>
             m.tempId === tempId
               ? {
-                  kind: 'dm',
+                  kind: 'dm' as const,
                   messageId: created.messageId,
                   authorPlayerId: created.senderPlayerId,
                   body: created.body,
@@ -497,8 +497,8 @@ export default function FactionMessages() {
 
   // ─── Unread dots in the conversation list ────────────────────────
   const isChannelUnread = useMemo(() => {
-    if (channelMessages.length === 0) return false;
     const last = channelMessages[0]; // newest first from repo
+    if (!last) return false;
     const stored = readLastRead(faction.stableId, channelKey);
     return stored !== last.messageId;
   }, [channelMessages, faction.stableId]);
@@ -635,7 +635,7 @@ export default function FactionMessages() {
             {t('factions.messages.channelLabel', 'FACTION-WIDE')}
           </span>
           <span className="faction-messages__channel-sub">
-            {channelMessages.length > 0
+            {channelMessages[0]
               ? channelMessages[0].body.slice(0, 60)
               : t('factions.messages.channelEmpty', 'No messages yet.')}
           </span>
