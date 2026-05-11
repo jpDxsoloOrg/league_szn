@@ -84,69 +84,52 @@
   background-color: var(--color-surface);
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  transition: background-color 0.15s ease;
 }
 
-.faction-promos__thumb-link {
-  display: block;
-  position: relative;
-  background-color: var(--color-bg);
+.faction-promos__card:hover {
+  background-color: var(--color-surface-hover);
 }
 
-.faction-promos__thumb {
-  position: relative;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-}
-
-.faction-promos__thumb-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.faction-promos__thumb-placeholder {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(135deg, #1a1a1a, #0f0f0f),
-    repeating-linear-gradient(45deg, transparent 0 8px, rgba(212, 175, 55, 0.04) 8px 16px);
-  background-blend-mode: overlay;
-}
-
-.faction-promos__play-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-primary);
-  font-size: 2.5rem;
-  opacity: 0.85;
-  pointer-events: none;
-}
-
-.faction-promos__body {
-  padding: 14px 16px;
+.faction-promos__card-link {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.faction-promos__headline-link {
+  gap: 8px;
+  padding: 16px 18px;
   text-decoration: none;
   color: inherit;
 }
 
+.faction-promos__card-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
 .faction-promos__headline {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: var(--color-text);
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  letter-spacing: -0.005em;
+  line-height: 1.25;
+}
+
+.faction-promos__body-text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.faction-promos__inline-image {
+  max-width: 220px;
+  max-height: 140px;
+  object-fit: cover;
+  background-color: var(--color-bg);
+  align-self: flex-start;
 }
 
 .faction-promos__byline {
@@ -197,7 +180,9 @@
 
 .faction-promos__reply {
   align-self: flex-start;
-  margin-top: 4px;
+  /* Sits as a sibling of the card-link now, so it provides its own
+   * outer spacing instead of inheriting the link's padding. */
+  margin: 0 18px 16px;
   padding: 6px 12px;
   background-color: var(--color-primary);
   color: #1a1a1a;

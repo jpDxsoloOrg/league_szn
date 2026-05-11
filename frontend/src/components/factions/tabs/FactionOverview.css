@@ -170,11 +170,26 @@
 
 .faction-overview__promo {
   background-color: var(--color-surface);
-  padding: 12px;
+  min-width: 0;
+  transition: background-color 0.15s ease;
+}
+
+.faction-overview__promo:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.faction-overview__promo-link {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-width: 0;
+  padding: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.faction-overview__promo-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 .faction-overview__promo-headline {

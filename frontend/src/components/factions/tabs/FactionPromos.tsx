@@ -194,28 +194,32 @@ export default function FactionPromos() {
                 </span>
               ) : null;
 
+            // Headline falls back to the first ~60 chars of the body
+            // when no title was set, so the card always leads with text.
+            const headline = promo.headline ?? promo.excerpt.slice(0, 60);
+            // Show the body only if we have additional content beyond the
+            // headline (i.e. the headline isn't already the same text).
+            const bodyText = promo.headline && promo.excerpt ? promo.excerpt : '';
+
             return (
               <article key={promo.promoId} className="faction-promos__card">
-                <Link to={`/promos/${promo.promoId}`} className="faction-promos__thumb-link">
-                  <div className="faction-promos__thumb">
-                    {promo.thumbnail ? (
-                      <img src={promo.thumbnail} alt="" className="faction-promos__thumb-image" />
-                    ) : (
-                      <span className="faction-promos__thumb-placeholder" aria-hidden="true" />
-                    )}
-                    <span className="faction-promos__play-overlay" aria-hidden="true">▶</span>
-                  </div>
-                </Link>
-                <div className="faction-promos__body">
-                  <Link
-                    to={`/promos/${promo.promoId}`}
-                    className="faction-promos__headline-link"
-                  >
-                    <h3 className="faction-promos__headline">
-                      {promo.headline ?? promo.excerpt}
-                    </h3>
-                  </Link>
+                <Link
+                  to={`/promos/${promo.promoId}`}
+                  className="faction-promos__card-link"
+                >
                   <p className="faction-promos__byline">{byline}</p>
+                  <h3 className="faction-promos__headline">{headline}</h3>
+                  {bodyText && (
+                    <p className="faction-promos__body-text">{bodyText}</p>
+                  )}
+                  {promo.thumbnail && (
+                    <img
+                      src={promo.thumbnail}
+                      alt=""
+                      className="faction-promos__inline-image"
+                      loading="lazy"
+                    />
+                  )}
                   <div className="faction-promos__meta">
                     <time dateTime={promo.date}>
                       {new Date(promo.date).toLocaleDateString()}
@@ -232,15 +236,15 @@ export default function FactionPromos() {
                     )}
                     {heatPill}
                   </div>
-                  {filter === 'directed-at-faction' && (
-                    <Link
-                      to={`/promos/new?targetPlayerId=${promo.authorPlayerId}&promoType=response&targetPromoId=${promo.promoId}`}
-                      className="faction-promos__reply"
-                    >
-                      {t('factions.promos.replyCta', 'Reply with a promo')}
-                    </Link>
-                  )}
-                </div>
+                </Link>
+                {filter === 'directed-at-faction' && (
+                  <Link
+                    to={`/promos/new?targetPlayerId=${promo.authorPlayerId}&promoType=response&targetPromoId=${promo.promoId}`}
+                    className="faction-promos__reply"
+                  >
+                    {t('factions.promos.replyCta', 'Reply with a promo')}
+                  </Link>
+                )}
               </article>
             );
           })}
