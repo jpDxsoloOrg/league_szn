@@ -916,6 +916,10 @@ functions:
           path: stables/{stableId}/direct-messages/{partnerPlayerId}
           method: any
           cors: *corsConfig
+      - http:
+          path: stables/{stableId}/stats
+          method: get
+          cors: *corsConfig
 
   # Tag Teams (consolidated: list, get, standings, create, update, respond, approve, reject, dissolve, delete)
   tagTeams:
