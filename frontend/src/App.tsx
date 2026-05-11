@@ -3,7 +3,7 @@ import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
 import { PresenceProvider } from './contexts/PresenceContext';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
-import { MenuModeProvider } from './contexts/MenuModeContext';
+import { MenuModeProvider } from './contexts/MenuModeProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
 import NotFound from './components/NotFound';
