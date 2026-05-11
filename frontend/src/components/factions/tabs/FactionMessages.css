@@ -24,6 +24,8 @@
 
 .faction-messages__channel-pin {
   position: relative;
+  appearance: none;
+  -webkit-appearance: none;
   background-color: var(--color-bg);
   border: none;
   padding: 12px;
@@ -33,6 +35,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  font: inherit;
   transition: background-color 0.15s ease;
   border-left: 3px solid var(--color-primary);
 }
@@ -43,6 +46,7 @@
 
 .faction-messages__channel-pin--active {
   background-color: var(--color-surface-hover);
+  border-left-width: 5px;
 }
 
 .faction-messages__channel-label {
@@ -92,14 +96,18 @@
   grid-template-columns: 40px 1fr auto;
   gap: 8px;
   align-items: center;
-  background: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: transparent;
   border: none;
-  padding: 8px;
+  border-left: 3px solid transparent;
+  padding: 8px 8px 8px 5px;
   text-align: left;
   color: var(--color-text);
+  font: inherit;
   cursor: pointer;
   width: 100%;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, border-left-color 0.15s ease;
 }
 
 .faction-messages__thread-row:hover {
@@ -108,6 +116,7 @@
 
 .faction-messages__thread-row--active {
   background-color: var(--color-surface-hover);
+  border-left-color: var(--color-primary);
 }
 
 .faction-messages__thread-avatar {
