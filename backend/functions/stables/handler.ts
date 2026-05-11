@@ -14,6 +14,9 @@ import { handler as removeMemberHandler } from './removeMember';
 import { handler as deleteStableHandler } from './deleteStable';
 import { handler as postMessageHandler } from './postMessage';
 import { handler as getMessagesHandler } from './getMessages';
+import { handler as postDirectMessageHandler } from './postDirectMessage';
+import { handler as getDirectMessageThreadHandler } from './getDirectMessageThread';
+import { handler as getMyDirectMessageThreadsHandler } from './getMyDirectMessageThreads';
 import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
@@ -105,6 +108,24 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/stables/{stableId}/messages',
     method: 'POST',
     handler: postMessageHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/stables/{stableId}/direct-messages',
+    method: 'GET',
+    handler: getMyDirectMessageThreadsHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/stables/{stableId}/direct-messages',
+    method: 'POST',
+    handler: postDirectMessageHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/stables/{stableId}/direct-messages/{partnerPlayerId}',
+    method: 'GET',
+    handler: getDirectMessageThreadHandler,
     requireAuth: true,
   },
   {
