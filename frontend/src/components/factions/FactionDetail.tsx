@@ -157,9 +157,19 @@ export default function FactionDetail() {
 
   const outletContext: FactionDetailContext = { faction };
 
+  // FAC-22: when a faction has a custom banner the banner art usually already
+  // carries the brand (logo / name baked into the image), so we drop the
+  // overlay <h1> to avoid the name reading twice. The fallback gradient
+  // placeholder has no text, so we still need the text header in that case.
+  const hasCustomBanner = Boolean(faction.imageUrl);
+
   return (
     <div className="faction-detail">
-      <header className="faction-detail__hero">
+      <header
+        className={`faction-detail__hero ${
+          hasCustomBanner ? 'faction-detail__hero--banner' : ''
+        }`}
+      >
         <img
           src={resolveImageSrc(faction.imageUrl, DEFAULT_FACTION_IMAGE)}
           onError={(event) => applyImageFallback(event, DEFAULT_FACTION_IMAGE)}
@@ -170,7 +180,9 @@ export default function FactionDetail() {
         <div className="faction-detail__hero-overlay" aria-hidden="true" />
         <div className="faction-detail__hero-content">
           <div className="faction-detail__hero-left">
-            <h1 className="faction-detail__hero-name">{faction.name}</h1>
+            {!hasCustomBanner && (
+              <h1 className="faction-detail__hero-name">{faction.name}</h1>
+            )}
             <p className="faction-detail__hero-caption">
               <span
                 className={`faction-detail__hero-status faction-detail__hero-status--${faction.status}`}
