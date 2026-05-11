@@ -53,6 +53,7 @@ import EventDetail from './components/events/EventDetail';
 import EventResults from './components/events/EventResults';
 // Factions components
 import FactionsList from './components/factions/FactionsList';
+import FactionStandings from './components/factions/FactionStandings';
 import FactionDetail from './components/factions/FactionDetail';
 import MyFaction from './components/factions/MyFaction';
 // Tag Teams components
@@ -239,6 +240,9 @@ function AppLayout() {
             {/* Factions Routes - feature-gated */}
             <Route path="/factions" element={
               <FeatureRoute feature="stables"><FactionsList /></FeatureRoute>
+            } />
+            <Route path="/factions/standings" element={
+              <FeatureRoute feature="stables"><FactionStandings /></FeatureRoute>
             } />
             <Route path="/factions/:factionId" element={
               <FeatureRoute feature="stables"><FactionDetail /></FeatureRoute>

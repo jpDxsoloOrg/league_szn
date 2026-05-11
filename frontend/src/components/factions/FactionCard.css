@@ -1,86 +1,224 @@
+/*
+ * Faction card — magazine-cover style for the Factions Hub redesign.
+ * "Prestige Brutalism": tonal stacking, no borders, gold accents.
+ */
+
 .faction-card {
   display: flex;
   flex-direction: column;
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  overflow: hidden;
   text-decoration: none;
   color: var(--color-text);
-  transition: border-color 0.2s, transform 0.15s;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  position: relative;
+  isolation: isolate;
 }
 
-.faction-card:hover {
-  border-color: var(--color-primary);
+.faction-card:hover,
+.faction-card:focus-visible {
+  background-color: var(--color-surface-hover);
   transform: translateY(-2px);
+  outline: none;
 }
 
-.faction-card__image-wrapper {
+.faction-card:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+/* ─── Hero ─── */
+
+.faction-card__hero {
+  position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
   background-color: var(--color-bg);
 }
 
-.faction-card__image {
+.faction-card__hero-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
-.faction-card__body {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.faction-card__hero-overlay {
+  position: absolute;
+  inset: 40% 0 0 0;
+  background: linear-gradient(to bottom, transparent 0%, #131313 90%);
+  pointer-events: none;
+}
+
+.faction-card__status {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1a1a1a;
+  background-color: var(--color-primary);
+  z-index: 1;
+}
+
+.faction-card__status--pending {
+  background-color: #5a4a1e;
+  color: #fbbf24;
+}
+
+.faction-card__status--approved {
+  background-color: var(--color-primary);
+  color: #1a1a1a;
+}
+
+.faction-card__status--active {
+  background-color: var(--color-primary);
+  color: #1a1a1a;
+}
+
+.faction-card__status--disbanded {
+  background-color: #2a2a2a;
+  color: #888;
 }
 
 .faction-card__name {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--color-text);
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 12px;
   margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: var(--color-text);
+  z-index: 1;
 }
 
-.faction-card__members {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-}
+/* ─── Body ─── */
 
-.faction-card__stats {
+.faction-card__body {
+  padding: 16px;
   display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-top: 0.25rem;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.faction-card__stat {
-  font-size: 0.85rem;
-  font-weight: 600;
+.faction-card__leader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.faction-card__stat--wins {
-  color: var(--color-success);
+.faction-card__leader-avatar {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  background-color: var(--color-bg);
 }
 
-.faction-card__stat--losses {
-  color: var(--color-danger-alt);
-}
-
-.faction-card__stat--draws {
-  color: var(--color-warning);
-}
-
-.faction-card__stat--winpct {
+.faction-card__leader-text {
+  font-size: 0.8rem;
   color: var(--color-text-secondary);
 }
 
+/* ─── Roster ─── */
+
+.faction-card__roster {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.faction-card__roster-avatar {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  background-color: var(--color-bg);
+  outline: 1px solid var(--color-surface-hover);
+  outline-offset: -1px;
+}
+
+.faction-card__roster-extra {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  margin-left: 4px;
+}
+
+/* ─── Stat strip ─── */
+
+.faction-card__stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.faction-card__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.faction-card__stat-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.faction-card__stat-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+/* ─── Heat gauge ─── */
+
+.faction-card__heat {
+  display: flex;
+  gap: 4px;
+  margin-top: -4px;
+}
+
+.faction-card__flame {
+  width: 18px;
+  height: 18px;
+}
+
+.faction-card__flame--lit {
+  color: var(--color-primary);
+}
+
+.faction-card__flame--dim {
+  color: #2f2f2f;
+}
+
+/* ─── Mobile ─── */
+
 @media (max-width: 768px) {
   .faction-card__body {
-    padding: 0.75rem;
+    padding: 12px;
+    gap: 10px;
   }
 
   .faction-card__name {
-    font-size: 1rem;
+    font-size: 1.2rem;
+  }
+
+  .faction-card__roster-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .faction-card__stat-value {
+    font-size: 1.05rem;
   }
 }
