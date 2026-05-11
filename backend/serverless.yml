@@ -920,6 +920,14 @@ functions:
           path: stables/{stableId}/stats
           method: get
           cors: *corsConfig
+      - http:
+          path: stables/{stableId}/schedule
+          method: get
+          cors: *corsConfig
+      - http:
+          path: stables/{stableId}/promos
+          method: get
+          cors: *corsConfig
 
   # Tag Teams (consolidated: list, get, standings, create, update, respond, approve, reject, dissolve, delete)
   tagTeams:
