@@ -1,0 +1,94 @@
+/*
+ * Shared confirmation modal for member removal. Used by FAC-12 (Members)
+ * and FAC-16 (Manage). Visually matches the original in-file styling from
+ * FAC-12 — extracted to keep both consumers in sync.
+ */
+
+.remove-member-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.remove-member-modal {
+  background-color: var(--color-surface);
+  width: 100%;
+  max-width: 480px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.remove-member-modal__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.remove-member-modal__warning {
+  margin: 0;
+  padding: 8px 12px;
+  background-color: rgba(220, 53, 69, 0.2);
+  color: var(--color-danger-alt);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.remove-member-modal__body {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.remove-member-modal__error {
+  margin: 0;
+  color: var(--color-danger-alt);
+  font-size: 0.85rem;
+}
+
+.remove-member-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.remove-member-modal__cancel {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+  padding: 8px 16px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.remove-member-modal__cancel:hover {
+  background-color: #333;
+}
+
+.remove-member-modal__confirm {
+  background-color: var(--color-danger);
+  color: #fff;
+  padding: 8px 16px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.remove-member-modal__confirm:hover {
+  background-color: #b02a37;
+}
+
+.remove-member-modal__cancel:disabled,
+.remove-member-modal__confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
