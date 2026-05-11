@@ -1,0 +1,447 @@
+/*
+ * Faction Detail · Stats tab (FAC-13).
+ * KPI grid + bar/line/donut charts + leaderboard + H2H + milestones.
+ */
+
+.faction-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 0;
+}
+
+.faction-stats__loading,
+.faction-stats__error {
+  margin: 24px 0;
+  color: var(--color-text-muted);
+}
+
+.faction-stats__error {
+  color: var(--color-danger-alt);
+}
+
+/* ─── Utility row ─── */
+
+.faction-stats__utility {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.faction-stats__seasons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.faction-stats__season {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+  padding: 6px 14px;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.faction-stats__season:hover {
+  background-color: #333;
+}
+
+.faction-stats__season--active {
+  background-color: var(--color-primary);
+  color: #1a1a1a;
+}
+
+.faction-stats__compare {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.faction-stats__compare select {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  padding: 6px 10px;
+  border: none;
+  font-size: 0.85rem;
+}
+
+.faction-stats__compare select:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* ─── KPI grid ─── */
+
+.faction-stats__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.faction-stats__kpi {
+  background-color: var(--color-surface);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.faction-stats__kpi-title {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.faction-stats__kpi-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.faction-stats__kpi-subtitle {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.faction-stats__kpi-pct {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.faction-stats__kpi-pct-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.faction-stats__kpi-heat {
+  display: flex;
+  gap: 4px;
+}
+
+.faction-stats__flame {
+  width: 20px;
+  height: 20px;
+}
+
+.faction-stats__flame--lit {
+  color: var(--color-primary);
+}
+
+.faction-stats__flame--dim {
+  color: #2f2f2f;
+}
+
+/* ─── Layout ─── */
+
+.faction-stats__main {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.faction-stats__left,
+.faction-stats__right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.faction-stats__card {
+  background-color: var(--color-surface);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faction-stats__card-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.faction-stats__empty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.faction-stats__callout {
+  margin: 0;
+  padding-top: 4px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--color-primary);
+}
+
+/* ─── Bar chart ─── */
+
+.faction-stats__bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.faction-stats__bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.faction-stats__bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--color-text);
+}
+
+.faction-stats__bar-format {
+  font-weight: 600;
+}
+
+.faction-stats__bar-record {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.faction-stats__bar-track {
+  display: flex;
+  height: 12px;
+  background-color: var(--color-bg);
+  overflow: hidden;
+}
+
+.faction-stats__bar-seg {
+  display: block;
+  height: 100%;
+}
+
+.faction-stats__bar-seg--w {
+  background-color: var(--color-primary);
+}
+
+.faction-stats__bar-seg--l {
+  background-color: var(--color-danger-alt);
+}
+
+.faction-stats__bar-seg--d {
+  background-color: var(--color-warning);
+}
+
+/* ─── Line chart ─── */
+
+.faction-stats__lines {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.faction-stats__legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.faction-stats__legend-dot {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.faction-stats__legend-dot--w {
+  background-color: var(--color-primary);
+}
+
+.faction-stats__legend-dot--l {
+  background-color: var(--color-danger-alt);
+}
+
+.faction-stats__legend-dot--d {
+  background-color: var(--color-warning);
+}
+
+/* ─── Donut ─── */
+
+.faction-stats__outcome {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.faction-stats__donut-wrap {
+  flex-shrink: 0;
+}
+
+/* ─── Leaderboard ─── */
+
+.faction-stats__leaderboard {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faction-stats__leader-row {
+  display: grid;
+  grid-template-columns: 24px 32px 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.faction-stats__leader-rank {
+  font-weight: 800;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.faction-stats__leader-avatar {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  background-color: var(--color-bg);
+}
+
+.faction-stats__leader-name {
+  font-size: 0.85rem;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.faction-stats__leader-pct {
+  font-weight: 800;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── H2H ─── */
+
+.faction-stats__h2h {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faction-stats__h2h-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background-color: var(--color-bg);
+}
+
+.faction-stats__h2h-row--focus {
+  background-color: var(--color-surface-hover);
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.faction-stats__h2h-name {
+  font-size: 0.85rem;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.faction-stats__h2h-record {
+  font-weight: 800;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+}
+
+/* ─── Milestones ─── */
+
+.faction-stats__milestones {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.faction-stats__milestones li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.faction-stats__milestone-label {
+  color: var(--color-text-secondary);
+}
+
+.faction-stats__milestone-value {
+  color: var(--color-primary);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Responsive ─── */
+
+@media (max-width: 1100px) {
+  .faction-stats__main {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .faction-stats__kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .faction-stats__kpi-value {
+    font-size: 1.8rem;
+  }
+
+  .faction-stats__compare {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .faction-stats__compare select {
+    flex: 1;
+  }
+}

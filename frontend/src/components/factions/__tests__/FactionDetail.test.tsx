@@ -147,11 +147,11 @@ describe('FactionDetail shell (FAC-11)', () => {
     renderShell();
     await screen.findByRole('heading', { name: 'The Brood' });
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Stats' }));
+    await userEvent.click(screen.getByRole('tab', { name: 'Schedule' }));
     await waitFor(() => {
-      expect(screen.getByText('Stats tab — coming soon.')).toBeInTheDocument();
+      expect(screen.getByText('Schedule tab — coming soon.')).toBeInTheDocument();
     });
-    expect(screen.getByRole('tab', { name: 'Stats' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('tab', { name: 'Schedule' })).toHaveAttribute('aria-current', 'page');
 
     await userEvent.click(screen.getByRole('tab', { name: 'Manage' }));
     await waitFor(() => {
