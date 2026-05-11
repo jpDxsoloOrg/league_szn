@@ -301,18 +301,31 @@
   position: relative;
 }
 
+/* FAC-23: compact 32x32 icon-button — must stay a tonal square so it doesn't
+   collide with the right-rail composition donut, and the global gold-button
+   fallback in App.css is excluded from this class for the same reason. */
 .faction-members__menu-trigger {
-  background: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-surface-hover);
   border: none;
-  color: var(--color-text);
-  font-size: 1.4rem;
-  cursor: pointer;
-  padding: 4px 8px;
+  border-radius: 4px;
+  color: var(--color-text-secondary);
+  font-size: 1.1rem;
   line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
-.faction-members__menu-trigger:hover {
-  color: var(--color-primary);
+.faction-members__menu-trigger:hover,
+.faction-members__menu-trigger:focus-visible {
+  background-color: #333;
+  color: var(--color-text);
+  outline: none;
 }
 
 .faction-members__menu {

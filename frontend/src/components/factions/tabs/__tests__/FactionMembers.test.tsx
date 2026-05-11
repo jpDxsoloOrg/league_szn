@@ -337,3 +337,79 @@ describe('FactionMembers tab (FAC-12)', () => {
     });
   });
 });
+
+// ─── FAC-23 — Leave faction option ─────────────────────────────────
+describe('FactionMembers tab — Leave faction (FAC-23)', () => {
+  it("shows Leave faction on the caller's own row when they're a non-leader member", async () => {
+    // Caller is "m1" (Christian) — a regular member, not the leader.
+    mockUseAuth.mockReturnValue({ playerId: 'm1', isWrestler: true });
+    renderTab();
+    await screen.findAllByRole('article');
+
+    const myRow = screen
+      .getAllByRole('article')
+      .find((a) => within(a).queryByText('Christian'))!;
+    await userEvent.click(within(myRow).getByRole('button', { name: /Actions for/ }));
+
+    expect(screen.getByRole('menuitem', { name: 'Leave faction' })).toBeInTheDocument();
+    // Non-leader callers must not see Remove anywhere — Leave is the only
+    // destructive action available to them.
+    expect(screen.queryByRole('menuitem', { name: 'Remove from faction' })).not.toBeInTheDocument();
+  });
+
+  it("does NOT show Leave faction on the leader's own row", async () => {
+    // Default beforeEach makes the caller the leader.
+    renderTab();
+    await screen.findAllByRole('article');
+
+    const leaderRow = screen
+      .getAllByRole('article')
+      .find((a) => within(a).queryByText('Edge'))!;
+    await userEvent.click(within(leaderRow).getByRole('button', { name: /Actions for/ }));
+
+    expect(screen.queryByRole('menuitem', { name: 'Leave faction' })).not.toBeInTheDocument();
+  });
+
+  it("does NOT show Leave faction on another member's row (only on caller's own)", async () => {
+    // Caller is m1 (Christian) — opening m2's (Gangrel) action menu.
+    mockUseAuth.mockReturnValue({ playerId: 'm1', isWrestler: true });
+    renderTab();
+    await screen.findAllByRole('article');
+
+    const otherRow = screen
+      .getAllByRole('article')
+      .find((a) => within(a).queryByText('Gangrel'))!;
+    await userEvent.click(within(otherRow).getByRole('button', { name: /Actions for/ }));
+
+    expect(screen.queryByRole('menuitem', { name: 'Leave faction' })).not.toBeInTheDocument();
+  });
+
+  it('calls removeMember with the caller playerId and navigates to /factions on confirm', async () => {
+    mockUseAuth.mockReturnValue({ playerId: 'm1', isWrestler: true });
+    mockRemoveMember.mockResolvedValueOnce({ status: 'active' });
+    renderTab();
+    await screen.findAllByRole('article');
+
+    const myRow = screen
+      .getAllByRole('article')
+      .find((a) => within(a).queryByText('Christian'))!;
+    await userEvent.click(within(myRow).getByRole('button', { name: /Actions for/ }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Leave faction' }));
+
+    // Modal renders the leave-mode copy (title references the faction, not
+    // a third-party member name).
+    expect(await screen.findByRole('dialog', { name: /Leave The Brood/ })).toBeInTheDocument();
+    // The confirm button label is the leave variant, not "Remove member".
+    await userEvent.click(screen.getByRole('button', { name: 'Leave faction' }));
+
+    await waitFor(() => {
+      expect(mockRemoveMember).toHaveBeenCalledWith('f1', 'm1');
+    });
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(
+        '/factions',
+        expect.objectContaining({ state: expect.any(Object) }),
+      );
+    });
+  });
+});

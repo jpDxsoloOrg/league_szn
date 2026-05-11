@@ -14,6 +14,13 @@ interface Props {
   error?: string | null;
   /** True while the API call is in-flight — disables the buttons. */
   busy?: boolean;
+  /**
+   * 'remove' (default) — leader removing another member.
+   * 'leave' — caller leaving the faction themselves (FAC-23).
+   * Switches the copy of title / body / confirm-button only; the
+   * underlying API call is the same (removeMember with their own playerId).
+   */
+  mode?: 'remove' | 'leave';
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -30,10 +37,38 @@ export default function RemoveMemberModal({
   willDisband,
   error,
   busy,
+  mode = 'remove',
   onCancel,
   onConfirm,
 }: Props) {
   const { t } = useTranslation();
+  const isLeave = mode === 'leave';
+
+  const title = isLeave
+    ? t('factions.members.leaveConfirmTitle', 'Leave {{factionName}}?', { factionName })
+    : t('factions.my.removeMemberConfirmTitle', 'Remove {{playerName}} from {{factionName}}?', {
+        playerName,
+        factionName,
+      });
+
+  const body = isLeave
+    ? t(
+        'factions.members.leaveConfirmBody',
+        'You will lose access to faction-only surfaces (channel, DMs, schedule).',
+      )
+    : t(
+        'factions.members.removeBody',
+        'They will lose access to faction-only surfaces (channel, DMs, schedule).',
+      );
+
+  const confirmIdleLabel = isLeave
+    ? t('factions.members.leaveConfirm', 'Leave faction')
+    : t('factions.my.removeMemberConfirm', 'Remove member');
+
+  const confirmBusyLabel = isLeave
+    ? t('common.leaving', 'Leaving…')
+    : t('common.removing', 'Removing…');
+
   return (
     <div
       className="remove-member-modal__backdrop"
@@ -43,10 +78,7 @@ export default function RemoveMemberModal({
     >
       <div className="remove-member-modal">
         <h2 id="remove-member-title" className="remove-member-modal__title">
-          {t('factions.my.removeMemberConfirmTitle', 'Remove {{playerName}} from {{factionName}}?', {
-            playerName,
-            factionName,
-          })}
+          {title}
         </h2>
         {willDisband && (
           <p className="remove-member-modal__warning">
@@ -56,12 +88,7 @@ export default function RemoveMemberModal({
             )}
           </p>
         )}
-        <p className="remove-member-modal__body">
-          {t(
-            'factions.members.removeBody',
-            'They will lose access to faction-only surfaces (channel, DMs, schedule).',
-          )}
-        </p>
+        <p className="remove-member-modal__body">{body}</p>
         {error && (
           <p className="remove-member-modal__error" role="alert">
             {error}
@@ -82,9 +109,7 @@ export default function RemoveMemberModal({
             onClick={onConfirm}
             disabled={busy}
           >
-            {busy
-              ? t('common.removing', 'Removing…')
-              : t('factions.my.removeMemberConfirm', 'Remove member')}
+            {busy ? confirmBusyLabel : confirmIdleLabel}
           </button>
         </div>
       </div>
