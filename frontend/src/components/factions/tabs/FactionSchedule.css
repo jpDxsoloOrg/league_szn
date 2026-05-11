@@ -1,0 +1,288 @@
+/*
+ * Faction Detail · Schedule tab (FAC-14).
+ * Upcoming matches list + member filter / mini calendar / timeline rail.
+ */
+
+.faction-schedule {
+  padding: 24px 0;
+}
+
+.faction-schedule__loading,
+.faction-schedule__error,
+.faction-schedule__empty {
+  margin: 24px 0;
+  color: var(--color-text-muted);
+}
+
+.faction-schedule__error {
+  color: var(--color-danger-alt);
+}
+
+.faction-schedule__main {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.faction-schedule__heading {
+  margin: 0 0 12px 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* ─── List ─── */
+
+.faction-schedule__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faction-schedule__row {
+  background-color: var(--color-surface);
+}
+
+.faction-schedule__row-link {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 16px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: var(--color-text);
+  transition: background-color 0.15s ease;
+}
+
+.faction-schedule__row-link:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.faction-schedule__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.faction-schedule__date-day {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.faction-schedule__date-month {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.faction-schedule__row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.faction-schedule__format {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--color-primary);
+}
+
+.faction-schedule__member {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.faction-schedule__opponents {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.faction-schedule__event {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.faction-schedule__row-meta {
+  display: flex;
+  align-items: center;
+}
+
+.faction-schedule__countdown {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+/* ─── Right rail ─── */
+
+.faction-schedule__rail {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faction-schedule__rail-card {
+  background-color: var(--color-surface);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faction-schedule__rail-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.faction-schedule__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.faction-schedule__chip {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-muted);
+  padding: 4px 10px;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.faction-schedule__chip:hover {
+  background-color: #333;
+}
+
+.faction-schedule__chip--on {
+  background-color: var(--color-primary);
+  color: #1a1a1a;
+}
+
+/* ─── Calendar ─── */
+
+.faction-schedule__calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.faction-schedule__day {
+  background-color: var(--color-bg);
+  color: var(--color-text-muted);
+  padding: 8px 4px;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: default;
+  font-size: 0.75rem;
+  min-height: 36px;
+}
+
+.faction-schedule__day--has-matches {
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.faction-schedule__day--has-matches:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.faction-schedule__day-num {
+  font-weight: 700;
+}
+
+.faction-schedule__day-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--color-primary);
+  border-radius: 50%;
+}
+
+/* ─── Timeline ─── */
+
+.faction-schedule__timeline {
+  position: relative;
+  height: 24px;
+}
+
+.faction-schedule__timeline-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 2px;
+  background-color: var(--color-surface-hover);
+}
+
+.faction-schedule__timeline-pill {
+  position: absolute;
+  top: 4px;
+  width: 6px;
+  height: 16px;
+  background-color: var(--color-primary);
+  transform: translateX(-50%);
+}
+
+/* ─── Responsive ─── */
+
+@media (max-width: 1100px) {
+  .faction-schedule__main {
+    grid-template-columns: 1fr;
+  }
+
+  .faction-schedule__rail {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .faction-schedule__row-link {
+    grid-template-columns: 56px 1fr;
+    grid-template-areas:
+      'date body'
+      'meta meta';
+    gap: 12px;
+  }
+
+  .faction-schedule__date {
+    grid-area: date;
+  }
+
+  .faction-schedule__row-body {
+    grid-area: body;
+  }
+
+  .faction-schedule__row-meta {
+    grid-area: meta;
+  }
+
+  .faction-schedule__date-day {
+    font-size: 1.4rem;
+  }
+}
