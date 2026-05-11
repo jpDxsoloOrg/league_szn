@@ -147,6 +147,7 @@ export default function FactionMembers() {
   const [memberToRemove, setMemberToRemove] = useState<{
     playerId: string;
     playerName: string;
+    mode: 'remove' | 'leave';
   } | null>(null);
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
@@ -265,6 +266,7 @@ export default function FactionMembers() {
 
   const handleRemove = async () => {
     if (!memberToRemove) return;
+    const { mode } = memberToRemove;
     setRemoving(true);
     setRemoveError(null);
     try {
@@ -276,6 +278,25 @@ export default function FactionMembers() {
       const wasDisbanded = result?.status === 'disbanded';
       const removedName = memberToRemove.playerName;
       setMemberToRemove(null);
+
+      // FAC-23: when the caller is leaving, they lose access to this Detail
+      // page entirely — always navigate them back to /factions whether or
+      // not the faction also disbanded as a side effect.
+      if (mode === 'leave') {
+        navigate('/factions', {
+          state: {
+            toast: wasDisbanded
+              ? t(
+                  'factions.my.removeMemberDisbanded',
+                  'Faction disbanded — only the leader remained.',
+                )
+              : t('factions.members.leaveSuccess', 'You left {{factionName}}.', {
+                  factionName: faction.name,
+                }),
+          },
+        });
+        return;
+      }
 
       if (wasDisbanded) {
         navigate('/factions', {
@@ -554,11 +575,33 @@ export default function FactionMembers() {
                               setMemberToRemove({
                                 playerId: row.playerId,
                                 playerName: row.wrestlerName,
+                                mode: 'remove',
                               });
                               setRemoveError(null);
                             }}
                           >
                             {t('factions.members.actionRemove', 'Remove from faction')}
+                          </button>
+                        )}
+                        {/* FAC-23: caller's own row (only if they aren't the
+                            leader) gets a "Leave faction" option. Leaders
+                            use transfer-leadership / disband instead. */}
+                        {!row.isLeader && row.playerId === auth.playerId && (
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className="faction-members__menu-item faction-members__menu-item--destructive"
+                            onClick={() => {
+                              setOpenMenuFor(null);
+                              setMemberToRemove({
+                                playerId: row.playerId,
+                                playerName: row.wrestlerName,
+                                mode: 'leave',
+                              });
+                              setRemoveError(null);
+                            }}
+                          >
+                            {t('factions.members.actionLeave', 'Leave faction')}
                           </button>
                         )}
                       </div>
@@ -711,7 +754,8 @@ export default function FactionMembers() {
         />
       )}
 
-      {/* Remove-member confirmation modal — shared with the Manage tab. */}
+      {/* Remove-member / leave-faction confirmation modal — shared with the
+          Manage tab. The mode flag picks between the two copy variants. */}
       {memberToRemove && (
         <RemoveMemberModal
           factionName={faction.name}
@@ -719,6 +763,7 @@ export default function FactionMembers() {
           willDisband={willDisband}
           error={removeError}
           busy={removing}
+          mode={memberToRemove.mode}
           onCancel={() => {
             setMemberToRemove(null);
             setRemoveError(null);
