@@ -275,7 +275,7 @@
   margin: 0.75rem 1rem;
   padding: 0.5rem 1rem !important;
   background-color: var(--color-primary) !important;
-  color: #000 !important;
+  color: var(--color-on-primary) !important;
   border: none;
   border-radius: 4px;
   font-size: 0.875rem;

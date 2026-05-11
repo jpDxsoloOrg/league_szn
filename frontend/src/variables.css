@@ -1,6 +1,10 @@
 :root {
   --color-primary: #d4af37;
   --color-primary-hover: #b8941f;
+  /* Canonical "text on gold" — use this anywhere `background: var(--color-primary)` is set so the
+     default `--color-text: #fff` doesn't inherit through and render unreadable white-on-gold.
+     Value is intentionally near-black to clear WCAG AA contrast at every realistic weight. */
+  --color-on-primary: #1a1a1a;
   --color-bg: #0f0f0f;
   --color-surface: #1a1a1a;
   --color-surface-hover: #252525;
