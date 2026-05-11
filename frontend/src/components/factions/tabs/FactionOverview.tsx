@@ -246,15 +246,20 @@ export default function FactionOverview() {
             <ul className="faction-overview__promos">
               {promos.items.map((promo) => (
                 <li key={promo.promoId} className="faction-overview__promo">
-                  <div className="faction-overview__promo-headline">
-                    {promo.headline ?? promo.excerpt}
-                  </div>
-                  <div className="faction-overview__promo-meta">
-                    <span>{promo.authorWrestlerName}</span>
-                    <time dateTime={promo.date}>
-                      {new Date(promo.date).toLocaleDateString()}
-                    </time>
-                  </div>
+                  <Link
+                    to={`/promos/${promo.promoId}`}
+                    className="faction-overview__promo-link"
+                  >
+                    <div className="faction-overview__promo-headline">
+                      {promo.headline ?? promo.excerpt}
+                    </div>
+                    <div className="faction-overview__promo-meta">
+                      <span>{promo.authorWrestlerName}</span>
+                      <time dateTime={promo.date}>
+                        {new Date(promo.date).toLocaleDateString()}
+                      </time>
+                    </div>
+                  </Link>
                 </li>
               ))}
             </ul>
