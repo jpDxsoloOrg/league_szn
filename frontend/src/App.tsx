@@ -3,7 +3,7 @@ import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
 import { PresenceProvider } from './contexts/PresenceContext';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
-import { MenuModeProvider } from './contexts/MenuModeContext';
+import { MenuModeProvider } from './contexts/MenuModeProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
 import NotFound from './components/NotFound';
@@ -53,7 +53,15 @@ import EventDetail from './components/events/EventDetail';
 import EventResults from './components/events/EventResults';
 // Factions components
 import FactionsList from './components/factions/FactionsList';
+import FactionStandings from './components/factions/FactionStandings';
 import FactionDetail from './components/factions/FactionDetail';
+import FactionOverview from './components/factions/tabs/FactionOverview';
+import FactionMembers from './components/factions/tabs/FactionMembers';
+import FactionStats from './components/factions/tabs/FactionStats';
+import FactionScheduleTab from './components/factions/tabs/FactionSchedule';
+import FactionPromosTab from './components/factions/tabs/FactionPromos';
+import FactionMessages from './components/factions/tabs/FactionMessages';
+import FactionManage from './components/factions/tabs/FactionManage';
 import MyFaction from './components/factions/MyFaction';
 // Tag Teams components
 import TagTeamsList from './components/tagTeams/TagTeamsList';
@@ -240,9 +248,20 @@ function AppLayout() {
             <Route path="/factions" element={
               <FeatureRoute feature="stables"><FactionsList /></FeatureRoute>
             } />
+            <Route path="/factions/standings" element={
+              <FeatureRoute feature="stables"><FactionStandings /></FeatureRoute>
+            } />
             <Route path="/factions/:factionId" element={
               <FeatureRoute feature="stables"><FactionDetail /></FeatureRoute>
-            } />
+            }>
+              <Route index element={<FactionOverview />} />
+              <Route path="members" element={<FactionMembers />} />
+              <Route path="stats" element={<FactionStats />} />
+              <Route path="schedule" element={<FactionScheduleTab />} />
+              <Route path="promos" element={<FactionPromosTab />} />
+              <Route path="messages" element={<FactionMessages />} />
+              <Route path="manage" element={<FactionManage />} />
+            </Route>
             <Route path="/my-faction" element={
               <FeatureRoute feature="stables">
                 <ProtectedRoute requiredRole="Wrestler">

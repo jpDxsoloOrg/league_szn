@@ -1,67 +1,273 @@
-.factions-list-container {
+/*
+ * Factions Hub — redesigned list page (FAC-10).
+ *
+ * Prestige Brutalism: obsidian background, gold accents, tonal stacking,
+ * no borders. Layout is a 3-column card grid on desktop with a sticky
+ * right rail; on mobile the grid collapses to one column and the rail
+ * is hidden so the page stays scannable on a 375px viewport.
+ */
+
+.factions-hub {
   width: 100%;
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
-.factions-list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.factions-list-header h2 {
-  margin: 0;
-}
-
-.factions-view-toggle {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.factions-toggle-btn {
-  padding: 0.5rem 1.25rem;
-  border: 1px solid var(--color-border, #444);
-  border-radius: 6px;
-  background-color: var(--color-surface, #2d2d2d);
-  color: var(--color-text-secondary, #bbb);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-
-.factions-toggle-btn:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: var(--color-text-secondary, #bbb);
-}
-
-.factions-toggle-btn--active {
-  background-color: var(--color-primary, #d4af37);
-  color: #1a1a1a;
-  border-color: var(--color-primary, #d4af37);
-}
-
-.factions-toggle-btn--active:hover {
-  background-color: var(--color-primary, #d4af37);
-  border-color: var(--color-primary, #d4af37);
-}
-
-.factions-grid {
+.factions-hub__header {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1.5rem;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 8px 0 16px;
+}
+
+.factions-hub__title {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.factions-hub__tabs {
+  display: flex;
+  gap: 24px;
+}
+
+.factions-hub__tab {
+  position: relative;
+  padding: 8px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.factions-hub__tab:hover {
+  color: var(--color-text);
+}
+
+.factions-hub__tab--active {
+  color: var(--color-text);
+}
+
+.factions-hub__tab--active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 4px;
+  background-color: var(--color-primary);
+}
+
+.factions-hub__cta {
+  padding: 10px 20px;
+  background-color: var(--color-primary);
+  color: #1a1a1a;
+  font-weight: 700;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: background-color 0.15s ease;
+}
+
+.factions-hub__cta:hover {
+  background-color: var(--color-primary-hover);
+}
+
+/* ─── Filter row ─── */
+
+.factions-hub__filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.factions-hub__chip {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.factions-hub__chip:hover {
+  background-color: #333;
+}
+
+.factions-hub__chip--active {
+  background-color: var(--color-primary);
+  color: #1a1a1a;
+}
+
+.factions-hub__chip--active:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.factions-hub__search {
+  flex: 1 1 240px;
+  display: flex;
+  margin-left: auto;
+  min-width: 160px;
+}
+
+.factions-hub__search input {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: none;
+  font-size: 0.875rem;
+}
+
+.factions-hub__search input:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* ─── Main layout: grid + rail ─── */
+
+.factions-hub__main {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 32px;
+  align-items: start;
+}
+
+.factions-hub__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.factions-hub__rail {
+  position: sticky;
+  top: 16px;
+  background-color: var(--color-surface);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.factions-hub__rail-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.factions-hub__rail-empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.factions-hub__rail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.factions-hub__rail-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.factions-hub__rail-avatar {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  background-color: var(--color-bg);
+  flex-shrink: 0;
+}
+
+.factions-hub__rail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.factions-hub__rail-summary {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.factions-hub__rail-time {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+/* ─── Visually-hidden util (sr-only) ─── */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── Responsive ─── */
+
+@media (max-width: 1200px) {
+  .factions-hub__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
-  .factions-list-header {
-    flex-direction: column;
-    align-items: flex-start;
+  .factions-hub__header {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
-  .factions-grid {
+  .factions-hub__title {
+    font-size: 1.85rem;
+  }
+
+  .factions-hub__tabs {
+    gap: 16px;
+    overflow-x: auto;
+  }
+
+  .factions-hub__cta {
+    justify-self: flex-start;
+  }
+
+  .factions-hub__main {
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: 16px;
+  }
+
+  .factions-hub__grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .factions-hub__rail {
+    display: none;
   }
 }

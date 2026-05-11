@@ -12,6 +12,14 @@ import { handler as disbandStableHandler } from './disbandStable';
 import { handler as reactivateStableHandler } from './reactivateStable';
 import { handler as removeMemberHandler } from './removeMember';
 import { handler as deleteStableHandler } from './deleteStable';
+import { handler as postMessageHandler } from './postMessage';
+import { handler as getMessagesHandler } from './getMessages';
+import { handler as postDirectMessageHandler } from './postDirectMessage';
+import { handler as getDirectMessageThreadHandler } from './getDirectMessageThread';
+import { handler as getMyDirectMessageThreadsHandler } from './getMyDirectMessageThreads';
+import { handler as getFactionStatsHandler } from './getFactionStats';
+import { handler as getFactionScheduleHandler } from './getFactionSchedule';
+import { handler as getFactionPromosHandler } from './getFactionPromos';
 import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
@@ -92,6 +100,51 @@ const routes: ReadonlyArray<RouteConfig> = [
     method: 'POST',
     handler: removeMemberHandler,
     requireAuth: true,
+  },
+  {
+    resource: '/stables/{stableId}/messages',
+    method: 'GET',
+    handler: getMessagesHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/stables/{stableId}/messages',
+    method: 'POST',
+    handler: postMessageHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/stables/{stableId}/direct-messages',
+    method: 'GET',
+    handler: getMyDirectMessageThreadsHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/stables/{stableId}/direct-messages',
+    method: 'POST',
+    handler: postDirectMessageHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/stables/{stableId}/direct-messages/{partnerPlayerId}',
+    method: 'GET',
+    handler: getDirectMessageThreadHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/stables/{stableId}/stats',
+    method: 'GET',
+    handler: getFactionStatsHandler,
+  },
+  {
+    resource: '/stables/{stableId}/schedule',
+    method: 'GET',
+    handler: getFactionScheduleHandler,
+  },
+  {
+    resource: '/stables/{stableId}/promos',
+    method: 'GET',
+    handler: getFactionPromosHandler,
   },
   {
     resource: '/stables/{stableId}',

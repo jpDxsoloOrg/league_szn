@@ -139,6 +139,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     return success({
       ...stable,
+      // FAC-22: override the (possibly stale or uninitialized) raw counters
+      // with the values we just derived from completed-match outcomes so the
+      // Detail hero matches Standings, which also computes from matches.
+      wins: computedWins,
+      losses: computedLosses,
+      draws: computedDraws,
       members,
       leaderName,
       headToHead,

@@ -2,6 +2,7 @@ import type { SyntheticEvent } from 'react';
 
 export const DEFAULT_WRESTLER_IMAGE = '/images/placeholders/wrestler-default.svg';
 export const DEFAULT_CHAMPIONSHIP_IMAGE = '/images/placeholders/championship-default.svg';
+export const DEFAULT_FACTION_IMAGE = '/images/placeholders/faction-default.svg';
 
 export function resolveImageSrc(src: string | null | undefined, fallbackSrc: string): string {
   return src?.trim() ? src : fallbackSrc;

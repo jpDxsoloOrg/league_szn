@@ -4,6 +4,10 @@ import type { SeasonRepository } from './SeasonRepository';
 import type { LeagueOpsRepository } from './LeagueOpsRepository';
 import type { ContentRepository } from './ContentRepository';
 import type { UserRepository } from './UserRepository';
+import type {
+  FactionMessagesRepository,
+  FactionDirectMessagesRepository,
+} from './factionMessages';
 import type { UnitOfWorkFactory } from './unitOfWork';
 
 export interface Repositories {
@@ -13,6 +17,8 @@ export interface Repositories {
   leagueOps: LeagueOpsRepository;
   content: ContentRepository;
   user: UserRepository;
+  factionMessages: FactionMessagesRepository;
+  factionDirectMessages: FactionDirectMessagesRepository;
   runInTransaction: UnitOfWorkFactory;
 
   // Admin bulk operations

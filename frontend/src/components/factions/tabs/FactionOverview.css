@@ -1,0 +1,353 @@
+/*
+ * Faction Detail · Overview tab content (FAC-11).
+ * Two-column split (left 8 / right 4). Tonal stacking, no borders.
+ */
+
+.faction-overview {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 32px;
+  padding: 24px 0;
+}
+
+.faction-overview__main {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-width: 0;
+}
+
+.faction-overview__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.faction-overview__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faction-overview__section-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.faction-overview__empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+/* ─── Roster row ─── */
+
+.faction-overview__roster-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: 8px;
+}
+
+.faction-overview__member {
+  flex: 0 0 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: var(--color-surface);
+  text-decoration: none;
+  color: var(--color-text);
+  padding: 8px;
+  scroll-snap-align: start;
+  transition: background-color 0.15s ease;
+}
+
+.faction-overview__member:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.faction-overview__member-image-wrap {
+  aspect-ratio: 4 / 5;
+  background-color: var(--color-bg);
+  overflow: hidden;
+}
+
+.faction-overview__member-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.faction-overview__member-position {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-primary);
+}
+
+.faction-overview__member-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.faction-overview__member-record {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Recent results ─── */
+
+.faction-overview__results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faction-overview__result {
+  display: grid;
+  grid-template-columns: 100px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background-color: var(--color-surface);
+  padding: 10px 12px;
+}
+
+.faction-overview__result-date {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.faction-overview__result-format {
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.faction-overview__result-pill {
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #1a1a1a;
+}
+
+.faction-overview__result-pill--w {
+  background-color: var(--color-primary);
+}
+
+.faction-overview__result-pill--l {
+  background-color: var(--color-danger-alt);
+  color: #1a1a1a;
+}
+
+.faction-overview__result-pill--d {
+  background-color: var(--color-text-muted);
+}
+
+/* ─── Promos ─── */
+
+.faction-overview__promos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.faction-overview__promo {
+  background-color: var(--color-surface);
+  min-width: 0;
+  transition: background-color 0.15s ease;
+}
+
+.faction-overview__promo:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.faction-overview__promo-link {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.faction-overview__promo-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.faction-overview__promo-headline {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.faction-overview__promo-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* ─── Right rail cards ─── */
+
+.faction-overview__card {
+  background-color: var(--color-surface);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faction-overview__card-title {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* Streak */
+
+.faction-overview__streak {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.faction-overview__streak-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.faction-overview__sparkline {
+  display: flex;
+  gap: 3px;
+}
+
+.faction-overview__spark {
+  width: 12px;
+  height: 12px;
+  background-color: var(--color-text-muted);
+}
+
+.faction-overview__spark--w {
+  background-color: var(--color-primary);
+}
+
+.faction-overview__spark--l {
+  background-color: var(--color-danger-alt);
+}
+
+.faction-overview__spark--d {
+  background-color: var(--color-neutral);
+}
+
+/* Upcoming */
+
+.faction-overview__upcoming {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.faction-overview__upcoming-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.faction-overview__upcoming-countdown {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.04em;
+}
+
+.faction-overview__upcoming-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+
+.faction-overview__upcoming-format {
+  font-weight: 600;
+}
+
+.faction-overview__upcoming-member {
+  color: var(--color-text-muted);
+}
+
+/* Activity */
+
+.faction-overview__activity {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faction-overview__activity-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.faction-overview__activity-summary {
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+
+.faction-overview__activity-time {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+/* ─── Responsive ─── */
+
+@media (max-width: 1024px) {
+  .faction-overview__promos {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .faction-overview {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .faction-overview__member {
+    flex-basis: 120px;
+  }
+}

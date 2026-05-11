@@ -1,0 +1,585 @@
+/*
+ * Faction Detail · Members tab (FAC-12).
+ * Stacked member rows + right-rail composition/tenure panels.
+ */
+
+.faction-members {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 0;
+}
+
+.faction-members__feedback {
+  background-color: var(--color-surface);
+  color: var(--color-primary);
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+.faction-members__error {
+  margin: 0;
+  color: var(--color-danger-alt);
+  font-size: 0.85rem;
+}
+
+.faction-members__empty {
+  margin: 16px 0;
+  color: var(--color-text-muted);
+}
+
+/* ─── Utility row ─── */
+
+.faction-members__utility {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.faction-members__sort {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  padding: 8px 12px;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.faction-members__sort:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.faction-members__filters {
+  display: flex;
+  gap: 4px;
+}
+
+.faction-members__chip {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+  padding: 6px 12px;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.faction-members__chip:hover {
+  background-color: #333;
+}
+
+.faction-members__chip--active {
+  background-color: var(--color-primary);
+  color: #1a1a1a;
+}
+
+.faction-members__search {
+  flex: 1 1 200px;
+  min-width: 160px;
+}
+
+.faction-members__search input {
+  width: 100%;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: none;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+}
+
+.faction-members__search input:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.faction-members__invite-cta {
+  background-color: var(--color-primary);
+  color: #1a1a1a;
+  padding: 8px 16px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.faction-members__invite-cta:hover {
+  background-color: var(--color-primary-hover);
+}
+
+/* ─── Main layout ─── */
+
+.faction-members__main {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+  align-items: start;
+}
+
+.faction-members__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ─── Member row ─── */
+
+.faction-members__row {
+  display: grid;
+  grid-template-columns: 96px 1.5fr 2fr auto 40px;
+  gap: 16px;
+  align-items: center;
+  background-color: var(--color-surface);
+  padding: 12px 16px;
+}
+
+.faction-members__portrait {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  background-color: var(--color-bg);
+}
+
+.faction-members__row-identity {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.faction-members__row-name {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.faction-members__row-player {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.faction-members__row-position {
+  margin: 4px 0 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.faction-members__role {
+  padding: 2px 6px;
+  font-weight: 800;
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.faction-members__role--leader {
+  background-color: var(--color-primary);
+  color: #1a1a1a;
+}
+
+.faction-members__row-divider {
+  color: var(--color-text-muted);
+}
+
+.faction-members__row-tenure {
+  color: var(--color-text-secondary);
+}
+
+.faction-members__stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.faction-members__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.faction-members__stat-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.faction-members__stat-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.faction-members__delta-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.faction-members__delta {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.faction-members__delta--up {
+  color: var(--color-success);
+}
+
+.faction-members__delta--down {
+  color: var(--color-danger-alt);
+}
+
+.faction-members__delta--flat {
+  color: var(--color-text-muted);
+}
+
+.faction-members__form {
+  display: flex;
+  gap: 3px;
+}
+
+.faction-members__form-cell {
+  width: 14px;
+  height: 14px;
+}
+
+.faction-members__form-cell--w {
+  background-color: var(--color-success);
+}
+
+.faction-members__form-cell--l {
+  background-color: var(--color-danger-alt);
+}
+
+.faction-members__form-cell--d {
+  background-color: var(--color-warning);
+}
+
+.faction-members__form-empty {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.faction-members__streak {
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.faction-members__streak--hot {
+  background-color: var(--color-primary);
+  color: #1a1a1a;
+}
+
+.faction-members__streak--cold {
+  background-color: rgba(220, 53, 69, 0.2);
+  color: var(--color-danger-alt);
+}
+
+/* 3-dot menu */
+
+.faction-members__actions {
+  position: relative;
+}
+
+/* FAC-23: compact 32x32 icon-button — must stay a tonal square so it doesn't
+   collide with the right-rail composition donut, and the global gold-button
+   fallback in App.css is excluded from this class for the same reason. */
+.faction-members__menu-trigger {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-surface-hover);
+  border: none;
+  border-radius: 4px;
+  color: var(--color-text-secondary);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.faction-members__menu-trigger:hover,
+.faction-members__menu-trigger:focus-visible {
+  background-color: #333;
+  color: var(--color-text);
+  outline: none;
+}
+
+.faction-members__menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 10;
+  background-color: var(--color-surface-hover);
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  margin-top: 4px;
+}
+
+.faction-members__menu-item {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 8px 14px;
+  color: var(--color-text);
+  font-size: 0.85rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.faction-members__menu-item:hover {
+  background-color: #333;
+}
+
+.faction-members__menu-item--destructive {
+  color: var(--color-danger-alt);
+}
+
+/* ─── Totals card ─── */
+
+.faction-members__totals {
+  background-color: var(--color-surface);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.faction-members__totals-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.faction-members__totals-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.faction-members__totals-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.faction-members__totals-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.faction-members__totals-stat strong {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.faction-members__callouts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.faction-members__callout {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  background-color: var(--color-surface-hover);
+  padding: 8px;
+}
+
+.faction-members__callout-label {
+  grid-column: 1 / -1;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.faction-members__callout-image {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  background-color: var(--color-bg);
+}
+
+.faction-members__callout-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.faction-members__callout-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Right rail ─── */
+
+.faction-members__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.faction-members__rail-card {
+  background-color: var(--color-surface);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faction-members__rail-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.faction-members__rail-donut {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.faction-members__rail-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.faction-members__rail-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--color-text);
+}
+
+.faction-members__rail-legend-dot {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+}
+
+.faction-members__tenure-bar {
+  display: flex;
+  height: 24px;
+  gap: 2px;
+}
+
+.faction-members__tenure-seg {
+  background-color: var(--color-surface-hover);
+}
+
+.faction-members__tenure-seg--leader {
+  background-color: var(--color-primary);
+}
+
+.faction-members__tenure-note {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+/* Modal styles moved to ../RemoveMemberModal.css when the dialog was
+ * extracted as a shared component for FAC-12 + FAC-16. */
+
+/* ─── Responsive ─── */
+
+@media (max-width: 1100px) {
+  .faction-members__main {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .faction-members__row {
+    grid-template-columns: 64px 1fr 40px;
+    grid-template-areas:
+      'portrait identity menu'
+      'stats stats stats'
+      'form form form';
+    gap: 12px;
+  }
+
+  .faction-members__portrait {
+    grid-area: portrait;
+    width: 64px;
+    height: 64px;
+  }
+
+  .faction-members__row-identity {
+    grid-area: identity;
+  }
+
+  .faction-members__stats {
+    grid-area: stats;
+  }
+
+  .faction-members__delta-form {
+    grid-area: form;
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .faction-members__actions {
+    grid-area: menu;
+  }
+
+  .faction-members__stat-value {
+    font-size: 1.1rem;
+  }
+
+  .faction-members__callouts {
+    grid-template-columns: 1fr;
+  }
+}

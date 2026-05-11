@@ -1,17 +1,71 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { factionsApi } from '../../services/api';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { logger } from '../../utils/logger';
-import type { StableDetailResponse, StablePlayerInfo, StableHeadToHead, StableMatchTypeRecord } from '../../types/stable';
+import type { StableDetailResponse } from '../../types/stable';
 import {
-  DEFAULT_WRESTLER_IMAGE,
+  DEFAULT_FACTION_IMAGE,
   resolveImageSrc,
   applyImageFallback,
 } from '../../constants/imageFallbacks';
 import Skeleton from '../ui/Skeleton';
 import './FactionDetail.css';
+
+/**
+ * Outlet context contract — child tabs receive the loaded faction so they
+ * don't re-fetch on mount. Each tab is free to fetch its own slice in
+ * addition; the shell only loads the identity + standings record.
+ */
+export interface FactionDetailContext {
+  faction: StableDetailResponse;
+}
+
+const HEAT_FLAME_COUNT = 5;
+
+function clampHeat(count: number | undefined): number {
+  if (!count || count < 0) return 0;
+  return Math.min(HEAT_FLAME_COUNT, Math.floor(count));
+}
+
+// FAC-22: defensive against legacy / mis-typed records where wins/losses/draws
+// could be undefined or negative. The backend now computes these from match
+// outcomes, but this guard keeps "-1-1-0"-style renders out of the UI regardless.
+function safeCount(n: number | null | undefined): number {
+  if (typeof n !== 'number' || !Number.isFinite(n) || n < 0) return 0;
+  return Math.floor(n);
+}
+
+function formatRecord(wins: number | null | undefined, losses: number | null | undefined, draws: number | null | undefined): string {
+  return `${safeCount(wins)}-${safeCount(losses)}-${safeCount(draws)}`;
+}
+
+function FlameIcon({ lit }: { lit: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox="0 0 16 16"
+      className={`faction-detail__flame ${lit ? 'faction-detail__flame--lit' : 'faction-detail__flame--dim'}`}
+    >
+      <path
+        d="M8 .5s2.5 3 2.5 5.5a2.5 2.5 0 0 1-1 2 1.5 1.5 0 0 0 1.5-2.5C12.5 7 14 9 14 11a6 6 0 1 1-12 0c0-2.5 2-4.5 2-7 0 2 2 3 4 3.5 0-2-1-3-1-4.5 0-1 1-2.5 1-2.5z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+const TABS = [
+  { value: 'overview', path: '', i18nKey: 'factions.detailTabs.overview', fallback: 'Overview' },
+  { value: 'members', path: 'members', i18nKey: 'factions.detailTabs.members', fallback: 'Members' },
+  { value: 'stats', path: 'stats', i18nKey: 'factions.detailTabs.stats', fallback: 'Stats' },
+  { value: 'schedule', path: 'schedule', i18nKey: 'factions.detailTabs.schedule', fallback: 'Schedule' },
+  { value: 'promos', path: 'promos', i18nKey: 'factions.detailTabs.promos', fallback: 'Promos' },
+  { value: 'messages', path: 'messages', i18nKey: 'factions.detailTabs.messages', fallback: 'Messages' },
+  { value: 'manage', path: 'manage', i18nKey: 'factions.detailTabs.manage', fallback: 'Manage' },
+] as const;
 
 export default function FactionDetail() {
   const { t } = useTranslation();
@@ -19,19 +73,20 @@ export default function FactionDetail() {
   const [faction, setFaction] = useState<StableDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useDocumentTitle(faction?.name ?? t('factions.detail', 'Faction Detail'));
 
   useEffect(() => {
     if (!factionId) return;
-    const abortController = new AbortController();
+    const ac = new AbortController();
 
     const fetchFaction = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await factionsApi.getById(factionId, abortController.signal);
-        if (!abortController.signal.aborted) {
+        const data = await factionsApi.getById(factionId, ac.signal);
+        if (!ac.signal.aborted) {
           setFaction(data);
         }
       } catch (err) {
@@ -40,15 +95,15 @@ export default function FactionDetail() {
           setError(err.message || 'Failed to load faction');
         }
       } finally {
-        if (!abortController.signal.aborted) {
+        if (!ac.signal.aborted) {
           setLoading(false);
         }
       }
     };
 
     fetchFaction();
-    return () => abortController.abort();
-  }, [factionId]);
+    return () => ac.abort();
+  }, [factionId, reloadKey]);
 
   if (loading) {
     return <Skeleton variant="block" count={4} className="faction-detail-skeleton" />;
@@ -56,9 +111,16 @@ export default function FactionDetail() {
 
   if (error) {
     return (
-      <div className="error">
+      <div className="faction-detail__error">
         <p>{t('common.error', 'Error')}: {error}</p>
-        <Link to="/factions" className="btn btn-secondary">
+        <button
+          type="button"
+          className="faction-detail__retry"
+          onClick={() => setReloadKey((k) => k + 1)}
+        >
+          {t('common.retry', 'Retry')}
+        </button>
+        <Link to="/factions" className="faction-detail__back-link">
           {t('factions.backToList', 'Back to Factions')}
         </Link>
       </div>
@@ -67,245 +129,117 @@ export default function FactionDetail() {
 
   if (!faction) {
     return (
-      <div className="error">
+      <div className="faction-detail__error">
         <p>{t('factions.notFound', 'Faction not found.')}</p>
-        <Link to="/factions" className="btn btn-secondary">
+        <Link to="/factions" className="faction-detail__back-link">
           {t('factions.backToList', 'Back to Factions')}
         </Link>
       </div>
     );
   }
 
-  const totalMatches = faction.wins + faction.losses + faction.draws;
+  const litHeat = clampHeat(faction.standings.currentStreak?.count);
+  const heatLabel = t('factions.hub.heatLabel', 'Heat: {{lit}} of {{total}}', {
+    lit: litHeat,
+    total: HEAT_FLAME_COUNT,
+  });
+  const statusFallbacks: Record<string, string> = {
+    pending: 'Pending',
+    approved: 'Active',
+    active: 'Active',
+    disbanded: 'Disbanded',
+  };
+  const statusLabel = t(
+    `factions.hub.status.${faction.status}`,
+    statusFallbacks[faction.status] ?? faction.status,
+  );
+  const leaderName = faction.leaderName ?? t('factions.unknownLeader', 'Unknown');
+
+  const outletContext: FactionDetailContext = { faction };
+
+  // FAC-22: when a faction has a custom banner the banner art usually already
+  // carries the brand (logo / name baked into the image), so we drop the
+  // overlay <h1> to avoid the name reading twice. The fallback gradient
+  // placeholder has no text, so we still need the text header in that case.
+  const hasCustomBanner = Boolean(faction.imageUrl);
 
   return (
     <div className="faction-detail">
-      {/* Header */}
-      <div className="faction-detail__header">
-        <div className="faction-detail__header-image-wrapper">
-          <img
-            src={resolveImageSrc(faction.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-            onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-            alt={faction.name}
-            className="faction-detail__header-image"
-          />
-        </div>
-        <div className="faction-detail__header-info">
-          <h2 className="faction-detail__name">{faction.name}</h2>
-          <span className={`faction-detail__status faction-detail__status--${faction.status}`}>
-            {faction.status}
-          </span>
-          {faction.leaderName && (
-            <p className="faction-detail__leader">
-              {t('factions.leader', 'Leader')}: <strong>{faction.leaderName}</strong>
-            </p>
-          )}
-          <p className="faction-detail__member-summary">
-            {t('factions.memberCount', '{{count}} members', { count: faction.members.length })}
-          </p>
-        </div>
-      </div>
-
-      {/* Overall Stats */}
-      <section className="faction-detail__section">
-        <h3>{t('factions.overallStats', 'Overall Stats')}</h3>
-        <div className="faction-detail__stats-grid">
-          <div className="faction-detail__stat-card">
-            <span className="faction-detail__stat-value faction-detail__stat-value--wins">{faction.wins}</span>
-            <span className="faction-detail__stat-label">{t('standings.table.wins', 'Wins')}</span>
-          </div>
-          <div className="faction-detail__stat-card">
-            <span className="faction-detail__stat-value faction-detail__stat-value--losses">{faction.losses}</span>
-            <span className="faction-detail__stat-label">{t('standings.table.losses', 'Losses')}</span>
-          </div>
-          <div className="faction-detail__stat-card">
-            <span className="faction-detail__stat-value faction-detail__stat-value--draws">{faction.draws}</span>
-            <span className="faction-detail__stat-label">{t('standings.table.draws', 'Draws')}</span>
-          </div>
-          <div className="faction-detail__stat-card">
-            <span className="faction-detail__stat-value">{faction.standings.winPercentage.toFixed(1)}%</span>
-            <span className="faction-detail__stat-label">{t('standings.table.winPercent', 'Win%')}</span>
-          </div>
-          <div className="faction-detail__stat-card">
-            <span className="faction-detail__stat-value">{totalMatches}</span>
-            <span className="faction-detail__stat-label">{t('factions.totalMatches', 'Total Matches')}</span>
-          </div>
-        </div>
-
-        {/* Form & Streak */}
-        <div className="faction-detail__form-streak">
-          <div className="faction-detail__form">
-            <span className="faction-detail__form-label">{t('standings.table.form', 'Form')}:</span>
-            {faction.standings.recentForm.length > 0 ? (
-              <span className="form-dots" aria-label={faction.standings.recentForm.join(', ')}>
-                {faction.standings.recentForm.map((result, i) => (
-                  <span
-                    key={i}
-                    className={`form-dot ${result === 'W' ? 'win' : result === 'L' ? 'loss' : 'draw'}`}
-                    title={result === 'W' ? 'Win' : result === 'L' ? 'Loss' : 'Draw'}
-                  />
-                ))}
-              </span>
-            ) : (
-              <span className="form-empty">-</span>
+      <header
+        className={`faction-detail__hero ${
+          hasCustomBanner ? 'faction-detail__hero--banner' : ''
+        }`}
+      >
+        <img
+          src={resolveImageSrc(faction.imageUrl, DEFAULT_FACTION_IMAGE)}
+          onError={(event) => applyImageFallback(event, DEFAULT_FACTION_IMAGE)}
+          alt={t('factions.heroAlt', '{{name}} faction banner', { name: faction.name })}
+          loading="lazy"
+          className="faction-detail__hero-image"
+        />
+        <div className="faction-detail__hero-overlay" aria-hidden="true" />
+        <div className="faction-detail__hero-content">
+          <div className="faction-detail__hero-left">
+            {!hasCustomBanner && (
+              <h1 className="faction-detail__hero-name">{faction.name}</h1>
             )}
-          </div>
-          <div className="faction-detail__streak">
-            <span className="faction-detail__streak-label">{t('standings.table.streak', 'Streak')}:</span>
-            {faction.standings.currentStreak.count >= 3 ? (
+            <p className="faction-detail__hero-caption">
               <span
-                className={`streak-badge ${faction.standings.currentStreak.type === 'W' ? 'hot' : faction.standings.currentStreak.type === 'L' ? 'cold' : 'neutral'}`}
+                className={`faction-detail__hero-status faction-detail__hero-status--${faction.status}`}
+                aria-label={t('factions.statusLabel', 'Faction status: {{status}}', { status: statusLabel })}
               >
-                {faction.standings.currentStreak.count}
-                {faction.standings.currentStreak.type === 'W' ? 'W' : faction.standings.currentStreak.type === 'L' ? 'L' : 'D'}
+                {statusLabel}
               </span>
-            ) : (
-              <span className="streak-empty">-</span>
-            )}
+              <span className="faction-detail__hero-divider" aria-hidden="true">·</span>
+              <span className="faction-detail__hero-led">
+                {t('factions.hub.ledBy', 'Led by {{name}}', { name: leaderName })}
+              </span>
+            </p>
           </div>
-        </div>
-      </section>
-
-      {/* Roster */}
-      <section className="faction-detail__section">
-        <h3>{t('factions.roster', 'Roster')}</h3>
-        <div className="faction-detail__roster-grid">
-          {faction.members.map((member: StablePlayerInfo) => (
-            <Link
-              key={member.playerId}
-              to={`/stats/player/${member.playerId}`}
-              className="faction-detail__member-card"
+          <div className="faction-detail__hero-right">
+            <div className="faction-detail__hero-record">
+              <span className="faction-detail__hero-record-label">
+                {t('factions.recordLabel', 'RECORD')}
+              </span>
+              <span className="faction-detail__hero-record-value">
+                {formatRecord(faction.wins, faction.losses, faction.draws)}
+              </span>
+            </div>
+            <div
+              className="faction-detail__hero-heat"
+              role="img"
+              aria-label={heatLabel}
             >
-              <img
-                src={resolveImageSrc(member.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-                onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-                alt={member.wrestlerName}
-                className="faction-detail__member-image"
-              />
-              <div className="faction-detail__member-info">
-                <span className="faction-detail__member-wrestler">{member.wrestlerName}</span>
-                <span className="faction-detail__member-player">
-                  {member.playerName}
-                  {member.playerId === faction.leaderId && (
-                    <span className="faction-detail__leader-badge">
-                      {t('factions.leaderBadge', 'Leader')}
-                    </span>
-                  )}
-                </span>
-                {member.psnId && (
-                  <span className="faction-detail__member-psn">PSN: {member.psnId}</span>
-                )}
-                <span className="faction-detail__member-record">
-                  <span className="wins">{member.wins}W</span>
-                  {' '}
-                  <span className="losses">{member.losses}L</span>
-                  {' '}
-                  <span className="draws">{member.draws}D</span>
-                </span>
-              </div>
-            </Link>
-          ))}
+              {Array.from({ length: HEAT_FLAME_COUNT }, (_, i) => (
+                <FlameIcon key={i} lit={i < litHeat} />
+              ))}
+            </div>
+          </div>
         </div>
-      </section>
+      </header>
 
-      {/* Match Type Breakdown */}
-      {faction.matchTypeRecords.length > 0 && (
-        <section className="faction-detail__section">
-          <h3>{t('factions.matchTypeBreakdown', 'Match Type Breakdown')}</h3>
-          <div className="faction-detail__table-wrapper">
-            <table className="faction-detail__table">
-              <thead>
-                <tr>
-                  <th>{t('factions.format', 'Format')}</th>
-                  <th>{t('standings.table.wins', 'W')}</th>
-                  <th>{t('standings.table.losses', 'L')}</th>
-                  <th>{t('standings.table.draws', 'D')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {faction.matchTypeRecords.map((record: StableMatchTypeRecord) => (
-                  <tr key={record.matchFormat}>
-                    <td className="faction-detail__format-name">{record.matchFormat}</td>
-                    <td className="wins">{record.wins}</td>
-                    <td className="losses">{record.losses}</td>
-                    <td className="draws">{record.draws}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
+      <nav
+        className="faction-detail__tabs"
+        role="tablist"
+        aria-label={t('factions.detailTabs.label', 'Faction sections')}
+      >
+        {TABS.map((tab) => (
+          <NavLink
+            key={tab.value}
+            to={tab.path === '' ? `/factions/${factionId}` : `/factions/${factionId}/${tab.path}`}
+            end={tab.path === ''}
+            role="tab"
+            className={({ isActive }) =>
+              `faction-detail__tab ${isActive ? 'faction-detail__tab--active' : ''}`
+            }
+          >
+            {t(tab.i18nKey, tab.fallback)}
+          </NavLink>
+        ))}
+      </nav>
 
-      {/* Head to Head */}
-      {faction.headToHead.length > 0 && (
-        <section className="faction-detail__section">
-          <h3>{t('factions.headToHead', 'Head to Head')}</h3>
-          <div className="faction-detail__table-wrapper">
-            <table className="faction-detail__table">
-              <thead>
-                <tr>
-                  <th>{t('factions.opponent', 'Opponent')}</th>
-                  <th>{t('standings.table.wins', 'W')}</th>
-                  <th>{t('standings.table.losses', 'L')}</th>
-                  <th>{t('standings.table.draws', 'D')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {faction.headToHead.map((h2h: StableHeadToHead) => (
-                  <tr key={h2h.opponentStableId}>
-                    <td className="faction-detail__opponent-name">
-                      <Link to={`/factions/${h2h.opponentStableId}`}>
-                        {h2h.opponentStableName}
-                      </Link>
-                    </td>
-                    <td className="wins">{h2h.wins}</td>
-                    <td className="losses">{h2h.losses}</td>
-                    <td className="draws">{h2h.draws}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {/* Recent Matches */}
-      {faction.recentMatches.length > 0 && (
-        <section className="faction-detail__section">
-          <h3>{t('factions.recentMatches', 'Recent Matches')}</h3>
-          <div className="faction-detail__recent-matches">
-            {faction.recentMatches.slice(0, 10).map((match, index) => {
-              const matchObj = match as Record<string, unknown>;
-              const matchDate = typeof matchObj['date'] === 'string'
-                ? new Date(matchObj['date']).toLocaleDateString()
-                : '';
-              const matchFormat = typeof matchObj['matchType'] === 'string'
-                ? matchObj['matchType']
-                : '';
-              const matchStatus = typeof matchObj['status'] === 'string'
-                ? matchObj['status']
-                : '';
-              const isWin = matchStatus === 'completed' && Array.isArray(matchObj['winners']);
-
-              return (
-                <div key={index} className="faction-detail__match-item">
-                  <span className="faction-detail__match-date">{matchDate}</span>
-                  <span className="faction-detail__match-format">{matchFormat}</span>
-                  <span className={`faction-detail__match-result ${isWin ? 'faction-detail__match-result--win' : 'faction-detail__match-result--loss'}`}>
-                    {matchStatus === 'completed' ? (isWin ? t('factions.win', 'W') : t('factions.loss', 'L')) : matchStatus}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      <div className="faction-detail__back">
-        <Link to="/factions" className="btn btn-secondary">
-          {t('factions.backToList', 'Back to Factions')}
-        </Link>
+      <div className="faction-detail__content">
+        <Outlet context={outletContext} />
       </div>
     </div>
   );

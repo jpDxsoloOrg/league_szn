@@ -7,7 +7,32 @@ import type {
   CreateStableInput,
   InviteToStableInput,
 } from '../../types/stable';
+import type {
+  FactionMessage,
+  FactionDirectMessage,
+} from '../../types/factionMessage';
+import type {
+  DirectMessageThreadSummary,
+  FactionPromoFilter,
+  FactionPromosResponse,
+  FactionScheduleResponse,
+  FactionStatsResponse,
+} from '../../types/faction';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
+
+// The data plane stays on /stables/* per the FAC-01 rename guardrail; only
+// the namespace name on the client changes (factionsApi.*).
+const factionsBase = (factionId: string) => `${API_BASE_URL}/stables/${factionId}`;
+
+const buildQuery = (params: Record<string, string | number | undefined>): string => {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null || v === '') continue;
+    qs.set(k, String(v));
+  }
+  const out = qs.toString();
+  return out ? `?${out}` : '';
+};
 
 export const factionsApi = {
   getAll: async (filters?: { status?: string }, signal?: AbortSignal): Promise<Stable[]> => {
@@ -111,5 +136,109 @@ export const factionsApi = {
 
   getInvitations: async (stableId: string, signal?: AbortSignal): Promise<StableInvitationWithDetails[]> => {
     return fetchWithAuth(`${API_BASE_URL}/stables/${stableId}/invitations`, {}, signal);
+  },
+
+  // ─── Faction 1:1 direct messages (FAC-06) ────────────────────────────
+  directMessages: {
+    listMyThreads: async (
+      factionId: string,
+      signal?: AbortSignal,
+    ): Promise<DirectMessageThreadSummary[]> => {
+      const response: { items: DirectMessageThreadSummary[] } = await fetchWithAuth(
+        `${factionsBase(factionId)}/direct-messages`,
+        {},
+        signal,
+      );
+      return response.items;
+    },
+
+    listThread: async (
+      factionId: string,
+      partnerPlayerId: string,
+      opts: { cursor?: string; limit?: number } = {},
+      signal?: AbortSignal,
+    ): Promise<{ items: FactionDirectMessage[]; nextCursor?: string }> => {
+      const qs = buildQuery({ cursor: opts.cursor, limit: opts.limit });
+      return fetchWithAuth(
+        `${factionsBase(factionId)}/direct-messages/${partnerPlayerId}${qs}`,
+        {},
+        signal,
+      );
+    },
+
+    post: async (
+      factionId: string,
+      recipientPlayerId: string,
+      body: string,
+      signal?: AbortSignal,
+    ): Promise<FactionDirectMessage> => {
+      return fetchWithAuth(
+        `${factionsBase(factionId)}/direct-messages`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ recipientPlayerId, body }),
+        },
+        signal,
+      );
+    },
+  },
+
+  // ─── Aggregated stats (FAC-07) ───────────────────────────────────────
+  getStats: async (
+    factionId: string,
+    opts: { seasonId?: string } = {},
+    signal?: AbortSignal,
+  ): Promise<FactionStatsResponse> => {
+    const qs = buildQuery({ seasonId: opts.seasonId });
+    return fetchWithAuth(`${factionsBase(factionId)}/stats${qs}`, {}, signal);
+  },
+
+  // ─── Schedule tab (FAC-08) ───────────────────────────────────────────
+  getSchedule: async (
+    factionId: string,
+    opts: { from?: string; to?: string; limit?: number } = {},
+    signal?: AbortSignal,
+  ): Promise<FactionScheduleResponse> => {
+    const qs = buildQuery({ from: opts.from, to: opts.to, limit: opts.limit });
+    return fetchWithAuth(`${factionsBase(factionId)}/schedule${qs}`, {}, signal);
+  },
+
+  // ─── Promos tab (FAC-08) ─────────────────────────────────────────────
+  getPromos: async (
+    factionId: string,
+    opts: { filter?: FactionPromoFilter; cursor?: string; limit?: number } = {},
+    signal?: AbortSignal,
+  ): Promise<FactionPromosResponse> => {
+    const qs = buildQuery({ filter: opts.filter, cursor: opts.cursor, limit: opts.limit });
+    return fetchWithAuth(`${factionsBase(factionId)}/promos${qs}`, {}, signal);
+  },
+
+  // ─── Faction channel messages (FAC-05) ───────────────────────────────
+  messages: {
+    list: async (
+      factionId: string,
+      opts: { cursor?: string; limit?: number } = {},
+      signal?: AbortSignal,
+    ): Promise<{ items: FactionMessage[]; nextCursor?: string }> => {
+      const qs = buildQuery({ cursor: opts.cursor, limit: opts.limit });
+      return fetchWithAuth(`${factionsBase(factionId)}/messages${qs}`, {}, signal);
+    },
+
+    // Only user messages can be posted from the client — system events are
+    // emitted server-side (e.g. member-joined, member-removed).
+    post: async (
+      factionId: string,
+      body: string,
+      signal?: AbortSignal,
+    ): Promise<FactionMessage> => {
+      return fetchWithAuth(
+        `${factionsBase(factionId)}/messages`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ body, messageType: 'user' }),
+        },
+        signal,
+      );
+    },
   },
 };

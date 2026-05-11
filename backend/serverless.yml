@@ -36,6 +36,8 @@ provider:
     STABLES_TABLE: ${self:service}-stables-${self:provider.stage}
     TAG_TEAMS_TABLE: ${self:service}-tag-teams-${self:provider.stage}
     STABLE_INVITATIONS_TABLE: ${self:service}-stable-invitations-${self:provider.stage}
+    FACTION_MESSAGES_TABLE: ${self:service}-faction-messages-${self:provider.stage}
+    FACTION_DIRECT_MESSAGES_TABLE: ${self:service}-faction-direct-messages-${self:provider.stage}
     VIDEOS_TABLE: ${self:service}-videos-${self:provider.stage}
     ANNOUNCEMENTS_TABLE: ${self:service}-announcements-${self:provider.stage}
     NOTIFICATIONS_TABLE: ${self:service}-notifications-${self:provider.stage}
@@ -103,6 +105,10 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TAG_TEAMS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STABLE_INVITATIONS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.STABLE_INVITATIONS_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FACTION_MESSAGES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FACTION_MESSAGES_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FACTION_DIRECT_MESSAGES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FACTION_DIRECT_MESSAGES_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.ANNOUNCEMENTS_TABLE}
@@ -897,6 +903,30 @@ functions:
       - http:
           path: stables/{stableId}/remove-member
           method: post
+          cors: *corsConfig
+      - http:
+          path: stables/{stableId}/messages
+          method: any
+          cors: *corsConfig
+      - http:
+          path: stables/{stableId}/direct-messages
+          method: any
+          cors: *corsConfig
+      - http:
+          path: stables/{stableId}/direct-messages/{partnerPlayerId}
+          method: any
+          cors: *corsConfig
+      - http:
+          path: stables/{stableId}/stats
+          method: get
+          cors: *corsConfig
+      - http:
+          path: stables/{stableId}/schedule
+          method: get
+          cors: *corsConfig
+      - http:
+          path: stables/{stableId}/promos
+          method: get
           cors: *corsConfig
 
   # Tag Teams (consolidated: list, get, standings, create, update, respond, approve, reject, dissolve, delete)
@@ -1764,6 +1794,72 @@ resources:
               - AttributeName: invitedPlayerId
                 KeyType: HASH
               - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    # Faction-channel messages: one item per post in a faction's shared channel.
+    # PK=factionId, SK=createdAt#messageId — composite SK keeps sort stable when
+    # two posts land at the same millisecond. Audience-only (active members)
+    # is enforced in the handler, not the table.
+    FactionMessagesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.FACTION_MESSAGES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: factionId
+            AttributeType: S
+          - AttributeName: createdAtMessageId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: factionId
+            KeyType: HASH
+          - AttributeName: createdAtMessageId
+            KeyType: RANGE
+
+    # 1:1 direct messages between two members of the same faction.
+    # PK=factionId#threadKey, SK=createdAt#messageId. threadKey is the
+    # deterministic sort of [a, b] joined by `#` so both sides see the same
+    # thread. No GSI needed — the PK already scopes by thread.
+    FactionDirectMessagesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.FACTION_DIRECT_MESSAGES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: factionThreadKey
+            AttributeType: S
+          - AttributeName: createdAtMessageId
+            AttributeType: S
+          - AttributeName: factionId
+            AttributeType: S
+          - AttributeName: senderPlayerId
+            AttributeType: S
+          - AttributeName: recipientPlayerId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: factionThreadKey
+            KeyType: HASH
+          - AttributeName: createdAtMessageId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          # Enables listThreadsForPlayer: enumerate every thread a player is
+          # part of inside a given faction (as sender).
+          - IndexName: FactionSenderIndex
+            KeySchema:
+              - AttributeName: factionId
+                KeyType: HASH
+              - AttributeName: senderPlayerId
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          # …and as recipient.
+          - IndexName: FactionRecipientIndex
+            KeySchema:
+              - AttributeName: factionId
+                KeyType: HASH
+              - AttributeName: recipientPlayerId
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
