@@ -1357,6 +1357,43 @@
       "activityTitle": "Neueste Faktionsaktivität",
       "activityEmpty": "Noch keine Aktivität."
     },
+    "heroAlt": "{{name}}-Faktionsbanner",
+    "statusLabel": "Faktionsstatus: {{status}}",
+    "recordLabel": "BILANZ",
+    "detailTabs": {
+      "label": "Faktionsbereiche",
+      "overview": "Übersicht",
+      "members": "Mitglieder",
+      "stats": "Statistik",
+      "schedule": "Spielplan",
+      "promos": "Promos",
+      "messages": "Nachrichten",
+      "manage": "Verwalten",
+      "stub": {
+        "members": "Mitglieder-Tab — folgt in Kürze.",
+        "stats": "Statistik-Tab — folgt in Kürze.",
+        "schedule": "Spielplan-Tab — folgt in Kürze.",
+        "promos": "Promos-Tab — folgt in Kürze.",
+        "messages": "Nachrichten-Tab — folgt in Kürze.",
+        "manage": "Verwalten-Tab — folgt in Kürze."
+      }
+    },
+    "overview": {
+      "rosterHeading": "Kader auf einen Blick",
+      "rosterEmpty": "Noch keine Mitglieder.",
+      "resultsHeading": "Letzte Faktionsergebnisse",
+      "resultsEmpty": "Keine aktuellen Ergebnisse.",
+      "promosHeading": "Promos zu dieser Faktion",
+      "promosEmpty": "Noch keine Promos zu dieser Faktion.",
+      "promosError": "Promos konnten nicht geladen werden.",
+      "streakTitle": "Serie",
+      "sparklineLabel": "Letzte 10 Ergebnisse",
+      "upcomingTitle": "Anstehende Matches ({{count}})",
+      "scheduleEmpty": "Keine Matches in den nächsten 60 Tagen.",
+      "scheduleError": "Spielplan konnte nicht geladen werden.",
+      "activityTitle": "Faktionsaktivität",
+      "activityEmpty": "Keine aktuellen Ereignisse."
+    },
     "members": "Mitglieder",
     "stats": "Statistiken",
     "headToHead": "Kopf an Kopf",

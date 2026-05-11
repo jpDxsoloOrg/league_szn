@@ -1,396 +1,283 @@
+/*
+ * Faction Detail · shell (FAC-11).
+ *
+ * Hero banner + tab strip; each tab renders its own content underneath
+ * via <Outlet />. Prestige Brutalism: obsidian background, gold accents,
+ * tonal stacking, no borders.
+ */
+
 .faction-detail {
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-/* Header */
-.faction-detail__header {
-  display: flex;
-  gap: 1.5rem;
-  align-items: flex-start;
-}
-
-.faction-detail__header-image-wrapper {
-  width: 160px;
-  height: 160px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 2px solid var(--color-border);
   background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
-.faction-detail__header-image {
+/* ─── Hero strip ─── */
+
+.faction-detail__hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 5;
+  min-height: 240px;
+  background-color: var(--color-bg);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.faction-detail__hero-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
-.faction-detail__header-info {
+.faction-detail__hero-overlay {
+  position: absolute;
+  inset: 40% 0 0 0;
+  background: linear-gradient(to bottom, transparent 0%, #131313 90%);
+  pointer-events: none;
+}
+
+.faction-detail__hero-content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 32px;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  z-index: 1;
 }
 
-.faction-detail__name {
-  margin: 0;
-  font-size: 1.75rem;
-}
-
-.faction-detail__status {
-  display: inline-block;
-  padding: 0.2em 0.6em;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  width: fit-content;
-}
-
-.faction-detail__status--active {
-  background-color: var(--color-success);
-  color: #000;
-}
-
-.faction-detail__status--pending {
-  background-color: var(--color-warning);
-  color: #000;
-}
-
-.faction-detail__status--approved {
-  background-color: var(--color-info);
-  color: #fff;
-}
-
-.faction-detail__status--disbanded {
-  background-color: var(--color-text-muted);
-  color: #fff;
-}
-
-.faction-detail__leader {
-  color: var(--color-text-secondary);
-  font-size: 0.95rem;
-}
-
-.faction-detail__member-summary {
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-}
-
-/* Sections */
-.faction-detail__section {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 1.5rem;
-}
-
-.faction-detail__section h3 {
-  margin: 0 0 1rem 0;
-  color: var(--color-primary);
-  font-size: 1.1rem;
-}
-
-/* Stats Grid */
-.faction-detail__stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 1rem;
-}
-
-.faction-detail__stat-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 1rem;
-  background-color: var(--color-bg);
-  border-radius: 6px;
-  border: 1px solid var(--color-border);
-}
-
-.faction-detail__stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.faction-detail__stat-value--wins {
-  color: var(--color-success);
-}
-
-.faction-detail__stat-value--losses {
-  color: var(--color-danger-alt);
-}
-
-.faction-detail__stat-value--draws {
-  color: var(--color-warning);
-}
-
-.faction-detail__stat-label {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* Form & Streak */
-.faction-detail__form-streak {
-  display: flex;
-  gap: 2rem;
-  margin-top: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.faction-detail__form,
-.faction-detail__streak {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.faction-detail__form-label,
-.faction-detail__streak-label {
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-/* Roster Grid */
-.faction-detail__roster-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.faction-detail__member-card {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.75rem;
-  background-color: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  text-decoration: none;
-  color: var(--color-text);
-  transition: border-color 0.2s;
-}
-
-.faction-detail__member-card:hover {
-  border-color: var(--color-primary);
-}
-
-.faction-detail__member-image {
-  width: 48px;
-  height: 48px;
-  border-radius: 4px;
-  object-fit: cover;
-  flex-shrink: 0;
-  border: 1px solid var(--color-border);
-}
-
-.faction-detail__member-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+.faction-detail__hero-left {
   min-width: 0;
 }
 
-.faction-detail__member-player {
-  font-weight: 700;
-  font-size: 0.9rem;
+.faction-detail__hero-name {
+  margin: 0;
+  font-size: 4.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.faction-detail__hero-caption {
+  margin: 12px 0 0 0;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
 }
 
-.faction-detail__leader-badge {
-  font-size: 0.65rem;
-  padding: 0.1em 0.4em;
-  border-radius: 3px;
+.faction-detail__hero-status {
+  padding: 3px 8px;
+  font-weight: 800;
   background-color: var(--color-primary);
-  color: #000;
+  color: #1a1a1a;
+}
+
+.faction-detail__hero-status--pending {
+  background-color: #5a4a1e;
+  color: #fbbf24;
+}
+
+.faction-detail__hero-status--disbanded {
+  background-color: #2a2a2a;
+  color: #888;
+}
+
+.faction-detail__hero-divider {
+  color: var(--color-text-muted);
+}
+
+.faction-detail__hero-led {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.faction-detail__hero-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.faction-detail__hero-record {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.faction-detail__hero-record-label {
+  font-size: 0.7rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
 }
 
-.faction-detail__member-wrestler {
-  font-size: 0.8rem;
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.faction-detail__member-record {
-  font-size: 0.75rem;
-}
-
-.faction-detail__member-record .wins {
-  color: var(--color-success);
-  font-weight: 600;
-}
-
-.faction-detail__member-record .losses {
-  color: var(--color-danger-alt);
-  font-weight: 600;
-}
-
-.faction-detail__member-record .draws {
-  color: var(--color-warning);
-}
-
-/* Tables (Match Type Breakdown, Head to Head) */
-.faction-detail__table-wrapper {
-  overflow-x: auto;
-}
-
-.faction-detail__table {
-  width: 100%;
-  min-width: 300px;
-  border-collapse: collapse;
-}
-
-.faction-detail__table th {
-  text-align: center;
-  padding: 0.75rem;
-  border-bottom: 2px solid var(--color-border);
-  color: var(--color-text-secondary);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.faction-detail__table td {
-  text-align: center;
-  padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.faction-detail__table tbody tr:hover {
-  background-color: var(--color-surface-hover, rgba(255, 255, 255, 0.03));
-}
-
-.faction-detail__format-name,
-.faction-detail__opponent-name {
-  text-align: left;
-  font-weight: 600;
-}
-
-.faction-detail__opponent-name a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.faction-detail__opponent-name a:hover {
+.faction-detail__hero-record-value {
+  font-size: 2.5rem;
+  font-weight: 800;
   color: var(--color-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.faction-detail__hero-heat {
+  display: flex;
+  gap: 4px;
+}
+
+.faction-detail__flame {
+  width: 22px;
+  height: 22px;
+}
+
+.faction-detail__flame--lit {
+  color: var(--color-primary);
+}
+
+.faction-detail__flame--dim {
+  color: #2f2f2f;
+}
+
+/* ─── Tab strip ─── */
+
+.faction-detail__tabs {
+  display: flex;
+  gap: 24px;
+  padding: 4px 32px 0;
+  background-color: var(--color-bg);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.faction-detail__tab {
+  position: relative;
+  padding: 12px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.faction-detail__tab:hover {
+  color: var(--color-text);
+}
+
+.faction-detail__tab--active {
+  color: var(--color-primary);
+}
+
+.faction-detail__tab--active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 4px;
+  background-color: var(--color-primary);
+}
+
+.faction-detail__content {
+  padding: 0 32px 32px;
+}
+
+/* Generic stub used by every "Coming soon" tab. */
+.faction-detail__tab-stub {
+  margin: 24px 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+/* ─── Error states ─── */
+
+.faction-detail__error {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.faction-detail__retry {
+  padding: 8px 16px;
+  background-color: var(--color-primary);
+  color: #1a1a1a;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+.faction-detail__retry:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.faction-detail__back-link {
+  color: var(--color-text-secondary);
   text-decoration: underline;
 }
 
-.faction-detail__table .wins {
-  color: var(--color-success);
-  font-weight: bold;
-}
+/* ─── Responsive ─── */
 
-.faction-detail__table .losses {
-  color: var(--color-danger-alt);
-  font-weight: bold;
-}
+@media (max-width: 1024px) {
+  .faction-detail__hero-name {
+    font-size: 3rem;
+  }
 
-.faction-detail__table .draws {
-  color: var(--color-warning);
-}
-
-/* Recent Matches */
-.faction-detail__recent-matches {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.faction-detail__match-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.5rem 0.75rem;
-  background-color: var(--color-bg);
-  border-radius: 4px;
-  border: 1px solid var(--color-border);
-}
-
-.faction-detail__match-date {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-  min-width: 90px;
-}
-
-.faction-detail__match-format {
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
-  flex: 1;
-}
-
-.faction-detail__match-result {
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 0.15em 0.5em;
-  border-radius: 3px;
-}
-
-.faction-detail__match-result--win {
-  background-color: var(--color-success);
-  color: #000;
-}
-
-.faction-detail__match-result--loss {
-  background-color: var(--color-danger-alt);
-  color: #fff;
-}
-
-/* Back link */
-.faction-detail__back {
-  margin-top: 1rem;
+  .faction-detail__hero-record-value {
+    font-size: 2rem;
+  }
 }
 
 @media (max-width: 768px) {
-  .faction-detail__header {
+  .faction-detail__hero {
+    aspect-ratio: 4 / 3;
+    min-height: 320px;
+  }
+
+  .faction-detail__hero-content {
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 12px;
   }
 
-  .faction-detail__header-image-wrapper {
-    width: 120px;
-    height: 120px;
+  .faction-detail__hero-name {
+    font-size: 2.25rem;
   }
 
-  .faction-detail__header-info {
-    align-items: center;
+  .faction-detail__hero-right {
+    align-items: flex-start;
   }
 
-  .faction-detail__stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  .faction-detail__hero-record {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
   }
 
-  .faction-detail__roster-grid {
-    grid-template-columns: 1fr;
+  .faction-detail__hero-record-value {
+    font-size: 1.6rem;
   }
 
-  .faction-detail__section {
-    padding: 1rem;
+  .faction-detail__tabs {
+    padding: 4px 16px 0;
+    gap: 16px;
   }
 
-  .faction-detail__match-item {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .faction-detail__match-date {
-    min-width: auto;
+  .faction-detail__content {
+    padding: 0 16px 24px;
   }
 }
