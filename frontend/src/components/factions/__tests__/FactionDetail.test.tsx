@@ -147,16 +147,13 @@ describe('FactionDetail shell (FAC-11)', () => {
     renderShell();
     await screen.findByRole('heading', { name: 'The Brood' });
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Messages' }));
-    await waitFor(() => {
-      expect(screen.getByText('Messages tab — coming soon.')).toBeInTheDocument();
-    });
-    expect(screen.getByRole('tab', { name: 'Messages' })).toHaveAttribute('aria-current', 'page');
-
+    // Only Manage is still a stub after FAC-15; navigate to it for the
+    // active-state assertion, then back to it to verify a second click.
     await userEvent.click(screen.getByRole('tab', { name: 'Manage' }));
     await waitFor(() => {
       expect(screen.getByText('Manage tab — coming soon.')).toBeInTheDocument();
     });
+    expect(screen.getByRole('tab', { name: 'Manage' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('renders an error state with a Retry button when the fetch fails', async () => {
