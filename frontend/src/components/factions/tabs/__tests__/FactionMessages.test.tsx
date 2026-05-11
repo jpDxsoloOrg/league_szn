@@ -115,6 +115,7 @@ beforeEach(() => {
       partnerPlayerId: 'partner-1',
       partnerPlayerName: 'Partner 1',
       partnerWrestlerName: 'Christian',
+      partnerImageUrl: 'https://example.com/christian.jpg',
       lastMessage: {
         messageId: 'dm-1',
         factionId: 'f1',
@@ -222,6 +223,56 @@ describe('FactionMessages tab (FAC-15)', () => {
       expect(screen.getByText('DIRECT · Christian')).toBeInTheDocument();
     });
     expect(screen.getByText('PRIVATE — JUST YOU TWO')).toBeInTheDocument();
+  });
+
+  // FAC-21: thread row avatars must use the partner's profile picture when
+  // we have one, and fall back to the default placeholder when we don't.
+  it("renders the partner's profile image on each DM row when available", async () => {
+    mockListMyThreads.mockResolvedValueOnce([
+      {
+        partnerPlayerId: 'partner-with-pic',
+        partnerPlayerName: 'Partner With Pic',
+        partnerWrestlerName: 'Edge',
+        partnerImageUrl: 'https://example.com/edge-portrait.jpg',
+        lastMessage: {
+          messageId: 'dm-a',
+          factionId: 'f1',
+          threadKey: 'me#partner-with-pic',
+          senderPlayerId: 'partner-with-pic',
+          recipientPlayerId: 'me',
+          body: 'Hi',
+          createdAt: '2026-04-30T10:00:00.000Z',
+        },
+        lastMessageAt: '2026-04-30T10:00:00.000Z',
+      },
+      {
+        partnerPlayerId: 'partner-no-pic',
+        partnerPlayerName: 'Partner No Pic',
+        partnerWrestlerName: 'Christian',
+        partnerImageUrl: null,
+        lastMessage: {
+          messageId: 'dm-b',
+          factionId: 'f1',
+          threadKey: 'me#partner-no-pic',
+          senderPlayerId: 'partner-no-pic',
+          recipientPlayerId: 'me',
+          body: 'Hey',
+          createdAt: '2026-04-30T10:00:00.000Z',
+        },
+        lastMessageAt: '2026-04-30T10:00:00.000Z',
+      },
+    ]);
+    renderTab();
+
+    const withPic = await screen.findByAltText('Edge');
+    expect(withPic).toHaveAttribute('src', 'https://example.com/edge-portrait.jpg');
+
+    const withoutPic = screen.getByAltText('Christian');
+    // resolveImageSrc returns the default image when input is undefined/null —
+    // we don't assert the exact URL of the default (changing the asset would
+    // break the test) but we confirm we did NOT keep the partner's null URL.
+    expect(withoutPic.getAttribute('src')).not.toBe('null');
+    expect(withoutPic.getAttribute('src')).not.toBe('');
   });
 
   it('opens the deep-linked DM on mount when ?dm=<partnerPlayerId> is set', async () => {

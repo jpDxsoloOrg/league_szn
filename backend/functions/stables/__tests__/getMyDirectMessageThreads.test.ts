@@ -138,6 +138,35 @@ describe('getMyDirectMessageThreads (FAC-06)', () => {
     expect(rowThird.lastMessage.body).toBe('LT-2-1');
   });
 
+  // FAC-21: each thread row must carry the partner's imageUrl (or null when
+  // they don't have one) so the frontend can render the actual profile pic
+  // instead of the default placeholder on every row.
+  it('hydrates partnerImageUrl from the partner player record', async () => {
+    const { leader, member, third, stable } = await seed();
+    await repos.roster.players.update(member.playerId, {
+      imageUrl: 'https://example.com/member-portrait.jpg',
+    });
+    // `third` is intentionally left without an imageUrl so we exercise the null branch.
+
+    await postN(stable.stableId, leader.playerId, member.playerId, 1, 'L1');
+    await postN(stable.stableId, leader.playerId, third.playerId, 1, 'L2');
+
+    const result = await getMyThreads(
+      makeEvent(stable.stableId, LEADER_SUB),
+      ctx,
+      cb,
+    );
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    const byPartner = new Map<string, (typeof body.items)[number]>(
+      body.items.map((r: { partnerPlayerId: string }) => [r.partnerPlayerId, r]),
+    );
+    expect(byPartner.get(member.playerId)!.partnerImageUrl).toBe(
+      'https://example.com/member-portrait.jpg',
+    );
+    expect(byPartner.get(third.playerId)!.partnerImageUrl).toBeNull();
+  });
+
   it('returns 403 to a non-member of the faction', async () => {
     const { leader, member, stable } = await seed();
     await postN(stable.stableId, leader.playerId, member.playerId, 1);
