@@ -115,6 +115,19 @@ export interface UnitOfWork {
   createRivalryNote(note: RivalryNote): void;
 
   /**
+   * Stage deletion of a rivalry's META row plus every PARTICIPANT row.
+   * Caller passes the full participant playerId list so the UoW can build
+   * the per-participant SKs without an extra Query.
+   */
+  deleteRivalry(rivalryId: string, participantPlayerIds: string[]): void;
+
+  /** Stage deletion of one rivalry message row. */
+  deleteRivalryMessage(message: RivalryMessage): void;
+
+  /** Stage deletion of one rivalry note row. */
+  deleteRivalryNote(note: RivalryNote): void;
+
+  /**
    * Stage assigning a wrestler to a player's primary or alternate slot.
    * Sets `isInUse=true` (string on-disk), `assignedPlayerId`, `assignedSlot`.
    */
