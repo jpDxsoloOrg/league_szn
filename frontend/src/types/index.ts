@@ -476,3 +476,4 @@ export interface StorylineRequestWithDetails extends StorylineRequest {
 export * from './matchmaking';
 export * from './location';
 export * from './factionMessage';
+export * from './rivalry';

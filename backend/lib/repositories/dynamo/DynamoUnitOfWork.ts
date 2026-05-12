@@ -2,6 +2,15 @@ import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb';
 import { dynamoDb, TableNames } from '../../dynamodb';
 import type { UnitOfWork, RecordDelta } from '../unitOfWork';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
+import {
+  participantSk,
+  RIVALRY_META_SK,
+  type Rivalry,
+  type RivalryMessage,
+  type RivalryNote,
+  type RivalryParticipant,
+  type RivalryPatch,
+} from '../rivalries';
 
 interface TransactWriteItem {
   Put?: { TableName: string; Item: Record<string, unknown>; ConditionExpression?: string };
@@ -392,6 +401,118 @@ export class DynamoUnitOfWork implements UnitOfWork {
           recipientPlayerId: message.recipientPlayerId,
           body: message.body,
           createdAt: message.createdAt,
+        },
+      },
+    });
+  }
+
+  // ── Rivalries (RIV-01) ───────────────────────────────────────────
+  createRivalry(rivalry: Rivalry): void {
+    this.staged.push({
+      Put: {
+        TableName: TableNames.RIVALRIES,
+        Item: {
+          rivalryId: rivalry.rivalryId,
+          recordType: RIVALRY_META_SK,
+          title: rivalry.title,
+          ...(rivalry.description !== undefined && { description: rivalry.description }),
+          status: rivalry.status,
+          heat: rivalry.heat,
+          requestedBy: rivalry.requestedBy,
+          ...(rivalry.moderatedBy !== undefined && { moderatedBy: rivalry.moderatedBy }),
+          ...(rivalry.moderationNote !== undefined && { moderationNote: rivalry.moderationNote }),
+          ...(rivalry.startedAt !== undefined && { startedAt: rivalry.startedAt }),
+          ...(rivalry.endedAt !== undefined && { endedAt: rivalry.endedAt }),
+          createdAt: rivalry.createdAt,
+          updatedAt: rivalry.updatedAt,
+        },
+      },
+    });
+    for (const participant of rivalry.participants) {
+      this.addRivalryParticipant(rivalry.rivalryId, participant);
+    }
+  }
+
+  updateRivalry(rivalryId: string, patch: RivalryPatch): void {
+    const now = new Date().toISOString();
+    const sets: string[] = ['#updatedAt = :now'];
+    const names: Record<string, string> = { '#updatedAt': 'updatedAt' };
+    const values: Record<string, unknown> = { ':now': now };
+    let i = 0;
+    for (const [key, val] of Object.entries(patch)) {
+      if (val === undefined) continue;
+      const nameKey = `#f${i}`;
+      const valKey = `:v${i}`;
+      names[nameKey] = key;
+      values[valKey] = val;
+      sets.push(`${nameKey} = ${valKey}`);
+      i++;
+    }
+    this.staged.push({
+      Update: {
+        TableName: TableNames.RIVALRIES,
+        Key: { rivalryId, recordType: RIVALRY_META_SK },
+        UpdateExpression: `SET ${sets.join(', ')}`,
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+      },
+    });
+  }
+
+  addRivalryParticipant(rivalryId: string, participant: RivalryParticipant): void {
+    this.staged.push({
+      Put: {
+        TableName: TableNames.RIVALRIES,
+        Item: {
+          rivalryId,
+          recordType: participantSk(participant.playerId),
+          participantId: participant.playerId,
+          role: participant.role,
+          addedAt: participant.addedAt,
+        },
+      },
+    });
+  }
+
+  removeRivalryParticipant(rivalryId: string, playerId: string): void {
+    this.staged.push({
+      Delete: {
+        TableName: TableNames.RIVALRIES,
+        Key: { rivalryId, recordType: participantSk(playerId) },
+      },
+    });
+  }
+
+  appendRivalryMessage(message: RivalryMessage): void {
+    this.staged.push({
+      Put: {
+        TableName: TableNames.RIVALRY_MESSAGES,
+        Item: {
+          rivalryId: message.rivalryId,
+          createdAtMessageId: `${message.createdAt}#${message.messageId}`,
+          messageId: message.messageId,
+          authorPlayerId: message.authorPlayerId,
+          body: message.body,
+          audience: message.audience,
+          createdAt: message.createdAt,
+        },
+      },
+    });
+  }
+
+  createRivalryNote(note: RivalryNote): void {
+    this.staged.push({
+      Put: {
+        TableName: TableNames.RIVALRY_NOTES,
+        Item: {
+          rivalryId: note.rivalryId,
+          noteId: note.noteId,
+          noteType: note.noteType,
+          visibility: note.visibility,
+          body: note.body,
+          authorPlayerId: note.authorPlayerId,
+          createdAt: note.createdAt,
+          updatedAt: note.updatedAt,
         },
       },
     });
