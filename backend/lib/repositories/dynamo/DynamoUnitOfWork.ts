@@ -518,6 +518,44 @@ export class DynamoUnitOfWork implements UnitOfWork {
     });
   }
 
+  deleteRivalry(rivalryId: string, participantPlayerIds: string[]): void {
+    this.staged.push({
+      Delete: {
+        TableName: TableNames.RIVALRIES,
+        Key: { rivalryId, recordType: RIVALRY_META_SK },
+      },
+    });
+    for (const playerId of participantPlayerIds) {
+      this.staged.push({
+        Delete: {
+          TableName: TableNames.RIVALRIES,
+          Key: { rivalryId, recordType: participantSk(playerId) },
+        },
+      });
+    }
+  }
+
+  deleteRivalryMessage(message: RivalryMessage): void {
+    this.staged.push({
+      Delete: {
+        TableName: TableNames.RIVALRY_MESSAGES,
+        Key: {
+          rivalryId: message.rivalryId,
+          createdAtMessageId: `${message.createdAt}#${message.messageId}`,
+        },
+      },
+    });
+  }
+
+  deleteRivalryNote(note: RivalryNote): void {
+    this.staged.push({
+      Delete: {
+        TableName: TableNames.RIVALRY_NOTES,
+        Key: { rivalryId: note.rivalryId, noteId: note.noteId },
+      },
+    });
+  }
+
   // ── Commit / Rollback ────────────────────────────────────────────
   async commit(): Promise<void> {
     if (this.committed) throw new Error('UnitOfWork already committed');
