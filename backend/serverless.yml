@@ -751,7 +751,7 @@ functions:
           cors: *corsConfig
 
   getRivalries:
-    handler: functions/rivalries/getRivalries.handler
+    handler: functions/rivalries/getMatchHistoryRivalries.handler
     timeout: 15
     events:
       - http:
