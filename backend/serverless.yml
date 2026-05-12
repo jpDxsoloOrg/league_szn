@@ -759,6 +759,27 @@ functions:
           method: get
           cors: *corsConfig
 
+  # Persistent rivalries (RIV-02): create/list/get/update/respond/delete.
+  # Lives under /rivalry-requests so the synthetic /rivalries endpoint
+  # above stays untouched. Auth (JWT) is checked inside the router for
+  # the mutating routes; the two GETs are public.
+  rivalryRequests:
+    handler: functions/rivalries/handler.handler
+    timeout: 15
+    events:
+      - http:
+          path: rivalry-requests
+          method: any
+          cors: *corsConfig
+      - http:
+          path: rivalry-requests/{rivalryId}
+          method: any
+          cors: *corsConfig
+      - http:
+          path: rivalry-requests/{rivalryId}/respond
+          method: post
+          cors: *corsConfig
+
   # Challenges (Phase 2 consolidated: getChallenges, getChallenge, create, respond, cancel, delete, bulkDelete)
   challenges:
     handler: functions/challenges/handler.handler
