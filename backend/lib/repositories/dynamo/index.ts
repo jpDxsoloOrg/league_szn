@@ -9,6 +9,11 @@ import {
   DynamoFactionDirectMessagesRepository,
   DynamoFactionMessagesRepository,
 } from './DynamoFactionMessagesRepository';
+import {
+  DynamoRivalriesRepository,
+  DynamoRivalryMessagesRepository,
+  DynamoRivalryNotesRepository,
+} from './DynamoRivalriesRepository';
 import { createDynamoUnitOfWorkFactory } from './DynamoUnitOfWork';
 import { dynamoClearAllData, dynamoExportAllData, dynamoImportAllData } from './adminOps';
 
@@ -21,6 +26,9 @@ registerDriver('dynamo', (): Repositories => ({
   user: new DynamoUserRepository(),
   factionMessages: new DynamoFactionMessagesRepository(),
   factionDirectMessages: new DynamoFactionDirectMessagesRepository(),
+  rivalries: new DynamoRivalriesRepository(),
+  rivalryMessages: new DynamoRivalryMessagesRepository(),
+  rivalryNotes: new DynamoRivalryNotesRepository(),
   runInTransaction: createDynamoUnitOfWorkFactory(),
   clearAllData: dynamoClearAllData,
   exportAllData: dynamoExportAllData,

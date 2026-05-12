@@ -120,3 +120,25 @@ export type {
   ListPageOptions,
 } from './factionMessages';
 export { buildThreadKey } from './factionMessages';
+
+export type {
+  Rivalry,
+  RivalryStatus,
+  RivalryHeat,
+  RivalryParticipant,
+  RivalryParticipantRole,
+  RivalryMessage,
+  RivalryMessageAudience,
+  RivalryMessagePostInput,
+  RivalryNote,
+  RivalryNoteType,
+  RivalryNoteVisibility,
+  RivalryNoteCreateInput,
+  RivalryNotePatch,
+  CreateRivalryInput,
+  RivalryPatch,
+  RivalriesRepository,
+  RivalryMessagesRepository,
+  RivalryNotesRepository,
+} from './rivalries';
+export { participantSk, RIVALRY_META_SK } from './rivalries';
