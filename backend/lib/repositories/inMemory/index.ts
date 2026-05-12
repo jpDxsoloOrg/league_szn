@@ -41,6 +41,9 @@ export function buildInMemoryRepositories(): Repositories {
       wrestlers: roster.wrestlersStore as unknown as Map<string, Record<string, unknown>>,
       factionMessages: factionMessages.store,
       factionDirectMessages: factionDirectMessages.store,
+      rivalries: rivalries.store,
+      rivalryMessages: rivalryMessages.store,
+      rivalryNotes: rivalryNotes.store,
     });
     try {
       const result = await fn(uow);
