@@ -38,6 +38,9 @@ provider:
     STABLE_INVITATIONS_TABLE: ${self:service}-stable-invitations-${self:provider.stage}
     FACTION_MESSAGES_TABLE: ${self:service}-faction-messages-${self:provider.stage}
     FACTION_DIRECT_MESSAGES_TABLE: ${self:service}-faction-direct-messages-${self:provider.stage}
+    RIVALRIES_TABLE: ${self:service}-rivalries-${self:provider.stage}
+    RIVALRY_MESSAGES_TABLE: ${self:service}-rivalry-messages-${self:provider.stage}
+    RIVALRY_NOTES_TABLE: ${self:service}-rivalry-notes-${self:provider.stage}
     VIDEOS_TABLE: ${self:service}-videos-${self:provider.stage}
     ANNOUNCEMENTS_TABLE: ${self:service}-announcements-${self:provider.stage}
     NOTIFICATIONS_TABLE: ${self:service}-notifications-${self:provider.stage}
@@ -109,6 +112,11 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FACTION_MESSAGES_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FACTION_DIRECT_MESSAGES_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FACTION_DIRECT_MESSAGES_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRIES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRIES_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRY_MESSAGES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRY_NOTES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRY_NOTES_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.ANNOUNCEMENTS_TABLE}
