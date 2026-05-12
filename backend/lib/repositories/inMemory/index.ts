@@ -9,6 +9,11 @@ import {
   InMemoryFactionDirectMessagesRepository,
   InMemoryFactionMessagesRepository,
 } from './InMemoryFactionMessagesRepository';
+import {
+  InMemoryRivalriesRepository,
+  InMemoryRivalryMessagesRepository,
+  InMemoryRivalryNotesRepository,
+} from './InMemoryRivalriesRepository';
 import { InMemoryUnitOfWork } from './InMemoryUnitOfWork';
 
 export function buildInMemoryRepositories(): Repositories {
@@ -20,6 +25,9 @@ export function buildInMemoryRepositories(): Repositories {
   const user = new InMemoryUserRepository();
   const factionMessages = new InMemoryFactionMessagesRepository();
   const factionDirectMessages = new InMemoryFactionDirectMessagesRepository();
+  const rivalries = new InMemoryRivalriesRepository();
+  const rivalryMessages = new InMemoryRivalryMessagesRepository();
+  const rivalryNotes = new InMemoryRivalryNotesRepository();
 
   const runInTransaction: Repositories['runInTransaction'] = async <T>(fn: (tx: import('../unitOfWork').UnitOfWork) => Promise<T>): Promise<T> => {
     const uow = new InMemoryUnitOfWork({
@@ -53,6 +61,9 @@ export function buildInMemoryRepositories(): Repositories {
     user,
     factionMessages,
     factionDirectMessages,
+    rivalries,
+    rivalryMessages,
+    rivalryNotes,
     runInTransaction,
     clearAllData: async () => {
       const counts: Record<string, { deleted: number; errors: number }> = {};
@@ -118,4 +129,9 @@ export {
   InMemoryFactionMessagesRepository,
   InMemoryFactionDirectMessagesRepository,
 } from './InMemoryFactionMessagesRepository';
+export {
+  InMemoryRivalriesRepository,
+  InMemoryRivalryMessagesRepository,
+  InMemoryRivalryNotesRepository,
+} from './InMemoryRivalriesRepository';
 export { InMemoryUnitOfWork } from './InMemoryUnitOfWork';
