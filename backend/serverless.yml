@@ -1864,6 +1864,51 @@ resources:
             Projection:
               ProjectionType: ALL
 
+    # Rivalries (RIV-01): one base row per rivalry (recordType="META") plus
+    # one row per participant (recordType="PARTICIPANT#<playerId>"). The
+    # participant rows duplicate `participantId` so the ParticipantIndex GSI
+    # can answer "all rivalries player X is in" cheaply. The META rows expose
+    # `status` so the StatusIndex GSI can power admin moderation queues.
+    # Both GSIs are sparse — items lacking the index attributes are skipped.
+    RivalriesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.RIVALRIES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: rivalryId
+            AttributeType: S
+          - AttributeName: recordType
+            AttributeType: S
+          - AttributeName: participantId
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: rivalryId
+            KeyType: HASH
+          - AttributeName: recordType
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: ParticipantIndex
+            KeySchema:
+              - AttributeName: participantId
+                KeyType: HASH
+              - AttributeName: rivalryId
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: StatusIndex
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
     VideosTable:
       Type: AWS::DynamoDB::Table
       Properties:
