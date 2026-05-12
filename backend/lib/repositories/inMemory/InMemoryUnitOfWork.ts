@@ -284,6 +284,35 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     });
   }
 
+  deleteRivalry(rivalryId: string, _participantPlayerIds: string[]): void {
+    // The in-memory store keeps the rivalry as a single aggregate, so the
+    // per-participant IDs are unused here — they're only meaningful for
+    // the DynamoDB SK-per-participant layout.
+    void _participantPlayerIds;
+    this.staged.push(() => {
+      this.stores.rivalries.delete(rivalryId);
+    });
+  }
+
+  deleteRivalryMessage(message: RivalryMessage): void {
+    this.staged.push(() => {
+      const idx = this.stores.rivalryMessages.findIndex(
+        (m) =>
+          m.rivalryId === message.rivalryId && m.messageId === message.messageId,
+      );
+      if (idx >= 0) this.stores.rivalryMessages.splice(idx, 1);
+    });
+  }
+
+  deleteRivalryNote(note: RivalryNote): void {
+    this.staged.push(() => {
+      const idx = this.stores.rivalryNotes.findIndex(
+        (n) => n.rivalryId === note.rivalryId && n.noteId === note.noteId,
+      );
+      if (idx >= 0) this.stores.rivalryNotes.splice(idx, 1);
+    });
+  }
+
   async commit(): Promise<void> {
     if (this.committed) throw new Error('UnitOfWork already committed');
     this.committed = true;
