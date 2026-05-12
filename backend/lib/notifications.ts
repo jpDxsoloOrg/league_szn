@@ -12,9 +12,10 @@ export type NotificationType =
   | 'storyline_request'
   | 'storyline_request_reviewed'
   | 'match_invitation'
-  | 'match_invitation_declined';
+  | 'match_invitation_declined'
+  | 'rivalry_reviewed';
 
-export type NotificationSourceType = 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'match_invitation';
+export type NotificationSourceType = 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'match_invitation' | 'rivalry';
 
 export interface CreateNotificationParams {
   userId: string;
