@@ -1909,6 +1909,26 @@ resources:
             Projection:
               ProjectionType: ALL
 
+    # Rivalry messages (RIV-01): every post on a rivalry thread. PK=rivalryId,
+    # SK=createdAt#messageId so a single Query returns the whole thread in
+    # time order with no GSI. Audience filtering (`all` vs `participants` vs
+    # `admins`) lives on each row and is enforced by handlers.
+    RivalryMessagesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.RIVALRY_MESSAGES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: rivalryId
+            AttributeType: S
+          - AttributeName: createdAtMessageId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: rivalryId
+            KeyType: HASH
+          - AttributeName: createdAtMessageId
+            KeyType: RANGE
+
     VideosTable:
       Type: AWS::DynamoDB::Table
       Properties:
