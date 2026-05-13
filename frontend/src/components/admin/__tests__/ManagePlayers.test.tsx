@@ -114,7 +114,8 @@ describe('ManagePlayers', () => {
     expect(screen.getByText('Jane')).toBeInTheDocument();
     expect(screen.getByText('Becky Lynch')).toBeInTheDocument();
     expect(screen.getByText('10W - 3L - 1D')).toBeInTheDocument();
-    expect(screen.getByText('Raw')).toBeInTheDocument();
+    // "Raw" appears as both a filter dropdown option and a division cell; target the cell
+    expect(screen.getByText('Raw', { selector: '.division-cell' })).toBeInTheDocument();
     // "Linked" appears as both a table header and badge; target the badge by CSS class
     expect(screen.getByText('Linked', { selector: '.linked-badge' })).toBeInTheDocument();
     expect(screen.getByText('Manual')).toBeInTheDocument();
