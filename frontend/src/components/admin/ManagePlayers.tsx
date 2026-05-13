@@ -90,9 +90,23 @@ export default function ManagePlayers() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  // Division filter for the players table. `null` means "not yet initialized";
+  // a one-shot effect picks Heavyweight (or "all" if Heavyweight is missing)
+  // once divisions load. Special values: 'all' = no filter, 'none' = players
+  // with no division assigned.
+  const [divisionFilter, setDivisionFilter] = useState<string | null>(null);
+
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (divisionFilter !== null || divisions.length === 0) return;
+    const heavyweight = divisions.find(
+      (d) => d.name.toLowerCase() === 'heavyweight',
+    );
+    setDivisionFilter(heavyweight ? heavyweight.divisionId : 'all');
+  }, [divisions, divisionFilter]);
 
   const loadData = async () => {
     try {
@@ -137,6 +151,12 @@ export default function ManagePlayers() {
       ),
     [wrestlers, formData.currentWrestlerId, formData.alternateWrestlerId],
   );
+
+  const filteredPlayers = useMemo(() => {
+    if (divisionFilter === null || divisionFilter === 'all') return players;
+    if (divisionFilter === 'none') return players.filter((p) => !p.divisionId);
+    return players.filter((p) => p.divisionId === divisionFilter);
+  }, [players, divisionFilter]);
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -517,9 +537,32 @@ export default function ManagePlayers() {
       )}
 
       <div className="players-list">
-        <h3>All Players ({players.length})</h3>
+        <div className="players-list-header">
+          <h3>
+            All Players ({filteredPlayers.length}
+            {filteredPlayers.length !== players.length ? ` of ${players.length}` : ''})
+          </h3>
+          <div className="players-filter">
+            <label htmlFor="divisionFilter">Division:</label>
+            <select
+              id="divisionFilter"
+              value={divisionFilter ?? 'all'}
+              onChange={(e) => setDivisionFilter(e.target.value)}
+            >
+              <option value="all">All</option>
+              {divisions.map((division) => (
+                <option key={division.divisionId} value={division.divisionId}>
+                  {division.name}
+                </option>
+              ))}
+              <option value="none">No Division</option>
+            </select>
+          </div>
+        </div>
         {players.length === 0 ? (
           <p>No players yet. Add your first player!</p>
+        ) : filteredPlayers.length === 0 ? (
+          <p>No players match the selected division.</p>
         ) : (
           <div className="players-table-wrapper">
           <table className="players-table">
@@ -538,7 +581,7 @@ export default function ManagePlayers() {
               </tr>
             </thead>
             <tbody>
-              {players.map((player) => (
+              {filteredPlayers.map((player) => (
                 <tr key={player.playerId}>
                   <td>
                     <img
