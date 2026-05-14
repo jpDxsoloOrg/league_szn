@@ -1098,6 +1098,11 @@
       "confirmDeleteEvent": "Möchtest du \"{{name}}\" wirklich löschen?",
       "deleteEventSuccess": "Veranstaltung erfolgreich gelöscht.",
       "deleteEventError": "Veranstaltung konnte nicht gelöscht werden.",
+      "editDate": {
+        "label": "Veranstaltungsdatum",
+        "invalid": "Bitte ein gültiges Datum wählen.",
+        "error": "Datum konnte nicht aktualisiert werden."
+      },
       "loadEventsError": "Veranstaltungen konnten nicht geladen werden.",
       "name": "Veranstaltungsname",
       "namePlaceholder": "z.B. WrestleMania 41, Monday Night Raw",
