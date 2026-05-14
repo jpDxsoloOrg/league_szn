@@ -251,6 +251,72 @@
   min-width: 90px;
 }
 
+.event-detail-date-row {
+  align-items: center;
+}
+
+.event-detail-date-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-detail-date-edit input[type='date'] {
+  padding: 4px 8px;
+  background-color: #1a1a1a;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.event-detail-date-edit-btn,
+.event-detail-date-save,
+.event-detail-date-cancel {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.event-detail-date-edit-btn {
+  color: #d4af37;
+  border-color: #d4af37;
+  background: transparent;
+}
+
+.event-detail-date-edit-btn:hover {
+  background-color: rgba(212, 175, 55, 0.12);
+}
+
+.event-detail-date-save {
+  color: #000;
+  background-color: #d4af37;
+  font-weight: 600;
+}
+
+.event-detail-date-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.event-detail-date-cancel {
+  color: #ccc;
+  background-color: #333;
+}
+
+.event-detail-date-error {
+  color: #fecaca;
+  background-color: #7f1d1d;
+  border: 1px solid #991b1b;
+  padding: 6px 10px;
+  border-radius: 4px;
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+
 .event-rating {
   color: #d4af37;
   font-weight: 600;

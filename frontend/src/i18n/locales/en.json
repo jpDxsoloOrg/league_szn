@@ -1099,6 +1099,11 @@
       "confirmDeleteEvent": "Are you sure you want to delete \"{{name}}\"?",
       "deleteEventSuccess": "Event deleted successfully.",
       "deleteEventError": "Failed to delete event.",
+      "editDate": {
+        "label": "Event date",
+        "invalid": "Pick a valid date.",
+        "error": "Failed to update date."
+      },
       "loadEventsError": "Failed to load events.",
       "name": "Event Name",
       "namePlaceholder": "e.g., WrestleMania 41, Monday Night Raw",

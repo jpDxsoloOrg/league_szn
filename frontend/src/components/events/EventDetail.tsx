@@ -20,7 +20,7 @@ import EventCheckInRosterPanel from './EventCheckInRosterPanel';
 import MatchSlots from './MatchSlots';
 import SlotEditDialog from './SlotEditDialog';
 import type { HydratedMatchSlot } from '../../types';
-import { formatCalendarDate } from '../../utils/dateUtils';
+import { formatCalendarDate, toCalendarDate } from '../../utils/dateUtils';
 import './EventDetail.css';
 
 const eventTypeColors: Record<string, string> = {
@@ -73,6 +73,10 @@ export default function EventDetail() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [editingDate, setEditingDate] = useState(false);
+  const [dateDraft, setDateDraft] = useState('');
+  const [savingDate, setSavingDate] = useState(false);
+  const [dateError, setDateError] = useState<string | null>(null);
 
   // Admin-only data for inline record/edit/delete flows
   const [scheduledMatches, setScheduledMatches] = useState<Match[]>([]);
@@ -204,6 +208,41 @@ export default function EventDetail() {
       console.error('Failed to update event status:', err);
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const handleStartEditDate = () => {
+    if (!eventData) return;
+    setDateDraft(toCalendarDate(eventData.date));
+    setDateError(null);
+    setEditingDate(true);
+  };
+
+  const handleCancelEditDate = () => {
+    setEditingDate(false);
+    setDateError(null);
+  };
+
+  const handleSaveDate = async () => {
+    if (!eventData || !eventId || savingDate) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateDraft)) {
+      setDateError(t('events.admin.editDate.invalid', 'Pick a valid date.'));
+      return;
+    }
+    if (dateDraft === toCalendarDate(eventData.date)) {
+      setEditingDate(false);
+      return;
+    }
+    setSavingDate(true);
+    setDateError(null);
+    try {
+      const updated = await eventsApi.update(eventId, { date: dateDraft });
+      setEventData({ ...eventData, date: updated.date });
+      setEditingDate(false);
+    } catch (err) {
+      setDateError(err instanceof Error ? err.message : t('events.admin.editDate.error', 'Failed to update date.'));
+    } finally {
+      setSavingDate(false);
     }
   };
 
@@ -606,10 +645,55 @@ export default function EventDetail() {
         )}
 
         <div className="event-detail-info">
-          <div className="event-detail-info-item">
+          <div className="event-detail-info-item event-detail-date-row">
             <span className="info-label">{t('events.detail.date')}:</span>
-            <span>{formattedDate}</span>
+            {isAdminOrModerator && editingDate ? (
+              <span className="event-detail-date-edit">
+                <input
+                  type="date"
+                  value={dateDraft}
+                  onChange={(e) => setDateDraft(e.target.value)}
+                  disabled={savingDate}
+                  aria-label={t('events.admin.editDate.label', 'Event date')}
+                />
+                <button
+                  type="button"
+                  className="event-detail-date-save"
+                  onClick={handleSaveDate}
+                  disabled={savingDate}
+                >
+                  {savingDate ? t('common.saving') : t('common.save', 'Save')}
+                </button>
+                <button
+                  type="button"
+                  className="event-detail-date-cancel"
+                  onClick={handleCancelEditDate}
+                  disabled={savingDate}
+                >
+                  {t('common.cancel', 'Cancel')}
+                </button>
+              </span>
+            ) : (
+              <>
+                <span>{formattedDate}</span>
+                {isAdminOrModerator && (
+                  <button
+                    type="button"
+                    className="event-detail-date-edit-btn"
+                    onClick={handleStartEditDate}
+                    aria-label={t('events.admin.editDate.label', 'Event date')}
+                  >
+                    {t('common.edit', 'Edit')}
+                  </button>
+                )}
+              </>
+            )}
           </div>
+          {dateError && (
+            <div className="event-detail-date-error" role="alert">
+              {dateError}
+            </div>
+          )}
           {eventData.venue && (
             <div className="event-detail-info-item">
               <span className="info-label">{t('events.detail.venue')}:</span>
