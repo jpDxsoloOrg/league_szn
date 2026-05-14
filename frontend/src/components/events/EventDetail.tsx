@@ -20,6 +20,7 @@ import EventCheckInRosterPanel from './EventCheckInRosterPanel';
 import MatchSlots from './MatchSlots';
 import SlotEditDialog from './SlotEditDialog';
 import type { HydratedMatchSlot } from '../../types';
+import { formatCalendarDate } from '../../utils/dateUtils';
 import './EventDetail.css';
 
 const eventTypeColors: Record<string, string> = {
@@ -384,12 +385,11 @@ export default function EventDetail() {
   const typeColor = eventTypeColors[eventData.eventType] || '#9ca3af';
   const statusColor = statusColors[eventData.status] || '#9ca3af';
 
-  const formattedDate = new Date(eventData.date).toLocaleDateString('en-US', {
+  const formattedDate = formatCalendarDate(eventData.date, 'en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    timeZone: 'UTC',
   });
 
   // Separate pre-show and main card matches

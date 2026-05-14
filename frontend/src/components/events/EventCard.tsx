@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import type { EventCalendarEntry } from '../../types/event';
+import { formatCalendarDate } from '../../utils/dateUtils';
 import './EventCard.css';
 
 interface EventCardProps {
@@ -27,12 +28,11 @@ export default function EventCard({ event }: EventCardProps) {
   const typeColor = eventTypeColors[event.eventType] || '#9ca3af';
   const statusColor = statusColors[event.status] || '#9ca3af';
 
-  const formattedDate = new Date(event.date).toLocaleDateString('en-US', {
+  const formattedDate = formatCalendarDate(event.date, 'en-US', {
     weekday: 'short',
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-    timeZone: 'UTC',
   });
 
   return (

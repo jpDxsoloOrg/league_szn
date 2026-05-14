@@ -3,6 +3,49 @@
  */
 
 /**
+ * Normalize a value to a calendar date string `YYYY-MM-DD`.
+ *
+ * Why this exists: events store a calendar day (no time), but legacy rows are
+ * full ISO timestamps. Stripping to the UTC date portion gives a single
+ * representation that renders identically in every viewer timezone.
+ */
+export function toCalendarDate(value: string): string {
+  if (!value) return value;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(value);
+  return match?.[1] ?? value;
+}
+
+/**
+ * Serialize a local `Date` to `YYYY-MM-DD` using its local calendar
+ * components — used when the user picked a day on a calendar grid that
+ * was rendered in their local timezone.
+ */
+export function dateToCalendarDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Format a calendar date for display. Accepts `YYYY-MM-DD` or a legacy ISO
+ * timestamp; always renders the same calendar day regardless of viewer
+ * timezone (anchored to UTC).
+ */
+export function formatCalendarDate(
+  value: string,
+  locale?: string,
+  options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' },
+): string {
+  const ymd = toCalendarDate(value);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+  if (!m) return value;
+  const date = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return date.toLocaleDateString(locale, { ...options, timeZone: 'UTC' });
+}
+
+/**
  * Formats a date string to a localized short date format.
  * Example: "Jan 15, 2024"
  *

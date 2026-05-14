@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { MatchDesignation, MatchCardEntry, LeagueEvent } from '../../types/event';
 import type { Player } from '../../types';
 import { matchesApi, playersApi, eventsApi } from '../../services/api';
+import { formatCalendarDate } from '../../utils/dateUtils';
 import SearchableSelect from './SearchableSelect';
 import EventCheckInRosterPanel from '../events/EventCheckInRosterPanel';
 import './MatchCardBuilder.css';
@@ -239,7 +240,7 @@ export default function MatchCardBuilder() {
             { value: '', label: t('events.admin.chooseEvent', '-- Choose an event --') },
             ...events.map((ev) => ({
               value: ev.eventId,
-              label: `${ev.name} (${new Date(ev.date).toLocaleDateString()})`,
+              label: `${ev.name} (${formatCalendarDate(ev.date)})`,
             })),
           ]}
         />
