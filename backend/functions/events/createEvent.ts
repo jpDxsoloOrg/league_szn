@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { parseBody } from '../../lib/parseBody';
 import { badRequest, created, notFound, serverError } from '../../lib/response';
+import { normalizeCalendarDate } from '../../lib/calendarDate';
 import type { EventCreateInput } from '../../lib/repositories/LeagueOpsRepository';
 import type { Location } from '../../lib/repositories/types';
 
@@ -47,6 +48,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!raw.eventType) return badRequest('eventType is required');
     if (!raw.date) return badRequest('date is required');
 
+    const calendarDate = normalizeCalendarDate(raw.date);
+    if (!calendarDate) {
+      return badRequest('date must be a calendar date (YYYY-MM-DD)');
+    }
+
     if (!isValidEventType(raw.eventType)) {
       return badRequest('eventType must be one of ppv, weekly, special, or house');
     }
@@ -67,7 +73,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const input: EventCreateInput = {
       name: raw.name as string,
       eventType: raw.eventType,
-      date: raw.date as string,
+      date: calendarDate,
     };
     if (raw.venue !== undefined) input.venue = raw.venue as string;
     if (raw.description !== undefined) input.description = raw.description as string;

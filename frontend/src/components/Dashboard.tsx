@@ -12,6 +12,7 @@ import {
 import Skeleton from './ui/Skeleton';
 import FindMatchWidget from './matchmaking/FindMatchWidget';
 import ChampionCarousel from './ChampionCarousel';
+import { formatCalendarDate } from '../utils/dateUtils';
 import './Dashboard.css';
 
 function renderStarRating(rating: number): string {
@@ -163,7 +164,7 @@ export default function Dashboard() {
                 >
                   <span className="db-live-badge">{t('dashboard.liveBadge')}</span>
                   <div className="db-event-name">{e.name}</div>
-                  <div className="db-event-date">{new Date(e.date).toLocaleDateString(undefined, { dateStyle: 'medium' })}</div>
+                  <div className="db-event-date">{formatCalendarDate(e.date, undefined, { dateStyle: 'medium' })}</div>
                 </Link>
               ))}
             </div>
@@ -182,7 +183,7 @@ export default function Dashboard() {
                 <Link key={e.eventId} to={`/events/${e.eventId}`} className="db-event-card">
                   <div className="db-event-name">{e.name}</div>
                   <div className="db-event-countdown">{formatCountdown(e.date, now, t)}</div>
-                  <div className="db-event-date">{new Date(e.date).toLocaleDateString(undefined, { dateStyle: 'medium' })}</div>
+                  <div className="db-event-date">{formatCalendarDate(e.date, undefined, { dateStyle: 'medium' })}</div>
                 </Link>
               ))}
             </div>

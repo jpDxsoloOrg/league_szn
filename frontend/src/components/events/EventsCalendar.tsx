@@ -6,6 +6,7 @@ import type { Show } from '../../types';
 import { eventsApi, showsApi, companiesApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { toCalendarDate, dateToCalendarDate } from '../../utils/dateUtils';
 import Skeleton from '../ui/Skeleton';
 import EmptyState from '../ui/EmptyState';
 import EventCard from './EventCard';
@@ -37,7 +38,7 @@ const dayOfWeekToNumber: Record<string, number> = {
 interface ShowCalendarEntry {
   show: Show;
   companyName: string;
-  date: string; // ISO date for this specific occurrence
+  date: string; // calendar date YYYY-MM-DD for this specific occurrence
   eventType: 'weekly' | 'ppv';
 }
 
@@ -129,11 +130,14 @@ export default function EventsCalendar() {
     return calendarEntries.filter((e) => e.eventType === activeFilter);
   }, [activeFilter, calendarEntries]);
 
-  // Events for the current calendar month
+  // Events for the current calendar month. Compare against the YYYY-MM-DD
+  // calendar day so the placement is identical for every viewer's timezone.
   const monthEvents = useMemo(() => {
     return filteredEntries.filter((e) => {
-      const d = new Date(e.date);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      const ymd = toCalendarDate(e.date);
+      const m = /^(\d{4})-(\d{2})-/.exec(ymd);
+      if (!m) return false;
+      return Number(m[1]) === currentYear && Number(m[2]) - 1 === currentMonth;
     });
   }, [filteredEntries, currentMonth, currentYear]);
 
@@ -142,14 +146,8 @@ export default function EventsCalendar() {
     const map: Record<number, ShowCalendarEntry[]> = {};
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
-    const eventExistsForShowOnDate = (showId: string, date: Date) =>
-      calendarEntries.some((e) => {
-        if (e.showId !== showId) return false;
-        const eDate = new Date(e.date);
-        return eDate.getFullYear() === date.getFullYear() &&
-          eDate.getMonth() === date.getMonth() &&
-          eDate.getDate() === date.getDate();
-      });
+    const eventExistsForShowOnYmd = (showId: string, ymd: string) =>
+      calendarEntries.some((e) => e.showId === showId && toCalendarDate(e.date) === ymd);
 
     shows.forEach((show) => {
       // Weekly recurring shows
@@ -161,30 +159,36 @@ export default function EventsCalendar() {
         for (let d = 1; d <= daysInMonth; d++) {
           const date = new Date(currentYear, currentMonth, d);
           if (date.getDay() !== targetDay) continue;
-          if (eventExistsForShowOnDate(show.showId, date)) continue;
+          const ymd = dateToCalendarDate(date);
+          if (eventExistsForShowOnYmd(show.showId, ymd)) continue;
           const arr = map[d] ?? (map[d] = []);
           arr.push({
             show,
             companyName: companyNames[show.companyId] || '',
-            date: date.toISOString(),
+            date: ymd,
             eventType: 'weekly',
           });
         }
         return;
       }
 
-      // PPV shows pinned to a specific date
+      // PPV shows pinned to a specific date. Parse YMD directly so the
+      // pinned day is the same in every viewer's timezone.
       if (show.schedule === 'ppv' && show.ppvDate) {
         if (activeFilter !== 'all' && activeFilter !== 'ppv') return;
-        const ppvDate = new Date(show.ppvDate);
-        if (ppvDate.getFullYear() !== currentYear || ppvDate.getMonth() !== currentMonth) return;
-        if (eventExistsForShowOnDate(show.showId, ppvDate)) return;
-        const d = ppvDate.getDate();
-        const arr = map[d] ?? (map[d] = []);
+        const ymd = toCalendarDate(show.ppvDate);
+        const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+        if (!parts) return;
+        const ppvYear = Number(parts[1]);
+        const ppvMonth = Number(parts[2]) - 1;
+        const ppvDay = Number(parts[3]);
+        if (ppvYear !== currentYear || ppvMonth !== currentMonth) return;
+        if (eventExistsForShowOnYmd(show.showId, ymd)) return;
+        const arr = map[ppvDay] ?? (map[ppvDay] = []);
         arr.push({
           show,
           companyName: companyNames[show.companyId] || '',
-          date: ppvDate.toISOString(),
+          date: ymd,
           eventType: 'ppv',
         });
       }
@@ -210,7 +214,9 @@ export default function EventsCalendar() {
   const eventsByDay = useMemo(() => {
     const map: Record<number, typeof monthEvents> = {};
     monthEvents.forEach((e) => {
-      const day = new Date(e.date).getDate();
+      const parts = /^\d{4}-\d{2}-(\d{2})$/.exec(toCalendarDate(e.date));
+      if (!parts) return;
+      const day = Number(parts[1]);
       if (!map[day]) map[day] = [];
       map[day].push(e);
     });

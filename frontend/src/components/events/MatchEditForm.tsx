@@ -26,6 +26,7 @@ import type { TagTeam } from '../../types/tagTeam';
 import type { LeagueEvent, MatchDesignation } from '../../types/event';
 import SearchableSelect from '../admin/SearchableSelect';
 import Skeleton from '../ui/Skeleton';
+import { formatCalendarDate } from '../../utils/dateUtils';
 import '../admin/ScheduleMatch.css';
 import './MatchEditForm.css';
 
@@ -454,7 +455,7 @@ export default function MatchEditForm({
                   { value: '', label: t('scheduleMatch.noEvent', 'No Event (Standalone Match)') },
                   ...events.map((ev) => ({
                     value: ev.eventId,
-                    label: `${ev.name} (${new Date(ev.date).toLocaleDateString()})`,
+                    label: `${ev.name} (${formatCalendarDate(ev.date)})`,
                   })),
                 ]}
               />

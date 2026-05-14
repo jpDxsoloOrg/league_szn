@@ -3,6 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import { NotFoundError } from '../../lib/repositories/errors';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
+import { normalizeCalendarDate } from '../../lib/calendarDate';
 import type { EventPatch } from '../../lib/repositories/LeagueOpsRepository';
 
 interface UpdateEventBody {
@@ -64,6 +65,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           return notFound(`Company ${companyId} not found`);
         }
       }
+    }
+
+    if (body.date !== undefined) {
+      const normalized = normalizeCalendarDate(body.date);
+      if (!normalized) {
+        return badRequest('date must be a calendar date (YYYY-MM-DD)');
+      }
+      body.date = normalized;
     }
 
     const patch: EventPatch = {};
