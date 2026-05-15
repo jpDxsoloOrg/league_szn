@@ -330,6 +330,10 @@ export interface LeagueEvent {
   matchCards: MatchCardEntry[];
   attendance?: number;
   rating?: number;
+  // When true, players cannot create or change their check-in for this event.
+  // Independent of `status`: admins can lock sign-ups while the event is still
+  // upcoming (e.g. to close the roster once it's filled).
+  checkInsLocked?: boolean;
   createdAt: string;
   updatedAt: string;
 }

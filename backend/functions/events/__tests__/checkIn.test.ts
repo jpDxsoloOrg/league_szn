@@ -145,6 +145,24 @@ describe('checkIn', () => {
     expect(mockPut).not.toHaveBeenCalled();
   });
 
+  it('returns 403 when check-ins are locked by admin', async () => {
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockGet.mockResolvedValue({
+      Item: {
+        eventId: 'evt-1',
+        status: 'upcoming',
+        date: '2026-05-01T00:00:00.000Z',
+        checkInsLocked: true,
+      },
+    });
+
+    const result = await checkIn(wrestlerEvent('evt-1', { status: 'available' }));
+
+    expect(result!.statusCode).toBe(403);
+    expect(JSON.parse(result!.body).message).toBe('Check-ins are locked for this event');
+    expect(mockPut).not.toHaveBeenCalled();
+  });
+
   it('returns 404 for non-existent event', async () => {
     mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
     mockGet.mockResolvedValue({ Item: undefined });

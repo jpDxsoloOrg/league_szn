@@ -30,6 +30,8 @@ export interface LeagueEvent {
   matchCards: MatchCardEntry[];
   attendance?: number;
   rating?: number;
+  // When true, players cannot create or change their check-in for this event.
+  checkInsLocked?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -97,6 +99,7 @@ export interface UpdateEventInput extends Partial<CreateEventInput> {
   rating?: number;
   companyIds?: string[];
   showId?: string;
+  checkInsLocked?: boolean;
 }
 
 export type EventCheckInStatus = 'available' | 'tentative' | 'unavailable';

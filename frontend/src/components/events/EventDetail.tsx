@@ -77,6 +77,8 @@ export default function EventDetail() {
   const [dateDraft, setDateDraft] = useState('');
   const [savingDate, setSavingDate] = useState(false);
   const [dateError, setDateError] = useState<string | null>(null);
+  const [togglingLock, setTogglingLock] = useState(false);
+  const [lockError, setLockError] = useState<string | null>(null);
 
   // Admin-only data for inline record/edit/delete flows
   const [scheduledMatches, setScheduledMatches] = useState<Match[]>([]);
@@ -243,6 +245,21 @@ export default function EventDetail() {
       setDateError(err instanceof Error ? err.message : t('events.admin.editDate.error', 'Failed to update date.'));
     } finally {
       setSavingDate(false);
+    }
+  };
+
+  const handleToggleSignupLock = async () => {
+    if (!eventData || !eventId || togglingLock) return;
+    const next = !eventData.checkInsLocked;
+    setTogglingLock(true);
+    setLockError(null);
+    try {
+      const updated = await eventsApi.update(eventId, { checkInsLocked: next });
+      setEventData({ ...eventData, checkInsLocked: updated.checkInsLocked });
+    } catch (err) {
+      setLockError(err instanceof Error ? err.message : t('events.admin.lockSignups.error', 'Failed to update sign-ups.'));
+    } finally {
+      setTogglingLock(false);
     }
   };
 
@@ -619,6 +636,24 @@ export default function EventDetail() {
                 </select>
                 <button
                   type="button"
+                  className={`event-detail-lock-btn${eventData.checkInsLocked ? ' is-locked' : ''}`}
+                  onClick={handleToggleSignupLock}
+                  disabled={togglingLock}
+                  title={
+                    eventData.checkInsLocked
+                      ? t('events.admin.lockSignups.unlock', 'Unlock sign-ups')
+                      : t('events.admin.lockSignups.lock', 'Lock sign-ups')
+                  }
+                  aria-pressed={!!eventData.checkInsLocked}
+                >
+                  {togglingLock
+                    ? t('common.saving')
+                    : eventData.checkInsLocked
+                      ? t('events.admin.lockSignups.unlock', 'Unlock sign-ups')
+                      : t('events.admin.lockSignups.lock', 'Lock sign-ups')}
+                </button>
+                <button
+                  type="button"
                   className="event-detail-delete-btn"
                   onClick={handleDeleteEvent}
                   disabled={deleting}
@@ -641,6 +676,11 @@ export default function EventDetail() {
         {deleteError && (
           <div className="event-detail-delete-error" role="alert">
             {deleteError}
+          </div>
+        )}
+        {lockError && (
+          <div className="event-detail-delete-error" role="alert">
+            {lockError}
           </div>
         )}
 
@@ -727,6 +767,7 @@ export default function EventDetail() {
               currentStatus={myCheckIn?.status ?? null}
               summary={checkInSummary}
               onChange={handleCheckInChange}
+              signupsLocked={!!eventData.checkInsLocked}
             />
             {checkInError && (
               <div className="event-checkin-error" role="alert">

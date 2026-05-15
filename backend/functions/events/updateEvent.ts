@@ -21,6 +21,7 @@ interface UpdateEventBody {
   rating?: number;
   companyIds?: string[];
   showId?: string;
+  checkInsLocked?: boolean;
 }
 
 const VALID_EVENT_TYPES = ['ppv', 'weekly', 'special', 'house'];
@@ -90,6 +91,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (body.rating !== undefined) patch.rating = body.rating;
     if (body.companyIds !== undefined) patch.companyIds = body.companyIds;
     if (body.showId !== undefined) patch.showId = body.showId;
+    if (body.checkInsLocked !== undefined) patch.checkInsLocked = body.checkInsLocked;
 
     if (Object.keys(patch).length === 0) {
       return badRequest('No valid fields to update');
