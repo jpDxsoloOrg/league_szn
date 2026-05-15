@@ -1104,6 +1104,11 @@
         "invalid": "Pick a valid date.",
         "error": "Failed to update date."
       },
+      "lockSignups": {
+        "lock": "Lock sign-ups",
+        "unlock": "Unlock sign-ups",
+        "error": "Failed to update sign-ups."
+      },
       "loadEventsError": "Failed to load events.",
       "name": "Event Name",
       "namePlaceholder": "e.g., WrestleMania 41, Monday Night Raw",
@@ -1135,6 +1140,7 @@
       "clearResponse": "Clear my response",
       "summary": "{{available}} available · {{tentative}} tentative · {{unavailable}} unavailable",
       "lockedAfterStart": "Check-ins are locked once the event has started or ended.",
+      "lockedByAdmin": "Sign-ups are closed for this event.",
       "error": "Couldn't update your response. Please try again.",
       "success": "Response saved.",
       "noPlayerProfile": "Link a player profile to RSVP.",

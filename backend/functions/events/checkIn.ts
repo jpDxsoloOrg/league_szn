@@ -54,6 +54,10 @@ export const handler = async (
       return badRequest('Check-in is only allowed for upcoming or in-progress events');
     }
 
+    if (eventItem.checkInsLocked) {
+      return forbidden('Check-ins are locked for this event');
+    }
+
     if (!eventItem.date) {
       return serverError('Event is missing a date');
     }

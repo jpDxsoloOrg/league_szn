@@ -38,6 +38,10 @@ export const handler = async (
       return badRequest('Check-in can only be cleared for upcoming or in-progress events');
     }
 
+    if (eventItem.checkInsLocked) {
+      return forbidden('Check-ins are locked for this event');
+    }
+
     // Idempotent delete -- does not error if the row does not exist
     await events.deleteCheckIn(eventId, playerId);
 

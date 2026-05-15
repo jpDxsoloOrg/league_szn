@@ -1103,6 +1103,11 @@
         "invalid": "Bitte ein gültiges Datum wählen.",
         "error": "Datum konnte nicht aktualisiert werden."
       },
+      "lockSignups": {
+        "lock": "Anmeldung sperren",
+        "unlock": "Anmeldung freigeben",
+        "error": "Anmeldung konnte nicht aktualisiert werden."
+      },
       "loadEventsError": "Veranstaltungen konnten nicht geladen werden.",
       "name": "Veranstaltungsname",
       "namePlaceholder": "z.B. WrestleMania 41, Monday Night Raw",
@@ -1134,6 +1139,7 @@
       "clearResponse": "Antwort zurücksetzen",
       "summary": "{{available}} verfügbar · {{tentative}} vielleicht · {{unavailable}} nicht verfügbar",
       "lockedAfterStart": "Anmeldungen sind gesperrt, sobald das Event begonnen hat oder beendet ist.",
+      "lockedByAdmin": "Die Anmeldung für dieses Event ist geschlossen.",
       "error": "Antwort konnte nicht aktualisiert werden. Bitte versuche es erneut.",
       "success": "Antwort gespeichert.",
       "noPlayerProfile": "Verknüpfe ein Spielerprofil, um zuzusagen.",

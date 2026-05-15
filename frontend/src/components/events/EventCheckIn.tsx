@@ -8,15 +8,18 @@ interface EventCheckInProps {
   currentStatus: EventCheckInStatus | null;
   summary: EventCheckInSummary;
   onChange: (status: EventCheckInStatus | null) => Promise<void>;
+  /** Admin-controlled lock; independent of `eventStatus`. */
+  signupsLocked?: boolean;
 }
 
 const RSVP_OPTIONS: EventCheckInStatus[] = ['available', 'tentative', 'unavailable'];
 
-function EventCheckIn({ eventStatus, currentStatus, summary, onChange }: EventCheckInProps) {
+function EventCheckIn({ eventStatus, currentStatus, summary, onChange, signupsLocked = false }: EventCheckInProps) {
   const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
 
-  const locked = eventStatus !== 'upcoming' && eventStatus !== 'in-progress';
+  const statusLocked = eventStatus !== 'upcoming' && eventStatus !== 'in-progress';
+  const locked = statusLocked || signupsLocked;
   const disabled = locked || submitting;
 
   const handleChange = async (status: EventCheckInStatus | null) => {
@@ -70,7 +73,9 @@ function EventCheckIn({ eventStatus, currentStatus, summary, onChange }: EventCh
 
       {locked && (
         <div className="event-checkin-locked-hint">
-          {t('events.checkIn.lockedAfterStart')}
+          {signupsLocked && !statusLocked
+            ? t('events.checkIn.lockedByAdmin')
+            : t('events.checkIn.lockedAfterStart')}
         </div>
       )}
     </div>

@@ -42,6 +42,7 @@ export interface EventPatch {
   matchCards?: LeagueEvent['matchCards'];
   attendance?: number;
   rating?: number;
+  checkInsLocked?: boolean;
 }
 
 // ─── Show input types ───────────────────────────────────────────────
