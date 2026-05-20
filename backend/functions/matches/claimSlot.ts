@@ -139,6 +139,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return conflict('Event is no longer accepting signups');
     }
 
+    if (linkedEvent?.checkInsLocked) {
+      return forbidden('Sign-ups are closed for this event');
+    }
+
     // MSL-04: a wrestler may hold at most one slot across the entire event
     // card. Walk every other match on this event and reject if the caller
     // already occupies a slot anywhere. Admin force-assign via
