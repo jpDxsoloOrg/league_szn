@@ -547,11 +547,18 @@ export default function EventDetail() {
               ? (slot) => handleAdminEditSlot(match.matchId, slot)
               : undefined}
             claimDisabled={
-              !!userOccupiedMatchId && userOccupiedMatchId !== match.matchId
+              !!eventData.checkInsLocked ||
+              (!!userOccupiedMatchId && userOccupiedMatchId !== match.matchId)
             }
-            disableClaimReason={t('matches.slots.alreadyBookedTooltip', {
-              defaultValue: 'You already have a slot in another match on this event',
-            })}
+            disableClaimReason={
+              eventData.checkInsLocked
+                ? t('events.checkIn.lockedByAdmin', {
+                    defaultValue: 'Sign-ups are closed for this event.',
+                  })
+                : t('matches.slots.alreadyBookedTooltip', {
+                    defaultValue: 'You already have a slot in another match on this event',
+                  })
+            }
             currentPlayerCurrentWrestler={currentWrestler}
             currentPlayerAlternateWrestler={alternateWrestler}
             winnerPlayerIds={match.matchData.winners}
