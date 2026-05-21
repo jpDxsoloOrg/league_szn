@@ -60,6 +60,25 @@ describe('hydrateMatchSlots', () => {
     const out = hydrateMatchSlots(slots, new Map());
     expect(out[0].wrestlerName).toBeUndefined();
     expect(out[0].playerName).toBeUndefined();
+    expect(out[0].psnId).toBeUndefined();
+  });
+
+  it('plumbs psnId from the player record onto filled slots', () => {
+    const slots: MatchSlot[] = [
+      { slotId: 's1', position: 1, playerId: 'p1' },
+    ];
+    const lookup = new Map<string, Player>([['p1', player({ psnId: 'StoneCold_316' })]]);
+    const out = hydrateMatchSlots(slots, lookup);
+    expect(out[0].psnId).toBe('StoneCold_316');
+  });
+
+  it('leaves psnId undefined when the player has none on file', () => {
+    const slots: MatchSlot[] = [
+      { slotId: 's1', position: 1, playerId: 'p1' },
+    ];
+    const lookup = new Map<string, Player>([['p1', player({ psnId: undefined })]]);
+    const out = hydrateMatchSlots(slots, lookup);
+    expect(out[0].psnId).toBeUndefined();
   });
 });
 

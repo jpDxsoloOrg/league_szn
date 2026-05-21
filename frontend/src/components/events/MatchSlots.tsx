@@ -219,7 +219,15 @@ export default function MatchSlots(props: MatchSlotsProps) {
                   <Link to={`/players/${slot.playerId}`} className="match-slot-link">
                     <span className="match-slot-wrestler">{slot.wrestlerName ?? slot.playerId}</span>
                     {slot.playerName && (
-                      <span className="match-slot-player"> ({slot.playerName})</span>
+                      slot.psnId ? (
+                        <span className="match-slot-player">
+                          {' ('}{slot.playerName}{' · '}
+                          <span className="match-slot-psn">{slot.psnId}</span>
+                          {')'}
+                        </span>
+                      ) : (
+                        <span className="match-slot-player"> ({slot.playerName})</span>
+                      )
                     )}
                     {isWinner && (
                       <span className="match-slot-winner-badge" aria-label="Winner">W</span>

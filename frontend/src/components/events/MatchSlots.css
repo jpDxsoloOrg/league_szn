@@ -148,6 +148,13 @@
   font-size: 0.85em;
 }
 
+.match-slot-psn {
+  /* Inherits color + font-size from .match-slot-player so PSN reads as
+     part of the same parenthetical. Tabular numerals keep digit-heavy
+     gamertags aligned across rows. */
+  font-feature-settings: "tnum";
+}
+
 .match-slot-empty {
   color: #888;
   font-style: italic;

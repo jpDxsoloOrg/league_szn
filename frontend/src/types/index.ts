@@ -49,6 +49,8 @@ export interface MatchSlot {
 export interface HydratedMatchSlot extends MatchSlot {
   playerName?: string;
   wrestlerName?: string;
+  /** Live PSN gamertag from the player record; undefined when unset. */
+  psnId?: string;
 }
 
 /** Input for one slot when scheduling a match in slot mode. */

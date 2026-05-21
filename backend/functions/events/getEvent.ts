@@ -67,7 +67,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         // Fetch participant player data via repository. The same lookup also
         // feeds slot hydration below, since slot playerIds are a subset of
         // participants in slot-mode matches.
-        const participantData: { playerId: string; playerName: string; wrestlerName: string }[] = [];
+        const participantData: { playerId: string; playerName: string; wrestlerName: string; psnId?: string }[] = [];
         const playerLookup = new Map<string, Player>();
         if (Array.isArray(match.participants) && match.participants.length > 0) {
           const playerPromises = (match.participants as string[]).map(async (playerId: string) => {
@@ -78,6 +78,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               playerId,
               playerName: player?.name || 'Unknown Player',
               wrestlerName: snapshot ?? player?.currentWrestler ?? 'Unknown Wrestler',
+              psnId: player?.psnId,
             };
           });
           participantData.push(...(await Promise.all(playerPromises)));
