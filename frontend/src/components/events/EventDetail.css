@@ -587,6 +587,12 @@
   font-weight: 400;
 }
 
+.participant-psn {
+  /* Inherits color/size from .participant-player; tabular numerals
+     keep digit-heavy gamertags aligned across stacked rows. */
+  font-feature-settings: "tnum";
+}
+
 .winner-indicator {
   font-size: 0.7rem;
   font-weight: 700;
