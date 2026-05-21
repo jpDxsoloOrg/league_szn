@@ -893,6 +893,8 @@ interface MatchEntryProps {
         playerId: string;
         playerName: string;
         wrestlerName: string;
+        /** Live PSN gamertag from the player record; undefined when unset. */
+        psnId?: string;
       }[];
       winners?: string[];
       losers?: string[];
@@ -992,7 +994,15 @@ function MatchEntry({
               className={`participant ${isWinner ? 'winner' : ''} ${isLoser ? 'loser' : ''}`}
             >
               {p.wrestlerName}
-              <span className="participant-player">({p.playerName})</span>
+              {p.psnId ? (
+                <span className="participant-player">
+                  ({p.playerName}{' · '}
+                  <span className="participant-psn">{p.psnId}</span>
+                  {')'}
+                </span>
+              ) : (
+                <span className="participant-player">({p.playerName})</span>
+              )}
               {isWinner && <span className="winner-indicator"> {t('events.detail.winner')}</span>}
             </span>
           );
