@@ -72,6 +72,22 @@ describe('MatchSlots', () => {
     expect(screen.getByText('(Bob)')).toBeInTheDocument();
   });
 
+  it('renders psnId in its own span when present, alongside the player name', () => {
+    const { container } = renderSlots({ slots: [filled({ psnId: 'StoneCold_316' })] });
+    // PSN gets its own span so it can be styled (.match-slot-psn).
+    const psn = container.querySelector('.match-slot-psn');
+    expect(psn).not.toBeNull();
+    expect(psn?.textContent).toBe('StoneCold_316');
+    // The parenthetical still contains the player name + a separator.
+    const player = container.querySelector('.match-slot-player');
+    expect(player?.textContent).toBe(' (Bob · StoneCold_316)');
+  });
+
+  it('omits the psn span entirely when the player has no psnId', () => {
+    const { container } = renderSlots({ slots: [filled({ psnId: undefined })] });
+    expect(container.querySelector('.match-slot-psn')).toBeNull();
+  });
+
   it('renders open slot with Claim button when authenticated', () => {
     renderSlots({ slots: [open()], isAuthenticated: true });
     expect(screen.getByRole('button', { name: 'Claim spot' })).toBeInTheDocument();

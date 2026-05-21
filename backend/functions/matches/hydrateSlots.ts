@@ -10,6 +10,14 @@ export interface HydratedMatchSlot extends MatchSlot {
    * predate MSL-03's snapshot field. Only set when the slot is filled.
    */
   wrestlerName?: string;
+  /**
+   * Live PSN gamertag from the player record. Unlike `wrestlerName`, this
+   * is not snapshotted — a renamed PSN propagates to historical match
+   * cards because the value's purpose is "the gamertag to add today", not
+   * a brand identity tied to a moment in time. Undefined when the player
+   * has no PSN on file or the slot is unfilled.
+   */
+  psnId?: string;
 }
 
 /**
@@ -35,6 +43,7 @@ export function hydrateMatchSlots(
       ...slot,
       playerName: player?.name ?? 'Unknown Player',
       wrestlerName,
+      psnId: player?.psnId,
     };
   });
 }
