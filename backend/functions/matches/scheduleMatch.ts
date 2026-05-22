@@ -266,14 +266,26 @@ export async function scheduleMatchInternal(
     // tab without the GM needing to know about rivalryId. Ambiguous
     // overlaps (zero or multiple matching rivalries) are left unlinked
     // and rely on the frontend's participant-overlap fallback.
-    const participantsInMatch = new Set(derivedParticipants);
-    const candidatePage = await rivalries.listByParticipant(derivedParticipants[0]);
-    const matchingRivalries = candidatePage.items.filter((r) => {
-      if (r.status !== 'active') return false;
-      return r.participants.every((p) => participantsInMatch.has(p.playerId));
-    });
-    if (matchingRivalries.length === 1) {
-      resolvedRivalryId = matchingRivalries[0].rivalryId;
+    //
+    // Defensive: a rivalry-store outage must not block the user from
+    // scheduling a match. On any failure, fall back to no auto-link.
+    try {
+      const participantsInMatch = new Set(derivedParticipants);
+      const candidatePage = await rivalries.listByParticipant(derivedParticipants[0]);
+      const candidates = Array.isArray(candidatePage?.items) ? candidatePage.items : [];
+      const matchingRivalries = candidates.filter((r) => {
+        if (r.status !== 'active') return false;
+        if (!Array.isArray(r.participants)) return false;
+        return r.participants.every((p) => participantsInMatch.has(p.playerId));
+      });
+      if (matchingRivalries.length === 1) {
+        resolvedRivalryId = matchingRivalries[0].rivalryId;
+      }
+    } catch (autoLinkErr) {
+      console.warn(
+        'scheduleMatch: rivalry auto-link failed, scheduling without rivalryId',
+        autoLinkErr,
+      );
     }
   }
 

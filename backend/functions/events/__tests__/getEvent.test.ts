@@ -221,7 +221,11 @@ describe('getEvent', () => {
     const result = await getEvent(event, ctx, cb);
 
     expect(result!.statusCode).toBe(500);
-    expect(JSON.parse(result!.body).message).toBe('Failed to fetch event');
+    // The handler now appends the underlying error detail so the user (and
+    // their server log) can see what actually broke instead of a generic
+    // "Failed to fetch event" with no clue.
+    expect(JSON.parse(result!.body).message).toMatch(/^Failed to fetch event/);
+    expect(JSON.parse(result!.body).message).toContain('DB error');
   });
 
   it('participants[].wrestlerName uses slot wrestlerNameSnapshot when present (MSL-03)', async () => {
