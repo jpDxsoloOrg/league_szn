@@ -140,5 +140,12 @@ export type {
   RivalriesRepository,
   RivalryMessagesRepository,
   RivalryNotesRepository,
+  RivalryActivityKind,
+  RivalryActivityItem,
+  RivalryMessageActivityItem,
+  RivalryPromoActivityItem,
+  RivalryMatchActivityItem,
+  RivalryNoteActivityItem,
+  RivalryActivityPage,
 } from './rivalries';
 export { participantSk, RIVALRY_META_SK } from './rivalries';

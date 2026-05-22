@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ctx, cb, makeEvent, withAuth } from './testHelpers';
+import { ctx, cb, makeEvent } from './testHelpers';
 
 const mockRivalries = { get: vi.fn() };
 const mockMessages = { list: vi.fn() };

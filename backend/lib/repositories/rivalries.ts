@@ -122,6 +122,61 @@ export interface RivalryNotePatch {
   visibility?: RivalryNoteVisibility;
 }
 
+// ─── Activity feed (RIV-03) — mirrors frontend/src/types/rivalry.ts ────
+
+export type RivalryActivityKind = 'message' | 'promo' | 'match' | 'note';
+
+interface BaseRivalryActivityItem {
+  rivalryId: string;
+  occurredAt: string;
+}
+
+export interface RivalryMessageActivityItem extends BaseRivalryActivityItem {
+  kind: 'message';
+  messageId: string;
+  authorPlayerId: string;
+  body: string;
+  audience: RivalryMessageAudience;
+}
+
+export interface RivalryPromoActivityItem extends BaseRivalryActivityItem {
+  kind: 'promo';
+  promoId: string;
+  authorPlayerId: string;
+  title?: string;
+  content: string;
+}
+
+export interface RivalryMatchActivityItem extends BaseRivalryActivityItem {
+  kind: 'match';
+  matchId: string;
+  participants: string[];
+  winners?: string[];
+  status: string;
+  isChampionship?: boolean;
+  eventId?: string;
+}
+
+export interface RivalryNoteActivityItem extends BaseRivalryActivityItem {
+  kind: 'note';
+  noteId: string;
+  noteType: RivalryNoteType;
+  visibility: RivalryNoteVisibility;
+  body: string;
+  authorPlayerId: string;
+}
+
+export type RivalryActivityItem =
+  | RivalryMessageActivityItem
+  | RivalryPromoActivityItem
+  | RivalryMatchActivityItem
+  | RivalryNoteActivityItem;
+
+export interface RivalryActivityPage {
+  items: RivalryActivityItem[];
+  nextCursor: string | null;
+}
+
 // ─── Repository interfaces ─────────────────────────────────────────────
 
 export interface RivalriesRepository {

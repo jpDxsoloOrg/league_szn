@@ -96,3 +96,74 @@ export interface CreateRivalryInput {
   /** Initial heat; defaults to 'warm' if omitted. */
   heat?: RivalryHeat;
 }
+
+// ─── Activity feed (RIV-03) ────────────────────────────────────────────
+
+/**
+ * Discriminator on a single feed entry. The Hub's "Recent Rivalry
+ * Activity" stream merges these four sources into one chronologically-
+ * sorted list.
+ */
+export type RivalryActivityKind = 'message' | 'promo' | 'match' | 'note';
+
+interface BaseRivalryActivityItem {
+  /** Rivalry this entry was attributed to (for grouping / linkout). */
+  rivalryId: string;
+  /** Normalized timestamp used for cross-source sorting and cursoring. */
+  occurredAt: string;
+}
+
+export interface RivalryMessageActivityItem extends BaseRivalryActivityItem {
+  kind: 'message';
+  messageId: string;
+  authorPlayerId: string;
+  body: string;
+  audience: RivalryMessageAudience;
+}
+
+export interface RivalryPromoActivityItem extends BaseRivalryActivityItem {
+  kind: 'promo';
+  promoId: string;
+  authorPlayerId: string;
+  title?: string;
+  content: string;
+}
+
+export interface RivalryMatchActivityItem extends BaseRivalryActivityItem {
+  kind: 'match';
+  matchId: string;
+  participants: string[];
+  winners?: string[];
+  status: string;
+  isChampionship?: boolean;
+  eventId?: string;
+}
+
+export interface RivalryNoteActivityItem extends BaseRivalryActivityItem {
+  kind: 'note';
+  noteId: string;
+  noteType: RivalryNoteType;
+  visibility: RivalryNoteVisibility;
+  body: string;
+  authorPlayerId: string;
+}
+
+/**
+ * Tagged union of feed entries. Frontend consumers can switch on `kind`
+ * to render a card per source without losing type information.
+ */
+export type RivalryActivityItem =
+  | RivalryMessageActivityItem
+  | RivalryPromoActivityItem
+  | RivalryMatchActivityItem
+  | RivalryNoteActivityItem;
+
+/** Paginated response from `GET /rivalries/activity`. */
+export interface RivalryActivityPage {
+  items: RivalryActivityItem[];
+  /**
+   * `occurredAt` of the tail item when more pages exist; `null` when the
+   * feed has been exhausted.
+   */
+  nextCursor: string | null;
+}
