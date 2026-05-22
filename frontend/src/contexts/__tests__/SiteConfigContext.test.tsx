@@ -27,6 +27,7 @@ const ALL_ENABLED = {
   statistics: true,
   stables: true,
   notifications: true,
+  rivalries: true,
 };
 
 describe('SiteConfigContext', () => {
@@ -42,6 +43,7 @@ describe('SiteConfigContext', () => {
       statistics: true,
       stables: true,
       notifications: true,
+      rivalries: true,
     };
     mockGetFeatures.mockResolvedValue({ features: serverFeatures });
 
@@ -83,6 +85,7 @@ describe('SiteConfigContext', () => {
       statistics: true,
       stables: true,
       notifications: true,
+      rivalries: true,
     });
   });
 
