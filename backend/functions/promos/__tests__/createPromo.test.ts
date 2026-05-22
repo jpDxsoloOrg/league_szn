@@ -256,4 +256,29 @@ describe('createPromo', () => {
     expect(result!.statusCode).toBe(500);
     expect(body(result).message).toBe('Failed to create promo');
   });
+
+  it('persists rivalryId without validating participant membership (RIV-06)', async () => {
+    mockQuery.mockResolvedValue({
+      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+    });
+    mockPut.mockResolvedValue({});
+
+    const event = withAuth(
+      makeEvent({
+        body: JSON.stringify({
+          promoType: 'open-mic',
+          content: VALID_CONTENT,
+          rivalryId: 'r1',
+        }),
+      }),
+      'Wrestler',
+    );
+
+    const result = await createPromo(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(201);
+    expect(body(result).rivalryId).toBe('r1');
+    const putArg = mockPut.mock.calls[0][0];
+    expect(putArg.Item.rivalryId).toBe('r1');
+  });
 });

@@ -453,4 +453,37 @@ describe('getMatches', () => {
     expect(result!.statusCode).toBe(500);
     expect(JSON.parse(result!.body).message).toBe('Failed to fetch matches');
   });
+
+  it('filters by rivalryId via direct field comparison (RIV-06)', async () => {
+    await repos.competition.matches.create({
+      matchId: 'm-tagged',
+      date: '2024-01-01T00:00:00Z',
+      status: 'completed',
+      participants: ['p1', 'p2'],
+      rivalryId: 'r1',
+      createdAt: new Date().toISOString(),
+    });
+    await repos.competition.matches.create({
+      matchId: 'm-other-rivalry',
+      date: '2024-01-02T00:00:00Z',
+      status: 'completed',
+      participants: ['p3', 'p4'],
+      rivalryId: 'r2',
+      createdAt: new Date().toISOString(),
+    });
+    await repos.competition.matches.create({
+      matchId: 'm-untagged',
+      date: '2024-01-03T00:00:00Z',
+      status: 'completed',
+      participants: ['p5', 'p6'],
+      createdAt: new Date().toISOString(),
+    });
+
+    const event = makeEvent({ queryStringParameters: { rivalryId: 'r1' } });
+    const result = await getMatches(event, ctx, cb);
+    const body = JSON.parse(result!.body);
+
+    expect(body).toHaveLength(1);
+    expect(body[0].matchId).toBe('m-tagged');
+  });
 });

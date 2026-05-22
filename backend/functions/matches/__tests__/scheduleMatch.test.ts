@@ -16,6 +16,7 @@ const {
   mockPromosFindById,
   mockPromosUpdate,
   mockStipulationsFindById,
+  mockRivalriesGet,
 } = vi.hoisted(() => ({
   mockPlayersFindById: vi.fn(),
   mockChampionshipsFindById: vi.fn(),
@@ -29,6 +30,7 @@ const {
   mockPromosFindById: vi.fn(),
   mockPromosUpdate: vi.fn(),
   mockStipulationsFindById: vi.fn(),
+  mockRivalriesGet: vi.fn(),
 }));
 
 vi.mock('../../../lib/repositories', () => ({
@@ -54,6 +56,7 @@ vi.mock('../../../lib/repositories', () => ({
     content: {
       promos: { findById: mockPromosFindById, update: mockPromosUpdate },
     },
+    rivalries: { get: mockRivalriesGet },
   }),
 }));
 
@@ -455,5 +458,70 @@ describe('scheduleMatch (slot-mode)', () => {
     }), ctx, cb);
     expect(r!.statusCode).toBe(400);
     expect(JSON.parse(r!.body).message).toContain('division');
+  });
+});
+
+describe('scheduleMatch (rivalryId — RIV-06)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPlayersFindById.mockImplementation(async (id: string) => ({
+      playerId: id, name: id, divisionId: undefined,
+    }));
+    mockMatchesCreate.mockResolvedValue(undefined);
+  });
+
+  it('persists rivalryId when both match participants are in the rivalry', async () => {
+    mockRivalriesGet.mockResolvedValueOnce({
+      rivalryId: 'r1',
+      participants: [
+        { playerId: 'p1', role: 'instigator', addedAt: '' },
+        { playerId: 'p2', role: 'rival', addedAt: '' },
+      ],
+    });
+
+    const r = await scheduleMatch(ev({
+      body: validBody({ rivalryId: 'r1' }),
+    }), ctx, cb);
+
+    expect(r!.statusCode).toBe(201);
+    expect(mockMatchesCreate).toHaveBeenCalledTimes(1);
+    expect(mockMatchesCreate.mock.calls[0][0].rivalryId).toBe('r1');
+  });
+
+  it('returns 400 when rivalryId does not include both match participants', async () => {
+    mockRivalriesGet.mockResolvedValueOnce({
+      rivalryId: 'r1',
+      participants: [
+        { playerId: 'p99', role: 'instigator', addedAt: '' },
+        { playerId: 'p98', role: 'rival', addedAt: '' },
+      ],
+    });
+
+    const r = await scheduleMatch(ev({
+      body: validBody({ rivalryId: 'r1' }),
+    }), ctx, cb);
+
+    expect(r!.statusCode).toBe(400);
+    expect(JSON.parse(r!.body).message).toContain('Rivalry');
+    expect(mockMatchesCreate).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 when rivalryId does not exist', async () => {
+    mockRivalriesGet.mockResolvedValueOnce(undefined);
+
+    const r = await scheduleMatch(ev({
+      body: validBody({ rivalryId: 'ghost' }),
+    }), ctx, cb);
+
+    expect(r!.statusCode).toBe(404);
+    expect(mockMatchesCreate).not.toHaveBeenCalled();
+  });
+
+  it('is a no-op when rivalryId is omitted (backwards compat)', async () => {
+    const r = await scheduleMatch(ev({ body: validBody() }), ctx, cb);
+
+    expect(r!.statusCode).toBe(201);
+    expect(mockRivalriesGet).not.toHaveBeenCalled();
+    expect(mockMatchesCreate.mock.calls[0][0].rivalryId).toBeUndefined();
   });
 });
