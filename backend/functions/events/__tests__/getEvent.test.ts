@@ -311,4 +311,78 @@ describe('getEvent', () => {
     const body = JSON.parse(result!.body);
     expect(body.enrichedMatches[0].matchData.participants[0].wrestlerName).toBe('Stone Cold');
   });
+
+  // RIV-24: every matchData carries userHasRated + userRating.
+  describe('RIV-24 user rating decoration', () => {
+    async function setupEventWithFiveMatches(): Promise<{ eventId: string }> {
+      const matchIds = ['m1', 'm2', 'm3', 'm4', 'm5'];
+      for (const matchId of matchIds) {
+        await repos.competition.matches.create({
+          matchId,
+          date: '2024-01-01',
+          matchFormat: 'singles',
+          participants: [],
+          isChampionship: false,
+          status: 'completed',
+          createdAt: new Date().toISOString(),
+        });
+      }
+      const eventItem = await repos.leagueOps.events.create({
+        name: 'Raw', eventType: 'weekly', date: '2024-01-01',
+      });
+      await repos.leagueOps.events.update(eventItem.eventId, {
+        matchCards: matchIds.map((matchId, i) => ({
+          position: i + 1, matchId, designation: 'midcard' as const,
+        })),
+      });
+      return { eventId: eventItem.eventId };
+    }
+
+    function authedEvent(eventId: string, userId: string): APIGatewayProxyEvent {
+      return makeEvent({
+        pathParameters: { eventId },
+        requestContext: {
+          authorizer: { principalId: userId, username: 'tester', email: '', groups: '' },
+        } as unknown as APIGatewayProxyEvent['requestContext'],
+      });
+    }
+
+    it('decorates each matchData with userHasRated / userRating for an authenticated caller', async () => {
+      const { eventId } = await setupEventWithFiveMatches();
+
+      // User u1 rated 2 of the 5 matches.
+      await repos.matchRatings.create({ matchId: 'm1', userId: 'u1', rating: 5 });
+      await repos.matchRatings.create({ matchId: 'm3', userId: 'u1', rating: 3 });
+      // Noise from another user — must not leak.
+      await repos.matchRatings.create({ matchId: 'm2', userId: 'other', rating: 4 });
+
+      const result = await getEvent(authedEvent(eventId, 'u1'), ctx, cb);
+      expect(result!.statusCode).toBe(200);
+      const body = JSON.parse(result!.body);
+      const byId = new Map<string, { userHasRated: boolean; userRating: number | null }>(
+        body.enrichedMatches.map((em: { matchId: string; matchData: { userHasRated: boolean; userRating: number | null } }) =>
+          [em.matchId, em.matchData],
+        ),
+      );
+      expect(byId.get('m1')).toMatchObject({ userHasRated: true, userRating: 5 });
+      expect(byId.get('m3')).toMatchObject({ userHasRated: true, userRating: 3 });
+      expect(byId.get('m2')).toMatchObject({ userHasRated: false, userRating: null });
+      expect(byId.get('m4')).toMatchObject({ userHasRated: false, userRating: null });
+      expect(byId.get('m5')).toMatchObject({ userHasRated: false, userRating: null });
+    });
+
+    it('returns userHasRated=false and userRating=null on every matchData for unauthenticated callers', async () => {
+      const { eventId } = await setupEventWithFiveMatches();
+      // Other users' ratings must not leak to guests.
+      await repos.matchRatings.create({ matchId: 'm1', userId: 'someone', rating: 5 });
+
+      const result = await getEvent(makeEvent({ pathParameters: { eventId } }), ctx, cb);
+      expect(result!.statusCode).toBe(200);
+      const body = JSON.parse(result!.body);
+      for (const em of body.enrichedMatches) {
+        expect(em.matchData.userHasRated).toBe(false);
+        expect(em.matchData.userRating).toBeNull();
+      }
+    });
+  });
 });

@@ -96,6 +96,17 @@ class MatchesDynamo implements MatchesMethods {
     }) as unknown as Match[];
   }
 
+  async findByRivalryId(rivalryId: string): Promise<Match[]> {
+    // No GSI on rivalryId — fall back to a filtered scan. Acceptable
+    // because each rivalry has at most a handful of matches and this
+    // call only runs on rating submit (RIV-23).
+    return await dynamoDb.scanAll({
+      TableName: TableNames.MATCHES,
+      FilterExpression: 'rivalryId = :rivalryId',
+      ExpressionAttributeValues: { ':rivalryId': rivalryId },
+    }) as unknown as Match[];
+  }
+
   async create(input: Record<string, unknown>): Promise<Match> {
     await dynamoDb.put({
       TableName: TableNames.MATCHES,

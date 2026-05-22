@@ -2,6 +2,7 @@ import type { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { Player, Championship, ChampionshipHistoryEntry } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import { getAuthContext } from '../../lib/auth';
 
 interface DashboardChampion {
   championshipId: string;
@@ -39,6 +40,10 @@ interface DashboardMatch {
   loserName: string;
   loserImageUrl?: string;
   eventId?: string;
+  /** True iff the calling user has rated this match. False for guests (RIV-24). */
+  userHasRated: boolean;
+  /** This user's rating for the match, or null if unrated / unauthenticated (RIV-24). */
+  userRating: number | null;
 }
 
 interface DashboardSeason {
@@ -67,9 +72,9 @@ interface DashboardResponse {
   activeChallengesCount: number;
 }
 
-export const handler: APIGatewayProxyHandler = async () => {
+export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const { competition: { championships, matches, stipulations }, roster: { players }, season: { seasons, standings: seasonStandings }, leagueOps: { events }, user: { challenges } } = getRepositories();
+    const { competition: { championships, matches, stipulations }, roster: { players }, season: { seasons, standings: seasonStandings }, leagueOps: { events }, user: { challenges }, matchRatings } = getRepositories();
 
     // Fetch data: championships, players, seasons, matches, stipulations; events and challenges via query
     const [championshipList, playerList, seasonList, matchList, stipulationList, upcomingEventsList, inProgressEventsList, pendingChallengeList] =
@@ -204,7 +209,24 @@ export const handler: APIGatewayProxyHandler = async () => {
       (m) => (m.updatedAt || m.date) >= threeDaysAgo
     );
     // Safety cap to avoid unbounded responses
-    const recentResults: DashboardMatch[] = recentCompletedMatches.slice(0, 50).map((m) => {
+    const recentResultMatches = recentCompletedMatches.slice(0, 50);
+
+    // RIV-24: batch-lookup the caller's ratings for the matches we're about
+    // to project, so the FE rating widget renders in the right state without
+    // N+1 follow-up calls. Public endpoint — guests get false/null for every
+    // row. Wrapped defensively because getAuthContext reads requestContext,
+    // which may be undefined for synthetic test events.
+    const callerUserId = event?.requestContext
+      ? (getAuthContext(event).sub || null)
+      : null;
+    let userRatingsByMatchId = new Map<string, number>();
+    if (callerUserId && recentResultMatches.length > 0) {
+      const matchIds = recentResultMatches.map((m) => m.matchId);
+      const userRatings = await matchRatings.getByMatchIdsForUser(matchIds, callerUserId);
+      userRatingsByMatchId = new Map(userRatings.map((r) => [r.matchId, r.rating]));
+    }
+
+    const recentResults: DashboardMatch[] = recentResultMatches.map((m) => {
       const winnerIds = m.winners!;
       const loserIds = m.losers!;
       const winnerName = (winnerIds || [])
@@ -230,6 +252,7 @@ export const handler: APIGatewayProxyHandler = async () => {
       const stipulationName = stipulationId ? stipulationMap.get(stipulationId) : undefined;
       const matchType = m.matchFormat ?? m.matchType ?? 'singles';
       const isChampionship = Boolean(m.isChampionship && champId);
+      const userRatingForMatch = userRatingsByMatchId.get(m.matchId);
       return {
         matchId: m.matchId,
         date: m.date,
@@ -251,6 +274,8 @@ export const handler: APIGatewayProxyHandler = async () => {
           ? playerMap.get(firstLoser)?.imageUrl
           : undefined,
         eventId: m.eventId,
+        userHasRated: userRatingForMatch !== undefined,
+        userRating: userRatingForMatch ?? null,
       };
     });
 

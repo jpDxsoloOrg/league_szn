@@ -39,6 +39,7 @@ vi.mock('uuid', () => ({ v4: () => 'test-uuid-1234' }));
 
 vi.mock('../../../lib/auth', () => ({
   requireRole: () => undefined,
+  getAuthContext: () => ({ username: '', email: '', sub: '', groups: [] }),
 }));
 
 vi.mock('../../../lib/authenticate', () => ({

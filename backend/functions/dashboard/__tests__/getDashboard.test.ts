@@ -11,6 +11,7 @@ const {
   mockChallengesListByStatus,
   mockChampionshipsFindCurrentReign,
   mockSeasonStandingsListBySeason,
+  mockGetByMatchIdsForUser,
 } = vi.hoisted(() => ({
   mockChampionshipsList: vi.fn(),
   mockPlayersList: vi.fn(),
@@ -21,6 +22,7 @@ const {
   mockChallengesListByStatus: vi.fn(),
   mockChampionshipsFindCurrentReign: vi.fn(),
   mockSeasonStandingsListBySeason: vi.fn(),
+  mockGetByMatchIdsForUser: vi.fn(),
 }));
 
 vi.mock('../../../lib/repositories', () => ({
@@ -43,6 +45,9 @@ vi.mock('../../../lib/repositories', () => ({
     user: {
       challenges: { listByStatus: mockChallengesListByStatus },
     },
+    matchRatings: {
+      getByMatchIdsForUser: mockGetByMatchIdsForUser,
+    },
   }),
 }));
 
@@ -63,6 +68,7 @@ describe('getDashboard', () => {
     mockChallengesListByStatus.mockResolvedValue([]);
     mockChampionshipsFindCurrentReign.mockResolvedValue(null);
     mockSeasonStandingsListBySeason.mockResolvedValue([]);
+    mockGetByMatchIdsForUser.mockResolvedValue([]);
   });
 
   it('returns 200 with all dashboard sections', async () => {
@@ -263,5 +269,79 @@ describe('getDashboard', () => {
 
     expect(result!.statusCode).toBe(500);
     expect(JSON.parse(result!.body).message).toBe('Failed to load dashboard data');
+  });
+
+  // RIV-24: every match in recentResults carries userHasRated + userRating.
+  describe('RIV-24 recent result rating decoration', () => {
+    function makeAuthedEvent(userId: string): { requestContext: { authorizer: Record<string, unknown> } } {
+      return {
+        requestContext: { authorizer: { principalId: userId } },
+      };
+    }
+
+    function setupFiveRecentMatches() {
+      const now = Date.now();
+      const oneHourMs = 60 * 60 * 1000;
+      const matches = Array.from({ length: 5 }, (_, i) => ({
+        matchId: `m${i + 1}`,
+        date: new Date(now - (i + 1) * oneHourMs).toISOString(),
+        updatedAt: new Date(now - (i + 1) * oneHourMs).toISOString(),
+        status: 'completed',
+        winners: ['p1'],
+        losers: ['p2'],
+        matchFormat: 'singles',
+      }));
+      mockMatchesList.mockResolvedValue(matches);
+      mockPlayersList.mockResolvedValue([
+        { playerId: 'p1', currentWrestler: 'A' },
+        { playerId: 'p2', currentWrestler: 'B' },
+      ]);
+    }
+
+    it('decorates recentResults with userHasRated / userRating for an authenticated caller', async () => {
+      setupFiveRecentMatches();
+      // User u1 rated m1 (4) and m4 (3.5). Other three unrated.
+      mockGetByMatchIdsForUser.mockImplementation((matchIds: string[], userId: string) => {
+        expect(userId).toBe('u1');
+        const rated = new Map([
+          ['m1', 4],
+          ['m4', 3.5],
+        ]);
+        return Promise.resolve(
+          matchIds
+            .filter((id) => rated.has(id))
+            .map((id) => ({ matchId: id, userId, rating: rated.get(id)!, createdAt: '' })),
+        );
+      });
+
+      const result = await getDashboard(makeAuthedEvent('u1') as never, ctx, cb);
+      expect(result!.statusCode).toBe(200);
+      const body = JSON.parse(result!.body);
+      expect(body.recentResults).toHaveLength(5);
+      const byId = new Map<string, { userHasRated: boolean; userRating: number | null }>(
+        body.recentResults.map((m: { matchId: string; userHasRated: boolean; userRating: number | null }) => [m.matchId, m]),
+      );
+      expect(byId.get('m1')).toMatchObject({ userHasRated: true, userRating: 4 });
+      expect(byId.get('m4')).toMatchObject({ userHasRated: true, userRating: 3.5 });
+      expect(byId.get('m2')).toMatchObject({ userHasRated: false, userRating: null });
+      expect(byId.get('m3')).toMatchObject({ userHasRated: false, userRating: null });
+      expect(byId.get('m5')).toMatchObject({ userHasRated: false, userRating: null });
+      expect(mockGetByMatchIdsForUser).toHaveBeenCalledOnce();
+    });
+
+    it('returns userHasRated=false and userRating=null on every recent result for unauthenticated callers', async () => {
+      setupFiveRecentMatches();
+
+      const result = await getDashboard({} as never, ctx, cb);
+      expect(result!.statusCode).toBe(200);
+      const body = JSON.parse(result!.body);
+      expect(body.recentResults).toHaveLength(5);
+      for (const m of body.recentResults) {
+        expect(m.userHasRated).toBe(false);
+        expect(m.userRating).toBeNull();
+      }
+      // Unauthenticated path must not hit the ratings repo.
+      expect(mockGetByMatchIdsForUser).not.toHaveBeenCalled();
+    });
   });
 });

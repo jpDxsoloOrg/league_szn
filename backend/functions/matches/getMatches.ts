@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, serverError } from '../../lib/response';
+import { getAuthContext } from '../../lib/auth';
 import { collectSlotPlayerIds, hydrateMatchSlots } from './hydrateSlots';
 
 const MATCH_TYPE_ALIAS_GROUPS: string[][] = [
@@ -133,7 +134,33 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return { ...m, slots: hydrateMatchSlots(slots, playerLookup) };
     });
 
-    return success(hydratedMatches);
+    // RIV-24: surface the calling user's rating per match so the FE rating
+    // widget can render in the right state without N+1 follow-up calls.
+    // Public endpoint — unauthenticated callers get false/null for every match.
+    const userId = getAuthContext(event).sub || null;
+    let userRatingsByMatchId = new Map<string, number>();
+    if (userId) {
+      const matchIds = hydratedMatches
+        .map((m) => m.matchId as string | undefined)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+      if (matchIds.length > 0) {
+        const { matchRatings } = getRepositories();
+        const userRatings = await matchRatings.getByMatchIdsForUser(matchIds, userId);
+        userRatingsByMatchId = new Map(userRatings.map((r) => [r.matchId, r.rating]));
+      }
+    }
+
+    const decoratedMatches = hydratedMatches.map((m) => {
+      const id = m.matchId as string | undefined;
+      const rating = id ? userRatingsByMatchId.get(id) : undefined;
+      return {
+        ...m,
+        userHasRated: rating !== undefined,
+        userRating: rating ?? null,
+      };
+    });
+
+    return success(decoratedMatches);
   } catch (err) {
     console.error('Error fetching matches:', err);
     return serverError('Failed to fetch matches');

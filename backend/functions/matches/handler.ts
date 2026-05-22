@@ -6,6 +6,8 @@ import { handler as deleteMatchHandler } from './deleteMatch';
 import { handler as claimSlotHandler } from './claimSlot';
 import { handler as releaseSlotHandler } from './releaseSlot';
 import { handler as adminUpdateSlotHandler } from './adminUpdateSlot';
+import { handler as setMatchOfTheNightHandler } from './setMatchOfTheNight';
+import { handler as submitRatingHandler } from './submitRating';
 import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
@@ -46,6 +48,18 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/matches/{matchId}/slots/{slotId}',
     method: 'PUT',
     handler: adminUpdateSlotHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/matches/{matchId}/motn',
+    method: 'PUT',
+    handler: setMatchOfTheNightHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/matches/{matchId}/ratings',
+    method: 'POST',
+    handler: submitRatingHandler,
     requireAuth: true,
   },
   {

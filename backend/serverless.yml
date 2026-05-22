@@ -409,6 +409,14 @@ functions:
           method: any
           cors: *corsConfig
       - http:
+          path: matches/{matchId}/motn
+          method: put
+          cors: *corsConfig
+      - http:
+          path: matches/{matchId}/ratings
+          method: post
+          cors: *corsConfig
+      - http:
           path: matches/{matchId}
           method: any
           cors: *corsConfig
@@ -819,6 +827,10 @@ functions:
           cors: *corsConfig
       - http:
           path: rivalry-requests/{rivalryId}/respond
+          method: post
+          cors: *corsConfig
+      - http:
+          path: rivalry-requests/{rivalryId}/recompute-heat
           method: post
           cors: *corsConfig
 

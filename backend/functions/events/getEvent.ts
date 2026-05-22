@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { getAuthContext } from '../../lib/auth';
 import { hydrateMatchSlots } from '../matches/hydrateSlots';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -12,7 +13,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Event ID is required');
     }
 
-    const { leagueOps: { events }, roster: { players }, competition: { matches, championships, stipulations } } = getRepositories();
+    const { leagueOps: { events }, roster: { players }, competition: { matches, championships, stipulations }, matchRatings } = getRepositories();
 
     // Get the event
     const eventItem = await events.findById(eventId);
@@ -22,6 +23,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const matchCards = eventItem.matchCards || [];
+
+    // RIV-24: batch-lookup the caller's ratings for every match in this
+    // event up front so we can decorate each enriched match without making
+    // per-match follow-up calls. Public endpoint — guests get false/null
+    // on every row.
+    const callerUserId = getAuthContext(event).sub || null;
+    let userRatingsByMatchId = new Map<string, number>();
+    if (callerUserId) {
+      const matchIdsForRatings = matchCards
+        .map((c) => c.matchId)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+      if (matchIdsForRatings.length > 0) {
+        const userRatings = await matchRatings.getByMatchIdsForUser(matchIdsForRatings, callerUserId);
+        userRatingsByMatchId = new Map(userRatings.map((r) => [r.matchId, r.rating]));
+      }
+    }
 
     // Build enrichedMatches array matching the EventWithMatches frontend type
     const enrichedMatches = await Promise.all(
@@ -103,6 +120,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           stipulationName = stipulation?.name;
         }
 
+        const userRatingForMatch = userRatingsByMatchId.get(match.matchId);
+
         return {
           position: card.position,
           matchId: card.matchId,
@@ -122,6 +141,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             ...(hydratedSlots && { slots: hydratedSlots, slotsRequired: match.slotsRequired }),
             ...(match.starRating != null && { starRating: match.starRating }),
             ...(match.matchOfTheNight != null && { matchOfTheNight: match.matchOfTheNight }),
+            userHasRated: userRatingForMatch !== undefined,
+            userRating: userRatingForMatch ?? null,
           },
         };
       })

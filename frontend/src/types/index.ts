@@ -92,9 +92,9 @@ export interface Match {
   /** Number of user ratings submitted for this match (RIV-22+). */
   ratingsCount?: number;
   /** True if the calling user has already rated this match (populated by RIV-24). */
-  userHasRated?: boolean;
+  userHasRated: boolean;
   /** This user's rating for the match, if any (populated by RIV-24). */
-  userRating?: number | null;
+  userRating: number | null;
   matchOfTheNight?: boolean;
 }
 
