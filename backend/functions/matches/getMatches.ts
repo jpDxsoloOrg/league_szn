@@ -35,7 +35,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Use repo methods for common filter cases; fall back to list() + client-side filter for complex combos
     let scannedItems: Record<string, unknown>[];
 
-    if (!params.playerId && !params.stipulationId && !params.championshipId && !params.dateFrom && !params.dateTo && !params.matchType) {
+    if (!params.playerId && !params.stipulationId && !params.championshipId && !params.dateFrom && !params.dateTo && !params.matchType && !params.rivalryId) {
       // Simple status-only or no-filter path
       if (params.status && !params.seasonId) {
         scannedItems = await matches.listByStatus(params.status) as unknown as Record<string, unknown>[];
@@ -78,6 +78,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
       if (params.dateTo) {
         scannedItems = scannedItems.filter((m) => (m.date as string) <= (params.dateTo as string));
+      }
+      if (params.rivalryId) {
+        // Direct field comparison — more efficient than the participants
+        // array overlap path used for playerId (RIV-06).
+        scannedItems = scannedItems.filter((m) => m.rivalryId === params.rivalryId);
       }
     }
 

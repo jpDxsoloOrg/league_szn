@@ -29,6 +29,8 @@ export interface ScheduleMatchInput {
   designation?: string;
   challengeId?: string;
   promoId?: string;
+  /** Optional pointer to the rivalry this match advances (RIV-06). */
+  rivalryId?: string;
 }
 
 export interface ScheduleMatchResult {
@@ -47,6 +49,7 @@ export interface ScheduleMatchResult {
   eventId?: string;
   challengeId?: string;
   promoId?: string;
+  rivalryId?: string;
   status: MatchStatus;
   createdAt: string;
 }
@@ -80,7 +83,7 @@ export async function scheduleMatchInternal(
   input: ScheduleMatchInput,
 ): Promise<ScheduleMatchResult> {
   const repos = getRepositories();
-  const { competition, roster, season: seasonAggregate, leagueOps, user, content } = repos;
+  const { competition, roster, season: seasonAggregate, leagueOps, user, content, rivalries } = repos;
 
   if (!input.matchFormat) {
     throw new ScheduleMatchError(400, 'matchFormat is required');
@@ -239,6 +242,24 @@ export async function scheduleMatchInternal(
     }
   }
 
+  // Validate rivalryId exists and includes the match participants if provided
+  // (RIV-06). Lookup is done once and the participant check is a single
+  // set-membership pass — no repeated work per participant.
+  if (input.rivalryId) {
+    const rivalry = await rivalries.get(input.rivalryId);
+    if (!rivalry) {
+      throw new ScheduleMatchError(404, `Rivalry not found: ${input.rivalryId}`);
+    }
+    const rivalryPlayerIds = new Set(rivalry.participants.map((p) => p.playerId));
+    const overlap = derivedParticipants.filter((id) => rivalryPlayerIds.has(id));
+    if (overlap.length < 2) {
+      throw new ScheduleMatchError(
+        400,
+        `Rivalry ${input.rivalryId} does not include both match participants`,
+      );
+    }
+  }
+
   // Status: open-signups when slot-mode has any unfilled slot; scheduled otherwise.
   const hasOpenSlot = resolvedSlots
     ? resolvedSlots.some((s) => !s.playerId)
@@ -266,6 +287,7 @@ export async function scheduleMatchInternal(
   if (input.teams && input.teams.length > 0) match.teams = input.teams;
   if (input.challengeId) match.challengeId = input.challengeId;
   if (input.promoId) match.promoId = input.promoId;
+  if (input.rivalryId) match.rivalryId = input.rivalryId;
 
   await competition.matches.create(match);
 

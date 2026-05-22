@@ -77,6 +77,8 @@ export interface Match {
   championshipId?: string;
   tournamentId?: string;
   seasonId?: string;
+  /** Optional pointer to the rivalry this match advances (RIV-06). */
+  rivalryId?: string;
   status: MatchStatus;
   slots?: MatchSlot[];
   slotsRequired?: number;

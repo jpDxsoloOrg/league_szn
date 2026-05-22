@@ -23,6 +23,8 @@ export interface Promo {
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamName?: string;
   targetTagTeamName?: string;
+  /** Optional pointer to the rivalry this promo advances (RIV-06). */
+  rivalryId?: string;
   reactions: Record<string, ReactionType>;
   reactionCounts: Record<ReactionType, number>;
   isPinned: boolean;
@@ -54,4 +56,5 @@ export interface CreatePromoInput {
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamName?: string;
   targetTagTeamName?: string;
+  rivalryId?: string;
 }
