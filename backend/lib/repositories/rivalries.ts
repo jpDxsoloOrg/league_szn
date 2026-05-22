@@ -77,6 +77,12 @@ export interface RivalryNote {
   visibility: RivalryNoteVisibility;
   body: string;
   authorPlayerId: string;
+  /** Optional pointer to an upcoming match this note plans for. Advisory only. */
+  linkedMatchId?: string;
+  /** Optional pointer to an event this note plans for. Advisory only. */
+  linkedEventId?: string;
+  /** When the note's plan is meant to play out. ISO string. */
+  scheduledFor?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -115,11 +121,17 @@ export interface RivalryNoteCreateInput {
   visibility: RivalryNoteVisibility;
   body: string;
   authorPlayerId: string;
+  linkedMatchId?: string;
+  linkedEventId?: string;
+  scheduledFor?: string;
 }
 
 export interface RivalryNotePatch {
   body?: string;
   visibility?: RivalryNoteVisibility;
+  linkedMatchId?: string;
+  linkedEventId?: string;
+  scheduledFor?: string;
 }
 
 // ─── Activity feed (RIV-03) — mirrors frontend/src/types/rivalry.ts ────

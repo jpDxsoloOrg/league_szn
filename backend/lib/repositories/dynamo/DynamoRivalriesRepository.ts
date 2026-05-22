@@ -336,20 +336,29 @@ interface NoteRow {
   visibility: 'all' | 'participants' | 'admins';
   body: string;
   authorPlayerId: string;
+  linkedMatchId?: string;
+  linkedEventId?: string;
+  scheduledFor?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-const toNoteDomain = (row: NoteRow): RivalryNote => ({
-  rivalryId: row.rivalryId,
-  noteId: row.noteId,
-  noteType: row.noteType,
-  visibility: row.visibility,
-  body: row.body,
-  authorPlayerId: row.authorPlayerId,
-  createdAt: row.createdAt,
-  updatedAt: row.updatedAt,
-});
+const toNoteDomain = (row: NoteRow): RivalryNote => {
+  const note: RivalryNote = {
+    rivalryId: row.rivalryId,
+    noteId: row.noteId,
+    noteType: row.noteType,
+    visibility: row.visibility,
+    body: row.body,
+    authorPlayerId: row.authorPlayerId,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+  if (row.linkedMatchId) note.linkedMatchId = row.linkedMatchId;
+  if (row.linkedEventId) note.linkedEventId = row.linkedEventId;
+  if (row.scheduledFor) note.scheduledFor = row.scheduledFor;
+  return note;
+};
 
 export class DynamoRivalryNotesRepository implements RivalryNotesRepository {
   async listByRivalry(rivalryId: string): Promise<RivalryNote[]> {
@@ -397,6 +406,9 @@ export class DynamoRivalryNotesRepository implements RivalryNotesRepository {
       createdAt: now,
       updatedAt: now,
     };
+    if (input.linkedMatchId) row.linkedMatchId = input.linkedMatchId;
+    if (input.linkedEventId) row.linkedEventId = input.linkedEventId;
+    if (input.scheduledFor) row.scheduledFor = input.scheduledFor;
     await dynamoDb.put({ TableName: TableNames.RIVALRY_NOTES, Item: row });
     return toNoteDomain(row);
   }

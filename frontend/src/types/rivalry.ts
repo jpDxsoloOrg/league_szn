@@ -82,6 +82,13 @@ export interface RivalryNote {
   visibility: RivalryNoteVisibility;
   body: string;
   authorPlayerId: string;
+  /** Optional pointer to a future match this note plans for. Advisory; the linked
+   *  record may have been deleted — the Notes & Plans UI handles missing links. */
+  linkedMatchId?: string;
+  /** Optional pointer to an event this note plans for. Advisory only. */
+  linkedEventId?: string;
+  /** When the plan is meant to play out. ISO string. */
+  scheduledFor?: string;
   createdAt: string;
   updatedAt: string;
 }
