@@ -109,7 +109,7 @@ describe('RivalryHub', () => {
     await waitFor(() => expect(mockList).toHaveBeenCalled());
     const callsBefore = mockList.mock.calls.length;
 
-    const heatedChip = screen.getByText('rivalries.hub.chips.hot');
+    const heatedChip = screen.getByText('rivalries.hub.chips.heated');
     await userEvent.click(heatedChip);
 
     // Chip filtering is purely client-side; no additional list call.

@@ -13,7 +13,7 @@ import RivalryCard from './RivalryCard';
 import './RivalryHub.css';
 
 type TabId = 'active' | 'mine' | 'archive';
-type ChipId = 'all' | 'hot' | 'warm' | 'cold';
+type ChipId = 'all' | 'heated' | 'brewing' | 'slowBurn';
 
 const TAB_LABEL: Record<TabId, string> = {
   active: 'rivalries.hub.tabs.active',
@@ -23,18 +23,25 @@ const TAB_LABEL: Record<TabId, string> = {
 
 const CHIP_LABEL: Record<ChipId, string> = {
   all: 'rivalries.hub.chips.all',
-  hot: 'rivalries.hub.chips.hot',
-  warm: 'rivalries.hub.chips.warm',
-  cold: 'rivalries.hub.chips.cold',
+  heated: 'rivalries.hub.chips.heated',
+  brewing: 'rivalries.hub.chips.brewing',
+  slowBurn: 'rivalries.hub.chips.slowBurn',
 };
 
 const CHIP_TO_HEAT: Record<Exclude<ChipId, 'all'>, RivalryHeat> = {
-  hot: 'hot',
-  warm: 'warm',
-  cold: 'cold',
+  heated: 'hot',
+  brewing: 'warm',
+  slowBurn: 'cold',
 };
 
 const ACTIVITY_PAGE_SIZE = 25;
+
+const ACTIVITY_ICONS: Record<'message' | 'promo' | 'match' | 'note', string> = {
+  message: '💬',
+  promo: '🎤',
+  match: '🥊',
+  note: '📝',
+};
 
 export default function RivalryHub() {
   const { t } = useTranslation();
@@ -205,7 +212,7 @@ export default function RivalryHub() {
       </nav>
 
       <div className="rivalry-hub__chips" role="toolbar">
-        {(['all', 'hot', 'warm', 'cold'] as ChipId[]).map((id) => (
+        {(['all', 'heated', 'brewing', 'slowBurn'] as ChipId[]).map((id) => (
           <button
             key={id}
             type="button"
@@ -254,6 +261,12 @@ export default function RivalryHub() {
             <ul className="rivalry-hub__activity-list">
               {activity.map((item) => (
                 <li key={activityKey(item)} className="rivalry-hub__activity-row">
+                  <span
+                    className={`rivalry-hub__activity-icon rivalry-hub__activity-icon--${item.kind}`}
+                    aria-hidden="true"
+                  >
+                    {ACTIVITY_ICONS[item.kind]}
+                  </span>
                   <span className={`rivalry-hub__activity-kind rivalry-hub__activity-kind--${item.kind}`}>
                     {t(`rivalries.activityKind.${item.kind}`)}
                   </span>

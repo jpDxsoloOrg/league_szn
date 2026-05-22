@@ -221,7 +221,7 @@ export default function RivalryDetail() {
             {winsA}W – {winsB}L – {hydrated.headToHead.draws}D
           </span>
         </div>
-        <div className="rivalry-detail__stat">
+        <div className="rivalry-detail__stat rivalry-detail__stat--center">
           <span className="rivalry-detail__stat-label">
             {t('rivalries.detail.matchesInRivalry', { defaultValue: 'Matches in Rivalry' })}
           </span>
@@ -241,7 +241,7 @@ export default function RivalryDetail() {
                     : 'rivalry-detail__flame'
                 }
               >
-                ▲
+                🔥
               </span>
             ))}
           </span>

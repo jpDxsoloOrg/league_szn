@@ -1008,6 +1008,9 @@
       },
       "chips": {
         "all": "Alle",
+        "heated": "Hitzig",
+        "brewing": "Brodelnd",
+        "slowBurn": "Schwelend",
         "hot": "Hitzig",
         "warm": "Brodelnd",
         "cold": "Schwelend"

@@ -139,6 +139,11 @@
   gap: 0.15rem;
 }
 
+.rivalry-detail__stat--center {
+  align-items: center;
+  text-align: center;
+}
+
 .rivalry-detail__stat-label {
   font-size: 0.7rem;
   text-transform: uppercase;
@@ -167,8 +172,15 @@
   color: var(--color-accent-gold, #c8a85a);
 }
 
-.rivalry-detail__flame { color: #333; }
-.rivalry-detail__flame--on { color: var(--color-accent-gold, #c8a85a); }
+.rivalry-detail__flame {
+  font-size: 0.9rem;
+  line-height: 1;
+  filter: grayscale(1) opacity(0.3);
+}
+
+.rivalry-detail__flame--on {
+  filter: none;
+}
 
 .rivalry-detail__tabs {
   display: flex;

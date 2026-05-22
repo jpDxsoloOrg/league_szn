@@ -1009,6 +1009,9 @@
       },
       "chips": {
         "all": "All",
+        "heated": "Heated",
+        "brewing": "Brewing",
+        "slowBurn": "Slow Burn",
         "hot": "Heated",
         "warm": "Brewing",
         "cold": "Slow Burn"

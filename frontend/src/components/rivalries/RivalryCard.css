@@ -102,12 +102,13 @@
 }
 
 .rivalry-card__flame {
-  color: #333333;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1;
+  filter: grayscale(1) opacity(0.3);
 }
 
 .rivalry-card__flame--on {
-  color: var(--color-accent-gold, #c8a85a);
+  filter: none;
 }
 
 .rivalry-card__footer {

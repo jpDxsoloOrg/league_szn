@@ -30,6 +30,7 @@ interface DisplayMessage {
 
 const POLL_INTERVAL_MS = 10_000;
 const COMPOSER_MAX_LINES = 6;
+const COMPOSER_MAX_CHARS = 1000;
 const FIXED_AUDIENCE = 'participants' as const;
 
 function formatTime(iso: string): string {
@@ -328,6 +329,23 @@ export default function MessagesTab({ hydrated, players }: TabProps) {
         </span>
       </header>
 
+      <ul className="rivalry-msgs__participants" aria-label="participants">
+        {hydrated.rivalry.participants.map((p) => {
+          const player = memberById.get(p.playerId);
+          return (
+            <li key={p.playerId} className="rivalry-msgs__participant-chip">
+              <img
+                src={resolveImageSrc(player?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+                onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
+                alt=""
+                className="rivalry-msgs__participant-avatar"
+              />
+              <span>{resolveWrestlerName(p, player)}</span>
+            </li>
+          );
+        })}
+      </ul>
+
       {feedError && (
         <p className="rivalry-msgs__feed-error" role="alert">
           {t('rivalries.messages.feedError', { defaultValue: 'Could not load messages.' })}: {feedError}
@@ -374,12 +392,23 @@ export default function MessagesTab({ hydrated, players }: TabProps) {
           className="rivalry-msgs__composer-input"
           placeholder={t('rivalries.messages.placeholder')}
           value={composer}
-          onChange={(e) => setComposer(e.target.value)}
+          onChange={(e) => setComposer(e.target.value.slice(0, COMPOSER_MAX_CHARS))}
           onKeyDown={handleComposerKeyDown}
           rows={1}
+          maxLength={COMPOSER_MAX_CHARS}
           style={{ maxHeight: `${COMPOSER_MAX_LINES * 1.6}em` }}
           aria-label={t('rivalries.messages.placeholder')}
         />
+        <span
+          className={`rivalry-msgs__composer-count ${
+            composer.length > COMPOSER_MAX_CHARS * 0.9
+              ? 'rivalry-msgs__composer-count--warning'
+              : ''
+          }`}
+          aria-live="polite"
+        >
+          {composer.length} / {COMPOSER_MAX_CHARS}
+        </span>
         <button
           type="button"
           className="rivalry-msgs__send"

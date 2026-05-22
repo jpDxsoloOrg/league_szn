@@ -95,7 +95,7 @@ export default function RivalryCard({
               }
               aria-hidden="true"
             >
-              ▲
+              🔥
             </span>
           ))}
         </span>
