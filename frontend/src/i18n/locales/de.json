@@ -1055,7 +1055,12 @@
       "totalMatches_other": "{{count}} Kämpfe",
       "draws_one": "{{count}} Unentschieden",
       "draws_other": "{{count}} Unentschieden",
-      "championships": "Titelkämpfe"
+      "championships": "Titelkämpfe",
+      "matchesInRivalry": "Kämpfe in dieser Rivalität",
+      "bookerBadge": "Gebucht von {{name}}",
+      "assignBooker": "Ich buche das",
+      "takeBooker": "Buchung übernehmen",
+      "clearBooker": "Booker entfernen"
     },
     "messages": {
       "heading": "Nachrichten",

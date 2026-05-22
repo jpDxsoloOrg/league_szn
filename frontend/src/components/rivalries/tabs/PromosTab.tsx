@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Player } from '../../../types';
 import type { HydratedRivalry } from '../../../types/rivalry';
@@ -8,23 +9,46 @@ interface TabProps {
 }
 
 /**
- * Recent promos by the participants. The hydrated payload already
- * carries the latest 5 — RIV-06's rivalryId-tagged promos will swap
- * this for a `promosApi.getAll({ rivalryId })` call once the seed
- * data and UI catch up; participant-keyed promos still flow through
- * the hydrated path for legacy data.
+ * Recent promos within the rivalry. The hydrated payload carries
+ * every recent promo by either participant; this tab narrows it
+ * further to promos that actually reference the OPPOSING participant
+ * (targetPlayerId / targetPromoId points at the other wrestler),
+ * which is the spec for what should show on a rivalry's promos tab.
+ *
+ * Promos hydrated from the backend carry the metadata we need to
+ * make that decision client-side; no extra fetch.
  */
 export default function PromosTab({ hydrated, players }: TabProps) {
   const { t } = useTranslation();
   const lookup = new Map(players.map((p) => [p.playerId, p] as const));
 
-  if (hydrated.recentPromos.length === 0) {
+  const participantIds = useMemo(
+    () => new Set(hydrated.rivalry.participants.map((p) => p.playerId)),
+    [hydrated.rivalry.participants],
+  );
+
+  // First narrow to promos where each promo's author is one rivalry
+  // participant and the targetPlayerId is the other (or the promo
+  // explicitly carries this rivalry's id).
+  const promos = useMemo(() => {
+    return hydrated.recentPromos.filter((promo) => {
+      if (promo.rivalryId === hydrated.rivalry.rivalryId) return true;
+      if (!promo.targetPlayerId) return false;
+      return (
+        participantIds.has(promo.playerId) &&
+        participantIds.has(promo.targetPlayerId) &&
+        promo.playerId !== promo.targetPlayerId
+      );
+    });
+  }, [hydrated.recentPromos, hydrated.rivalry.rivalryId, participantIds]);
+
+  if (promos.length === 0) {
     return <div className="rivalry-tab__empty">{t('rivalries.detail.noRecentPromos')}</div>;
   }
 
   return (
     <div className="rivalry-tab">
-      {hydrated.recentPromos.map((p) => {
+      {promos.map((p) => {
         const author = lookup.get(p.playerId);
         return (
           <article key={p.promoId} className="rivalry-tab__card">

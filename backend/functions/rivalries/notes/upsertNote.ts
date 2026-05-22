@@ -87,12 +87,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return forbidden('Only GMs may author plan notes');
     }
 
-    // Wrestler-authored storyline notes are always suggestions to the
-    // GM, regardless of what they passed. Plan default for GMs is
-    // 'admins' so spoilers stay locked behind an explicit opt-in.
+    // Notes & plans are scoped to the participants + GMs only. Wrestler-
+    // authored storyline notes are forced to 'participants' so the
+    // rival can see them too. GM-authored notes default to 'participants'
+    // (visible to both wrestlers + GMs); explicit 'admins' is still
+    // honored for back-room spoilers.
     const visibility: RivalryNoteVisibility = !isGm
-      ? 'admins'
-      : (input.visibility ?? (noteType === 'plan' ? 'admins' : 'participants'));
+      ? 'participants'
+      : (input.visibility ?? 'participants');
 
     // Light existence checks — advisory pointers, not foreign keys.
     if (input.linkedMatchId) {

@@ -71,6 +71,7 @@ export interface RivalryPatchInput {
   moderationNote?: string;
   startedAt?: string;
   endedAt?: string;
+  bookerName?: string;
 }
 
 export interface RivalryNoteUpsertInput {
@@ -213,6 +214,12 @@ export const rivalriesApi = {
       return fetchWithAuth(`${API_BASE_URL}/rivalries/${rivalryId}/notes`, {
         method: 'POST',
         body: JSON.stringify(note),
+      });
+    },
+
+    delete: async (rivalryId: string, noteId: string): Promise<void> => {
+      await fetchWithAuth(`${API_BASE_URL}/rivalries/${rivalryId}/notes/${noteId}`, {
+        method: 'DELETE',
       });
     },
   },

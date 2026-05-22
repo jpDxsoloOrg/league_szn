@@ -11,6 +11,8 @@ interface UpdateBody {
   heat?: RivalryHeat;
   moderationNote?: string;
   status?: 'cancelled';
+  /** Empty string clears the booker; any other value assigns the GM by display name. */
+  bookerName?: string;
 }
 
 const VALID_HEAT: ReadonlyArray<RivalryHeat> = ['cold', 'warm', 'hot'];
@@ -28,7 +30,7 @@ const VALID_HEAT: ReadonlyArray<RivalryHeat> = ['cold', 'warm', 'hot'];
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const auth = getAuthContext(event);
-    const isAdmin = hasRole(auth, 'Admin');
+    const isAdmin = hasRole(auth, 'Admin', 'Moderator');
     const isWrestler = hasRole(auth, 'Wrestler');
     if (!isAdmin && !isWrestler) {
       return forbidden('You do not have permission to update rivalries');
@@ -51,7 +53,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         body.title !== undefined ||
         body.description !== undefined ||
         body.heat !== undefined ||
-        body.moderationNote !== undefined
+        body.moderationNote !== undefined ||
+        body.bookerName !== undefined
       ) {
         return forbidden('Only admins can edit rivalry fields');
       }
@@ -91,6 +94,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
     if (body.moderationNote !== undefined) {
       patch.moderationNote = body.moderationNote.trim() || undefined;
+    }
+    if (body.bookerName !== undefined) {
+      // Empty string clears the booker; any other value assigns it.
+      patch.bookerName = body.bookerName.trim();
     }
     if (body.status === 'cancelled') {
       // Admin force-cancel: allowed from any non-terminal state.

@@ -1056,7 +1056,12 @@
       "totalMatches_other": "{{count}} matches",
       "draws_one": "{{count}} draw",
       "draws_other": "{{count}} draws",
-      "championships": "Championship matches"
+      "championships": "Championship matches",
+      "matchesInRivalry": "Matches in Rivalry",
+      "bookerBadge": "Booked by {{name}}",
+      "assignBooker": "I'll book this",
+      "takeBooker": "Take over booking",
+      "clearBooker": "Clear booker"
     },
     "messages": {
       "heading": "Messages",
@@ -1092,6 +1097,8 @@
       "titleField": "Title",
       "descriptionField": "Storyline pitch",
       "heatField": "Initial heat",
+      "myWrestler": "Which wrestler are you using?",
+      "opponentWrestler": "Which wrestler is your opponent using?",
       "submit": "Submit for approval",
       "cancel": "Cancel",
       "success": "Submitted! A GM will review it.",

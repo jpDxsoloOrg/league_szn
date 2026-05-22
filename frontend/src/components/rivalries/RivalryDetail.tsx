@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, Routes, Route, useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { playersApi, rivalriesApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import type { Player } from '../../types';
 import type { HydratedRivalry, RivalryHeat, RivalryStatus } from '../../types/rivalry';
 import {
@@ -15,6 +16,7 @@ import FutureMatchesTab from './tabs/FutureMatchesTab';
 import PromosTab from './tabs/PromosTab';
 import NotesPlansTab from './tabs/NotesPlansTab';
 import MessagesTab from './tabs/MessagesTab';
+import { resolveWrestlerName } from './rivalryUtils';
 import './RivalryDetail.css';
 
 const HEAT_FLAMES: Record<RivalryHeat, number> = { cold: 1, warm: 3, hot: 5 };
@@ -40,10 +42,12 @@ export default function RivalryDetail() {
   const { t } = useTranslation();
   const { rivalryId } = useParams<{ rivalryId: string }>();
   const navigate = useNavigate();
+  const { isAdminOrModerator, email, isAuthenticated } = useAuth();
   const [hydrated, setHydrated] = useState<HydratedRivalry | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [bookerBusy, setBookerBusy] = useState(false);
 
   useEffect(() => {
     if (!rivalryId) return;
@@ -105,9 +109,36 @@ export default function RivalryDetail() {
   }
 
   const r = hydrated.rivalry;
-  const [pidA, pidB] = r.participants.map((p) => p.playerId);
-  const a = playerLookup.get(pidA ?? '');
-  const b = playerLookup.get(pidB ?? '');
+  const [partA, partB] = r.participants;
+  const pidA = partA?.playerId ?? '';
+  const pidB = partB?.playerId ?? '';
+  const a = playerLookup.get(pidA);
+  const b = playerLookup.get(pidB);
+  const nameA = resolveWrestlerName(partA, a);
+  const nameB = resolveWrestlerName(partB, b);
+
+  const callerLabel = email ? email.split('@')[0] : '';
+  const isBooker = !!r.bookerName && r.bookerName === callerLabel;
+  async function assignSelfAsBooker() {
+    if (!isAdminOrModerator || !callerLabel) return;
+    setBookerBusy(true);
+    try {
+      const updated = await rivalriesApi.update(rivalryId!, { bookerName: callerLabel });
+      setHydrated((prev) => (prev ? { ...prev, rivalry: updated } : prev));
+    } finally {
+      setBookerBusy(false);
+    }
+  }
+  async function clearBooker() {
+    if (!isAdminOrModerator) return;
+    setBookerBusy(true);
+    try {
+      const updated = await rivalriesApi.update(rivalryId!, { bookerName: '' });
+      setHydrated((prev) => (prev ? { ...prev, rivalry: updated } : prev));
+    } finally {
+      setBookerBusy(false);
+    }
+  }
 
   const winsA = (pidA && hydrated.headToHead.winsByParticipant[pidA]) ?? 0;
   const winsB = (pidB && hydrated.headToHead.winsByParticipant[pidB]) ?? 0;
@@ -123,31 +154,63 @@ export default function RivalryDetail() {
         <div className="rivalry-detail__portrait">
           <img
             src={resolveImageSrc(a?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-            alt={a?.currentWrestler ?? a?.name ?? pidA ?? ''}
+            alt={nameA}
             loading="lazy"
             decoding="async"
             onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
           />
-          <h2 className="rivalry-detail__name">
-            {a?.currentWrestler ?? a?.name ?? '—'}
-          </h2>
+          <h2 className="rivalry-detail__name">{nameA}</h2>
         </div>
         <span className="rivalry-detail__vs" aria-hidden="true">VS</span>
         <div className="rivalry-detail__portrait">
           <img
             src={resolveImageSrc(b?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-            alt={b?.currentWrestler ?? b?.name ?? pidB ?? ''}
+            alt={nameB}
             loading="lazy"
             decoding="async"
             onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
           />
-          <h2 className="rivalry-detail__name">
-            {b?.currentWrestler ?? b?.name ?? '—'}
-          </h2>
+          <h2 className="rivalry-detail__name">{nameB}</h2>
         </div>
       </header>
 
       <h1 className="rivalry-detail__title">{r.title}</h1>
+
+      <div className="rivalry-detail__booker">
+        {r.bookerName ? (
+          <>
+            <span className="rivalry-detail__booker-badge">
+              {t('rivalries.detail.bookerBadge', {
+                defaultValue: 'Booked by {{name}}',
+                name: r.bookerName,
+              })}
+            </span>
+            {isAdminOrModerator && (
+              <button
+                type="button"
+                className="rivalry-detail__booker-btn"
+                disabled={bookerBusy}
+                onClick={isBooker ? clearBooker : assignSelfAsBooker}
+              >
+                {isBooker
+                  ? t('rivalries.detail.clearBooker', { defaultValue: 'Clear booker' })
+                  : t('rivalries.detail.takeBooker', { defaultValue: 'Take over booking' })}
+              </button>
+            )}
+          </>
+        ) : (
+          isAdminOrModerator && isAuthenticated && (
+            <button
+              type="button"
+              className="rivalry-detail__booker-btn"
+              disabled={bookerBusy || !callerLabel}
+              onClick={assignSelfAsBooker}
+            >
+              {t('rivalries.detail.assignBooker', { defaultValue: "I'll book this" })}
+            </button>
+          )
+        )}
+      </div>
 
       <section className="rivalry-detail__stats">
         <div className="rivalry-detail__stat">
@@ -160,7 +223,7 @@ export default function RivalryDetail() {
         </div>
         <div className="rivalry-detail__stat">
           <span className="rivalry-detail__stat-label">
-            {t('rivalries.detail.totalMatches', { count: hydrated.headToHead.totalMatches })}
+            {t('rivalries.detail.matchesInRivalry', { defaultValue: 'Matches in Rivalry' })}
           </span>
           <span className="rivalry-detail__stat-value">
             {hydrated.headToHead.totalMatches}

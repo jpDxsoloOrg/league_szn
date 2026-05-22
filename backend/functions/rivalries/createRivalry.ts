@@ -3,17 +3,22 @@ import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, conflict, forbidden, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
-import type { RivalryHeat, RivalryParticipantRole } from '../../lib/repositories';
+import type { RivalryHeat, RivalryParticipantRole, WrestlerVariant } from '../../lib/repositories';
 
 interface CreateRivalryBody {
   title?: string;
   description?: string;
   heat?: RivalryHeat;
-  participants?: Array<{ playerId?: string; role?: RivalryParticipantRole }>;
+  participants?: Array<{
+    playerId?: string;
+    role?: RivalryParticipantRole;
+    wrestlerVariant?: WrestlerVariant;
+  }>;
 }
 
 const VALID_HEAT: ReadonlyArray<RivalryHeat> = ['cold', 'warm', 'hot'];
 const VALID_ROLE: ReadonlyArray<RivalryParticipantRole> = ['instigator', 'rival'];
+const VALID_VARIANT: ReadonlyArray<WrestlerVariant> = ['primary', 'alternate'];
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -37,7 +42,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const seen = new Set<string>();
-    const normalizedParticipants: Array<{ playerId: string; role: RivalryParticipantRole }> = [];
+    const normalizedParticipants: Array<{
+      playerId: string;
+      role: RivalryParticipantRole;
+      wrestlerVariant?: WrestlerVariant;
+    }> = [];
     for (const p of participants) {
       if (!p || typeof p.playerId !== 'string' || !p.playerId) {
         return badRequest('Every participant entry needs a playerId');
@@ -49,7 +58,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (p.role !== undefined && !VALID_ROLE.includes(p.role)) {
         return badRequest(`participant role must be one of: ${VALID_ROLE.join(', ')}`);
       }
-      normalizedParticipants.push({ playerId: p.playerId, role: p.role ?? 'rival' });
+      if (p.wrestlerVariant !== undefined && !VALID_VARIANT.includes(p.wrestlerVariant)) {
+        return badRequest(`wrestlerVariant must be one of: ${VALID_VARIANT.join(', ')}`);
+      }
+      normalizedParticipants.push({
+        playerId: p.playerId,
+        role: p.role ?? 'rival',
+        wrestlerVariant: p.wrestlerVariant,
+      });
     }
 
     const { roster: { players }, rivalries } = getRepositories();
@@ -101,6 +117,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           )?.role === undefined
             ? 'instigator'
             : p.role,
+        wrestlerVariant: p.wrestlerVariant,
       })),
     });
 

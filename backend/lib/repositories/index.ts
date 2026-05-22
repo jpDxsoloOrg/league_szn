@@ -127,6 +127,7 @@ export type {
   RivalryHeat,
   RivalryParticipant,
   RivalryParticipantRole,
+  WrestlerVariant,
   RivalryMessage,
   RivalryMessageAudience,
   RivalryMessagePostInput,

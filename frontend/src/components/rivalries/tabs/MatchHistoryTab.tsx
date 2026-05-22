@@ -13,18 +13,29 @@ interface TabProps {
 /**
  * Match history scoped to this rivalry. Filters server-side by
  * rivalryId when present; falls back to participant-set overlap for
- * legacy matches that pre-date RIV-06.
+ * legacy matches that pre-date RIV-06. Either way the result is
+ * additionally clipped to the rivalry's startedAt..endedAt window so
+ * a multi-year H2H between two wrestlers doesn't bleed into a
+ * single rivalry's history.
  */
 export default function MatchHistoryTab({ hydrated, players }: TabProps) {
   const { t } = useTranslation();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const rivalryId = hydrated.rivalry.rivalryId;
+  const startedAt = hydrated.rivalry.startedAt;
+  const endedAt = hydrated.rivalry.endedAt;
   const participantSet = useMemo(
     () => new Set(hydrated.rivalry.participants.map((p) => p.playerId)),
     [hydrated.rivalry.participants],
   );
   const lookup = useMemo(() => new Map(players.map((p) => [p.playerId, p] as const)), [players]);
+
+  const withinWindow = (date: string): boolean => {
+    if (startedAt && date < startedAt) return false;
+    if (endedAt && date > endedAt) return false;
+    return true;
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -35,13 +46,15 @@ export default function MatchHistoryTab({ hydrated, players }: TabProps) {
       .getAll({ rivalryId }, controller.signal)
       .then((tagged) => {
         if (tagged.length > 0) {
-          if (mounted) setMatches(tagged);
+          if (mounted) setMatches(tagged.filter((m) => withinWindow(m.date)));
           return;
         }
-        // Legacy fallback — show matches whose participants overlap.
+        // Legacy fallback — show matches whose participants overlap AND
+        // that fall within the rivalry's lifecycle window.
         return matchesApi.getAll({ status: 'completed' }, controller.signal).then((all) => {
           const overlap = all.filter((m) => {
             if (!m.participants || m.participants.length < 2) return false;
+            if (!withinWindow(m.date)) return false;
             let hits = 0;
             for (const pid of m.participants) {
               if (participantSet.has(pid)) hits++;
@@ -61,7 +74,8 @@ export default function MatchHistoryTab({ hydrated, players }: TabProps) {
       mounted = false;
       controller.abort();
     };
-  }, [rivalryId, participantSet]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rivalryId, participantSet, startedAt, endedAt]);
 
   if (loading) return <div className="rivalry-tab__empty">…</div>;
   if (matches.length === 0)

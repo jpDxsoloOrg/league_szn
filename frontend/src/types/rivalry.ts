@@ -24,10 +24,19 @@ export type RivalryHeat = 'cold' | 'warm' | 'hot';
  */
 export type RivalryParticipantRole = 'instigator' | 'rival';
 
+/**
+ * Which wrestler the player chose to represent in the rivalry. Resolved
+ * against the player's currentWrestler / alternateWrestler at render
+ * time so renames stay in lockstep.
+ */
+export type WrestlerVariant = 'primary' | 'alternate';
+
 /** A participant entry on a rivalry. */
 export interface RivalryParticipant {
   playerId: string;
   role: RivalryParticipantRole;
+  /** Optional — defaults to 'primary' on legacy data. */
+  wrestlerVariant?: WrestlerVariant;
   addedAt: string;
 }
 
@@ -48,6 +57,8 @@ export interface Rivalry {
   startedAt?: string;
   /** Set when the rivalry moves to `completed`. */
   endedAt?: string;
+  /** Display name of the GM booking this rivalry. Cosmetic — no permission impact. */
+  bookerName?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -98,7 +109,11 @@ export interface CreateRivalryInput {
   title: string;
   description?: string;
   /** All participants including the requester. Roles default to 'rival'. */
-  participants: Array<{ playerId: string; role?: RivalryParticipantRole }>;
+  participants: Array<{
+    playerId: string;
+    role?: RivalryParticipantRole;
+    wrestlerVariant?: WrestlerVariant;
+  }>;
   requestedBy: string;
   /** Initial heat; defaults to 'warm' if omitted. */
   heat?: RivalryHeat;
@@ -199,6 +214,11 @@ export interface RivalryRecentPromo {
   playerId: string;
   title?: string;
   content: string;
+  /** Optional pointer to the targeted wrestler — used to decide if the
+   *  promo references the other rivalry participant. */
+  targetPlayerId?: string;
+  /** Set when the promo was explicitly tagged to this rivalry. */
+  rivalryId?: string;
   createdAt: string;
 }
 

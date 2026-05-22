@@ -100,8 +100,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         rivalryNotes.listByRivalry(rivalryId),
       ]);
 
-    const headToHead = computeHeadToHead(allMatches, participantIds);
-    const nextEvent = pickNextEvent(upcomingEvents, allMatches, participantSet);
+    const headToHead = computeHeadToHead(allMatches, participantIds, {
+      startedAt: rivalry.startedAt,
+      endedAt: rivalry.endedAt,
+    });
+    const nextEvent = pickNextEvent(upcomingEvents, allMatches, participantSet, {
+      startedAt: rivalry.startedAt,
+      endedAt: rivalry.endedAt,
+    });
 
     const recentPromos = perPlayerPromos
       .flat()
@@ -112,6 +118,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         playerId: p.playerId,
         title: p.title,
         content: p.content,
+        targetPlayerId: p.targetPlayerId,
+        rivalryId: p.rivalryId,
         createdAt: p.createdAt,
       }));
 
@@ -173,11 +181,27 @@ interface MatchLite {
   eventId?: string;
 }
 
-function computeHeadToHead(allMatches: MatchLite[], participantIds: string[]): HeadToHead {
+interface RivalryWindow {
+  startedAt?: string;
+  endedAt?: string;
+}
+
+function isWithinWindow(date: string, window: RivalryWindow): boolean {
+  if (window.startedAt && date < window.startedAt) return false;
+  if (window.endedAt && date > window.endedAt) return false;
+  return true;
+}
+
+function computeHeadToHead(
+  allMatches: MatchLite[],
+  participantIds: string[],
+  window: RivalryWindow = {},
+): HeadToHead {
   const set = new Set(participantIds);
   const completed = allMatches.filter((m) => {
     if (m.status !== 'completed') return false;
     if (!m.participants || m.participants.length < 2) return false;
+    if (!isWithinWindow(m.date, window)) return false;
     // Every match participant must be in the rivalry set, and the match must
     // include at least two of the rivalry's participants.
     let hits = 0;
@@ -232,12 +256,15 @@ function pickNextEvent(
   upcoming: UpcomingEventLite[],
   allMatches: MatchLite[],
   participantSet: Set<string>,
+  window: RivalryWindow = {},
 ): UpcomingEvent | null {
   // Match an upcoming event to the rivalry only if it has a scheduled match
-  // featuring the rivalry's participant set.
+  // featuring the rivalry's participant set, AND the match falls within the
+  // rivalry's lifecycle window.
   const matchedEventIds = new Set<string>();
   for (const m of allMatches) {
     if (m.status !== 'scheduled' || !m.eventId || !m.participants) continue;
+    if (!isWithinWindow(m.date, window)) continue;
     const overlap = m.participants.filter((p) => participantSet.has(p)).length;
     if (overlap >= 2) matchedEventIds.add(m.eventId);
   }

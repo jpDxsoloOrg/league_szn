@@ -57,6 +57,7 @@ interface MetaRow {
   moderationNote?: string;
   startedAt?: string;
   endedAt?: string;
+  bookerName?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -66,6 +67,7 @@ interface ParticipantRow {
   recordType: string; // PARTICIPANT#<playerId>
   participantId: string;
   role: RivalryParticipantRole;
+  wrestlerVariant?: 'primary' | 'alternate';
   addedAt: string;
 }
 
@@ -85,14 +87,19 @@ function aggregateFromRows(meta: MetaRow, participantRows: ParticipantRow[]): Ri
     moderationNote: meta.moderationNote,
     startedAt: meta.startedAt,
     endedAt: meta.endedAt,
+    bookerName: meta.bookerName,
     createdAt: meta.createdAt,
     updatedAt: meta.updatedAt,
     participants: participantRows
-      .map<RivalryParticipant>((row) => ({
-        playerId: row.participantId,
-        role: row.role,
-        addedAt: row.addedAt,
-      }))
+      .map<RivalryParticipant>((row) => {
+        const p: RivalryParticipant = {
+          playerId: row.participantId,
+          role: row.role,
+          addedAt: row.addedAt,
+        };
+        if (row.wrestlerVariant) p.wrestlerVariant = row.wrestlerVariant;
+        return p;
+      })
       .sort((a, b) => (a.addedAt < b.addedAt ? -1 : 1)),
   };
 }
@@ -174,13 +181,17 @@ export class DynamoRivalriesRepository implements RivalriesRepository {
       createdAt: now,
       updatedAt: now,
     };
-    const participantRows: ParticipantRow[] = input.participants.map((p) => ({
-      rivalryId,
-      recordType: participantSk(p.playerId),
-      participantId: p.playerId,
-      role: p.role ?? 'rival',
-      addedAt: now,
-    }));
+    const participantRows: ParticipantRow[] = input.participants.map((p) => {
+      const row: ParticipantRow = {
+        rivalryId,
+        recordType: participantSk(p.playerId),
+        participantId: p.playerId,
+        role: p.role ?? 'rival',
+        addedAt: now,
+      };
+      if (p.wrestlerVariant) row.wrestlerVariant = p.wrestlerVariant;
+      return row;
+    });
 
     // Best-effort batch: serverless-offline / DynamoDB Local handle put well
     // enough for these volumes (typically 2–4 participants). Real cross-row
@@ -226,6 +237,7 @@ export class DynamoRivalriesRepository implements RivalriesRepository {
     rivalryId: string,
     playerId: string,
     role: RivalryParticipantRole = 'rival',
+    wrestlerVariant?: 'primary' | 'alternate',
   ): Promise<RivalryParticipant> {
     const addedAt = new Date().toISOString();
     const row: ParticipantRow = {
@@ -235,8 +247,11 @@ export class DynamoRivalriesRepository implements RivalriesRepository {
       role,
       addedAt,
     };
+    if (wrestlerVariant) row.wrestlerVariant = wrestlerVariant;
     await dynamoDb.put({ TableName: TableNames.RIVALRIES, Item: row });
-    return { playerId, role, addedAt };
+    const participant: RivalryParticipant = { playerId, role, addedAt };
+    if (wrestlerVariant) participant.wrestlerVariant = wrestlerVariant;
+    return participant;
   }
 
   async removeParticipant(rivalryId: string, playerId: string): Promise<void> {

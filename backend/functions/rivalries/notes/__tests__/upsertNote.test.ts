@@ -91,7 +91,10 @@ describe('upsertNote', () => {
     expect(mockNotes.create).toHaveBeenCalledTimes(1);
     const created = mockNotes.create.mock.calls[0][0];
     expect(created.noteType).toBe('plan');
-    expect(created.visibility).toBe('admins'); // default for plan
+    // Default visibility for GM-created notes is now 'participants'
+    // (scope is rivalry participants + GMs; no UI surface creates
+    // admins-only notes via the dropdown anymore).
+    expect(created.visibility).toBe('participants');
     expect(created.linkedMatchId).toBe('m1');
     expect(created.scheduledFor).toBe('2026-06-01T00:00:00.000Z');
   });
@@ -109,15 +112,15 @@ describe('upsertNote', () => {
     expect(mockNotes.create).not.toHaveBeenCalled();
   });
 
-  it('forces a wrestler-authored storyline note to admins visibility', async () => {
+  it('forces a wrestler-authored storyline note to participants visibility', async () => {
     mockPlayers.findByUserId.mockResolvedValue({ playerId: 'p1', userId: 'user-p1' });
 
     const res = await upsertNote(
       withAuth(
         postEvent({
           noteType: 'storyline',
-          content: 'suggestion for the GM',
-          visibility: 'all', // attempting to bypass — must be ignored
+          content: 'visible to my opponent + the GMs',
+          visibility: 'all', // attempting to make it fully public — must be coerced
         }),
         'Wrestler',
         'user-p1',
@@ -129,7 +132,7 @@ describe('upsertNote', () => {
     expect(res!.statusCode).toBe(200);
     expect(mockNotes.create).toHaveBeenCalledTimes(1);
     const created = mockNotes.create.mock.calls[0][0];
-    expect(created.visibility).toBe('admins');
+    expect(created.visibility).toBe('participants');
     expect(created.authorPlayerId).toBe('p1');
   });
 

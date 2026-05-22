@@ -20,11 +20,19 @@ export default function FutureMatchesTab({ hydrated, players }: TabProps) {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const rivalryId = hydrated.rivalry.rivalryId;
+  const startedAt = hydrated.rivalry.startedAt;
+  const endedAt = hydrated.rivalry.endedAt;
   const participantSet = useMemo(
     () => new Set(hydrated.rivalry.participants.map((p) => p.playerId)),
     [hydrated.rivalry.participants],
   );
   const lookup = useMemo(() => new Map(players.map((p) => [p.playerId, p] as const)), [players]);
+
+  const withinWindow = (date: string): boolean => {
+    if (startedAt && date < startedAt) return false;
+    if (endedAt && date > endedAt) return false;
+    return true;
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -34,7 +42,9 @@ export default function FutureMatchesTab({ hydrated, players }: TabProps) {
     matchesApi
       .getAll({ rivalryId }, controller.signal)
       .then((all) => {
-        const upcoming = all.filter((m) => m.status === 'scheduled' || m.status === 'open-signups');
+        const upcoming = all.filter((m) =>
+          (m.status === 'scheduled' || m.status === 'open-signups') && withinWindow(m.date),
+        );
         if (upcoming.length > 0) {
           if (mounted) setMatches(upcoming);
           return;
@@ -42,6 +52,7 @@ export default function FutureMatchesTab({ hydrated, players }: TabProps) {
         return matchesApi.getAll({ status: 'scheduled' }, controller.signal).then((scheduled) => {
           const overlap = scheduled.filter((m) => {
             if (!m.participants || m.participants.length < 2) return false;
+            if (!withinWindow(m.date)) return false;
             let hits = 0;
             for (const pid of m.participants) {
               if (participantSet.has(pid)) hits++;
@@ -61,7 +72,8 @@ export default function FutureMatchesTab({ hydrated, players }: TabProps) {
       mounted = false;
       controller.abort();
     };
-  }, [rivalryId, participantSet]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rivalryId, participantSet, startedAt, endedAt]);
 
   if (loading) return <div className="rivalry-tab__empty">…</div>;
   if (matches.length === 0)

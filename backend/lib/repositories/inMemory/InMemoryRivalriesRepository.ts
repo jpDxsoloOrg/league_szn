@@ -88,11 +88,15 @@ export class InMemoryRivalriesRepository implements RivalriesRepository {
       status: 'pending',
       heat: input.heat ?? 'warm',
       requestedBy: input.requestedBy,
-      participants: input.participants.map((p) => ({
-        playerId: p.playerId,
-        role: p.role ?? 'rival',
-        addedAt: now,
-      })),
+      participants: input.participants.map((p) => {
+        const participant: RivalryParticipant = {
+          playerId: p.playerId,
+          role: p.role ?? 'rival',
+          addedAt: now,
+        };
+        if (p.wrestlerVariant) participant.wrestlerVariant = p.wrestlerVariant;
+        return participant;
+      }),
       createdAt: now,
       updatedAt: now,
     };
@@ -116,11 +120,13 @@ export class InMemoryRivalriesRepository implements RivalriesRepository {
     rivalryId: string,
     playerId: string,
     role: RivalryParticipantRole = 'rival',
+    wrestlerVariant?: 'primary' | 'alternate',
   ): Promise<RivalryParticipant> {
     const existing = this.store.get(rivalryId);
     if (!existing) throw new Error(`Rivalry ${rivalryId} not found`);
     const addedAt = new Date().toISOString();
     const participant: RivalryParticipant = { playerId, role, addedAt };
+    if (wrestlerVariant) participant.wrestlerVariant = wrestlerVariant;
     const filtered = existing.participants.filter((p) => p.playerId !== playerId);
     this.store.set(rivalryId, {
       ...existing,

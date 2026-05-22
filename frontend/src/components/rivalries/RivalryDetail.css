@@ -69,12 +69,50 @@
 }
 
 .rivalry-detail__title {
-  margin: 1.5rem 0 1rem;
+  margin: 1.5rem 0 0.5rem;
   font-size: 1.6rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   text-align: center;
+}
+
+.rivalry-detail__booker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.rivalry-detail__booker-badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  background: rgba(200, 168, 90, 0.18);
+  color: var(--color-accent-gold, #c8a85a);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.rivalry-detail__booker-btn {
+  background: transparent;
+  border: 1px solid var(--color-accent-gold, #c8a85a);
+  color: var(--color-accent-gold, #c8a85a);
+  border-radius: 4px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.rivalry-detail__booker-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .rivalry-detail__stats {
@@ -298,6 +336,50 @@
   gap: 0.5rem;
   flex-wrap: wrap;
   font-size: 0.85rem;
+}
+
+.rivalry-detail-notes__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.rivalry-detail-notes__actions {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.rivalry-detail-notes__icon {
+  background: transparent;
+  border: 1px solid var(--color-border, #2a2a2a);
+  color: inherit;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rivalry-detail-notes__icon:hover {
+  border-color: var(--color-accent-gold, #c8a85a);
+  color: var(--color-accent-gold, #c8a85a);
+}
+
+.rivalry-detail-notes__icon--danger:hover {
+  border-color: #ff8888;
+  color: #ff8888;
+}
+
+.rivalry-detail-notes__edit-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .rivalry-detail-notes__badge,

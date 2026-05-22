@@ -794,6 +794,10 @@ functions:
           path: rivalries/{rivalryId}/notes
           method: any
           cors: *corsConfig
+      - http:
+          path: rivalries/{rivalryId}/notes/{noteId}
+          method: any
+          cors: *corsConfig
 
   # Persistent rivalries (RIV-02): create/list/get/update/respond/delete.
   # Lives under /rivalry-requests so the synthetic /rivalries endpoint

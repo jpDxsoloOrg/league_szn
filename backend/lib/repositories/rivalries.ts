@@ -33,9 +33,19 @@ export type RivalryHeat = 'cold' | 'warm' | 'hot';
 
 export type RivalryParticipantRole = 'instigator' | 'rival';
 
+/**
+ * Which wrestler the player picked to represent in this rivalry. The
+ * UI resolves this against the player's currentWrestler /
+ * alternateWrestler names — the rivalry itself doesn't snapshot the
+ * names so a wrestler rename stays in lockstep.
+ */
+export type WrestlerVariant = 'primary' | 'alternate';
+
 export interface RivalryParticipant {
   playerId: string;
   role: RivalryParticipantRole;
+  /** Optional — defaults to 'primary' on legacy data. */
+  wrestlerVariant?: WrestlerVariant;
   addedAt: string;
 }
 
@@ -51,6 +61,9 @@ export interface Rivalry {
   moderationNote?: string;
   startedAt?: string;
   endedAt?: string;
+  /** Display name of the GM driving the storyline. Cosmetic — no
+   *  permission impact. Visible to all viewers. */
+  bookerName?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -92,7 +105,11 @@ export interface RivalryNote {
 export interface CreateRivalryInput {
   title: string;
   description?: string;
-  participants: Array<{ playerId: string; role?: RivalryParticipantRole }>;
+  participants: Array<{
+    playerId: string;
+    role?: RivalryParticipantRole;
+    wrestlerVariant?: WrestlerVariant;
+  }>;
   requestedBy: string;
   heat?: RivalryHeat;
 }
@@ -106,6 +123,8 @@ export interface RivalryPatch {
   moderationNote?: string;
   startedAt?: string;
   endedAt?: string;
+  /** Empty string clears the booker; any other value assigns it. */
+  bookerName?: string;
 }
 
 export interface RivalryMessagePostInput {
@@ -212,6 +231,7 @@ export interface RivalriesRepository {
     rivalryId: string,
     playerId: string,
     role?: RivalryParticipantRole,
+    wrestlerVariant?: WrestlerVariant,
   ): Promise<RivalryParticipant>;
 
   /** Detach a participant row from a rivalry. */

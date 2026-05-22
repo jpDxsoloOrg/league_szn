@@ -7,6 +7,7 @@ import {
   applyImageFallback,
   resolveImageSrc,
 } from '../../constants/imageFallbacks';
+import { resolveWrestlerName } from './rivalryUtils';
 import './RivalryCard.css';
 
 interface RivalryCardProps {
@@ -40,10 +41,12 @@ export default function RivalryCard({
   const flames = HEAT_FLAMES[rivalry.heat] ?? 1;
 
   const lookup = new Map(participants.map((p) => [p.playerId, p] as const));
-  const pidA = rivalry.participants[0]?.playerId ?? '';
-  const pidB = rivalry.participants[1]?.playerId ?? '';
-  const a = lookup.get(pidA);
-  const b = lookup.get(pidB);
+  const partA = rivalry.participants[0];
+  const partB = rivalry.participants[1];
+  const a = partA ? lookup.get(partA.playerId) : undefined;
+  const b = partB ? lookup.get(partB.playerId) : undefined;
+  const nameA = resolveWrestlerName(partA, a);
+  const nameB = resolveWrestlerName(partB, b);
 
   const lastActivityLabel = lastActivityAt
     ? new Date(lastActivityAt).toLocaleDateString()
@@ -55,12 +58,10 @@ export default function RivalryCard({
         <div className="rivalry-card__avatar">
           <img
             src={resolveImageSrc(a?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-            alt={a?.currentWrestler ?? a?.name ?? pidA}
+            alt={nameA}
             onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
           />
-          <span className="rivalry-card__avatar-name">
-            {a?.currentWrestler ?? a?.name ?? '—'}
-          </span>
+          <span className="rivalry-card__avatar-name">{nameA}</span>
         </div>
 
         <span className="rivalry-card__vs" aria-hidden="true">vs</span>
@@ -68,12 +69,10 @@ export default function RivalryCard({
         <div className="rivalry-card__avatar">
           <img
             src={resolveImageSrc(b?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-            alt={b?.currentWrestler ?? b?.name ?? pidB}
+            alt={nameB}
             onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
           />
-          <span className="rivalry-card__avatar-name">
-            {b?.currentWrestler ?? b?.name ?? '—'}
-          </span>
+          <span className="rivalry-card__avatar-name">{nameB}</span>
         </div>
       </div>
 

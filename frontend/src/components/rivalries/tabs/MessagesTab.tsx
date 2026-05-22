@@ -2,278 +2,393 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { rivalriesApi } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
+import {
+  DEFAULT_WRESTLER_IMAGE,
+  applyImageFallback,
+  resolveImageSrc,
+} from '../../../constants/imageFallbacks';
 import type { Player } from '../../../types';
-import type {
-  HydratedRivalry,
-  RivalryMessage,
-  RivalryMessageAudience,
-} from '../../../types/rivalry';
+import type { HydratedRivalry, RivalryMessage } from '../../../types/rivalry';
+import { resolveWrestlerName } from '../rivalryUtils';
+import './MessagesTab.css';
 
 interface TabProps {
   hydrated: HydratedRivalry;
   players: Player[];
 }
 
-interface ThreadEntry {
-  message: RivalryMessage;
-  state: 'confirmed' | 'sending' | 'failed';
-  localKey: string;
+interface DisplayMessage {
+  messageId: string;
+  authorPlayerId: string;
+  body: string;
+  audience: RivalryMessage['audience'];
+  createdAt: string;
+  isPending?: boolean;
+  hasError?: boolean;
+  tempId?: string;
 }
 
-const POLL_MS = 15_000;
+const POLL_INTERVAL_MS = 10_000;
+const COMPOSER_MAX_LINES = 6;
+const FIXED_AUDIENCE = 'participants' as const;
+
+function formatTime(iso: string): string {
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return '';
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  return sameDay
+    ? d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString();
+}
+
+function dayKey(iso: string): string {
+  const d = new Date(iso);
+  return Number.isFinite(d.getTime()) ? d.toISOString().slice(0, 10) : '';
+}
+
+function tempId(): string {
+  return `temp-${Math.random().toString(36).slice(2)}-${Date.now()}`;
+}
 
 /**
- * Messages tab (RIV-12). Polls every 15s when visible, supports
- * optimistic send with rollback, and a per-message + thread-default
- * audience toggle. Real-time transport (websockets) is intentionally
- * deferred per the project's known-limitations list.
+ * Single-thread chat for a rivalry — patterned after FactionMessages
+ * but stripped of the channel-vs-DM list because a rivalry is itself
+ * one conversation between the two wrestlers and any GMs. Polls every
+ * 10 s while the page is visible, posts optimistically with retry on
+ * failure, and renders system messages (status changes) distinctly
+ * from user bubbles.
  */
 export default function MessagesTab({ hydrated, players }: TabProps) {
   const { t } = useTranslation();
-  const { playerId } = useAuth();
+  const auth = useAuth();
+  const callerPlayerId = auth.playerId;
   const rivalryId = hydrated.rivalry.rivalryId;
-  const lookup = useMemo(() => new Map(players.map((p) => [p.playerId, p] as const)), [players]);
 
-  const [entries, setEntries] = useState<ThreadEntry[]>([]);
-  const [loopInOpponent, setLoopInOpponent] = useState(true);
+  const memberById = useMemo(() => new Map(players.map((p) => [p.playerId, p] as const)), [players]);
+
+  const [feed, setFeed] = useState<DisplayMessage[]>([]);
   const [composer, setComposer] = useState('');
-  const [composerAudienceOverride, setComposerAudienceOverride] = useState(false);
-  const lastFetchRef = useRef<number>(0);
+  const [posting, setPosting] = useState(false);
+  const [feedError, setFeedError] = useState<string | null>(null);
+  const [visible, setVisible] = useState(
+    typeof document !== 'undefined' ? document.visibilityState === 'visible' : true,
+  );
 
-  const defaultAudience: RivalryMessageAudience = loopInOpponent ? 'participants' : 'admins';
-  const effectiveAudience: RivalryMessageAudience = composerAudienceOverride
-    ? (defaultAudience === 'admins' ? 'participants' : 'admins')
-    : defaultAudience;
+  const feedRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
+  const userScrolledUp = useRef(false);
 
-  const refresh = useCallback(async () => {
-    lastFetchRef.current = Date.now();
-    const res = await rivalriesApi.messages.list(rivalryId).catch(() => null);
-    if (!res) return;
-    const confirmed = res.messages.map<ThreadEntry>((m) => ({
-      message: m,
-      state: 'confirmed',
-      localKey: m.messageId,
-    }));
-    // Preserve in-flight optimistic entries that haven't been confirmed.
-    setEntries((prev) => {
-      const optimistic = prev.filter((e) => e.state !== 'confirmed');
-      const seen = new Set(confirmed.map((e) => e.message.messageId));
-      const stillPending = optimistic.filter((e) => !seen.has(e.message.messageId));
-      return [...confirmed, ...stillPending];
-    });
+  // ─── Initial load ────────────────────────────────────────────────
+  useEffect(() => {
+    const ac = new AbortController();
+    rivalriesApi.messages
+      .list(rivalryId, { limit: 50 }, ac.signal)
+      .then((page) => {
+        if (ac.signal.aborted) return;
+        setFeed(
+          page.messages.map((m) => ({
+            messageId: m.messageId,
+            authorPlayerId: m.authorPlayerId,
+            body: m.body,
+            audience: m.audience,
+            createdAt: m.createdAt,
+          })),
+        );
+      })
+      .catch((err) => {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setFeedError(err.message);
+        }
+      });
+    return () => ac.abort();
+  }, [rivalryId]);
+
+  // ─── Visibility tracking ─────────────────────────────────────────
+  useEffect(() => {
+    const onChange = () => setVisible(document.visibilityState === 'visible');
+    document.addEventListener('visibilitychange', onChange);
+    return () => document.removeEventListener('visibilitychange', onChange);
+  }, []);
+
+  // ─── Polling ─────────────────────────────────────────────────────
+  const pollOnce = useCallback(async () => {
+    try {
+      const page = await rivalriesApi.messages.list(rivalryId, { limit: 50 });
+      setFeed((prev) => {
+        const knownIds = new Set(prev.map((m) => m.messageId));
+        const incoming: DisplayMessage[] = page.messages
+          .filter((m) => !knownIds.has(m.messageId))
+          .map((m) => ({
+            messageId: m.messageId,
+            authorPlayerId: m.authorPlayerId,
+            body: m.body,
+            audience: m.audience,
+            createdAt: m.createdAt,
+          }));
+        if (incoming.length === 0) return prev;
+        // Drop temp bubbles whose content + author match an incoming
+        // server copy — covers the race where polling beats the post
+        // response back.
+        const survivors = prev.filter((m) => {
+          if (!m.isPending) return true;
+          return !incoming.find(
+            (inc) => inc.authorPlayerId === m.authorPlayerId && inc.body === m.body,
+          );
+        });
+        return [...survivors, ...incoming];
+      });
+    } catch {
+      // Poll failures are silent — the next tick will try again.
+    }
   }, [rivalryId]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (!visible) return;
+    const id = window.setInterval(pollOnce, POLL_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [visible, pollOnce]);
 
-  // Page Visibility-aware polling.
-  useEffect(() => {
-    let active = !document.hidden;
-    const tick = () => {
-      if (!active) return;
-      // Skip if a manual fetch happened recently.
-      if (Date.now() - lastFetchRef.current < POLL_MS / 2) return;
-      refresh();
-    };
-    const id = setInterval(tick, POLL_MS);
-    const onVis = () => {
-      active = !document.hidden;
-      if (active) refresh();
-    };
-    document.addEventListener('visibilitychange', onVis);
-    return () => {
-      clearInterval(id);
-      document.removeEventListener('visibilitychange', onVis);
-    };
-  }, [refresh]);
-
-  async function send() {
-    const body = composer.trim();
-    if (!body) return;
-    const localKey = `local-${Date.now()}`;
-    const optimistic: ThreadEntry = {
-      message: {
-        rivalryId,
-        messageId: localKey,
-        authorPlayerId: playerId ?? 'self',
-        body,
-        audience: effectiveAudience,
-        createdAt: new Date().toISOString(),
-      },
-      state: 'sending',
-      localKey,
-    };
-    setEntries((prev) => [...prev, optimistic]);
-    setComposer('');
-    setComposerAudienceOverride(false);
-
-    try {
-      const res = await rivalriesApi.messages.post(rivalryId, body, effectiveAudience);
-      setEntries((prev) =>
-        prev.map((e) =>
-          e.localKey === localKey
-            ? { message: res.message, state: 'confirmed', localKey: res.message.messageId }
-            : e,
-        ),
-      );
-    } catch {
-      setEntries((prev) =>
-        prev.map((e) => (e.localKey === localKey ? { ...e, state: 'failed' } : e)),
-      );
-    }
-  }
-
-  async function retry(localKey: string) {
-    const entry = entries.find((e) => e.localKey === localKey);
-    if (!entry) return;
-    setEntries((prev) =>
-      prev.map((e) => (e.localKey === localKey ? { ...e, state: 'sending' } : e)),
-    );
-    try {
-      const res = await rivalriesApi.messages.post(
-        rivalryId,
-        entry.message.body,
-        entry.message.audience,
-      );
-      setEntries((prev) =>
-        prev.map((e) =>
-          e.localKey === localKey
-            ? { message: res.message, state: 'confirmed', localKey: res.message.messageId }
-            : e,
-        ),
-      );
-    } catch {
-      setEntries((prev) =>
-        prev.map((e) => (e.localKey === localKey ? { ...e, state: 'failed' } : e)),
-      );
-    }
-  }
-
-  const sorted = [...entries].sort((a, b) =>
-    a.message.createdAt < b.message.createdAt ? -1 : 1,
+  // ─── Display order (oldest → newest) ─────────────────────────────
+  const activeFeed = useMemo(
+    () => [...feed].sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+    [feed],
   );
 
-  return (
-    <div className="rivalry-tab rivalry-messages">
-      <aside className="rivalry-messages__rail">
-        <div className="rivalry-tab__card">
-          <h3 className="rivalry-tab__heading">{t('rivalries.messages2.participantsHeading')}</h3>
-          <ul>
-            {hydrated.rivalry.participants.map((p) => {
-              const player = lookup.get(p.playerId);
-              return (
-                <li key={p.playerId} className="rivalry-messages__participant">
-                  <span className="rivalry-messages__dot" aria-hidden="true" />
-                  <span>{player?.currentWrestler ?? player?.name ?? p.playerId}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+  // ─── Auto-scroll ─────────────────────────────────────────────────
+  useEffect(() => {
+    const el = feedRef.current;
+    if (!el || userScrolledUp.current) return;
+    el.scrollTop = el.scrollHeight;
+  }, [activeFeed]);
 
-        <div className="rivalry-tab__card">
-          <h3 className="rivalry-tab__heading">{t('rivalries.messages2.settingsHeading')}</h3>
-          <label className="rivalry-messages__toggle">
-            <input
-              type="checkbox"
-              checked={loopInOpponent}
-              onChange={(e) => setLoopInOpponent(e.target.checked)}
-            />
-            <span>{t('rivalries.messages2.loopInOpponent')}</span>
-          </label>
-          <p className="rivalry-detail__hint">
-            {defaultAudience === 'admins'
-              ? 'Messages are private between you and the GMs.'
-              : 'Messages are visible to your opponent and the GMs.'}
-          </p>
-        </div>
-      </aside>
+  const handleFeedScroll = () => {
+    const el = feedRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    userScrolledUp.current = distanceFromBottom > 80;
+  };
 
-      <section className="rivalry-messages__thread">
-        {sorted.length === 0 ? (
-          <p className="rivalry-tab__empty">{t('rivalries.messages.empty')}</p>
-        ) : (
-          <ul className="rivalry-messages__list">
-            {sorted.map((entry) => {
-              const m = entry.message;
-              const isSelf = m.authorPlayerId === playerId;
-              const isSystem = m.authorPlayerId === 'system';
-              const author = lookup.get(m.authorPlayerId);
-              return (
-                <li
-                  key={entry.localKey}
-                  className={
-                    isSystem
-                      ? 'rivalry-messages__row rivalry-messages__row--system'
-                      : isSelf
-                      ? 'rivalry-messages__row rivalry-messages__row--self'
-                      : 'rivalry-messages__row'
-                  }
-                >
-                  {!isSystem && (
-                    <header className="rivalry-messages__row-meta">
-                      <span>{author?.currentWrestler ?? author?.name ?? m.authorPlayerId}</span>
-                      <span>{new Date(m.createdAt).toLocaleString()}</span>
-                      {m.audience === 'admins' && (
-                        <span className="rivalry-messages__audience" title="GMs only">
-                          🔒
-                        </span>
-                      )}
-                    </header>
-                  )}
-                  <p>{m.body}</p>
-                  {entry.state === 'sending' && (
-                    <span className="rivalry-messages__sending">…sending</span>
-                  )}
-                  {entry.state === 'failed' && (
-                    <button
-                      type="button"
-                      className="rivalry-messages__retry"
-                      onClick={() => retry(entry.localKey)}
-                    >
-                      Failed — retry
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
+  // ─── Send (optimistic) ───────────────────────────────────────────
+  const handleSend = async (overrideBody?: string, retryTempId?: string) => {
+    const body = (overrideBody ?? composer).trim();
+    if (!body) return;
+    if (posting) return;
 
-        <form
-          className="rivalry-messages__composer"
-          onSubmit={(e) => {
-            e.preventDefault();
-            send();
-          }}
+    setPosting(true);
+
+    let id: string;
+    if (retryTempId) {
+      id = retryTempId;
+      setFeed((prev) =>
+        prev.map((m) => (m.tempId === id ? { ...m, hasError: false, isPending: true } : m)),
+      );
+    } else {
+      id = tempId();
+      const now = new Date().toISOString();
+      setFeed((prev) => [
+        ...prev,
+        {
+          messageId: id,
+          tempId: id,
+          authorPlayerId: callerPlayerId ?? 'me',
+          body,
+          audience: FIXED_AUDIENCE,
+          createdAt: now,
+          isPending: true,
+        },
+      ]);
+      setComposer('');
+    }
+
+    try {
+      const res = await rivalriesApi.messages.post(rivalryId, body, FIXED_AUDIENCE);
+      setFeed((prev) =>
+        prev.map((m) =>
+          m.tempId === id
+            ? {
+                messageId: res.message.messageId,
+                authorPlayerId: res.message.authorPlayerId,
+                body: res.message.body,
+                audience: res.message.audience,
+                createdAt: res.message.createdAt,
+              }
+            : m,
+        ),
+      );
+    } catch {
+      setFeed((prev) =>
+        prev.map((m) => (m.tempId === id ? { ...m, isPending: false, hasError: true } : m)),
+      );
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const handleRetry = (msg: DisplayMessage) => {
+    if (!msg.tempId) return;
+    handleSend(msg.body, msg.tempId);
+  };
+
+  const handleComposerKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  // ─── Render ──────────────────────────────────────────────────────
+  const headerContext = t('rivalries.messages.headerContext', {
+    defaultValue: 'Participants + GMs',
+  });
+  const audiencePill = t('rivalries.messages.audiencePill', {
+    defaultValue: 'VISIBLE TO PARTICIPANTS + GMs',
+  });
+
+  const renderFeed = (): React.ReactNode[] => {
+    const out: React.ReactNode[] = [];
+    let lastDay = '';
+    for (const m of activeFeed) {
+      const d = dayKey(m.createdAt);
+      if (d && d !== lastDay) {
+        out.push(
+          <div key={`sep-${d}`} className="rivalry-msgs__day-sep">
+            <span>{new Date(m.createdAt).toLocaleDateString()}</span>
+          </div>,
+        );
+        lastDay = d;
+      }
+      const isSystem = m.authorPlayerId === 'system';
+      if (isSystem) {
+        out.push(
+          <div key={m.messageId} className="rivalry-msgs__system">
+            {m.body}
+          </div>,
+        );
+        continue;
+      }
+      const isSelf = m.authorPlayerId === callerPlayerId;
+      const author = memberById.get(m.authorPlayerId);
+      const participant = hydrated.rivalry.participants.find(
+        (p) => p.playerId === m.authorPlayerId,
+      );
+      out.push(
+        <div
+          key={m.messageId}
+          className={`rivalry-msgs__bubble ${
+            isSelf ? 'rivalry-msgs__bubble--self' : 'rivalry-msgs__bubble--other'
+          } ${m.isPending ? 'rivalry-msgs__bubble--pending' : ''} ${
+            m.hasError ? 'rivalry-msgs__bubble--error' : ''
+          }`}
         >
-          <textarea
-            rows={3}
-            value={composer}
-            onChange={(e) => setComposer(e.target.value)}
-            placeholder={t('rivalries.messages.placeholder')}
-          />
-          <div className="rivalry-messages__composer-bar">
-            <label className="rivalry-messages__toggle">
-              <input
-                type="checkbox"
-                checked={composerAudienceOverride}
-                onChange={(e) => setComposerAudienceOverride(e.target.checked)}
-              />
-              <span>{t('rivalries.messages2.overrideAudience')}</span>
-            </label>
-            <span className="rivalry-messages__effective">
-              {effectiveAudience === 'admins'
-                ? t('rivalries.messages2.gmOnly')
-                : t('rivalries.messages2.loopInOn')}
-            </span>
-            <button type="submit" disabled={!composer.trim()}>
-              {t('rivalries.messages.send')}
-            </button>
+          {!isSelf && (
+            <img
+              src={resolveImageSrc(author?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+              onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
+              alt=""
+              className="rivalry-msgs__bubble-avatar"
+            />
+          )}
+          <div className="rivalry-msgs__bubble-body">
+            {!isSelf && (
+              <span className="rivalry-msgs__bubble-author">
+                {resolveWrestlerName(participant, author) || m.authorPlayerId}
+              </span>
+            )}
+            <p className="rivalry-msgs__bubble-text">{m.body}</p>
+            <span className="rivalry-msgs__bubble-time">{formatTime(m.createdAt)}</span>
+            {m.hasError && (
+              <button
+                type="button"
+                className="rivalry-msgs__bubble-retry"
+                onClick={() => handleRetry(m)}
+              >
+                {t('rivalries.messages.retry', { defaultValue: 'Retry' })}
+              </button>
+            )}
           </div>
-        </form>
-      </section>
-    </div>
+        </div>,
+      );
+    }
+    return out;
+  };
+
+  return (
+    <section className="rivalry-msgs" aria-live="polite">
+      <header className="rivalry-msgs__header">
+        <span className="rivalry-msgs__header-context">{headerContext}</span>
+        <span
+          className="rivalry-msgs__audience-pill"
+          aria-label={t('rivalries.messages.audienceAria', {
+            defaultValue: 'Audience: {{label}}',
+            label: audiencePill,
+          })}
+        >
+          {audiencePill}
+        </span>
+      </header>
+
+      {feedError && (
+        <p className="rivalry-msgs__feed-error" role="alert">
+          {t('rivalries.messages.feedError', { defaultValue: 'Could not load messages.' })}: {feedError}
+        </p>
+      )}
+
+      <div className="rivalry-msgs__feed" ref={feedRef} onScroll={handleFeedScroll}>
+        {activeFeed.length === 0 ? (
+          <p className="rivalry-msgs__empty">{t('rivalries.messages.empty')}</p>
+        ) : (
+          renderFeed()
+        )}
+      </div>
+
+      <p className="rivalry-msgs__reminder">
+        {t('rivalries.messages.reminder', {
+          defaultValue: 'Visible to your opponent and the GMs only.',
+        })}
+      </p>
+
+      <div className="rivalry-msgs__composer">
+        <button
+          type="button"
+          className="rivalry-msgs__composer-icon"
+          disabled
+          title={t('rivalries.messages.attachComingSoon', {
+            defaultValue: 'Attachments coming soon',
+          })}
+          aria-label="attach"
+        >
+          📎
+        </button>
+        <button
+          type="button"
+          className="rivalry-msgs__composer-icon"
+          disabled
+          title={t('rivalries.messages.emojiComingSoon', { defaultValue: 'Emoji coming soon' })}
+          aria-label="emoji"
+        >
+          🙂
+        </button>
+        <textarea
+          ref={composerRef}
+          className="rivalry-msgs__composer-input"
+          placeholder={t('rivalries.messages.placeholder')}
+          value={composer}
+          onChange={(e) => setComposer(e.target.value)}
+          onKeyDown={handleComposerKeyDown}
+          rows={1}
+          style={{ maxHeight: `${COMPOSER_MAX_LINES * 1.6}em` }}
+          aria-label={t('rivalries.messages.placeholder')}
+        />
+        <button
+          type="button"
+          className="rivalry-msgs__send"
+          disabled={posting || composer.trim().length === 0}
+          onClick={() => handleSend()}
+        >
+          {t('rivalries.messages.send')}
+        </button>
+      </div>
+    </section>
   );
 }

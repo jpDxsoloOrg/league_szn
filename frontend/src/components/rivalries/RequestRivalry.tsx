@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { playersApi, rivalriesApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Player } from '../../types';
-import type { RivalryHeat } from '../../types/rivalry';
+import type { RivalryHeat, WrestlerVariant } from '../../types/rivalry';
 import './RequestRivalry.css';
 
 interface PlanDraft {
@@ -44,6 +44,11 @@ export default function RequestRivalry() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [planFailures, setPlanFailures] = useState(0);
+  const [myVariant, setMyVariant] = useState<WrestlerVariant>('primary');
+  const [opponentVariant, setOpponentVariant] = useState<WrestlerVariant>('primary');
+
+  const selfPlayer = players.find((p) => p.playerId === playerId) ?? null;
+  const opponentPlayer = players.find((p) => p.playerId === opponentId) ?? null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -97,8 +102,8 @@ export default function RequestRivalry() {
         heat,
         requestedBy: playerId,
         participants: [
-          { playerId, role: 'instigator' },
-          { playerId: opponentId, role: 'rival' },
+          { playerId, role: 'instigator', wrestlerVariant: myVariant },
+          { playerId: opponentId, role: 'rival', wrestlerVariant: opponentVariant },
         ],
       });
 
@@ -180,6 +185,7 @@ export default function RequestRivalry() {
                       onClick={() => {
                         setOpponentId(p.playerId);
                         setOpponentQuery('');
+                        setOpponentVariant('primary');
                       }}
                     >
                       <strong>{p.currentWrestler}</strong>
@@ -193,6 +199,60 @@ export default function RequestRivalry() {
               </ul>
             )}
           </label>
+
+          {selfPlayer?.alternateWrestler && (
+            <fieldset className="request-rivalry__heat">
+              <legend>
+                {t('rivalries.request.myWrestler', { defaultValue: 'Which wrestler are you using?' })}
+              </legend>
+              <label>
+                <input
+                  type="radio"
+                  name="myVariant"
+                  checked={myVariant === 'primary'}
+                  onChange={() => setMyVariant('primary')}
+                />
+                <span>{selfPlayer.currentWrestler} (primary)</span>
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="myVariant"
+                  checked={myVariant === 'alternate'}
+                  onChange={() => setMyVariant('alternate')}
+                />
+                <span>{selfPlayer.alternateWrestler} (alternate)</span>
+              </label>
+            </fieldset>
+          )}
+
+          {opponentPlayer?.alternateWrestler && (
+            <fieldset className="request-rivalry__heat">
+              <legend>
+                {t('rivalries.request.opponentWrestler', {
+                  defaultValue: "Which wrestler is your opponent using?",
+                })}
+              </legend>
+              <label>
+                <input
+                  type="radio"
+                  name="opponentVariant"
+                  checked={opponentVariant === 'primary'}
+                  onChange={() => setOpponentVariant('primary')}
+                />
+                <span>{opponentPlayer.currentWrestler} (primary)</span>
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="opponentVariant"
+                  checked={opponentVariant === 'alternate'}
+                  onChange={() => setOpponentVariant('alternate')}
+                />
+                <span>{opponentPlayer.alternateWrestler} (alternate)</span>
+              </label>
+            </fieldset>
+          )}
 
           <label>
             <span>{t('rivalries.request.titleField')}</span>
