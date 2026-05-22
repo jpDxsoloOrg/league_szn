@@ -770,6 +770,19 @@ functions:
           method: get
           cors: *corsConfig
 
+  # Per-rivalry message thread (RIV-04). Both routes are authed; the
+  # router validates participant / GM membership and applies per-
+  # message audience filtering on reads + notification fan-out on
+  # writes.
+  rivalryMessages:
+    handler: functions/rivalries/messages/handler.handler
+    timeout: 15
+    events:
+      - http:
+          path: rivalries/{rivalryId}/messages
+          method: any
+          cors: *corsConfig
+
   # Persistent rivalries (RIV-02): create/list/get/update/respond/delete.
   # Lives under /rivalry-requests so the synthetic /rivalries endpoint
   # above stays untouched. Auth (JWT) is checked inside the router for
