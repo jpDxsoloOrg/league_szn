@@ -759,6 +759,17 @@ functions:
           method: get
           cors: *corsConfig
 
+  # Cross-source activity feed for the Hub (RIV-03). Public read; auth
+  # is optional and only widens audience filtering when present.
+  getRivalryActivity:
+    handler: functions/rivalries/getRivalryActivity.handler
+    timeout: 15
+    events:
+      - http:
+          path: rivalries/activity
+          method: get
+          cors: *corsConfig
+
   # Persistent rivalries (RIV-02): create/list/get/update/respond/delete.
   # Lives under /rivalry-requests so the synthetic /rivalries endpoint
   # above stays untouched. Auth (JWT) is checked inside the router for
