@@ -13,6 +13,16 @@ export type NotificationType =
   | 'storyline_request_reviewed'
   | 'match_invitation'
   | 'match_invitation_declined'
+  | 'rivalry_reviewed'
+  | 'rivalry_message'
+  | 'rivalry_request'
+  | 'rivalry_status_change';
+
+/** Set of notification types scoped to a rivalry source. */
+export type RivalryNotificationType =
+  | 'rivalry_message'
+  | 'rivalry_request'
+  | 'rivalry_status_change'
   | 'rivalry_reviewed';
 
 export type NotificationSourceType = 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'match_invitation' | 'rivalry';
@@ -67,4 +77,23 @@ export async function createNotifications(params: CreateNotificationParams[]): P
   } catch (error: unknown) {
     console.error('Failed to create bulk notifications:', error);
   }
+}
+
+/**
+ * Convenience for rivalry-sourced notifications. Centralises the
+ * sourceType so callers don't drift on naming.
+ */
+export function createRivalryNotification(
+  rivalryId: string,
+  recipientUserId: string,
+  type: RivalryNotificationType,
+  message: string,
+): Promise<void> {
+  return createNotification({
+    userId: recipientUserId,
+    type,
+    message,
+    sourceId: rivalryId,
+    sourceType: 'rivalry',
+  });
 }
