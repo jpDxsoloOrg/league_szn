@@ -44,6 +44,10 @@ const ALL_TABLES: TableConfig[] = [
   { key: 'stipulations', tableName: TableNames.STIPULATIONS, partitionKey: 'stipulationId' },
   { key: 'matchTypes', tableName: TableNames.MATCH_TYPES, partitionKey: 'matchTypeId' },
   { key: 'seasonAwards', tableName: TableNames.SEASON_AWARDS, partitionKey: 'seasonId', sortKey: 'awardId' },
+  // Rivalries (RIV-01): META + PARTICIPANT rows sharing the same partition key.
+  { key: 'rivalries', tableName: TableNames.RIVALRIES, partitionKey: 'rivalryId', sortKey: 'recordType' },
+  { key: 'rivalryMessages', tableName: TableNames.RIVALRY_MESSAGES, partitionKey: 'rivalryId', sortKey: 'messageId' },
+  { key: 'rivalryNotes', tableName: TableNames.RIVALRY_NOTES, partitionKey: 'rivalryId', sortKey: 'noteId' },
 ];
 
 async function deleteAllItemsFromTable(

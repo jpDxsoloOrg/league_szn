@@ -945,6 +945,230 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       updatedAt: now,
     }));
 
+    // ── Rivalries (RIV-18) ─────────────────────────────────────
+    // Three example rivalries referencing the existing seeded
+    // players so /rivalries renders meaningfully out of the box:
+    //
+    //   1. ACTIVE / hot — players[0] (Stone Cold) vs players[1] (The Rock)
+    //   2. COMPLETED / cold — players[6] (John Cena) vs players[10] (Roman Reigns)
+    //   3. PENDING / warm — players[2] vs players[3], no sub-data
+    //
+    // Rivalry 1 also tags the first 3 completed matches and the
+    // first 2 promos with its rivalryId so the rivalry detail page
+    // shows real history. Rivalry 2 tags 2 more completed matches.
+    console.log('Creating rivalries (3 sample storylines)...');
+    const rivalries: Record<string, unknown>[] = [];
+    const rivalryMessages: Record<string, unknown>[] = [];
+    const rivalryNotes: Record<string, unknown>[] = [];
+
+    const buildRivalry = (input: {
+      rivalryId: string;
+      title: string;
+      description: string;
+      status: 'active' | 'completed' | 'pending';
+      heat: 'cold' | 'warm' | 'hot';
+      requesterPlayerId: string;
+      rivalPlayerId: string;
+      startedAgoDays?: number;
+      endedAgoDays?: number;
+      moderatedBy?: string;
+    }) => {
+      const createdAt = daysAgo(input.startedAgoDays ?? 14).toISOString();
+      const updatedAt = input.endedAgoDays
+        ? daysAgo(input.endedAgoDays).toISOString()
+        : now;
+      rivalries.push({
+        rivalryId: input.rivalryId,
+        recordType: 'META',
+        title: input.title,
+        description: input.description,
+        status: input.status,
+        heat: input.heat,
+        requestedBy: input.requesterPlayerId,
+        moderatedBy: input.moderatedBy,
+        startedAt: input.status !== 'pending' ? createdAt : undefined,
+        endedAt: input.status === 'completed' ? updatedAt : undefined,
+        createdAt,
+        updatedAt,
+      });
+      rivalries.push({
+        rivalryId: input.rivalryId,
+        recordType: `PARTICIPANT#${input.requesterPlayerId}`,
+        participantId: input.requesterPlayerId,
+        role: 'instigator',
+        addedAt: createdAt,
+      });
+      rivalries.push({
+        rivalryId: input.rivalryId,
+        recordType: `PARTICIPANT#${input.rivalPlayerId}`,
+        participantId: input.rivalPlayerId,
+        role: 'rival',
+        addedAt: createdAt,
+      });
+    };
+
+    const rivalry1Id = uuidv4();
+    const rivalry2Id = uuidv4();
+    const rivalry3Id = uuidv4();
+
+    buildRivalry({
+      rivalryId: rivalry1Id,
+      title: 'Bottom Line vs. The People\'s Champ',
+      description: 'A bitter feud over who really runs WWF — the Texas Rattlesnake or the Brahma Bull.',
+      status: 'active',
+      heat: 'hot',
+      requesterPlayerId: players[0].playerId,
+      rivalPlayerId: players[1].playerId,
+      startedAgoDays: 21,
+      moderatedBy: 'seed-script',
+    });
+
+    buildRivalry({
+      rivalryId: rivalry2Id,
+      title: 'Tribal Chief vs. Cenation Leader',
+      description: 'A historical clash between two top-tier headliners. Closed after the rematch.',
+      status: 'completed',
+      heat: 'cold',
+      requesterPlayerId: players[10].playerId,
+      rivalPlayerId: players[6].playerId,
+      startedAgoDays: 120,
+      endedAgoDays: 30,
+      moderatedBy: 'seed-script',
+    });
+
+    buildRivalry({
+      rivalryId: rivalry3Id,
+      title: 'New feud — pending GM approval',
+      description: 'A brand-new rivalry request awaiting moderation.',
+      status: 'pending',
+      heat: 'warm',
+      requesterPlayerId: players[2].playerId,
+      rivalPlayerId: players[3].playerId,
+      startedAgoDays: 2,
+    });
+
+    // Tag the first 3 completed matches + first 2 promos to rivalry 1.
+    let taggedCompleted = 0;
+    for (const m of matches) {
+      if (m.status === 'completed' && taggedCompleted < 3) {
+        m.rivalryId = rivalry1Id;
+        m.participants = [players[0].playerId, players[1].playerId];
+        m.winners = taggedCompleted === 1 ? [players[1].playerId] : [players[0].playerId];
+        m.losers = taggedCompleted === 1 ? [players[0].playerId] : [players[1].playerId];
+        taggedCompleted++;
+      }
+    }
+    if (promoItems[0]) {
+      promoItems[0].rivalryId = rivalry1Id;
+      promoItems[0].playerId = players[0].playerId;
+    }
+    if (promoItems[1]) {
+      promoItems[1].rivalryId = rivalry1Id;
+      promoItems[1].playerId = players[1].playerId;
+    }
+
+    // Tag 2 more completed matches to rivalry 2.
+    let taggedR2 = 0;
+    for (const m of matches) {
+      if (m.status === 'completed' && !m.rivalryId && taggedR2 < 2) {
+        m.rivalryId = rivalry2Id;
+        m.participants = [players[6].playerId, players[10].playerId];
+        m.winners = taggedR2 === 0 ? [players[10].playerId] : [players[6].playerId];
+        m.losers = taggedR2 === 0 ? [players[6].playerId] : [players[10].playerId];
+        taggedR2++;
+      }
+    }
+    if (promoItems[2]) {
+      promoItems[2].rivalryId = rivalry2Id;
+      promoItems[2].playerId = players[10].playerId;
+    }
+
+    // Rivalry 1 messages (mixed audience).
+    const r1Messages: Array<{ playerId: string; body: string; audience: 'all' | 'participants' | 'admins'; ago: number }> = [
+      { playerId: players[0].playerId, body: 'Best of luck on screen. Off-mic — let\'s talk pacing for the rematch.', audience: 'participants', ago: 14 },
+      { playerId: players[1].playerId, body: 'Agreed. Want to escalate slower or sprint to a ladder match?', audience: 'participants', ago: 13 },
+      { playerId: 'system', body: 'Rivalry approved by seed-script.', audience: 'all', ago: 21 },
+      { playerId: players[0].playerId, body: 'GM heads-up: I want the heel turn at PPV-2, not earlier.', audience: 'admins', ago: 10 },
+      { playerId: players[1].playerId, body: 'OK with that. We need a clean win for me in the next street fight to set it up.', audience: 'participants', ago: 9 },
+      { playerId: players[0].playerId, body: 'Public taunt: see you Monday.', audience: 'all', ago: 5 },
+      { playerId: players[1].playerId, body: 'I\'ll be there. Hope the People are too.', audience: 'all', ago: 5 },
+      { playerId: players[0].playerId, body: '🔒 Behind-the-scenes only: please make sure the ref counts the pin properly this time.', audience: 'admins', ago: 3 },
+    ];
+    for (const m of r1Messages) {
+      rivalryMessages.push({
+        rivalryId: rivalry1Id,
+        messageId: uuidv4(),
+        authorPlayerId: m.playerId,
+        body: m.body,
+        audience: m.audience,
+        createdAt: daysAgo(m.ago).toISOString(),
+      });
+    }
+
+    // Rivalry 2 messages (lighter, all public).
+    const r2Messages: Array<{ playerId: string; body: string; audience: 'all' | 'participants'; ago: number }> = [
+      { playerId: 'system', body: 'Rivalry approved by seed-script.', audience: 'all', ago: 120 },
+      { playerId: players[10].playerId, body: 'Acknowledge me.', audience: 'all', ago: 100 },
+      { playerId: players[6].playerId, body: 'Never.', audience: 'all', ago: 99 },
+      { playerId: players[10].playerId, body: 'Round 2 at the dome.', audience: 'participants', ago: 80 },
+      { playerId: players[6].playerId, body: 'See you there.', audience: 'participants', ago: 79 },
+      { playerId: 'system', body: 'Rivalry concluded by seed-script.', audience: 'all', ago: 30 },
+    ];
+    for (const m of r2Messages) {
+      rivalryMessages.push({
+        rivalryId: rivalry2Id,
+        messageId: uuidv4(),
+        authorPlayerId: m.playerId,
+        body: m.body,
+        audience: m.audience,
+        createdAt: daysAgo(m.ago).toISOString(),
+      });
+    }
+
+    // Rivalry 1 storyline notes + plan notes.
+    const r1Notes: Array<{ noteType: 'storyline' | 'plan'; body: string; visibility: 'all' | 'participants' | 'admins'; authorPlayerId: string; ago: number; scheduledFor?: string; linkedMatchId?: string }> = [
+      { noteType: 'storyline', body: 'Confrontation backstage after the last show — Stone Cold dumped beer on The Rock\'s suit.', visibility: 'all', authorPlayerId: 'seed-script', ago: 14 },
+      { noteType: 'storyline', body: 'The Rock cut a promo calling out Austin\'s family — escalation point.', visibility: 'participants', authorPlayerId: players[1].playerId, ago: 10 },
+      { noteType: 'storyline', body: 'Wrestler suggestion: would love a brawl through the crowd next week.', visibility: 'admins', authorPlayerId: players[0].playerId, ago: 4 },
+      { noteType: 'plan', body: 'Plan A: street fight at next PPV — Stone Cold wins clean.', visibility: 'admins', authorPlayerId: 'seed-script', ago: 7, scheduledFor: daysFromNow(14).toISOString(), linkedMatchId: matches.find((m) => m.status === 'scheduled' && m.rivalryId === undefined)?.matchId as string | undefined },
+      { noteType: 'plan', body: 'Plan B: title match payoff at WrestleMania — depends on outcome of street fight.', visibility: 'admins', authorPlayerId: 'seed-script', ago: 5, scheduledFor: daysFromNow(60).toISOString() },
+    ];
+    for (const n of r1Notes) {
+      const createdAt = daysAgo(n.ago).toISOString();
+      const note: Record<string, unknown> = {
+        rivalryId: rivalry1Id,
+        noteId: uuidv4(),
+        noteType: n.noteType,
+        visibility: n.visibility,
+        body: n.body,
+        authorPlayerId: n.authorPlayerId,
+        createdAt,
+        updatedAt: createdAt,
+      };
+      if (n.scheduledFor) note.scheduledFor = n.scheduledFor;
+      if (n.linkedMatchId) note.linkedMatchId = n.linkedMatchId;
+      rivalryNotes.push(note);
+    }
+
+    // Rivalry 2 storyline notes (no active plans — concluded).
+    const r2Notes: Array<{ body: string; visibility: 'all' | 'participants'; ago: number }> = [
+      { body: 'Started after Reigns headbutted Cena on the post-show — kicked off the program.', visibility: 'all', ago: 120 },
+      { body: 'Wrapped at the Anniversary show — clean pin, mutual respect spot afterward.', visibility: 'all', ago: 30 },
+    ];
+    for (const n of r2Notes) {
+      const createdAt = daysAgo(n.ago).toISOString();
+      rivalryNotes.push({
+        rivalryId: rivalry2Id,
+        noteId: uuidv4(),
+        noteType: 'storyline',
+        visibility: n.visibility,
+        body: n.body,
+        authorPlayerId: 'seed-script',
+        createdAt,
+        updatedAt: createdAt,
+      });
+    }
+
     // ── Import all data via repository layer ───────────────────
     console.log('Importing all seed data via repository layer...');
     const { importAllData } = getRepositories();
@@ -967,6 +1191,9 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       stipulations: [],
       matchTypes: matchTypeItems,
       seasonAwards: [],
+      rivalries,
+      rivalryMessages,
+      rivalryNotes,
     };
 
     const createdCounts = await importAllData(seedData);
