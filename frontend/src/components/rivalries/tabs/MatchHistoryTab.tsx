@@ -50,7 +50,10 @@ export default function MatchHistoryTab({ hydrated, players }: TabProps) {
           return;
         }
         // Legacy fallback — show matches whose participants overlap AND
-        // that fall within the rivalry's lifecycle window.
+        // that fall within the rivalry's lifecycle window. A match
+        // counts as a rivalry match if at least two of its participants
+        // are in the rivalry; outsiders (e.g. a triple-threat involving
+        // the rivals + a third party) are allowed.
         return matchesApi.getAll({ status: 'completed' }, controller.signal).then((all) => {
           const overlap = all.filter((m) => {
             if (!m.participants || m.participants.length < 2) return false;
@@ -58,7 +61,6 @@ export default function MatchHistoryTab({ hydrated, players }: TabProps) {
             let hits = 0;
             for (const pid of m.participants) {
               if (participantSet.has(pid)) hits++;
-              else return false;
             }
             return hits >= 2;
           });

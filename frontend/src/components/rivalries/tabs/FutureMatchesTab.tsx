@@ -49,14 +49,18 @@ export default function FutureMatchesTab({ hydrated, players }: TabProps) {
           if (mounted) setMatches(upcoming);
           return;
         }
-        return matchesApi.getAll({ status: 'scheduled' }, controller.signal).then((scheduled) => {
-          const overlap = scheduled.filter((m) => {
+        // Legacy fallback. Fetch all matches (single call), filter to
+        // upcoming states + lifecycle window + at-least-two rivalry
+        // participants. Outsiders in the match (e.g. a triple-threat
+        // involving the two rivals + a third party) are allowed.
+        return matchesApi.getAll({}, controller.signal).then((everything) => {
+          const overlap = everything.filter((m) => {
+            if (m.status !== 'scheduled' && m.status !== 'open-signups') return false;
             if (!m.participants || m.participants.length < 2) return false;
             if (!withinWindow(m.date)) return false;
             let hits = 0;
             for (const pid of m.participants) {
               if (participantSet.has(pid)) hits++;
-              else return false;
             }
             return hits >= 2;
           });
