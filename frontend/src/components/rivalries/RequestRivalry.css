@@ -1,0 +1,217 @@
+.request-rivalry {
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background: var(--color-bg-elevated, #1a1a1a);
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+}
+
+.request-rivalry__header h1 {
+  margin: 0 0 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.request-rivalry__steps {
+  display: flex;
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  gap: 1.5rem;
+  border-bottom: 1px solid var(--color-border, #2a2a2a);
+}
+
+.request-rivalry__steps li {
+  padding: 0.5rem 0;
+  color: var(--color-text-muted, #888);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 2px solid transparent;
+}
+
+.request-rivalry__steps li.is-active {
+  color: var(--color-accent-gold, #c8a85a);
+  border-bottom-color: var(--color-accent-gold, #c8a85a);
+}
+
+.request-rivalry__steps li.is-complete {
+  color: #cccccc;
+}
+
+.request-rivalry__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.request-rivalry__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted, #888);
+  position: relative;
+}
+
+.request-rivalry__form input,
+.request-rivalry__form textarea {
+  background: #111;
+  border: 1px solid var(--color-border, #2a2a2a);
+  color: #eee;
+  border-radius: 4px;
+  padding: 0.6rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.request-rivalry__count {
+  align-self: flex-end;
+  font-size: 0.7rem;
+  text-transform: none;
+  color: var(--color-text-muted, #888);
+}
+
+.request-rivalry__heat,
+.request-rivalry__plans {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.request-rivalry__heat legend,
+.request-rivalry__plans legend {
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted, #888);
+}
+
+.request-rivalry__heat label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-right: 1rem;
+  font-size: 0.85rem;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #eee;
+  font-weight: 500;
+}
+
+.request-rivalry__autocomplete {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  background: #0d0d0d;
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.request-rivalry__autocomplete li button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: inherit;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  text-transform: none;
+}
+
+.request-rivalry__autocomplete li button:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.request-rivalry__record {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #888);
+}
+
+.request-rivalry__plan-row {
+  display: grid;
+  grid-template-columns: 1fr 150px auto;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.request-rivalry__plan-add {
+  background: transparent;
+  border: 1px dashed var(--color-border, #2a2a2a);
+  color: var(--color-accent-gold, #c8a85a);
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.request-rivalry__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  border: none;
+  margin-top: 0.5rem;
+}
+
+.request-rivalry__cancel,
+.request-rivalry__back {
+  background: transparent;
+  color: inherit;
+  border: 1px solid var(--color-border, #2a2a2a);
+  padding: 0.55rem 1.2rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  font-size: 0.85rem;
+}
+
+.request-rivalry__actions button[type='submit'] {
+  background: var(--color-accent-gold, #c8a85a);
+  color: #111;
+  border: none;
+  padding: 0.55rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.request-rivalry__actions button[type='submit']:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.request-rivalry__error {
+  padding: 0.75rem 1rem;
+  background: rgba(180, 60, 60, 0.18);
+  color: #ff8888;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.request-rivalry__warn {
+  padding: 0.75rem 1rem;
+  background: rgba(200, 168, 90, 0.18);
+  color: var(--color-accent-gold, #c8a85a);
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
