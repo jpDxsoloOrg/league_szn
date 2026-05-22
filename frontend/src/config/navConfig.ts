@@ -162,6 +162,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
       { path: '/admin/videos', i18nKey: 'admin.panel.tabs.videos' },
       { path: '/admin/storyline-requests', i18nKey: 'admin.panel.tabs.storylineRequests' },
       { path: '/admin/promos', i18nKey: 'admin.panel.tabs.promos' },
+      { path: '/admin/rivalries', i18nKey: 'admin.panel.tabs.rivalries' },
     ],
   },
   {
