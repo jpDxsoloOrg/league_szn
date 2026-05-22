@@ -51,8 +51,8 @@ export const MotnToggleButton = ({
         aria-pressed={current}
       >
         {current
-          ? t('match.motn.unmark', '★ Match of the Night — Remove')
-          : t('match.motn.markAs', '☆ Mark as Match of the Night')}
+          ? t('match.motn.unmark', '★ Match of the Night')
+          : t('match.motn.markAs', '☆ Match of the Night')}
       </button>
       {error && (
         <span className="motn-toggle-button__error" role="alert">

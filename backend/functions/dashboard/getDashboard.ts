@@ -2,6 +2,7 @@ import type { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { Player, Championship, ChampionshipHistoryEntry } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
 
 interface DashboardChampion {
@@ -215,7 +216,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // to project, so the FE rating widget renders in the right state without
     // N+1 follow-up calls. Public endpoint — guests get false/null for every
     // row. Wrapped defensively because getAuthContext reads requestContext,
-    // which may be undefined for synthetic test events.
+    // which may be undefined for synthetic test events. Optionally verifies
+    // the bearer token so authenticated callers actually get their state.
+    if (event?.headers && (event.headers.Authorization || event.headers.authorization)) {
+      await authenticate(event).catch(() => undefined);
+    }
     const callerUserId = event?.requestContext
       ? (getAuthContext(event).sub || null)
       : null;

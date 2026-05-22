@@ -42,6 +42,7 @@ export async function recomputeRivalryHeat(
   const ratedInputs = matches.map((m) => ({
     ratingAverage: m.ratingAverage ?? 0,
     ratingsCount: m.ratingsCount ?? 0,
+    matchOfTheNight: m.matchOfTheNight === true,
   }));
   const result = computeRivalryHeat({ matches: ratedInputs });
   const patch = { heatScore: result.heatScore, heat: result.tier };

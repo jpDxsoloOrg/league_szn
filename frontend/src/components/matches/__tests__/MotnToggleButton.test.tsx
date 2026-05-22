@@ -31,21 +31,21 @@ describe('MotnToggleButton', () => {
     setMotnMock.mockReset();
   });
 
-  it('shows the "Mark as" label when matchOfTheNight is false', () => {
+  it('shows the off-state label when matchOfTheNight is false', () => {
     render(
       <MotnToggleButton matchId="m1" matchOfTheNight={false} />
     );
     const btn = screen.getByRole('button');
-    expect(btn).toHaveTextContent('Mark as Match of the Night');
+    expect(btn).toHaveTextContent('☆ Match of the Night');
     expect(btn.getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('shows the "Remove" label when matchOfTheNight is true', () => {
+  it('shows the on-state label when matchOfTheNight is true', () => {
     render(
       <MotnToggleButton matchId="m1" matchOfTheNight={true} />
     );
     const btn = screen.getByRole('button');
-    expect(btn).toHaveTextContent('Match of the Night — Remove');
+    expect(btn).toHaveTextContent('★ Match of the Night');
     expect(btn.getAttribute('aria-pressed')).toBe('true');
     expect(btn.className).toContain('motn-toggle-button--on');
   });
@@ -67,7 +67,7 @@ describe('MotnToggleButton', () => {
     });
 
     await waitFor(() => {
-      expect(btn).toHaveTextContent('Match of the Night — Remove');
+      expect(btn).toHaveTextContent('★ Match of the Night');
     });
 
     expect(onToggled).toHaveBeenCalledWith(true);
@@ -114,7 +114,7 @@ describe('MotnToggleButton', () => {
     });
 
     // State should not have flipped because the API rejected.
-    expect(btn).toHaveTextContent('Mark as Match of the Night');
+    expect(btn).toHaveTextContent('☆ Match of the Night');
     expect(btn.getAttribute('aria-pressed')).toBe('false');
   });
 });

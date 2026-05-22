@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, serverError } from '../../lib/response';
+import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
 import { collectSlotPlayerIds, hydrateMatchSlots } from './hydrateSlots';
 
@@ -137,6 +138,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // RIV-24: surface the calling user's rating per match so the FE rating
     // widget can render in the right state without N+1 follow-up calls.
     // Public endpoint — unauthenticated callers get false/null for every match.
+    // Route has no Lambda authorizer attached, so we optionally verify any
+    // bearer token in-handler; missing/bad token silently falls back to
+    // anonymous.
+    if (event.headers?.Authorization || event.headers?.authorization) {
+      await authenticate(event).catch(() => undefined);
+    }
     const userId = getAuthContext(event).sub || null;
     let userRatingsByMatchId = new Map<string, number>();
     if (userId) {

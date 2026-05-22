@@ -26,6 +26,14 @@ export type RatedMatchInput = {
   ratingAverage: number;
   /** Number of users who rated this match. */
   ratingsCount: number;
+  /**
+   * When true, the GM has flagged this match as Match of the Night;
+   * its contribution to rivalry heat is multiplied by
+   * `MOTN_HEAT_MULTIPLIER` (above-pivot matches get a bigger nudge up,
+   * below-pivot ones a bigger nudge down — a celebrated bad match
+   * still hurts, just more honestly).
+   */
+  matchOfTheNight?: boolean;
 };
 
 /** The five visible heat tiers, coldest → hottest. */
@@ -46,6 +54,13 @@ export const HEAT_MAX_WEIGHT = 5;
 
 /** Bounds for the resulting score; tiers sit inside this range. */
 export const HEAT_SCORE_CAP = 100;
+
+/**
+ * Multiplier applied to a Match-of-the-Night's contribution. A 5★ MOTN
+ * with full weight contributes `2.5 × 5 × 1.5 = 18.75` instead of
+ * `12.5` — enough to push a rivalry tier without dominating the score.
+ */
+export const MOTN_HEAT_MULTIPLIER = 1.5;
 
 /**
  * Inclusive lower bounds for each tier. Ordered hottest → coldest so the
@@ -101,7 +116,8 @@ export function computeRivalryHeat(input: {
   for (const m of input.matches) {
     if (!m || m.ratingsCount <= 0) continue;
     const weight = Math.min(m.ratingsCount, HEAT_MAX_WEIGHT);
-    scoreSum += (m.ratingAverage - HEAT_PIVOT) * weight;
+    const motnMultiplier = m.matchOfTheNight ? MOTN_HEAT_MULTIPLIER : 1;
+    scoreSum += (m.ratingAverage - HEAT_PIVOT) * weight * motnMultiplier;
     ratedMatchCount += 1;
   }
   const heatScore = clamp(scoreSum, -HEAT_SCORE_CAP, HEAT_SCORE_CAP);

@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
 import { hydrateMatchSlots } from '../matches/hydrateSlots';
 
@@ -27,7 +28,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // RIV-24: batch-lookup the caller's ratings for every match in this
     // event up front so we can decorate each enriched match without making
     // per-match follow-up calls. Public endpoint — guests get false/null
-    // on every row.
+    // on every row. The route has no Lambda authorizer attached so we
+    // optionally verify the bearer token ourselves; a failed/missing token
+    // is silently treated as anonymous.
+    if (event.headers?.Authorization || event.headers?.authorization) {
+      await authenticate(event).catch(() => undefined);
+    }
     const callerUserId = getAuthContext(event).sub || null;
     let userRatingsByMatchId = new Map<string, number>();
     if (callerUserId) {
@@ -140,6 +146,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             status: match.status,
             ...(hydratedSlots && { slots: hydratedSlots, slotsRequired: match.slotsRequired }),
             ...(match.starRating != null && { starRating: match.starRating }),
+            ...(match.ratingAverage != null && { ratingAverage: match.ratingAverage }),
+            ratingsCount: typeof match.ratingsCount === 'number' ? match.ratingsCount : 0,
             ...(match.matchOfTheNight != null && { matchOfTheNight: match.matchOfTheNight }),
             userHasRated: userRatingForMatch !== undefined,
             userRating: userRatingForMatch ?? null,

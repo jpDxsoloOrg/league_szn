@@ -1,19 +1,30 @@
 /* RIV-30: GM-only Match of the Night toggle button. */
 
+/* Container in the event detail / match search rows that puts the rating
+   widget on the left and the small MOTN pill on the far right. */
+.match-rate-widget-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75em;
+  flex-wrap: wrap;
+}
+
 .motn-toggle-button-wrapper {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5em;
+  margin-left: auto;
 }
 
 .motn-toggle-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 12px;
+  padding: 2px 8px;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   line-height: 1.2;
@@ -22,6 +33,7 @@
   color: var(--color-accent-gold, #c8a85a);
   border: 1px solid var(--color-accent-gold, #c8a85a);
   transition: background-color 120ms ease, color 120ms ease, opacity 120ms ease;
+  white-space: nowrap;
 }
 
 .motn-toggle-button:hover:not(:disabled) {

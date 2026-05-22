@@ -534,6 +534,7 @@ export default function EventDetail() {
               ? () => handleDeleteMatch(match.matchId)
               : undefined
           }
+          onMatchUpdated={refreshAfterMutation}
         />
         {slots && slots.length > 0 && match.matchData && (
           <MatchSlots
@@ -917,6 +918,9 @@ interface MatchEntryProps {
   onRecordResult?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  /** Invoked after a rating submission or a MOTN toggle so the parent can
+   *  refetch the event and propagate the new aggregate / state. */
+  onMatchUpdated?: () => void;
 }
 
 function MatchEntry({
@@ -927,6 +931,7 @@ function MatchEntry({
   onRecordResult,
   onEdit,
   onDelete,
+  onMatchUpdated,
 }: MatchEntryProps) {
   const { t } = useTranslation();
   const { designation, matchData } = match;
@@ -1021,11 +1026,13 @@ function MatchEntry({
             matchStatus={matchData.status}
             userHasRated={matchData.userHasRated ?? false}
             userRating={matchData.userRating ?? null}
+            onRated={onMatchUpdated}
           />
           {isAdmin && (
             <MotnToggleButton
               matchId={matchData.matchId}
               matchOfTheNight={!!matchData.matchOfTheNight}
+              onToggled={onMatchUpdated}
             />
           )}
         </div>

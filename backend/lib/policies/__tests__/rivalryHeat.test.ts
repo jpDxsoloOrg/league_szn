@@ -4,14 +4,16 @@ import {
   HEAT_PIVOT,
   HEAT_SCORE_CAP,
   HEAT_TIER_CENTRES,
+  MOTN_HEAT_MULTIPLIER,
   computeRivalryHeat,
   scoreToTier,
   type RatedMatchInput,
 } from '../rivalryHeat';
 
-const match = (avg: number, count: number): RatedMatchInput => ({
+const match = (avg: number, count: number, motn = false): RatedMatchInput => ({
   ratingAverage: avg,
   ratingsCount: count,
+  matchOfTheNight: motn,
 });
 
 describe('computeRivalryHeat', () => {
@@ -176,5 +178,56 @@ describe('HEAT_TIER_CENTRES', () => {
     for (const tier of ['frozen', 'cold', 'warm', 'hot', 'scorching'] as const) {
       expect(scoreToTier(HEAT_TIER_CENTRES[tier])).toBe(tier);
     }
+  });
+
+  describe('Match of the Night boost', () => {
+    it('multiplies a MOTN match contribution by MOTN_HEAT_MULTIPLIER', () => {
+      // Same shape both ways — only the MOTN flag differs.
+      const baseline = computeRivalryHeat({ matches: [match(5, 5, false)] });
+      const boosted = computeRivalryHeat({ matches: [match(5, 5, true)] });
+
+      const expectedBaseline = (5 - HEAT_PIVOT) * HEAT_MAX_WEIGHT;
+      const expectedBoosted = expectedBaseline * MOTN_HEAT_MULTIPLIER;
+
+      expect(baseline.heatScore).toBeCloseTo(expectedBaseline);
+      expect(boosted.heatScore).toBeCloseTo(expectedBoosted);
+      expect(boosted.heatScore).toBeGreaterThan(baseline.heatScore);
+    });
+
+    it('amplifies the loss when a MOTN match is below the pivot', () => {
+      // A celebrated bad match should hurt MORE than a regular bad match
+      // — the multiplier doesn't change sign, it scales magnitude.
+      const baseline = computeRivalryHeat({ matches: [match(1, 5, false)] });
+      const boosted = computeRivalryHeat({ matches: [match(1, 5, true)] });
+
+      expect(baseline.heatScore).toBeLessThan(0);
+      expect(boosted.heatScore).toBeLessThan(baseline.heatScore);
+    });
+
+    it('does not affect matches where MOTN is undefined', () => {
+      const result = computeRivalryHeat({
+        matches: [{ ratingAverage: 5, ratingsCount: 5 }],
+      });
+      const expected = (5 - HEAT_PIVOT) * HEAT_MAX_WEIGHT;
+      expect(result.heatScore).toBeCloseTo(expected);
+    });
+
+    it('a single 5★ MOTN with 5 votes lands in `hot`', () => {
+      // Plain version sits at +12.5 → warm. With MOTN: +18.75 → still warm.
+      // Three such matches: 56.25 → hot.
+      const result = computeRivalryHeat({
+        matches: [match(5, 5, true), match(5, 5, true), match(5, 5, true)],
+      });
+      expect(result.heatScore).toBeCloseTo((5 - HEAT_PIVOT) * 5 * MOTN_HEAT_MULTIPLIER * 3);
+      expect(result.tier).toBe('hot');
+    });
+
+    it('MOTN can only push at most HEAT_SCORE_CAP', () => {
+      // Twenty 5★ MOTN matches would mathematically blow well past the cap.
+      const motnMatches = Array.from({ length: 20 }, () => match(5, 50, true));
+      const result = computeRivalryHeat({ matches: motnMatches });
+      expect(result.heatScore).toBe(HEAT_SCORE_CAP);
+      expect(result.tier).toBe('scorching');
+    });
   });
 });

@@ -449,8 +449,8 @@
     "matchOfTheNight": "Match of the Night",
     "matchOfTheNightBadge": "Match of the Night",
     "motn": {
-      "markAs": "☆ Mark as Match of the Night",
-      "unmark": "★ Match of the Night — Remove"
+      "markAs": "☆ Match of the Night",
+      "unmark": "★ Match of the Night"
     },
     "clearRating": "Clear rating",
     "rating": {

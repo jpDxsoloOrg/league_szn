@@ -84,16 +84,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const siblings = await matches.findByRivalryId(match.rivalryId);
       const projected = siblings.map((m) =>
         m.matchId === matchId
-          ? { ratingAverage, ratingsCount: newCount }
+          ? {
+              ratingAverage,
+              ratingsCount: newCount,
+              matchOfTheNight: m.matchOfTheNight === true,
+            }
           : {
               ratingAverage: m.ratingAverage ?? 0,
               ratingsCount: m.ratingsCount ?? 0,
+              matchOfTheNight: m.matchOfTheNight === true,
             },
       );
       // If the current match isn't in the sibling scan (e.g. stale index),
       // make sure we still factor its in-flight aggregate in.
       if (!siblings.some((m) => m.matchId === matchId)) {
-        projected.push({ ratingAverage, ratingsCount: newCount });
+        projected.push({
+          ratingAverage,
+          ratingsCount: newCount,
+          matchOfTheNight: match.matchOfTheNight === true,
+        });
       }
       const heat = computeRivalryHeat({ matches: projected });
       rivalryUpdate = {
