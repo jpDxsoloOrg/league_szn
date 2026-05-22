@@ -5,6 +5,7 @@ import { eventsApi } from '../../services/api';
 import type { MatchDesignation, EventWithMatches } from '../../types/event';
 import Skeleton from '../ui/Skeleton';
 import EmptyState from '../ui/EmptyState';
+import { StarRating } from '../matches/StarRating';
 import './EventResults.css';
 
 const designationLabels: Record<MatchDesignation, string> = {
@@ -191,9 +192,12 @@ export default function EventResults() {
                 {(matchData.starRating != null || matchData.matchOfTheNight) && (
                   <div className="results-match-awards">
                     {matchData.starRating != null && (
-                      <span className="results-match-rating" title={t('match.starRating')}>
-                        {renderStarRating(matchData.starRating)}
-                        <span className="results-match-rating-value">{matchData.starRating}</span>
+                      <span className="results-match-rating">
+                        <StarRating
+                          starRating={matchData.starRating}
+                          ratingsCount={matchData.ratingsCount}
+                          size="sm"
+                        />
                       </span>
                     )}
                     {matchData.matchOfTheNight && (

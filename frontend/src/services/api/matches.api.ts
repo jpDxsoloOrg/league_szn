@@ -1,5 +1,27 @@
 import type { Match, MatchFilters, ScheduleMatchInput } from '../../types';
+import type { RivalryHeat } from '../../types/rivalry';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
+
+/**
+ * Response returned by POST /matches/{matchId}/ratings. Includes the
+ * updated per-match aggregate plus, when the match belongs to an active
+ * rivalry, the recomputed rivalry heat.
+ */
+export interface SubmitRatingResponse {
+  matchId: string;
+  userId: string;
+  rating: number;
+  matchAggregate: {
+    ratingAverage: number;
+    starRating: number;
+    ratingsCount: number;
+  };
+  rivalry: {
+    rivalryId: string;
+    heatScore: number;
+    heat: RivalryHeat;
+  } | null;
+}
 
 export const matchesApi = {
   getAll: async (filters?: MatchFilters, signal?: AbortSignal): Promise<Match[]> => {
@@ -84,6 +106,33 @@ export const matchesApi = {
     return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}/slots/${slotId}`, {
       method: 'PUT',
       body: JSON.stringify(patch),
+    });
+  },
+
+  /**
+   * Submit a 1–5 star rating for a completed match. On success returns
+   * the updated match-level rating aggregate and, if the match belongs
+   * to an active rivalry, the recomputed rivalry heat.
+   *
+   * The backend rejects duplicates with a 409 Conflict — callers should
+   * surface the thrown Error's message ("You have already rated this
+   * match.") to detect and handle that case.
+   */
+  submitRating: async (matchId: string, rating: number): Promise<SubmitRatingResponse> => {
+    return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}/ratings`, {
+      method: 'POST',
+      body: JSON.stringify({ rating }),
+    });
+  },
+
+  /**
+   * Admin/Moderator-only flag toggle for "Match of the Night". Returns
+   * the updated Match. Wrestlers and Fantasy users receive a 403.
+   */
+  setMatchOfTheNight: async (matchId: string, matchOfTheNight: boolean): Promise<Match> => {
+    return fetchWithAuth(`${API_BASE_URL}/matches/${matchId}/motn`, {
+      method: 'PUT',
+      body: JSON.stringify({ matchOfTheNight }),
     });
   },
 };

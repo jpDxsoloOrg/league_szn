@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { playersApi, rivalriesApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Player } from '../../types';
-import type { HydratedRivalry, RivalryHeat, RivalryStatus } from '../../types/rivalry';
+import type { HydratedRivalry, RivalryStatus } from '../../types/rivalry';
 import {
   DEFAULT_WRESTLER_IMAGE,
   applyImageFallback,
@@ -17,17 +17,8 @@ import PromosTab from './tabs/PromosTab';
 import NotesPlansTab from './tabs/NotesPlansTab';
 import MessagesTab from './tabs/MessagesTab';
 import { resolveWrestlerName } from './rivalryUtils';
+import HeatBadge from './HeatBadge';
 import './RivalryDetail.css';
-
-// Five-tier mapping (RIV-21). Proper HeatBadge component lands in
-// RIV-31; this is a temporary visual stand-in.
-const HEAT_FLAMES: Record<RivalryHeat, number> = {
-  frozen: 0,
-  cold: 1,
-  warm: 3,
-  hot: 5,
-  scorching: 5,
-};
 
 const TAB_DEFS: Array<{ id: string; labelKey: string }> = [
   { id: 'overview', labelKey: 'rivalries.detail.overviewTab' },
@@ -150,7 +141,6 @@ export default function RivalryDetail() {
 
   const winsA = (pidA && hydrated.headToHead.winsByParticipant[pidA]) ?? 0;
   const winsB = (pidB && hydrated.headToHead.winsByParticipant[pidB]) ?? 0;
-  const flames = HEAT_FLAMES[r.heat] ?? 1;
 
   return (
     <div className="rivalry-detail">
@@ -240,18 +230,7 @@ export default function RivalryDetail() {
         <div className="rivalry-detail__stat">
           <span className="rivalry-detail__stat-label">Heat</span>
           <span className="rivalry-detail__stat-value">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <span
-                key={i}
-                className={
-                  i < flames
-                    ? 'rivalry-detail__flame rivalry-detail__flame--on'
-                    : 'rivalry-detail__flame'
-                }
-              >
-                🔥
-              </span>
-            ))}
+            <HeatBadge heat={r.heat} heatScore={r.heatScore} size="md" />
           </span>
         </div>
         <div className="rivalry-detail__stat">

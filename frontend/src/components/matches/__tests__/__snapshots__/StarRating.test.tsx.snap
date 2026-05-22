@@ -1,0 +1,292 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`StarRating > snapshots the three size variants > size-lg 1`] = `
+<span
+  class="star-rating star-rating--lg"
+  title="{{rating}} of 5"
+>
+  <span
+    aria-label="{{rating}} of 5"
+    class="star-rating__stars"
+    role="img"
+  >
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--full"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--full"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--full"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--empty"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--empty"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+  </span>
+  <span
+    aria-label="4 votes"
+    class="star-rating__count"
+  >
+    (
+    4
+    )
+  </span>
+</span>
+`;
+
+exports[`StarRating > snapshots the three size variants > size-md 1`] = `
+<span
+  class="star-rating star-rating--md"
+  title="{{rating}} of 5"
+>
+  <span
+    aria-label="{{rating}} of 5"
+    class="star-rating__stars"
+    role="img"
+  >
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--full"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--full"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--full"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--empty"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--empty"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+  </span>
+  <span
+    aria-label="4 votes"
+    class="star-rating__count"
+  >
+    (
+    4
+    )
+  </span>
+</span>
+`;
+
+exports[`StarRating > snapshots the three size variants > size-sm 1`] = `
+<span
+  class="star-rating star-rating--sm"
+  title="{{rating}} of 5"
+>
+  <span
+    aria-label="{{rating}} of 5"
+    class="star-rating__stars"
+    role="img"
+  >
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--full"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--full"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--full"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--empty"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+    <span
+      aria-hidden="true"
+      class="star-rating__star star-rating__star--empty"
+    >
+      <span
+        class="star-rating__star-bg"
+      >
+        ★
+      </span>
+      <span
+        class="star-rating__star-fg"
+      >
+        ★
+      </span>
+    </span>
+  </span>
+  <span
+    aria-label="4 votes"
+    class="star-rating__count"
+  >
+    (
+    4
+    )
+  </span>
+</span>
+`;

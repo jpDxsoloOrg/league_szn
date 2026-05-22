@@ -1,0 +1,91 @@
+/* HeatBadge — RIV-31. Five distinct tiers, three sizes. */
+
+.heat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  border-radius: 999px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.heat-badge__icon {
+  line-height: 1;
+  display: inline-flex;
+}
+
+.heat-badge__label {
+  line-height: 1;
+}
+
+/* ── Size variants ──────────────────────────────────────────────── */
+
+.heat-badge--sm {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.65rem;
+}
+
+.heat-badge--sm .heat-badge__icon {
+  font-size: 0.75rem;
+}
+
+.heat-badge--md {
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+}
+
+.heat-badge--md .heat-badge__icon {
+  font-size: 0.9rem;
+}
+
+.heat-badge--lg {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.9rem;
+}
+
+.heat-badge--lg .heat-badge__icon {
+  font-size: 1.15rem;
+}
+
+/* ── Tier colour variants ───────────────────────────────────────── */
+
+/* Frozen — icy pale blue, deep blue text. */
+.heat-badge--frozen {
+  background: rgba(120, 195, 235, 0.18);
+  color: #c7e6f5;
+  border-color: rgba(120, 195, 235, 0.35);
+}
+
+/* Cold — soft blue / blue-grey. */
+.heat-badge--cold {
+  background: rgba(90, 140, 200, 0.18);
+  color: #aac5e6;
+  border-color: rgba(90, 140, 200, 0.32);
+}
+
+/* Warm — neutral cream / amber. */
+.heat-badge--warm {
+  background: rgba(200, 168, 90, 0.16);
+  color: var(--color-accent-gold, #c8a85a);
+  border-color: rgba(200, 168, 90, 0.32);
+}
+
+/* Hot — orange / amber background, dark red text. */
+.heat-badge--hot {
+  background: rgba(235, 140, 60, 0.22);
+  color: #ffb066;
+  border-color: rgba(235, 140, 60, 0.45);
+}
+
+/* Scorching — crimson gradient, white text. */
+.heat-badge--scorching {
+  background: linear-gradient(135deg, #b30021 0%, #ff3838 100%);
+  color: #ffffff;
+  border-color: #ff5555;
+  box-shadow: 0 0 0 1px rgba(255, 85, 85, 0.35), 0 0 12px rgba(255, 56, 56, 0.25);
+}

@@ -1,0 +1,123 @@
+/* Interactive half-star rating picker (RIV-28). */
+
+.rate-match-widget {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  line-height: 1;
+  font-size: 1em;
+}
+
+.rate-match-widget--guest .rate-match-widget__label,
+.rate-match-widget--rated .rate-match-widget__label {
+  color: var(--color-text-muted, #888888);
+  font-size: 0.9em;
+}
+
+.rate-match-widget__label {
+  color: var(--color-text, inherit);
+  font-size: 0.95em;
+}
+
+.rate-match-widget__thanks {
+  color: var(--color-accent-gold, #c8a85a);
+  font-size: 0.85em;
+}
+
+.rate-match-widget__error {
+  color: var(--color-danger, #d04040);
+  font-size: 0.85em;
+}
+
+.rate-match-widget__stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.rate-match-widget__star {
+  position: relative;
+  display: inline-block;
+  width: 1.5em;
+  height: 1.5em;
+  line-height: 1;
+  font-size: 1.2em;
+}
+
+/* Visual fill layer (decorative). */
+.rate-match-widget__visual {
+  position: absolute;
+  inset: 0;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.rate-match-widget__visual-bg,
+.rate-match-widget__visual-fg {
+  position: absolute;
+  inset: 0;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+}
+
+.rate-match-widget__visual-bg {
+  color: var(--color-text-muted, #888888);
+  opacity: 0.55;
+}
+
+.rate-match-widget__visual-fg {
+  color: var(--color-accent-gold, #c8a85a);
+  overflow: hidden;
+  width: 0;
+}
+
+.rate-match-widget__visual--full .rate-match-widget__visual-fg {
+  width: 1em;
+}
+
+.rate-match-widget__visual--half .rate-match-widget__visual-fg {
+  width: 0.5em;
+}
+
+.rate-match-widget__visual--empty .rate-match-widget__visual-fg {
+  width: 0;
+}
+
+/* Hit-target halves on top of the visual layer. */
+.rate-match-widget__half {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  min-width: 24px; /* mobile-friendly tap target */
+  min-height: 24px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.rate-match-widget__half--left {
+  left: 0;
+}
+
+.rate-match-widget__half--right {
+  left: 50%;
+}
+
+.rate-match-widget__half:focus-visible {
+  outline: 2px solid var(--color-accent-gold, #c8a85a);
+  outline-offset: 1px;
+}
+
+.rate-match-widget__half:disabled {
+  cursor: progress;
+}

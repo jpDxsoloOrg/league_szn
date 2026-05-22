@@ -1,0 +1,81 @@
+/* Read-only star rating display (RIV-29). */
+
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.star-rating--sm {
+  font-size: 0.85em;
+}
+
+.star-rating--md {
+  font-size: 1em;
+}
+
+.star-rating--lg {
+  font-size: 1.25em;
+}
+
+.star-rating__stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  color: var(--color-accent-gold, #c8a85a);
+}
+
+.star-rating__star {
+  position: relative;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+}
+
+.star-rating__star-bg,
+.star-rating__star-fg {
+  position: absolute;
+  inset: 0;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+}
+
+/* The "background" layer is the muted empty-star colour. */
+.star-rating__star-bg {
+  color: var(--color-text-muted, #888888);
+  opacity: 0.55;
+}
+
+/* The "foreground" layer is the gold fill, clipped per fill state. */
+.star-rating__star-fg {
+  color: var(--color-accent-gold, #c8a85a);
+  overflow: hidden;
+}
+
+.star-rating__star--full .star-rating__star-fg {
+  width: 1em;
+}
+
+.star-rating__star--half .star-rating__star-fg {
+  width: 0.5em;
+}
+
+.star-rating__star--empty .star-rating__star-fg {
+  width: 0;
+}
+
+.star-rating__count {
+  color: var(--color-text-muted, #888888);
+  font-size: 0.85em;
+}
+
+.star-rating--empty {
+  color: var(--color-text-muted, #888888);
+  font-style: italic;
+  font-size: 0.9em;
+}

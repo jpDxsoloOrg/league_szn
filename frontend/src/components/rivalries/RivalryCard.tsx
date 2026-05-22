@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { Player } from '../../types';
-import type { Rivalry, RivalryHeat, RivalryStatus } from '../../types/rivalry';
+import type { Rivalry, RivalryStatus } from '../../types/rivalry';
 import {
   DEFAULT_WRESTLER_IMAGE,
   applyImageFallback,
   resolveImageSrc,
 } from '../../constants/imageFallbacks';
 import { resolveWrestlerName } from './rivalryUtils';
+import HeatBadge from './HeatBadge';
 import './RivalryCard.css';
 
 interface RivalryCardProps {
@@ -16,17 +17,6 @@ interface RivalryCardProps {
   matchCount: number;
   lastActivityAt?: string;
 }
-
-// Five-tier mapping (RIV-21). Proper HeatBadge component lands in
-// RIV-31; this is a temporary visual stand-in so frozen and scorching
-// still render.
-const HEAT_FLAMES: Record<RivalryHeat, number> = {
-  frozen: 0,
-  cold: 1,
-  warm: 3,
-  hot: 5,
-  scorching: 5,
-};
 
 const STATUS_LABEL_KEY: Record<RivalryStatus, string> = {
   pending: 'rivalries.status.pending',
@@ -43,7 +33,6 @@ export default function RivalryCard({
   lastActivityAt,
 }: RivalryCardProps) {
   const { t } = useTranslation();
-  const flames = HEAT_FLAMES[rivalry.heat] ?? 1;
 
   const lookup = new Map(participants.map((p) => [p.playerId, p] as const));
   const partA = rivalry.participants[0];
@@ -89,21 +78,7 @@ export default function RivalryCard({
         >
           {t(STATUS_LABEL_KEY[rivalry.status])}
         </span>
-        <span className="rivalry-card__heat" aria-label={`heat: ${rivalry.heat}`}>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <span
-              key={i}
-              className={
-                i < flames
-                  ? 'rivalry-card__flame rivalry-card__flame--on'
-                  : 'rivalry-card__flame'
-              }
-              aria-hidden="true"
-            >
-              🔥
-            </span>
-          ))}
-        </span>
+        <HeatBadge heat={rivalry.heat} heatScore={rivalry.heatScore} size="sm" />
       </div>
 
       <div className="rivalry-card__footer">

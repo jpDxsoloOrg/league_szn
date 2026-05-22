@@ -6,6 +6,10 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import type { Match, MatchFilters, Player, Season, Championship, Stipulation, MatchType } from '../types';
 import Skeleton from './ui/Skeleton';
 import EmptyState from './ui/EmptyState';
+import { StarRating } from './matches/StarRating';
+import { RateMatchWidget } from './matches/RateMatchWidget';
+import { MotnToggleButton } from './matches/MotnToggleButton';
+import { useAuth } from '../contexts/AuthContext';
 import './MatchSearch.css';
 
 const FILTER_KEYS: (keyof MatchFilters)[] = [
@@ -37,6 +41,7 @@ function hasActiveFilters(filters: MatchFilters): boolean {
 
 export default function MatchSearch() {
   const { t } = useTranslation();
+  const { isAdminOrModerator } = useAuth();
   useDocumentTitle(t('matchSearch.title'));
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -356,15 +361,36 @@ export default function MatchSearch() {
                       {seasonMap.get(match.seasonId)!.name}
                     </span>
                   )}
-                  {match.starRating != null && match.starRating > 0 && (
+                  {match.ratingsCount != null && match.ratingsCount > 0 && (
                     <span className="match-tag star-tag">
-                      {'★'.repeat(match.starRating)}
+                      <StarRating
+                        starRating={match.starRating}
+                        ratingsCount={match.ratingsCount}
+                        size="sm"
+                      />
                     </span>
                   )}
                   {match.matchOfTheNight && (
                     <span className="match-tag motn-tag">{t('match.matchOfTheNight')}</span>
                   )}
                 </div>
+
+                {match.status === 'completed' && (
+                  <div className="match-rate-widget-wrap">
+                    <RateMatchWidget
+                      matchId={match.matchId}
+                      matchStatus={match.status}
+                      userHasRated={match.userHasRated}
+                      userRating={match.userRating}
+                    />
+                    {isAdminOrModerator && (
+                      <MotnToggleButton
+                        matchId={match.matchId}
+                        matchOfTheNight={!!match.matchOfTheNight}
+                      />
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}

@@ -212,6 +212,7 @@ export interface DashboardMatch {
   championshipName?: string;
   championshipImageUrl?: string;
   starRating?: number;
+  ratingsCount?: number;
   matchOfTheNight?: boolean;
   winnerName: string;
   winnerImageUrl?: string;

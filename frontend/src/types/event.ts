@@ -54,6 +54,11 @@ export interface EnrichedMatchData {
   slots?: HydratedMatchSlot[];
   slotsRequired?: number;
   starRating?: number;
+  ratingsCount?: number;
+  /** True if the calling user has already rated this match (RIV-24+). */
+  userHasRated?: boolean;
+  /** This user's rating for the match, if any (RIV-24+). */
+  userRating?: number | null;
   matchOfTheNight?: boolean;
 }
 

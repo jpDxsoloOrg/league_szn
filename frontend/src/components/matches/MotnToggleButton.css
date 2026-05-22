@@ -1,0 +1,54 @@
+/* RIV-30: GM-only Match of the Night toggle button. */
+
+.motn-toggle-button-wrapper {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5em;
+}
+
+.motn-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  cursor: pointer;
+  background: transparent;
+  color: var(--color-accent-gold, #c8a85a);
+  border: 1px solid var(--color-accent-gold, #c8a85a);
+  transition: background-color 120ms ease, color 120ms ease, opacity 120ms ease;
+}
+
+.motn-toggle-button:hover:not(:disabled) {
+  background: rgba(200, 168, 90, 0.12);
+}
+
+.motn-toggle-button:focus-visible {
+  outline: 2px solid var(--color-accent-gold, #c8a85a);
+  outline-offset: 2px;
+}
+
+.motn-toggle-button--on {
+  background: linear-gradient(135deg, #d4af37, #c8a85a);
+  color: #1a1a1a;
+  border-color: #c8a85a;
+}
+
+.motn-toggle-button--on:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e0bd48, #d4af37);
+}
+
+.motn-toggle-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.motn-toggle-button__error {
+  color: var(--color-danger, #d04040);
+  font-size: 0.85em;
+}

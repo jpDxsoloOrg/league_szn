@@ -26,7 +26,6 @@ vi.mock('react-i18next', () => ({
         'recordResult.error': 'Failed to record result',
         'match.starRating': 'Star Rating',
         'match.clearRating': 'Clear',
-        'match.matchOfTheNight': 'Match of the Night',
         'common.unknown': 'Unknown',
       };
       return translations[key] || key;
