@@ -9,6 +9,8 @@ import {
   type ExportData,
   type SeedImportPayload,
 } from './dataTransferConfig';
+import { HEAT_TIER_CENTRES, type HeatTier } from '../../lib/policies/rivalryHeat';
+import { roundToHalfStar } from '../../lib/utils/halfStar';
 
 /** Valid seed module IDs for pick-and-choose (issue 118). When modular seed exists, only these will be run when requested. */
 export const SEED_MODULE_IDS = [
@@ -1049,10 +1051,12 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       startedAgoDays: 2,
     });
 
-    // Tag the first 3 completed matches + first 2 promos to rivalry 1.
+    // Tag the first 5 completed matches + first 2 promos to rivalry 1
+    // (scorching tier — five matches is the minimum to push heatScore past
+    // the +60 scorching threshold given the weight cap).
     let taggedCompleted = 0;
     for (const m of matches) {
-      if (m.status === 'completed' && taggedCompleted < 3) {
+      if (m.status === 'completed' && taggedCompleted < 5) {
         m.rivalryId = rivalry1Id;
         m.participants = [players[0].playerId, players[1].playerId];
         m.winners = taggedCompleted === 1 ? [players[1].playerId] : [players[0].playerId];
@@ -1069,10 +1073,10 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       promoItems[1].playerId = players[1].playerId;
     }
 
-    // Tag 2 more completed matches to rivalry 2.
+    // Tag the remaining 3 completed matches to rivalry 2 (cold tier).
     let taggedR2 = 0;
     for (const m of matches) {
-      if (m.status === 'completed' && !m.rivalryId && taggedR2 < 2) {
+      if (m.status === 'completed' && !m.rivalryId && taggedR2 < 3) {
         m.rivalryId = rivalry2Id;
         m.participants = [players[6].playerId, players[10].playerId];
         m.winners = taggedR2 === 0 ? [players[10].playerId] : [players[6].playerId];
@@ -1083,6 +1087,85 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     if (promoItems[2]) {
       promoItems[2].rivalryId = rivalry2Id;
       promoItems[2].playerId = players[10].playerId;
+    }
+
+    // ── Match ratings + heat seed (RIV-33) ─────────────────────
+    // Stamp rating aggregates directly on the completed matches and
+    // emit individual MatchRatings rows using synthetic seed-rater
+    // user IDs. Rivalry heat is set to the centre-of-tier value so the
+    // recompute endpoint converges on the same answer.
+    //
+    //   rivalry 1 (active)    → scorching: avg ≈ 5.0, 8 raters per match
+    //   rivalry 2 (completed) → cold:      avg ≈ 1.0, 6 raters per match
+    //   rivalry 3 (pending)   → warm:      no rated matches
+    //
+    // Synthetic raters (`seed-rater-1` … `seed-rater-8`) are the
+    // shape `submitRating` expects but are not Cognito users — they
+    // exist only so the MatchRatings table has realistic populations
+    // for the dashboard "already rated" badge, BestMatches stats, and
+    // visual smoke testing.
+    console.log('Creating match ratings + heat aggregates...');
+    const matchRatings: Record<string, unknown>[] = [];
+    const ratersFor = (n: number): string[] =>
+      Array.from({ length: n }, (_, i) => `seed-rater-${i + 1}`);
+
+    const stampRating = (
+      match: Record<string, unknown>,
+      stars: number[],
+      markMotn = false,
+    ): void => {
+      if (!stars.length) return;
+      const sum = stars.reduce((s, v) => s + v, 0);
+      const ratingAverage = sum / stars.length;
+      match.ratingAverage = ratingAverage;
+      match.starRating = roundToHalfStar(ratingAverage);
+      match.ratingsCount = stars.length;
+      if (markMotn) match.matchOfTheNight = true;
+      const raters = ratersFor(stars.length);
+      const matchId = match.matchId as string;
+      const matchDate = match.date as string;
+      for (let i = 0; i < stars.length; i++) {
+        matchRatings.push({
+          matchId,
+          userId: raters[i],
+          rating: stars[i],
+          // Stagger createdAt so they are deterministically ordered.
+          createdAt: new Date(new Date(matchDate).getTime() + (i + 1) * 60_000).toISOString(),
+        });
+      }
+    };
+
+    // Rivalry 1: 5 matches, each averaging 5.0 stars with 8 raters →
+    // contribution per match = (5.0 - 2.5) * 5 (capped weight) = 12.5
+    // total = 62.5 → scorching.
+    const r1Matches = matches.filter((m) => m.rivalryId === rivalry1Id);
+    for (let i = 0; i < r1Matches.length; i++) {
+      // Mix in one 4.5 to keep starRating realistic but still scorching.
+      const stars = i === 0 ? [5, 5, 5, 5, 5, 5, 5, 5] : [5, 5, 5, 5, 4.5, 5, 5, 5];
+      stampRating(r1Matches[i], stars, i === 0); // First match also MOTN.
+    }
+
+    // Rivalry 2: 3 matches averaging ~1.0 with 6 raters →
+    // contribution per match = (1.0 - 2.5) * 5 = -7.5 → total -22.5 → cold.
+    const r2Matches = matches.filter((m) => m.rivalryId === rivalry2Id);
+    for (const m of r2Matches) {
+      stampRating(m, [1, 1, 0.5, 1.5, 1, 1]);
+    }
+
+    // Set the heat on rivalries to the centre-of-tier value (matches what
+    // recomputeRivalryHeat would produce for the averages above).
+    const rivalryHeatById: Record<string, HeatTier> = {
+      [rivalry1Id]: 'scorching',
+      [rivalry2Id]: 'cold',
+      [rivalry3Id]: 'warm',
+    };
+    for (const row of rivalries) {
+      if (row.recordType !== 'META') continue;
+      const id = row.rivalryId as string;
+      const tier = rivalryHeatById[id];
+      if (!tier) continue;
+      row.heat = tier;
+      row.heatScore = HEAT_TIER_CENTRES[tier];
     }
 
     // Rivalry 1 messages (mixed audience).
@@ -1196,6 +1279,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       rivalries,
       rivalryMessages,
       rivalryNotes,
+      matchRatings,
     };
 
     const createdCounts = await importAllData(seedData);

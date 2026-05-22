@@ -353,7 +353,9 @@
       "adminDataManagement": "Admin: Data Management",
       "adminWorkflow": "Admin: Typical Workflow",
       "rivalries": "Rivalries",
-      "adminRivalries": "Admin: Rivalries"
+      "adminRivalries": "Admin: Rivalries",
+      "rateMatches": "Rate Matches",
+      "rivalryHeatExplained": "How Rivalry Heat Works"
     }
   },
   "languageSwitcher": {

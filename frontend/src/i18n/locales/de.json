@@ -353,7 +353,9 @@
       "adminDataManagement": "Admin: Datenverwaltung",
       "adminWorkflow": "Admin: Typischer Wochenablauf",
       "rivalries": "Rivalitäten",
-      "adminRivalries": "Admin: Rivalitäten"
+      "adminRivalries": "Admin: Rivalitäten",
+      "rateMatches": "Kämpfe bewerten",
+      "rivalryHeatExplained": "Wie Rivalitäts-Hitze funktioniert"
     }
   },
   "languageSwitcher": {
@@ -447,21 +449,21 @@
     "matchOfTheNight": "Match of the Night",
     "matchOfTheNightBadge": "Match of the Night",
     "motn": {
-      "markAs": "☆ Mark as Match of the Night",
-      "unmark": "★ Match of the Night — Remove"
+      "markAs": "☆ Als Match of the Night markieren",
+      "unmark": "★ Match of the Night entfernen"
     },
     "clearRating": "Bewertung löschen",
     "rating": {
-      "notYetRated": "Not yet rated",
-      "outOfFive": "{{rating}} of 5",
-      "votesCount_one": "{{count}} vote",
-      "votesCount_other": "{{count}} votes",
-      "rateThisMatch": "Rate this match",
-      "youRated": "You rated this {{rating}}",
-      "signInToRate": "Sign in to rate this match",
-      "thanksForRating": "Thanks for rating!",
-      "submitError": "Could not submit rating. Try again.",
-      "giveStars": "{{value}} stars"
+      "notYetRated": "Noch nicht bewertet",
+      "outOfFive": "{{rating}} von 5",
+      "votesCount_one": "{{count}} Stimme",
+      "votesCount_other": "{{count}} Stimmen",
+      "rateThisMatch": "Diesen Kampf bewerten",
+      "youRated": "Du hast {{rating}} gegeben",
+      "signInToRate": "Anmelden, um diesen Kampf zu bewerten",
+      "thanksForRating": "Danke für die Bewertung!",
+      "submitError": "Bewertung konnte nicht gesendet werden. Bitte erneut versuchen.",
+      "giveStars": "{{value}} Sterne"
     }
   },
   "matches": {
@@ -1172,15 +1174,15 @@
   },
   "rivalry": {
     "heat": {
-      "frozen": "Frozen",
-      "cold": "Cold",
+      "frozen": "Eiskalt",
+      "cold": "Kalt",
       "warm": "Warm",
-      "hot": "Hot",
-      "scorching": "Scorching",
-      "score": "Heat score: {{score}}",
-      "recomputeButton": "Recompute from ratings",
-      "recomputeHint": "Will be recomputed when matches are rated",
-      "recomputeError": "Could not recompute heat. Try again."
+      "hot": "Heiß",
+      "scorching": "Glühend heiß",
+      "score": "Hitze-Wert: {{score}}",
+      "recomputeButton": "Aus Bewertungen neu berechnen",
+      "recomputeHint": "Wird neu berechnet, wenn Kämpfe bewertet werden",
+      "recomputeError": "Hitze konnte nicht neu berechnet werden. Bitte erneut versuchen."
     }
   },
   "events": {

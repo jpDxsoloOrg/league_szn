@@ -57,6 +57,12 @@ Conclude a rivalry when the storyline has had its payoff match and you don't int
 
 Wrestlers get a notification when you conclude. The conclude modal accepts an optional closing note — use this to record "Decided at WrestleMania 40 — Cena retires Punk" so the archive isn't faceless.
 
+## Heat is Driven by Match Ratings
+
+Each rivalry has a **heat** tier (Frozen → Cold → Warm → Hot → Scorching) that lives on the rivalry card and detail page. As of Wave 3, heat is no longer set by hand: it is recomputed automatically from user star ratings of the rivalry's matches.
+
+You can still manually override a rivalry's heat from the admin row, but the next rating submitted against any of its matches will overwrite your override. Use the **Recompute from ratings** button to force a fresh calculation immediately. See [How rivalry heat works](/guide/wiki/rivalry-heat-explained) for the full formula and tier thresholds.
+
 ## Bulk Cleanup
 
 The **Clear resolved** button hard-deletes every rivalry with status `completed`, `rejected`, or `cancelled`. Use this when the archive has accumulated test records or noise. The confirmation modal shows the exact count.

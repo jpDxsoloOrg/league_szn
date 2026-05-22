@@ -104,6 +104,52 @@ describe('seedData', () => {
     expect(importData.players).toHaveLength(12);
   });
 
+  it('seeds match ratings + rivalry heat aggregates (RIV-33)', async () => {
+    mockImportAllData.mockResolvedValue({ players: 12, matches: 12, matchRatings: 48 });
+
+    await seedData(makeEvent(), ctx, cb);
+
+    const importData = mockImportAllData.mock.calls[0][0];
+
+    // matchRatings dataset is present and populated.
+    expect(Array.isArray(importData.matchRatings)).toBe(true);
+    expect(importData.matchRatings.length).toBeGreaterThan(20);
+
+    // Every rating row carries the required composite-key fields.
+    for (const r of importData.matchRatings) {
+      expect(typeof r.matchId).toBe('string');
+      expect(typeof r.userId).toBe('string');
+      expect(typeof r.rating).toBe('number');
+      expect(r.rating).toBeGreaterThanOrEqual(0.5);
+      expect(r.rating).toBeLessThanOrEqual(5);
+    }
+
+    // Match aggregates are stamped on completed matches that received ratings.
+    const ratedMatches = importData.matches.filter(
+      (m: Record<string, unknown>) => typeof m.ratingsCount === 'number' && (m.ratingsCount as number) > 0,
+    );
+    expect(ratedMatches.length).toBe(8); // 5 (rivalry 1) + 3 (rivalry 2).
+    for (const m of ratedMatches) {
+      expect(typeof m.ratingAverage).toBe('number');
+      expect(typeof m.starRating).toBe('number');
+    }
+
+    // Rivalry META rows carry tier-aligned heatScore/heat.
+    const rivalryMetas = importData.rivalries.filter(
+      (r: Record<string, unknown>) => r.recordType === 'META',
+    );
+    const tiers = rivalryMetas.map((r: Record<string, unknown>) => r.heat);
+    expect(tiers).toContain('scorching');
+    expect(tiers).toContain('cold');
+    expect(tiers).toContain('warm');
+    for (const meta of rivalryMetas) {
+      expect(typeof meta.heatScore).toBe('number');
+    }
+
+    // At least one Match of the Night is flagged for the scorching rivalry.
+    expect(ratedMatches.some((m: Record<string, unknown>) => m.matchOfTheNight === true)).toBe(true);
+  });
+
   it('returns 500 when importAllData throws', async () => {
     mockImportAllData.mockRejectedValue(new Error('write error'));
 

@@ -48,6 +48,10 @@ const ALL_TABLES: TableConfig[] = [
   { key: 'rivalries', tableName: TableNames.RIVALRIES, partitionKey: 'rivalryId', sortKey: 'recordType' },
   { key: 'rivalryMessages', tableName: TableNames.RIVALRY_MESSAGES, partitionKey: 'rivalryId', sortKey: 'messageId' },
   { key: 'rivalryNotes', tableName: TableNames.RIVALRY_NOTES, partitionKey: 'rivalryId', sortKey: 'noteId' },
+  // MatchRatings (RIV-20): one row per (matchId, userId) — included here so
+  // re-seeds clear stale ratings and the seed handler can ferry rows in via
+  // importAllData. Aggregates live on the matches table (RIV-22).
+  { key: 'matchRatings', tableName: TableNames.MATCH_RATINGS, partitionKey: 'matchId', sortKey: 'userId' },
 ];
 
 async function deleteAllItemsFromTable(
