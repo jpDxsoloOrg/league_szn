@@ -39,7 +39,7 @@ const ACTIVITY_PAGE_SIZE = 25;
 
 export default function RivalryHub() {
   const { t } = useTranslation();
-  const { isAuthenticated, playerId } = useAuth();
+  const { isAuthenticated, playerId, isAdminOrModerator } = useAuth();
 
   const [activeTab, setActiveTab] = useState<TabId>('active');
   const [activeChip, setActiveChip] = useState<ChipId>('all');
@@ -202,9 +202,11 @@ export default function RivalryHub() {
               </select>
             </label>
           )}
-          <Link to="/rivalries/new" className="rivalry-hub__cta">
-            {t('rivalries.hub.requestCta')}
-          </Link>
+          {isAdminOrModerator && (
+            <Link to="/rivalries/new" className="rivalry-hub__cta">
+              {t('rivalries.hub.requestCta')}
+            </Link>
+          )}
         </div>
       </header>
 

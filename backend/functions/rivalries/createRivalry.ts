@@ -23,8 +23,10 @@ const VALID_VARIANT: ReadonlyArray<WrestlerVariant> = ['primary', 'alternate'];
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const auth = getAuthContext(event);
-    if (!hasRole(auth, 'Wrestler')) {
-      return forbidden('Only wrestlers can request a rivalry');
+    // Initial rollout: only GMs may open a rivalry. The UI hides the
+    // CTA for everyone else; this is the matching back-end gate.
+    if (!hasRole(auth, 'Admin', 'Moderator')) {
+      return forbidden('Only GMs can open a rivalry');
     }
 
     const parsed = parseBody<CreateRivalryBody>(event);
@@ -61,22 +63,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (p.wrestlerVariant !== undefined && !VALID_VARIANT.includes(p.wrestlerVariant)) {
         return badRequest(`wrestlerVariant must be one of: ${VALID_VARIANT.join(', ')}`);
       }
+      // First participant in the payload becomes the instigator by
+      // default; explicit roles still win.
+      const defaultRole: RivalryParticipantRole =
+        normalizedParticipants.length === 0 ? 'instigator' : 'rival';
       normalizedParticipants.push({
         playerId: p.playerId,
-        role: p.role ?? 'rival',
+        role: p.role ?? defaultRole,
         wrestlerVariant: p.wrestlerVariant,
       });
     }
 
     const { roster: { players }, rivalries } = getRepositories();
-
-    const requester = await players.findByUserId(auth.sub);
-    if (!requester) {
-      return badRequest('No player profile linked to your account');
-    }
-    if (!seen.has(requester.playerId)) {
-      return badRequest('Requester must be one of the participants');
-    }
 
     // Verify every participant exists.
     const playerLookups = await Promise.all(
@@ -87,12 +85,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest(`Participant not found: ${missing.playerId}`);
     }
 
-    // Duplicate-active check (read-then-write; race-window noted in ticket).
-    const existingForRequester = await rivalries.listByParticipant(requester.playerId, {
-      limit: 200,
-    });
+    // Duplicate-active check — keyed off the first participant so the
+    // GM gets a 409 if either of these two wrestlers is already in
+    // another pending/active rivalry with the same opponent.
+    const probeId = normalizedParticipants[0]?.playerId;
+    if (!probeId) {
+      return badRequest('At least one participant is required');
+    }
+    const existingForProbe = await rivalries.listByParticipant(probeId, { limit: 200 });
     const wantedSet = new Set(normalizedParticipants.map((p) => p.playerId));
-    const duplicate = existingForRequester.items.find((r) => {
+    const duplicate = existingForProbe.items.find((r) => {
       if (r.status !== 'pending' && r.status !== 'active') return false;
       if (r.participants.length !== wantedSet.size) return false;
       return r.participants.every((p) => wantedSet.has(p.playerId));
@@ -103,23 +105,43 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       );
     }
 
-    // Mark the requester as the instigator unless they explicitly set their own role.
+    // Pick the recorded requester: the GM's linked player if they have
+    // one, otherwise the first participant. The bookerName field will
+    // hold the GM's display identity separately.
+    const callerPlayer = auth.sub
+      ? await players.findByUserId(auth.sub).catch(() => null)
+      : null;
+    const requestedBy = callerPlayer?.playerId ?? normalizedParticipants[0].playerId;
+    const bookerName = auth.username || auth.email?.split('@')[0] || '';
+
     const rivalry = await rivalries.create({
       title: title.trim(),
       description: description?.trim() || undefined,
       heat: heat ?? 'warm',
-      requestedBy: requester.playerId,
+      requestedBy,
       participants: normalizedParticipants.map((p) => ({
         playerId: p.playerId,
-        role:
-          p.playerId === requester.playerId && participants.find(
-            (orig) => orig.playerId === requester.playerId,
-          )?.role === undefined
-            ? 'instigator'
-            : p.role,
+        role: p.role,
         wrestlerVariant: p.wrestlerVariant,
       })),
     });
+
+    // Admin-created rivalries skip the pending queue — the GM is already
+    // the moderator. Flip to active + tag the booker. Best-effort; the
+    // rivalry exists either way.
+    if (rivalry.status === 'pending') {
+      try {
+        const activated = await rivalries.update(rivalry.rivalryId, {
+          status: 'active',
+          startedAt: new Date().toISOString(),
+          moderatedBy: bookerName || 'admin',
+          bookerName: bookerName || undefined,
+        });
+        return created(activated);
+      } catch {
+        // Fall through with the pending record.
+      }
+    }
 
     return created(rivalry);
   } catch (err) {

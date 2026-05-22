@@ -217,7 +217,7 @@ function AppLayout() {
             } />
             <Route path="/rivalries/new" element={
               <FeatureRoute feature="rivalries">
-                <ProtectedRoute requiredRole="Wrestler">
+                <ProtectedRoute requiredRole="Moderator">
                   <RequestRivalry />
                 </ProtectedRoute>
               </FeatureRoute>

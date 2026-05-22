@@ -116,7 +116,18 @@ describe('RivalryHub', () => {
     expect(mockList).toHaveBeenCalledTimes(callsBefore);
   });
 
-  it('renders the Request a Rivalry CTA pointing to /rivalries/new', async () => {
+  it('hides the Request a Rivalry CTA from non-GM viewers', async () => {
+    setup();
+    await waitFor(() => expect(mockList).toHaveBeenCalled());
+    expect(screen.queryByText('rivalries.hub.requestCta')).toBeNull();
+  });
+
+  it('renders the CTA for GMs and points it at /rivalries/new', async () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true,
+      playerId: 'gm-player',
+      isAdminOrModerator: true,
+    });
     setup();
     const cta = await screen.findByText('rivalries.hub.requestCta');
     expect(cta.closest('a')?.getAttribute('href')).toBe('/rivalries/new');

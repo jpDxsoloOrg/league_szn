@@ -21,21 +21,29 @@ const MIN_PITCH = 100;
 const MAX_TITLE = 80;
 const MAX_PLANS = 5;
 
+interface WrestlerPick {
+  playerId: string | null;
+  query: string;
+  variant: WrestlerVariant;
+}
+
+const EMPTY_PICK: WrestlerPick = { playerId: null, query: '', variant: 'primary' };
+
 /**
- * Two-step "Pitch a Rivalry" form. Wraps `rivalriesApi.create` plus
- * optional sequential `notes.upsert` calls for proposed plan rows.
- * State lives in this component — no router-driven step transitions
- * because the form is small enough that internal state is cheaper.
+ * Admin-only two-step rivalry form. The admin picks any two
+ * wrestlers (they're free to include themselves but aren't required
+ * to). The backend createRivalry auto-flips an admin-created rivalry
+ * to active + records the GM as the booker, so this UI is the
+ * one-and-done entry point.
  */
 export default function RequestRivalry() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { playerId } = useAuth();
+  const { isAdminOrModerator } = useAuth();
 
   const [step, setStep] = useState<1 | 2>(1);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [opponentQuery, setOpponentQuery] = useState('');
-  const [opponentId, setOpponentId] = useState<string | null>(null);
+  const [picks, setPicks] = useState<[WrestlerPick, WrestlerPick]>([EMPTY_PICK, EMPTY_PICK]);
   const [title, setTitle] = useState('');
   const [heat, setHeat] = useState<RivalryHeat>('warm');
   const [description, setDescription] = useState('');
@@ -44,11 +52,6 @@ export default function RequestRivalry() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [planFailures, setPlanFailures] = useState(0);
-  const [myVariant, setMyVariant] = useState<WrestlerVariant>('primary');
-  const [opponentVariant, setOpponentVariant] = useState<WrestlerVariant>('primary');
-
-  const selfPlayer = players.find((p) => p.playerId === playerId) ?? null;
-  const opponentPlayer = players.find((p) => p.playerId === opponentId) ?? null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -63,26 +66,49 @@ export default function RequestRivalry() {
     };
   }, []);
 
-  const opponentOptions = useMemo(() => {
-    const q = opponentQuery.toLowerCase().trim();
+  const playerLookup = useMemo(
+    () => new Map(players.map((p) => [p.playerId, p] as const)),
+    [players],
+  );
+
+  function updatePick(idx: 0 | 1, partial: Partial<WrestlerPick>): void {
+    setPicks((prev) => {
+      const next: [WrestlerPick, WrestlerPick] = [prev[0], prev[1]];
+      next[idx] = { ...next[idx], ...partial };
+      return next;
+    });
+  }
+
+  function selectPick(idx: 0 | 1, p: Player): void {
+    setPicks((prev) => {
+      const next: [WrestlerPick, WrestlerPick] = [prev[0], prev[1]];
+      next[idx] = { playerId: p.playerId, query: '', variant: 'primary' };
+      return next;
+    });
+  }
+
+  function searchOptions(idx: 0 | 1): Player[] {
+    const q = picks[idx].query.toLowerCase().trim();
+    // Exclude only the OTHER pick (so the same wrestler can't appear on both
+    // sides). The caller themselves is fair game — admin may be one of them.
+    const otherId = picks[idx === 0 ? 1 : 0].playerId;
     return players
-      .filter((p) => p.playerId !== playerId)
+      .filter((p) => p.playerId !== otherId)
       .filter((p) =>
         !q
           ? true
           : (p.name?.toLowerCase().includes(q) || p.currentWrestler?.toLowerCase().includes(q)),
       )
       .slice(0, 8);
-  }, [players, opponentQuery, playerId]);
+  }
 
-  const opponentName = (id: string | null) => {
-    if (!id) return '';
-    const p = players.find((q) => q.playerId === id);
-    return p?.currentWrestler ?? p?.name ?? '';
-  };
+  const picked = (idx: 0 | 1): Player | null =>
+    picks[idx].playerId ? playerLookup.get(picks[idx].playerId!) ?? null : null;
 
   const step1Valid =
-    !!opponentId &&
+    !!picks[0].playerId &&
+    !!picks[1].playerId &&
+    picks[0].playerId !== picks[1].playerId &&
     title.trim().length > 0 &&
     title.trim().length <= MAX_TITLE &&
     description.length >= MIN_DESCRIPTION &&
@@ -91,7 +117,9 @@ export default function RequestRivalry() {
   const step2Valid = pitch.length >= MIN_PITCH && pitch.length <= MAX_PITCH;
 
   async function submit() {
-    if (!step1Valid || !step2Valid || !opponentId || !playerId) return;
+    if (!step1Valid || !step2Valid) return;
+    const [p0, p1] = picks;
+    if (!p0.playerId || !p1.playerId) return;
     setSubmitting(true);
     setError(null);
     setPlanFailures(0);
@@ -100,14 +128,13 @@ export default function RequestRivalry() {
         title: title.trim(),
         description: pitch.trim() || description.trim(),
         heat,
-        requestedBy: playerId,
+        requestedBy: p0.playerId,
         participants: [
-          { playerId, role: 'instigator', wrestlerVariant: myVariant },
-          { playerId: opponentId, role: 'rival', wrestlerVariant: opponentVariant },
+          { playerId: p0.playerId, role: 'instigator', wrestlerVariant: p0.variant },
+          { playerId: p1.playerId, role: 'rival', wrestlerVariant: p1.variant },
         ],
       });
 
-      // Best-effort sequential plan creation; failures flagged, not rolled back.
       let failures = 0;
       for (const plan of plans) {
         const content = plan.content.trim();
@@ -116,7 +143,7 @@ export default function RequestRivalry() {
           await rivalriesApi.notes.upsert(rivalry.rivalryId, {
             noteType: 'plan',
             content,
-            visibility: 'admins',
+            visibility: 'participants',
             scheduledFor: plan.scheduledFor || undefined,
           });
         } catch {
@@ -125,7 +152,6 @@ export default function RequestRivalry() {
       }
       if (failures > 0) {
         setPlanFailures(failures);
-        // Brief delay so the banner is visible before nav.
         setTimeout(() => navigate(`/rivalries/${rivalry.rivalryId}`), 1500);
       } else {
         navigate(`/rivalries/${rivalry.rivalryId}`);
@@ -135,6 +161,24 @@ export default function RequestRivalry() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  // Route is feature-flagged; gracefully fail closed if a wrestler
+  // somehow lands here.
+  if (!isAdminOrModerator) {
+    return (
+      <div className="request-rivalry">
+        <header className="request-rivalry__header">
+          <h1>{t('rivalries.request.heading')}</h1>
+        </header>
+        <p>{t('rivalries.request.adminOnly', {
+          defaultValue: 'Only GMs can open a new rivalry.',
+        })}</p>
+        <Link to="/rivalries" className="request-rivalry__cancel">
+          {t('rivalries.detail.backToHub')}
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -165,94 +209,75 @@ export default function RequestRivalry() {
             if (step1Valid) setStep(2);
           }}
         >
-          <label>
-            <span>{t('rivalries.request.rivalField')}</span>
-            <input
-              type="text"
-              placeholder={t('rivalries.request2.opponentPlaceholder')}
-              value={opponentId ? opponentName(opponentId) : opponentQuery}
-              onChange={(e) => {
-                setOpponentId(null);
-                setOpponentQuery(e.target.value);
-              }}
-            />
-            {!opponentId && opponentQuery && (
-              <ul className="request-rivalry__autocomplete">
-                {opponentOptions.map((p) => (
-                  <li key={p.playerId}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOpponentId(p.playerId);
-                        setOpponentQuery('');
-                        setOpponentVariant('primary');
-                      }}
-                    >
-                      <strong>{p.currentWrestler}</strong>
-                      <span>{p.name}</span>
-                      <span className="request-rivalry__record">
-                        {p.wins}-{p.losses}-{p.draws}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </label>
-
-          {selfPlayer?.alternateWrestler && (
-            <fieldset className="request-rivalry__heat">
-              <legend>
-                {t('rivalries.request.myWrestler', { defaultValue: 'Which wrestler are you using?' })}
-              </legend>
-              <label>
-                <input
-                  type="radio"
-                  name="myVariant"
-                  checked={myVariant === 'primary'}
-                  onChange={() => setMyVariant('primary')}
-                />
-                <span>{selfPlayer.currentWrestler} (primary)</span>
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="myVariant"
-                  checked={myVariant === 'alternate'}
-                  onChange={() => setMyVariant('alternate')}
-                />
-                <span>{selfPlayer.alternateWrestler} (alternate)</span>
-              </label>
-            </fieldset>
-          )}
-
-          {opponentPlayer?.alternateWrestler && (
-            <fieldset className="request-rivalry__heat">
-              <legend>
-                {t('rivalries.request.opponentWrestler', {
-                  defaultValue: "Which wrestler is your opponent using?",
-                })}
-              </legend>
-              <label>
-                <input
-                  type="radio"
-                  name="opponentVariant"
-                  checked={opponentVariant === 'primary'}
-                  onChange={() => setOpponentVariant('primary')}
-                />
-                <span>{opponentPlayer.currentWrestler} (primary)</span>
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="opponentVariant"
-                  checked={opponentVariant === 'alternate'}
-                  onChange={() => setOpponentVariant('alternate')}
-                />
-                <span>{opponentPlayer.alternateWrestler} (alternate)</span>
-              </label>
-            </fieldset>
-          )}
+          {[0, 1].map((i) => {
+            const idx = i as 0 | 1;
+            const pick = picks[idx];
+            const chosen = picked(idx);
+            return (
+              <div key={idx} className="request-rivalry__pick">
+                <label>
+                  <span>
+                    {idx === 0
+                      ? t('rivalries.request.instigator', { defaultValue: 'Instigator' })
+                      : t('rivalries.request.rival', { defaultValue: 'Rival' })}
+                  </span>
+                  <input
+                    type="text"
+                    placeholder={t('rivalries.request2.opponentPlaceholder')}
+                    value={chosen ? chosen.currentWrestler : pick.query}
+                    onChange={(e) =>
+                      updatePick(idx, { playerId: null, query: e.target.value })
+                    }
+                  />
+                  {!chosen && pick.query && (
+                    <ul className="request-rivalry__autocomplete">
+                      {searchOptions(idx).map((p) => (
+                        <li key={p.playerId}>
+                          <button
+                            type="button"
+                            onClick={() => selectPick(idx, p)}
+                          >
+                            <strong>{p.currentWrestler}</strong>
+                            <span>{p.name}</span>
+                            <span className="request-rivalry__record">
+                              {p.wins}-{p.losses}-{p.draws}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </label>
+                {chosen?.alternateWrestler && (
+                  <fieldset className="request-rivalry__variant">
+                    <legend>
+                      {t('rivalries.request.whichWrestler', {
+                        defaultValue: 'Which wrestler is in this rivalry?',
+                      })}
+                    </legend>
+                    <label>
+                      <input
+                        type="radio"
+                        name={`variant-${idx}`}
+                        checked={pick.variant === 'primary'}
+                        onChange={() => updatePick(idx, { variant: 'primary' })}
+                      />
+                      <span>{chosen.currentWrestler} (primary)</span>
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name={`variant-${idx}`}
+                        checked={pick.variant === 'alternate'}
+                        onChange={() => updatePick(idx, { variant: 'alternate' })}
+                      />
+                      <span>{chosen.alternateWrestler} (alternate)</span>
+                    </label>
+                  </fieldset>
+                )}
+              </div>
+            );
+          })}
 
           <label>
             <span>{t('rivalries.request.titleField')}</span>
