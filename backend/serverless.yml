@@ -783,6 +783,18 @@ functions:
           method: any
           cors: *corsConfig
 
+  # Per-rivalry storyline + plan notes (RIV-05). Authed; the handler
+  # enforces role-based visibility so a wrestler never sees admins-
+  # only notes from other authors and never sees unpublished plans.
+  rivalryNotes:
+    handler: functions/rivalries/notes/handler.handler
+    timeout: 15
+    events:
+      - http:
+          path: rivalries/{rivalryId}/notes
+          method: any
+          cors: *corsConfig
+
   # Persistent rivalries (RIV-02): create/list/get/update/respond/delete.
   # Lives under /rivalry-requests so the synthetic /rivalries endpoint
   # above stays untouched. Auth (JWT) is checked inside the router for
