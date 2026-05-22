@@ -14,6 +14,7 @@ import {
   InMemoryRivalryMessagesRepository,
   InMemoryRivalryNotesRepository,
 } from './InMemoryRivalriesRepository';
+import { InMemoryMatchRatingsRepository } from './InMemoryMatchRatingsRepository';
 import { InMemoryUnitOfWork } from './InMemoryUnitOfWork';
 
 export function buildInMemoryRepositories(): Repositories {
@@ -28,6 +29,7 @@ export function buildInMemoryRepositories(): Repositories {
   const rivalries = new InMemoryRivalriesRepository();
   const rivalryMessages = new InMemoryRivalryMessagesRepository();
   const rivalryNotes = new InMemoryRivalryNotesRepository();
+  const matchRatings = new InMemoryMatchRatingsRepository();
 
   const runInTransaction: Repositories['runInTransaction'] = async <T>(fn: (tx: import('../unitOfWork').UnitOfWork) => Promise<T>): Promise<T> => {
     const uow = new InMemoryUnitOfWork({
@@ -44,6 +46,7 @@ export function buildInMemoryRepositories(): Repositories {
       rivalries: rivalries.store,
       rivalryMessages: rivalryMessages.store,
       rivalryNotes: rivalryNotes.store,
+      matchRatings: matchRatings.store,
     });
     try {
       const result = await fn(uow);
@@ -67,6 +70,7 @@ export function buildInMemoryRepositories(): Repositories {
     rivalries,
     rivalryMessages,
     rivalryNotes,
+    matchRatings,
     runInTransaction,
     clearAllData: async () => {
       const counts: Record<string, { deleted: number; errors: number }> = {};
@@ -137,4 +141,5 @@ export {
   InMemoryRivalryMessagesRepository,
   InMemoryRivalryNotesRepository,
 } from './InMemoryRivalriesRepository';
+export { InMemoryMatchRatingsRepository } from './InMemoryMatchRatingsRepository';
 export { InMemoryUnitOfWork } from './InMemoryUnitOfWork';

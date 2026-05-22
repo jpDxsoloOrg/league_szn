@@ -7,6 +7,8 @@ import type {
   RivalryParticipant,
   RivalryPatch,
 } from '../rivalries';
+import { RatingAlreadyExistsError } from '../matchRatings';
+import type { MatchRating } from '../types';
 
 type StagedOp = () => void;
 
@@ -29,6 +31,7 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       rivalries: Map<string, Rivalry>;
       rivalryMessages: RivalryMessage[];
       rivalryNotes: RivalryNote[];
+      matchRatings: Map<string, MatchRating>;
     },
   ) {}
 
@@ -310,6 +313,30 @@ export class InMemoryUnitOfWork implements UnitOfWork {
         (n) => n.rivalryId === note.rivalryId && n.noteId === note.noteId,
       );
       if (idx >= 0) this.stores.rivalryNotes.splice(idx, 1);
+    });
+  }
+
+  // ── Match ratings (RIV-20) ───────────────────────────────────────
+  createMatchRating(input: { matchId: string; userId: string; rating: number }): void {
+    // Pre-validate so a duplicate fails synchronously at stage time —
+    // mirrors the behaviour of a DynamoDB ConditionalCheckFailed on the
+    // PUT and gives handlers a deterministic place to surface the error
+    // without first having to commit.
+    const key = `${input.matchId}#${input.userId}`;
+    if (this.stores.matchRatings.has(key)) {
+      throw new RatingAlreadyExistsError(input.matchId, input.userId);
+    }
+    this.staged.push(() => {
+      if (this.stores.matchRatings.has(key)) {
+        throw new RatingAlreadyExistsError(input.matchId, input.userId);
+      }
+      const row: MatchRating = {
+        matchId: input.matchId,
+        userId: input.userId,
+        rating: input.rating,
+        createdAt: new Date().toISOString(),
+      };
+      this.stores.matchRatings.set(key, row);
     });
   }
 

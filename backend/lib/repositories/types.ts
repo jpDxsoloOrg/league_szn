@@ -545,10 +545,27 @@ export interface Match {
   status: MatchStatus;
   slots?: MatchSlot[];
   slotsRequired?: number;
+  /** Average of user ratings, rounded to the nearest 0.5. Computed from MatchRatings on each rating submit (RIV-23+). */
   starRating?: number;
+  /** Raw mean of user ratings (un-rounded). Drives rivalry heat calculations. */
+  ratingAverage?: number;
+  /** Number of user ratings submitted for this match. */
+  ratingsCount?: number;
   matchOfTheNight?: boolean;
   createdAt: string;
   updatedAt?: string;
+}
+
+/**
+ * One user-submitted rating per match (RIV-20). Star scale is 0.5–5 in
+ * half-step increments, validated by the calling handler before reaching
+ * the repository.
+ */
+export interface MatchRating {
+  matchId: string;
+  userId: string;
+  rating: number;
+  createdAt: string;
 }
 
 export interface Championship {

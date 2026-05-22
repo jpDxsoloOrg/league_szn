@@ -17,10 +17,15 @@ interface RivalryCardProps {
   lastActivityAt?: string;
 }
 
+// Five-tier mapping (RIV-21). Proper HeatBadge component lands in
+// RIV-31; this is a temporary visual stand-in so frozen and scorching
+// still render.
 const HEAT_FLAMES: Record<RivalryHeat, number> = {
+  frozen: 0,
   cold: 1,
   warm: 3,
   hot: 5,
+  scorching: 5,
 };
 
 const STATUS_LABEL_KEY: Record<RivalryStatus, string> = {

@@ -150,3 +150,9 @@ export type {
   RivalryActivityPage,
 } from './rivalries';
 export { participantSk, RIVALRY_META_SK } from './rivalries';
+
+export type {
+  MatchRatingsRepository,
+  MatchRatingCreateInput,
+} from './matchRatings';
+export { RatingAlreadyExistsError } from './matchRatings';

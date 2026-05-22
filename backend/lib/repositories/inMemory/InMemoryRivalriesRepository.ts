@@ -87,6 +87,7 @@ export class InMemoryRivalriesRepository implements RivalriesRepository {
       description: input.description,
       status: 'pending',
       heat: input.heat ?? 'warm',
+      heatScore: 0,
       requestedBy: input.requestedBy,
       participants: input.participants.map((p) => {
         const participant: RivalryParticipant = {
@@ -152,7 +153,11 @@ export class InMemoryRivalriesRepository implements RivalriesRepository {
 }
 
 function cloneRivalry(r: Rivalry): Rivalry {
-  return { ...r, participants: r.participants.map((p) => ({ ...p })) };
+  return {
+    ...r,
+    heatScore: typeof r.heatScore === 'number' ? r.heatScore : 0,
+    participants: r.participants.map((p) => ({ ...p })),
+  };
 }
 
 export class InMemoryRivalryMessagesRepository implements RivalryMessagesRepository {

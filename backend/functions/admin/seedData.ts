@@ -450,6 +450,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         isChampionship: false,
         seasonId: season.seasonId,
         status: 'completed',
+        ratingsCount: 0,
         createdAt: now,
         version: 1,
       });
@@ -475,6 +476,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         isChampionship: i === 0,
         seasonId: season.seasonId,
         status: 'scheduled',
+        ratingsCount: 0,
         createdAt: now,
         version: 1,
       };

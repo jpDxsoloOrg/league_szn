@@ -31,6 +31,8 @@ interface DashboardMatch {
   championshipName?: string;
   championshipImageUrl?: string;
   starRating?: number;
+  ratingAverage?: number;
+  ratingsCount?: number;
   matchOfTheNight?: boolean;
   winnerName: string;
   winnerImageUrl?: string;
@@ -237,6 +239,8 @@ export const handler: APIGatewayProxyHandler = async () => {
         championshipName: champ ? champ.name : undefined,
         championshipImageUrl: champ?.imageUrl,
         starRating: m.starRating,
+        ratingAverage: m.ratingAverage,
+        ratingsCount: m.ratingsCount,
         matchOfTheNight: Boolean(m.matchOfTheNight),
         winnerName: winnerName || '\u2014',
         winnerImageUrl: firstWinner

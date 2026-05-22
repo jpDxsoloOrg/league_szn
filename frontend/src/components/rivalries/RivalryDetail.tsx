@@ -19,7 +19,15 @@ import MessagesTab from './tabs/MessagesTab';
 import { resolveWrestlerName } from './rivalryUtils';
 import './RivalryDetail.css';
 
-const HEAT_FLAMES: Record<RivalryHeat, number> = { cold: 1, warm: 3, hot: 5 };
+// Five-tier mapping (RIV-21). Proper HeatBadge component lands in
+// RIV-31; this is a temporary visual stand-in.
+const HEAT_FLAMES: Record<RivalryHeat, number> = {
+  frozen: 0,
+  cold: 1,
+  warm: 3,
+  hot: 5,
+  scorching: 5,
+};
 
 const TAB_DEFS: Array<{ id: string; labelKey: string }> = [
   { id: 'overview', labelKey: 'rivalries.detail.overviewTab' },
