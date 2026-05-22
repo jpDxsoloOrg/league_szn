@@ -121,7 +121,7 @@ export default function AdminRivalries() {
           disabled={resolvedCount === 0}
           onClick={() => setModal({ action: 'bulk-clear', bulkCount: resolvedCount })}
         >
-          Clear resolved ({resolvedCount})
+          {t('rivalries.admin.bulkClear')} ({resolvedCount})
         </button>
       </header>
 
@@ -137,7 +137,7 @@ export default function AdminRivalries() {
             }}
           >
             {id === 'all'
-              ? 'All'
+              ? t('rivalries.admin.filterAll')
               : t(`rivalries.status.${id as RivalryStatus}`)}
           </button>
         ))}
@@ -148,20 +148,20 @@ export default function AdminRivalries() {
       <table className="admin-rivalries__table">
         <thead>
           <tr>
-            <th>Created</th>
-            <th>Requester</th>
-            <th>Opponent</th>
-            <th>Title</th>
-            <th>Heat</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th>{t('rivalries.admin.columnCreated')}</th>
+            <th>{t('rivalries.admin.columnRequester')}</th>
+            <th>{t('rivalries.admin.columnOpponent')}</th>
+            <th>{t('rivalries.admin.columnTitle')}</th>
+            <th>{t('rivalries.admin.columnHeat')}</th>
+            <th>{t('rivalries.admin.columnStatus')}</th>
+            <th>{t('rivalries.admin.columnActions')}</th>
           </tr>
         </thead>
         <tbody>
           {paged.length === 0 ? (
             <tr>
               <td colSpan={7} className="admin-rivalries__empty">
-                No rivalries match the current filter.
+                {t('rivalries.admin.emptyState')}
               </td>
             </tr>
           ) : (
@@ -210,7 +210,7 @@ export default function AdminRivalries() {
                           {t('rivalries.admin.conclude')}
                         </button>
                         <Link to={`/rivalries/${r.rivalryId}`} className="admin-rivalries__link">
-                          Open
+                          {t('rivalries.admin.open')}
                         </Link>
                       </>
                     )}
@@ -222,7 +222,7 @@ export default function AdminRivalries() {
                         setModalNote('');
                       }}
                     >
-                      Delete
+                      {t('rivalries.admin.delete')}
                     </button>
                   </td>
                 </tr>
@@ -234,17 +234,17 @@ export default function AdminRivalries() {
 
       <footer className="admin-rivalries__pager">
         <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
-          ← Prev
+          {t('rivalries.admin.pagePrev')}
         </button>
         <span>
-          Page {page} / {totalPages}
+          {page} / {totalPages}
         </span>
         <button
           type="button"
           onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
           disabled={page >= totalPages}
         >
-          Next →
+          {t('rivalries.admin.pageNext')}
         </button>
       </footer>
 
@@ -253,14 +253,14 @@ export default function AdminRivalries() {
           <div className="admin-rivalries__modal-card">
             <h3>
               {modal.action === 'bulk-clear'
-                ? `Delete ${modal.bulkCount} resolved rivalries?`
+                ? t('rivalries.admin.bulkClearPrompt', { count: modal.bulkCount ?? 0 })
                 : modal.action === 'delete'
-                ? `Delete "${modal.rivalry?.title}"?`
+                ? t('rivalries.admin.deletePrompt', { title: modal.rivalry?.title ?? '' })
                 : modal.action === 'approve'
-                ? `Approve "${modal.rivalry?.title}"`
+                ? t('rivalries.admin.approvePrompt', { title: modal.rivalry?.title ?? '' })
                 : modal.action === 'reject'
-                ? `Reject "${modal.rivalry?.title}"`
-                : `Conclude "${modal.rivalry?.title}"`}
+                ? t('rivalries.admin.rejectPrompt', { title: modal.rivalry?.title ?? '' })
+                : t('rivalries.admin.concludePrompt', { title: modal.rivalry?.title ?? '' })}
             </h3>
             {(modal.action === 'reject' || modal.action === 'conclude' || modal.action === 'approve') && (
               <textarea
@@ -275,11 +275,11 @@ export default function AdminRivalries() {
               />
             )}
             {modal.action === 'bulk-clear' && (
-              <p>This will hard-delete every rivalry in completed / rejected / cancelled status.</p>
+              <p>{t('rivalries.admin.bulkClearWarning')}</p>
             )}
             <footer>
               <button type="button" onClick={() => setModal(null)} disabled={busy}>
-                Cancel
+                {t('rivalries.request.cancel')}
               </button>
               <button
                 type="button"
@@ -287,7 +287,7 @@ export default function AdminRivalries() {
                 onClick={performModalAction}
                 disabled={busy || (modal.action === 'reject' && !modalNote.trim())}
               >
-                Confirm
+                {t('rivalries.admin.confirm')}
               </button>
             </footer>
           </div>

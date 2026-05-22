@@ -158,7 +158,7 @@ export default function MessagesTab({ hydrated, players }: TabProps) {
     <div className="rivalry-tab rivalry-messages">
       <aside className="rivalry-messages__rail">
         <div className="rivalry-tab__card">
-          <h3 className="rivalry-tab__heading">Participants</h3>
+          <h3 className="rivalry-tab__heading">{t('rivalries.messages2.participantsHeading')}</h3>
           <ul>
             {hydrated.rivalry.participants.map((p) => {
               const player = lookup.get(p.playerId);
@@ -173,14 +173,14 @@ export default function MessagesTab({ hydrated, players }: TabProps) {
         </div>
 
         <div className="rivalry-tab__card">
-          <h3 className="rivalry-tab__heading">Settings</h3>
+          <h3 className="rivalry-tab__heading">{t('rivalries.messages2.settingsHeading')}</h3>
           <label className="rivalry-messages__toggle">
             <input
               type="checkbox"
               checked={loopInOpponent}
               onChange={(e) => setLoopInOpponent(e.target.checked)}
             />
-            <span>Loop in opponent</span>
+            <span>{t('rivalries.messages2.loopInOpponent')}</span>
           </label>
           <p className="rivalry-detail__hint">
             {defaultAudience === 'admins'
@@ -261,10 +261,12 @@ export default function MessagesTab({ hydrated, players }: TabProps) {
                 checked={composerAudienceOverride}
                 onChange={(e) => setComposerAudienceOverride(e.target.checked)}
               />
-              <span>Override audience</span>
+              <span>{t('rivalries.messages2.overrideAudience')}</span>
             </label>
             <span className="rivalry-messages__effective">
-              {effectiveAudience === 'admins' ? 'GMs only' : 'Loop in opponent'}
+              {effectiveAudience === 'admins'
+                ? t('rivalries.messages2.gmOnly')
+                : t('rivalries.messages2.loopInOn')}
             </span>
             <button type="submit" disabled={!composer.trim()}>
               {t('rivalries.messages.send')}

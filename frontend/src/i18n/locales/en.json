@@ -1103,7 +1103,46 @@
       "conclude": "Conclude",
       "active": "Active",
       "rejectReason": "Reason (required)",
-      "concludeNote": "Closing note (optional)"
+      "concludeNote": "Closing note (optional)",
+      "delete": "Delete",
+      "open": "Open",
+      "bulkClear": "Clear resolved",
+      "filterAll": "All",
+      "columnCreated": "Created",
+      "columnRequester": "Requester",
+      "columnOpponent": "Opponent",
+      "columnTitle": "Title",
+      "columnHeat": "Heat",
+      "columnStatus": "Status",
+      "columnActions": "Actions",
+      "emptyState": "No rivalries match the current filter.",
+      "pagePrev": "← Prev",
+      "pageNext": "Next →",
+      "confirm": "Confirm",
+      "bulkClearWarning": "This will hard-delete every rivalry in completed / rejected / cancelled status.",
+      "deletePrompt": "Delete \"{{title}}\"?",
+      "approvePrompt": "Approve \"{{title}}\"",
+      "rejectPrompt": "Reject \"{{title}}\"",
+      "concludePrompt": "Conclude \"{{title}}\"",
+      "bulkClearPrompt": "Delete {{count}} resolved rivalries?"
+    },
+    "messages2": {
+      "loopInOpponent": "Loop in opponent",
+      "overrideAudience": "Override audience",
+      "gmOnly": "GMs only",
+      "loopInOn": "Loop in opponent",
+      "settingsHeading": "Settings",
+      "participantsHeading": "Participants"
+    },
+    "request2": {
+      "opponentPlaceholder": "Type to search…",
+      "planPlaceholder": "Plan beat…",
+      "storylinePitch": "Storyline pitch",
+      "proposedPlans": "Proposed plans (optional)",
+      "addPlan": "+ add plan beat",
+      "back": "Back",
+      "minChars": "min {{count}}",
+      "maxOfMax": "{{cur}}/{{max}}"
     }
   },
   "events": {

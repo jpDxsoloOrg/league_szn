@@ -1102,7 +1102,46 @@
       "conclude": "Abschließen",
       "active": "Aktiv",
       "rejectReason": "Grund (erforderlich)",
-      "concludeNote": "Abschluss-Notiz (optional)"
+      "concludeNote": "Abschluss-Notiz (optional)",
+      "delete": "Löschen",
+      "open": "Öffnen",
+      "bulkClear": "Erledigte löschen",
+      "filterAll": "Alle",
+      "columnCreated": "Erstellt",
+      "columnRequester": "Antragsteller",
+      "columnOpponent": "Gegner",
+      "columnTitle": "Titel",
+      "columnHeat": "Hitze",
+      "columnStatus": "Status",
+      "columnActions": "Aktionen",
+      "emptyState": "Keine Rivalitäten passen zum Filter.",
+      "pagePrev": "← Zurück",
+      "pageNext": "Weiter →",
+      "confirm": "Bestätigen",
+      "bulkClearWarning": "Dies löscht alle Rivalitäten mit Status abgeschlossen / abgelehnt / abgebrochen unwiderruflich.",
+      "deletePrompt": "„{{title}}\" löschen?",
+      "approvePrompt": "„{{title}}\" genehmigen",
+      "rejectPrompt": "„{{title}}\" ablehnen",
+      "concludePrompt": "„{{title}}\" abschließen",
+      "bulkClearPrompt": "{{count}} erledigte Rivalitäten löschen?"
+    },
+    "messages2": {
+      "loopInOpponent": "Gegner einbeziehen",
+      "overrideAudience": "Audience überschreiben",
+      "gmOnly": "Nur GMs",
+      "loopInOn": "Gegner einbeziehen",
+      "settingsHeading": "Einstellungen",
+      "participantsHeading": "Teilnehmer"
+    },
+    "request2": {
+      "opponentPlaceholder": "Tippen zum Suchen…",
+      "planPlaceholder": "Plan-Beat…",
+      "storylinePitch": "Storyline-Pitch",
+      "proposedPlans": "Vorgeschlagene Pläne (optional)",
+      "addPlan": "+ Plan-Beat hinzufügen",
+      "back": "Zurück",
+      "minChars": "min. {{count}}",
+      "maxOfMax": "{{cur}}/{{max}}"
     }
   },
   "events": {

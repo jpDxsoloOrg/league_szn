@@ -164,7 +164,7 @@ export default function RequestRivalry() {
             <span>{t('rivalries.request.rivalField')}</span>
             <input
               type="text"
-              placeholder="Type to search…"
+              placeholder={t('rivalries.request2.opponentPlaceholder')}
               value={opponentId ? opponentName(opponentId) : opponentQuery}
               onChange={(e) => {
                 setOpponentId(null);
@@ -257,7 +257,7 @@ export default function RequestRivalry() {
           }}
         >
           <label>
-            <span>Storyline pitch</span>
+            <span>{t('rivalries.request2.storylinePitch')}</span>
             <textarea
               rows={8}
               maxLength={MAX_PITCH}
@@ -270,12 +270,12 @@ export default function RequestRivalry() {
           </label>
 
           <fieldset className="request-rivalry__plans">
-            <legend>Proposed plans (optional)</legend>
+            <legend>{t('rivalries.request2.proposedPlans')}</legend>
             {plans.map((p, i) => (
               <div key={i} className="request-rivalry__plan-row">
                 <input
                   type="text"
-                  placeholder="Plan beat…"
+                  placeholder={t('rivalries.request2.planPlaceholder')}
                   value={p.content}
                   onChange={(e) => {
                     const next = [...plans];
@@ -306,7 +306,7 @@ export default function RequestRivalry() {
                 className="request-rivalry__plan-add"
                 onClick={() => setPlans([...plans, { content: '', scheduledFor: '' }])}
               >
-                + add plan beat
+                {t('rivalries.request2.addPlan')}
               </button>
             )}
           </fieldset>
@@ -323,7 +323,7 @@ export default function RequestRivalry() {
               className="request-rivalry__back"
               onClick={() => setStep(1)}
             >
-              Back
+              {t('rivalries.request2.back')}
             </button>
             <button type="submit" disabled={!step2Valid || submitting}>
               {t('rivalries.request.submit')}
