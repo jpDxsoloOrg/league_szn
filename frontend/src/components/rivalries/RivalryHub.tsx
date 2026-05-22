@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { eventsApi, playersApi, rivalriesApi } from '../../services/api';
+import { playersApi, rivalriesApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Player } from '../../types';
-import type { LeagueEvent } from '../../types/event';
 import type {
   Rivalry,
   RivalryActivityItem,
@@ -43,9 +42,9 @@ export default function RivalryHub() {
 
   const [activeTab, setActiveTab] = useState<TabId>('active');
   const [activeChip, setActiveChip] = useState<ChipId>('all');
-  const [eventId, setEventId] = useState<string | undefined>(undefined);
-
-  const [events, setEvents] = useState<LeagueEvent[]>([]);
+  // Episode dropdown is hidden for now; the Hub defaults to "All
+  // Episodes" (eventId stays undefined).
+  const eventId: string | undefined = undefined;
   const [players, setPlayers] = useState<Player[]>([]);
   const [rivalries, setRivalries] = useState<Rivalry[]>([]);
   const [activity, setActivity] = useState<RivalryActivityItem[]>([]);
@@ -54,20 +53,15 @@ export default function RivalryHub() {
   const [activityLoading, setActivityLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // One-shot bootstrap of events + players (don't refetch on tab/chip change).
+  // One-shot bootstrap of players. (Events pre-fetch removed along
+  // with the hidden Episode dropdown.)
   useEffect(() => {
     const controller = new AbortController();
     let mounted = true;
-    Promise.all([
-      eventsApi.getAll(undefined, controller.signal).catch(() => [] as LeagueEvent[]),
-      playersApi.getAll(controller.signal).catch(() => [] as Player[]),
-    ]).then(([eventList, playerList]) => {
-      if (!mounted) return;
-      setEvents(eventList);
-      setPlayers(playerList);
-      const active = eventList.find((e) => e.status === 'upcoming') ?? eventList[0];
-      if (active) setEventId(active.eventId);
-    });
+    playersApi
+      .getAll(controller.signal)
+      .then((playerList) => mounted && setPlayers(playerList))
+      .catch(() => undefined);
     return () => {
       mounted = false;
       controller.abort();
@@ -184,24 +178,9 @@ export default function RivalryHub() {
           <p className="rivalry-hub__tagline">{t('rivalries.hub.tagline')}</p>
         </div>
         <div className="rivalry-hub__header-actions">
-          {events.length > 1 && (
-            <label className="rivalry-hub__episode">
-              <span className="rivalry-hub__episode-label">
-                {t('rivalries.hub.episodeLabel')}
-              </span>
-              <select
-                value={eventId ?? ''}
-                onChange={(e) => setEventId(e.target.value || undefined)}
-              >
-                <option value="">{t('rivalries.hub.episodeAll')}</option>
-                {events.map((ev) => (
-                  <option key={ev.eventId} value={ev.eventId}>
-                    {ev.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+          {/* Episode dropdown is hidden for now; the Hub defaults to All
+              Episodes. Re-enable by restoring this block when episodes
+              are reintroduced to the storyline timeline. */}
           {isAdminOrModerator && (
             <Link to="/rivalries/new" className="rivalry-hub__cta">
               {t('rivalries.hub.requestCta')}
