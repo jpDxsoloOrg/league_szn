@@ -990,7 +990,118 @@
       "historic": "Historisch 👑"
     },
     "noRivalries": "Noch keine Rivalitäten. Rivalitäten erscheinen, wenn zwei Spieler mindestens 3 Mal gegeneinander angetreten sind.",
-    "viewHeadToHead": "Direktvergleich anzeigen"
+    "viewHeadToHead": "Direktvergleich anzeigen",
+    "hub": {
+      "heading": "Rivalitäten",
+      "tagline": "Storylines, Streit und schlechtes Blut.",
+      "episodeLabel": "Episode",
+      "episodeAll": "Alle Episoden",
+      "requestCta": "Rivalität anfragen",
+      "tabs": {
+        "active": "Aktive Rivalitäten",
+        "mine": "Meine Rivalitäten",
+        "archive": "Archiv"
+      },
+      "chips": {
+        "all": "Alle",
+        "hot": "Hitzig",
+        "warm": "Brodelnd",
+        "cold": "Schwelend"
+      },
+      "empty": "Keine Rivalitäten entsprechen den Filtern.",
+      "activityHeading": "Letzte Rivalitäts-Aktivität",
+      "activityLoading": "Aktivität lädt…",
+      "activityEmpty": "Keine neue Aktivität.",
+      "loadMore": "Mehr laden",
+      "viewRivalry": "Ansehen"
+    },
+    "card": {
+      "matchCount_one": "{{count}} Kampf",
+      "matchCount_other": "{{count}} Kämpfe",
+      "noActivity": "Noch keine Aktivität"
+    },
+    "status": {
+      "pending": "Prüfung läuft",
+      "active": "Aktiv",
+      "completed": "Abgeschlossen",
+      "rejected": "Abgelehnt",
+      "cancelled": "Abgebrochen"
+    },
+    "activityKind": {
+      "message": "Nachricht",
+      "promo": "Promo",
+      "match": "Kampf",
+      "note": "Notiz"
+    },
+    "detail": {
+      "backToHub": "Zurück zu Rivalitäten",
+      "overviewTab": "Übersicht",
+      "matchesTab": "Kampfhistorie",
+      "futureTab": "Zukünftige Kämpfe",
+      "promosTab": "Promos",
+      "notesTab": "Notizen & Pläne",
+      "messagesTab": "Nachrichten",
+      "headToHead": "Direktvergleich",
+      "nextEvent": "Nächstes Event",
+      "noNextEvent": "Kein geplantes nächstes Event.",
+      "recentPromos": "Aktuelle Promos",
+      "noRecentPromos": "Keine aktuellen Promos.",
+      "noMatches": "Noch keine Kämpfe in dieser Rivalität.",
+      "totalMatches_one": "{{count}} Kampf",
+      "totalMatches_other": "{{count}} Kämpfe",
+      "draws_one": "{{count}} Unentschieden",
+      "draws_other": "{{count}} Unentschieden",
+      "championships": "Titelkämpfe"
+    },
+    "messages": {
+      "heading": "Nachrichten",
+      "audienceParticipants": "Teilnehmer",
+      "audienceAll": "Öffentlich",
+      "audienceAdmins": "Nur GMs",
+      "send": "Senden",
+      "placeholder": "Nachricht eingeben…",
+      "empty": "Noch keine Nachrichten. Fang an zu lästern.",
+      "sentBy": "Gepostet von {{author}}"
+    },
+    "notes": {
+      "heading": "Notizen & Pläne",
+      "newNote": "Neue Notiz",
+      "noteTypeStoryline": "Storyline",
+      "noteTypePlan": "Plan",
+      "visibilityAll": "Öffentlich",
+      "visibilityParticipants": "Teilnehmer",
+      "visibilityAdmins": "Nur GMs",
+      "save": "Speichern",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "empty": "Noch keine Notizen.",
+      "linkedMatch": "Verknüpfter Kampf",
+      "linkedEvent": "Verknüpftes Event",
+      "scheduledFor": "Geplant für"
+    },
+    "request": {
+      "heading": "Rivalität anfragen",
+      "step1": "Wähle deinen Rivalen",
+      "step2": "Storyline beschreiben",
+      "rivalField": "Rivale",
+      "titleField": "Titel",
+      "descriptionField": "Storyline-Pitch",
+      "heatField": "Anfangshitze",
+      "submit": "Zur Freigabe einreichen",
+      "cancel": "Abbrechen",
+      "success": "Eingereicht! Ein GM prüft sie.",
+      "errorTitle": "Übermittlung fehlgeschlagen"
+    },
+    "admin": {
+      "heading": "Rivalitäten (Admin)",
+      "queueHeading": "Offene Anfragen",
+      "approve": "Genehmigen",
+      "reject": "Ablehnen",
+      "conclude": "Abschließen",
+      "active": "Aktiv",
+      "rejectReason": "Grund (erforderlich)",
+      "concludeNote": "Abschluss-Notiz (optional)"
+    }
   },
   "events": {
     "title": "Veranstaltungen & PPV",

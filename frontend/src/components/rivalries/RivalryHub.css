@@ -1,0 +1,229 @@
+.rivalry-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem 1.5rem;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.rivalry-hub__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border, #2a2a2a);
+}
+
+.rivalry-hub__title {
+  margin: 0;
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.rivalry-hub__tagline {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-muted, #888888);
+  font-size: 0.9rem;
+}
+
+.rivalry-hub__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.rivalry-hub__episode {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+}
+
+.rivalry-hub__episode-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted, #888888);
+}
+
+.rivalry-hub__episode select {
+  background: #111;
+  color: #eee;
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+}
+
+.rivalry-hub__cta {
+  padding: 0.6rem 1.1rem;
+  background: var(--color-accent-gold, #c8a85a);
+  color: #111;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+.rivalry-hub__cta:hover {
+  filter: brightness(1.1);
+}
+
+.rivalry-hub__tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--color-border, #2a2a2a);
+}
+
+.rivalry-hub__tab {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted, #888888);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.rivalry-hub__tab.is-active {
+  color: var(--color-accent-gold, #c8a85a);
+  border-bottom-color: var(--color-accent-gold, #c8a85a);
+}
+
+.rivalry-hub__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rivalry-hub__chip {
+  background: transparent;
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+  color: inherit;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rivalry-hub__chip.is-active {
+  background: var(--color-accent-gold, #c8a85a);
+  color: #111;
+  border-color: var(--color-accent-gold, #c8a85a);
+}
+
+.rivalry-hub__error {
+  padding: 0.75rem 1rem;
+  background: rgba(180, 60, 60, 0.15);
+  color: #ff8888;
+  border-radius: 4px;
+}
+
+.rivalry-hub__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.rivalry-hub__skeleton {
+  height: 220px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    #1a1a1a 0%,
+    #2a2a2a 50%,
+    #1a1a1a 100%
+  );
+  background-size: 200% 100%;
+  animation: rivalry-skeleton 1.4s linear infinite;
+}
+
+@keyframes rivalry-skeleton {
+  to { background-position: -200% 0; }
+}
+
+.rivalry-hub__empty {
+  grid-column: 1 / -1;
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-text-muted, #888888);
+  border: 1px dashed var(--color-border, #2a2a2a);
+  border-radius: 4px;
+}
+
+.rivalry-hub__activity {
+  border-top: 1px solid var(--color-border, #2a2a2a);
+  padding-top: 1.5rem;
+}
+
+.rivalry-hub__activity-heading {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rivalry-hub__activity-empty {
+  padding: 1rem;
+  color: var(--color-text-muted, #888888);
+}
+
+.rivalry-hub__activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rivalry-hub__activity-row {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.rivalry-hub__activity-kind {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-accent-gold, #c8a85a);
+}
+
+.rivalry-hub__activity-time {
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #888888);
+}
+
+.rivalry-hub__activity-link {
+  color: var(--color-accent-gold, #c8a85a);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.rivalry-hub__activity-more {
+  margin-top: 0.75rem;
+  background: transparent;
+  color: var(--color-accent-gold, #c8a85a);
+  border: 1px solid var(--color-accent-gold, #c8a85a);
+  border-radius: 4px;
+  padding: 0.5rem 1.2rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}

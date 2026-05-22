@@ -1,0 +1,314 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { eventsApi, playersApi, rivalriesApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import type { Player } from '../../types';
+import type { LeagueEvent } from '../../types/event';
+import type {
+  Rivalry,
+  RivalryActivityItem,
+  RivalryHeat,
+} from '../../types/rivalry';
+import RivalryCard from './RivalryCard';
+import './RivalryHub.css';
+
+type TabId = 'active' | 'mine' | 'archive';
+type ChipId = 'all' | 'hot' | 'warm' | 'cold';
+
+const TAB_LABEL: Record<TabId, string> = {
+  active: 'rivalries.hub.tabs.active',
+  mine: 'rivalries.hub.tabs.mine',
+  archive: 'rivalries.hub.tabs.archive',
+};
+
+const CHIP_LABEL: Record<ChipId, string> = {
+  all: 'rivalries.hub.chips.all',
+  hot: 'rivalries.hub.chips.hot',
+  warm: 'rivalries.hub.chips.warm',
+  cold: 'rivalries.hub.chips.cold',
+};
+
+const CHIP_TO_HEAT: Record<Exclude<ChipId, 'all'>, RivalryHeat> = {
+  hot: 'hot',
+  warm: 'warm',
+  cold: 'cold',
+};
+
+const ACTIVITY_PAGE_SIZE = 25;
+
+export default function RivalryHub() {
+  const { t } = useTranslation();
+  const { isAuthenticated, playerId } = useAuth();
+
+  const [activeTab, setActiveTab] = useState<TabId>('active');
+  const [activeChip, setActiveChip] = useState<ChipId>('all');
+  const [eventId, setEventId] = useState<string | undefined>(undefined);
+
+  const [events, setEvents] = useState<LeagueEvent[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [rivalries, setRivalries] = useState<Rivalry[]>([]);
+  const [activity, setActivity] = useState<RivalryActivityItem[]>([]);
+  const [activityCursor, setActivityCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activityLoading, setActivityLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // One-shot bootstrap of events + players (don't refetch on tab/chip change).
+  useEffect(() => {
+    const controller = new AbortController();
+    let mounted = true;
+    Promise.all([
+      eventsApi.getAll(undefined, controller.signal).catch(() => [] as LeagueEvent[]),
+      playersApi.getAll(controller.signal).catch(() => [] as Player[]),
+    ]).then(([eventList, playerList]) => {
+      if (!mounted) return;
+      setEvents(eventList);
+      setPlayers(playerList);
+      const active = eventList.find((e) => e.status === 'upcoming') ?? eventList[0];
+      if (active) setEventId(active.eventId);
+    });
+    return () => {
+      mounted = false;
+      controller.abort();
+    };
+  }, []);
+
+  // Refetch rivalry grid whenever the active scope changes.
+  useEffect(() => {
+    const controller = new AbortController();
+    let mounted = true;
+    setLoading(true);
+    setError(null);
+
+    const params: Parameters<typeof rivalriesApi.list>[0] = { eventId };
+    if (activeTab === 'active') params.status = 'active';
+    if (activeTab === 'archive') params.status = 'completed';
+    if (activeTab === 'mine') {
+      if (!playerId) {
+        // Unauthenticated visitor can't see "mine".
+        if (mounted) {
+          setRivalries([]);
+          setLoading(false);
+        }
+        return;
+      }
+      params.participantId = playerId;
+    }
+
+    rivalriesApi
+      .list(params, controller.signal)
+      .then((res) => {
+        if (!mounted) return;
+        setRivalries(res.rivalries);
+      })
+      .catch((err: Error) => {
+        if (mounted && err.name !== 'AbortError') setError(err.message);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+      controller.abort();
+    };
+  }, [activeTab, eventId, playerId]);
+
+  // Activity feed is independent of tab; it follows participantId + eventId.
+  useEffect(() => {
+    const controller = new AbortController();
+    let mounted = true;
+    setActivityLoading(true);
+    rivalriesApi
+      .getActivity(
+        {
+          participantId: activeTab === 'mine' && playerId ? playerId : undefined,
+          eventId,
+          limit: ACTIVITY_PAGE_SIZE,
+        },
+        controller.signal,
+      )
+      .then((res) => {
+        if (!mounted) return;
+        setActivity(res.items);
+        setActivityCursor(res.nextCursor);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (mounted) setActivityLoading(false);
+      });
+    return () => {
+      mounted = false;
+      controller.abort();
+    };
+  }, [activeTab, eventId, playerId]);
+
+  const filtered = useMemo(() => {
+    if (activeChip === 'all') return rivalries;
+    const heat = CHIP_TO_HEAT[activeChip];
+    return rivalries.filter((r) => r.heat === heat);
+  }, [rivalries, activeChip]);
+
+  const loadMoreActivity = async () => {
+    if (!activityCursor) return;
+    const res = await rivalriesApi.getActivity({
+      participantId: activeTab === 'mine' && playerId ? playerId : undefined,
+      eventId,
+      limit: ACTIVITY_PAGE_SIZE,
+      cursor: activityCursor,
+    });
+    // Dedupe defensively in case of ties at the cursor boundary.
+    setActivity((prev) => {
+      const seen = new Set(prev.map(activityKey));
+      const merged = [...prev];
+      for (const item of res.items) {
+        const k = activityKey(item);
+        if (!seen.has(k)) {
+          merged.push(item);
+          seen.add(k);
+        }
+      }
+      return merged;
+    });
+    setActivityCursor(res.nextCursor);
+  };
+
+  const tabs: TabId[] = isAuthenticated ? ['active', 'mine', 'archive'] : ['active', 'archive'];
+
+  return (
+    <div className="rivalry-hub">
+      <header className="rivalry-hub__header">
+        <div>
+          <h1 className="rivalry-hub__title">{t('rivalries.hub.heading')}</h1>
+          <p className="rivalry-hub__tagline">{t('rivalries.hub.tagline')}</p>
+        </div>
+        <div className="rivalry-hub__header-actions">
+          {events.length > 1 && (
+            <label className="rivalry-hub__episode">
+              <span className="rivalry-hub__episode-label">
+                {t('rivalries.hub.episodeLabel')}
+              </span>
+              <select
+                value={eventId ?? ''}
+                onChange={(e) => setEventId(e.target.value || undefined)}
+              >
+                <option value="">{t('rivalries.hub.episodeAll')}</option>
+                {events.map((ev) => (
+                  <option key={ev.eventId} value={ev.eventId}>
+                    {ev.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <Link to="/rivalries/new" className="rivalry-hub__cta">
+            {t('rivalries.hub.requestCta')}
+          </Link>
+        </div>
+      </header>
+
+      <nav className="rivalry-hub__tabs" role="tablist">
+        {tabs.map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === id}
+            className={`rivalry-hub__tab ${activeTab === id ? 'is-active' : ''}`}
+            onClick={() => setActiveTab(id)}
+          >
+            {t(TAB_LABEL[id])}
+          </button>
+        ))}
+      </nav>
+
+      <div className="rivalry-hub__chips" role="toolbar">
+        {(['all', 'hot', 'warm', 'cold'] as ChipId[]).map((id) => (
+          <button
+            key={id}
+            type="button"
+            className={`rivalry-hub__chip ${activeChip === id ? 'is-active' : ''}`}
+            onClick={() => setActiveChip(id)}
+          >
+            {t(CHIP_LABEL[id])}
+          </button>
+        ))}
+      </div>
+
+      {error && <div className="rivalry-hub__error">{error}</div>}
+
+      <section className="rivalry-hub__grid" aria-busy={loading}>
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rivalry-hub__skeleton" />
+            ))
+          : filtered.length === 0
+          ? <div className="rivalry-hub__empty">{t('rivalries.hub.empty')}</div>
+          : filtered.map((r) => (
+              <RivalryCard
+                key={r.rivalryId}
+                rivalry={r}
+                participants={players}
+                matchCount={0}
+                lastActivityAt={r.updatedAt}
+              />
+            ))}
+      </section>
+
+      <section className="rivalry-hub__activity">
+        <h2 className="rivalry-hub__activity-heading">
+          {t('rivalries.hub.activityHeading')}
+        </h2>
+        {activityLoading ? (
+          <div className="rivalry-hub__activity-empty">
+            {t('rivalries.hub.activityLoading')}
+          </div>
+        ) : activity.length === 0 ? (
+          <div className="rivalry-hub__activity-empty">
+            {t('rivalries.hub.activityEmpty')}
+          </div>
+        ) : (
+          <>
+            <ul className="rivalry-hub__activity-list">
+              {activity.map((item) => (
+                <li key={activityKey(item)} className="rivalry-hub__activity-row">
+                  <span className={`rivalry-hub__activity-kind rivalry-hub__activity-kind--${item.kind}`}>
+                    {t(`rivalries.activityKind.${item.kind}`)}
+                  </span>
+                  <span className="rivalry-hub__activity-time">
+                    {new Date(item.occurredAt).toLocaleString()}
+                  </span>
+                  <Link
+                    to={`/rivalries/${item.rivalryId}`}
+                    className="rivalry-hub__activity-link"
+                  >
+                    {t('rivalries.hub.viewRivalry')}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            {activityCursor && (
+              <button
+                type="button"
+                className="rivalry-hub__activity-more"
+                onClick={loadMoreActivity}
+              >
+                {t('rivalries.hub.loadMore')}
+              </button>
+            )}
+          </>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function activityKey(item: RivalryActivityItem): string {
+  switch (item.kind) {
+    case 'message': return `m:${item.messageId}`;
+    case 'note': return `n:${item.noteId}`;
+    case 'match': return `x:${item.matchId}`;
+    case 'promo': return `p:${item.promoId}`;
+  }
+}
