@@ -8,7 +8,7 @@ export type NavItem = {
   path: string;
   i18nKey: string;
   /** When set, link is only shown when this feature is enabled */
-  feature?: 'challenges' | 'promos' | 'contenders' | 'statistics' | 'stables';
+  feature?: 'challenges' | 'promos' | 'contenders' | 'statistics' | 'stables' | 'rivalries';
   /** When set, link is only shown when user has this role (and feature if any) */
   role?: 'Wrestler';
   /** Disabled label key when role not met (e.g. "Wrestler Only") */
@@ -70,6 +70,7 @@ export const USER_NAV_GROUPS: NavGroup[] = [
       { path: '/profile', i18nKey: 'nav.profile', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
       { path: '/my-videos', i18nKey: 'nav.myVideos', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
       { path: '/promos', i18nKey: 'nav.promos', feature: 'promos' },
+      { path: '/rivalries', i18nKey: 'nav.rivalries', feature: 'rivalries' },
       { path: '/my-faction', i18nKey: 'nav.myFaction', feature: 'stables', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
       { path: '/my-tag-team', i18nKey: 'nav.myTagTeam', feature: 'stables', role: 'Wrestler', roleLockedLabel: 'Wrestler Only' },
     ],

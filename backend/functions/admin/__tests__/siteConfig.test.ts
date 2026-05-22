@@ -21,6 +21,7 @@ const DEFAULT_FEATURES = {
   contenders: true,
   statistics: true,
   stables: true,
+  rivalries: true,
 };
 
 function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent {
@@ -93,6 +94,7 @@ describe('getSiteConfig', () => {
       contenders: true,
       statistics: true,
       stables: true,
+      rivalries: true,
     });
   });
 });
@@ -205,6 +207,7 @@ describe('updateSiteConfig', () => {
       contenders: true,
       statistics: true,
       stables: true,
+      rivalries: true,
     });
   });
 
@@ -224,6 +227,7 @@ describe('updateSiteConfig', () => {
       contenders: true,
       statistics: false,
       stables: true,
+      rivalries: true,
     });
   });
 });

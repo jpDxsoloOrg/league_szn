@@ -67,6 +67,10 @@ import MyFaction from './components/factions/MyFaction';
 import TagTeamsList from './components/tagTeams/TagTeamsList';
 import TagTeamDetail from './components/tagTeams/TagTeamDetail';
 import MyTagTeam from './components/tagTeams/MyTagTeam';
+// Rivalries components
+import RivalryHub from './components/rivalries/RivalryHub';
+import RivalryDetail from './components/rivalries/RivalryDetail';
+import RequestRivalry from './components/rivalries/RequestRivalry';
 // Profile components
 import WrestlerProfile from './components/profile/WrestlerProfile';
 import PublicProfile from './components/profile/PublicProfile';
@@ -205,6 +209,21 @@ function AppLayout() {
                   <PromoThread />
                 </ProtectedRoute>
               </FeatureRoute>
+            } />
+
+            {/* Rivalries — feature-gated public hub + detail; new requires auth */}
+            <Route path="/rivalries" element={
+              <FeatureRoute feature="rivalries"><RivalryHub /></FeatureRoute>
+            } />
+            <Route path="/rivalries/new" element={
+              <FeatureRoute feature="rivalries">
+                <ProtectedRoute requiredRole="Wrestler">
+                  <RequestRivalry />
+                </ProtectedRoute>
+              </FeatureRoute>
+            } />
+            <Route path="/rivalries/:rivalryId/*" element={
+              <FeatureRoute feature="rivalries"><RivalryDetail /></FeatureRoute>
             } />
 
             {/* Statistics Routes - feature-gated */}
