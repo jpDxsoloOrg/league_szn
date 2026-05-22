@@ -4,9 +4,8 @@
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5em;
+  gap: 0.65em;
   line-height: 1;
-  font-size: 1em;
 }
 
 .rate-match-widget--guest .rate-match-widget__label,
@@ -30,45 +29,46 @@
   font-size: 0.85em;
 }
 
+/* Star strip — explicit pixel sizing keeps the half-button hit targets
+   predictable across different parent font-sizes. */
 .rate-match-widget__stars {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
 }
 
 .rate-match-widget__star {
   position: relative;
   display: inline-block;
-  width: 1.5em;
-  height: 1.5em;
+  width: 28px;
+  height: 28px;
   line-height: 1;
-  font-size: 1.2em;
 }
 
-/* Visual fill layer (decorative). */
+/* Visual fill layer (decorative, behind the click targets). */
 .rate-match-widget__visual {
   position: absolute;
   inset: 0;
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  line-height: 1;
   pointer-events: none;
 }
 
 .rate-match-widget__visual-bg,
 .rate-match-widget__visual-fg {
   position: absolute;
-  inset: 0;
-  display: inline-block;
-  width: 1em;
-  height: 1em;
+  top: 0;
+  left: 0;
+  height: 100%;
+  display: block;
+  font-size: 28px;
   line-height: 1;
+  white-space: nowrap;
+  user-select: none;
 }
 
 .rate-match-widget__visual-bg {
-  color: var(--color-text-muted, #888888);
-  opacity: 0.55;
+  color: var(--color-text-muted, #6a6a6a);
+  opacity: 0.5;
+  width: 100%;
 }
 
 .rate-match-widget__visual-fg {
@@ -77,26 +77,16 @@
   width: 0;
 }
 
-.rate-match-widget__visual--full .rate-match-widget__visual-fg {
-  width: 1em;
-}
+.rate-match-widget__visual--full .rate-match-widget__visual-fg { width: 100%; }
+.rate-match-widget__visual--half .rate-match-widget__visual-fg { width: 50%; }
+.rate-match-widget__visual--empty .rate-match-widget__visual-fg { width: 0; }
 
-.rate-match-widget__visual--half .rate-match-widget__visual-fg {
-  width: 0.5em;
-}
-
-.rate-match-widget__visual--empty .rate-match-widget__visual-fg {
-  width: 0;
-}
-
-/* Hit-target halves on top of the visual layer. */
+/* Hit-target halves layered above the visual. */
 .rate-match-widget__half {
   position: absolute;
   top: 0;
   width: 50%;
   height: 100%;
-  min-width: 24px; /* mobile-friendly tap target */
-  min-height: 24px;
   background: transparent;
   border: none;
   padding: 0;
@@ -105,17 +95,20 @@
   z-index: 1;
 }
 
-.rate-match-widget__half--left {
-  left: 0;
-}
+.rate-match-widget__half--left  { left: 0; }
+.rate-match-widget__half--right { left: 50%; }
 
-.rate-match-widget__half--right {
-  left: 50%;
+/* Subtle ring while hovering so the user knows the picker is interactive,
+   without painting a giant gold rectangle over the strip. */
+.rate-match-widget__half:hover,
+.rate-match-widget__half:focus-visible {
+  outline: none;
 }
 
 .rate-match-widget__half:focus-visible {
   outline: 2px solid var(--color-accent-gold, #c8a85a);
   outline-offset: 1px;
+  border-radius: 2px;
 }
 
 .rate-match-widget__half:disabled {
