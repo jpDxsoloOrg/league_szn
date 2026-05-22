@@ -28,6 +28,10 @@ const FEATURE_LABELS: Record<keyof SiteFeatures, { name: string; description: st
     name: 'Notifications',
     description: 'Announcements banner and in-app notification bell for users',
   },
+  rivalries: {
+    name: 'Rivalries',
+    description: 'Persistent rivalries hub, messaging threads, and admin moderation',
+  },
 };
 
 export default function ManageFeatures() {

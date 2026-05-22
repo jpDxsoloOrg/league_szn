@@ -1,0 +1,298 @@
+/* Patterned after FactionMessages.css but simplified — single thread,
+   no DM list. Visual language stays the same (sharp 4px corners,
+   gold accents, sunken inputs). */
+
+.rivalry-msgs {
+  display: flex;
+  flex-direction: column;
+  min-height: 480px;
+  background: var(--color-bg-elevated, #1a1a1a);
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rivalry-msgs__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--color-border, #2a2a2a);
+}
+
+.rivalry-msgs__header-context {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.rivalry-msgs__audience-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent-gold, #c8a85a);
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--color-accent-gold, #c8a85a);
+  border-radius: 4px;
+}
+
+.rivalry-msgs__participants {
+  list-style: none;
+  margin: 0;
+  padding: 0.6rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  border-bottom: 1px solid var(--color-border, #2a2a2a);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.rivalry-msgs__participant-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem 0.25rem 0.3rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.rivalry-msgs__participant-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  object-fit: cover;
+  background: #050505;
+}
+
+.rivalry-msgs__feed {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-height: 320px;
+  max-height: 60vh;
+}
+
+.rivalry-msgs__empty {
+  margin: auto;
+  color: var(--color-text-muted, #888);
+  text-align: center;
+}
+
+.rivalry-msgs__feed-error {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  background: rgba(180, 60, 60, 0.18);
+  color: #ff8888;
+  border-bottom: 1px solid rgba(180, 60, 60, 0.4);
+  font-size: 0.85rem;
+}
+
+.rivalry-msgs__day-sep {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.5rem 0;
+  position: relative;
+}
+
+.rivalry-msgs__day-sep::before {
+  content: '';
+  position: absolute;
+  inset: 50% 0 0 0;
+  border-top: 1px solid var(--color-border, #2a2a2a);
+  z-index: 0;
+}
+
+.rivalry-msgs__day-sep span {
+  position: relative;
+  z-index: 1;
+  background: var(--color-bg-elevated, #1a1a1a);
+  padding: 0 0.6rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted, #888);
+}
+
+.rivalry-msgs__system {
+  align-self: center;
+  background: transparent;
+  border: 1px dashed var(--color-border, #2a2a2a);
+  color: var(--color-text-muted, #888);
+  padding: 0.45rem 0.9rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-style: italic;
+  max-width: 75%;
+  text-align: center;
+}
+
+.rivalry-msgs__bubble {
+  display: flex;
+  gap: 0.5rem;
+  max-width: 75%;
+  align-items: flex-end;
+}
+
+.rivalry-msgs__bubble--other {
+  align-self: flex-start;
+}
+
+.rivalry-msgs__bubble--self {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.rivalry-msgs__bubble--pending .rivalry-msgs__bubble-body {
+  opacity: 0.6;
+}
+
+.rivalry-msgs__bubble--error .rivalry-msgs__bubble-body {
+  border-color: rgba(255, 100, 100, 0.5);
+}
+
+.rivalry-msgs__bubble-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: #050505;
+}
+
+.rivalry-msgs__bubble-body {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+  padding: 0.55rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 80px;
+}
+
+.rivalry-msgs__bubble--self .rivalry-msgs__bubble-body {
+  background: rgba(200, 168, 90, 0.16);
+  border-color: rgba(200, 168, 90, 0.3);
+}
+
+.rivalry-msgs__bubble-author {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-accent-gold, #c8a85a);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.rivalry-msgs__bubble-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.rivalry-msgs__bubble-time {
+  align-self: flex-end;
+  font-size: 0.65rem;
+  color: var(--color-text-muted, #888);
+}
+
+.rivalry-msgs__bubble-retry {
+  align-self: flex-start;
+  background: rgba(180, 60, 60, 0.15);
+  color: #ff8888;
+  border: 1px solid rgba(180, 60, 60, 0.4);
+  border-radius: 4px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.rivalry-msgs__reminder {
+  margin: 0;
+  padding: 0.4rem 1rem;
+  font-size: 0.7rem;
+  text-align: center;
+  color: var(--color-text-muted, #888);
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid var(--color-border, #2a2a2a);
+}
+
+.rivalry-msgs__composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #0c0c0c;
+  border-top: 1px solid var(--color-border, #2a2a2a);
+}
+
+.rivalry-msgs__composer-icon {
+  background: transparent;
+  border: 1px solid var(--color-border, #2a2a2a);
+  color: var(--color-text-muted, #888);
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  font-size: 0.95rem;
+  cursor: not-allowed;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rivalry-msgs__composer-input {
+  flex-grow: 1;
+  background: #111;
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+  color: #eee;
+  padding: 0.55rem 0.7rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.rivalry-msgs__composer-count {
+  font-size: 0.7rem;
+  color: var(--color-text-muted, #888);
+  align-self: flex-end;
+  padding-bottom: 0.55rem;
+  white-space: nowrap;
+}
+
+.rivalry-msgs__composer-count--warning {
+  color: #ff8888;
+}
+
+.rivalry-msgs__send {
+  background: var(--color-accent-gold, #c8a85a);
+  color: #111;
+  border: none;
+  border-radius: 4px;
+  padding: 0.55rem 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.rivalry-msgs__send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

@@ -199,6 +199,7 @@
     "events": "Events",
     "challenges": "Challenges",
     "promos": "Promos",
+    "rivalries": "Rivalries",
     "statistics": "Stats",
     "help": "Help",
     "wiki": "Wiki",
@@ -350,7 +351,9 @@
       "adminPromos": "Admin: Promos",
       "adminContenderConfig": "Admin: Contender Config",
       "adminDataManagement": "Admin: Data Management",
-      "adminWorkflow": "Admin: Typical Workflow"
+      "adminWorkflow": "Admin: Typical Workflow",
+      "rivalries": "Rivalries",
+      "adminRivalries": "Admin: Rivalries"
     }
   },
   "languageSwitcher": {
@@ -575,6 +578,7 @@
         "videos": "Manage Videos",
         "transfers": "Division Transfers",
         "storylineRequests": "Storyline Requests",
+        "rivalries": "Rivalries",
         "dangerZone": "Danger Zone"
       },
       "groups": {
@@ -991,7 +995,167 @@
       "historic": "Historic 👑"
     },
     "noRivalries": "No rivalries yet. Rivalries appear when two players have faced each other 3+ times.",
-    "viewHeadToHead": "View Head-to-Head"
+    "viewHeadToHead": "View Head-to-Head",
+    "hub": {
+      "heading": "Rivalries",
+      "tagline": "Storylines, beef, and bad blood.",
+      "episodeLabel": "Episode",
+      "episodeAll": "All Episodes",
+      "requestCta": "Request a Rivalry",
+      "tabs": {
+        "active": "Active Rivalries",
+        "mine": "My Rivalries",
+        "archive": "Legacy Archive"
+      },
+      "chips": {
+        "all": "All",
+        "heated": "Heated",
+        "brewing": "Brewing",
+        "slowBurn": "Slow Burn",
+        "hot": "Heated",
+        "warm": "Brewing",
+        "cold": "Slow Burn"
+      },
+      "empty": "No rivalries match the current filters.",
+      "activityHeading": "Recent Rivalry Activity",
+      "activityLoading": "Loading activity…",
+      "activityEmpty": "No recent activity.",
+      "loadMore": "Load more",
+      "viewRivalry": "View"
+    },
+    "card": {
+      "matchCount_one": "{{count}} match",
+      "matchCount_other": "{{count}} matches",
+      "noActivity": "No activity yet"
+    },
+    "status": {
+      "pending": "Pending review",
+      "active": "Active",
+      "completed": "Concluded",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "activityKind": {
+      "message": "Message",
+      "promo": "Promo",
+      "match": "Match",
+      "note": "Note"
+    },
+    "detail": {
+      "backToHub": "Back to Rivalries",
+      "overviewTab": "Overview",
+      "matchesTab": "Match History",
+      "futureTab": "Future Matches",
+      "promosTab": "Promos",
+      "notesTab": "Notes & Plans",
+      "messagesTab": "Messages",
+      "headToHead": "Head-to-Head",
+      "nextEvent": "Next Event",
+      "noNextEvent": "No scheduled next event.",
+      "recentPromos": "Recent Promos",
+      "noRecentPromos": "No recent promos.",
+      "noMatches": "No matches in this rivalry yet.",
+      "totalMatches_one": "{{count}} match",
+      "totalMatches_other": "{{count}} matches",
+      "draws_one": "{{count}} draw",
+      "draws_other": "{{count}} draws",
+      "championships": "Championship matches",
+      "matchesInRivalry": "Matches in Rivalry",
+      "bookerBadge": "Booked by {{name}}",
+      "assignBooker": "I'll book this",
+      "takeBooker": "Take over booking",
+      "clearBooker": "Clear booker"
+    },
+    "messages": {
+      "heading": "Messages",
+      "audienceParticipants": "Participants",
+      "audienceAll": "Public",
+      "audienceAdmins": "GMs only",
+      "send": "Send",
+      "placeholder": "Type a message…",
+      "empty": "No messages yet. Start the trash talk.",
+      "sentBy": "Posted by {{author}}"
+    },
+    "notes": {
+      "heading": "Notes & Plans",
+      "newNote": "New note",
+      "noteTypeStoryline": "Storyline",
+      "noteTypePlan": "Plan",
+      "visibilityAll": "Public",
+      "visibilityParticipants": "Participants",
+      "visibilityAdmins": "GMs only",
+      "save": "Save",
+      "edit": "Edit",
+      "delete": "Delete",
+      "empty": "No notes yet.",
+      "linkedMatch": "Linked match",
+      "linkedEvent": "Linked event",
+      "scheduledFor": "Scheduled for"
+    },
+    "request": {
+      "heading": "Request a Rivalry",
+      "step1": "Pick your rival",
+      "step2": "Frame the storyline",
+      "rivalField": "Rival",
+      "titleField": "Title",
+      "descriptionField": "Storyline pitch",
+      "heatField": "Initial heat",
+      "myWrestler": "Which wrestler are you using?",
+      "opponentWrestler": "Which wrestler is your opponent using?",
+      "submit": "Submit for approval",
+      "cancel": "Cancel",
+      "success": "Submitted! A GM will review it.",
+      "errorTitle": "Submission failed"
+    },
+    "admin": {
+      "heading": "Rivalries (Admin)",
+      "queueHeading": "Pending requests",
+      "approve": "Approve",
+      "reject": "Reject",
+      "conclude": "Conclude",
+      "active": "Active",
+      "rejectReason": "Reason (required)",
+      "concludeNote": "Closing note (optional)",
+      "delete": "Delete",
+      "open": "Open",
+      "bulkClear": "Clear resolved",
+      "filterAll": "All",
+      "columnCreated": "Created",
+      "columnRequester": "Requester",
+      "columnOpponent": "Opponent",
+      "columnTitle": "Title",
+      "columnHeat": "Heat",
+      "columnStatus": "Status",
+      "columnActions": "Actions",
+      "emptyState": "No rivalries match the current filter.",
+      "pagePrev": "← Prev",
+      "pageNext": "Next →",
+      "confirm": "Confirm",
+      "bulkClearWarning": "This will hard-delete every rivalry in completed / rejected / cancelled status.",
+      "deletePrompt": "Delete \"{{title}}\"?",
+      "approvePrompt": "Approve \"{{title}}\"",
+      "rejectPrompt": "Reject \"{{title}}\"",
+      "concludePrompt": "Conclude \"{{title}}\"",
+      "bulkClearPrompt": "Delete {{count}} resolved rivalries?"
+    },
+    "messages2": {
+      "loopInOpponent": "Loop in opponent",
+      "overrideAudience": "Override audience",
+      "gmOnly": "GMs only",
+      "loopInOn": "Loop in opponent",
+      "settingsHeading": "Settings",
+      "participantsHeading": "Participants"
+    },
+    "request2": {
+      "opponentPlaceholder": "Type to search…",
+      "planPlaceholder": "Plan beat…",
+      "storylinePitch": "Storyline pitch",
+      "proposedPlans": "Proposed plans (optional)",
+      "addPlan": "+ add plan beat",
+      "back": "Back",
+      "minChars": "min {{count}}",
+      "maxOfMax": "{{cur}}/{{max}}"
+    }
   },
   "events": {
     "title": "Events & PPV",

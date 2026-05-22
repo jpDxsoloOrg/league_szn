@@ -380,6 +380,8 @@ export interface Promo {
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamName?: string;
   targetTagTeamName?: string;
+  /** Optional pointer to the rivalry this promo is part of (RIV-06). */
+  rivalryId?: string;
   reactions: Record<string, ReactionType>;
   reactionCounts: Record<ReactionType, number>;
   isPinned: boolean;
@@ -538,6 +540,8 @@ export interface Match {
   tournamentId?: string;
   seasonId?: string;
   eventId?: string;
+  /** Optional pointer to the rivalry this match advances (RIV-06). */
+  rivalryId?: string;
   status: MatchStatus;
   slots?: MatchSlot[];
   slotsRequired?: number;

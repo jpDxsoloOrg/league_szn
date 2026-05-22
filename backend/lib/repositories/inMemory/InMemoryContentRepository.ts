@@ -213,6 +213,7 @@ class PromosImpl implements PromosMethods {
       challengeMode: input.challengeMode,
       challengerTagTeamName: input.challengerTagTeamName,
       targetTagTeamName: input.targetTagTeamName,
+      rivalryId: input.rivalryId,
       reactions: {},
       reactionCounts: { fire: 0, mic: 0, trash: 0, 'mind-blown': 0, clap: 0 },
       isPinned: false,

@@ -1,5 +1,12 @@
 import type { UnitOfWork, RecordDelta } from '../unitOfWork';
 import type { FactionMessage, FactionDirectMessage } from '../factionMessages';
+import type {
+  Rivalry,
+  RivalryMessage,
+  RivalryNote,
+  RivalryParticipant,
+  RivalryPatch,
+} from '../rivalries';
 
 type StagedOp = () => void;
 
@@ -19,6 +26,9 @@ export class InMemoryUnitOfWork implements UnitOfWork {
       wrestlers: Map<string, Record<string, unknown>>;
       factionMessages: FactionMessage[];
       factionDirectMessages: FactionDirectMessage[];
+      rivalries: Map<string, Rivalry>;
+      rivalryMessages: RivalryMessage[];
+      rivalryNotes: RivalryNote[];
     },
   ) {}
 
@@ -210,6 +220,96 @@ export class InMemoryUnitOfWork implements UnitOfWork {
   appendFactionDirectMessage(message: FactionDirectMessage): void {
     this.staged.push(() => {
       this.stores.factionDirectMessages.push({ ...message });
+    });
+  }
+
+  // ── Rivalries (RIV-01) ───────────────────────────────────────────
+  createRivalry(rivalry: Rivalry): void {
+    this.staged.push(() => {
+      this.stores.rivalries.set(rivalry.rivalryId, {
+        ...rivalry,
+        participants: rivalry.participants.map((p) => ({ ...p })),
+      });
+    });
+  }
+
+  updateRivalry(rivalryId: string, patch: RivalryPatch): void {
+    this.staged.push(() => {
+      const existing = this.stores.rivalries.get(rivalryId);
+      if (!existing) return;
+      this.stores.rivalries.set(rivalryId, {
+        ...existing,
+        ...patch,
+        updatedAt: new Date().toISOString(),
+      });
+    });
+  }
+
+  addRivalryParticipant(rivalryId: string, participant: RivalryParticipant): void {
+    this.staged.push(() => {
+      const existing = this.stores.rivalries.get(rivalryId);
+      if (!existing) return;
+      const filtered = existing.participants.filter(
+        (p) => p.playerId !== participant.playerId,
+      );
+      this.stores.rivalries.set(rivalryId, {
+        ...existing,
+        participants: [...filtered, { ...participant }],
+        updatedAt: new Date().toISOString(),
+      });
+    });
+  }
+
+  removeRivalryParticipant(rivalryId: string, playerId: string): void {
+    this.staged.push(() => {
+      const existing = this.stores.rivalries.get(rivalryId);
+      if (!existing) return;
+      this.stores.rivalries.set(rivalryId, {
+        ...existing,
+        participants: existing.participants.filter((p) => p.playerId !== playerId),
+        updatedAt: new Date().toISOString(),
+      });
+    });
+  }
+
+  appendRivalryMessage(message: RivalryMessage): void {
+    this.staged.push(() => {
+      this.stores.rivalryMessages.push({ ...message });
+    });
+  }
+
+  createRivalryNote(note: RivalryNote): void {
+    this.staged.push(() => {
+      this.stores.rivalryNotes.push({ ...note });
+    });
+  }
+
+  deleteRivalry(rivalryId: string, _participantPlayerIds: string[]): void {
+    // The in-memory store keeps the rivalry as a single aggregate, so the
+    // per-participant IDs are unused here — they're only meaningful for
+    // the DynamoDB SK-per-participant layout.
+    void _participantPlayerIds;
+    this.staged.push(() => {
+      this.stores.rivalries.delete(rivalryId);
+    });
+  }
+
+  deleteRivalryMessage(message: RivalryMessage): void {
+    this.staged.push(() => {
+      const idx = this.stores.rivalryMessages.findIndex(
+        (m) =>
+          m.rivalryId === message.rivalryId && m.messageId === message.messageId,
+      );
+      if (idx >= 0) this.stores.rivalryMessages.splice(idx, 1);
+    });
+  }
+
+  deleteRivalryNote(note: RivalryNote): void {
+    this.staged.push(() => {
+      const idx = this.stores.rivalryNotes.findIndex(
+        (n) => n.rivalryId === note.rivalryId && n.noteId === note.noteId,
+      );
+      if (idx >= 0) this.stores.rivalryNotes.splice(idx, 1);
     });
   }
 

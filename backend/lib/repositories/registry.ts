@@ -8,6 +8,11 @@ import type {
   FactionMessagesRepository,
   FactionDirectMessagesRepository,
 } from './factionMessages';
+import type {
+  RivalriesRepository,
+  RivalryMessagesRepository,
+  RivalryNotesRepository,
+} from './rivalries';
 import type { UnitOfWorkFactory } from './unitOfWork';
 
 export interface Repositories {
@@ -19,6 +24,9 @@ export interface Repositories {
   user: UserRepository;
   factionMessages: FactionMessagesRepository;
   factionDirectMessages: FactionDirectMessagesRepository;
+  rivalries: RivalriesRepository;
+  rivalryMessages: RivalryMessagesRepository;
+  rivalryNotes: RivalryNotesRepository;
   runInTransaction: UnitOfWorkFactory;
 
   // Admin bulk operations

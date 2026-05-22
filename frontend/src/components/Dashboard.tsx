@@ -12,6 +12,7 @@ import {
 import Skeleton from './ui/Skeleton';
 import FindMatchWidget from './matchmaking/FindMatchWidget';
 import ChampionCarousel from './ChampionCarousel';
+import DashboardRivalries from './rivalries/DashboardRivalries';
 import { formatCalendarDate } from '../utils/dateUtils';
 import './Dashboard.css';
 
@@ -217,6 +218,10 @@ export default function Dashboard() {
 
       {/* Find Match widget — self-gates on wrestler + playerId */}
       <FindMatchWidget />
+
+      {/* My Active Rivalries — self-gates on wrestler + active rivalries */}
+      <DashboardRivalries />
+
 
       {/* ROW 3 — Recent Results (horizontal scroll) */}
       <section className="db-results">

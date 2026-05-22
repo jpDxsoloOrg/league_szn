@@ -38,6 +38,9 @@ provider:
     STABLE_INVITATIONS_TABLE: ${self:service}-stable-invitations-${self:provider.stage}
     FACTION_MESSAGES_TABLE: ${self:service}-faction-messages-${self:provider.stage}
     FACTION_DIRECT_MESSAGES_TABLE: ${self:service}-faction-direct-messages-${self:provider.stage}
+    RIVALRIES_TABLE: ${self:service}-rivalries-${self:provider.stage}
+    RIVALRY_MESSAGES_TABLE: ${self:service}-rivalry-messages-${self:provider.stage}
+    RIVALRY_NOTES_TABLE: ${self:service}-rivalry-notes-${self:provider.stage}
     VIDEOS_TABLE: ${self:service}-videos-${self:provider.stage}
     ANNOUNCEMENTS_TABLE: ${self:service}-announcements-${self:provider.stage}
     NOTIFICATIONS_TABLE: ${self:service}-notifications-${self:provider.stage}
@@ -109,6 +112,11 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FACTION_MESSAGES_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FACTION_DIRECT_MESSAGES_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FACTION_DIRECT_MESSAGES_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRIES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRIES_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRY_MESSAGES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRY_NOTES_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRY_NOTES_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.ANNOUNCEMENTS_TABLE}
@@ -743,12 +751,73 @@ functions:
           cors: *corsConfig
 
   getRivalries:
-    handler: functions/rivalries/getRivalries.handler
+    handler: functions/rivalries/getMatchHistoryRivalries.handler
     timeout: 15
     events:
       - http:
           path: rivalries
           method: get
+          cors: *corsConfig
+
+  # Cross-source activity feed for the Hub (RIV-03). Public read; auth
+  # is optional and only widens audience filtering when present.
+  getRivalryActivity:
+    handler: functions/rivalries/getRivalryActivity.handler
+    timeout: 15
+    events:
+      - http:
+          path: rivalries/activity
+          method: get
+          cors: *corsConfig
+
+  # Per-rivalry message thread (RIV-04). Both routes are authed; the
+  # router validates participant / GM membership and applies per-
+  # message audience filtering on reads + notification fan-out on
+  # writes.
+  rivalryMessages:
+    handler: functions/rivalries/messages/handler.handler
+    timeout: 15
+    events:
+      - http:
+          path: rivalries/{rivalryId}/messages
+          method: any
+          cors: *corsConfig
+
+  # Per-rivalry storyline + plan notes (RIV-05). Authed; the handler
+  # enforces role-based visibility so a wrestler never sees admins-
+  # only notes from other authors and never sees unpublished plans.
+  rivalryNotes:
+    handler: functions/rivalries/notes/handler.handler
+    timeout: 15
+    events:
+      - http:
+          path: rivalries/{rivalryId}/notes
+          method: any
+          cors: *corsConfig
+      - http:
+          path: rivalries/{rivalryId}/notes/{noteId}
+          method: any
+          cors: *corsConfig
+
+  # Persistent rivalries (RIV-02): create/list/get/update/respond/delete.
+  # Lives under /rivalry-requests so the synthetic /rivalries endpoint
+  # above stays untouched. Auth (JWT) is checked inside the router for
+  # the mutating routes; the two GETs are public.
+  rivalryRequests:
+    handler: functions/rivalries/handler.handler
+    timeout: 15
+    events:
+      - http:
+          path: rivalry-requests
+          method: any
+          cors: *corsConfig
+      - http:
+          path: rivalry-requests/{rivalryId}
+          method: any
+          cors: *corsConfig
+      - http:
+          path: rivalry-requests/{rivalryId}/respond
+          method: post
           cors: *corsConfig
 
   # Challenges (Phase 2 consolidated: getChallenges, getChallenge, create, respond, cancel, delete, bulkDelete)
@@ -1860,6 +1929,105 @@ resources:
               - AttributeName: factionId
                 KeyType: HASH
               - AttributeName: recipientPlayerId
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    # Rivalries (RIV-01): one base row per rivalry (recordType="META") plus
+    # one row per participant (recordType="PARTICIPANT#<playerId>"). The
+    # participant rows duplicate `participantId` so the ParticipantIndex GSI
+    # can answer "all rivalries player X is in" cheaply. The META rows expose
+    # `status` so the StatusIndex GSI can power admin moderation queues.
+    # Both GSIs are sparse — items lacking the index attributes are skipped.
+    RivalriesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.RIVALRIES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: rivalryId
+            AttributeType: S
+          - AttributeName: recordType
+            AttributeType: S
+          - AttributeName: participantId
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: rivalryId
+            KeyType: HASH
+          - AttributeName: recordType
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: ParticipantIndex
+            KeySchema:
+              - AttributeName: participantId
+                KeyType: HASH
+              - AttributeName: rivalryId
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: StatusIndex
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    # Rivalry messages (RIV-01): every post on a rivalry thread. PK=rivalryId,
+    # SK=createdAt#messageId so a single Query returns the whole thread in
+    # time order with no GSI. Audience filtering (`all` vs `participants` vs
+    # `admins`) lives on each row and is enforced by handlers.
+    RivalryMessagesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.RIVALRY_MESSAGES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: rivalryId
+            AttributeType: S
+          - AttributeName: createdAtMessageId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: rivalryId
+            KeyType: HASH
+          - AttributeName: createdAtMessageId
+            KeyType: RANGE
+
+    # Rivalry notes (RIV-01): booker/admin notes attached to a rivalry,
+    # split into 'storyline' and 'plan'. PK=rivalryId, SK=noteId. The
+    # NoteTypeIndex GSI lets admin tooling enumerate every note of a given
+    # type across all rivalries (e.g. a global "all plans" view). Per-note
+    # `visibility` is enforced in handlers based on the caller's role.
+    RivalryNotesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.RIVALRY_NOTES_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: rivalryId
+            AttributeType: S
+          - AttributeName: noteId
+            AttributeType: S
+          - AttributeName: noteType
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: rivalryId
+            KeyType: HASH
+          - AttributeName: noteId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: NoteTypeIndex
+            KeySchema:
+              - AttributeName: noteType
+                KeyType: HASH
+              - AttributeName: createdAt
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL

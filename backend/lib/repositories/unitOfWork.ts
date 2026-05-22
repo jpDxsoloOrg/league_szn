@@ -1,4 +1,11 @@
 import type { FactionMessage, FactionDirectMessage } from './factionMessages';
+import type {
+  Rivalry,
+  RivalryMessage,
+  RivalryNote,
+  RivalryParticipant,
+  RivalryPatch,
+} from './rivalries';
 
 /**
  * Record delta for player/season standings.
@@ -83,6 +90,42 @@ export interface UnitOfWork {
    * `buildThreadKey(...)`). The UoW does not validate membership.
    */
   appendFactionDirectMessage(message: FactionDirectMessage): void;
+
+  // ── Rivalries (RIV-01) ───────────────────────────────────────────
+  /**
+   * Stage the META row + every PARTICIPANT row for a new rivalry. The
+   * caller owns id/timestamp generation so this method can be combined
+   * with related writes (e.g. a system message) in one transaction.
+   */
+  createRivalry(rivalry: Rivalry): void;
+
+  /** Stage an update against a rivalry's META row. */
+  updateRivalry(rivalryId: string, patch: RivalryPatch): void;
+
+  /** Stage a PUT for one participant row on an existing rivalry. */
+  addRivalryParticipant(rivalryId: string, participant: RivalryParticipant): void;
+
+  /** Stage a DELETE for one participant row. */
+  removeRivalryParticipant(rivalryId: string, playerId: string): void;
+
+  /** Stage a PUT into the rivalry messages table. */
+  appendRivalryMessage(message: RivalryMessage): void;
+
+  /** Stage a PUT into the rivalry notes table. */
+  createRivalryNote(note: RivalryNote): void;
+
+  /**
+   * Stage deletion of a rivalry's META row plus every PARTICIPANT row.
+   * Caller passes the full participant playerId list so the UoW can build
+   * the per-participant SKs without an extra Query.
+   */
+  deleteRivalry(rivalryId: string, participantPlayerIds: string[]): void;
+
+  /** Stage deletion of one rivalry message row. */
+  deleteRivalryMessage(message: RivalryMessage): void;
+
+  /** Stage deletion of one rivalry note row. */
+  deleteRivalryNote(note: RivalryNote): void;
 
   /**
    * Stage assigning a wrestler to a player's primary or alternate slot.

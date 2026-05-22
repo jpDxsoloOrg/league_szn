@@ -19,6 +19,7 @@ interface CreatePromoBody {
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamName?: string;
   targetTagTeamName?: string;
+  rivalryId?: string;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -30,7 +31,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { data: body, error: parseError } = parseBody<CreatePromoBody>(event);
     if (parseError) return parseError;
-    const { promoType, title, content, targetPlayerId, targetPromoId, matchId, championshipId, challengeMode, challengerTagTeamName, targetTagTeamName } = body;
+    const { promoType, title, content, targetPlayerId, targetPromoId, matchId, championshipId, challengeMode, challengerTagTeamName, targetTagTeamName, rivalryId } = body;
 
     if (!promoType || !VALID_PROMO_TYPES.includes(promoType as PromoType)) {
       return badRequest('Valid promoType is required');
@@ -65,6 +66,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       challengeMode,
       challengerTagTeamName,
       targetTagTeamName,
+      rivalryId,
     });
 
     // Notify the target player if they have a linked user account

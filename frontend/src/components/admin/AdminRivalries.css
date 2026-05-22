@@ -1,0 +1,191 @@
+.admin-rivalries {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.admin-rivalries__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.admin-rivalries__header h2 {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-rivalries__bulk {
+  background: rgba(180, 60, 60, 0.18);
+  color: #ff8888;
+  border: 1px solid rgba(180, 60, 60, 0.4);
+  padding: 0.45rem 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.admin-rivalries__bulk:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.admin-rivalries__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.admin-rivalries__chip {
+  background: transparent;
+  border: 1px solid var(--color-border, #2a2a2a);
+  color: inherit;
+  border-radius: 4px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-rivalries__chip.is-active {
+  background: var(--color-accent-gold, #c8a85a);
+  color: #111;
+  border-color: var(--color-accent-gold, #c8a85a);
+}
+
+.admin-rivalries__table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-bg-elevated, #1a1a1a);
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+}
+
+.admin-rivalries__table th,
+.admin-rivalries__table td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border, #2a2a2a);
+  font-size: 0.85rem;
+}
+
+.admin-rivalries__table th {
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted, #888);
+}
+
+.admin-rivalries__empty {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--color-text-muted, #888);
+}
+
+.admin-rivalries__actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.admin-rivalries__actions button,
+.admin-rivalries__link {
+  background: transparent;
+  border: 1px solid var(--color-border, #2a2a2a);
+  color: inherit;
+  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.admin-rivalries__danger {
+  border-color: rgba(180, 60, 60, 0.4) !important;
+  color: #ff8888 !important;
+  background: rgba(180, 60, 60, 0.12) !important;
+}
+
+.admin-rivalries__pager {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  font-size: 0.85rem;
+}
+
+.admin-rivalries__pager button {
+  background: transparent;
+  color: inherit;
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+
+.admin-rivalries__pager button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.admin-rivalries__error {
+  padding: 0.75rem 1rem;
+  background: rgba(180, 60, 60, 0.18);
+  color: #ff8888;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.admin-rivalries__modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+.admin-rivalries__modal-card {
+  background: #1a1a1a;
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+  padding: 1.25rem;
+  width: 100%;
+  max-width: 480px;
+}
+
+.admin-rivalries__modal-card h3 {
+  margin: 0 0 0.75rem;
+}
+
+.admin-rivalries__modal-card textarea {
+  width: 100%;
+  background: #111;
+  color: #eee;
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-family: inherit;
+}
+
+.admin-rivalries__modal-card footer {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.admin-rivalries__modal-card footer button {
+  background: transparent;
+  border: 1px solid var(--color-border, #2a2a2a);
+  color: inherit;
+  border-radius: 4px;
+  padding: 0.45rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}

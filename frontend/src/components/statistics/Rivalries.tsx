@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { rivalriesApi, seasonsApi } from '../../services/api';
-import type { Rivalry } from '../../services/api/rivalries.api';
+import type { MatchHistoryRivalry as Rivalry } from '../../services/api/rivalries.api';
 import type { Season } from '../../types';
 import {
   DEFAULT_WRESTLER_IMAGE,

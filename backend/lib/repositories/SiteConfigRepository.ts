@@ -4,6 +4,7 @@ export interface FeatureFlags {
   contenders: boolean;
   statistics: boolean;
   stables: boolean;
+  rivalries: boolean;
 }
 
 export const DEFAULT_FEATURES: FeatureFlags = {
@@ -12,6 +13,7 @@ export const DEFAULT_FEATURES: FeatureFlags = {
   contenders: true,
   statistics: true,
   stables: true,
+  rivalries: true,
 };
 
 export interface SiteConfigRepository {

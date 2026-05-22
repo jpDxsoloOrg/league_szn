@@ -31,10 +31,11 @@ import ManageVideos from './ManageVideos';
 import ManageOveralls from './ManageOveralls';
 import ManageTransfers from './ManageTransfers';
 import ManageStorylineRequests from './ManageStorylineRequests';
+import AdminRivalries from './AdminRivalries';
 
-type AdminTab = 'players' | 'divisions' | 'wrestlers' | 'match-config' | 'schedule' | 'championships' | 'tournaments' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'contender-config' | 'contender-overrides' | 'companies' | 'locations' | 'shows' | 'factions' | 'tag-teams' | 'announcements' | 'videos' | 'overalls' | 'transfers' | 'storyline-requests' | 'danger' | 'users' | 'features';
+type AdminTab = 'players' | 'divisions' | 'wrestlers' | 'match-config' | 'schedule' | 'championships' | 'tournaments' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'contender-config' | 'contender-overrides' | 'companies' | 'locations' | 'shows' | 'factions' | 'tag-teams' | 'announcements' | 'videos' | 'overalls' | 'transfers' | 'storyline-requests' | 'rivalries' | 'danger' | 'users' | 'features';
 
-const VALID_TABS: AdminTab[] = ['players', 'divisions', 'wrestlers', 'match-config', 'schedule', 'championships', 'tournaments', 'promos', 'seasons', 'season-awards', 'events', 'contender-config', 'contender-overrides', 'companies', 'locations', 'shows', 'factions', 'tag-teams', 'announcements', 'videos', 'overalls', 'transfers', 'storyline-requests', 'danger', 'users', 'features'];
+const VALID_TABS: AdminTab[] = ['players', 'divisions', 'wrestlers', 'match-config', 'schedule', 'championships', 'tournaments', 'promos', 'seasons', 'season-awards', 'events', 'contender-config', 'contender-overrides', 'companies', 'locations', 'shows', 'factions', 'tag-teams', 'announcements', 'videos', 'overalls', 'transfers', 'storyline-requests', 'rivalries', 'danger', 'users', 'features'];
 
 
 export default function AdminPanel() {
@@ -96,6 +97,7 @@ export default function AdminPanel() {
     overalls: <ManageOveralls />,
     transfers: <ManageTransfers />,
     'storyline-requests': <ManageStorylineRequests />,
+    rivalries: <AdminRivalries />,
     danger: <ClearAllData />,
   };
 

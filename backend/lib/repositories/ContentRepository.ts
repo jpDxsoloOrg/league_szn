@@ -67,6 +67,8 @@ export interface PromoCreateInput {
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamName?: string;
   targetTagTeamName?: string;
+  /** Optional pointer to the rivalry this promo advances (RIV-06). */
+  rivalryId?: string;
 }
 
 // ─── Storyline Request input types ──────────────────────────────────

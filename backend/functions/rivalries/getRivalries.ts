@@ -1,134 +1,109 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import type { Match, Player } from '../../lib/repositories';
-import { success, serverError } from '../../lib/response';
+import { success, badRequest, serverError } from '../../lib/response';
+import type { Rivalry, RivalryStatus } from '../../lib/repositories';
 
-const MIN_MATCHES_FOR_RIVALRY = 3;
-const MAX_RIVALRIES_RETURNED = 20;
+const VALID_STATUS: ReadonlyArray<RivalryStatus> = [
+  'pending',
+  'active',
+  'completed',
+  'rejected',
+  'cancelled',
+];
 
-interface RivalryAgg {
-  player1Id: string;
-  player2Id: string;
-  player1Wins: number;
-  player2Wins: number;
-  draws: number;
-  matchCount: number;
-  lastMatchDate: string;
-  championshipMatches: number;
-  recentMatchIds: string[];
+const DEFAULT_LIMIT = 25;
+const MAX_LIMIT = 100;
+
+function parseLimit(raw: string | undefined): number {
+  if (!raw) return DEFAULT_LIMIT;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_LIMIT;
+  return Math.min(Math.floor(n), MAX_LIMIT);
 }
 
-function pairKey(id1: string, id2: string): string {
-  return [id1, id2].sort().join('|');
-}
-
-function intensityBadge(matchCount: number): 'heatingUp' | 'intense' | 'historic' {
-  if (matchCount >= 8) return 'historic';
-  if (matchCount >= 5) return 'intense';
-  return 'heatingUp';
-}
-
+/**
+ * Public list endpoint for persistent rivalries.
+ *
+ * Filters: status, participantId, seasonId, eventId, cursor, limit. The
+ * primary DynamoDB query is driven by participantId (preferred) → status
+ * (next) → status=active (default), and any remaining filters are applied
+ * in-memory. seasonId/eventId join via the matches table.
+ */
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const { competition: { matches }, roster: { players } } = getRepositories();
-    const seasonId = event.queryStringParameters?.seasonId;
+    const qp = event.queryStringParameters || {};
+    const statusFilter = qp.status as RivalryStatus | undefined;
+    const participantId = qp.participantId || undefined;
+    const seasonId = qp.seasonId || undefined;
+    const eventId = qp.eventId || undefined;
+    const cursor = qp.cursor || undefined;
+    const limit = parseLimit(qp.limit ?? undefined);
 
-    const [allPlayers, allMatches] = await Promise.all([
-      players.list(),
-      matches.list(),
-    ]);
-
-    // Only include players who have a wrestler assigned (exclude Fantasy-only users)
-    const filteredPlayers = allPlayers.filter((p: Player) => p.currentWrestler);
-    let completed = allMatches.filter((m: Match) => m.status === 'completed');
-    if (seasonId) {
-      completed = completed.filter((m: Match) => m.seasonId === seasonId);
+    if (statusFilter && !VALID_STATUS.includes(statusFilter)) {
+      return badRequest(`status must be one of: ${VALID_STATUS.join(', ')}`);
     }
 
-    const playerMap = new Map(filteredPlayers.map((p: Player) => [p.playerId, p]));
+    const { rivalries, competition: { matches } } = getRepositories();
 
-    const aggMap = new Map<string, RivalryAgg>();
-
-    for (const match of completed) {
-      const participants = match.participants || [];
-      if (participants.length !== 2) continue;
-      const [a, b] = participants;
-      const key = pairKey(a, b);
-      const existing = aggMap.get(key);
-      const p1Won = match.winners?.includes(a);
-      const p2Won = match.winners?.includes(b);
-      const isDraw = !p1Won && !p2Won;
-
-      if (!existing) {
-        aggMap.set(key, {
-          player1Id: a,
-          player2Id: b,
-          player1Wins: p1Won ? 1 : 0,
-          player2Wins: p2Won ? 1 : 0,
-          draws: isDraw ? 1 : 0,
-          matchCount: 1,
-          lastMatchDate: match.date,
-          championshipMatches: match.isChampionship ? 1 : 0,
-          recentMatchIds: [match.matchId],
-        });
-      } else {
-        existing.player1Wins += p1Won ? 1 : 0;
-        existing.player2Wins += p2Won ? 1 : 0;
-        existing.draws += isDraw ? 1 : 0;
-        existing.matchCount += 1;
-        if (new Date(match.date) > new Date(existing.lastMatchDate)) {
-          existing.lastMatchDate = match.date;
-        }
-        if (match.isChampionship) existing.championshipMatches += 1;
-        existing.recentMatchIds.push(match.matchId);
-      }
+    let primary: { items: Rivalry[]; nextCursor?: string };
+    if (participantId) {
+      primary = await rivalries.listByParticipant(participantId, { limit, cursor });
+    } else if (statusFilter) {
+      primary = await rivalries.listByStatus(statusFilter, { limit, cursor });
+    } else {
+      // Public default: show ongoing storylines, not the moderation backlog.
+      primary = await rivalries.listByStatus('active', { limit, cursor });
     }
 
-    const rivalries = Array.from(aggMap.values())
-      .filter((r) => r.matchCount >= MIN_MATCHES_FOR_RIVALRY)
-      .map((r) => {
-        const sorted = [...r.recentMatchIds].sort(
-          (id1, id2) => {
-            const m1 = completed.find((m) => m.matchId === id1);
-            const m2 = completed.find((m) => m.matchId === id2);
-            const d1 = m1 ? new Date(m1.date).getTime() : 0;
-            const d2 = m2 ? new Date(m2.date).getTime() : 0;
-            return d2 - d1;
-          }
-        );
-        return {
-          ...r,
-          recentMatchIds: sorted.slice(0, 5),
-        };
-      })
-      .sort((a, b) => {
-        const scoreA = a.matchCount * 2 + (a.championshipMatches > 0 ? 3 : 0) + new Date(a.lastMatchDate).getTime() / 1e12;
-        const scoreB = b.matchCount * 2 + (b.championshipMatches > 0 ? 3 : 0) + new Date(b.lastMatchDate).getTime() / 1e12;
-        return scoreB - scoreA;
-      })
-      .slice(0, MAX_RIVALRIES_RETURNED)
-      .map((r) => {
-        const p1 = playerMap.get(r.player1Id);
-        const p2 = playerMap.get(r.player2Id);
-        return {
-          player1Id: r.player1Id,
-          player2Id: r.player2Id,
-          player1: p1 ? { playerId: p1.playerId, name: p1.name, wrestlerName: p1.currentWrestler, imageUrl: p1.imageUrl } : undefined,
-          player2: p2 ? { playerId: p2.playerId, name: p2.name, wrestlerName: p2.currentWrestler, imageUrl: p2.imageUrl } : undefined,
-          player1Wins: r.player1Wins,
-          player2Wins: r.player2Wins,
-          draws: r.draws,
-          matchCount: r.matchCount,
-          lastMatchDate: r.lastMatchDate,
-          championshipMatches: r.championshipMatches,
-          recentMatchIds: r.recentMatchIds,
-          intensityBadge: intensityBadge(r.matchCount),
-        };
+    let items: Rivalry[] = primary.items;
+
+    // In-memory filters that don't fit the primary index.
+    if (participantId && statusFilter) {
+      items = items.filter((r) => r.status === statusFilter);
+    }
+
+    if (seasonId || eventId) {
+      const allMatches = await matches.list();
+      const inScope = allMatches.filter((m) => {
+        if (seasonId && m.seasonId !== seasonId) return false;
+        if (eventId && m.eventId !== eventId) return false;
+        return true;
       });
+      const scopedParticipantPairs = new Set<string>();
+      for (const m of inScope) {
+        if (!m.participants || m.participants.length < 2) continue;
+        const key = [...m.participants].sort().join('|');
+        scopedParticipantPairs.add(key);
+      }
+      items = items.filter((r) => {
+        const key = r.participants
+          .map((p) => p.playerId)
+          .sort()
+          .join('|');
+        return scopedParticipantPairs.has(key);
+      });
+    }
 
-    return success({ rivalries });
+    // Sensitive fields are filtered server-side per ticket note.
+    const sanitized = items.map(sanitizeRivalry);
+
+    return success({
+      rivalries: sanitized,
+      nextCursor: primary.nextCursor ?? null,
+    });
   } catch (err) {
-    console.error('Error computing rivalries:', err);
-    return serverError('Failed to load rivalries');
+    console.error('Error listing rivalries:', err);
+    return serverError('Failed to list rivalries');
   }
 };
+
+/**
+ * Strip booker-only fields (moderationNote) from the public payload. The
+ * authenticated detail handler (getRivalry) re-applies role-based gating
+ * before returning the full record.
+ */
+function sanitizeRivalry(r: Rivalry): Omit<Rivalry, 'moderationNote'> {
+  const { moderationNote, ...rest } = r;
+  void moderationNote;
+  return rest;
+}

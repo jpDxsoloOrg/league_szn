@@ -58,6 +58,10 @@ vi.mock('../matchmaking/FindMatchWidget', () => ({
   default: () => null,
 }));
 
+vi.mock('../rivalries/DashboardRivalries', () => ({
+  default: () => null,
+}));
+
 import Dashboard from '../Dashboard';
 
 const emptyDashboard = {
