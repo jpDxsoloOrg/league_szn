@@ -351,7 +351,9 @@
       "adminPromos": "Admin: Promos",
       "adminContenderConfig": "Admin: Contender Config",
       "adminDataManagement": "Admin: Data Management",
-      "adminWorkflow": "Admin: Typical Workflow"
+      "adminWorkflow": "Admin: Typical Workflow",
+      "rivalries": "Rivalries",
+      "adminRivalries": "Admin: Rivalries"
     }
   },
   "languageSwitcher": {
