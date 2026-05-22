@@ -319,6 +319,7 @@ export interface MatchFilters {
   seasonId?: string;
   dateFrom?: string;
   dateTo?: string;
+  rivalryId?: string;
 }
 
 /** Activity feed item from GET /activity */

@@ -174,3 +174,40 @@ export interface RivalryActivityPage {
    */
   nextCursor: string | null;
 }
+
+// ─── Hydrated detail (RIV-02) ──────────────────────────────────────────
+
+export interface RivalryHeadToHead {
+  totalMatches: number;
+  championshipMatches: number;
+  lastMatchDate?: string;
+  recentMatchIds: string[];
+  winsByParticipant: Record<string, number>;
+  draws: number;
+}
+
+export interface RivalryUpcomingEvent {
+  eventId: string;
+  name: string;
+  date: string;
+  eventType: string;
+  venue?: string;
+}
+
+export interface RivalryRecentPromo {
+  promoId: string;
+  playerId: string;
+  title?: string;
+  content: string;
+  createdAt: string;
+}
+
+/** Shape returned by `GET /rivalry-requests/{rivalryId}`. */
+export interface HydratedRivalry {
+  rivalry: Rivalry;
+  headToHead: RivalryHeadToHead;
+  nextEvent: RivalryUpcomingEvent | null;
+  recentPromos: RivalryRecentPromo[];
+  recentMessages: RivalryMessage[];
+  notes: RivalryNote[];
+}

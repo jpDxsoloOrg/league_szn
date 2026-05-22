@@ -1,5 +1,6 @@
 import type {
   CreateRivalryInput,
+  HydratedRivalry,
   Rivalry,
   RivalryActivityPage,
   RivalryHeat,
@@ -122,7 +123,7 @@ export const rivalriesApi = {
     return fetchWithAuth(`${API_BASE_URL}/rivalry-requests${query}`, {}, signal);
   },
 
-  get: async (rivalryId: string, signal?: AbortSignal): Promise<unknown> => {
+  get: async (rivalryId: string, signal?: AbortSignal): Promise<HydratedRivalry> => {
     return fetchWithAuth(`${API_BASE_URL}/rivalry-requests/${rivalryId}`, {}, signal);
   },
 

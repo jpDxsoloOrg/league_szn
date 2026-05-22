@@ -1,0 +1,516 @@
+.rivalry-detail {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  position: relative;
+}
+
+.rivalry-detail__back {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: var(--color-text-muted, #888);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.rivalry-detail__back:hover {
+  color: var(--color-accent-gold, #c8a85a);
+}
+
+.rivalry-detail__hero {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 1rem;
+  background: linear-gradient(180deg, #161616 0%, #0c0c0c 100%);
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+}
+
+.rivalry-detail__hero--skeleton {
+  height: 280px;
+  background: linear-gradient(90deg, #1a1a1a, #2a2a2a, #1a1a1a);
+  background-size: 200% 100%;
+  animation: rivalry-detail-skeleton 1.4s linear infinite;
+}
+
+.rivalry-detail__portrait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.rivalry-detail__portrait img {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: #050505;
+}
+
+.rivalry-detail__name {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-accent-gold, #c8a85a);
+  text-align: center;
+}
+
+.rivalry-detail__vs {
+  font-size: 3rem;
+  font-weight: 900;
+  color: var(--color-accent-gold, #c8a85a);
+  letter-spacing: 0.05em;
+}
+
+.rivalry-detail__title {
+  margin: 1.5rem 0 1rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.rivalry-detail__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-bg-elevated, #1a1a1a);
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+}
+
+.rivalry-detail__stats--skeleton {
+  height: 80px;
+  background: linear-gradient(90deg, #1a1a1a, #2a2a2a, #1a1a1a);
+  background-size: 200% 100%;
+  animation: rivalry-detail-skeleton 1.4s linear infinite;
+}
+
+.rivalry-detail__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.rivalry-detail__stat-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted, #888);
+}
+
+.rivalry-detail__stat-value {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.rivalry-detail__pill {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.rivalry-detail__pill--active {
+  background: rgba(200, 168, 90, 0.18);
+  color: var(--color-accent-gold, #c8a85a);
+}
+
+.rivalry-detail__flame { color: #333; }
+.rivalry-detail__flame--on { color: var(--color-accent-gold, #c8a85a); }
+
+.rivalry-detail__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--color-border, #2a2a2a);
+  margin-bottom: 1.5rem;
+}
+
+.rivalry-detail__tab {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted, #888);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.6rem 0.9rem;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+.rivalry-detail__tab.is-active {
+  color: var(--color-accent-gold, #c8a85a);
+  border-bottom-color: var(--color-accent-gold, #c8a85a);
+}
+
+.rivalry-detail__content {
+  min-height: 200px;
+}
+
+.rivalry-detail__error {
+  padding: 2rem;
+  text-align: center;
+  color: #ff8888;
+}
+
+.rivalry-detail__message-gm {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background: var(--color-accent-gold, #c8a85a);
+  color: #111;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes rivalry-detail-skeleton {
+  to { background-position: -200% 0; }
+}
+
+/* ─── Tabs (shared) ──────────────────────────────────────────────── */
+
+.rivalry-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rivalry-tab__heading {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rivalry-tab__card {
+  padding: 1rem;
+  background: var(--color-bg-elevated, #1a1a1a);
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+}
+
+.rivalry-tab__empty {
+  padding: 1rem;
+  color: var(--color-text-muted, #888);
+  text-align: center;
+  border: 1px dashed var(--color-border, #2a2a2a);
+  border-radius: 4px;
+}
+
+.rivalry-tab__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 800px) {
+  .rivalry-tab__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rivalry-detail__portrait img {
+    width: 130px;
+    height: 130px;
+  }
+}
+
+/* ─── Notes & Plans tab ──────────────────────────────────────────── */
+
+.rivalry-detail__hint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #888);
+  font-style: italic;
+}
+
+.rivalry-detail-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.rivalry-detail-form textarea,
+.rivalry-detail-form input,
+.rivalry-detail-form select {
+  background: #111;
+  color: #eee;
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-family: inherit;
+}
+
+.rivalry-detail-form__row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rivalry-detail-form button[type='submit'] {
+  align-self: flex-end;
+  background: var(--color-accent-gold, #c8a85a);
+  color: #111;
+  border: none;
+  padding: 0.45rem 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.rivalry-detail-notes,
+.rivalry-detail-plans,
+.rivalry-detail-promos,
+.rivalry-detail-matches {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rivalry-detail-notes__meta,
+.rivalry-detail-promo__header,
+.rivalry-detail-matches li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+
+.rivalry-detail-notes__badge,
+.rivalry-detail-plans__when {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 2px;
+  background: rgba(200, 168, 90, 0.15);
+  color: var(--color-accent-gold, #c8a85a);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.rivalry-detail-plans__links {
+  display: flex;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.rivalry-detail-link {
+  color: var(--color-accent-gold, #c8a85a);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* ─── Messages tab ───────────────────────────────────────────────── */
+
+.rivalry-messages {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 800px) {
+  .rivalry-messages {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rivalry-messages__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rivalry-messages__participant {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.rivalry-messages__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: #555;
+}
+
+.rivalry-messages__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.rivalry-messages__thread {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--color-bg-elevated, #1a1a1a);
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+  padding: 1rem;
+  min-height: 360px;
+}
+
+.rivalry-messages__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.rivalry-messages__row {
+  align-self: flex-start;
+  max-width: 80%;
+  padding: 0.6rem 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+}
+
+.rivalry-messages__row--self {
+  align-self: flex-end;
+  background: rgba(200, 168, 90, 0.15);
+}
+
+.rivalry-messages__row--system {
+  align-self: stretch;
+  text-align: center;
+  background: transparent;
+  border: 1px dashed var(--color-border, #2a2a2a);
+  color: var(--color-text-muted, #888);
+  font-size: 0.85rem;
+}
+
+.rivalry-messages__row-meta {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #888);
+  margin-bottom: 0.2rem;
+}
+
+.rivalry-messages__audience {
+  margin-left: auto;
+}
+
+.rivalry-messages__sending,
+.rivalry-messages__retry {
+  font-size: 0.7rem;
+  margin-top: 0.25rem;
+}
+
+.rivalry-messages__retry {
+  background: rgba(180, 60, 60, 0.18);
+  color: #ff8888;
+  border: none;
+  padding: 0.2rem 0.5rem;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.rivalry-messages__composer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rivalry-messages__composer textarea {
+  background: #111;
+  color: #eee;
+  border: 1px solid var(--color-border, #2a2a2a);
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.rivalry-messages__composer-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rivalry-messages__effective {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #888);
+}
+
+.rivalry-messages__composer button[type='submit'] {
+  margin-left: auto;
+  background: var(--color-accent-gold, #c8a85a);
+  color: #111;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.rivalry-messages__composer button[type='submit']:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Promos tab ─────────────────────────────────────────────────── */
+
+.rivalry-detail-promo__title {
+  margin: 0.25rem 0;
+}
+
+.rivalry-detail-promo__content {
+  white-space: pre-wrap;
+}
+
+.rivalry-detail-matches__date {
+  color: var(--color-text-muted, #888);
+  font-size: 0.85rem;
+  min-width: 90px;
+}
+
+.rivalry-detail-matches__teams {
+  flex-grow: 1;
+  font-weight: 600;
+}
+
+.rivalry-detail-matches__winner {
+  font-size: 0.75rem;
+  color: var(--color-accent-gold, #c8a85a);
+}
+
+.rivalry-detail-matches__champ {
+  color: var(--color-accent-gold, #c8a85a);
+}
