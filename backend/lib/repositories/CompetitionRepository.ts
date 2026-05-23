@@ -112,6 +112,13 @@ export interface MatchesMethods {
   listByStatus(status: string): Promise<Match[]>;
   listByTournament(tournamentId: string): Promise<Match[]>;
   listBySeason(seasonId: string): Promise<Match[]>;
+  /**
+   * Every match attached to the given rivalry. Used by the rivalry-heat
+   * recompute on rating submit (RIV-23). Implementation note: there is
+   * no GSI on `rivalryId` yet, so the Dynamo driver falls back to a
+   * filtered table scan.
+   */
+  findByRivalryId(rivalryId: string): Promise<Match[]>;
   create(input: Record<string, unknown>): Promise<Match>;
   update(matchId: string, date: string, patch: Record<string, unknown>): Promise<Match>;
   delete(matchId: string, date: string): Promise<void>;

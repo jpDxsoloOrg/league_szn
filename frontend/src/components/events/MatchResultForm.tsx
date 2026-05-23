@@ -25,7 +25,6 @@ export default function MatchResultForm({
   const [isDraw, setIsDraw] = useState(false);
   const [winningTeamIndex, setWinningTeamIndex] = useState<number | null>(null);
   const [starRating, setStarRating] = useState<number | ''>('');
-  const [matchOfTheNight, setMatchOfTheNight] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,13 +84,12 @@ export default function MatchResultForm({
       // Draw: all participants get draw stat
       try {
         setError(null);
-        const payload: { winners: string[]; losers: string[]; isDraw: boolean; starRating?: number; matchOfTheNight?: boolean } = {
+        const payload: { winners: string[]; losers: string[]; isDraw: boolean; starRating?: number } = {
           winners: match.participants,
           losers: [],
           isDraw: true,
         };
         if (starRating !== '') payload.starRating = starRating as number;
-        if (matchOfTheNight) payload.matchOfTheNight = true;
         await matchesApi.recordResult(match.matchId, payload);
         onSuccess();
       } catch (err) {
@@ -112,13 +110,12 @@ export default function MatchResultForm({
 
       try {
         setError(null);
-        const payload: { winners: string[]; losers: string[]; winningTeam: number; starRating?: number; matchOfTheNight?: boolean } = {
+        const payload: { winners: string[]; losers: string[]; winningTeam: number; starRating?: number } = {
           winners,
           losers,
           winningTeam: winningTeamIndex,
         };
         if (starRating !== '') payload.starRating = starRating as number;
-        if (matchOfTheNight) payload.matchOfTheNight = true;
         await matchesApi.recordResult(match.matchId, payload);
         onSuccess();
       } catch (err) {
@@ -138,9 +135,8 @@ export default function MatchResultForm({
 
       try {
         setError(null);
-        const payload: { winners: string[]; losers: string[]; starRating?: number; matchOfTheNight?: boolean } = { winners, losers };
+        const payload: { winners: string[]; losers: string[]; starRating?: number } = { winners, losers };
         if (starRating !== '') payload.starRating = starRating as number;
-        if (matchOfTheNight) payload.matchOfTheNight = true;
         await matchesApi.recordResult(match.matchId, payload);
         onSuccess();
       } catch (err) {
@@ -274,17 +270,6 @@ export default function MatchResultForm({
               {t('match.clearRating')}
             </button>
           )}
-        </div>
-        <div className="motn-row">
-          <label className="motn-label">
-            <input
-              type="checkbox"
-              checked={matchOfTheNight}
-              onChange={(e) => setMatchOfTheNight(e.target.checked)}
-              className="motn-checkbox"
-            />
-            <span className="motn-text">{t('match.matchOfTheNight')}</span>
-          </label>
         </div>
       </div>
 

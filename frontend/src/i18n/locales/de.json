@@ -353,7 +353,9 @@
       "adminDataManagement": "Admin: Datenverwaltung",
       "adminWorkflow": "Admin: Typischer Wochenablauf",
       "rivalries": "Rivalitäten",
-      "adminRivalries": "Admin: Rivalitäten"
+      "adminRivalries": "Admin: Rivalitäten",
+      "rateMatches": "Kämpfe bewerten",
+      "rivalryHeatExplained": "Wie Rivalitäts-Hitze funktioniert"
     }
   },
   "languageSwitcher": {
@@ -446,7 +448,23 @@
     "starRating": "Sternebewertung",
     "matchOfTheNight": "Match of the Night",
     "matchOfTheNightBadge": "Match of the Night",
-    "clearRating": "Bewertung löschen"
+    "motn": {
+      "markAs": "☆ Match of the Night",
+      "unmark": "★ Match of the Night"
+    },
+    "clearRating": "Bewertung löschen",
+    "rating": {
+      "notYetRated": "Noch nicht bewertet",
+      "outOfFive": "{{rating}} von 5",
+      "votesCount_one": "{{count}} Stimme",
+      "votesCount_other": "{{count}} Stimmen",
+      "rateThisMatch": "Diesen Kampf bewerten",
+      "youRated": "Du hast {{rating}} gegeben",
+      "signInToRate": "Anmelden, um diesen Kampf zu bewerten",
+      "thanksForRating": "Danke für die Bewertung!",
+      "submitError": "Bewertung konnte nicht gesendet werden. Bitte erneut versuchen.",
+      "giveStars": "{{value}} Sterne"
+    }
   },
   "matches": {
     "slots": {
@@ -1152,6 +1170,19 @@
       "back": "Zurück",
       "minChars": "min. {{count}}",
       "maxOfMax": "{{cur}}/{{max}}"
+    }
+  },
+  "rivalry": {
+    "heat": {
+      "frozen": "Eiskalt",
+      "cold": "Kalt",
+      "warm": "Warm",
+      "hot": "Heiß",
+      "scorching": "Glühend heiß",
+      "score": "Hitze-Wert: {{score}}",
+      "recomputeButton": "Aus Bewertungen neu berechnen",
+      "recomputeHint": "Wird neu berechnet, wenn Kämpfe bewertet werden",
+      "recomputeError": "Hitze konnte nicht neu berechnet werden. Bitte erneut versuchen."
     }
   },
   "events": {

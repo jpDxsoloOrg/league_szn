@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { matchesApi } from '../../../services/api';
 import type { Match, Player } from '../../../types';
 import type { HydratedRivalry } from '../../../types/rivalry';
+import { resolvePlayerFullLabel } from '../rivalryUtils';
 
 interface TabProps {
   hydrated: HydratedRivalry;
@@ -49,14 +50,18 @@ export default function FutureMatchesTab({ hydrated, players }: TabProps) {
           if (mounted) setMatches(upcoming);
           return;
         }
-        return matchesApi.getAll({ status: 'scheduled' }, controller.signal).then((scheduled) => {
-          const overlap = scheduled.filter((m) => {
+        // Legacy fallback. Fetch all matches (single call), filter to
+        // upcoming states + lifecycle window + at-least-two rivalry
+        // participants. Outsiders in the match (e.g. a triple-threat
+        // involving the two rivals + a third party) are allowed.
+        return matchesApi.getAll({}, controller.signal).then((everything) => {
+          const overlap = everything.filter((m) => {
+            if (m.status !== 'scheduled' && m.status !== 'open-signups') return false;
             if (!m.participants || m.participants.length < 2) return false;
             if (!withinWindow(m.date)) return false;
             let hits = 0;
             for (const pid of m.participants) {
               if (participantSet.has(pid)) hits++;
-              else return false;
             }
             return hits >= 2;
           });
@@ -88,7 +93,7 @@ export default function FutureMatchesTab({ hydrated, players }: TabProps) {
               {new Date(m.date).toLocaleString()}
             </span>
             <span className="rivalry-detail-matches__teams">
-              {m.participants.map((id) => lookup.get(id)?.currentWrestler ?? id).join(' vs ')}
+              {m.participants.map((id) => resolvePlayerFullLabel(lookup.get(id), id)).join(' vs ')}
             </span>
             {m.isChampionship && (
               <span className="rivalry-detail-matches__champ">★</span>

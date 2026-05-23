@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { playersApi, rivalriesApi } from '../../services/api';
 import type { Player } from '../../types';
-import type { Rivalry, RivalryStatus } from '../../types/rivalry';
+import type { Rivalry, RivalryHeat, RivalryStatus } from '../../types/rivalry';
+import HeatBadge from '../rivalries/HeatBadge';
 import './AdminRivalries.css';
+
+const HEAT_TIERS: RivalryHeat[] = ['frozen', 'cold', 'warm', 'hot', 'scorching'];
 
 type FilterChip = 'all' | RivalryStatus;
 
@@ -34,6 +37,8 @@ export default function AdminRivalries() {
   const [modalNote, setModalNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rowBusy, setRowBusy] = useState<Record<string, boolean>>({});
+  const [rowError, setRowError] = useState<Record<string, string | null>>({});
 
   const refresh = async () => {
     const fetches: Promise<{ rivalries: Rivalry[] }>[] = [];
@@ -77,6 +82,59 @@ export default function AdminRivalries() {
     if (!playerId) return '—';
     const p = lookup.get(playerId);
     return p?.currentWrestler ?? p?.name ?? playerId;
+  }
+
+  function setRowBusyFor(rivalryId: string, value: boolean) {
+    setRowBusy((prev) => ({ ...prev, [rivalryId]: value }));
+  }
+
+  function setRowErrorFor(rivalryId: string, value: string | null) {
+    setRowError((prev) => ({ ...prev, [rivalryId]: value }));
+  }
+
+  async function changeHeat(rivalry: Rivalry, nextHeat: RivalryHeat) {
+    if (nextHeat === rivalry.heat) return;
+    setRowBusyFor(rivalry.rivalryId, true);
+    setRowErrorFor(rivalry.rivalryId, null);
+    try {
+      const updated = await rivalriesApi.update(rivalry.rivalryId, { heat: nextHeat });
+      setRivalries((prev) =>
+        prev.map((r) => (r.rivalryId === updated.rivalryId ? updated : r)),
+      );
+    } catch (e) {
+      setRowErrorFor(
+        rivalry.rivalryId,
+        e instanceof Error ? e.message : String(e),
+      );
+    } finally {
+      setRowBusyFor(rivalry.rivalryId, false);
+    }
+  }
+
+  async function recomputeHeat(rivalry: Rivalry) {
+    setRowBusyFor(rivalry.rivalryId, true);
+    setRowErrorFor(rivalry.rivalryId, null);
+    try {
+      const res = await rivalriesApi.recomputeHeat(rivalry.rivalryId);
+      setRivalries((prev) =>
+        prev.map((r) =>
+          r.rivalryId === rivalry.rivalryId
+            ? { ...r, heat: res.heat, heatScore: res.heatScore }
+            : r,
+        ),
+      );
+    } catch (e) {
+      setRowErrorFor(
+        rivalry.rivalryId,
+        e instanceof Error
+          ? e.message
+          : t('rivalry.heat.recomputeError', {
+              defaultValue: 'Could not recompute heat. Try again.',
+            }),
+      );
+    } finally {
+      setRowBusyFor(rivalry.rivalryId, false);
+    }
   }
 
   async function performModalAction() {
@@ -173,7 +231,43 @@ export default function AdminRivalries() {
                   <td>{nameOf(r.requestedBy)}</td>
                   <td>{nameOf(opponent?.playerId)}</td>
                   <td>{r.title}</td>
-                  <td>{r.heat}</td>
+                  <td className="admin-rivalries__heat-cell">
+                    <HeatBadge heat={r.heat} heatScore={r.heatScore} size="sm" />
+                    <select
+                      className="admin-rivalries__heat-select"
+                      value={r.heat}
+                      disabled={rowBusy[r.rivalryId]}
+                      aria-label={t('rivalries.admin.columnHeat')}
+                      title={t('rivalry.heat.recomputeHint', {
+                        defaultValue: 'Will be recomputed when matches are rated',
+                      })}
+                      onChange={(e) => changeHeat(r, e.target.value as RivalryHeat)}
+                    >
+                      {HEAT_TIERS.map((h) => (
+                        <option key={h} value={h}>
+                          {t(`rivalry.heat.${h}`, {
+                            defaultValue:
+                              h.charAt(0).toUpperCase() + h.slice(1),
+                          })}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="admin-rivalries__recompute"
+                      disabled={rowBusy[r.rivalryId]}
+                      onClick={() => recomputeHeat(r)}
+                    >
+                      {t('rivalry.heat.recomputeButton', {
+                        defaultValue: 'Recompute from ratings',
+                      })}
+                    </button>
+                    {rowError[r.rivalryId] && (
+                      <span className="admin-rivalries__row-error">
+                        {rowError[r.rivalryId]}
+                      </span>
+                    )}
+                  </td>
                   <td>{t(`rivalries.status.${r.status}`)}</td>
                   <td className="admin-rivalries__actions">
                     {r.status === 'pending' && (

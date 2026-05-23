@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { playersApi, rivalriesApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Player } from '../../types';
-import type { HydratedRivalry, RivalryHeat, RivalryStatus } from '../../types/rivalry';
+import type { HydratedRivalry, RivalryStatus } from '../../types/rivalry';
 import {
   DEFAULT_WRESTLER_IMAGE,
   applyImageFallback,
@@ -16,10 +16,9 @@ import FutureMatchesTab from './tabs/FutureMatchesTab';
 import PromosTab from './tabs/PromosTab';
 import NotesPlansTab from './tabs/NotesPlansTab';
 import MessagesTab from './tabs/MessagesTab';
-import { resolveWrestlerName } from './rivalryUtils';
+import { resolveWrestlerName, resolveWrestlerFullLabel } from './rivalryUtils';
+import HeatBadge from './HeatBadge';
 import './RivalryDetail.css';
-
-const HEAT_FLAMES: Record<RivalryHeat, number> = { cold: 1, warm: 3, hot: 5 };
 
 const TAB_DEFS: Array<{ id: string; labelKey: string }> = [
   { id: 'overview', labelKey: 'rivalries.detail.overviewTab' },
@@ -114,8 +113,12 @@ export default function RivalryDetail() {
   const pidB = partB?.playerId ?? '';
   const a = playerLookup.get(pidA);
   const b = playerLookup.get(pidB);
+  // alt text gets the bare wrestler name; the visible heading carries
+  // the WrestlerName (PlayerName · PSN) suffix.
   const nameA = resolveWrestlerName(partA, a);
   const nameB = resolveWrestlerName(partB, b);
+  const labelA = resolveWrestlerFullLabel(partA, a);
+  const labelB = resolveWrestlerFullLabel(partB, b);
 
   const callerLabel = email ? email.split('@')[0] : '';
   const isBooker = !!r.bookerName && r.bookerName === callerLabel;
@@ -142,7 +145,6 @@ export default function RivalryDetail() {
 
   const winsA = (pidA && hydrated.headToHead.winsByParticipant[pidA]) ?? 0;
   const winsB = (pidB && hydrated.headToHead.winsByParticipant[pidB]) ?? 0;
-  const flames = HEAT_FLAMES[r.heat] ?? 1;
 
   return (
     <div className="rivalry-detail">
@@ -159,7 +161,7 @@ export default function RivalryDetail() {
             decoding="async"
             onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
           />
-          <h2 className="rivalry-detail__name">{nameA}</h2>
+          <h2 className="rivalry-detail__name">{labelA}</h2>
         </div>
         <span className="rivalry-detail__vs" aria-hidden="true">VS</span>
         <div className="rivalry-detail__portrait">
@@ -170,7 +172,7 @@ export default function RivalryDetail() {
             decoding="async"
             onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
           />
-          <h2 className="rivalry-detail__name">{nameB}</h2>
+          <h2 className="rivalry-detail__name">{labelB}</h2>
         </div>
       </header>
 
@@ -232,18 +234,7 @@ export default function RivalryDetail() {
         <div className="rivalry-detail__stat">
           <span className="rivalry-detail__stat-label">Heat</span>
           <span className="rivalry-detail__stat-value">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <span
-                key={i}
-                className={
-                  i < flames
-                    ? 'rivalry-detail__flame rivalry-detail__flame--on'
-                    : 'rivalry-detail__flame'
-                }
-              >
-                🔥
-              </span>
-            ))}
+            <HeatBadge heat={r.heat} heatScore={r.heatScore} size="md" />
           </span>
         </div>
         <div className="rivalry-detail__stat">

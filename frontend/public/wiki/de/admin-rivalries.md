@@ -57,6 +57,12 @@ Schließe eine Rivalität ab, sobald die Storyline ihr Payoff-Match hatte und du
 
 Wrestler bekommen eine Benachrichtigung. Das Abschluss-Modal akzeptiert eine optionale Abschluss-Notiz — nutze sie für „WrestleMania 40, Cena retired Punk", damit das Archiv nicht namenlos ist.
 
+## Hitze ergibt sich aus Kampfbewertungen
+
+Jede Rivalität hat eine **Hitze**-Stufe (Eiskalt → Kalt → Warm → Heiß → Glühend heiß), die auf der Rivalitäts-Karte und der Detailseite sichtbar ist. Seit Welle 3 wird die Hitze nicht mehr manuell gesetzt: Sie wird automatisch aus den Sternebewertungen der Nutzer für die Kämpfe der Rivalität neu berechnet.
+
+Du kannst die Hitze einer Rivalität weiterhin manuell überschreiben, doch die nächste abgegebene Bewertung eines ihrer Kämpfe überschreibt deinen Wert wieder. Mit der Schaltfläche **Aus Bewertungen neu berechnen** kannst du eine Neuberechnung sofort erzwingen. Siehe [Wie Rivalitäts-Hitze funktioniert](/guide/wiki/rivalry-heat-explained) für die vollständige Formel und die Schwellenwerte.
+
 ## Massen-Aufräumen
 
 Der **Erledigte löschen**-Button löscht jede Rivalität mit Status `completed`, `rejected` oder `cancelled` hart. Nutze das, wenn sich Testdaten oder Rauschen angesammelt haben. Das Bestätigungs-Modal zeigt die exakte Zahl.

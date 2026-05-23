@@ -52,6 +52,9 @@ interface MetaRow {
   description?: string;
   status: RivalryStatus;
   heat: RivalryHeat;
+  /** Optional on the wire — legacy rows are read back as 0 in
+   *  `aggregateFromRows`. */
+  heatScore?: number;
   requestedBy: string;
   moderatedBy?: string;
   moderationNote?: string;
@@ -82,6 +85,7 @@ function aggregateFromRows(meta: MetaRow, participantRows: ParticipantRow[]): Ri
     description: meta.description,
     status: meta.status,
     heat: meta.heat,
+    heatScore: typeof meta.heatScore === 'number' ? meta.heatScore : 0,
     requestedBy: meta.requestedBy,
     moderatedBy: meta.moderatedBy,
     moderationNote: meta.moderationNote,
@@ -177,6 +181,7 @@ export class DynamoRivalriesRepository implements RivalriesRepository {
       description: input.description,
       status: 'pending',
       heat: input.heat ?? 'warm',
+      heatScore: 0,
       requestedBy: input.requestedBy,
       createdAt: now,
       updatedAt: now,

@@ -4,6 +4,7 @@ import { success, badRequest, notFound, forbidden, serverError } from '../../lib
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import type { RivalryHeat, RivalryPatch } from '../../lib/repositories';
+import { HEAT_TIER_CENTRES } from '../../lib/policies/rivalryHeat';
 
 interface UpdateBody {
   title?: string;
@@ -15,7 +16,13 @@ interface UpdateBody {
   bookerName?: string;
 }
 
-const VALID_HEAT: ReadonlyArray<RivalryHeat> = ['cold', 'warm', 'hot'];
+const VALID_HEAT: ReadonlyArray<RivalryHeat> = [
+  'frozen',
+  'cold',
+  'warm',
+  'hot',
+  'scorching',
+];
 
 /**
  * PUT /rivalry-requests/{rivalryId}.
@@ -91,6 +98,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return badRequest(`heat must be one of: ${VALID_HEAT.join(', ')}`);
       }
       patch.heat = body.heat;
+      // Manual admin override: snap heatScore to the centre of the tier
+      // so the score stays consistent with the displayed tier. The next
+      // rating-driven recompute (RIV-26) will overwrite both fields
+      // from the rated-match signal.
+      patch.heatScore = HEAT_TIER_CENTRES[body.heat];
     }
     if (body.moderationNote !== undefined) {
       patch.moderationNote = body.moderationNote.trim() || undefined;

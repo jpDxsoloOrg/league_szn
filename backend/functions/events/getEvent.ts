@@ -2,6 +2,8 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { authenticate } from '../../lib/authenticate';
+import { getAuthContext } from '../../lib/auth';
 import { hydrateMatchSlots } from '../matches/hydrateSlots';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -12,7 +14,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Event ID is required');
     }
 
-    const { leagueOps: { events }, roster: { players }, competition: { matches, championships, stipulations } } = getRepositories();
+    const { leagueOps: { events }, roster: { players }, competition: { matches, championships, stipulations }, matchRatings } = getRepositories();
 
     // Get the event
     const eventItem = await events.findById(eventId);
@@ -22,6 +24,43 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const matchCards = eventItem.matchCards || [];
+
+    // RIV-24: batch-lookup the caller's ratings for every match in this
+    // event up front so we can decorate each enriched match without making
+    // per-match follow-up calls. Public endpoint — guests get false/null
+    // on every row. The route has no Lambda authorizer attached so we
+    // optionally verify the bearer token ourselves; a failed/missing token
+    // is silently treated as anonymous.
+    //
+    // Defensive wrappers: an env misconfiguration that breaks JWT verification
+    // or a transient MatchRatings table issue must not prevent the event
+    // detail page from rendering. Failures here downgrade to the anonymous
+    // view rather than serverError-ing the whole response.
+    let callerUserId: string | null = null;
+    try {
+      if (event.headers?.Authorization || event.headers?.authorization) {
+        await authenticate(event).catch(() => undefined);
+      }
+      if (event.requestContext) {
+        callerUserId = getAuthContext(event).sub || null;
+      }
+    } catch (authErr) {
+      console.warn('getEvent: optional auth failed, continuing as anonymous', authErr);
+    }
+    let userRatingsByMatchId = new Map<string, number>();
+    if (callerUserId) {
+      try {
+        const matchIdsForRatings = matchCards
+          .map((c) => c.matchId)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0);
+        if (matchIdsForRatings.length > 0) {
+          const userRatings = await matchRatings.getByMatchIdsForUser(matchIdsForRatings, callerUserId);
+          userRatingsByMatchId = new Map(userRatings.map((r) => [r.matchId, r.rating]));
+        }
+      } catch (ratingsErr) {
+        console.warn('getEvent: user-rating lookup failed, falling back to no ratings', ratingsErr);
+      }
+    }
 
     // Build enrichedMatches array matching the EventWithMatches frontend type
     const enrichedMatches = await Promise.all(
@@ -103,6 +142,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           stipulationName = stipulation?.name;
         }
 
+        const userRatingForMatch = userRatingsByMatchId.get(match.matchId);
+
         return {
           position: card.position,
           matchId: card.matchId,
@@ -121,7 +162,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             status: match.status,
             ...(hydratedSlots && { slots: hydratedSlots, slotsRequired: match.slotsRequired }),
             ...(match.starRating != null && { starRating: match.starRating }),
+            ...(match.ratingAverage != null && { ratingAverage: match.ratingAverage }),
+            ratingsCount: typeof match.ratingsCount === 'number' ? match.ratingsCount : 0,
             ...(match.matchOfTheNight != null && { matchOfTheNight: match.matchOfTheNight }),
+            userHasRated: userRatingForMatch !== undefined,
+            userRating: userRatingForMatch ?? null,
           },
         };
       })
@@ -132,7 +177,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       enrichedMatches,
     });
   } catch (err) {
-    console.error('Error fetching event:', err);
-    return serverError('Failed to fetch event');
+    const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error('Error fetching event:', detail, stack);
+    return serverError(`Failed to fetch event: ${detail}`);
   }
 };

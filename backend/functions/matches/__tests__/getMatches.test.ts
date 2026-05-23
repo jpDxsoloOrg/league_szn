@@ -451,7 +451,10 @@ describe('getMatches', () => {
     const result = await getMatches(makeEvent(), ctx, cb);
 
     expect(result!.statusCode).toBe(500);
-    expect(JSON.parse(result!.body).message).toBe('Failed to fetch matches');
+    // Handler now appends the underlying error detail so callers can see
+    // what actually broke instead of a generic 500.
+    expect(JSON.parse(result!.body).message).toMatch(/^Failed to fetch matches/);
+    expect(JSON.parse(result!.body).message).toContain('DB failure');
   });
 
   it('filters by rivalryId via direct field comparison (RIV-06)', async () => {
@@ -485,5 +488,82 @@ describe('getMatches', () => {
 
     expect(body).toHaveLength(1);
     expect(body[0].matchId).toBe('m-tagged');
+  });
+
+  // RIV-24: every match in the response carries userHasRated + userRating.
+  describe('RIV-24 user rating decoration', () => {
+    function makeAuthedEvent(userId: string): APIGatewayProxyEvent {
+      return makeEvent({
+        requestContext: {
+          authorizer: { principalId: userId, username: 'tester', email: '', groups: '' },
+        } as unknown as APIGatewayProxyEvent['requestContext'],
+      });
+    }
+
+    it('decorates matches with userHasRated / userRating for an authenticated caller', async () => {
+      await repos.competition.matches.create({
+        matchId: 'm1', date: '2024-01-01T00:00:00Z', status: 'completed',
+        participants: [], createdAt: new Date().toISOString(),
+      });
+      await repos.competition.matches.create({
+        matchId: 'm2', date: '2024-01-02T00:00:00Z', status: 'completed',
+        participants: [], createdAt: new Date().toISOString(),
+      });
+      await repos.competition.matches.create({
+        matchId: 'm3', date: '2024-01-03T00:00:00Z', status: 'completed',
+        participants: [], createdAt: new Date().toISOString(),
+      });
+      await repos.competition.matches.create({
+        matchId: 'm4', date: '2024-01-04T00:00:00Z', status: 'completed',
+        participants: [], createdAt: new Date().toISOString(),
+      });
+      await repos.competition.matches.create({
+        matchId: 'm5', date: '2024-01-05T00:00:00Z', status: 'completed',
+        participants: [], createdAt: new Date().toISOString(),
+      });
+
+      // User u1 rated m1 (4 stars) and m4 (3.5 stars). Other 3 should be unrated.
+      await repos.matchRatings.create({ matchId: 'm1', userId: 'u1', rating: 4 });
+      await repos.matchRatings.create({ matchId: 'm4', userId: 'u1', rating: 3.5 });
+      // Noise from another user.
+      await repos.matchRatings.create({ matchId: 'm2', userId: 'other', rating: 5 });
+
+      const result = await getMatches(makeAuthedEvent('u1'), ctx, cb);
+      expect(result!.statusCode).toBe(200);
+      const body = JSON.parse(result!.body) as Array<{
+        matchId: string; userHasRated: boolean; userRating: number | null;
+      }>;
+      expect(body).toHaveLength(5);
+      const byId = new Map(body.map((m) => [m.matchId, m]));
+      expect(byId.get('m1')).toMatchObject({ userHasRated: true, userRating: 4 });
+      expect(byId.get('m4')).toMatchObject({ userHasRated: true, userRating: 3.5 });
+      expect(byId.get('m2')).toMatchObject({ userHasRated: false, userRating: null });
+      expect(byId.get('m3')).toMatchObject({ userHasRated: false, userRating: null });
+      expect(byId.get('m5')).toMatchObject({ userHasRated: false, userRating: null });
+    });
+
+    it('returns userHasRated=false and userRating=null on every match for unauthenticated callers', async () => {
+      await repos.competition.matches.create({
+        matchId: 'm1', date: '2024-01-01T00:00:00Z', status: 'completed',
+        participants: [], createdAt: new Date().toISOString(),
+      });
+      await repos.competition.matches.create({
+        matchId: 'm2', date: '2024-01-02T00:00:00Z', status: 'completed',
+        participants: [], createdAt: new Date().toISOString(),
+      });
+      // Someone else has rated these — must not leak to anonymous callers.
+      await repos.matchRatings.create({ matchId: 'm1', userId: 'someone', rating: 5 });
+
+      const result = await getMatches(makeEvent(), ctx, cb);
+      expect(result!.statusCode).toBe(200);
+      const body = JSON.parse(result!.body) as Array<{
+        matchId: string; userHasRated: boolean; userRating: number | null;
+      }>;
+      expect(body).toHaveLength(2);
+      for (const m of body) {
+        expect(m.userHasRated).toBe(false);
+        expect(m.userRating).toBeNull();
+      }
+    });
   });
 });

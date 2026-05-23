@@ -4,6 +4,7 @@ import { handler as getRivalryHandler } from './getRivalry';
 import { handler as updateRivalryHandler } from './updateRivalry';
 import { handler as respondRivalryHandler } from './respondRivalry';
 import { handler as deleteRivalryHandler } from './deleteRivalry';
+import { handler as recomputeHeatHandler } from './recomputeHeat';
 import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
@@ -49,6 +50,12 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/rivalry-requests/{rivalryId}',
     method: 'DELETE',
     handler: deleteRivalryHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/rivalry-requests/{rivalryId}/recompute-heat',
+    method: 'POST',
+    handler: recomputeHeatHandler,
     requireAuth: true,
   },
 ];

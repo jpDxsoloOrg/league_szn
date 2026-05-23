@@ -144,6 +144,34 @@ describe('matchesApi', () => {
     expect(fetchCallOptions().method).toBe('PUT');
     expect(fetchCallOptions().body).toBe(JSON.stringify(result));
   });
+
+  it('submitRating calls POST /matches/:id/ratings with rating body', async () => {
+    const responseBody = {
+      matchId: 'm1',
+      userId: 'u1',
+      rating: 4,
+      matchAggregate: { ratingAverage: 4.2, starRating: 4, ratingsCount: 5 },
+      rivalry: null,
+    };
+    mockFetch(responseBody, 201);
+
+    const result = await matchesApi.submitRating('m1', 4);
+
+    expect(fetchCallUrl()).toBe(`${API_BASE}/matches/m1/ratings`);
+    expect(fetchCallOptions().method).toBe('POST');
+    expect(fetchCallOptions().body).toBe(JSON.stringify({ rating: 4 }));
+    expect(result).toEqual(responseBody);
+  });
+
+  it('setMatchOfTheNight calls PUT /matches/:id/motn with flag body', async () => {
+    mockFetch({ matchId: 'm1', matchOfTheNight: true });
+
+    await matchesApi.setMatchOfTheNight('m1', true);
+
+    expect(fetchCallUrl()).toBe(`${API_BASE}/matches/m1/motn`);
+    expect(fetchCallOptions().method).toBe('PUT');
+    expect(fetchCallOptions().body).toBe(JSON.stringify({ matchOfTheNight: true }));
+  });
 });
 
 // ===========================================================================

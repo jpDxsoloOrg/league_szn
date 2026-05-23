@@ -2,6 +2,8 @@ import type { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { Player, Championship, ChampionshipHistoryEntry } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import { authenticate } from '../../lib/authenticate';
+import { getAuthContext } from '../../lib/auth';
 
 interface DashboardChampion {
   championshipId: string;
@@ -31,12 +33,18 @@ interface DashboardMatch {
   championshipName?: string;
   championshipImageUrl?: string;
   starRating?: number;
+  ratingAverage?: number;
+  ratingsCount?: number;
   matchOfTheNight?: boolean;
   winnerName: string;
   winnerImageUrl?: string;
   loserName: string;
   loserImageUrl?: string;
   eventId?: string;
+  /** True iff the calling user has rated this match. False for guests (RIV-24). */
+  userHasRated: boolean;
+  /** This user's rating for the match, or null if unrated / unauthenticated (RIV-24). */
+  userRating: number | null;
 }
 
 interface DashboardSeason {
@@ -65,22 +73,42 @@ interface DashboardResponse {
   activeChallengesCount: number;
 }
 
-export const handler: APIGatewayProxyHandler = async () => {
+export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const { competition: { championships, matches, stipulations }, roster: { players }, season: { seasons, standings: seasonStandings }, leagueOps: { events }, user: { challenges } } = getRepositories();
+    const { competition: { championships, matches, stipulations }, roster: { players }, season: { seasons, standings: seasonStandings }, leagueOps: { events }, user: { challenges }, matchRatings } = getRepositories();
 
-    // Fetch data: championships, players, seasons, matches, stipulations; events and challenges via query
-    const [championshipList, playerList, seasonList, matchList, stipulationList, upcomingEventsList, inProgressEventsList, pendingChallengeList] =
-      await Promise.all([
-        championships.list(),
-        players.list(),
-        seasons.list(),
-        matches.list(),
-        stipulations.list(),
-        events.listByStatus('upcoming'),
-        events.listByStatus('in-progress'),
-        challenges.listByStatus('pending'),
-      ]);
+    // Fetch data with allSettled so a single bad data source doesn't blank
+    // the whole dashboard — each list defaults to [] on failure and the
+    // dashboard renders with whatever was reachable. The actual error gets
+    // logged for the next pass to triage.
+    const results = await Promise.allSettled([
+      championships.list(),
+      players.list(),
+      seasons.list(),
+      matches.list(),
+      stipulations.list(),
+      events.listByStatus('upcoming'),
+      events.listByStatus('in-progress'),
+      challenges.listByStatus('pending'),
+    ]);
+    const labels = [
+      'championships', 'players', 'seasons', 'matches', 'stipulations',
+      'upcoming events', 'in-progress events', 'pending challenges',
+    ];
+    const unwrap = <T>(idx: number, fallback: T): T => {
+      const r = results[idx];
+      if (r.status === 'fulfilled') return r.value as T;
+      console.error(`Dashboard: ${labels[idx]} fetch failed:`, r.reason);
+      return fallback;
+    };
+    const championshipList = unwrap<Championship[]>(0, []);
+    const playerList = unwrap<Player[]>(1, []);
+    const seasonList = unwrap<Awaited<ReturnType<typeof seasons.list>>>(2, []);
+    const matchList = unwrap<Awaited<ReturnType<typeof matches.list>>>(3, []);
+    const stipulationList = unwrap<Awaited<ReturnType<typeof stipulations.list>>>(4, []);
+    const upcomingEventsList = unwrap<Awaited<ReturnType<typeof events.listByStatus>>>(5, []);
+    const inProgressEventsList = unwrap<Awaited<ReturnType<typeof events.listByStatus>>>(6, []);
+    const pendingChallengeList = unwrap<Awaited<ReturnType<typeof challenges.listByStatus>>>(7, []);
 
     // Only include players who have a wrestler assigned (exclude Fantasy-only users)
     const wrestlerPlayers = playerList.filter((p) => p.currentWrestler);
@@ -202,7 +230,28 @@ export const handler: APIGatewayProxyHandler = async () => {
       (m) => (m.updatedAt || m.date) >= threeDaysAgo
     );
     // Safety cap to avoid unbounded responses
-    const recentResults: DashboardMatch[] = recentCompletedMatches.slice(0, 50).map((m) => {
+    const recentResultMatches = recentCompletedMatches.slice(0, 50);
+
+    // RIV-24: batch-lookup the caller's ratings for the matches we're about
+    // to project, so the FE rating widget renders in the right state without
+    // N+1 follow-up calls. Public endpoint — guests get false/null for every
+    // row. Wrapped defensively because getAuthContext reads requestContext,
+    // which may be undefined for synthetic test events. Optionally verifies
+    // the bearer token so authenticated callers actually get their state.
+    if (event?.headers && (event.headers.Authorization || event.headers.authorization)) {
+      await authenticate(event).catch(() => undefined);
+    }
+    const callerUserId = event?.requestContext
+      ? (getAuthContext(event).sub || null)
+      : null;
+    let userRatingsByMatchId = new Map<string, number>();
+    if (callerUserId && recentResultMatches.length > 0) {
+      const matchIds = recentResultMatches.map((m) => m.matchId);
+      const userRatings = await matchRatings.getByMatchIdsForUser(matchIds, callerUserId);
+      userRatingsByMatchId = new Map(userRatings.map((r) => [r.matchId, r.rating]));
+    }
+
+    const recentResults: DashboardMatch[] = recentResultMatches.map((m) => {
       const winnerIds = m.winners!;
       const loserIds = m.losers!;
       const winnerName = (winnerIds || [])
@@ -228,6 +277,7 @@ export const handler: APIGatewayProxyHandler = async () => {
       const stipulationName = stipulationId ? stipulationMap.get(stipulationId) : undefined;
       const matchType = m.matchFormat ?? m.matchType ?? 'singles';
       const isChampionship = Boolean(m.isChampionship && champId);
+      const userRatingForMatch = userRatingsByMatchId.get(m.matchId);
       return {
         matchId: m.matchId,
         date: m.date,
@@ -237,6 +287,8 @@ export const handler: APIGatewayProxyHandler = async () => {
         championshipName: champ ? champ.name : undefined,
         championshipImageUrl: champ?.imageUrl,
         starRating: m.starRating,
+        ratingAverage: m.ratingAverage,
+        ratingsCount: m.ratingsCount,
         matchOfTheNight: Boolean(m.matchOfTheNight),
         winnerName: winnerName || '\u2014',
         winnerImageUrl: firstWinner
@@ -247,6 +299,8 @@ export const handler: APIGatewayProxyHandler = async () => {
           ? playerMap.get(firstLoser)?.imageUrl
           : undefined,
         eventId: m.eventId,
+        userHasRated: userRatingForMatch !== undefined,
+        userRating: userRatingForMatch ?? null,
       };
     });
 
@@ -323,7 +377,9 @@ export const handler: APIGatewayProxyHandler = async () => {
 
     return success(response);
   } catch (err) {
-    console.error('Dashboard error:', err);
-    return serverError('Failed to load dashboard data');
+    const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error('Dashboard error:', detail, stack);
+    return serverError(`Failed to load dashboard data: ${detail}`);
   }
 };

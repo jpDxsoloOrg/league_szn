@@ -28,10 +28,13 @@ const CHIP_LABEL: Record<ChipId, string> = {
   slowBurn: 'rivalries.hub.chips.slowBurn',
 };
 
-const CHIP_TO_HEAT: Record<Exclude<ChipId, 'all'>, RivalryHeat> = {
-  heated: 'hot',
-  brewing: 'warm',
-  slowBurn: 'cold',
+// Chips map to a set of tier names (RIV-21 widened to 5 tiers, but the
+// hub chips stay grouped into the same three buckets so the filter UI
+// doesn't sprout new buttons mid-rollout).
+const CHIP_TO_HEAT: Record<Exclude<ChipId, 'all'>, ReadonlyArray<RivalryHeat>> = {
+  heated: ['hot', 'scorching'],
+  brewing: ['warm'],
+  slowBurn: ['cold', 'frozen'],
 };
 
 const ACTIVITY_PAGE_SIZE = 25;
@@ -147,8 +150,8 @@ export default function RivalryHub() {
 
   const filtered = useMemo(() => {
     if (activeChip === 'all') return rivalries;
-    const heat = CHIP_TO_HEAT[activeChip];
-    return rivalries.filter((r) => r.heat === heat);
+    const tiers = CHIP_TO_HEAT[activeChip];
+    return rivalries.filter((r) => tiers.includes(r.heat));
   }, [rivalries, activeChip]);
 
   const loadMoreActivity = async () => {

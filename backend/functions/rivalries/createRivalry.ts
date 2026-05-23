@@ -16,7 +16,13 @@ interface CreateRivalryBody {
   }>;
 }
 
-const VALID_HEAT: ReadonlyArray<RivalryHeat> = ['cold', 'warm', 'hot'];
+const VALID_HEAT: ReadonlyArray<RivalryHeat> = [
+  'frozen',
+  'cold',
+  'warm',
+  'hot',
+  'scorching',
+];
 const VALID_ROLE: ReadonlyArray<RivalryParticipantRole> = ['instigator', 'rival'];
 const VALID_VARIANT: ReadonlyArray<WrestlerVariant> = ['primary', 'alternate'];
 

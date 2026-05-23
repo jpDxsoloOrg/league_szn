@@ -41,6 +41,7 @@ provider:
     RIVALRIES_TABLE: ${self:service}-rivalries-${self:provider.stage}
     RIVALRY_MESSAGES_TABLE: ${self:service}-rivalry-messages-${self:provider.stage}
     RIVALRY_NOTES_TABLE: ${self:service}-rivalry-notes-${self:provider.stage}
+    MATCH_RATINGS_TABLE: ${self:service}-match-ratings-${self:provider.stage}
     VIDEOS_TABLE: ${self:service}-videos-${self:provider.stage}
     ANNOUNCEMENTS_TABLE: ${self:service}-announcements-${self:provider.stage}
     NOTIFICATIONS_TABLE: ${self:service}-notifications-${self:provider.stage}
@@ -68,6 +69,15 @@ provider:
             - dynamodb:PutItem
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
+            # BatchGetItem is its own IAM action separate from GetItem.
+            # The MatchRatings repository's getByMatchIdsForUser uses
+            # BatchGetCommand to fetch the caller's ratings for every
+            # match in one round trip — without this, the dashboard
+            # and event-detail endpoints 500 with AccessDeniedException.
+            - dynamodb:BatchGetItem
+            # BatchWriteItem rounds out the batch family for future
+            # bulk-write paths; harmless to grant alongside the others.
+            - dynamodb:BatchWriteItem
           Resource:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PLAYERS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PLAYERS_TABLE}/index/*
@@ -117,6 +127,7 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRY_MESSAGES_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRY_NOTES_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.RIVALRY_NOTES_TABLE}/index/*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.MATCH_RATINGS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.VIDEOS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.ANNOUNCEMENTS_TABLE}
@@ -405,6 +416,14 @@ functions:
       - http:
           path: matches/{matchId}/slots/{slotId}
           method: any
+          cors: *corsConfig
+      - http:
+          path: matches/{matchId}/motn
+          method: put
+          cors: *corsConfig
+      - http:
+          path: matches/{matchId}/ratings
+          method: post
           cors: *corsConfig
       - http:
           path: matches/{matchId}
@@ -817,6 +836,10 @@ functions:
           cors: *corsConfig
       - http:
           path: rivalry-requests/{rivalryId}/respond
+          method: post
+          cors: *corsConfig
+      - http:
+          path: rivalry-requests/{rivalryId}/recompute-heat
           method: post
           cors: *corsConfig
 
@@ -2031,6 +2054,26 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
+
+    # Match ratings (RIV-20): one row per (matchId, userId). Enforces "one
+    # rating per viewer per match" via the (matchId, userId) composite key
+    # plus a ConditionExpression on create. Aggregates (average / count /
+    # match-of-the-night) are computed downstream in RIV-22.
+    MatchRatingsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.MATCH_RATINGS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: matchId
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: matchId
+            KeyType: HASH
+          - AttributeName: userId
+            KeyType: RANGE
 
     VideosTable:
       Type: AWS::DynamoDB::Table

@@ -55,6 +55,8 @@ export interface RatedMatchSummary {
   matchId: string;
   date: string;
   starRating: number;
+  /** Number of user ratings submitted for this match (RIV-22+). */
+  ratingsCount?: number;
   matchOfTheNight: boolean;
   participants: string[];
   winners?: string[];

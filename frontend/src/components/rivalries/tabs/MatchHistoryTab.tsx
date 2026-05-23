@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { matchesApi } from '../../../services/api';
 import type { Match, Player } from '../../../types';
 import type { HydratedRivalry } from '../../../types/rivalry';
+import { resolvePlayerFullLabel } from '../rivalryUtils';
 
 interface TabProps {
   hydrated: HydratedRivalry;
@@ -50,7 +51,10 @@ export default function MatchHistoryTab({ hydrated, players }: TabProps) {
           return;
         }
         // Legacy fallback — show matches whose participants overlap AND
-        // that fall within the rivalry's lifecycle window.
+        // that fall within the rivalry's lifecycle window. A match
+        // counts as a rivalry match if at least two of its participants
+        // are in the rivalry; outsiders (e.g. a triple-threat involving
+        // the rivals + a third party) are allowed.
         return matchesApi.getAll({ status: 'completed' }, controller.signal).then((all) => {
           const overlap = all.filter((m) => {
             if (!m.participants || m.participants.length < 2) return false;
@@ -58,7 +62,6 @@ export default function MatchHistoryTab({ hydrated, players }: TabProps) {
             let hits = 0;
             for (const pid of m.participants) {
               if (participantSet.has(pid)) hits++;
-              else return false;
             }
             return hits >= 2;
           });
@@ -92,11 +95,11 @@ export default function MatchHistoryTab({ hydrated, players }: TabProps) {
                 {new Date(m.date).toLocaleDateString()}
               </span>
               <span className="rivalry-detail-matches__teams">
-                {m.participants.map((id) => lookup.get(id)?.currentWrestler ?? id).join(' vs ')}
+                {m.participants.map((id) => resolvePlayerFullLabel(lookup.get(id), id)).join(' vs ')}
               </span>
               {m.winners && m.winners.length > 0 && (
                 <span className="rivalry-detail-matches__winner">
-                  W: {m.winners.map((id) => lookup.get(id)?.currentWrestler ?? id).join(', ')}
+                  W: {m.winners.map((id) => resolvePlayerFullLabel(lookup.get(id), id)).join(', ')}
                 </span>
               )}
               {m.isChampionship && (

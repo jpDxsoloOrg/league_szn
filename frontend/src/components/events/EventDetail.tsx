@@ -20,6 +20,9 @@ import EventCheckInRosterPanel from './EventCheckInRosterPanel';
 import MatchSlots from './MatchSlots';
 import SlotEditDialog from './SlotEditDialog';
 import type { HydratedMatchSlot } from '../../types';
+import { StarRating } from '../matches/StarRating';
+import { RateMatchWidget } from '../matches/RateMatchWidget';
+import { MotnToggleButton } from '../matches/MotnToggleButton';
 import { formatCalendarDate, toCalendarDate } from '../../utils/dateUtils';
 import './EventDetail.css';
 
@@ -531,6 +534,7 @@ export default function EventDetail() {
               ? () => handleDeleteMatch(match.matchId)
               : undefined
           }
+          onMatchUpdated={refreshAfterMutation}
         />
         {slots && slots.length > 0 && match.matchData && (
           <MatchSlots
@@ -902,6 +906,9 @@ interface MatchEntryProps {
       championshipName?: string;
       status: MatchStatus;
       starRating?: number;
+      ratingsCount?: number;
+      userHasRated?: boolean;
+      userRating?: number | null;
       matchOfTheNight?: boolean;
     } | null;
   };
@@ -911,14 +918,9 @@ interface MatchEntryProps {
   onRecordResult?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
-}
-
-function matchStarsDisplay(rating: number): string {
-  const stars: string[] = [];
-  for (let i = 1; i <= 5; i++) {
-    stars.push(i <= Math.floor(rating) ? '\u2605' : '\u2606');
-  }
-  return stars.join('');
+  /** Invoked after a rating submission or a MOTN toggle so the parent can
+   *  refetch the event and propagate the new aggregate / state. */
+  onMatchUpdated?: () => void;
 }
 
 function MatchEntry({
@@ -929,6 +931,7 @@ function MatchEntry({
   onRecordResult,
   onEdit,
   onDelete,
+  onMatchUpdated,
 }: MatchEntryProps) {
   const { t } = useTranslation();
   const { designation, matchData } = match;
@@ -972,9 +975,12 @@ function MatchEntry({
         {isCompleted && (matchData.starRating != null || matchData.matchOfTheNight) && (
           <span className="match-awards">
             {matchData.starRating != null && (
-              <span className="match-star-rating" title={t('match.starRating')}>
-                {matchStarsDisplay(matchData.starRating)}
-                <span className="match-star-value">{matchData.starRating}</span>
+              <span className="match-star-rating">
+                <StarRating
+                  starRating={matchData.starRating}
+                  ratingsCount={matchData.ratingsCount}
+                  size="sm"
+                />
               </span>
             )}
             {matchData.matchOfTheNight && (
@@ -1011,6 +1017,25 @@ function MatchEntry({
 
       {match.notes && (
         <div className="match-notes">{match.notes}</div>
+      )}
+
+      {isCompleted && (
+        <div className="match-rate-widget-wrap">
+          <RateMatchWidget
+            matchId={matchData.matchId}
+            matchStatus={matchData.status}
+            userHasRated={matchData.userHasRated ?? false}
+            userRating={matchData.userRating ?? null}
+            onRated={onMatchUpdated}
+          />
+          {isAdmin && (
+            <MotnToggleButton
+              matchId={matchData.matchId}
+              matchOfTheNight={!!matchData.matchOfTheNight}
+              onToggled={onMatchUpdated}
+            />
+          )}
+        </div>
       )}
 
       {isAdmin && (onRecordResult || onEdit || onDelete) && (

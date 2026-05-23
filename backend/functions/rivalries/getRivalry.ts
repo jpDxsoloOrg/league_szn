@@ -202,12 +202,12 @@ function computeHeadToHead(
     if (m.status !== 'completed') return false;
     if (!m.participants || m.participants.length < 2) return false;
     if (!isWithinWindow(m.date, window)) return false;
-    // Every match participant must be in the rivalry set, and the match must
-    // include at least two of the rivalry's participants.
+    // The match must include at least two of the rivalry's participants.
+    // Outsiders are tolerated (e.g. a triple-threat with the two rivals +
+    // a third party still counts toward the rivalry's H2H).
     let hits = 0;
     for (const pid of m.participants) {
       if (set.has(pid)) hits++;
-      else return false;
     }
     return hits >= 2;
   });

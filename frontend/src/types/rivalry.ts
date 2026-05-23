@@ -15,8 +15,21 @@ export type RivalryStatus =
   | 'rejected'   // admin declined the request
   | 'cancelled'; // withdrawn before/after approval
 
-/** Intensity tier surfaced to the UI as the storyline escalates. */
-export type RivalryHeat = 'cold' | 'warm' | 'hot';
+/**
+ * Intensity tier surfaced to the UI as the storyline escalates.
+ *
+ * Expanded from 3 → 5 tiers in RIV-21 so the heat policy
+ * (`backend/lib/policies/rivalryHeat.ts`) has room to express scorching
+ * feuds and dead-end frozen ones distinctly. The two new tiers fall
+ * outside the old 'cold'/'warm'/'hot' band:
+ *
+ *   frozen   → far below pivot (very low ratings)
+ *   cold     → below pivot
+ *   warm     → neutral / no signal
+ *   hot      → above pivot
+ *   scorching→ far above pivot (consistently high ratings)
+ */
+export type RivalryHeat = 'frozen' | 'cold' | 'warm' | 'hot' | 'scorching';
 
 /**
  * A participant's narrative role inside a rivalry. Kept loose so the
@@ -47,6 +60,12 @@ export interface Rivalry {
   description?: string;
   status: RivalryStatus;
   heat: RivalryHeat;
+  /**
+   * Raw heat score backing the tier. Clamped to ±100 by the policy
+   * module. Legacy rivalries without a recorded score are read back
+   * as 0.
+   */
+  heatScore: number;
   participants: RivalryParticipant[];
   /** Player who submitted the request. */
   requestedBy: string;

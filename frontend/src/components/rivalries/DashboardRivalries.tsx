@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { rivalriesApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Rivalry } from '../../types/rivalry';
+import HeatBadge from './HeatBadge';
 
 /**
  * Dashboard surface card for the logged-in wrestler's active
@@ -55,7 +56,7 @@ export default function DashboardRivalries() {
           <li key={r.rivalryId}>
             <Link to={`/rivalries/${r.rivalryId}`} className="db-rivalries__item">
               <span className="db-rivalries__title">{r.title}</span>
-              <span className="db-rivalries__heat">heat: {r.heat}</span>
+              <HeatBadge heat={r.heat} heatScore={r.heatScore} size="sm" />
             </Link>
           </li>
         ))}

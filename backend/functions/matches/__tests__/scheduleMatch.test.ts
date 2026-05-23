@@ -17,6 +17,7 @@ const {
   mockPromosUpdate,
   mockStipulationsFindById,
   mockRivalriesGet,
+  mockRivalriesListByParticipant,
 } = vi.hoisted(() => ({
   mockPlayersFindById: vi.fn(),
   mockChampionshipsFindById: vi.fn(),
@@ -31,6 +32,7 @@ const {
   mockPromosUpdate: vi.fn(),
   mockStipulationsFindById: vi.fn(),
   mockRivalriesGet: vi.fn(),
+  mockRivalriesListByParticipant: vi.fn(),
 }));
 
 vi.mock('../../../lib/repositories', () => ({
@@ -56,7 +58,7 @@ vi.mock('../../../lib/repositories', () => ({
     content: {
       promos: { findById: mockPromosFindById, update: mockPromosUpdate },
     },
-    rivalries: { get: mockRivalriesGet },
+    rivalries: { get: mockRivalriesGet, listByParticipant: mockRivalriesListByParticipant },
   }),
 }));
 
@@ -95,7 +97,12 @@ function validBody(overrides: Record<string, unknown> = {}) {
 // ---- Tests -----------------------------------------------------------------
 
 describe('scheduleMatch', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Default: no rivalries contain the match participants. Specific tests
+    // override this when exercising the auto-link path.
+    mockRivalriesListByParticipant.mockResolvedValue({ items: [] });
+  });
 
   it('creates a match with valid data and returns 201', async () => {
     mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
@@ -318,7 +325,10 @@ function slotBody(overrides: Record<string, unknown> = {}) {
 }
 
 describe('scheduleMatch (slot-mode)', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRivalriesListByParticipant.mockResolvedValue({ items: [] });
+  });
 
   it('creates an open-signups match when all slots are open', async () => {
     mockMatchesCreate.mockResolvedValue({});
@@ -468,6 +478,7 @@ describe('scheduleMatch (rivalryId — RIV-06)', () => {
       playerId: id, name: id, divisionId: undefined,
     }));
     mockMatchesCreate.mockResolvedValue(undefined);
+    mockRivalriesListByParticipant.mockResolvedValue({ items: [] });
   });
 
   it('persists rivalryId when both match participants are in the rivalry', async () => {
@@ -517,11 +528,149 @@ describe('scheduleMatch (rivalryId — RIV-06)', () => {
     expect(mockMatchesCreate).not.toHaveBeenCalled();
   });
 
-  it('is a no-op when rivalryId is omitted (backwards compat)', async () => {
+  it('does not call rivalries.get when rivalryId is omitted', async () => {
     const r = await scheduleMatch(ev({ body: validBody() }), ctx, cb);
 
     expect(r!.statusCode).toBe(201);
+    // Auto-link queries listByParticipant, not get — guard against regressions
+    // where we'd accidentally re-introduce an explicit get-by-id call.
     expect(mockRivalriesGet).not.toHaveBeenCalled();
+  });
+
+  it('auto-links to the single matching active rivalry when rivalryId omitted', async () => {
+    mockRivalriesListByParticipant.mockResolvedValueOnce({
+      items: [
+        {
+          rivalryId: 'r-auto',
+          status: 'active',
+          participants: [
+            { playerId: 'p1', role: 'instigator', addedAt: '' },
+            { playerId: 'p2', role: 'rival', addedAt: '' },
+          ],
+        },
+      ],
+    });
+
+    const r = await scheduleMatch(ev({ body: validBody() }), ctx, cb);
+
+    expect(r!.statusCode).toBe(201);
+    expect(mockMatchesCreate).toHaveBeenCalledTimes(1);
+    expect(mockMatchesCreate.mock.calls[0][0].rivalryId).toBe('r-auto');
+    expect(mockRivalriesListByParticipant).toHaveBeenCalledWith('p1');
+  });
+
+  it('auto-links when extra (non-rivalry) participants are in a multi-way match', async () => {
+    // Triple Threat: p1 + p2 are the rivalry; p3 is an outsider. The
+    // match should still auto-link because every rivalry participant is
+    // present in the match.
+    mockRivalriesListByParticipant.mockResolvedValueOnce({
+      items: [
+        {
+          rivalryId: 'r-auto',
+          status: 'active',
+          participants: [
+            { playerId: 'p1', role: 'instigator', addedAt: '' },
+            { playerId: 'p2', role: 'rival', addedAt: '' },
+          ],
+        },
+      ],
+    });
+
+    const r = await scheduleMatch(ev({
+      body: validBody({ participants: ['p1', 'p2', 'p3'], matchFormat: 'Triple Threat' }),
+    }), ctx, cb);
+
+    expect(r!.statusCode).toBe(201);
+    expect(mockMatchesCreate.mock.calls[0][0].rivalryId).toBe('r-auto');
+  });
+
+  it('does not auto-link when no rivalry contains every match participant', async () => {
+    // Candidate rivalry has [p1, p99]; match has [p1, p2]. p99 isn't in
+    // the match, so the rivalry doesn't apply.
+    mockRivalriesListByParticipant.mockResolvedValueOnce({
+      items: [
+        {
+          rivalryId: 'r-other',
+          status: 'active',
+          participants: [
+            { playerId: 'p1', role: 'instigator', addedAt: '' },
+            { playerId: 'p99', role: 'rival', addedAt: '' },
+          ],
+        },
+      ],
+    });
+
+    const r = await scheduleMatch(ev({ body: validBody() }), ctx, cb);
+
+    expect(r!.statusCode).toBe(201);
     expect(mockMatchesCreate.mock.calls[0][0].rivalryId).toBeUndefined();
+  });
+
+  it('does not auto-link when the matching rivalry is not active', async () => {
+    mockRivalriesListByParticipant.mockResolvedValueOnce({
+      items: [
+        {
+          rivalryId: 'r-completed',
+          status: 'completed',
+          participants: [
+            { playerId: 'p1', role: 'instigator', addedAt: '' },
+            { playerId: 'p2', role: 'rival', addedAt: '' },
+          ],
+        },
+      ],
+    });
+
+    const r = await scheduleMatch(ev({ body: validBody() }), ctx, cb);
+
+    expect(r!.statusCode).toBe(201);
+    expect(mockMatchesCreate.mock.calls[0][0].rivalryId).toBeUndefined();
+  });
+
+  it('does not auto-link when multiple active rivalries match (ambiguous)', async () => {
+    mockRivalriesListByParticipant.mockResolvedValueOnce({
+      items: [
+        {
+          rivalryId: 'r-a',
+          status: 'active',
+          participants: [
+            { playerId: 'p1', role: 'instigator', addedAt: '' },
+            { playerId: 'p2', role: 'rival', addedAt: '' },
+          ],
+        },
+        {
+          rivalryId: 'r-b',
+          status: 'active',
+          participants: [
+            { playerId: 'p1', role: 'instigator', addedAt: '' },
+            { playerId: 'p2', role: 'rival', addedAt: '' },
+          ],
+        },
+      ],
+    });
+
+    const r = await scheduleMatch(ev({ body: validBody() }), ctx, cb);
+
+    expect(r!.statusCode).toBe(201);
+    expect(mockMatchesCreate.mock.calls[0][0].rivalryId).toBeUndefined();
+  });
+
+  it('prefers an explicit rivalryId over auto-link when both could apply', async () => {
+    // listByParticipant should never be consulted when the caller has
+    // already named the rivalry.
+    mockRivalriesGet.mockResolvedValueOnce({
+      rivalryId: 'r-explicit',
+      participants: [
+        { playerId: 'p1', role: 'instigator', addedAt: '' },
+        { playerId: 'p2', role: 'rival', addedAt: '' },
+      ],
+    });
+
+    const r = await scheduleMatch(ev({
+      body: validBody({ rivalryId: 'r-explicit' }),
+    }), ctx, cb);
+
+    expect(r!.statusCode).toBe(201);
+    expect(mockMatchesCreate.mock.calls[0][0].rivalryId).toBe('r-explicit');
+    expect(mockRivalriesListByParticipant).not.toHaveBeenCalled();
   });
 });

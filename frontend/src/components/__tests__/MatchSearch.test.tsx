@@ -28,6 +28,18 @@ vi.mock('../../services/api', () => ({
   matchTypesApi: { getAll: mockGetAllMatchTypes },
 }));
 
+vi.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({
+    isAuthenticated: false,
+    isAdmin: false,
+    isAdminOrModerator: false,
+    isModerator: false,
+    isWrestler: false,
+    user: null,
+    role: null,
+  }),
+}));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, opts?: Record<string, unknown>) => {

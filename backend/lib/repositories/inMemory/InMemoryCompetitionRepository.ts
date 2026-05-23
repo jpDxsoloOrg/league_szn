@@ -80,6 +80,10 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
       return Array.from(this.matchesStore.values()).filter((m) => m.seasonId === seasonId);
     },
 
+    findByRivalryId: async (rivalryId: string): Promise<Match[]> => {
+      return Array.from(this.matchesStore.values()).filter((m) => m.rivalryId === rivalryId);
+    },
+
     create: async (input: Record<string, unknown>): Promise<Match> => {
       const match = input as unknown as Match;
       this.matchesStore.set(match.matchId, match);

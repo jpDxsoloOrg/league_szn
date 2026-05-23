@@ -16,6 +16,7 @@
  * relative to the lookup wins it unlocks.
  */
 import type { ListPage, ListPageOptions } from './factionMessages';
+import type { HeatTier } from '../policies/rivalryHeat';
 
 // ─── Re-exports for convenience ────────────────────────────────────────
 export type { ListPage, ListPageOptions } from './factionMessages';
@@ -29,7 +30,14 @@ export type RivalryStatus =
   | 'rejected'
   | 'cancelled';
 
-export type RivalryHeat = 'cold' | 'warm' | 'hot';
+/**
+ * The visible heat tier on a rivalry. Expanded from 3 → 5 tiers in
+ * RIV-21 so the `computeRivalryHeat` policy has room to express
+ * scorching feuds and dead-end frozen ones distinctly.
+ *
+ * Sourced from the policy module so the two stay in lock-step.
+ */
+export type RivalryHeat = HeatTier;
 
 export type RivalryParticipantRole = 'instigator' | 'rival';
 
@@ -55,6 +63,12 @@ export interface Rivalry {
   description?: string;
   status: RivalryStatus;
   heat: RivalryHeat;
+  /**
+   * Raw heat score from `computeRivalryHeat`. Always within
+   * [-HEAT_SCORE_CAP, +HEAT_SCORE_CAP]. Legacy rows missing this
+   * field are read back as 0.
+   */
+  heatScore: number;
   participants: RivalryParticipant[];
   requestedBy: string;
   moderatedBy?: string;
@@ -119,6 +133,9 @@ export interface RivalryPatch {
   description?: string;
   status?: RivalryStatus;
   heat?: RivalryHeat;
+  /** Allow callers (admin overrides, RIV-26 recompute) to write the
+   *  raw score alongside the tier name. */
+  heatScore?: number;
   moderatedBy?: string;
   moderationNote?: string;
   startedAt?: string;

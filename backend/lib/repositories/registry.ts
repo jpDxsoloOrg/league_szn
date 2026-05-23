@@ -13,6 +13,7 @@ import type {
   RivalryMessagesRepository,
   RivalryNotesRepository,
 } from './rivalries';
+import type { MatchRatingsRepository } from './matchRatings';
 import type { UnitOfWorkFactory } from './unitOfWork';
 
 export interface Repositories {
@@ -27,6 +28,7 @@ export interface Repositories {
   rivalries: RivalriesRepository;
   rivalryMessages: RivalryMessagesRepository;
   rivalryNotes: RivalryNotesRepository;
+  matchRatings: MatchRatingsRepository;
   runInTransaction: UnitOfWorkFactory;
 
   // Admin bulk operations

@@ -1,0 +1,105 @@
+/* Interactive half-star rating picker (RIV-28).
+ *
+ * Visual strategy: copies the read-only StarRating widget pixel-for-pixel.
+ * Two ★ glyph layers (muted background underneath, gold foreground on top
+ * with overflow:hidden width clipping). The picker adds two half-width
+ * <button> hit-targets stacked on top via z-index for hover preview +
+ * click commit.
+ */
+
+.rate-match-widget {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65em;
+  line-height: 1;
+}
+
+.rate-match-widget--guest .rate-match-widget__label,
+.rate-match-widget--rated .rate-match-widget__label {
+  color: var(--color-text-muted, #888888);
+  font-size: 0.9em;
+}
+
+.rate-match-widget__label {
+  color: var(--color-text, inherit);
+  font-size: 0.95em;
+}
+
+.rate-match-widget__thanks {
+  color: var(--color-accent-gold, #c8a85a);
+  font-size: 0.85em;
+}
+
+.rate-match-widget__error {
+  color: var(--color-danger, #d04040);
+  font-size: 0.85em;
+}
+
+.rate-match-widget__stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 1.4em;
+}
+
+.rate-match-widget__star {
+  position: relative;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+}
+
+.rate-match-widget__star-bg,
+.rate-match-widget__star-fg {
+  position: absolute;
+  inset: 0;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.rate-match-widget__star-bg {
+  color: var(--color-text-muted, #888888);
+  opacity: 0.55;
+}
+
+.rate-match-widget__star-fg {
+  color: var(--color-accent-gold, #c8a85a);
+  overflow: hidden;
+}
+
+.rate-match-widget__star--full .rate-match-widget__star-fg { width: 1em; }
+.rate-match-widget__star--half .rate-match-widget__star-fg { width: 0.5em; }
+.rate-match-widget__star--empty .rate-match-widget__star-fg { width: 0; }
+
+/* Hit-target halves layered above the glyphs. */
+.rate-match-widget__half {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.rate-match-widget__half--left  { left: 0; }
+.rate-match-widget__half--right { left: 50%; }
+
+.rate-match-widget__half:focus-visible {
+  outline: 2px solid var(--color-accent-gold, #c8a85a);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+.rate-match-widget__half:disabled {
+  cursor: progress;
+}

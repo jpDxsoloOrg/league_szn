@@ -127,6 +127,15 @@ export interface UnitOfWork {
   /** Stage deletion of one rivalry note row. */
   deleteRivalryNote(note: RivalryNote): void;
 
+  // ── Match ratings (RIV-20) ───────────────────────────────────────
+  /**
+   * Stage a PUT for a single user's rating on a single match. The PUT
+   * carries a `attribute_not_exists(matchId)` ConditionExpression so a
+   * duplicate `(matchId, userId)` rating fails the transaction; the
+   * commit path surfaces this as `RatingAlreadyExistsError`.
+   */
+  createMatchRating(input: { matchId: string; userId: string; rating: number }): void;
+
   /**
    * Stage assigning a wrestler to a player's primary or alternate slot.
    * Sets `isInUse=true` (string on-disk), `assignedPlayerId`, `assignedSlot`.

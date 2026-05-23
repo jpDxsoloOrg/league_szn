@@ -167,6 +167,18 @@ export const rivalriesApi = {
     });
   },
 
+  /**
+   * Admin/Moderator-only manual refresh of a rivalry's heat score and
+   * tier from its matches' rating aggregates. RIV-26.
+   */
+  recomputeHeat: async (
+    rivalryId: string,
+  ): Promise<{ rivalryId: string; heatScore: number; heat: RivalryHeat; ratedMatchCount: number }> => {
+    return fetchWithAuth(`${API_BASE_URL}/rivalry-requests/${rivalryId}/recompute-heat`, {
+      method: 'POST',
+    });
+  },
+
   messages: {
     list: async (
       rivalryId: string,

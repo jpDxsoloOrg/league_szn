@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { Player } from '../../types';
-import type { Rivalry, RivalryHeat, RivalryStatus } from '../../types/rivalry';
+import type { Rivalry, RivalryStatus } from '../../types/rivalry';
 import {
   DEFAULT_WRESTLER_IMAGE,
   applyImageFallback,
   resolveImageSrc,
 } from '../../constants/imageFallbacks';
-import { resolveWrestlerName } from './rivalryUtils';
+import { resolveWrestlerName, resolveWrestlerFullLabel } from './rivalryUtils';
+import HeatBadge from './HeatBadge';
 import './RivalryCard.css';
 
 interface RivalryCardProps {
@@ -16,12 +17,6 @@ interface RivalryCardProps {
   matchCount: number;
   lastActivityAt?: string;
 }
-
-const HEAT_FLAMES: Record<RivalryHeat, number> = {
-  cold: 1,
-  warm: 3,
-  hot: 5,
-};
 
 const STATUS_LABEL_KEY: Record<RivalryStatus, string> = {
   pending: 'rivalries.status.pending',
@@ -38,15 +33,19 @@ export default function RivalryCard({
   lastActivityAt,
 }: RivalryCardProps) {
   const { t } = useTranslation();
-  const flames = HEAT_FLAMES[rivalry.heat] ?? 1;
 
   const lookup = new Map(participants.map((p) => [p.playerId, p] as const));
   const partA = rivalry.participants[0];
   const partB = rivalry.participants[1];
   const a = partA ? lookup.get(partA.playerId) : undefined;
   const b = partB ? lookup.get(partB.playerId) : undefined;
+  // Wrestler name (no extras) for image alt text — assistive tech reads
+  // the player+PSN info from the visible caption below it.
   const nameA = resolveWrestlerName(partA, a);
   const nameB = resolveWrestlerName(partB, b);
+  // Visible captions get the full WrestlerName (PlayerName · PSN) format.
+  const labelA = resolveWrestlerFullLabel(partA, a);
+  const labelB = resolveWrestlerFullLabel(partB, b);
 
   const lastActivityLabel = lastActivityAt
     ? new Date(lastActivityAt).toLocaleDateString()
@@ -61,7 +60,7 @@ export default function RivalryCard({
             alt={nameA}
             onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
           />
-          <span className="rivalry-card__avatar-name">{nameA}</span>
+          <span className="rivalry-card__avatar-name">{labelA}</span>
         </div>
 
         <span className="rivalry-card__vs" aria-hidden="true">vs</span>
@@ -72,7 +71,7 @@ export default function RivalryCard({
             alt={nameB}
             onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
           />
-          <span className="rivalry-card__avatar-name">{nameB}</span>
+          <span className="rivalry-card__avatar-name">{labelB}</span>
         </div>
       </div>
 
@@ -84,21 +83,7 @@ export default function RivalryCard({
         >
           {t(STATUS_LABEL_KEY[rivalry.status])}
         </span>
-        <span className="rivalry-card__heat" aria-label={`heat: ${rivalry.heat}`}>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <span
-              key={i}
-              className={
-                i < flames
-                  ? 'rivalry-card__flame rivalry-card__flame--on'
-                  : 'rivalry-card__flame'
-              }
-              aria-hidden="true"
-            >
-              🔥
-            </span>
-          ))}
-        </span>
+        <HeatBadge heat={rivalry.heat} heatScore={rivalry.heatScore} size="sm" />
       </div>
 
       <div className="rivalry-card__footer">

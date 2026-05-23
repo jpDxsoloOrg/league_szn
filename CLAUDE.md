@@ -426,6 +426,17 @@ aws cloudformation describe-stacks --stack-name wwe-2k-league-api-devtest \
 8. ~~**Seasons Support**: Track standings per season, season resets.~~ **DONE** - Full season management implemented
 9. **Advanced Search**: No filtering/search beyond basic status filters.
 
+### Heat tunables (RIV-21)
+
+The rivalry heat formula lives in `backend/lib/policies/rivalryHeat.ts`.
+Pivot (`HEAT_PIVOT`), weight cap (`HEAT_MAX_WEIGHT`), score cap
+(`HEAT_SCORE_CAP`), tier thresholds (`HEAT_TIER_THRESHOLDS`), and the
+admin-override centres (`HEAT_TIER_CENTRES`) are all exported
+constants — tune them there without touching handlers. The seed in
+`backend/functions/admin/seedData.ts` reads `HEAT_TIER_CENTRES` so
+seeded rivalries stay aligned with whatever bucket boundaries are
+configured.
+
 ## Troubleshooting
 
 ### Frontend can't connect to backend

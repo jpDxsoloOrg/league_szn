@@ -17,6 +17,7 @@
     "notify-pending-invites": "ts-node scripts/notify-pending-invites.ts",
     "notify-pending-invites:prod": "AWS_PROFILE=league-szn DYNAMODB_ENDPOINT=https://dynamodb.us-east-1.amazonaws.com SERVICE_NAME=wwe-2k-league-api STAGE=dev ts-node scripts/notify-pending-invites.ts",
     "migrate:wrestlers-roster": "ts-node scripts/migrate-wrestlers-roster.ts",
+    "backfill-rivalry-heat": "ts-node scripts/backfill-rivalry-heat.ts",
     "lint": "eslint functions/ lib/",
     "test": "vitest run",
     "test:watch": "vitest"

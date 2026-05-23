@@ -695,6 +695,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           matchId: m.matchId,
           date: m.date,
           starRating: m.starRating,
+          ratingsCount: m.ratingsCount,
           matchOfTheNight: m.matchOfTheNight ?? false,
           participants: m.participants,
           winners: m.winners,

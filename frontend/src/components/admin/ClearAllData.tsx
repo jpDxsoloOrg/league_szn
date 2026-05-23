@@ -11,6 +11,8 @@ const SEED_MODULES: { id: string; label: string }[] = [
   { id: 'events', label: 'Events' },
   { id: 'contenders', label: 'Contenders' },
   { id: 'config', label: 'Config (Site, Stipulations, Match Types)' },
+  { id: 'rivalries', label: 'Rivalries (with sample promos, messages, notes)' },
+  { id: 'matchRatings', label: 'Match Ratings (with rivalry heat scores)' },
 ];
 
 export default function ClearAllData() {
@@ -19,6 +21,7 @@ export default function ClearAllData() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [resultCounts, setResultCounts] = useState<Record<string, number> | null>(null);
+  const [errorCounts, setErrorCounts] = useState<Record<string, number> | null>(null);
   const [resultType, setResultType] = useState<'deleted' | 'created' | null>(null);
   const [confirmText, setConfirmText] = useState('');
   const [selectedSeedModules, setSelectedSeedModules] = useState<string[]>([]);
@@ -50,12 +53,18 @@ export default function ClearAllData() {
 
     try {
       const result = await adminApi.clearAll();
-      setSuccess('All data has been cleared successfully!');
+      // The backend now returns a partial-success response whenever any
+      // table reported per-row delete errors — surface that distinction
+      // so the admin sees exactly which tables didn't drain.
+      const errCounts = (result as { errorCounts?: Record<string, number> }).errorCounts ?? null;
+      setSuccess(result.message ?? 'All data has been cleared successfully!');
       setResultCounts(result.deletedCounts);
+      setErrorCounts(errCounts);
       setResultType('deleted');
       setConfirmText('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to clear data');
+      setErrorCounts(null);
     } finally {
       setClearLoading(false);
     }
@@ -78,9 +87,11 @@ export default function ClearAllData() {
           : await adminApi.seedData();
       setSuccess('Sample data has been generated successfully!');
       setResultCounts(result.createdCounts);
+      setErrorCounts(null);
       setResultType('created');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to seed data');
+      setErrorCounts(null);
     } finally {
       setSeedLoading(false);
     }
@@ -139,6 +150,8 @@ export default function ClearAllData() {
             <li><strong>4 Championships</strong> - World, Intercontinental, Tag Team, and US titles</li>
             <li><strong>12 Matches</strong> - Mix of completed and scheduled matches</li>
             <li><strong>2 Tournaments</strong> - Single elimination and round robin</li>
+            <li><strong>3 Rivalries</strong> - Sample storylines across heat tiers, with linked promos, messages and notes</li>
+            <li><strong>Match Ratings</strong> - Star ratings on completed matches with rivalry heat scores recomputed from them</li>
           </ul>
         </div>
         <button
@@ -163,6 +176,8 @@ export default function ClearAllData() {
           <li>All tournaments</li>
           <li>All seasons and standings</li>
           <li>All divisions</li>
+          <li>All rivalries (including their promos, messages, notes, and heat)</li>
+          <li>All match ratings submitted by users</li>
         </ul>
         <p className="warning-text">
           This action <strong>CANNOT</strong> be undone. Make sure you have exported any data you want to keep before proceeding.
@@ -187,6 +202,10 @@ export default function ClearAllData() {
                     <li>Seasons: {resultCounts['seasons'] ?? 0}</li>
                     <li>Season Standings: {resultCounts['seasonStandings'] ?? 0}</li>
                     <li>Divisions: {resultCounts['divisions'] ?? 0}</li>
+                    <li>Rivalries: {resultCounts['rivalries'] ?? 0}</li>
+                    <li>Rivalry Messages: {resultCounts['rivalryMessages'] ?? 0}</li>
+                    <li>Rivalry Notes: {resultCounts['rivalryNotes'] ?? 0}</li>
+                    <li>Match Ratings: {resultCounts['matchRatings'] ?? 0}</li>
                   </>
                 ) : (
                   <>
@@ -198,9 +217,26 @@ export default function ClearAllData() {
                     <li>Championship History: {resultCounts['championshipHistory'] ?? 0}</li>
                     <li>Matches: {resultCounts['matches'] ?? 0}</li>
                     <li>Tournaments: {resultCounts['tournaments'] ?? 0}</li>
+                    <li>Rivalries: {resultCounts['rivalries'] ?? 0}</li>
+                    <li>Rivalry Messages: {resultCounts['rivalryMessages'] ?? 0}</li>
+                    <li>Rivalry Notes: {resultCounts['rivalryNotes'] ?? 0}</li>
+                    <li>Match Ratings: {resultCounts['matchRatings'] ?? 0}</li>
                   </>
                 )}
               </ul>
+              {errorCounts && Object.keys(errorCounts).length > 0 && (
+                <div className="result-counts">
+                  <h4>Errors (some rows could not be processed):</h4>
+                  <ul>
+                    {Object.entries(errorCounts).map(([key, count]) => (
+                      <li key={key}>{key}: {count}</li>
+                    ))}
+                  </ul>
+                  <p style={{ fontStyle: 'italic', fontSize: '0.85em', marginTop: '8px' }}>
+                    Check the backend logs for the underlying cause. Common reasons: a table missing in this environment, a schema mismatch, or an IAM permission denial.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

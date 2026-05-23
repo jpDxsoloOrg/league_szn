@@ -13,22 +13,9 @@ import Skeleton from './ui/Skeleton';
 import FindMatchWidget from './matchmaking/FindMatchWidget';
 import ChampionCarousel from './ChampionCarousel';
 import DashboardRivalries from './rivalries/DashboardRivalries';
+import { StarRating } from './matches/StarRating';
 import { formatCalendarDate } from '../utils/dateUtils';
 import './Dashboard.css';
-
-function renderStarRating(rating: number): string {
-  const stars: string[] = [];
-  for (let i = 1; i <= 5; i++) {
-    if (i <= Math.floor(rating)) {
-      stars.push('\u2605');
-    } else if (i === Math.ceil(rating) && rating % 1 >= 0.5) {
-      stars.push('\u2605');
-    } else {
-      stars.push('\u2606');
-    }
-  }
-  return stars.join('');
-}
 
 function formatCountdown(dateStr: string, currentTime: number, t: (key: string) => string): string {
   const target = new Date(dateStr).getTime();
@@ -260,11 +247,13 @@ export default function Dashboard() {
                       title={m.championshipName}
                     />
                   )}
-                  {m.starRating != null && (
-                    <span className="db-result-stars" title={t('match.starRating')}>
-                      {renderStarRating(m.starRating)}
-                    </span>
-                  )}
+                  <span className="db-result-stars">
+                    <StarRating
+                      starRating={m.starRating}
+                      ratingsCount={m.ratingsCount}
+                      size="sm"
+                    />
+                  </span>
                   {m.matchOfTheNight && (
                     <span className="db-result-motn">{t('match.matchOfTheNightBadge')}</span>
                   )}

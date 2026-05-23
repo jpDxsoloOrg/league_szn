@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Player } from '../../../types';
 import type { HydratedRivalry } from '../../../types/rivalry';
+import { resolvePlayerFullLabel } from '../rivalryUtils';
 
 interface TabProps {
   hydrated: HydratedRivalry;
@@ -53,7 +54,7 @@ export default function PromosTab({ hydrated, players }: TabProps) {
         return (
           <article key={p.promoId} className="rivalry-tab__card">
             <header className="rivalry-detail-promo__header">
-              <strong>{author?.currentWrestler ?? author?.name ?? p.playerId}</strong>
+              <strong>{resolvePlayerFullLabel(author, p.playerId)}</strong>
               <span className="rivalry-detail-promo__date">
                 {new Date(p.createdAt).toLocaleDateString()}
               </span>

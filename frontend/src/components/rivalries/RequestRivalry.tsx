@@ -12,7 +12,7 @@ interface PlanDraft {
   scheduledFor: string;
 }
 
-const HEAT_OPTIONS: RivalryHeat[] = ['cold', 'warm', 'hot'];
+const HEAT_OPTIONS: RivalryHeat[] = ['frozen', 'cold', 'warm', 'hot', 'scorching'];
 
 const MIN_DESCRIPTION = 50;
 const MAX_DESCRIPTION = 1500;

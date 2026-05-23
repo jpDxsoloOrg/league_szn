@@ -245,6 +245,7 @@ export async function scheduleMatchInternal(
   // Validate rivalryId exists and includes the match participants if provided
   // (RIV-06). Lookup is done once and the participant check is a single
   // set-membership pass — no repeated work per participant.
+  let resolvedRivalryId = input.rivalryId;
   if (input.rivalryId) {
     const rivalry = await rivalries.get(input.rivalryId);
     if (!rivalry) {
@@ -256,6 +257,34 @@ export async function scheduleMatchInternal(
       throw new ScheduleMatchError(
         400,
         `Rivalry ${input.rivalryId} does not include both match participants`,
+      );
+    }
+  } else if (derivedParticipants.length >= 2) {
+    // Auto-link to an active rivalry when one — and only one — rivalry
+    // already includes every match participant we have. This is what
+    // makes a GM-scheduled match show up in the rivalry's Future Matches
+    // tab without the GM needing to know about rivalryId. Ambiguous
+    // overlaps (zero or multiple matching rivalries) are left unlinked
+    // and rely on the frontend's participant-overlap fallback.
+    //
+    // Defensive: a rivalry-store outage must not block the user from
+    // scheduling a match. On any failure, fall back to no auto-link.
+    try {
+      const participantsInMatch = new Set(derivedParticipants);
+      const candidatePage = await rivalries.listByParticipant(derivedParticipants[0]);
+      const candidates = Array.isArray(candidatePage?.items) ? candidatePage.items : [];
+      const matchingRivalries = candidates.filter((r) => {
+        if (r.status !== 'active') return false;
+        if (!Array.isArray(r.participants)) return false;
+        return r.participants.every((p) => participantsInMatch.has(p.playerId));
+      });
+      if (matchingRivalries.length === 1) {
+        resolvedRivalryId = matchingRivalries[0].rivalryId;
+      }
+    } catch (autoLinkErr) {
+      console.warn(
+        'scheduleMatch: rivalry auto-link failed, scheduling without rivalryId',
+        autoLinkErr,
       );
     }
   }
@@ -287,7 +316,7 @@ export async function scheduleMatchInternal(
   if (input.teams && input.teams.length > 0) match.teams = input.teams;
   if (input.challengeId) match.challengeId = input.challengeId;
   if (input.promoId) match.promoId = input.promoId;
-  if (input.rivalryId) match.rivalryId = input.rivalryId;
+  if (resolvedRivalryId) match.rivalryId = resolvedRivalryId;
 
   await competition.matches.create(match);
 

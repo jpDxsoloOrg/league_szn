@@ -10,8 +10,6 @@ interface RecordResultBody {
   winners: string[];
   losers: string[];
   isDraw?: boolean;
-  starRating?: number;
-  matchOfTheNight?: boolean;
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -41,13 +39,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    if (body.starRating != null) {
-      const r = body.starRating;
-      if (typeof r !== 'number' || r < 0.5 || r > 5 || (r * 2) % 1 !== 0) {
-        return badRequest('starRating must be a number between 0.5 and 5 in half-star steps');
-      }
-    }
-
     const { competition: { matches }, runInTransaction } = getRepositories();
 
     // Get the match
@@ -74,8 +65,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       status: 'completed',
     };
     if (isDraw) matchPatch.isDraw = true;
-    if (body.starRating != null) matchPatch.starRating = body.starRating;
-    if (body.matchOfTheNight != null) matchPatch.matchOfTheNight = body.matchOfTheNight;
 
     try {
       await runInTransaction(async (tx) => {
@@ -154,8 +143,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       losers: body.losers,
       status: 'completed' as const,
       ...(isDraw && { isDraw: true }),
-      ...(body.starRating != null && { starRating: body.starRating }),
-      ...(body.matchOfTheNight != null && { matchOfTheNight: body.matchOfTheNight }),
     };
     return success({
       message: 'Match result recorded successfully',

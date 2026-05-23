@@ -2,6 +2,8 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, serverError } from '../../lib/response';
+import { authenticate } from '../../lib/authenticate';
+import { getAuthContext } from '../../lib/auth';
 import { collectSlotPlayerIds, hydrateMatchSlots } from './hydrateSlots';
 
 const MATCH_TYPE_ALIAS_GROUPS: string[][] = [
@@ -133,9 +135,59 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return { ...m, slots: hydrateMatchSlots(slots, playerLookup) };
     });
 
-    return success(hydratedMatches);
+    // RIV-24: surface the calling user's rating per match so the FE rating
+    // widget can render in the right state without N+1 follow-up calls.
+    // Public endpoint — unauthenticated callers get false/null for every match.
+    // Route has no Lambda authorizer attached, so we optionally verify any
+    // bearer token in-handler; missing/bad token silently falls back to
+    // anonymous.
+    //
+    // Defensive: any failure verifying the token or looking up ratings
+    // downgrades the response to the anonymous view rather than 500-ing
+    // the whole match list — admin pages depend on this endpoint
+    // returning *some* data even when rating enrichment is broken.
+    let userId: string | null = null;
+    try {
+      if (event.headers?.Authorization || event.headers?.authorization) {
+        await authenticate(event).catch(() => undefined);
+      }
+      if (event.requestContext) {
+        userId = getAuthContext(event).sub || null;
+      }
+    } catch (authErr) {
+      console.warn('getMatches: optional auth failed, continuing as anonymous', authErr);
+    }
+    let userRatingsByMatchId = new Map<string, number>();
+    if (userId) {
+      try {
+        const matchIds = hydratedMatches
+          .map((m) => m.matchId as string | undefined)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0);
+        if (matchIds.length > 0) {
+          const { matchRatings } = getRepositories();
+          const userRatings = await matchRatings.getByMatchIdsForUser(matchIds, userId);
+          userRatingsByMatchId = new Map(userRatings.map((r) => [r.matchId, r.rating]));
+        }
+      } catch (ratingsErr) {
+        console.warn('getMatches: user-rating lookup failed, falling back to no ratings', ratingsErr);
+      }
+    }
+
+    const decoratedMatches = hydratedMatches.map((m) => {
+      const id = m.matchId as string | undefined;
+      const rating = id ? userRatingsByMatchId.get(id) : undefined;
+      return {
+        ...m,
+        userHasRated: rating !== undefined,
+        userRating: rating ?? null,
+      };
+    });
+
+    return success(decoratedMatches);
   } catch (err) {
-    console.error('Error fetching matches:', err);
-    return serverError('Failed to fetch matches');
+    const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error('Error fetching matches:', detail, stack);
+    return serverError(`Failed to fetch matches: ${detail}`);
   }
 };

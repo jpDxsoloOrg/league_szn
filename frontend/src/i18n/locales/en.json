@@ -353,7 +353,9 @@
       "adminDataManagement": "Admin: Data Management",
       "adminWorkflow": "Admin: Typical Workflow",
       "rivalries": "Rivalries",
-      "adminRivalries": "Admin: Rivalries"
+      "adminRivalries": "Admin: Rivalries",
+      "rateMatches": "Rate Matches",
+      "rivalryHeatExplained": "How Rivalry Heat Works"
     }
   },
   "languageSwitcher": {
@@ -446,7 +448,23 @@
     "starRating": "Star rating",
     "matchOfTheNight": "Match of the Night",
     "matchOfTheNightBadge": "Match of the Night",
-    "clearRating": "Clear rating"
+    "motn": {
+      "markAs": "☆ Match of the Night",
+      "unmark": "★ Match of the Night"
+    },
+    "clearRating": "Clear rating",
+    "rating": {
+      "notYetRated": "Not yet rated",
+      "outOfFive": "{{rating}} of 5",
+      "votesCount_one": "{{count}} vote",
+      "votesCount_other": "{{count}} votes",
+      "rateThisMatch": "Rate this match",
+      "youRated": "You rated this {{rating}}",
+      "signInToRate": "Sign in to rate this match",
+      "thanksForRating": "Thanks for rating!",
+      "submitError": "Could not submit rating. Try again.",
+      "giveStars": "{{value}} stars"
+    }
   },
   "matches": {
     "slots": {
@@ -1155,6 +1173,19 @@
       "back": "Back",
       "minChars": "min {{count}}",
       "maxOfMax": "{{cur}}/{{max}}"
+    }
+  },
+  "rivalry": {
+    "heat": {
+      "frozen": "Frozen",
+      "cold": "Cold",
+      "warm": "Warm",
+      "hot": "Hot",
+      "scorching": "Scorching",
+      "score": "Heat score: {{score}}",
+      "recomputeButton": "Recompute from ratings",
+      "recomputeHint": "Will be recomputed when matches are rated",
+      "recomputeError": "Could not recompute heat. Try again."
     }
   },
   "events": {

@@ -11,6 +11,7 @@ import {
   type RivalryParticipant,
   type RivalryPatch,
 } from '../rivalries';
+import { RatingAlreadyExistsError } from '../matchRatings';
 
 interface TransactWriteItem {
   Put?: { TableName: string; Item: Record<string, unknown>; ConditionExpression?: string };
@@ -27,6 +28,10 @@ interface TransactWriteItem {
 
 export class DynamoUnitOfWork implements UnitOfWork {
   private staged: TransactWriteItem[] = [];
+  // Sidecar metadata mirroring `staged`. Lets us map a generic
+  // ConditionalCheckFailed (which DynamoDB does NOT tag with the failing
+  // table) back to a typed domain error like `RatingAlreadyExistsError`.
+  private stagedMeta: Array<{ kind?: 'matchRating'; matchId?: string; userId?: string } | undefined> = [];
   private committed = false;
 
   // ── Players ──────────────────────────────────────────────────────
@@ -556,6 +561,32 @@ export class DynamoUnitOfWork implements UnitOfWork {
     });
   }
 
+  // ── Match ratings (RIV-20) ───────────────────────────────────────
+  createMatchRating(input: { matchId: string; userId: string; rating: number }): void {
+    const item: Record<string, unknown> = {
+      matchId: input.matchId,
+      userId: input.userId,
+      rating: input.rating,
+      createdAt: new Date().toISOString(),
+    };
+    this.staged.push({
+      Put: {
+        TableName: TableNames.MATCH_RATINGS,
+        Item: item,
+        // Composite-key uniqueness: with a (matchId, userId) row, the
+        // attribute_not_exists guard on the hash key is sufficient — Dynamo
+        // applies it scoped to that exact key, so the write only succeeds
+        // when no row for that pair is present.
+        ConditionExpression: 'attribute_not_exists(matchId)',
+      },
+    });
+    this.stagedMeta.push({
+      kind: 'matchRating',
+      matchId: input.matchId,
+      userId: input.userId,
+    });
+  }
+
   // ── Commit / Rollback ────────────────────────────────────────────
   async commit(): Promise<void> {
     if (this.committed) throw new Error('UnitOfWork already committed');
@@ -563,22 +594,57 @@ export class DynamoUnitOfWork implements UnitOfWork {
 
     if (this.staged.length === 0) return;
 
+    // Pad stagedMeta so it stays index-aligned with staged. Helpers above
+    // only push meta on the createMatchRating path; everything else needs
+    // an `undefined` placeholder.
+    while (this.stagedMeta.length < this.staged.length) {
+      this.stagedMeta.push(undefined);
+    }
+
     // Chunk into ≤100-item batches (DynamoDB TransactWriteItems limit)
     const CHUNK_SIZE = 100;
     for (let i = 0; i < this.staged.length; i += CHUNK_SIZE) {
       const chunk = this.staged.slice(i, i + CHUNK_SIZE);
+      const chunkMeta = this.stagedMeta.slice(i, i + CHUNK_SIZE);
       if (chunk.length > CHUNK_SIZE) {
         console.warn(`UoW: chunking ${this.staged.length} items into ${Math.ceil(this.staged.length / CHUNK_SIZE)} transactions — NOT globally atomic`);
       }
-      await dynamoDb.transactWrite({ TransactItems: chunk } as TransactWriteCommandInput);
+      try {
+        await dynamoDb.transactWrite({ TransactItems: chunk } as TransactWriteCommandInput);
+      } catch (err: unknown) {
+        // DynamoDB returns TransactionCanceledException with a
+        // CancellationReasons array; the entry index lines up with the
+        // staged item that tripped the condition.
+        const failedIdx = extractConditionalFailureIndex(err);
+        if (failedIdx >= 0) {
+          const meta = chunkMeta[failedIdx];
+          if (meta?.kind === 'matchRating' && meta.matchId && meta.userId) {
+            throw new RatingAlreadyExistsError(meta.matchId, meta.userId);
+          }
+        }
+        throw err;
+      }
     }
   }
 
   rollback(): Promise<void> {
     this.staged = [];
+    this.stagedMeta = [];
     this.committed = true;
     return Promise.resolve();
   }
+}
+
+function extractConditionalFailureIndex(err: unknown): number {
+  if (!err || typeof err !== 'object') return -1;
+  const e = err as { name?: unknown; CancellationReasons?: unknown };
+  if (e.name !== 'TransactionCanceledException') return -1;
+  if (!Array.isArray(e.CancellationReasons)) return -1;
+  for (let i = 0; i < e.CancellationReasons.length; i++) {
+    const reason = e.CancellationReasons[i] as { Code?: unknown } | null | undefined;
+    if (reason && reason.Code === 'ConditionalCheckFailed') return i;
+  }
+  return -1;
 }
 
 export function createDynamoUnitOfWorkFactory(): <T>(fn: (tx: UnitOfWork) => Promise<T>) => Promise<T> {

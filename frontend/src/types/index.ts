@@ -85,7 +85,16 @@ export interface Match {
   createdAt: string;
   challengeId?: string;
   promoId?: string;
+  /** Average of user ratings, rounded to the nearest 0.5 (RIV-22+). */
   starRating?: number;
+  /** Raw mean of user ratings (un-rounded). Drives rivalry heat (RIV-22+). */
+  ratingAverage?: number;
+  /** Number of user ratings submitted for this match (RIV-22+). */
+  ratingsCount?: number;
+  /** True if the calling user has already rated this match (populated by RIV-24). */
+  userHasRated: boolean;
+  /** This user's rating for the match, if any (populated by RIV-24). */
+  userRating: number | null;
   matchOfTheNight?: boolean;
 }
 
@@ -203,6 +212,7 @@ export interface DashboardMatch {
   championshipName?: string;
   championshipImageUrl?: string;
   starRating?: number;
+  ratingsCount?: number;
   matchOfTheNight?: boolean;
   winnerName: string;
   winnerImageUrl?: string;
