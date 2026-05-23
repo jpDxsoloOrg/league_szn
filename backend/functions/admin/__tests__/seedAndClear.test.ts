@@ -156,7 +156,8 @@ describe('seedData', () => {
     const result = await seedData(makeEvent(), ctx, cb);
 
     expect(result!.statusCode).toBe(500);
-    expect(JSON.parse(result!.body).message).toBe('Failed to seed data');
+    // Handler now appends the underlying error detail for diagnostics.
+    expect(JSON.parse(result!.body).message).toMatch(/^Failed to seed data/);
   });
 
   it('accepts optional body with modules array and still runs full seed', async () => {
@@ -318,6 +319,7 @@ describe('clearAll', () => {
     const result = await clearAll(event, ctx, cb);
 
     expect(result!.statusCode).toBe(500);
-    expect(JSON.parse(result!.body).message).toBe('Failed to clear all data');
+    // Handler now appends the underlying error detail for diagnostics.
+    expect(JSON.parse(result!.body).message).toMatch(/^Failed to clear all data/);
   });
 });

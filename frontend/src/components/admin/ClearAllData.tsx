@@ -21,6 +21,7 @@ export default function ClearAllData() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [resultCounts, setResultCounts] = useState<Record<string, number> | null>(null);
+  const [errorCounts, setErrorCounts] = useState<Record<string, number> | null>(null);
   const [resultType, setResultType] = useState<'deleted' | 'created' | null>(null);
   const [confirmText, setConfirmText] = useState('');
   const [selectedSeedModules, setSelectedSeedModules] = useState<string[]>([]);
@@ -52,12 +53,18 @@ export default function ClearAllData() {
 
     try {
       const result = await adminApi.clearAll();
-      setSuccess('All data has been cleared successfully!');
+      // The backend now returns a partial-success response whenever any
+      // table reported per-row delete errors — surface that distinction
+      // so the admin sees exactly which tables didn't drain.
+      const errCounts = (result as { errorCounts?: Record<string, number> }).errorCounts ?? null;
+      setSuccess(result.message ?? 'All data has been cleared successfully!');
       setResultCounts(result.deletedCounts);
+      setErrorCounts(errCounts);
       setResultType('deleted');
       setConfirmText('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to clear data');
+      setErrorCounts(null);
     } finally {
       setClearLoading(false);
     }
@@ -80,9 +87,11 @@ export default function ClearAllData() {
           : await adminApi.seedData();
       setSuccess('Sample data has been generated successfully!');
       setResultCounts(result.createdCounts);
+      setErrorCounts(null);
       setResultType('created');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to seed data');
+      setErrorCounts(null);
     } finally {
       setSeedLoading(false);
     }
@@ -215,6 +224,19 @@ export default function ClearAllData() {
                   </>
                 )}
               </ul>
+              {errorCounts && Object.keys(errorCounts).length > 0 && (
+                <div className="result-counts">
+                  <h4>Errors (some rows could not be processed):</h4>
+                  <ul>
+                    {Object.entries(errorCounts).map(([key, count]) => (
+                      <li key={key}>{key}: {count}</li>
+                    ))}
+                  </ul>
+                  <p style={{ fontStyle: 'italic', fontSize: '0.85em', marginTop: '8px' }}>
+                    Check the backend logs for the underlying cause. Common reasons: a table missing in this environment, a schema mismatch, or an IAM permission denial.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

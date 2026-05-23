@@ -279,7 +279,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       if (errorMessage.includes('Dataset "')) {
         return badRequest(errorMessage);
       }
-      return serverError('Failed to import data payload');
+      return serverError(`Failed to import data payload: ${errorMessage}`);
     }
   }
 
@@ -1296,7 +1296,9 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       createdCounts,
     });
   } catch (err) {
-    console.error('Error seeding data:', err);
-    return serverError('Failed to seed data');
+    const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error('Error seeding data:', detail, stack);
+    return serverError(`Failed to seed data: ${detail}`);
   }
 };

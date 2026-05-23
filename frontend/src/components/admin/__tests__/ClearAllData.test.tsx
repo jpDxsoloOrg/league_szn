@@ -87,8 +87,10 @@ describe('ClearAllData', () => {
       expect(mockAdminApi.clearAll).toHaveBeenCalledTimes(1);
     });
 
-    // Success message
-    expect(screen.getByText('All data has been cleared successfully!')).toBeInTheDocument();
+    // Success message — uses whatever message the server returned (so a
+    // partial-success "cleared with N errors" can surface verbatim),
+    // falling back to a hardcoded string only when the field is missing.
+    expect(screen.getByText('All data cleared')).toBeInTheDocument();
     // Deleted counts displayed
     expect(screen.getByText('Deleted Items:')).toBeInTheDocument();
     expect(screen.getByText(/Players: 12/)).toBeInTheDocument();

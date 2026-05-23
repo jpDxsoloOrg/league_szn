@@ -34,7 +34,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
     return success(response);
   } catch (err) {
-    console.error('Error clearing all data:', err);
-    return serverError('Failed to clear all data');
+    const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error('Error clearing all data:', detail, stack);
+    return serverError(`Failed to clear all data: ${detail}`);
   }
 };
