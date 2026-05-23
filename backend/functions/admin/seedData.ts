@@ -22,6 +22,8 @@ export const SEED_MODULE_IDS = [
   'events',
   'contenders',
   'config',
+  'rivalries',
+  'matchRatings',
 ] as const;
 type SeedModuleId = (typeof SEED_MODULE_IDS)[number];
 
@@ -35,6 +37,11 @@ export const SEED_MODULE_ORDER: readonly string[] = [
   'events',
   'contenders',
   'config',
+  // Rivalries depend on players + completed matches (so they live after
+  // 'matches'); match ratings depend on rivalries existing so the heat
+  // recompute has somewhere to land.
+  'rivalries',
+  'matchRatings',
 ];
 
 interface ParsedSeedRequest {

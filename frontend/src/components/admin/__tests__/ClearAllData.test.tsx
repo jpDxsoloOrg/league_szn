@@ -216,6 +216,8 @@ describe('ClearAllData', () => {
         'events',
         'contenders',
         'config',
+        'rivalries',
+        'matchRatings',
       ],
     });
   });
