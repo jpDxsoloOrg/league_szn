@@ -69,6 +69,15 @@ provider:
             - dynamodb:PutItem
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
+            # BatchGetItem is its own IAM action separate from GetItem.
+            # The MatchRatings repository's getByMatchIdsForUser uses
+            # BatchGetCommand to fetch the caller's ratings for every
+            # match in one round trip — without this, the dashboard
+            # and event-detail endpoints 500 with AccessDeniedException.
+            - dynamodb:BatchGetItem
+            # BatchWriteItem rounds out the batch family for future
+            # bulk-write paths; harmless to grant alongside the others.
+            - dynamodb:BatchWriteItem
           Resource:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PLAYERS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PLAYERS_TABLE}/index/*
