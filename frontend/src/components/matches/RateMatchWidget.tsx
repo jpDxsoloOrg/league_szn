@@ -197,34 +197,38 @@ export const RateMatchWidget = ({
             defaultValue: '{{value}} stars',
           });
           const fillState = fillFor(previewValue, star);
-          // Pixel widths for the gold fill rect: full = whole star, half =
-          // left half, empty = none. Keeps the SVG geometry deterministic
-          // across browsers (no reliance on the ★ glyph in the system font).
-          const fillWidth = fillState === 'full' ? 24 : fillState === 'half' ? 12 : 0;
+          // Half-fill via a plain overflow:hidden wrapper rather than an
+          // SVG clipPath. clipPath references inside React-rendered inline
+          // SVGs have been flaky for us across Vite reloads — a wrapper
+          // div with width 0/50%/100% and overflow:hidden is more boring
+          // and renders the same on every browser.
+          const fillPct = fillState === 'full' ? '100%' : fillState === 'half' ? '50%' : '0%';
           return (
             <span key={star} className="rate-match-widget__star">
+              {/* Empty (grey) star — always visible underneath. */}
               <svg
-                className="rate-match-widget__svg"
+                className="rate-match-widget__svg rate-match-widget__svg--empty"
                 viewBox="0 0 24 24"
                 aria-hidden="true"
                 focusable="false"
               >
-                {/* Empty (grey) star — always visible underneath. */}
-                <path
-                  className="rate-match-widget__svg-empty"
-                  d={STAR_PATH}
-                />
-                {/* Gold fill, clipped to fillWidth so left half / full /
-                    empty is just a rectangle width adjustment. */}
-                <clipPath id={`fill-clip-${star}`}>
-                  <rect x="0" y="0" width={fillWidth} height="24" />
-                </clipPath>
-                <path
-                  className="rate-match-widget__svg-fill"
-                  d={STAR_PATH}
-                  clipPath={`url(#fill-clip-${star})`}
-                />
+                <path d={STAR_PATH} />
               </svg>
+              {/* Gold star, clipped to fillPct by its overflow:hidden parent. */}
+              <span
+                className="rate-match-widget__fill-wrap"
+                style={{ width: fillPct }}
+                aria-hidden="true"
+              >
+                <svg
+                  className="rate-match-widget__svg rate-match-widget__svg--fill"
+                  viewBox="0 0 24 24"
+                  preserveAspectRatio="xMinYMid meet"
+                  focusable="false"
+                >
+                  <path d={STAR_PATH} />
+                </svg>
+              </span>
               <button
                 type="button"
                 role="radio"
