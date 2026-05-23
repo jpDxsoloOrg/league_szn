@@ -45,41 +45,29 @@
   line-height: 1;
 }
 
-/* Visual fill layer (decorative, behind the click targets). */
-.rate-match-widget__visual {
+/* SVG visual — guaranteed to render the star shape regardless of system
+   font. The gold fill rect width is set per-star in TSX (0 / 12 / 24px)
+   to drive empty / half / full state via a clipPath. */
+.rate-match-widget__svg {
   position: absolute;
   inset: 0;
-  pointer-events: none;
-}
-
-.rate-match-widget__visual-bg,
-.rate-match-widget__visual-fg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  display: block;
-  font-size: 28px;
-  line-height: 1;
-  white-space: nowrap;
-  user-select: none;
-}
-
-.rate-match-widget__visual-bg {
-  color: var(--color-text-muted, #6a6a6a);
-  opacity: 0.5;
   width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
 }
 
-.rate-match-widget__visual-fg {
-  color: var(--color-accent-gold, #c8a85a);
-  overflow: hidden;
-  width: 0;
+.rate-match-widget__svg-empty {
+  fill: #3a3a3a;
+  stroke: #8a8a8a;
+  stroke-width: 1;
 }
 
-.rate-match-widget__visual--full .rate-match-widget__visual-fg { width: 100%; }
-.rate-match-widget__visual--half .rate-match-widget__visual-fg { width: 50%; }
-.rate-match-widget__visual--empty .rate-match-widget__visual-fg { width: 0; }
+.rate-match-widget__svg-fill {
+  fill: #f2ca50;
+  stroke: #c8a85a;
+  stroke-width: 1;
+}
 
 /* Hit-target halves layered above the visual. */
 .rate-match-widget__half {
@@ -97,13 +85,6 @@
 
 .rate-match-widget__half--left  { left: 0; }
 .rate-match-widget__half--right { left: 50%; }
-
-/* Subtle ring while hovering so the user knows the picker is interactive,
-   without painting a giant gold rectangle over the strip. */
-.rate-match-widget__half:hover,
-.rate-match-widget__half:focus-visible {
-  outline: none;
-}
 
 .rate-match-widget__half:focus-visible {
   outline: 2px solid var(--color-accent-gold, #c8a85a);

@@ -17,7 +17,52 @@ export interface RateMatchWidgetProps {
 const STAR_POSITIONS = [1, 2, 3, 4, 5] as const;
 const ALREADY_RATED_MARKER = 'already rated';
 
+/** Five-pointed star path on a 24×24 viewBox. Centred, fits 0-24 on both axes. */
+const STAR_PATH =
+  'M12 2.5l2.94 6.32 6.95.72-5.2 4.7 1.5 6.86L12 17.8l-6.19 3.3 1.5-6.86-5.2-4.7 6.95-.72L12 2.5z';
+
 type FillState = 'full' | 'half' | 'empty';
+
+/**
+ * Belt-and-braces UX cache. The server is the source of truth for who rated
+ * what, but a transient enrichment failure on getEvent must NOT make a
+ * user's own browser forget they already rated. Keyed by the user's email
+ * so a different account on the same browser can't be tricked into seeing
+ * a locked widget for a match they didn't actually rate.
+ *
+ * Lifecycle: written on successful submit, read on render. The server
+ * response wins when it's available (userHasRated=true bypasses cache
+ * inspection). Ratings are immutable so cached entries never go stale.
+ */
+const RATED_CACHE_PREFIX = 'lszn:rated';
+
+function ratedCacheKey(userEmail: string | null, matchId: string): string | null {
+  if (!userEmail) return null;
+  return `${RATED_CACHE_PREFIX}:${userEmail}:${matchId}`;
+}
+
+function readCachedRating(userEmail: string | null, matchId: string): number | null {
+  const key = ratedCacheKey(userEmail, matchId);
+  if (!key) return null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedRating(userEmail: string | null, matchId: string, rating: number): void {
+  const key = ratedCacheKey(userEmail, matchId);
+  if (!key) return;
+  try {
+    window.localStorage.setItem(key, String(rating));
+  } catch {
+    /* private mode / storage full — best effort */
+  }
+}
 
 function fillFor(value: number, star: number): FillState {
   if (value >= star) return 'full';
@@ -45,7 +90,7 @@ export const RateMatchWidget = ({
   onRated,
 }: RateMatchWidgetProps) => {
   const { t } = useTranslation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, email } = useAuth();
   const [hoverValue, setHoverValue] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,9 +110,15 @@ export const RateMatchWidget = ({
     );
   }
 
-  // Already rated (server-confirmed on load, or just-submitted in this session).
-  const effectiveUserRating = submittedRating ?? userRating;
-  if (userHasRated || submittedRating != null) {
+  // Already rated. Three sources, in priority order:
+  //  1) the server's userHasRated=true (most trustworthy)
+  //  2) a just-submitted rating from this React session
+  //  3) a localStorage trace from a prior submit on this browser (defensive
+  //     UX so a server-side enrichment hiccup doesn't show the picker again)
+  const cachedRating = readCachedRating(email, matchId);
+  const effectiveUserRating = submittedRating ?? userRating ?? cachedRating;
+  const isLocked = userHasRated || submittedRating != null || cachedRating != null;
+  if (isLocked) {
     return (
       <div className="rate-match-widget rate-match-widget--rated">
         <span className="rate-match-widget__label">
@@ -100,6 +151,7 @@ export const RateMatchWidget = ({
     try {
       await matchesApi.submitRating(matchId, value);
       setSubmittedRating(value);
+      writeCachedRating(email, matchId, value);
       onRated?.(value);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -107,7 +159,9 @@ export const RateMatchWidget = ({
         // Server says we already rated; lock the widget. We don't know
         // the exact prior value if userRating is null, so fall back to
         // whatever the parent already passed in.
-        setSubmittedRating(userRating ?? value);
+        const lockedValue = userRating ?? value;
+        setSubmittedRating(lockedValue);
+        writeCachedRating(email, matchId, lockedValue);
       } else {
         setError(
           t('match.rating.submitError', 'Could not submit rating. Try again.')
@@ -143,15 +197,34 @@ export const RateMatchWidget = ({
             defaultValue: '{{value}} stars',
           });
           const fillState = fillFor(previewValue, star);
+          // Pixel widths for the gold fill rect: full = whole star, half =
+          // left half, empty = none. Keeps the SVG geometry deterministic
+          // across browsers (no reliance on the ★ glyph in the system font).
+          const fillWidth = fillState === 'full' ? 24 : fillState === 'half' ? 12 : 0;
           return (
             <span key={star} className="rate-match-widget__star">
-              <span
-                className={`rate-match-widget__visual rate-match-widget__visual--${fillState}`}
+              <svg
+                className="rate-match-widget__svg"
+                viewBox="0 0 24 24"
                 aria-hidden="true"
+                focusable="false"
               >
-                <span className="rate-match-widget__visual-bg">{'★'}</span>
-                <span className="rate-match-widget__visual-fg">{'★'}</span>
-              </span>
+                {/* Empty (grey) star — always visible underneath. */}
+                <path
+                  className="rate-match-widget__svg-empty"
+                  d={STAR_PATH}
+                />
+                {/* Gold fill, clipped to fillWidth so left half / full /
+                    empty is just a rectangle width adjustment. */}
+                <clipPath id={`fill-clip-${star}`}>
+                  <rect x="0" y="0" width={fillWidth} height="24" />
+                </clipPath>
+                <path
+                  className="rate-match-widget__svg-fill"
+                  d={STAR_PATH}
+                  clipPath={`url(#fill-clip-${star})`}
+                />
+              </svg>
               <button
                 type="button"
                 role="radio"
