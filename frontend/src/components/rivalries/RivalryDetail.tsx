@@ -16,7 +16,7 @@ import FutureMatchesTab from './tabs/FutureMatchesTab';
 import PromosTab from './tabs/PromosTab';
 import NotesPlansTab from './tabs/NotesPlansTab';
 import MessagesTab from './tabs/MessagesTab';
-import { resolveWrestlerName } from './rivalryUtils';
+import { resolveWrestlerName, resolveWrestlerFullLabel } from './rivalryUtils';
 import HeatBadge from './HeatBadge';
 import './RivalryDetail.css';
 
@@ -113,8 +113,12 @@ export default function RivalryDetail() {
   const pidB = partB?.playerId ?? '';
   const a = playerLookup.get(pidA);
   const b = playerLookup.get(pidB);
+  // alt text gets the bare wrestler name; the visible heading carries
+  // the WrestlerName (PlayerName · PSN) suffix.
   const nameA = resolveWrestlerName(partA, a);
   const nameB = resolveWrestlerName(partB, b);
+  const labelA = resolveWrestlerFullLabel(partA, a);
+  const labelB = resolveWrestlerFullLabel(partB, b);
 
   const callerLabel = email ? email.split('@')[0] : '';
   const isBooker = !!r.bookerName && r.bookerName === callerLabel;
@@ -157,7 +161,7 @@ export default function RivalryDetail() {
             decoding="async"
             onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
           />
-          <h2 className="rivalry-detail__name">{nameA}</h2>
+          <h2 className="rivalry-detail__name">{labelA}</h2>
         </div>
         <span className="rivalry-detail__vs" aria-hidden="true">VS</span>
         <div className="rivalry-detail__portrait">
@@ -168,7 +172,7 @@ export default function RivalryDetail() {
             decoding="async"
             onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
           />
-          <h2 className="rivalry-detail__name">{nameB}</h2>
+          <h2 className="rivalry-detail__name">{labelB}</h2>
         </div>
       </header>
 

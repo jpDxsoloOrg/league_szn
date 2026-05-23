@@ -8,6 +8,7 @@ import type {
   RivalryNote,
   RivalryNoteType,
 } from '../../../types/rivalry';
+import { resolvePlayerFullLabel } from '../rivalryUtils';
 
 interface TabProps {
   hydrated: HydratedRivalry;
@@ -137,7 +138,7 @@ export default function NotesPlansTab({ hydrated, players }: TabProps) {
                 <NoteRow
                   key={n.noteId}
                   note={n}
-                  authorName={lookup.get(n.authorPlayerId)?.currentWrestler ?? n.authorPlayerId}
+                  authorName={resolvePlayerFullLabel(lookup.get(n.authorPlayerId), n.authorPlayerId)}
                   isEditing={editingId === n.noteId}
                   editDraft={editDraft}
                   setEditDraft={setEditDraft}
@@ -184,7 +185,7 @@ export default function NotesPlansTab({ hydrated, players }: TabProps) {
                   )}
                   <NoteRow
                     note={n}
-                    authorName={lookup.get(n.authorPlayerId)?.currentWrestler ?? n.authorPlayerId}
+                    authorName={resolvePlayerFullLabel(lookup.get(n.authorPlayerId), n.authorPlayerId)}
                     isEditing={editingId === n.noteId}
                     editDraft={editDraft}
                     setEditDraft={setEditDraft}

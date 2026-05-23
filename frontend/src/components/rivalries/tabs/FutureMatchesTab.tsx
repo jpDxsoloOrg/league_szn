@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { matchesApi } from '../../../services/api';
 import type { Match, Player } from '../../../types';
 import type { HydratedRivalry } from '../../../types/rivalry';
+import { resolvePlayerFullLabel } from '../rivalryUtils';
 
 interface TabProps {
   hydrated: HydratedRivalry;
@@ -92,7 +93,7 @@ export default function FutureMatchesTab({ hydrated, players }: TabProps) {
               {new Date(m.date).toLocaleString()}
             </span>
             <span className="rivalry-detail-matches__teams">
-              {m.participants.map((id) => lookup.get(id)?.currentWrestler ?? id).join(' vs ')}
+              {m.participants.map((id) => resolvePlayerFullLabel(lookup.get(id), id)).join(' vs ')}
             </span>
             {m.isChampionship && (
               <span className="rivalry-detail-matches__champ">★</span>

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { Player } from '../../../types';
 import type { HydratedRivalry } from '../../../types/rivalry';
+import { resolvePlayerFullLabel } from '../rivalryUtils';
 
 interface TabProps {
   hydrated: HydratedRivalry;
@@ -90,7 +91,7 @@ export default function OverviewTab({ hydrated, players }: TabProps) {
                 const author = playerLookup.get(p.playerId);
                 return (
                   <li key={p.promoId}>
-                    <strong>{author?.currentWrestler ?? author?.name ?? p.playerId}</strong>
+                    <strong>{resolvePlayerFullLabel(author, p.playerId)}</strong>
                     <p>{p.title ?? p.content.slice(0, 80)}</p>
                   </li>
                 );
