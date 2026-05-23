@@ -262,13 +262,18 @@ describe('getDashboard', () => {
     expect(body.recentResults.every((m: { matchId: string }) => m.matchId.startsWith('recent'))).toBe(true);
   });
 
-  it('returns 500 on repository error', async () => {
+  it('still returns 200 when a single repository fetch fails, with that section empty', async () => {
+    // Dashboard now uses Promise.allSettled so one failed data source
+    // doesn't blank the whole page. A championships failure means the
+    // currentChampions section is empty but everything else renders.
     mockChampionshipsList.mockRejectedValue(new Error('DynamoDB connection failed'));
 
     const result = await getDashboard({} as never, ctx, cb);
 
-    expect(result!.statusCode).toBe(500);
-    expect(JSON.parse(result!.body).message).toBe('Failed to load dashboard data');
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.currentChampions).toEqual([]);
+    expect(body.quickStats.activeChampionships).toBe(0);
   });
 
   // RIV-24: every match in recentResults carries userHasRated + userRating.

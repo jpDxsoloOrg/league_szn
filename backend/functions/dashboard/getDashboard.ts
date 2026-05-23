@@ -77,18 +77,38 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { competition: { championships, matches, stipulations }, roster: { players }, season: { seasons, standings: seasonStandings }, leagueOps: { events }, user: { challenges }, matchRatings } = getRepositories();
 
-    // Fetch data: championships, players, seasons, matches, stipulations; events and challenges via query
-    const [championshipList, playerList, seasonList, matchList, stipulationList, upcomingEventsList, inProgressEventsList, pendingChallengeList] =
-      await Promise.all([
-        championships.list(),
-        players.list(),
-        seasons.list(),
-        matches.list(),
-        stipulations.list(),
-        events.listByStatus('upcoming'),
-        events.listByStatus('in-progress'),
-        challenges.listByStatus('pending'),
-      ]);
+    // Fetch data with allSettled so a single bad data source doesn't blank
+    // the whole dashboard — each list defaults to [] on failure and the
+    // dashboard renders with whatever was reachable. The actual error gets
+    // logged for the next pass to triage.
+    const results = await Promise.allSettled([
+      championships.list(),
+      players.list(),
+      seasons.list(),
+      matches.list(),
+      stipulations.list(),
+      events.listByStatus('upcoming'),
+      events.listByStatus('in-progress'),
+      challenges.listByStatus('pending'),
+    ]);
+    const labels = [
+      'championships', 'players', 'seasons', 'matches', 'stipulations',
+      'upcoming events', 'in-progress events', 'pending challenges',
+    ];
+    const unwrap = <T>(idx: number, fallback: T): T => {
+      const r = results[idx];
+      if (r.status === 'fulfilled') return r.value as T;
+      console.error(`Dashboard: ${labels[idx]} fetch failed:`, r.reason);
+      return fallback;
+    };
+    const championshipList = unwrap<Championship[]>(0, []);
+    const playerList = unwrap<Player[]>(1, []);
+    const seasonList = unwrap<Awaited<ReturnType<typeof seasons.list>>>(2, []);
+    const matchList = unwrap<Awaited<ReturnType<typeof matches.list>>>(3, []);
+    const stipulationList = unwrap<Awaited<ReturnType<typeof stipulations.list>>>(4, []);
+    const upcomingEventsList = unwrap<Awaited<ReturnType<typeof events.listByStatus>>>(5, []);
+    const inProgressEventsList = unwrap<Awaited<ReturnType<typeof events.listByStatus>>>(6, []);
+    const pendingChallengeList = unwrap<Awaited<ReturnType<typeof challenges.listByStatus>>>(7, []);
 
     // Only include players who have a wrestler assigned (exclude Fantasy-only users)
     const wrestlerPlayers = playerList.filter((p) => p.currentWrestler);
@@ -357,7 +377,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     return success(response);
   } catch (err) {
-    console.error('Dashboard error:', err);
-    return serverError('Failed to load dashboard data');
+    const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error('Dashboard error:', detail, stack);
+    return serverError(`Failed to load dashboard data: ${detail}`);
   }
 };
