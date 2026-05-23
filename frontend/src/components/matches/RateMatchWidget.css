@@ -1,4 +1,11 @@
-/* Interactive half-star rating picker (RIV-28). */
+/* Interactive half-star rating picker (RIV-28).
+ *
+ * Visual strategy: copies the read-only StarRating widget pixel-for-pixel.
+ * Two ★ glyph layers (muted background underneath, gold foreground on top
+ * with overflow:hidden width clipping). The picker adds two half-width
+ * <button> hit-targets stacked on top via z-index for hover preview +
+ * click commit.
+ */
 
 .rate-match-widget {
   display: inline-flex;
@@ -32,60 +39,45 @@
 .rate-match-widget__stars {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 1px;
+  font-size: 1.4em;
 }
 
 .rate-match-widget__star {
   position: relative;
   display: inline-block;
-  width: 28px;
-  height: 28px;
+  width: 1em;
+  height: 1em;
   line-height: 1;
 }
 
-/* Empty grey star — sits at the bottom of the stack, always visible. */
-.rate-match-widget__svg {
+.rate-match-widget__star-bg,
+.rate-match-widget__star-fg {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
   pointer-events: none;
-  display: block;
+  user-select: none;
 }
 
-.rate-match-widget__svg--empty path {
-  fill: #3a3a3a;
-  stroke: #888888;
-  stroke-width: 1;
+.rate-match-widget__star-bg {
+  color: var(--color-text-muted, #888888);
+  opacity: 0.55;
 }
 
-/* Gold fill wrapper. width 0/50%/100% controls fill state via overflow. */
-.rate-match-widget__fill-wrap {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
+.rate-match-widget__star-fg {
+  color: var(--color-accent-gold, #c8a85a);
   overflow: hidden;
-  pointer-events: none;
-  display: block;
 }
 
-/* The gold SVG inside the wrapper is always the full 28px wide; the
-   wrapper's width clips it. preserveAspectRatio="xMinYMid meet" pins the
-   left edge so half-fill shows the LEFT half of the star, not the centre. */
-.rate-match-widget__fill-wrap .rate-match-widget__svg--fill {
-  width: 28px;
-  height: 100%;
-}
+.rate-match-widget__star--full .rate-match-widget__star-fg { width: 1em; }
+.rate-match-widget__star--half .rate-match-widget__star-fg { width: 0.5em; }
+.rate-match-widget__star--empty .rate-match-widget__star-fg { width: 0; }
 
-.rate-match-widget__svg--fill path {
-  fill: #f2ca50;
-  stroke: #c8a85a;
-  stroke-width: 1;
-}
-
-/* Hit-target halves layered above the visuals. */
+/* Hit-target halves layered above the glyphs. */
 .rate-match-widget__half {
   position: absolute;
   top: 0;

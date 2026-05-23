@@ -16,10 +16,7 @@ export interface RateMatchWidgetProps {
 
 const STAR_POSITIONS = [1, 2, 3, 4, 5] as const;
 const ALREADY_RATED_MARKER = 'already rated';
-
-/** Five-pointed star path on a 24×24 viewBox. Centred, fits 0-24 on both axes. */
-const STAR_PATH =
-  'M12 2.5l2.94 6.32 6.95.72-5.2 4.7 1.5 6.86L12 17.8l-6.19 3.3 1.5-6.86-5.2-4.7 6.95-.72L12 2.5z';
+const STAR_GLYPH = '★'; // ★
 
 type FillState = 'full' | 'half' | 'empty';
 
@@ -197,37 +194,20 @@ export const RateMatchWidget = ({
             defaultValue: '{{value}} stars',
           });
           const fillState = fillFor(previewValue, star);
-          // Half-fill via a plain overflow:hidden wrapper rather than an
-          // SVG clipPath. clipPath references inside React-rendered inline
-          // SVGs have been flaky for us across Vite reloads — a wrapper
-          // div with width 0/50%/100% and overflow:hidden is more boring
-          // and renders the same on every browser.
-          const fillPct = fillState === 'full' ? '100%' : fillState === 'half' ? '50%' : '0%';
           return (
-            <span key={star} className="rate-match-widget__star">
-              {/* Empty (grey) star — always visible underneath. */}
-              <svg
-                className="rate-match-widget__svg rate-match-widget__svg--empty"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <path d={STAR_PATH} />
-              </svg>
-              {/* Gold star, clipped to fillPct by its overflow:hidden parent. */}
-              <span
-                className="rate-match-widget__fill-wrap"
-                style={{ width: fillPct }}
-                aria-hidden="true"
-              >
-                <svg
-                  className="rate-match-widget__svg rate-match-widget__svg--fill"
-                  viewBox="0 0 24 24"
-                  preserveAspectRatio="xMinYMid meet"
-                  focusable="false"
-                >
-                  <path d={STAR_PATH} />
-                </svg>
+            <span
+              key={star}
+              className={`rate-match-widget__star rate-match-widget__star--${fillState}`}
+            >
+              {/* Same DOM as the read-only <StarRating> display in the
+                  match awards header — two ★ glyph layers, the gold fg
+                  clipped by width per fill state. Whatever browser
+                  renders one will render the other identically. */}
+              <span className="rate-match-widget__star-bg" aria-hidden="true">
+                {STAR_GLYPH}
+              </span>
+              <span className="rate-match-widget__star-fg" aria-hidden="true">
+                {STAR_GLYPH}
               </span>
               <button
                 type="button"
