@@ -14,7 +14,27 @@ const mockMatchRatingsRepo = {
   getByMatch: vi.fn(),
 };
 
+const mockPromosRepo = {
+  listByRivalry: vi.fn(),
+};
+
+const mockSiteConfigRepo = {
+  getHeatTunables: vi.fn(),
+};
+
 const mockRunInTransaction = vi.fn();
+
+// Tunables default — matches DEFAULT_HEAT_TUNABLES on the backend.
+const DEFAULT_TUNABLES = {
+  pivot: 2.5,
+  maxWeight: 5,
+  scoreCap: 100,
+  motnMultiplier: 1.5,
+  promoBase: 3,
+  promoReactionStep: 1.4,
+  promoBonusCap: 7,
+  promoMaxReactionCount: 5,
+};
 
 vi.mock('../../../lib/repositories', async () => {
   const actual = await vi.importActual<
@@ -25,6 +45,8 @@ vi.mock('../../../lib/repositories', async () => {
     getRepositories: () => ({
       competition: { matches: mockMatchesRepo },
       matchRatings: mockMatchRatingsRepo,
+      content: { promos: mockPromosRepo },
+      user: { siteConfig: mockSiteConfigRepo },
       runInTransaction: mockRunInTransaction,
     }),
   };
@@ -96,6 +118,10 @@ describe('submitRating', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     delete process.env.IS_OFFLINE;
+    // Default empty promo set + default tunables for the heat helper.
+    // Individual tests can override these mocks.
+    mockPromosRepo.listByRivalry.mockResolvedValue([]);
+    mockSiteConfigRepo.getHeatTunables.mockResolvedValue(DEFAULT_TUNABLES);
   });
 
   it('happy path: no rivalry — averages two existing 4-star ratings plus new 5', async () => {

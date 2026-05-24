@@ -287,6 +287,19 @@ function buildPromosMethods(): PromosMethods {
       return promos;
     },
 
+    async listByRivalry(rivalryId: string): Promise<Promo[]> {
+      // No GSI on rivalryId (yet); promo volume per rivalry is small,
+      // so a filtered scan is fine. Mirrors `listResponsesTo`.
+      const items = await dynamoDb.scanAll({
+        TableName: TableNames.PROMOS,
+        FilterExpression: 'rivalryId = :rid',
+        ExpressionAttributeValues: { ':rid': rivalryId },
+      });
+      const promos = items as unknown as Promo[];
+      promos.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      return promos;
+    },
+
     async create(input: PromoCreateInput): Promise<Promo> {
       const now = new Date().toISOString();
       const item: Promo = {

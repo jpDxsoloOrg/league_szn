@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { NotFoundError } from '../errors';
-import type { FeatureFlags } from '../SiteConfigRepository';
-import { DEFAULT_FEATURES } from '../SiteConfigRepository';
+import type { FeatureFlags, RivalryHeatTunables } from '../SiteConfigRepository';
+import { DEFAULT_FEATURES, DEFAULT_HEAT_TUNABLES } from '../SiteConfigRepository';
 import type {
   UserRepository,
   NotificationPage,
@@ -314,6 +314,7 @@ class FantasyImpl implements FantasyMethods {
 
 class SiteConfigImpl implements SiteConfigMethods {
   features: FeatureFlags = { ...DEFAULT_FEATURES };
+  heatTunables: RivalryHeatTunables = { ...DEFAULT_HEAT_TUNABLES };
 
   async getFeatures(): Promise<FeatureFlags> {
     return { ...this.features };
@@ -322,6 +323,15 @@ class SiteConfigImpl implements SiteConfigMethods {
   async updateFeatures(patch: Partial<FeatureFlags>): Promise<FeatureFlags> {
     this.features = { ...this.features, ...patch };
     return { ...this.features };
+  }
+
+  async getHeatTunables(): Promise<RivalryHeatTunables> {
+    return { ...this.heatTunables };
+  }
+
+  async updateHeatTunables(patch: Partial<RivalryHeatTunables>): Promise<RivalryHeatTunables> {
+    this.heatTunables = { ...this.heatTunables, ...patch };
+    return { ...this.heatTunables };
   }
 }
 

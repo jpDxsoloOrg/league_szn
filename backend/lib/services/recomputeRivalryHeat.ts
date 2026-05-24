@@ -1,37 +1,87 @@
 import type { UnitOfWork } from '../repositories/unitOfWork';
 import { getRepositories } from '../repositories';
-import { computeRivalryHeat, type HeatTier } from '../policies/rivalryHeat';
+import {
+  computeRivalryHeat,
+  type HeatTier,
+  type HeatResult,
+  type RatedMatchInput,
+  type PromoHeatInput,
+  type HeatTunables,
+} from '../policies/rivalryHeat';
+import type { Promo } from '../repositories/types';
 
 export interface RecomputeRivalryHeatResult {
   heatScore: number;
   heat: HeatTier;
   ratedMatchCount: number;
+  promoCount: number;
+}
+
+/**
+ * Map a `Promo` to the policy's reaction-only input shape. Only
+ * 'call-out' and 'rivalry' promo types contribute to heat — other
+ * types may carry a `rivalryId` for context, but they don't change
+ * the score. Promos without a `rivalryId` never reach this function.
+ */
+const PROMO_TYPES_CONTRIBUTING_TO_HEAT: ReadonlyArray<Promo['promoType']> = [
+  'call-out',
+  'rivalry',
+];
+
+function promoToHeatInput(promo: Promo): PromoHeatInput | null {
+  if (!PROMO_TYPES_CONTRIBUTING_TO_HEAT.includes(promo.promoType)) return null;
+  if (promo.isHidden) return null;
+  return {
+    fireCount: promo.reactionCounts?.fire ?? 0,
+    trashCount: promo.reactionCounts?.trash ?? 0,
+  };
+}
+
+/**
+ * Compute a rivalry's heat from a caller-supplied `matches` projection
+ * plus the rivalry's persisted promos + the live admin tunables.
+ *
+ * `matches` is provided by the caller because the inline submit-rating
+ * flow needs to project an in-flight rating that isn't committed yet.
+ * The recompute path (below) builds it from persisted aggregates.
+ *
+ * Pure-ish: only reads (promos + tunables); no writes.
+ */
+export async function computeHeatForRivalry(
+  rivalryId: string,
+  matches: RatedMatchInput[],
+): Promise<HeatResult> {
+  const repos = getRepositories();
+  const [promos, tunables] = await Promise.all([
+    repos.content.promos.listByRivalry(rivalryId),
+    repos.user.siteConfig.getHeatTunables(),
+  ]);
+  const promoInputs = promos
+    .map(promoToHeatInput)
+    .filter((p): p is PromoHeatInput => p !== null);
+  const tunablesOverride: HeatTunables = { ...tunables };
+  return computeRivalryHeat({ matches, promos: promoInputs }, tunablesOverride);
 }
 
 /**
  * Recompute a rivalry's heat from the values currently persisted on its
- * matches' rating aggregates. RIV-26.
+ * matches' rating aggregates plus its promos. RIV-26 + promo-heat extension.
  *
  * Use this from:
  *   - The backfill script (`scripts/backfill-rivalry-heat.ts`)
  *   - The admin recompute endpoint
  *     (`POST /rivalry-requests/{rivalryId}/recompute-heat`)
- *   - Any future post-commit healing flow (e.g. a sweep after a manual
- *     match edit)
+ *   - `createPromo` / `reactToPromo` (promo-driven heat changes)
+ *   - Any future post-commit healing flow
  *
- * **NOT** used by `submitRating` — that handler must project the
- * *in-flight* rating values for the match being rated (because the
- * rating hasn't been committed yet at projection time). Mixing the two
- * use cases would either re-read stale aggregates or require a more
- * complex override-shape API; the duplication is intentional and tiny.
+ * The submit-rating handler still projects in-flight match aggregates
+ * inline via `computeHeatForRivalry` because the new rating isn't
+ * committed at projection time.
  *
  * When `tx` is provided, the rivalry write is staged on the supplied
  * UnitOfWork so the caller can combine the recompute with other writes
  * in a single transaction. When `tx` is omitted, the helper opens its
  * own `runInTransaction` and flushes immediately.
- *
- * Either way, the freshly-computed heat values are returned so the
- * caller can log / surface them without an extra read.
  */
 export async function recomputeRivalryHeat(
   rivalryId: string,
@@ -39,12 +89,13 @@ export async function recomputeRivalryHeat(
 ): Promise<RecomputeRivalryHeatResult> {
   const repos = getRepositories();
   const matches = await repos.competition.matches.findByRivalryId(rivalryId);
-  const ratedInputs = matches.map((m) => ({
+  const ratedInputs: RatedMatchInput[] = matches.map((m) => ({
     ratingAverage: m.ratingAverage ?? 0,
     ratingsCount: m.ratingsCount ?? 0,
     matchOfTheNight: m.matchOfTheNight === true,
   }));
-  const result = computeRivalryHeat({ matches: ratedInputs });
+
+  const result = await computeHeatForRivalry(rivalryId, ratedInputs);
   const patch = { heatScore: result.heatScore, heat: result.tier };
 
   if (tx) {
@@ -59,5 +110,6 @@ export async function recomputeRivalryHeat(
     heatScore: result.heatScore,
     heat: result.tier,
     ratedMatchCount: result.ratedMatchCount,
+    promoCount: result.promoCount,
   };
 }

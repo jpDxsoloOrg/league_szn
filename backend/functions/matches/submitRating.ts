@@ -2,7 +2,8 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories, RatingAlreadyExistsError } from '../../lib/repositories';
 import { getAuthContext } from '../../lib/auth';
 import { isHalfStarRating, roundToHalfStar } from '../../lib/utils/halfStar';
-import { computeRivalryHeat, type HeatTier } from '../../lib/policies/rivalryHeat';
+import { type HeatTier } from '../../lib/policies/rivalryHeat';
+import { computeHeatForRivalry } from '../../lib/services/recomputeRivalryHeat';
 import { parseBody } from '../../lib/parseBody';
 import {
   created,
@@ -104,7 +105,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           matchOfTheNight: match.matchOfTheNight === true,
         });
       }
-      const heat = computeRivalryHeat({ matches: projected });
+      const heat = await computeHeatForRivalry(match.rivalryId, projected);
       rivalryUpdate = {
         rivalryId: match.rivalryId,
         heatScore: heat.heatScore,

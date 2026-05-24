@@ -565,6 +565,29 @@
     }
   },
   "admin": {
+    "heatConfig": {
+      "title": "Rivalry Heat Tunables",
+      "subtitle": "Tune the rivalry heat formula. Changes apply on the next rivalry write (match rating, promo create, manual recompute).",
+      "save": "Save Heat Tunables",
+      "reset": "Reset to Defaults",
+      "savedMessage": "Rivalry heat tunables saved. New rivalry writes will use these values.",
+      "pivot": "Match rating pivot",
+      "pivotHint": "Ratings above this value push heat positive; below pulls it negative. (0–5)",
+      "maxWeight": "Max match weight",
+      "maxWeightHint": "Cap on how many ratings amplify a single match.",
+      "scoreCap": "Heat score cap (±)",
+      "scoreCapHint": "Final heat score is clamped to ±this value.",
+      "motnMultiplier": "Match-of-the-Night multiplier",
+      "motnMultiplierHint": "How much a MOTN match's contribution is multiplied.",
+      "promoBase": "Promo base bonus",
+      "promoBaseHint": "Heat added per call-out or rivalry promo (before reactions).",
+      "promoReactionStep": "Per-reaction step",
+      "promoReactionStepHint": "Heat per fire reaction (subtracted per trash).",
+      "promoBonusCap": "Reaction bonus cap (±)",
+      "promoBonusCapHint": "Max magnitude of the reaction bonus per promo.",
+      "promoMaxReactionCount": "Reactions counted per type",
+      "promoMaxReactionCountHint": "Only the first N fire / trash reactions affect the bonus."
+    },
     "panel": {
       "title": "Admin Panel",
       "tabs": {
@@ -597,6 +620,7 @@
         "transfers": "Division Transfers",
         "storylineRequests": "Storyline Requests",
         "rivalries": "Rivalries",
+        "heatConfig": "Heat Tunables",
         "dangerZone": "Danger Zone"
       },
       "groups": {
@@ -1414,7 +1438,8 @@
         "pre-match": "Hype up an upcoming match.",
         "post-match": "React to a completed match.",
         "championship": "Address a championship situation.",
-        "return": "Announce your return to the league."
+        "return": "Announce your return to the league.",
+        "rivalry": "Advance one of your rivalries without calling anyone out directly."
       },
       "promoTitle": "Title",
       "titlePlaceholder": "Give your promo a catchy title...",
@@ -1446,7 +1471,11 @@
       "challengeFailed": "Promo published, but the challenge could not be created. You can issue it separately.",
       "matchType": "Match Type",
       "stipulation": "Stipulation",
-      "cutCallOut": "Cut a Call-Out Promo"
+      "cutCallOut": "Cut a Call-Out Promo",
+      "rivalry": "Rivalry",
+      "selectRivalry": "-- Select a rivalry --",
+      "noRivalries": "You're not in any rivalries yet. Have a GM start one, or pick a different promo type.",
+      "rivalryVs": "vs {{opponents}}"
     },
     "reactions": {
       "fire": "Fire",
@@ -1462,7 +1491,8 @@
       "pre-match": "Pre-Match",
       "post-match": "Post-Match",
       "championship": "Championship",
-      "return": "Return"
+      "return": "Return",
+      "rivalry": "Rivalry"
     },
     "admin": {
       "title": "Manage Promos",

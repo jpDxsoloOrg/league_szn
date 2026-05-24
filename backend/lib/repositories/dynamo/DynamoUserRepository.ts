@@ -21,8 +21,8 @@ import type {
   FantasyPick,
   WrestlerCost,
 } from '../types';
-import type { FeatureFlags } from '../SiteConfigRepository';
-import { DEFAULT_FEATURES } from '../SiteConfigRepository';
+import type { FeatureFlags, RivalryHeatTunables } from '../SiteConfigRepository';
+import { DEFAULT_FEATURES, DEFAULT_HEAT_TUNABLES } from '../SiteConfigRepository';
 import type { CrudRepository } from '../CrudRepository';
 
 // ─── Notifications sub-object ──────────────────────────────────────
@@ -467,6 +467,35 @@ class SiteConfigDelegate implements SiteConfigMethods {
       Item: {
         configKey: 'features',
         features: updated,
+        updatedAt: new Date().toISOString(),
+      },
+    });
+
+    return updated;
+  }
+
+  async getHeatTunables(): Promise<RivalryHeatTunables> {
+    const result = await dynamoDb.get({
+      TableName: TableNames.SITE_CONFIG,
+      Key: { configKey: 'rivalryHeatTunables' },
+    });
+
+    const stored = result.Item?.tunables as Partial<RivalryHeatTunables> | undefined;
+    // Merge so missing fields fall back to defaults — keeps the formula
+    // working even after we add a new tunable that older stored configs
+    // don't have yet.
+    return { ...DEFAULT_HEAT_TUNABLES, ...(stored ?? {}) };
+  }
+
+  async updateHeatTunables(patch: Partial<RivalryHeatTunables>): Promise<RivalryHeatTunables> {
+    const current = await this.getHeatTunables();
+    const updated = { ...current, ...patch };
+
+    await dynamoDb.put({
+      TableName: TableNames.SITE_CONFIG,
+      Item: {
+        configKey: 'rivalryHeatTunables',
+        tunables: updated,
         updatedAt: new Date().toISOString(),
       },
     });

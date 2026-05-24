@@ -7,7 +7,7 @@ import type {
   FantasyPick,
   WrestlerCost,
 } from './types';
-import type { FeatureFlags } from './SiteConfigRepository';
+import type { FeatureFlags, RivalryHeatTunables } from './SiteConfigRepository';
 
 // ─── Notification types ─────────────────────────────────────────────
 
@@ -87,6 +87,8 @@ export interface FantasyMethods {
 export interface SiteConfigMethods {
   getFeatures(): Promise<FeatureFlags>;
   updateFeatures(patch: Partial<FeatureFlags>): Promise<FeatureFlags>;
+  getHeatTunables(): Promise<RivalryHeatTunables>;
+  updateHeatTunables(patch: Partial<RivalryHeatTunables>): Promise<RivalryHeatTunables>;
 }
 
 // ─── Aggregate interface ────────────────────────────────────────────

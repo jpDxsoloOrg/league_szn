@@ -257,18 +257,21 @@ describe('createPromo', () => {
     expect(body(result).message).toBe('Failed to create promo');
   });
 
-  it('persists rivalryId without validating participant membership (RIV-06)', async () => {
-    mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
-    });
-    mockPut.mockResolvedValue({});
+  it('returns 404 when rivalryId is provided but the rivalry does not exist', async () => {
+    // mockQuery returns the player row on the first call (player lookup),
+    // then no rivalry rows on the second call (rivalry META lookup).
+    mockQuery
+      .mockResolvedValueOnce({
+        Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+      })
+      .mockResolvedValueOnce({ Items: [] });
 
     const event = withAuth(
       makeEvent({
         body: JSON.stringify({
           promoType: 'open-mic',
           content: VALID_CONTENT,
-          rivalryId: 'r1',
+          rivalryId: 'r-missing',
         }),
       }),
       'Wrestler',
@@ -276,9 +279,74 @@ describe('createPromo', () => {
 
     const result = await createPromo(event, ctx, cb);
 
-    expect(result!.statusCode).toBe(201);
-    expect(body(result).rivalryId).toBe('r1');
-    const putArg = mockPut.mock.calls[0][0];
-    expect(putArg.Item.rivalryId).toBe('r1');
+    expect(result!.statusCode).toBe(404);
+    expect(body(result).message).toBe('Rivalry not found');
+    expect(mockPut).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 when caller is not a participant of the referenced rivalry', async () => {
+    // First query: find player. Second query: rivalry rows with a different participant.
+    mockQuery
+      .mockResolvedValueOnce({
+        Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+      })
+      .mockResolvedValueOnce({
+        Items: [
+          {
+            rivalryId: 'r1',
+            recordType: 'META',
+            title: 'Storyline X',
+            status: 'active',
+            heat: 'warm',
+            heatScore: 0,
+            requestedBy: 'someone-else',
+            createdAt: '2024-01-01T00:00:00Z',
+            updatedAt: '2024-01-01T00:00:00Z',
+          },
+          {
+            rivalryId: 'r1',
+            recordType: 'PARTICIPANT#other-player',
+            participantId: 'other-player',
+            role: 'rival',
+            addedAt: '2024-01-01T00:00:00Z',
+          },
+        ],
+      });
+
+    const event = withAuth(
+      makeEvent({
+        body: JSON.stringify({
+          promoType: 'call-out',
+          content: VALID_CONTENT,
+          rivalryId: 'r1',
+          targetPlayerId: 'other-player',
+        }),
+      }),
+      'Wrestler',
+    );
+
+    const result = await createPromo(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(403);
+    expect(mockPut).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when a rivalry-type promo is submitted without rivalryId', async () => {
+    mockQuery.mockResolvedValue({
+      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+    });
+
+    const event = withAuth(
+      makeEvent({
+        body: JSON.stringify({ promoType: 'rivalry', content: VALID_CONTENT }),
+      }),
+      'Wrestler',
+    );
+
+    const result = await createPromo(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(body(result).message).toContain('rivalryId');
+    expect(mockPut).not.toHaveBeenCalled();
   });
 });
