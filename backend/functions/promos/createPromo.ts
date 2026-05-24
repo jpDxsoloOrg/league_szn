@@ -1,12 +1,18 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { created, badRequest, serverError } from '../../lib/response';
+import { created, badRequest, forbidden, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
+import { recomputeRivalryHeat } from '../../lib/services/recomputeRivalryHeat';
 import type { PromoType } from '../../lib/repositories/types';
 
-const VALID_PROMO_TYPES: PromoType[] = ['open-mic', 'call-out', 'response', 'pre-match', 'post-match', 'championship', 'return'];
+const VALID_PROMO_TYPES: PromoType[] = [
+  'open-mic', 'call-out', 'response', 'pre-match', 'post-match', 'championship', 'return', 'rivalry',
+];
+
+/** Promo types whose presence affects a rivalry's heat score. */
+const HEAT_CONTRIBUTING_TYPES: ReadonlyArray<PromoType> = ['call-out', 'rivalry'];
 
 interface CreatePromoBody {
   promoType: string;
@@ -45,13 +51,30 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (promoType === 'response' && !targetPromoId) {
       return badRequest('Response promos must reference an existing promo (targetPromoId)');
     }
+    if (promoType === 'rivalry' && !rivalryId) {
+      return badRequest('Rivalry promos must reference a rivalry (rivalryId)');
+    }
 
-    const { content: { promos }, roster: { players } } = getRepositories();
+    const repos = getRepositories();
+    const { content: { promos }, roster: { players }, rivalries } = repos;
 
     // Find the player via user sub
     const player = await players.findByUserId(auth.sub);
     if (!player) {
       return badRequest('No player profile linked to your account');
+    }
+
+    // Validate rivalryId (when present) refers to a real rivalry that the
+    // caller participates in. Applies to any promo type carrying a
+    // rivalryId — we don't want a non-participant pinning their promo
+    // (and its heat contribution) to someone else's storyline.
+    if (rivalryId) {
+      const rivalry = await rivalries.get(rivalryId);
+      if (!rivalry) return notFound('Rivalry not found');
+      const isParticipant = rivalry.participants.some((p) => p.playerId === player.playerId);
+      if (!isParticipant) {
+        return forbidden('You can only tag a promo to a rivalry you are part of');
+      }
     }
 
     const promo = await promos.create({
@@ -80,6 +103,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           sourceId: promo.promoId,
           sourceType: 'promo',
         });
+      }
+    }
+
+    // Push the rivalry's heat forward when this promo contributes.
+    // Failures here shouldn't roll back the promo creation — heat is
+    // eventually consistent via the admin recompute endpoint.
+    if (rivalryId && HEAT_CONTRIBUTING_TYPES.includes(promoType as PromoType)) {
+      try {
+        await recomputeRivalryHeat(rivalryId);
+      } catch (heatErr) {
+        console.error('Failed to recompute rivalry heat after promo create:', heatErr);
       }
     }
 

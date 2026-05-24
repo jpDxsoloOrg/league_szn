@@ -565,6 +565,29 @@
     }
   },
   "admin": {
+    "heatConfig": {
+      "title": "Rivalitäts-Heat-Einstellungen",
+      "subtitle": "Stelle die Heat-Formel ein. Änderungen greifen beim nächsten Rivalitäts-Update (Match-Bewertung, Promo-Erstellung, manuelle Neuberechnung).",
+      "save": "Heat-Einstellungen speichern",
+      "reset": "Auf Standard zurücksetzen",
+      "savedMessage": "Heat-Einstellungen gespeichert. Neue Rivalitäts-Updates verwenden diese Werte.",
+      "pivot": "Match-Bewertung Pivot",
+      "pivotHint": "Bewertungen über diesem Wert erhöhen Heat; darunter senken sie ihn. (0–5)",
+      "maxWeight": "Max. Match-Gewicht",
+      "maxWeightHint": "Begrenzt, wie viele Bewertungen ein einzelnes Match verstärken können.",
+      "scoreCap": "Heat-Score-Limit (±)",
+      "scoreCapHint": "Der endgültige Heat-Score wird auf ±diesen Wert beschränkt.",
+      "motnMultiplier": "Match-des-Abends-Multiplikator",
+      "motnMultiplierHint": "Wie stark der Beitrag eines MOTN-Matches multipliziert wird.",
+      "promoBase": "Promo-Basisbonus",
+      "promoBaseHint": "Heat pro Call-Out- oder Rivalitäts-Promo (vor Reaktionen).",
+      "promoReactionStep": "Schritt pro Reaktion",
+      "promoReactionStepHint": "Heat pro Feuer-Reaktion (wird pro Müll abgezogen).",
+      "promoBonusCap": "Reaktions-Bonus-Limit (±)",
+      "promoBonusCapHint": "Maximale Höhe des Reaktionsbonus pro Promo.",
+      "promoMaxReactionCount": "Gezählte Reaktionen pro Typ",
+      "promoMaxReactionCountHint": "Nur die ersten N Feuer/Müll-Reaktionen wirken sich auf den Bonus aus."
+    },
     "panel": {
       "title": "Admin-Bereich",
       "tabs": {
@@ -597,6 +620,7 @@
         "transfers": "Divisionstransfers",
         "storylineRequests": "Storyline-Anfragen",
         "rivalries": "Rivalitäten",
+        "heatConfig": "Heat-Einstellungen",
         "dangerZone": "Gefahrenzone"
       },
       "groups": {
@@ -1411,7 +1435,8 @@
         "pre-match": "Heize einen bevorstehenden Kampf an.",
         "post-match": "Reagiere auf einen abgeschlossenen Kampf.",
         "championship": "Sprich eine Meisterschaftssituation an.",
-        "return": "Kündige deine Rückkehr in die Liga an."
+        "return": "Kündige deine Rückkehr in die Liga an.",
+        "rivalry": "Bringe eine deiner Rivalitäten voran, ohne jemanden direkt anzusprechen."
       },
       "promoTitle": "Titel",
       "titlePlaceholder": "Gib deiner Promo einen einprägsamen Titel...",
@@ -1443,7 +1468,11 @@
       "challengeFailed": "Promo veröffentlicht, aber die Herausforderung konnte nicht erstellt werden. Du kannst sie separat aussprechen.",
       "matchType": "Match-Typ",
       "stipulation": "Auflagen",
-      "cutCallOut": "Call-Out-Promo schneiden"
+      "cutCallOut": "Call-Out-Promo schneiden",
+      "rivalry": "Rivalität",
+      "selectRivalry": "-- Rivalität auswählen --",
+      "noRivalries": "Du bist noch in keiner Rivalität. Lass einen GM eine starten oder wähle einen anderen Promo-Typ.",
+      "rivalryVs": "vs {{opponents}}"
     },
     "reactions": {
       "fire": "Feuer",
@@ -1459,7 +1488,8 @@
       "pre-match": "Vor dem Kampf",
       "post-match": "Nach dem Kampf",
       "championship": "Meisterschaft",
-      "return": "Rückkehr"
+      "return": "Rückkehr",
+      "rivalry": "Rivalität"
     },
     "admin": {
       "title": "Promos verwalten",

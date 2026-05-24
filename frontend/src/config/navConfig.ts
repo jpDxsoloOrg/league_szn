@@ -164,6 +164,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
       { path: '/admin/storyline-requests', i18nKey: 'admin.panel.tabs.storylineRequests' },
       { path: '/admin/promos', i18nKey: 'admin.panel.tabs.promos' },
       { path: '/admin/rivalries', i18nKey: 'admin.panel.tabs.rivalries' },
+      { path: '/admin/heat-config', i18nKey: 'admin.panel.tabs.heatConfig' },
     ],
   },
   {
@@ -207,7 +208,7 @@ export function getAdminGroupForPath(pathname: string): string | null {
   const rosterSeasons = ['/admin/players', '/admin/divisions', '/admin/wrestlers', '/admin/transfers', '/admin/seasons', '/admin/season-awards'];
   const titlesTournaments = ['/admin/championships', '/admin/tournaments', '/admin/companies', '/admin/locations', '/admin/shows'];
   const adminRankings = ['/admin/contender-config', '/admin/contender-overrides'];
-  const content = ['/admin/announcements', '/admin/videos', '/admin/storyline-requests', '/admin/promos'];
+  const content = ['/admin/announcements', '/admin/videos', '/admin/storyline-requests', '/admin/promos', '/admin/rivalries', '/admin/heat-config'];
   const adminFactions = ['/admin/factions', '/admin/tag-teams'];
   const system = ['/admin/users', '/admin/features', '/admin/danger'];
   if (matchDay.some((p) => pathname === p)) return 'matchDay';

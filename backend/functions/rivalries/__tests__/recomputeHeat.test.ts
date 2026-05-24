@@ -11,12 +11,33 @@ const mockMatchesRepo = {
   findByRivalryId: vi.fn(),
 };
 
+const mockPromosRepo = {
+  listByRivalry: vi.fn(),
+};
+
+const mockSiteConfigRepo = {
+  getHeatTunables: vi.fn(),
+};
+
 const mockRunInTransaction = vi.fn();
+
+const DEFAULT_TUNABLES = {
+  pivot: 2.5,
+  maxWeight: 5,
+  scoreCap: 100,
+  motnMultiplier: 1.5,
+  promoBase: 3,
+  promoReactionStep: 1.4,
+  promoBonusCap: 7,
+  promoMaxReactionCount: 5,
+};
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
     rivalries: mockRivalries,
     competition: { matches: mockMatchesRepo },
+    content: { promos: mockPromosRepo },
+    user: { siteConfig: mockSiteConfigRepo },
     runInTransaction: mockRunInTransaction,
   }),
 }));
@@ -47,6 +68,9 @@ describe('POST /rivalry-requests/{rivalryId}/recompute-heat', () => {
         return tx;
       },
     );
+    // Default: no promos contribute, default tunables.
+    mockPromosRepo.listByRivalry.mockResolvedValue([]);
+    mockSiteConfigRepo.getHeatTunables.mockResolvedValue(DEFAULT_TUNABLES);
   });
 
   it('rejects non-Admin/Moderator callers with 403', async () => {

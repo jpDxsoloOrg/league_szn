@@ -197,6 +197,12 @@ class PromosImpl implements PromosMethods {
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   }
 
+  async listByRivalry(rivalryId: string): Promise<Promo[]> {
+    return Array.from(this.store.values())
+      .filter((p) => p.rivalryId === rivalryId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+
   async create(input: PromoCreateInput): Promise<Promo> {
     const now = new Date().toISOString();
     const item: Promo = {

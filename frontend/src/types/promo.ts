@@ -5,7 +5,8 @@ export type PromoType =
   | 'pre-match'
   | 'post-match'
   | 'championship'
-  | 'return';
+  | 'return'
+  | 'rivalry';
 
 export type ReactionType = 'fire' | 'mic' | 'trash' | 'mind-blown' | 'clap';
 

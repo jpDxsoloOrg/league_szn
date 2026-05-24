@@ -300,6 +300,16 @@ functions:
           method: get
           cors: *corsConfig
           authorizer: adminAuthorizer
+      - http:
+          path: admin/heat-config
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/heat-config
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
 
   # Players (Phase 2 consolidated: getPlayers, createPlayer, updatePlayer, deletePlayer, getMyProfile, updateMyProfile)
   players:

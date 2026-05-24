@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { PromoType, PromoWithContext } from '../../types/promo';
 import { playersApi, promosApi, championshipsApi, matchesApi, challengesApi, stipulationsApi, matchTypesApi, tagTeamsApi } from '../../services/api';
+import { rivalriesApi } from '../../services/api/rivalries.api';
 import type { Player, Match, Championship, Stipulation, MatchType } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
+import type { Rivalry } from '../../types/rivalry';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import PromoCard from './PromoCard';
 import './PromoEditor.css';
@@ -59,6 +61,13 @@ const PROMO_TYPES: { value: PromoType; labelKey: string; fallback: string; descK
     descKey: 'promos.editor.typeDesc.return',
     descFallback: 'Announce your return to the league.',
   },
+  {
+    value: 'rivalry',
+    labelKey: 'promos.types.rivalry',
+    fallback: 'Rivalry',
+    descKey: 'promos.editor.typeDesc.rivalry',
+    descFallback: 'Advance one of your rivalries without calling anyone out directly.',
+  },
 ];
 
 const VALID_PROMO_TYPES = new Set<string>(PROMO_TYPES.map((pt) => pt.value));
@@ -112,6 +121,7 @@ export default function PromoEditor() {
   });
   const [matchId, setMatchId] = useState('');
   const [championshipId, setChampionshipId] = useState('');
+  const [rivalryId, setRivalryId] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -132,6 +142,7 @@ export default function PromoEditor() {
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [tagTeams, setTagTeams] = useState<TagTeam[]>([]);
   const [playerTagTeam, setPlayerTagTeam] = useState<TagTeam | null>(null);
+  const [myRivalries, setMyRivalries] = useState<Rivalry[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -176,6 +187,14 @@ export default function PromoEditor() {
             (tt) => tt.player1Id === foundPlayer!.playerId || tt.player2Id === foundPlayer!.playerId
           );
           setPlayerTagTeam(myTeam || null);
+
+          // Load rivalries the current player is a participant in.
+          // Fire-and-forget; if it fails, the rivalry promo picker will
+          // just show an empty list rather than blocking the editor.
+          rivalriesApi
+            .list({ participantId: foundPlayer.playerId, limit: 50 }, controller.signal)
+            .then((res) => setMyRivalries(res.rivalries ?? []))
+            .catch(() => {});
         }
       })
       .catch(() => {});
@@ -187,6 +206,7 @@ export default function PromoEditor() {
   const showTargetPromo = promoType === 'response';
   const showMatch = promoType === 'pre-match' || promoType === 'post-match';
   const showChampionship = promoType === 'championship';
+  const showRivalryPicker = promoType === 'rivalry';
 
   const targetPromos = useMemo(() => {
     if (!targetPlayerId) return [];
@@ -197,7 +217,14 @@ export default function PromoEditor() {
   const isContentValid = contentLength >= MIN_CONTENT && contentLength <= MAX_CONTENT;
   const needsTargetPromo = promoType === 'response';
   const hasTargetPromo = !!targetPromoId;
-  const canSubmit = isContentValid && promoType && !submitting && (!needsTargetPromo || hasTargetPromo);
+  const needsRivalry = promoType === 'rivalry';
+  const hasRivalry = !!rivalryId;
+  const canSubmit =
+    isContentValid &&
+    promoType &&
+    !submitting &&
+    (!needsTargetPromo || hasTargetPromo) &&
+    (!needsRivalry || hasRivalry);
 
   const previewPromo = useMemo((): PromoWithContext => {
     const targetPlayer = players.find((p) => p.playerId === targetPlayerId);
@@ -263,6 +290,7 @@ export default function PromoEditor() {
         targetPromoId: targetPromoId || undefined,
         matchId: matchId || undefined,
         championshipId: championshipId || undefined,
+        rivalryId: rivalryId || undefined,
         ...(promoType === 'call-out' && challengeMode === 'tag_team' && playerTagTeam && selectedTeam ? {
           challengeMode: 'tag_team',
           challengerTagTeamName: playerTagTeam.name,
@@ -339,6 +367,7 @@ export default function PromoEditor() {
                 setTargetPromoId('');
                 setMatchId('');
                 setChampionshipId('');
+                setRivalryId('');
                 setChallengeMatchType('');
                 setChallengeStipulation('');
                 setChallengeCreated(false);
@@ -392,6 +421,7 @@ export default function PromoEditor() {
                   setTargetPromoId('');
                   setMatchId('');
                   setChampionshipId('');
+                  setRivalryId('');
                 }}
               >
                 <span className="type-name">{t(pt.labelKey, pt.fallback)}</span>
@@ -597,6 +627,55 @@ export default function PromoEditor() {
                 </option>
               ))}
             </select>
+          </div>
+        )}
+
+        {/* Rivalry picker (rivalry promo type only) */}
+        {showRivalryPicker && (
+          <div className="form-group">
+            <label className="form-label" htmlFor="rivalry-select">
+              {t('promos.editor.rivalry', 'Rivalry')}
+              <span className="form-required" aria-label="required"> *</span>
+            </label>
+            {myRivalries.length === 0 ? (
+              <p className="form-hint">
+                {t(
+                  'promos.editor.noRivalries',
+                  "You're not in any rivalries yet. Have a GM start one, or pick a different promo type.",
+                )}
+              </p>
+            ) : (
+              <select
+                id="rivalry-select"
+                className="form-select"
+                value={rivalryId}
+                onChange={(e) => setRivalryId(e.target.value)}
+                required
+              >
+                <option value="">
+                  {t('promos.editor.selectRivalry', '-- Select a rivalry --')}
+                </option>
+                {myRivalries.map((r) => {
+                  const opponents = r.participants
+                    .filter((p) => p.playerId !== currentPlayer?.playerId)
+                    .map((p) => {
+                      const player = players.find((pl) => pl.playerId === p.playerId);
+                      return player?.currentWrestler ?? player?.name ?? p.playerId;
+                    })
+                    .join(', ');
+                  const label = r.title
+                    ? r.title
+                    : opponents
+                      ? t('promos.editor.rivalryVs', 'vs {{opponents}}', { opponents })
+                      : r.rivalryId;
+                  return (
+                    <option key={r.rivalryId} value={r.rivalryId}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
           </div>
         )}
 

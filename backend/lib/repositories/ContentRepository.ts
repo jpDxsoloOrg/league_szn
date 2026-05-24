@@ -93,6 +93,11 @@ export interface PromosMethods {
   list(): Promise<Promo[]>;
   listByPlayer(playerId: string): Promise<Promo[]>;
   listByType(promoType: PromoType): Promise<Promo[]>;
+  /**
+   * All promos tagged to a given rivalry. Powers the rivalry-heat
+   * recompute path so promos contribute to a rivalry's score.
+   */
+  listByRivalry(rivalryId: string): Promise<Promo[]>;
   listResponsesTo(targetPromoId: string): Promise<Promo[]>;
   create(input: PromoCreateInput): Promise<Promo>;
   update(promoId: string, patch: Partial<Promo>): Promise<Promo>;

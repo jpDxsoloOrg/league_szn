@@ -173,14 +173,19 @@ export default function AdminRivalries() {
     <div className="admin-rivalries">
       <header className="admin-rivalries__header">
         <h2>{t('rivalries.admin.heading')}</h2>
-        <button
-          type="button"
-          className="admin-rivalries__bulk"
-          disabled={resolvedCount === 0}
-          onClick={() => setModal({ action: 'bulk-clear', bulkCount: resolvedCount })}
-        >
-          {t('rivalries.admin.bulkClear')} ({resolvedCount})
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <Link to="/admin/heat-config" className="admin-rivalries__bulk" style={{ textDecoration: 'none' }}>
+            {t('admin.panel.tabs.heatConfig', 'Heat Tunables')}
+          </Link>
+          <button
+            type="button"
+            className="admin-rivalries__bulk"
+            disabled={resolvedCount === 0}
+            onClick={() => setModal({ action: 'bulk-clear', bulkCount: resolvedCount })}
+          >
+            {t('rivalries.admin.bulkClear')} ({resolvedCount})
+          </button>
+        </div>
       </header>
 
       <div className="admin-rivalries__chips" role="toolbar">

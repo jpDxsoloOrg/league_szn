@@ -3,9 +3,16 @@ import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, requireRole } from '../../lib/auth';
-import type { ReactionType } from '../../lib/repositories/types';
+import { recomputeRivalryHeat } from '../../lib/services/recomputeRivalryHeat';
+import type { ReactionType, PromoType } from '../../lib/repositories/types';
 
 const VALID_REACTIONS: ReactionType[] = ['fire', 'mic', 'trash', 'mind-blown', 'clap'];
+
+/** Reactions that change a rivalry's heat score. */
+const HEAT_RELEVANT_REACTIONS: ReadonlyArray<ReactionType> = ['fire', 'trash'];
+
+/** Promo types whose reactions feed into rivalry heat. */
+const HEAT_CONTRIBUTING_TYPES: ReadonlyArray<PromoType> = ['call-out', 'rivalry'];
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -47,6 +54,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         await promos.removeReaction(promoId, userId);
       }
       updatedPromo = await promos.addReaction(promoId, userId, reaction as ReactionType);
+    }
+
+    // If this reaction (or the one it replaced) moves the heat dial,
+    // recompute the rivalry's heat. We skip recompute for reaction
+    // changes that can't matter (e.g. clap → mic on a non-rivalry promo)
+    // to keep the hot path cheap.
+    const couldChangeHeat =
+      HEAT_RELEVANT_REACTIONS.includes(reaction as ReactionType) ||
+      (existingReaction !== undefined && HEAT_RELEVANT_REACTIONS.includes(existingReaction));
+    if (
+      couldChangeHeat &&
+      updatedPromo.rivalryId &&
+      HEAT_CONTRIBUTING_TYPES.includes(updatedPromo.promoType)
+    ) {
+      try {
+        await recomputeRivalryHeat(updatedPromo.rivalryId);
+      } catch (heatErr) {
+        console.error('Failed to recompute rivalry heat after reaction:', heatErr);
+      }
     }
 
     return success({ reactions: updatedPromo.reactions, reactionCounts: updatedPromo.reactionCounts });

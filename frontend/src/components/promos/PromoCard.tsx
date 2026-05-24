@@ -25,6 +25,7 @@ const PROMO_TYPE_COLORS: Record<PromoType, string> = {
   'post-match': '#10b981',
   championship: '#d4af37',
   return: '#ec4899',
+  rivalry: '#a855f7',
 };
 
 function getInitial(name: string): string {

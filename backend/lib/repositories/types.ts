@@ -363,7 +363,7 @@ export interface EventCheckIn {
   ttl?: number;
 }
 
-export type PromoType = 'open-mic' | 'call-out' | 'response' | 'pre-match' | 'post-match' | 'championship' | 'return';
+export type PromoType = 'open-mic' | 'call-out' | 'response' | 'pre-match' | 'post-match' | 'championship' | 'return' | 'rivalry';
 export type ReactionType = 'fire' | 'mic' | 'trash' | 'mind-blown' | 'clap';
 
 export interface Promo {

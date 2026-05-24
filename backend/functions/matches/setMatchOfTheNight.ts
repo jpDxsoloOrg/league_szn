@@ -9,7 +9,8 @@ import {
 } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
-import { computeRivalryHeat, type HeatTier } from '../../lib/policies/rivalryHeat';
+import { type HeatTier } from '../../lib/policies/rivalryHeat';
+import { computeHeatForRivalry } from '../../lib/services/recomputeRivalryHeat';
 
 interface SetMatchOfTheNightBody {
   matchOfTheNight: boolean;
@@ -79,7 +80,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           matchOfTheNight: body.matchOfTheNight,
         });
       }
-      const heat = computeRivalryHeat({ matches: projected });
+      const heat = await computeHeatForRivalry(match.rivalryId, projected);
       rivalryUpdate = {
         rivalryId: match.rivalryId,
         heatScore: heat.heatScore,
