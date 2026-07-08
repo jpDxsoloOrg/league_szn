@@ -9,6 +9,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { authApi, profileApi, playersApi } from '../api';
 
+// fetchWithAuth lazily imports the cognito service on the 401-refresh path;
+// mock it so tests never load aws-amplify.
+const { mockRefreshSession } = vi.hoisted(() => ({ mockRefreshSession: vi.fn() }));
+vi.mock('../cognito', () => ({
+  cognitoAuth: { refreshSession: mockRefreshSession },
+}));
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 // ---------------------------------------------------------------------------
@@ -112,6 +119,58 @@ describe('fetchWithAuth (indirect)', () => {
       expect.any(String),
       expect.objectContaining({ signal: controller.signal }),
     );
+  });
+
+  describe('expired-session refresh on 401', () => {
+    beforeEach(() => {
+      mockRefreshSession.mockReset();
+    });
+
+    it('refreshes the session and retries once when a token-bearing request gets 401', async () => {
+      sessionStorage.setItem('accessToken', 'expired-token');
+      mockRefreshSession.mockResolvedValue({ accessToken: 'fresh-token' });
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, status: 401, json: vi.fn() })
+        .mockResolvedValueOnce({ ok: true, status: 200, json: vi.fn().mockResolvedValue([]) });
+
+      const result = await playersApi.getAll();
+
+      expect(result).toEqual([]);
+      expect(mockRefreshSession).toHaveBeenCalledTimes(1);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      const retryHeaders = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[1][1]
+        .headers as Record<string, string>;
+      expect(retryHeaders['Authorization']).toBe('Bearer fresh-token');
+    });
+
+    it('throws a session-expired message when refresh fails', async () => {
+      sessionStorage.setItem('accessToken', 'expired-token');
+      mockRefreshSession.mockResolvedValue(null);
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: vi.fn().mockResolvedValue({ message: 'Unauthorized' }),
+      });
+
+      await expect(playersApi.getAll()).rejects.toThrow(
+        'Your session has expired. Please sign in again.',
+      );
+      expect(mockRefreshSession).toHaveBeenCalledTimes(1);
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not attempt a refresh for unauthenticated 401s', async () => {
+      mockRefreshSession.mockResolvedValue(null);
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: vi.fn().mockResolvedValue({ message: 'Unauthorized' }),
+      });
+
+      await expect(playersApi.getAll()).rejects.toThrow('Unauthorized');
+      expect(mockRefreshSession).not.toHaveBeenCalled();
+    });
   });
 });
 
