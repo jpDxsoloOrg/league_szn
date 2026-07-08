@@ -1,6 +1,18 @@
 import { Amplify } from 'aws-amplify';
-import { signIn, signUp, signOut, confirmSignUp, fetchAuthSession, getCurrentUser, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
+import { signIn, signUp, signOut, confirmSignUp, resendSignUpCode, fetchAuthSession, getCurrentUser, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
 import { logger } from '../utils/logger';
+
+/**
+ * Thrown by signIn when the account exists but the email was never verified.
+ * Callers detect this to route the user into the confirmation-code flow
+ * instead of showing a generic login error.
+ */
+export class UnconfirmedUserError extends Error {
+  constructor(message = 'Account not confirmed') {
+    super(message);
+    this.name = 'UnconfirmedUserError';
+  }
+}
 
 export type UserRole = 'Admin' | 'Moderator' | 'Wrestler';
 
@@ -112,7 +124,7 @@ export const cognitoAuth = {
       if (nextStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
         throw new Error('Password change required. Please contact administrator.');
       } else if (nextStep === 'CONFIRM_SIGN_UP') {
-        throw new Error('Account not confirmed. Please check your email for a verification code.');
+        throw new UnconfirmedUserError();
       } else if (nextStep) {
         throw new Error(`Additional step required: ${nextStep}`);
       }
@@ -120,6 +132,10 @@ export const cognitoAuth = {
       throw new Error('Sign in failed - unexpected state');
     } catch (error: unknown) {
       logger.error('Cognito sign in error');
+
+      if (error instanceof UnconfirmedUserError) {
+        throw error;
+      }
 
       if (error instanceof Error) {
         const cognitoError = error as Error & { name?: string };
@@ -132,7 +148,7 @@ export const cognitoAuth = {
         } else if (cognitoError.name === 'UserNotFoundException') {
           throw new Error('User not found');
         } else if (cognitoError.name === 'UserNotConfirmedException') {
-          throw new Error('Please verify your email before signing in');
+          throw new UnconfirmedUserError();
         }
         throw new Error(error.message || 'Authentication failed');
       }
@@ -220,6 +236,26 @@ export const cognitoAuth = {
         throw new Error(error.message || 'Confirmation failed');
       }
       throw new Error('Confirmation failed');
+    }
+  },
+
+  /**
+   * Resend the sign-up confirmation code to an unconfirmed user's email
+   */
+  resendConfirmationCode: async (email: string): Promise<void> => {
+    try {
+      await resendSignUpCode({ username: email });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        const cognitoError = error as Error & { name?: string };
+        if (cognitoError.name === 'LimitExceededException') {
+          throw new Error('Too many attempts. Please try again later.');
+        } else if (cognitoError.name === 'UserNotFoundException') {
+          throw new Error('No account found with this email');
+        }
+        throw new Error(error.message || 'Failed to resend verification code');
+      }
+      throw new Error('Failed to resend verification code');
     }
   },
 

@@ -18,6 +18,7 @@ interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, options?: { wrestlerName?: string; psnId?: string; playerName?: string }) => Promise<{ isConfirmed: boolean }>;
   confirmSignUp: (email: string, code: string) => Promise<boolean>;
+  resendConfirmationCode: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   devSignIn?: (player: { playerId: string; name: string }, roles?: UserRole[]) => void;
@@ -175,6 +176,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return cognitoAuth.confirmSignUp(email, code);
   }, []);
 
+  const handleResendConfirmationCode = useCallback(async (email: string) => {
+    return cognitoAuth.resendConfirmationCode(email);
+  }, []);
+
   const handleSignOut = useCallback(async () => {
     await cognitoAuth.signOut();
     sessionStorage.removeItem('devPlayer');
@@ -231,6 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signIn: handleSignIn,
     signUp: handleSignUp,
     confirmSignUp: handleConfirmSignUp,
+    resendConfirmationCode: handleResendConfirmationCode,
     signOut: handleSignOut,
     refreshProfile,
     ...(import.meta.env.DEV ? { devSignIn } : {}),
