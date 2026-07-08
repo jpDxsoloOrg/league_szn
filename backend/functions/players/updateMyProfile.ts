@@ -6,6 +6,7 @@ import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
+  filterExistingWrestlerIds,
   rejectDuplicateSlotAssignment,
   resolveWrestlerForAssignment,
 } from './wrestlerAssignment';
@@ -137,11 +138,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const newId = currentChange.newId;
       if (oldId && oldId !== newId) toRelease.push(oldId);
       if (newId) {
-        const r = await resolveWrestlerForAssignment(newId, playerId, 'primary');
-        if ('error' in r) return r.error;
-        toAssign.push({ wrestlerId: newId, slot: 'primary' });
-        patch.currentWrestlerId = newId;
-        patch.currentWrestler = r.wrestler.name;
+        // The edit form submits the full payload, so an unchanged slot echoes
+        // the player's stored FK back. If that FK is stale (its roster row
+        // was deleted, e.g. by a roster re-seed), failing the whole save
+        // with a 404 would block editing every other field — skip the slot.
+        const unchangedStale =
+          newId === oldId &&
+          (await filterExistingWrestlerIds([newId])).length === 0;
+        if (!unchangedStale) {
+          const r = await resolveWrestlerForAssignment(newId, playerId, 'primary');
+          if ('error' in r) return r.error;
+          toAssign.push({ wrestlerId: newId, slot: 'primary' });
+          patch.currentWrestlerId = newId;
+          patch.currentWrestler = r.wrestler.name;
+        }
       } else {
         patch.currentWrestlerId = null;
       }
@@ -153,11 +163,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const newId = alternateChange.newId;
       if (oldId && oldId !== newId) toRelease.push(oldId);
       if (newId) {
-        const r = await resolveWrestlerForAssignment(newId, playerId, 'alternate');
-        if ('error' in r) return r.error;
-        toAssign.push({ wrestlerId: newId, slot: 'alternate' });
-        patch.alternateWrestlerId = newId;
-        patch.alternateWrestler = r.wrestler.name;
+        const unchangedStale =
+          newId === oldId &&
+          (await filterExistingWrestlerIds([newId])).length === 0;
+        if (!unchangedStale) {
+          const r = await resolveWrestlerForAssignment(newId, playerId, 'alternate');
+          if ('error' in r) return r.error;
+          toAssign.push({ wrestlerId: newId, slot: 'alternate' });
+          patch.alternateWrestlerId = newId;
+          patch.alternateWrestler = r.wrestler.name;
+        }
       } else {
         patch.alternateWrestlerId = null;
         patch.alternateWrestler = undefined;
@@ -171,8 +186,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     if (toRelease.length > 0 || toAssign.length > 0) {
+      const releasable = await filterExistingWrestlerIds(toRelease);
       await runInTransaction(async (tx) => {
-        for (const wrestlerId of toRelease) {
+        for (const wrestlerId of releasable) {
           tx.releaseWrestlerFromPlayer({ wrestlerId });
         }
         for (const { wrestlerId, slot } of toAssign) {

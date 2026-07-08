@@ -6,6 +6,7 @@ const {
   mockAmplifySignUp,
   mockAmplifySignOut,
   mockAmplifyConfirmSignUp,
+  mockAmplifyResendSignUpCode,
   mockAmplifyFetchAuthSession,
   mockAmplifyGetCurrentUser,
   mockAmplifyConfigure,
@@ -14,6 +15,7 @@ const {
   mockAmplifySignUp: vi.fn(),
   mockAmplifySignOut: vi.fn(),
   mockAmplifyConfirmSignUp: vi.fn(),
+  mockAmplifyResendSignUpCode: vi.fn(),
   mockAmplifyFetchAuthSession: vi.fn(),
   mockAmplifyGetCurrentUser: vi.fn(),
   mockAmplifyConfigure: vi.fn(),
@@ -28,6 +30,7 @@ vi.mock('aws-amplify/auth', () => ({
   signUp: mockAmplifySignUp,
   signOut: mockAmplifySignOut,
   confirmSignUp: mockAmplifyConfirmSignUp,
+  resendSignUpCode: mockAmplifyResendSignUpCode,
   fetchAuthSession: mockAmplifyFetchAuthSession,
   getCurrentUser: mockAmplifyGetCurrentUser,
 }));
@@ -43,7 +46,7 @@ function fakeJwt(payload: Record<string, unknown>): string {
   return `${header}.${body}.fake-signature`;
 }
 
-import { cognitoAuth } from '../cognito';
+import { cognitoAuth, UnconfirmedUserError } from '../cognito';
 
 describe('cognito service — auth flows', () => {
   beforeEach(() => {
@@ -109,7 +112,7 @@ describe('cognito service — auth flows', () => {
       );
     });
 
-    it('handles CONFIRM_SIGN_UP next step', async () => {
+    it('throws UnconfirmedUserError on CONFIRM_SIGN_UP next step', async () => {
       mockAmplifySignOut.mockResolvedValue(undefined);
       mockAmplifySignIn.mockResolvedValue({
         isSignedIn: false,
@@ -117,18 +120,38 @@ describe('cognito service — auth flows', () => {
       });
 
       await expect(cognitoAuth.signIn('a@b.com', 'pass')).rejects.toThrow(
-        'Account not confirmed',
+        UnconfirmedUserError,
       );
     });
 
-    it('handles UserNotConfirmedException', async () => {
+    it('throws UnconfirmedUserError on UserNotConfirmedException', async () => {
       mockAmplifySignOut.mockResolvedValue(undefined);
       const err = new Error('User is not confirmed.');
       (err as Error & { name: string }).name = 'UserNotConfirmedException';
       mockAmplifySignIn.mockRejectedValue(err);
 
       await expect(cognitoAuth.signIn('a@b.com', 'pass')).rejects.toThrow(
-        'Please verify your email before signing in',
+        UnconfirmedUserError,
+      );
+    });
+  });
+
+  describe('resendConfirmationCode', () => {
+    it('calls Amplify resendSignUpCode with the email as username', async () => {
+      mockAmplifyResendSignUpCode.mockResolvedValue(undefined);
+
+      await cognitoAuth.resendConfirmationCode('a@b.com');
+
+      expect(mockAmplifyResendSignUpCode).toHaveBeenCalledWith({ username: 'a@b.com' });
+    });
+
+    it('maps LimitExceededException to a friendly message', async () => {
+      const err = new Error('Attempt limit exceeded');
+      (err as Error & { name: string }).name = 'LimitExceededException';
+      mockAmplifyResendSignUpCode.mockRejectedValue(err);
+
+      await expect(cognitoAuth.resendConfirmationCode('a@b.com')).rejects.toThrow(
+        'Too many attempts. Please try again later.',
       );
     });
   });

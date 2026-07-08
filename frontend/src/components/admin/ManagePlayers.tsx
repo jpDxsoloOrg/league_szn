@@ -39,6 +39,9 @@ function buildOptionGroups(
   excludeWrestlerId: string | undefined,
 ): WrestlerSlotOptions {
   const visible = allWrestlers.filter((w) => {
+    // Ghost roster rows (e.g. from a release against a deleted wrestlerId)
+    // lack name/promotion — drop them rather than crash the sorts below.
+    if (typeof w.name !== 'string' || typeof w.promotion !== 'string') return false;
     if (w.wrestlerId === excludeWrestlerId) return false; // never show the other-slot pick
     if (!w.isInUse) return true;
     return w.wrestlerId === selectedWrestlerId;

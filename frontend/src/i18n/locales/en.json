@@ -91,6 +91,8 @@
     "verifying": "Verifying...",
     "backToSignUp": "Back to sign up",
     "verificationFailed": "Verification failed. Please try again.",
+    "unconfirmedNotice": "Your account hasn't been verified yet. Enter the code we emailed you, or request a new one below.",
+    "codeResent": "A new verification code has been sent to your email.",
     "devLoginTitle": "Dev Login",
     "devLoginSubtitle": "Pick a role to sign in as (dev only)",
     "signInAsAdmin": "Sign in as Admin",

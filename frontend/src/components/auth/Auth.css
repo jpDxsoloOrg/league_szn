@@ -90,6 +90,16 @@
   margin-bottom: 0.5rem;
 }
 
+.auth-card .success-message {
+  background: rgba(40, 167, 69, 0.1);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  color: var(--color-success, #28a745);
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
 .auth-footer {
   margin-top: 1.5rem;
   text-align: center;

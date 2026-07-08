@@ -91,6 +91,8 @@
     "verifying": "Wird bestätigt...",
     "backToSignUp": "Zurück zur Registrierung",
     "verificationFailed": "Bestätigung fehlgeschlagen. Bitte versuche es erneut.",
+    "unconfirmedNotice": "Dein Konto wurde noch nicht bestätigt. Gib den Code ein, den wir dir per E-Mail geschickt haben, oder fordere unten einen neuen an.",
+    "codeResent": "Ein neuer Bestätigungscode wurde an deine E-Mail gesendet.",
     "devLoginTitle": "Dev-Anmeldung",
     "devLoginSubtitle": "Wähle eine Rolle zur Anmeldung (nur für Entwicklung)",
     "signInAsAdmin": "Als Admin anmelden",
