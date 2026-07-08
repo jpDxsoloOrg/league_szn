@@ -424,6 +424,55 @@ describe('stale wrestler FK handling', () => {
     expect(await repos.roster.wrestlers.findById('deleted-alternate')).toBeNull();
   });
 
+  it('updatePlayer tolerates the form echoing an unchanged stale FK', async () => {
+    // The ManagePlayers form submits the full payload on every save, so a
+    // stale FK (roster row deleted) comes back unchanged even when the admin
+    // only edited another field. That echo must not 404 the whole save.
+    const player = await repos.roster.players.create({ name: 'X', currentWrestler: 'Samoa Joe' });
+    await repos.roster.players.update(player.playerId, { alternateWrestlerId: 'deleted-id' });
+
+    const result = await updatePlayer(
+      makeEvent({
+        httpMethod: 'PUT',
+        pathParameters: { playerId: player.playerId },
+        body: JSON.stringify({
+          name: 'Renamed',
+          alternateWrestlerId: 'deleted-id',
+        }),
+      }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body).name).toBe('Renamed');
+    // The stale FK is left as-is and no ghost roster row appears.
+    expect(await repos.roster.wrestlers.findById('deleted-id')).toBeNull();
+  });
+
+  it('updateMyProfile tolerates the form echoing an unchanged stale FK', async () => {
+    const player = await repos.roster.players.create({ name: 'Me', currentWrestler: 'Gone' });
+    await repos.roster.players.update(player.playerId, {
+      userId: 'user-sub-1',
+      currentWrestlerId: 'deleted-id',
+    });
+
+    const result = await updateMyProfile(
+      withWrestlerAuth(
+        makeEvent({
+          httpMethod: 'PUT',
+          body: JSON.stringify({ name: 'Renamed', currentWrestlerId: 'deleted-id' }),
+        }),
+      ),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body).name).toBe('Renamed');
+    expect(await repos.roster.wrestlers.findById('deleted-id')).toBeNull();
+  });
+
   it('updateMyProfile still swaps wrestlers when the old FK is stale', async () => {
     const cena = await seedWrestler('John Cena');
     const player = await repos.roster.players.create({ name: 'Me', currentWrestler: 'Gone' });
