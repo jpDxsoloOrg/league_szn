@@ -295,6 +295,92 @@
   margin-bottom: 1rem;
 }
 
+/* Mobile card list — rendered instead of the table below 640px (the
+   useMediaQuery switch in Standings.tsx). Cards keep record, form, and
+   streak visible without horizontal scrolling. */
+.standings-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.standings-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.standings-card:active {
+  border-color: var(--color-primary);
+}
+
+.standings-card-rank {
+  flex: 0 0 1.6rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--color-primary);
+}
+
+.standings-card-avatar {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.standings-card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.standings-card-name {
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.standings-card-wrestler {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.standings-card-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+}
+
+.standings-card-record {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.standings-card-winpct {
+  color: var(--color-text-secondary);
+}
+
+.standings-card-ovr {
+  flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
   .standings-header {
     flex-direction: column;

@@ -49,6 +49,14 @@
   overflow-x: auto;
 }
 
+@media (max-width: 640px) {
+  /* Wrap instead of clipping off-screen — every filter stays visible. */
+  .events-filter-tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
 .events-filter-tab {
   background: none;
   border: none;

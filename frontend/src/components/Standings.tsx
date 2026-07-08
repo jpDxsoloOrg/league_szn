@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { standingsApi, seasonsApi, divisionsApi } from '../services/api';
 import { logger } from '../utils/logger';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import type { Standings as StandingsType, Season, Division, Player } from '../types';
 import PlayerHoverCard from './PlayerHoverCard';
 import DivisionFilter from './DivisionFilter';
@@ -29,6 +30,7 @@ export default function Standings() {
   const [defaultsResolved, setDefaultsResolved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isMobile = useMediaQuery('(max-width: 640px)');
 
   // Reload standings when retry button is clicked
   const loadStandings = useCallback(async () => {
@@ -231,6 +233,75 @@ export default function Standings() {
         </div>
       </div>
 
+      {/* Below 640px the table hides half its columns off-screen, so swap
+          in a card list that keeps record, form, and streak visible. */}
+      {isMobile ? (
+      <div className="standings-cards">
+        {playersWithStats.map((player, index) => (
+          <div
+            key={player.playerId}
+            className="standings-card"
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate(`/player/${player.playerId}`)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                navigate(`/player/${player.playerId}`);
+              }
+            }}
+            aria-label={player.name}
+          >
+            <span className="standings-card-rank">{index + 1}</span>
+            <img
+              src={resolveImageSrc(player.imageUrl, DEFAULT_WRESTLER_IMAGE)}
+              onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+              alt={player.currentWrestler}
+              className="standings-card-avatar"
+            />
+            <div className="standings-card-main">
+              <span className="standings-card-name">
+                {player.name}
+                {player.alignment === 'face' && ' 😇'}
+                {player.alignment === 'neutral' && ' ⚖️'}
+                {player.alignment === 'heel' && ' 😈'}
+              </span>
+              <span className="standings-card-wrestler">{player.currentWrestler}</span>
+              <div className="standings-card-stats">
+                <span className="standings-card-record">
+                  {player.wins}-{player.losses}-{player.draws}
+                </span>
+                <span className="standings-card-winpct">{player.winPercentage}%</span>
+                {player.recentForm && player.recentForm.length > 0 && (
+                  <span className="form-dots" aria-label={player.recentForm.join(', ')}>
+                    {player.recentForm.map((r, i) => (
+                      <span
+                        key={i}
+                        className={`form-dot ${r === 'W' ? 'win' : r === 'L' ? 'loss' : 'draw'}`}
+                      />
+                    ))}
+                  </span>
+                )}
+                {player.currentStreak && player.currentStreak.count >= 3 && (
+                  <span
+                    className={`streak-badge ${player.currentStreak.type === 'W' ? 'hot' : player.currentStreak.type === 'L' ? 'cold' : 'neutral'}`}
+                  >
+                    {player.currentStreak.type === 'W' && '🔥 '}
+                    {player.currentStreak.type === 'L' && '❄️ '}
+                    {player.currentStreak.type === 'D' && '➖ '}
+                    {player.currentStreak.count}
+                    {player.currentStreak.type}
+                  </span>
+                )}
+              </div>
+            </div>
+            {player.mainOverall !== undefined && (
+              <span className="overall-badge-sm standings-card-ovr">{player.mainOverall}</span>
+            )}
+          </div>
+        ))}
+      </div>
+      ) : (
       <div className="standings-table-wrapper">
         <table className="standings-table">
           <thead>
@@ -361,6 +432,7 @@ export default function Standings() {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }
