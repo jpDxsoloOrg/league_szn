@@ -378,4 +378,10 @@
   .sidebar.mobile-open {
     transform: translateX(0);
   }
+
+  /* The fixed hamburger button (now an X) sits on top of the open drawer —
+     clear its footprint so it doesn't overlap the title. */
+  .sidebar-header {
+    padding-left: 3.5rem;
+  }
 }
