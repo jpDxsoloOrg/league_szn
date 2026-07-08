@@ -305,6 +305,14 @@ export class DynamoUnitOfWork implements UnitOfWork {
   // `isInUse` is persisted as string "true"/"false" because DynamoDB GSI keys
   // cannot be Boolean; the repository boundary converts back to boolean on
   // read. See DynamoRosterRepository wrestlers.* for the read path.
+  //
+  // Both operations require the wrestler row to exist: DynamoDB Updates are
+  // upserts, and an unconditioned assign/release against a deleted wrestlerId
+  // creates a ghost row ({wrestlerId, isInUse, updatedAt} only) that crashes
+  // roster dropdowns in the frontend. Callers must verify existence first
+  // (resolveWrestlerForAssignment / filterExistingWrestlerIds); the condition
+  // turns the remaining delete race into a failed transaction instead of a
+  // silent ghost.
   assignWrestlerToPlayer(params: {
     wrestlerId: string;
     playerId: string;
@@ -315,6 +323,7 @@ export class DynamoUnitOfWork implements UnitOfWork {
       Update: {
         TableName: TableNames.WRESTLERS,
         Key: { wrestlerId: params.wrestlerId },
+        ConditionExpression: 'attribute_exists(wrestlerId)',
         UpdateExpression:
           'SET isInUse = :isInUse, assignedPlayerId = :playerId, assignedSlot = :slot, updatedAt = :now',
         ExpressionAttributeValues: {
@@ -333,6 +342,7 @@ export class DynamoUnitOfWork implements UnitOfWork {
       Update: {
         TableName: TableNames.WRESTLERS,
         Key: { wrestlerId: params.wrestlerId },
+        ConditionExpression: 'attribute_exists(wrestlerId)',
         UpdateExpression:
           'SET isInUse = :isInUse, updatedAt = :now REMOVE assignedPlayerId, assignedSlot',
         ExpressionAttributeValues: { ':isInUse': 'false', ':now': now },

@@ -47,6 +47,7 @@ import { handler as createPlayer } from '../createPlayer';
 import { handler as updatePlayer } from '../updatePlayer';
 import { handler as deletePlayer } from '../deletePlayer';
 import { handler as updateMyProfile } from '../updateMyProfile';
+import { filterExistingWrestlerIds } from '../wrestlerAssignment';
 
 let repos: Repositories;
 const ctx = {} as Context;
@@ -367,6 +368,84 @@ describe('deletePlayer releases assigned wrestlers', () => {
     const cenaAfter = await repos.roster.wrestlers.findById(cena.wrestlerId);
     expect(rockAfter?.isInUse).toBe(false);
     expect(cenaAfter?.isInUse).toBe(false);
+  });
+});
+
+// ─── Stale wrestler FKs (ghost-row regression) ──────────────────────
+//
+// A player row can hold a wrestlerId whose roster row was deleted. Releasing
+// it must be skipped — in DynamoDB an unconditioned release-update would
+// upsert a ghost row ({wrestlerId, isInUse, updatedAt} only) that crashes
+// the roster dropdowns in the frontend.
+
+describe('stale wrestler FK handling', () => {
+  it('filterExistingWrestlerIds drops ids with no roster row', async () => {
+    const rock = await seedWrestler('The Rock');
+    const result = await filterExistingWrestlerIds([rock.wrestlerId, 'deleted-id']);
+    expect(result).toEqual([rock.wrestlerId]);
+  });
+
+  it('updatePlayer still swaps wrestlers when the old FK is stale', async () => {
+    const cena = await seedWrestler('John Cena');
+    const player = await repos.roster.players.create({ name: 'X', currentWrestler: 'Gone' });
+    await repos.roster.players.update(player.playerId, { currentWrestlerId: 'deleted-id' });
+
+    const result = await updatePlayer(
+      makeEvent({
+        httpMethod: 'PUT',
+        pathParameters: { playerId: player.playerId },
+        body: JSON.stringify({ currentWrestlerId: cena.wrestlerId }),
+      }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body).currentWrestlerId).toBe(cena.wrestlerId);
+    // The stale id must not have been resurrected as a roster row.
+    expect(await repos.roster.wrestlers.findById('deleted-id')).toBeNull();
+  });
+
+  it('deletePlayer succeeds when both FKs are stale', async () => {
+    const player = await repos.roster.players.create({ name: 'X', currentWrestler: 'Gone' });
+    await repos.roster.players.update(player.playerId, {
+      currentWrestlerId: 'deleted-primary',
+      alternateWrestlerId: 'deleted-alternate',
+    });
+
+    const result = await deletePlayer(
+      makeEvent({ httpMethod: 'DELETE', pathParameters: { playerId: player.playerId } }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(204);
+    expect(await repos.roster.wrestlers.findById('deleted-primary')).toBeNull();
+    expect(await repos.roster.wrestlers.findById('deleted-alternate')).toBeNull();
+  });
+
+  it('updateMyProfile still swaps wrestlers when the old FK is stale', async () => {
+    const cena = await seedWrestler('John Cena');
+    const player = await repos.roster.players.create({ name: 'Me', currentWrestler: 'Gone' });
+    await repos.roster.players.update(player.playerId, {
+      userId: 'user-sub-1',
+      currentWrestlerId: 'deleted-id',
+    });
+
+    const result = await updateMyProfile(
+      withWrestlerAuth(
+        makeEvent({
+          httpMethod: 'PUT',
+          body: JSON.stringify({ currentWrestlerId: cena.wrestlerId }),
+        }),
+      ),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body).currentWrestlerId).toBe(cena.wrestlerId);
+    expect(await repos.roster.wrestlers.findById('deleted-id')).toBeNull();
   });
 });
 

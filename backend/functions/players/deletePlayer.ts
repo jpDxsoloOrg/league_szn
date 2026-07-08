@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { noContent, badRequest, serverError, conflict, notFound } from '../../lib/response';
+import { filterExistingWrestlerIds } from './wrestlerAssignment';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -111,10 +112,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const toRelease: string[] = [];
     if (player.currentWrestlerId) toRelease.push(player.currentWrestlerId);
     if (player.alternateWrestlerId) toRelease.push(player.alternateWrestlerId);
-    if (toRelease.length > 0) {
+    const releasable = await filterExistingWrestlerIds(toRelease);
+    if (releasable.length > 0) {
       const { runInTransaction } = getRepositories();
       await runInTransaction(async (tx) => {
-        for (const wrestlerId of toRelease) {
+        for (const wrestlerId of releasable) {
           tx.releaseWrestlerFromPlayer({ wrestlerId });
         }
       });

@@ -5,6 +5,7 @@ import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
+  filterExistingWrestlerIds,
   rejectDuplicateSlotAssignment,
   resolveWrestlerForAssignment,
 } from './wrestlerAssignment';
@@ -169,8 +170,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // If any FK transition happened, stage the player update + wrestler
     // release/assign atomically. Otherwise fall through to the simple update.
     if (toRelease.length > 0 || toAssign.length > 0) {
+      const releasable = await filterExistingWrestlerIds(toRelease);
       await runInTransaction(async (tx) => {
-        for (const wrestlerId of toRelease) {
+        for (const wrestlerId of releasable) {
           tx.releaseWrestlerFromPlayer({ wrestlerId });
         }
         for (const { wrestlerId, slot } of toAssign) {

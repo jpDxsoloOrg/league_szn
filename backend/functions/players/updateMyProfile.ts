@@ -6,6 +6,7 @@ import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
+  filterExistingWrestlerIds,
   rejectDuplicateSlotAssignment,
   resolveWrestlerForAssignment,
 } from './wrestlerAssignment';
@@ -171,8 +172,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     if (toRelease.length > 0 || toAssign.length > 0) {
+      const releasable = await filterExistingWrestlerIds(toRelease);
       await runInTransaction(async (tx) => {
-        for (const wrestlerId of toRelease) {
+        for (const wrestlerId of releasable) {
           tx.releaseWrestlerFromPlayer({ wrestlerId });
         }
         for (const { wrestlerId, slot } of toAssign) {

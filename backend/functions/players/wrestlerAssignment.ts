@@ -40,6 +40,27 @@ export async function resolveWrestlerForAssignment(
 }
 
 /**
+ * Filter a list of wrestler FKs down to the ones that still exist in the
+ * roster. A player row can hold a stale wrestlerId (the wrestler was deleted
+ * out from under it), and releasing a nonexistent id would upsert a ghost
+ * roster row — DynamoUnitOfWork conditions its writes on existence, so an
+ * unfiltered stale id would fail the whole transaction instead. Skipping the
+ * release is the right outcome: there is nothing to free.
+ */
+export async function filterExistingWrestlerIds(
+  wrestlerIds: string[],
+): Promise<string[]> {
+  const { roster } = getRepositories();
+  const checks = await Promise.all(
+    wrestlerIds.map(async (wrestlerId) => {
+      const wrestler = await roster.wrestlers.findById(wrestlerId);
+      return wrestler ? wrestlerId : null;
+    }),
+  );
+  return checks.filter((wrestlerId): wrestlerId is string => wrestlerId !== null);
+}
+
+/**
  * Reject when the same wrestler is picked for both slots on a single player.
  */
 export function rejectDuplicateSlotAssignment(

@@ -17,7 +17,14 @@ type WrestlerSlotOptions = ReadonlyArray<{
  * that "available" has the same definition everywhere a roster pick is made.
  */
 function buildAvailableOptionGroups(all: Wrestler[]): WrestlerSlotOptions {
-  const available = all.filter((w) => !w.isInUse);
+  const available = all.filter(
+    // Ghost roster rows (e.g. from a release against a deleted wrestlerId)
+    // lack name/promotion — drop them rather than crash the sorts below.
+    (w) =>
+      !w.isInUse &&
+      typeof w.name === 'string' &&
+      typeof w.promotion === 'string',
+  );
   const byPromotion = new Map<WrestlerPromotion, Wrestler[]>();
   for (const w of available) {
     const bucket = byPromotion.get(w.promotion) ?? [];
