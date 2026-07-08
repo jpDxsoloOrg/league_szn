@@ -117,8 +117,10 @@ describe('MyTagTeam — TTP-01 edit-identity form', () => {
     const myWrestlerInput = screen.getByLabelText('Your wrestler in this team');
     const partnerWrestlerInput = screen.getByLabelText("Partner's wrestler in this team");
 
-    // Fields are seeded from the loaded detail (override falls back to currentWrestler)
-    expect(teamNameInput).toHaveValue('The Brood');
+    // Fields are seeded from the loaded detail (override falls back to
+    // currentWrestler) by an effect that runs after the form first renders —
+    // wait for the seeded value instead of asserting the intermediate state.
+    await waitFor(() => expect(teamNameInput).toHaveValue('The Brood'));
     expect(myWrestlerInput).toHaveValue('Edge (solo)');
     expect(partnerWrestlerInput).toHaveValue('Christian (solo)');
 
