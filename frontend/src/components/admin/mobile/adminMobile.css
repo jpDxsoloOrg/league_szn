@@ -180,6 +180,50 @@
     color: var(--color-danger-alt);
   }
 
+  /* No-media variant: text-only cards (no avatar column) with two badge
+     slots side by side and a full-width action row along the card bottom.
+     Pair with .am-row-actions-bottom on the actions cell. */
+  tr.am-list-row.am-list-row-nomedia {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'title title'
+      'sub sub'
+      'badge badge2'
+      'actions actions';
+  }
+
+  td.am-row-badge2 {
+    grid-area: badge2;
+    justify-self: start;
+    align-self: start;
+    margin-top: 6px;
+  }
+
+  /* Bottom action row: divider above equal-width text buttons */
+  td.am-row-actions.am-row-actions-bottom {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .am-row-actions-bottom > div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .am-row-actions-bottom button {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 8px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background-color: transparent !important;
+  }
+
   /* Gold circular FAB for the section's primary add action. Works on the
      existing text button: the label is visually collapsed and replaced by a
      "+" glyph (the text keeps providing the accessible name). !important is

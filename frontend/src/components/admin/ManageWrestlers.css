@@ -377,15 +377,36 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Create Wrestler becomes the gold FAB (am-fab); the remaining header
+     actions share one row of comfortable tap targets. */
+  .wrestlers-header-actions {
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .wrestlers-header-actions button:not(.am-fab) {
+    flex: 1;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
   }
 
   .wrestler-form-container {
     padding: 1rem;
   }
 
+  /* Filters sit directly on the page background, app-style */
   .wrestlers-filters {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.75rem;
+    padding: 0;
+    background-color: transparent;
+    border: none;
   }
 
   .wrestlers-filters .form-group {
@@ -393,15 +414,110 @@
     width: 100%;
   }
 
+  .wrestlers-list h3 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Card list replaces the table (via am-card-table); drop the table chrome */
+  .wrestlers-table-wrapper {
+    overflow-x: visible;
+    background-color: transparent;
+    border: none;
+  }
+
+  /* Gold cap pill reads "Cap 95" instead of a bare number */
+  td.wrestler-cap-cell::before {
+    content: 'Cap ';
+  }
+
+  /* Bottom action row: colored text buttons on the card */
+  .am-row-actions-bottom .wrestler-edit-btn {
+    color: var(--color-primary);
+  }
+
+  .am-row-actions-bottom .wrestler-release-btn {
+    color: var(--color-warning);
+  }
+
+  .am-row-actions-bottom .wrestler-delete-btn {
+    color: var(--color-danger-alt);
+  }
+
+  .am-row-actions-bottom .wrestler-edit-btn:hover,
+  .am-row-actions-bottom .wrestler-release-btn:hover:not(:disabled),
+  .am-row-actions-bottom .wrestler-delete-btn:hover:not(:disabled) {
+    background-color: var(--color-surface-hover, rgba(255, 255, 255, 0.05)) !important;
+  }
+
   .form-actions {
     flex-direction: column;
   }
 
-  .modal-content {
-    padding: 1rem;
+  .wrestlers-pager {
+    gap: 0.5rem;
   }
 
-  .wrestler-actions {
-    flex-direction: column;
+  .wrestlers-pager button {
+    flex: 1;
+    min-height: 44px;
+    border-radius: 12px;
+  }
+
+  /* Import modal becomes a bottom sheet */
+  .manage-wrestlers .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .manage-wrestlers .modal-content {
+    max-width: none;
+    max-height: 88dvh;
+    padding: 0.75rem 1rem calc(1rem + env(safe-area-inset-bottom));
+    border: none;
+    border-top: 1px solid var(--color-primary);
+    border-radius: 16px 16px 0 0;
+    animation: wrestlers-sheet-up 0.25s ease;
+  }
+
+  .manage-wrestlers .modal-content::before {
+    content: '';
+    display: block;
+    width: 44px;
+    height: 4px;
+    margin: 0 auto 12px;
+    border-radius: 999px;
+    background: var(--color-border, #444);
+  }
+
+  /* The 3-column preview table fits the sheet; undo the desktop min-width */
+  .modal-content .wrestlers-table {
+    min-width: 0;
+  }
+
+  .modal-content .wrestlers-table th,
+  .modal-content .wrestlers-table td {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.85rem;
+  }
+
+  .modal-content .form-actions button {
+    min-height: 48px;
+    border-radius: 12px;
+  }
+}
+
+@keyframes wrestlers-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .manage-wrestlers .modal-content {
+    animation: none;
   }
 }
