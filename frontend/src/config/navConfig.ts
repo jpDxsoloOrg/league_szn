@@ -357,10 +357,28 @@ export function getPageInfo(path: string, t: TranslateFn): PageInfo {
     return { title: t('promos.thread.title'), parent: t('nav.promos') };
   }
 
+  // Rivalry / faction / tag-team / player sub-routes
+  if (path.match(/^\/rivalries\/[^/]+/)) {
+    return { title: t('nav.rivalries'), parent: t('nav.rivalries') };
+  }
+  if (path.match(/^\/factions\/.+/)) {
+    return { title: t('nav.factions'), parent: t('nav.factions') };
+  }
+  if (path.match(/^\/tag-teams\/[^/]+/)) {
+    return { title: t('nav.tagTeams'), parent: t('nav.tagTeams') };
+  }
+  if (path.startsWith('/player/')) {
+    return { title: t('nav.profile') };
+  }
+  if (path.startsWith('/guide')) {
+    return { title: t('nav.help') };
+  }
+
   // Top-level routes
   const topLevelMap: Record<string, string> = {
     '/': t('nav.dashboard'),
     '/standings': t('nav.standings'),
+    '/activity': t('nav.activity'),
     '/championships': t('nav.championships'),
     '/tournaments': t('nav.tournaments'),
     '/awards': t('nav.seasonAwards'),
@@ -369,6 +387,15 @@ export function getPageInfo(path: string, t: TranslateFn): PageInfo {
     '/contenders': t('nav.contenders'),
     '/challenges': t('nav.challenges'),
     '/promos': t('nav.promos'),
+    '/rivalries': t('nav.rivalries'),
+    '/highlights': t('nav.highlights'),
+    '/factions': t('nav.factions'),
+    '/tag-teams': t('nav.tagTeams'),
+    '/profile': t('nav.profile'),
+    '/my-videos': t('nav.myVideos'),
+    '/find-match': t('nav.findMatch'),
+    '/my-faction': t('nav.myFaction'),
+    '/my-tag-team': t('nav.myTagTeam'),
     '/stats': t('statistics.playerStats.title'),
     '/guide': t('nav.help'),
   };

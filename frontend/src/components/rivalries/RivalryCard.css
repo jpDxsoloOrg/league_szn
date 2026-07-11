@@ -137,14 +137,18 @@
     background: var(--color-surface-hover, #252525);
   }
 
-  /* Circular avatars pulled toward the centre with an italic VS. */
+  /* Circular avatars pulled toward the centre with an italic VS.
+     NOTE: keep default justify-items (stretch) — centering the grid items
+     sizes them to max-content, so long names blow past the card edges and
+     overlap in the middle. Content is centered inside each column instead. */
   .rivalry-card__faceoff {
-    justify-items: center;
     column-gap: 1rem;
   }
 
   .rivalry-card__avatar {
     gap: 0.5rem;
+    width: 100%;
+    min-width: 0;
   }
 
   .rivalry-card__avatar img {
@@ -155,11 +159,21 @@
     padding: 2px;
   }
 
+  /* Long names wrap to at most two centered lines instead of the desktop
+     single-line ellipsis (names here include the wrestler in parens). */
   .rivalry-card__avatar-name {
     font-size: 0.9rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.02em;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
   }
 
   .rivalry-card__vs {
