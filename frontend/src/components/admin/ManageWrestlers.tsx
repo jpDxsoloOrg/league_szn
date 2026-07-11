@@ -504,7 +504,9 @@ export default function ManageWrestlers() {
         <h2>Manage Wrestlers</h2>
         <div className="wrestlers-header-actions">
           {!showAddForm && (
-            <button onClick={() => setShowAddForm(true)}>Create Wrestler</button>
+            <button className="am-fab" onClick={() => setShowAddForm(true)}>
+              Create Wrestler
+            </button>
           )}
           <button className="wrestlers-import-btn" onClick={() => setShowImport(true)}>
             Import from file
@@ -526,9 +528,9 @@ export default function ManageWrestlers() {
       {success && <div className="success-message">{success}</div>}
 
       {showAddForm && (
-        <div className="wrestler-form-container">
+        <div className="wrestler-form-container am-sheet">
           <h3>{editingWrestler ? 'Edit Wrestler' : 'Create New Wrestler'}</h3>
-          <form onSubmit={handleSubmit} className="wrestler-form">
+          <form onSubmit={handleSubmit} className="wrestler-form am-form">
             <div className="form-group">
               <label htmlFor="promotion">Promotion</label>
               <select
@@ -578,7 +580,7 @@ export default function ManageWrestlers() {
               />
             </div>
 
-            <div className="form-actions">
+            <div className="form-actions am-actionbar">
               <button type="submit">
                 {editingWrestler ? 'Update Wrestler' : 'Create Wrestler'}
               </button>
@@ -591,7 +593,7 @@ export default function ManageWrestlers() {
       )}
 
       <div className="wrestlers-filters">
-        <div className="form-group">
+        <div className="form-group am-filter-row">
           <label htmlFor="filter-promotion">Filter by Promotion</label>
           <select
             id="filter-promotion"
@@ -612,9 +614,10 @@ export default function ManageWrestlers() {
             ))}
           </select>
         </div>
-        <label className="wrestlers-filter-checkbox">
+        <label className="wrestlers-filter-checkbox am-toggle-row">
           <input
             type="checkbox"
+            className="am-toggle"
             checked={filter.onlyAvailable}
             onChange={(e) => {
               setFilter({ ...filter, onlyAvailable: e.target.checked });
@@ -634,7 +637,7 @@ export default function ManageWrestlers() {
           <p>No wrestlers match the current filters.</p>
         ) : (
           <div className="wrestlers-table-wrapper">
-            <table className="wrestlers-table">
+            <table className="wrestlers-table am-card-table">
               <thead>
                 <tr>
                   <th>Promotion</th>
@@ -647,11 +650,11 @@ export default function ManageWrestlers() {
               </thead>
               <tbody>
                 {pagedWrestlers.map((wrestler) => (
-                  <tr key={wrestler.wrestlerId}>
-                    <td>{wrestler.promotion}</td>
-                    <td>{wrestler.name}</td>
-                    <td>{wrestler.overallCap}</td>
-                    <td>
+                  <tr key={wrestler.wrestlerId} className="am-list-row am-list-row-nomedia">
+                    <td className="am-row-sub">{wrestler.promotion}</td>
+                    <td className="am-row-title">{wrestler.name}</td>
+                    <td className="am-row-badge wrestler-cap-cell">{wrestler.overallCap}</td>
+                    <td className="am-row-badge2">
                       <span
                         className={
                           wrestler.isInUse
@@ -662,8 +665,8 @@ export default function ManageWrestlers() {
                         {wrestler.isInUse ? 'In Use' : 'Available'}
                       </span>
                     </td>
-                    <td>{wrestler.assignedPlayerId ?? '—'}</td>
-                    <td>
+                    <td className="am-row-extra">{wrestler.assignedPlayerId ?? '—'}</td>
+                    <td className="am-row-actions am-row-actions-bottom">
                       <div className="wrestler-actions">
                         <button
                           onClick={() => handleEdit(wrestler)}

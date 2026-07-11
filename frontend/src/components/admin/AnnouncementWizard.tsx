@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { announcementsApi, imagesApi } from '../../services/api';
 import { toMediaUrl } from '../../utils/mediaUrl';
 import './AnnouncementWizard.css';
@@ -497,6 +497,15 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+
+  // Lock background scrolling while the wizard overlay is open
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
 
   const totalSteps =
     mode === 'match-card'

@@ -22,10 +22,54 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
+/* Drag handle — hidden on desktop, shown when the modal becomes a sheet */
+.announcement-modal-handle {
+  display: none;
+  flex-shrink: 0;
+  width: 40px;
+  height: 4px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+.announcement-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
 .announcement-modal-title {
-  margin: 0 0 1rem;
+  margin: 0;
   color: var(--color-text);
   font-size: 1.4rem;
+}
+
+.announcement-modal-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: -4px -4px 0 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--color-text-secondary);
+  font-size: 1.6rem;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.announcement-modal-close:hover {
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.08));
+  color: var(--color-text);
 }
 
 .announcement-modal-body {
@@ -59,11 +103,31 @@
   display: block;
 }
 
-.announcement-modal-counter {
-  color: var(--color-text-secondary);
-  font-size: 0.8rem;
-  text-align: center;
+/* Pagination dots — tappable to jump between announcements */
+.announcement-modal-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
   margin-top: 1rem;
+}
+
+.announcement-modal-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  background: var(--color-border);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.2s, width 0.2s;
+}
+
+.announcement-modal-dot.active {
+  width: 20px;
+  border-radius: 999px;
+  background: var(--color-primary);
 }
 
 .announcement-modal-actions {
@@ -104,14 +168,82 @@
   background: var(--color-primary-hover);
 }
 
+/* Mobile: modal becomes an app-style bottom sheet */
 @media (max-width: 640px) {
+  .announcement-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
   .announcement-modal {
     max-width: 100%;
-    padding: 1.25rem;
-    max-height: 90vh;
+    max-height: 88dvh;
+    padding: 10px 1rem calc(1rem + env(safe-area-inset-bottom));
+    border: none;
+    border-top: 1px solid var(--color-primary);
+    border-radius: 16px 16px 0 0;
+    animation: announcement-sheet-up 0.25s ease;
+  }
+
+  .announcement-modal-handle {
+    display: block;
+  }
+
+  .announcement-modal-title {
+    font-size: 1.2rem;
+  }
+
+  .announcement-modal-close {
+    width: 44px;
+    height: 44px;
+  }
+
+  .announcement-video-player {
+    max-height: 40dvh;
   }
 
   .announcement-modal-actions {
     flex-direction: column-reverse;
+    gap: 0.5rem;
+    padding-top: 0.25rem;
+  }
+
+  .announcement-modal-actions .btn-next {
+    min-height: 50px;
+    border-radius: 999px;
+    font-size: 1rem;
+  }
+
+  .announcement-modal-actions .btn-dismiss {
+    min-height: 44px;
+    border: none;
+    border-radius: 999px;
+    text-align: center;
+  }
+
+  /* Bigger tap targets for the dots without changing their visual size */
+  .announcement-modal-dot {
+    position: relative;
+  }
+
+  .announcement-modal-dot::after {
+    content: '';
+    position: absolute;
+    inset: -10px;
+  }
+}
+
+@keyframes announcement-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .announcement-modal {
+    animation: none;
   }
 }

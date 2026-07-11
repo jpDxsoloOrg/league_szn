@@ -673,18 +673,112 @@
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 640px) {
+  /* Full-screen app layout: header, steps, and footer are fixed; only the
+     step content scrolls. Next/Publish is therefore always on screen. */
   .wizard-overlay {
     padding: 0;
     align-items: stretch;
+    z-index: 1300; /* above the 1000 bottom tab bar */
+    overflow-y: hidden;
+    overscroll-behavior: contain;
   }
 
   .wizard-container {
+    border: none;
     border-radius: 0;
-    min-height: 100vh;
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .wizard-header {
+    flex-shrink: 0;
+    padding: calc(env(safe-area-inset-top) + 1rem) 1rem 0.75rem;
+  }
+
+  .wizard-close {
+    min-width: 44px;
+    min-height: 44px;
+    margin: -8px -8px -8px 0;
+  }
+
+  .wizard-steps {
+    flex-shrink: 0;
+    padding: 0.75rem 1rem;
+  }
+
+  .wizard-step-label {
+    display: none;
+  }
+
+  .wizard-error {
+    flex-shrink: 0;
+    margin: 0.75rem 1rem 0;
+  }
+
+  .wizard-subtitle {
+    flex-shrink: 0;
+    padding: 0 1rem;
+  }
+
+  /* The one scrollable region */
+  .wizard-body,
+  .wizard-mode-cards {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .wizard-body {
+    padding: 1rem 1rem 1.5rem;
   }
 
   .wizard-mode-cards {
     grid-template-columns: 1fr;
+    align-content: start;
+    padding: 1rem 1rem 1.5rem;
+  }
+
+  .wizard-footer-actions {
+    flex-shrink: 0;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+    background: #0f1429;
+  }
+
+  .wizard-footer-actions button {
+    min-height: 48px;
+  }
+
+  .wizard-btn-primary,
+  .wizard-btn-publish {
+    flex: 1;
+  }
+
+  /* 16px inputs stop iOS Safari from auto-zooming on focus (which shoves
+     the layout sideways out of the box) */
+  .wizard-body .form-group input[type='text'],
+  .wizard-body .form-group input[type='date'],
+  .wizard-body .form-group select,
+  .wizard-body .form-group textarea,
+  .wizard-tags-row input,
+  .wizard-participant-name,
+  .wizard-promo-fields input[type='text'],
+  .wizard-promo-fields textarea {
+    font-size: 1rem;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .wizard-tags-row {
+    flex-wrap: wrap;
+  }
+
+  .wizard-tags-row input[type='file'] {
+    max-width: 100%;
   }
 
   .wizard-match-row {
@@ -699,11 +793,12 @@
     display: none;
   }
 
-  .wizard-steps {
-    padding: 0.75rem 1rem;
+  .wizard-btn-icon {
+    width: 36px;
+    height: 36px;
   }
 
-  .wizard-step-label {
-    display: none;
+  .wizard-preview-container {
+    padding: 0.75rem;
   }
 }

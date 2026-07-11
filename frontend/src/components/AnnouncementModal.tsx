@@ -93,6 +93,10 @@ export default function AnnouncementModal() {
     }
   };
 
+  const handleClose = () => {
+    setAnnouncements([]);
+  };
+
   const handleDontShowAgain = () => {
     dismissAnnouncement(current.announcementId);
     const remaining = announcements.filter(
@@ -110,9 +114,20 @@ export default function AnnouncementModal() {
       aria-labelledby="announcement-modal-title"
     >
       <div className="announcement-modal">
-        <h2 id="announcement-modal-title" className="announcement-modal-title">
-          {current.title}
-        </h2>
+        <div className="announcement-modal-handle" aria-hidden="true" />
+        <div className="announcement-modal-header">
+          <h2 id="announcement-modal-title" className="announcement-modal-title">
+            {current.title}
+          </h2>
+          <button
+            type="button"
+            className="announcement-modal-close"
+            onClick={handleClose}
+            aria-label={t('common.close')}
+          >
+            ×
+          </button>
+        </div>
         <div
           className="announcement-modal-body"
           dangerouslySetInnerHTML={{ __html: current.body }}
@@ -121,11 +136,24 @@ export default function AnnouncementModal() {
           <AnnouncementVideo url={current.videoUrl} />
         )}
         {announcements.length > 1 && (
-          <div className="announcement-modal-counter">
-            {t('announcements.counter', {
-              current: currentIndex + 1,
-              total: announcements.length,
-            })}
+          <div className="announcement-modal-dots">
+            {announcements.map((announcement, index) => (
+              <button
+                key={announcement.announcementId}
+                type="button"
+                className={
+                  index === currentIndex
+                    ? 'announcement-modal-dot active'
+                    : 'announcement-modal-dot'
+                }
+                aria-label={t('announcements.counter', {
+                  current: index + 1,
+                  total: announcements.length,
+                })}
+                aria-current={index === currentIndex}
+                onClick={() => setCurrentIndex(index)}
+              />
+            ))}
           </div>
         )}
         <div className="announcement-modal-actions">
