@@ -1,5 +1,16 @@
 /* HeatBadge — RIV-31. Five distinct tiers, three sizes. */
 
+/* Canonical heat tier colours (docs/design/mobile-app tokens). Shared by
+   the badge's mobile variants and the rivalry heat meters — reference
+   these instead of re-declaring the hex values. */
+:root {
+  --heat-tier-frozen: #94a3b8;
+  --heat-tier-cold: #60a5fa;
+  --heat-tier-warm: #fbbf24;
+  --heat-tier-hot: #f97316;
+  --heat-tier-scorching: #ef4444;
+}
+
 .heat-badge {
   display: inline-flex;
   align-items: center;
@@ -88,4 +99,40 @@
   color: #ffffff;
   border-color: #ff5555;
   box-shadow: 0 0 0 1px rgba(255, 85, 85, 0.35), 0 0 12px rgba(255, 56, 56, 0.25);
+}
+
+/* ── Mobile app shell (≤768px) — solid tier-coloured pills per
+      docs/design/mobile-app/rivalries-hub ─────────────────────────── */
+
+@media (max-width: 768px) {
+  .heat-badge {
+    letter-spacing: 0.1em;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .heat-badge--frozen {
+    background: var(--heat-tier-frozen);
+    color: var(--color-on-primary, #1a1a1a);
+  }
+
+  .heat-badge--cold {
+    background: var(--heat-tier-cold);
+    color: var(--color-on-primary, #1a1a1a);
+  }
+
+  .heat-badge--warm {
+    background: var(--heat-tier-warm);
+    color: var(--color-on-primary, #1a1a1a);
+  }
+
+  .heat-badge--hot {
+    background: var(--heat-tier-hot);
+    color: var(--color-on-primary, #1a1a1a);
+  }
+
+  .heat-badge--scorching {
+    background: var(--heat-tier-scorching);
+    color: #ffffff;
+  }
 }

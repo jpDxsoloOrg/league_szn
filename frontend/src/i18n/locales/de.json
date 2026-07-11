@@ -155,7 +155,18 @@
     "alternateWrestler": "Alternativer Wrestler",
     "alternateWrestlerPlaceholder": "Dein Backup-Wrestler",
     "alternate": "Alternativ",
-    "mainWrestler": "Haupt-Wrestler"
+    "mainWrestler": "Haupt-Wrestler",
+    "mobile": {
+      "details": "Details",
+      "displayName": "Anzeigename",
+      "notSet": "Nicht festgelegt",
+      "alignment": "Gesinnung",
+      "face": "Face",
+      "heel": "Heel",
+      "neutral": "Neutral",
+      "transferPending": "Transfer ausstehend",
+      "requestTransfer": "Transfer anfragen"
+    }
   },
   "publicProfile": {
     "title": "Spielerprofil",
@@ -224,8 +235,6 @@
       "wrestler": "Wrestler-Zone",
       "extras": "Mehr"
     },
-    "switchToTopMenu": "Obere Menüleiste",
-    "switchToSidebar": "Seitenmenü",
     "switchToBasic": "Zum einfachen Menü wechseln",
     "switchToAdvanced": "Zum erweiterten Menü wechseln",
     "basicMenu": "Einfaches Menü",
@@ -233,6 +242,12 @@
     "basicMenuShort": "Einfach",
     "advancedMenuShort": "Erweitert",
     "menuModeToggleLabel": "Menümodus"
+  },
+  "mobileNav": {
+    "ariaLabel": "Hauptnavigation",
+    "home": "Start",
+    "profile": "Profil",
+    "more": "Mehr"
   },
   "header": {
     "title": "WWE 2K Liga"
@@ -270,7 +285,10 @@
     "defenses": "Titelverteidigungen",
     "viewAllChampions": "Alle Champions anzeigen",
     "noChallenges": "Keine offenen Herausforderungen",
-    "viewChallenges": "Herausforderungen anzeigen"
+    "viewChallenges": "Herausforderungen anzeigen",
+    "championBadge": "Champion",
+    "winTag": "Sieg",
+    "lossTag": "Niederlage"
   },
   "activity": {
     "title": "Aktivität",
@@ -512,9 +530,13 @@
       "clearAll": "Filter zurücksetzen"
     },
     "resultsCount": "{{count}} Kampf/Kämpfe gefunden",
+    "searchPlaceholder": "Kämpfe, Spieler suchen...",
     "noResults": "Keine Kämpfe gefunden",
     "noResultsFiltered": "Keine Kämpfe entsprechen den aktuellen Filtern. Versuchen Sie, die Filter anzupassen oder zurückzusetzen.",
-    "noMatches": "Es wurden noch keine Kämpfe aufgezeichnet."
+    "noMatches": "Es wurden noch keine Kämpfe aufgezeichnet.",
+    "card": {
+      "titleMatch": "Titelkampf"
+    }
   },
   "recordResult": {
     "title": "Kampfergebnisse eintragen",
@@ -587,6 +609,18 @@
       "promoBonusCapHint": "Maximale Höhe des Reaktionsbonus pro Promo.",
       "promoMaxReactionCount": "Gezählte Reaktionen pro Typ",
       "promoMaxReactionCountHint": "Nur die ersten N Feuer/Müll-Reaktionen wirken sich auf den Bonus aus."
+    },
+    "hub": {
+      "back": "Admin-Bereich",
+      "superAdminOnly": "Nur Super-Admins",
+      "groups": {
+        "rosterPeople": "Kader & Personen",
+        "matchCompetition": "Matches & Wettbewerb",
+        "contentStorylines": "Inhalte & Storylines",
+        "leagueConfig": "Liga-Konfiguration",
+        "usersAccess": "Benutzer & Zugriff",
+        "dangerZone": "Gefahrenzone"
+      }
     },
     "panel": {
       "title": "Admin-Bereich",
@@ -1105,7 +1139,11 @@
       "bookerBadge": "Gebucht von {{name}}",
       "assignBooker": "Ich buche das",
       "takeBooker": "Buchung übernehmen",
-      "clearBooker": "Booker entfernen"
+      "clearBooker": "Booker entfernen",
+      "heatMeterLabel": "Rivalitäts-Hitze",
+      "heatScaleCold": "Kalt",
+      "heatScaleExtreme": "Extrem",
+      "heatScoreOutOf": "Hitze: {{score}}/100"
     },
     "messages": {
       "heading": "Nachrichten",
@@ -1232,11 +1270,13 @@
     },
     "card": {
       "matches": "Kämpfe",
-      "titleMatches": "Titelkämpfe"
+      "titleMatches": "Titelkämpfe",
+      "resultsAvailable": "Ergebnisse verfügbar"
     },
     "calendar": {
       "upcoming": "Bevorstehende Veranstaltungen",
       "inProgress": "Laufend",
+      "past": "Vergangen",
       "noUpcoming": "Keine bevorstehenden Veranstaltungen geplant.",
       "months": {
         "january": "Januar",

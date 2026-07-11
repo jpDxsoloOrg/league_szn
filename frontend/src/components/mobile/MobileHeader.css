@@ -1,0 +1,43 @@
+.mobile-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  height: calc(56px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 1rem 0;
+  background-color: var(--color-bg);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.mobile-header__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.mobile-header__actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* The bell dropdown is 350px wide and right-anchored; on small screens pin it
+   to the viewport below the header instead so it never overflows. */
+.mobile-header .notification-dropdown {
+  position: fixed;
+  top: calc(56px + env(safe-area-inset-top) + 4px);
+  left: 8px;
+  right: 8px;
+  width: auto;
+}

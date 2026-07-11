@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>League SZN - Championships</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&amp;family=Inter:wght@400;500;700&amp;family=Public+Sans:wght@700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#d4af37",
+                        "primary-pressed": "#b8941f",
+                        surface: "#1a1a1a",
+                        "surface-pressed": "#252525",
+                        background: "#0f0f0f",
+                        border: "#333333",
+                        "on-surface": "#ffffff",
+                        "on-surface-variant": "#bbbbbb",
+                        muted: "#666666",
+                        success: "#4ade80",
+                        danger: "#dc3545",
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Oswald", "Public Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #0f0f0f;
+            color: #ffffff;
+            -webkit-font-smoothing: antialiased;
+        }
+        .scroll-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .championship-card {
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+        .championship-card:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="font-body selection:bg-primary/30 selection:text-primary">
+<!-- TopAppBar -->
+<header class="bg-[#0f0f0f] border-b border-[#333333] fixed top-0 left-0 w-full z-50">
+<div class="flex justify-between items-center w-full px-4 h-16">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#d4af37] text-2xl">sports_kabaddi</span>
+<h1 class="font-headline font-black text-[#d4af37] uppercase tracking-tighter text-2xl">LEAGUE SZN</h1>
+</div>
+<div class="flex gap-4">
+<button class="text-[#666666] hover:bg-[#252525] transition-colors p-2 rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="pt-20 pb-24 px-4 max-w-md mx-auto min-h-screen">
+<!-- Screen Title -->
+<div class="mb-6">
+<h2 class="font-headline font-bold text-3xl text-primary uppercase tracking-tight">CHAMPIONSHIPS</h2>
+<div class="h-1 w-12 bg-primary mt-1"></div>
+</div>
+<!-- Championship List -->
+<div class="space-y-6">
+<!-- Card 1: World Heavyweight -->
+<article class="championship-card bg-surface border border-border rounded-xl overflow-hidden shadow-xl">
+<div class="relative h-48 w-full overflow-hidden">
+<img alt="World Heavyweight Championship Belt" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AP1WRLs8-iZxG0xWsSDiX49W3ffkkg9AS2lMj9xZO5rhHKJ840XNhIrds08aN7iudJ3MpDH1MtTAzQ1cRex53Q3YQztQ2tNT-FIscUBx3IkaBz02wQ-RVjSDw3gotnyFxsI2HgHROg6oCIr4S7HAfRxPJ9E8sUL2a2FGAjC9aXq1l__4fJUulUsH5j97uRJoxQKig38E7tVDhyFmroJp7CQjFuwfywDdn3TFwBkjY2HnytVWWtW-XDgJxRHMYko"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-3 left-4">
+<h3 class="font-headline font-bold text-xl uppercase text-white tracking-wide">World Heavyweight Championship</h3>
+</div>
+</div>
+<div class="p-4">
+<div class="flex items-center gap-4 mb-4">
+<div class="relative">
+<img alt="Champion Marcus Rivera" class="w-14 h-14 rounded-full border-2 border-primary object-cover p-0.5" src="https://lh3.googleusercontent.com/aida/AP1WRLt94aotfqZEUGz-TXk9IG5k8-2AUZjisguquBC4cpS2x7upo87NHCq-s8kVGYysCGETwmgPv_C3F26iVibpxB4BiQI8BK9QkL2YHzvU54Jg6QKVTAwFONUf2AtN47pdnJh2uczncvC_-bgNRta9LWkrboRRHgIYSpkeH1nKvePM51MI-TXqhYpgxUe4o7km1Oxt9Q1PhxQAqaqoe2YIduepyCEu4r7O8Wjz5y-BziPu96dBoHQBsDa47IU"/>
+<div class="absolute -bottom-1 -right-1 bg-primary text-background rounded-full p-0.5 flex items-center justify-center">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">stars</span>
+</div>
+</div>
+<div>
+<p class="text-white font-bold text-lg leading-tight">Marcus "The Ace" Rivera</p>
+<p class="text-muted text-xs uppercase font-semibold tracking-wider">Champion since Apr 17 · 84 days</p>
+</div>
+</div>
+<button class="w-full flex items-center justify-between text-primary font-bold text-sm uppercase tracking-widest py-2 group">
+<span>View history</span>
+<span class="material-symbols-outlined transition-transform group-hover:translate-x-1">chevron_right</span>
+</button>
+</div>
+</article>
+<!-- Card 2: Intercontinental -->
+<article class="championship-card bg-surface border border-border rounded-xl overflow-hidden shadow-xl">
+<div class="relative h-48 w-full overflow-hidden bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
+<img class="w-full h-full object-cover opacity-60" data-alt="A highly detailed 3D render of a silver and gold Intercontinental wrestling championship belt resting on a premium black velvet display stand. The belt features intricate silver scrollwork, a central gold globe, and sparkling jewels. The scene is lit with dramatic golden rim lighting against a dark, foggy arena background, evoking a sense of prestige and history." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkvAnW9A4MLMrryQJNQ7rKV1mtpBdV0xRYFTXfgmPASuLFG7IxTjJG-dIrpwTSB14CARxxua4CAEZM953TmLNBMfNkSuT_9yxqJpttDZGQnDj2to8pXMkJQ7c6sVDSOKLA6Uoao_jUIWkPtKy3LHAOeqbbY440TS9oExHJhio6DwO2OaN95GBLMsnzURRZdYXkISNJ-pbx2wlpJnCGGLansp5F1spyYTSq4COM8zh9sknczg4vLNjkq0k2DzBZ3GDBWXKPeGJLtFk"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-3 left-4">
+<h3 class="font-headline font-bold text-xl uppercase text-white tracking-wide">Intercontinental Championship</h3>
+</div>
+</div>
+<div class="p-4">
+<div class="flex items-center gap-4 mb-4">
+<div class="w-14 h-14 rounded-full border-2 border-muted/30 bg-zinc-800 flex items-center justify-center">
+<span class="material-symbols-outlined text-muted text-2xl">person_off</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="bg-zinc-700 text-muted px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter">VACANT</span>
+</div>
+<p class="text-muted text-xs uppercase font-semibold tracking-wider mt-1">Status: Open for Contention</p>
+</div>
+</div>
+<button class="w-full flex items-center justify-between text-primary font-bold text-sm uppercase tracking-widest py-2 group">
+<span>View history</span>
+<span class="material-symbols-outlined transition-transform group-hover:translate-x-1">chevron_right</span>
+</button>
+</div>
+</article>
+<!-- Card 3: Tag Team -->
+<article class="championship-card bg-surface border border-border rounded-xl overflow-hidden shadow-xl">
+<div class="relative h-48 w-full overflow-hidden bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
+<img class="w-full h-full object-cover opacity-80" data-alt="A cinematic studio shot of dual Tag Team Championship wrestling belts, featuring large circular gold plates with embossed gladiator helmets. The leather straps are premium black textured leather. The belts are positioned slightly overlapping in a symmetrical arrangement on a reflective black surface, with vibrant golden sparks and particles flying in the background to create a high-energy broadcast aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjrk9pHuCcp3q_eDpNZCo2qVVK7z5EEy1D5kqznJRxjvotAND-ZnfvGocaxwED7OX21NpCoe4QB3YFc9W8dgRRNT70hQTT_C1G8Lwou_yfxurkBLISEF7eT90aZRG17j9AZr5x8MH0F3WHSzEwCxPKZ1JgGyO-EgMA8tGs7ah233GWU_HLh3RAUFyuEbwHcZ1ZtAFpv1oWSbqj9Y-tV5fvJ6TYfxUN--Nl7zY9HpZFvqWnJlLI1LwgsLS2RZ2G9jzbxY9SC2fnbts"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-3 left-4">
+<h3 class="font-headline font-bold text-xl uppercase text-white tracking-wide">Tag Team Championship</h3>
+</div>
+</div>
+<div class="p-4">
+<div class="flex items-center gap-4 mb-4">
+<div class="flex -space-x-4">
+<img alt="Champion 1" class="w-14 h-14 rounded-full border-2 border-primary object-cover p-0.5 z-10 bg-surface" src="https://lh3.googleusercontent.com/aida/AP1WRLt94aotfqZEUGz-TXk9IG5k8-2AUZjisguquBC4cpS2x7upo87NHCq-s8kVGYysCGETwmgPv_C3F26iVibpxB4BiQI8BK9QkL2YHzvU54Jg6QKVTAwFONUf2AtN47pdnJh2uczncvC_-bgNRta9LWkrboRRHgIYSpkeH1nKvePM51MI-TXqhYpgxUe4o7km1Oxt9Q1PhxQAqaqoe2YIduepyCEu4r7O8Wjz5y-BziPu96dBoHQBsDa47IU"/>
+<img class="w-14 h-14 rounded-full border-2 border-primary object-cover p-0.5 z-0 bg-surface" data-alt="A professional portrait of a charismatic Hispanic professional wrestler in his early 30s with a sharp fade haircut and a confident expression. He is wearing elaborate, high-contrast gold and black wrestling gear with metallic textures. The lighting is dramatic, high-key studio style with deep shadows, set against a dark industrial gym or locker room backdrop." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHUt9N8zd7xqGHZJ-gtFWWUNNsijJKL22TJMArJdSjLeoMtSUq5fh5sQVkIr2A0MBxy3foe-aTJxirA6tLH8s--y7EQ47e9J5-DcQW2BhIxoQP9mRvU-5aNzRupAZkIjafq05nEZziSBYUJEOdBV04F9jB1rQwYa0rbE1G-0Jd2JLVUQPOlWRODqQ4f0FiYIxBknwOnXFavw3MS8TFjW6RtvwHDI9FM_f2GbW0HD8fLtEmb9gC1shvJ1x89nFO6cBqcj1kndk5jzM"/>
+</div>
+<div class="pl-2">
+<p class="text-white font-bold text-lg leading-tight">The Ace &amp; Johnny Nitro</p>
+<p class="text-muted text-xs uppercase font-semibold tracking-wider">Champions since May 20 · 51 days</p>
+</div>
+</div>
+<button class="w-full flex items-center justify-between text-primary font-bold text-sm uppercase tracking-widest py-2 group">
+<span>View history</span>
+<span class="material-symbols-outlined transition-transform group-hover:translate-x-1">chevron_right</span>
+</button>
+</div>
+</article>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-[#1a1a1a] border-t border-[#333333] shadow-2xl flex justify-around items-center h-16 pb-safe px-2">
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl">home</span>
+<span class="font-label text-[10px] uppercase font-bold">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl">leaderboard</span>
+<span class="font-label text-[10px] uppercase font-bold">Standings</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl">whatshot</span>
+<span class="font-label text-[10px] uppercase font-bold">Rivalries</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl">person</span>
+<span class="font-label text-[10px] uppercase font-bold">Profile</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#d4af37] scale-110 active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">menu</span>
+<span class="font-label text-[10px] uppercase font-bold">More</span>
+</a>
+</nav>
+<!-- Visual Polish: Noise Overlay -->
+<div class="fixed inset-0 pointer-events-none z-[100] opacity-[0.03]" style="background-image: url('https://www.transparenttextures.com/patterns/carbon-fibre.png')"></div>
+<script>
+        // Simple micro-interaction for cards
+        document.querySelectorAll('.championship-card').forEach(card => {
+            card.addEventListener('touchstart', () => {
+                card.style.backgroundColor = '#252525';
+            });
+            card.addEventListener('touchend', () => {
+                card.style.backgroundColor = '#1a1a1a';
+            });
+        });
+    </script>
+</body></html>

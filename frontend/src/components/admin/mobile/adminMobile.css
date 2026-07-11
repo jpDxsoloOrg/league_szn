@@ -1,0 +1,415 @@
+/*
+ * adminMobile.css — shared mobile (app-shell) templates for admin sections.
+ *
+ * Imported once from AdminPanel.tsx so the `am-` classes cascade to every
+ * section rendered inside the panel. Sections opt in by adding the generic
+ * `am-` classes to their existing markup; nothing here should change desktop
+ * rendering, so EVERY rule is scoped inside the ≤768px media query.
+ *
+ * Design sources of truth:
+ *   docs/design/mobile-app/manage-players-admin/screen.png  (list-manage)
+ *   docs/design/mobile-app/schedule-match-admin/screen.png  (full-screen form)
+ *
+ * Templates:
+ *   List-manage: .am-search / .am-filter-row, .am-card-table + .am-list-row
+ *     (+ .am-row-media/-title/-sub/-badge/-extra/-actions), .am-fab, .am-sheet
+ *   Form: .am-form (field cards), .am-toggle-row + .am-toggle (gold switch),
+ *     .am-chip (+ .am-chip-remove), .am-actionbar (sticky bottom actions)
+ */
+
+@media (max-width: 768px) {
+  /* ── List-manage template ─────────────────────────────────────────────── */
+
+  /* Full-width rounded search / filter control */
+  input.am-search,
+  select.am-search {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 0.9rem;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    font-size: 1rem;
+  }
+
+  /* Filter row: label + control stretched across the viewport */
+  div.am-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  div.am-filter-row select {
+    flex: 1;
+    min-height: 44px;
+    padding: 0 0.9rem;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    font-size: 1rem;
+  }
+
+  /* Table → card list. Apply .am-card-table to the <table> and .am-list-row
+     to each <tr>; cells opt in via the .am-row-* classes below. */
+  table.am-card-table {
+    display: block;
+    min-width: 0;
+    margin-top: 0.5rem;
+    border: none;
+  }
+
+  .am-card-table thead {
+    display: none;
+  }
+
+  .am-card-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  tr.am-list-row {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'media title actions'
+      'media sub actions'
+      'media badge actions';
+    column-gap: 12px;
+    align-items: center;
+    padding: 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+  }
+
+  .am-list-row td {
+    display: block;
+    padding: 0;
+    border-bottom: none;
+  }
+
+  /* Avatar / thumbnail on the left */
+  td.am-row-media {
+    grid-area: media;
+  }
+
+  .am-row-media img {
+    display: block;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--color-border);
+  }
+
+  /* Two-line text: bold title + uppercase secondary line */
+  td.am-row-title {
+    grid-area: title;
+    align-self: end;
+    overflow: hidden;
+    font-weight: 700;
+    font-size: 1rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  td.am-row-sub {
+    grid-area: sub;
+    overflow: hidden;
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* Small gold pill under the text (e.g. division) */
+  td.am-row-badge {
+    grid-area: badge;
+    justify-self: start;
+    align-self: start;
+    margin-top: 6px;
+    padding: 2px 10px;
+    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+    border-radius: 999px;
+    color: var(--color-primary);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* Desktop-only columns hidden in the card layout */
+  td.am-row-extra {
+    display: none;
+  }
+
+  /* Right-aligned action buttons with 44px tap targets */
+  td.am-row-actions {
+    grid-area: actions;
+  }
+
+  .am-row-actions .actions-cell {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .am-row-actions button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .am-row-actions .edit-btn {
+    background-color: transparent !important;
+    color: var(--color-primary);
+  }
+
+  .am-row-actions .delete-btn {
+    background-color: transparent !important;
+    color: var(--color-danger-alt);
+  }
+
+  /* Gold circular FAB for the section's primary add action. Works on the
+     existing text button: the label is visually collapsed and replaced by a
+     "+" glyph (the text keeps providing the accessible name). !important is
+     needed to beat App.css's high-specificity legacy button fallback. */
+  button.am-fab {
+    position: fixed;
+    right: 16px;
+    bottom: calc(72px + env(safe-area-inset-bottom) + 16px);
+    z-index: 900; /* below the 1000 bottom tab bar */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+    font-size: 0 !important;
+    line-height: 0;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  }
+
+  button.am-fab::before {
+    content: '+';
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  /* Inline add/edit form presented as a bottom-sheet-like card */
+  div.am-sheet {
+    position: relative;
+    padding: 24px 16px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background-color: var(--color-surface);
+  }
+
+  div.am-sheet::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    width: 44px;
+    height: 4px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: var(--color-border);
+  }
+
+  /* ── Full-screen form template ────────────────────────────────────────── */
+
+  /* Strip the boxed desktop form so fields sit app-like on the page bg */
+  form.am-form {
+    padding: 0;
+    background-color: transparent;
+    border: none;
+  }
+
+  .am-form .form-group {
+    margin-bottom: 1.1rem;
+  }
+
+  .am-form .form-group > label {
+    margin-bottom: 0.5rem;
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Stacked full-width field controls with comfortable tap targets */
+  .am-form select,
+  .am-form textarea,
+  .am-form input[type='text'],
+  .am-form input[type='number'],
+  .am-form input[type='date'],
+  .am-form input[type='time'],
+  .am-form input[type='datetime-local'],
+  .am-form input[type='url'] {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.65rem 0.9rem;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    font-size: 1rem;
+  }
+
+  .am-form .division-filter {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .am-form .division-filter-select {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .am-form .participant-card {
+    min-height: 44px;
+    border-radius: 12px;
+  }
+
+  /* Toggle row: label card with the switch pinned right. The first selector
+     out-ranks the `.am-form .form-group > label` field-label rule above so
+     toggle labels nested in form groups keep the card treatment. */
+  .am-form .form-group > label.am-toggle-row,
+  label.am-toggle-row {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 52px;
+    margin-bottom: 0;
+    padding: 8px 14px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    color: var(--color-text);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* Native checkbox rendered as a gold switch */
+  .am-toggle-row input[type='checkbox'].am-toggle {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    flex-shrink: 0;
+    width: 48px;
+    height: 28px;
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-border);
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .am-toggle-row input[type='checkbox'].am-toggle::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.15s ease;
+  }
+
+  .am-toggle-row input[type='checkbox'].am-toggle:checked {
+    background-color: var(--color-primary);
+  }
+
+  .am-toggle-row input[type='checkbox'].am-toggle:checked::before {
+    transform: translateX(20px);
+  }
+
+  .am-toggle-row input[type='checkbox'].am-toggle:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Removable selected-item chips */
+  .am-chip {
+    min-height: 36px;
+    padding: 6px 6px 6px 14px;
+    border-radius: 999px;
+  }
+
+  button.am-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    min-height: 28px;
+    margin-left: 2px;
+    border-radius: 50%;
+    font-size: 1.1rem;
+  }
+
+  /* Sticky bottom action bar clearing the tab bar: full-width gold primary
+     on top, ghost cancel below. */
+  .am-actionbar {
+    position: sticky;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 12px 0 4px;
+    background-color: var(--color-bg);
+  }
+
+  /* Inside a sheet card the bar must match the card surface */
+  .am-sheet .am-actionbar {
+    background-color: var(--color-surface);
+  }
+
+  .am-actionbar button {
+    width: 100%;
+    min-height: 50px;
+  }
+
+  .am-actionbar button[type='submit'] {
+    padding: 0.75rem 1rem !important;
+    border-radius: 999px !important;
+    font-weight: 700;
+  }
+
+  .am-actionbar .cancel-btn {
+    background-color: transparent !important;
+    border: none;
+    border-radius: 999px;
+    color: var(--color-text-secondary);
+    font-weight: 600;
+  }
+
+  .am-actionbar .cancel-btn:hover,
+  .am-actionbar .cancel-btn:active {
+    background-color: var(--color-surface-hover) !important;
+    color: var(--color-text);
+  }
+}

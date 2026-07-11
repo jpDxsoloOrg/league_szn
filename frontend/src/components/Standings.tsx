@@ -17,6 +17,14 @@ import {
 } from '../constants/imageFallbacks';
 import './Standings.css';
 
+/** Mirrors the desktop alignment <select> options (same hardcoded labels). */
+const ALIGNMENT_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'face', label: '😇 Face' },
+  { value: 'neutral', label: '⚖️ Neutral' },
+  { value: 'heel', label: '😈 Heel' },
+];
+
 export default function Standings() {
   const { t } = useTranslation();
   useDocumentTitle(t('standings.title'));
@@ -30,7 +38,7 @@ export default function Standings() {
   const [defaultsResolved, setDefaultsResolved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const isMobile = useMediaQuery('(max-width: 640px)');
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   // Reload standings when retry button is clicked
   const loadStandings = useCallback(async () => {
@@ -206,6 +214,61 @@ export default function Standings() {
         </div>
       )}
 
+      {/* On mobile the select-based filters become horizontally scrollable
+          pill chips (matching the app-shell design); desktop keeps selects. */}
+      {isMobile ? (
+        <div className="standings-filter-chips">
+          {divisions.length > 0 && (
+            <div
+              className="filter-chip-row"
+              role="group"
+              aria-label={t('standings.filterByDivision')}
+            >
+              <button
+                type="button"
+                className={`filter-chip ${selectedDivision === 'all' ? 'selected' : ''}`}
+                aria-pressed={selectedDivision === 'all'}
+                onClick={() => setSelectedDivision('all')}
+              >
+                {t('common.all')}
+              </button>
+              {divisions.map((division) => (
+                <button
+                  key={division.divisionId}
+                  type="button"
+                  className={`filter-chip ${selectedDivision === division.divisionId ? 'selected' : ''}`}
+                  aria-pressed={selectedDivision === division.divisionId}
+                  onClick={() => setSelectedDivision(division.divisionId)}
+                >
+                  {division.name}
+                </button>
+              ))}
+              <button
+                type="button"
+                className={`filter-chip ${selectedDivision === 'none' ? 'selected' : ''}`}
+                aria-pressed={selectedDivision === 'none'}
+                onClick={() => setSelectedDivision('none')}
+              >
+                {t('standings.noDivision')}
+              </button>
+            </div>
+          )}
+
+          <div className="filter-chip-row" role="group" aria-label="Alignment">
+            {ALIGNMENT_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`filter-chip ${selectedAlignment === option.value ? 'selected' : ''}`}
+                aria-pressed={selectedAlignment === option.value}
+                onClick={() => setSelectedAlignment(option.value)}
+              >
+                {option.value === 'all' ? t('common.all') : option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
       <div className="standings-filters">
         {divisions.length > 0 && (
           <DivisionFilter
@@ -232,9 +295,11 @@ export default function Standings() {
           </select>
         </div>
       </div>
+      )}
 
-      {/* Below 640px the table hides half its columns off-screen, so swap
-          in a card list that keeps record, form, and streak visible. */}
+      {/* Below 768px (matching the mobile app shell) the table hides half its
+          columns off-screen, so swap in a card list that keeps record, form,
+          and streak visible. */}
       {isMobile ? (
       <div className="standings-cards">
         {playersWithStats.map((player, index) => (

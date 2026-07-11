@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>League SZN - More Menu</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Oswald:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#d4af37",
+                        surface: "#1a1a1a",
+                        background: "#0f0f0f",
+                        border: "#333333",
+                        onSurface: "#ffffff",
+                        secondaryText: "#bbbbbb",
+                        muted: "#666666",
+                        danger: "#dc3545"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Oswald", "sans-serif"],
+                        display: ["Oswald", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0f0f0f;
+            color: #ffffff;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .safe-pb {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .glass-header {
+            background: rgba(15, 15, 15, 0.8);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body selection:bg-primary/30">
+<!-- Top App Bar (Based on Shared Components) -->
+<header class="fixed top-0 left-0 w-full z-50 bg-[#0f0f0f] border-b border-[#333333] h-16 flex justify-between items-center px-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#d4af37]">sports_kabaddi</span>
+<h1 class="font-headline font-black text-[#d4af37] uppercase tracking-tighter text-2xl">LEAGUE SZN</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-[#666666] hover:bg-[#252525] transition-colors active:scale-95">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-20 pb-32 px-4 max-w-md mx-auto">
+<!-- Screen Header -->
+<div class="mb-6">
+<h2 class="font-headline text-4xl text-[#d4af37] uppercase tracking-tight">MORE</h2>
+</div>
+<!-- Top Highlight: Admin Panel -->
+<section class="mb-8">
+<button class="w-full flex items-center justify-between p-4 bg-[#1a1a1a] border border-[#d4af37] rounded-xl hover:bg-[#252525] transition-all active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-[#d4af37]/10 flex items-center justify-center text-[#d4af37]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+<span class="font-bold text-lg uppercase tracking-tight text-[#d4af37] font-headline">Admin Panel</span>
+</div>
+<span class="material-symbols-outlined text-[#d4af37]">chevron_right</span>
+</button>
+</section>
+<!-- Menu Groups -->
+<div class="space-y-8">
+<!-- COMPETITION -->
+<section>
+<h3 class="font-headline text-[#666666] text-sm tracking-widest mb-3 px-1">COMPETITION</h3>
+<div class="bg-[#1a1a1a] border border-[#333333] rounded-xl overflow-hidden">
+<div class="divide-y divide-[#333333]">
+<a class="flex items-center justify-between p-4 hover:bg-[#252525] transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbbbbb]">emoji_events</span>
+<span class="font-medium">Championships</span>
+</div>
+<span class="material-symbols-outlined text-[#666666] text-sm">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-[#252525] transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbbbbb]">calendar_month</span>
+<span class="font-medium">Events</span>
+</div>
+<span class="material-symbols-outlined text-[#666666] text-sm">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-[#252525] transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbbbbb]">sports_martial_arts</span>
+<span class="font-medium">Matches</span>
+</div>
+<span class="material-symbols-outlined text-[#666666] text-sm">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-[#252525] transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbbbbb]">account_tree</span>
+<span class="font-medium">Tournaments</span>
+</div>
+<span class="material-symbols-outlined text-[#666666] text-sm">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-[#252525] transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbbbbb]">military_tech</span>
+<span class="font-medium">Awards</span>
+</div>
+<span class="material-symbols-outlined text-[#666666] text-sm">chevron_right</span>
+</a>
+</div>
+</div>
+</section>
+<!-- RANKINGS -->
+<section>
+<h3 class="font-headline text-[#666666] text-sm tracking-widest mb-3 px-1">RANKINGS</h3>
+<div class="bg-[#1a1a1a] border border-[#333333] rounded-xl overflow-hidden">
+<div class="divide-y divide-[#333333]">
+<a class="flex items-center justify-between p-4 hover:bg-[#252525] transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbbbbb]">format_list_numbered</span>
+<span class="font-medium">Contenders</span>
+</div>
+<span class="material-symbols-outlined text-[#666666] text-sm">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-[#252525] transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbbbbb]">query_stats</span>
+<span class="font-medium">Statistics</span>
+</div>
+<span class="material-symbols-outlined text-[#666666] text-sm">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-[#252525] transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbbbbb]">movie_filter</span>
+<span class="font-medium">Highlights</span>
+</div>
+<span class="material-symbols-outlined text-[#666666] text-sm">chevron_right</span>
+</a>
+</div>
+</div>
+</section>
+<!-- FACTIONS -->
+<section>
+<h3 class="font-headline text-[#666666] text-sm tracking-widest mb-3 px-1">FACTIONS</h3>
+<div class="bg-[#1a1a1a] border border-[#333333] rounded-xl overflow-hidden">
+<div class="divide-y divide-[#333333]">
+<a class="flex items-center justify-between p-4 hover:bg-[#252525] transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbbbbb]">groups</span>
+<span class="font-medium">Factions</span>
+</div>
+<span class="material-symbols-outlined text-[#666666] text-sm">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-[#252525] transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbbbbb]">group_add</span>
+<span class="font-medium">Tag Teams</span>
+</div>
+<span class="material-symbols-outlined text-[#666666] text-sm">chevron_right</span>
+</a>
+</div>
+</div>
+</section>
+<!-- WRESTLER ZONE -->
+<section>
+<h3 class="font-headline text-[#666666] text-sm tracking-widest mb-3 px-1">WRESTLER ZONE</h3>
+<div class="bg-[#1a1a1a] border border-[#333333] rounded-xl overflow-hidden">
+<div class="divide-y divide-[#333333]">
+<a class="flex items-center justify-between p-4 hover:bg-[#252525] transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbbbbb]">record_voice_over</span>
+<span class="font-medium">Promos</span>
+</div>
+<span class="material-symbols-outlined text-[#666666] text-sm">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-[#252525] transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbbbbb]">video_library</span>
+<span class="font-medium">My Videos</span>
+</div>
+<span class="material-symbols-outlined text-[#666666] text-sm">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-[#252525] transition-colors" href="#">
+<div class="flex items-center gap-4 text-[#d4af37]">
+<span class="material-symbols-outlined">person_search</span>
+<span class="font-bold">Find Match</span>
+</div>
+<span class="material-symbols-outlined text-[#d4af37] text-sm">chevron_right</span>
+</a>
+</div>
+</div>
+</section>
+<!-- FOOTER ROWS -->
+<section class="pb-10">
+<div class="bg-[#1a1a1a] border border-[#333333] rounded-xl overflow-hidden">
+<div class="divide-y divide-[#333333]">
+<a class="flex items-center justify-between p-4 hover:bg-[#252525] transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbbbbb]">help_outline</span>
+<span class="font-medium">Help</span>
+</div>
+<span class="material-symbols-outlined text-[#666666] text-sm">chevron_right</span>
+</a>
+<button class="w-full flex items-center justify-between p-4 hover:bg-[#252525] transition-colors">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbbbbb]">language</span>
+<span class="font-medium">Language</span>
+</div>
+<div class="flex items-center gap-2 text-[#666666]">
+<span class="text-sm font-medium">English</span>
+<span class="material-symbols-outlined text-sm">arrow_drop_down</span>
+</div>
+</button>
+<button class="w-full flex items-center justify-between p-4 hover:bg-red-950/20 transition-colors">
+<div class="flex items-center gap-4 text-red-500">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-bold">Log out</span>
+</div>
+</button>
+</div>
+</div>
+<div class="mt-6 flex flex-col items-center gap-2 text-[#666666] text-xs uppercase tracking-widest font-bold">
+<span class="font-headline opacity-40">LEAGUE SZN v2.4.0</span>
+<span class="opacity-20">© 2024 SMACKDOWN NETWORKS</span>
+</div>
+</section>
+</div>
+</main>
+<!-- Bottom Navigation Bar (The Anchor Component) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 pb-safe px-2 bg-[#1a1a1a] border-t border-[#333333] shadow-2xl">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">Home</span>
+</a>
+<!-- Standings -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">Standings</span>
+</a>
+<!-- Rivalries -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">whatshot</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">Rivalries</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">Profile</span>
+</a>
+<!-- More (Active) -->
+<a class="flex flex-col items-center justify-center text-[#d4af37] scale-110 active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">More</span>
+</a>
+</nav>
+<!-- Floating Action Button (Suppressed as per rules for More/Settings screen) -->
+<script>
+        // Simple touch feedback micro-interactions
+        document.querySelectorAll('a, button').forEach(el => {
+            el.addEventListener('touchstart', () => {
+                el.style.opacity = '0.7';
+            });
+            el.addEventListener('touchend', () => {
+                el.style.opacity = '1';
+            });
+        });
+
+        // Language selector mock interaction
+        const langBtn = document.querySelector('button .text-sm.font-medium');
+        if (langBtn) {
+            langBtn.parentElement.parentElement.addEventListener('click', () => {
+                const langs = ['English', 'Español', '日本語', 'Deutsch'];
+                const current = langBtn.innerText;
+                const next = langs[(langs.indexOf(current) + 1) % langs.length];
+                langBtn.innerText = next;
+            });
+        }
+    </script>
+</body></html>

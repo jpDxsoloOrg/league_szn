@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>League SZN Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Oswald:wght@500;600;700&amp;family=Public+Sans:wght@700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        background: "#0f0f0f",
+                        surface: "#1a1a1a",
+                        surfacePressed: "#252525",
+                        border: "#333333",
+                        primary: "#d4af37",
+                        primaryPressed: "#b8941f",
+                        onPrimary: "#1a1a1a",
+                        textPrimary: "#ffffff",
+                        textSecondary: "#bbbbbb",
+                        textMuted: "#666666",
+                        success: "#4ade80",
+                        danger: "#dc3545",
+                        warning: "#fbbf24",
+                        info: "#0ea5e9"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Oswald", "sans-serif"],
+                        display: ["Public Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pulse-red {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        body {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            background-color: #0f0f0f;
+        }
+    </style>
+</head>
+<body class="font-body text-textPrimary antialiased pb-20">
+<!-- TopAppBar -->
+<header class="bg-[#0f0f0f] border-b border-[#333333] fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-16">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#d4af37] text-2xl">sports_kabaddi</span>
+<h1 class="font-headline uppercase tracking-tighter text-2xl font-black text-[#d4af37]">LEAGUE SZN</h1>
+</div>
+<button class="text-[#d4af37] p-2 hover:bg-[#252525] transition-colors rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<main class="mt-16 px-4 pt-4 space-y-8 max-w-lg mx-auto">
+<!-- Hero Champion Carousel -->
+<section class="relative">
+<div class="relative overflow-hidden rounded-xl bg-surface border border-border aspect-[4/5] flex flex-col justify-end">
+<!-- Belt Image as Background -->
+<div class="absolute inset-0 z-0">
+<img alt="World Heavyweight Championship Belt" class="w-full h-full object-cover opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBO5pyvkc9QO1jS_8uCY4pSxNM87MdzqyHYOVDdTT1VRmFBlS8wfwWXmJf-JJM9AGSLlf0t-ZA0a0Tv4hldcPzM64MrLP13e11E5Se1wvuQ5KWketv1dBS52QHtil_EBoxXrvC3Tv-dzvSfHjJcnOh49lEmlMXf7TyiRxjkmVTLbSROngjUXTnZP-EefdmtPZRLUTCa2GBPij-3ogWhFHHfQw5tRMNcbi13jIRLtkBWamRPqz2qMoEPoiWiwRD3hXN-WLdKGVPI-KI"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+</div>
+<!-- Content Overlay -->
+<div class="relative z-10 p-6 flex flex-col items-center text-center">
+<div class="mb-4 relative">
+<div class="w-24 h-24 rounded-full border-4 border-primary overflow-hidden shadow-2xl">
+<img alt="Champion Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCseNhoeZ30kHsx-AO31PPoy_qVv3m8NAfAL8l-mA2rOHCc_FxHKdyWTpvRQovIS07DjZNiEGZq_bAv83gUII1WCTpWQylgd-IUGXJHejNOrtTjNYIr0xlukfRxFUYjIQ13Klq1UdJyWBKT19oKWpiyShjyCntblxTjs2bj_jSrswbFxkWMptxOkrNAQAWpWBn-Md08BBfGDkO4htMdZQD5YJMHC7_hYwvV-VeVRT6H5Va-C0OWfHJoEBBCxx7FgO_R0XAJasz4JP8"/>
+</div>
+<div class="absolute -bottom-2 -right-2 bg-primary text-onPrimary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Champion</div>
+</div>
+<h2 class="font-headline text-3xl uppercase tracking-tight text-primary leading-none mb-1">World Heavyweight Championship</h2>
+<p class="text-xl font-medium">Marcus "The Ace" Rivera</p>
+<p class="text-textMuted text-sm font-bold uppercase tracking-widest mt-1">Reign: 84 days</p>
+<!-- Indicators -->
+<div class="flex gap-2 mt-6">
+<div class="h-1.5 w-6 rounded-full bg-primary"></div>
+<div class="h-1.5 w-1.5 rounded-full bg-border"></div>
+<div class="h-1.5 w-1.5 rounded-full bg-border"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- WHAT'S HAPPENING Section -->
+<section class="space-y-4">
+<h3 class="font-headline text-xl uppercase tracking-wider text-textSecondary px-1 flex items-center gap-2">
+<span class="w-1.5 h-6 bg-primary"></span>
+                What's Happening
+            </h3>
+<div class="space-y-3">
+<!-- Live Event Card -->
+<div class="bg-surface border border-border p-4 rounded-xl flex items-center justify-between group active:bg-surfacePressed transition-colors">
+<div class="flex items-center gap-4">
+<div class="relative">
+<div class="w-12 h-12 rounded-lg bg-danger/20 flex items-center justify-center text-danger border border-danger/30">
+<span class="material-symbols-outlined text-2xl">live_tv</span>
+</div>
+<span class="absolute -top-1 -right-1 flex h-3 w-3">
+<span class="pulse-red absolute inline-flex h-full w-full rounded-full bg-danger opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-danger"></span>
+</span>
+</div>
+<div>
+<h4 class="font-bold text-textPrimary">Friday Night Mayhem</h4>
+<p class="text-xs text-textMuted font-medium">4 of 7 matches complete</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-textMuted group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+<!-- Upcoming Event Card -->
+<div class="bg-surface border border-border p-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+<span class="material-symbols-outlined text-2xl">event</span>
+</div>
+<div>
+<h4 class="font-bold text-textPrimary">SummerSlam Showdown</h4>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-xs font-mono font-bold bg-border px-1.5 py-0.5 rounded text-primary">2d 14h 32m</span>
+<span class="text-[10px] text-textMuted uppercase font-bold tracking-tight">Madison Square Garden</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Quick Stats Grid -->
+<section class="grid grid-cols-2 gap-3">
+<div class="bg-surface border border-border p-4 rounded-xl flex flex-col gap-1">
+<span class="text-textMuted text-[10px] font-bold uppercase tracking-widest">Active Roster</span>
+<span class="font-headline text-3xl text-primary leading-none">24</span>
+<span class="text-[10px] text-success font-bold mt-1 uppercase">+2 this week</span>
+</div>
+<div class="bg-surface border border-border p-4 rounded-xl flex flex-col gap-1">
+<span class="text-textMuted text-[10px] font-bold uppercase tracking-widest">Total Matches</span>
+<span class="font-headline text-3xl text-primary leading-none">312</span>
+<span class="text-[10px] text-textMuted font-bold mt-1 uppercase">Season 5 stats</span>
+</div>
+<div class="bg-surface border border-border p-4 rounded-xl flex flex-col gap-1">
+<span class="text-textMuted text-[10px] font-bold uppercase tracking-widest">Titles</span>
+<span class="font-headline text-3xl text-primary leading-none">6</span>
+<span class="text-[10px] text-warning font-bold mt-1 uppercase">1 Vacant</span>
+</div>
+<div class="bg-surface border border-border p-4 rounded-xl flex flex-col gap-1">
+<span class="text-textMuted text-[10px] font-bold uppercase tracking-widest">Leader</span>
+<span class="font-headline text-3xl text-primary leading-none">31 Wins</span>
+<span class="text-[10px] text-textMuted font-bold mt-1 uppercase">Danny B</span>
+</div>
+</section>
+<!-- RECENT RESULTS Section -->
+<section class="space-y-4">
+<div class="flex justify-between items-end px-1">
+<h3 class="font-headline text-xl uppercase tracking-wider text-textSecondary flex items-center gap-2">
+<span class="w-1.5 h-6 bg-primary"></span>
+                    Recent Results
+                </h3>
+<button class="text-primary text-[10px] font-bold uppercase tracking-widest">View All</button>
+</div>
+<div class="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory">
+<!-- Result Card 1 -->
+<div class="min-w-[280px] bg-surface border border-border p-4 rounded-xl snap-center relative">
+<div class="absolute top-2 right-2 flex gap-1">
+<span class="bg-primary/20 text-primary text-[8px] font-black px-1.5 py-0.5 rounded border border-primary/30 uppercase">MOTN</span>
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-textMuted font-bold uppercase">Main Event</span>
+<span class="text-primary font-bold text-xs">★★★★½</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-bold text-success flex items-center gap-1">Marcus Rivera <span class="material-symbols-outlined text-xs">check_circle</span></span>
+<span class="text-textMuted font-mono text-xs italic">WIN</span>
+</div>
+<div class="text-textMuted text-[10px] font-bold uppercase text-center py-0.5 bg-border/30 rounded">def.</div>
+<div class="flex items-center justify-between">
+<span class="font-medium text-textSecondary">Johnny Nitro</span>
+<span class="text-textMuted font-mono text-xs italic">LOSS</span>
+</div>
+</div>
+<div class="text-[10px] text-textMuted font-bold uppercase tracking-widest border-t border-border pt-2 text-center">Ladder Match • 18:24</div>
+</div>
+</div>
+<!-- Result Card 2 -->
+<div class="min-w-[280px] bg-surface border border-border p-4 rounded-xl snap-center">
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-textMuted font-bold uppercase">Undercard</span>
+<span class="text-primary font-bold text-xs">★★★</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-bold text-success flex items-center gap-1">Sarah Blade <span class="material-symbols-outlined text-xs">check_circle</span></span>
+<span class="text-textMuted font-mono text-xs italic">WIN</span>
+</div>
+<div class="text-textMuted text-[10px] font-bold uppercase text-center py-0.5 bg-border/30 rounded">def.</div>
+<div class="flex items-center justify-between">
+<span class="font-medium text-textSecondary">Viper Queen</span>
+<span class="text-textMuted font-mono text-xs italic">LOSS</span>
+</div>
+</div>
+<div class="text-[10px] text-textMuted font-bold uppercase tracking-widest border-t border-border pt-2 text-center">Singles Match • 09:12</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Season Progress -->
+<section class="bg-surface border border-border p-6 rounded-xl relative overflow-hidden">
+<!-- Background Decoration -->
+<div class="absolute -right-12 -bottom-12 w-48 h-48 bg-primary/5 rounded-full border border-primary/10"></div>
+<div class="flex items-center justify-between relative z-10">
+<div class="space-y-1">
+<h3 class="font-headline text-2xl uppercase tracking-tighter text-primary">Season 5</h3>
+<p class="text-xs text-textMuted font-bold uppercase tracking-widest italic">Mar 1 – Aug 30</p>
+<div class="flex gap-2 pt-2">
+<span class="bg-border px-2 py-0.5 rounded text-[10px] font-bold text-textSecondary">32 DAYS LEFT</span>
+</div>
+</div>
+<div class="relative w-24 h-24 flex items-center justify-center">
+<!-- SVG Progress Circle -->
+<svg class="w-full h-full -rotate-90">
+<circle class="text-border" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" stroke-width="6"></circle>
+<circle class="text-primary" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" stroke-dasharray="251.2" stroke-dashoffset="80.4" stroke-width="6"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-xl font-headline font-bold leading-none">68%</span>
+<span class="text-[8px] uppercase font-black tracking-widest text-textMuted">Done</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-[#1a1a1a] border-t border-[#333333] shadow-2xl fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 pb-safe px-2">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center text-[#d4af37] scale-110 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">Home</span>
+</a>
+<!-- Standings -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">Standings</span>
+</a>
+<!-- Rivalries -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">whatshot</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">Rivalries</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">Profile</span>
+</a>
+<!-- More -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">menu</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">More</span>
+</a>
+</nav>
+<!-- FAB (Admin) -->
+<button class="fixed bottom-20 right-4 w-14 h-14 bg-primary text-onPrimary rounded-full shadow-lg flex items-center justify-center active:scale-95 active:bg-primaryPressed transition-all z-40 border-4 border-background">
+<span class="material-symbols-outlined text-3xl font-bold">add</span>
+</button>
+<script>
+        // Simple Interaction logic
+        document.querySelectorAll('nav a').forEach(item => {
+            item.addEventListener('click', function(e) {
+                // e.preventDefault();
+                // This is where real navigation would happen
+            });
+        });
+
+        // Add visual feedback to buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => btn.classList.add('opacity-70'));
+            btn.addEventListener('touchend', () => btn.classList.remove('opacity-70'));
+        });
+    </script>
+</body></html>

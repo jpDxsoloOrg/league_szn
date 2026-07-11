@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Schedule Match | LEAGUE SZN</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Oswald:wght@500;700&amp;family=Public+Sans:wght@700;900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: "#d4af37",
+                            pressed: "#b8941f"
+                        },
+                        background: "#0f0f0f",
+                        surface: "#1a1a1a",
+                        "surface-hover": "#252525",
+                        border: "#333333",
+                        text: {
+                            primary: "#ffffff",
+                            secondary: "#bbbbbb",
+                            muted: "#666666"
+                        }
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Oswald", "sans-serif"],
+                        display: ["Public Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #0f0f0f;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .oswald-tight {
+            font-family: 'Oswald', sans-serif;
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #333333;
+            border-radius: 10px;
+        }
+        /* Custom Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            background-color: #d4af37;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #333333;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+<!-- Top App Bar (Task-Focused: No Nav Shell) -->
+<header class="fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 bg-[#0f0f0f] border-b border-[#333333] z-50">
+<button class="p-2 active:scale-90 transition-transform text-text-primary">
+<span class="material-symbols-outlined text-2xl">close</span>
+</button>
+<h1 class="oswald-tight text-xl font-bold text-[#d4af37]">SCHEDULE MATCH</h1>
+<div class="w-10"></div> <!-- Spacer for centering -->
+</header>
+<main class="flex-grow pt-20 pb-40 px-4 max-w-lg mx-auto w-full">
+<!-- Participants Section -->
+<section class="mb-6">
+<h2 class="text-text-muted text-xs font-bold uppercase tracking-widest mb-3 px-1">Participants</h2>
+<div class="bg-surface rounded-xl border border-border p-4">
+<div class="flex flex-wrap gap-3">
+<!-- Participant 1 -->
+<div class="flex items-center gap-2 bg-surface-hover pl-1 pr-2 py-1 rounded-full border border-border group">
+<div class="w-8 h-8 rounded-full border border-primary/50 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional studio headshot of a lean, athletic male wrestler with short hair and a determined expression. The lighting is dramatic, high-contrast sports photography style with deep shadows and golden rim lighting that highlights his facial features against a dark, industrial gym background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkchgN55Ze3JlpUfv1zNHn4-deiu9gVtkBxMHN4vGi6nD9Llw-ZbVFope-VkKEgJKNfZ41YrvGgNgOT0xShg68BGdWcJc9jCoh1WMOaF-j8Z-fETFx2yPqTnzBQ2HetnuWEwF1PJpYAZYqVSxclAUNuX5jYqngDgHKM-bii5qNEbj9f9hGibWYPx-amkyOFghp-T4BSJWGeO3wRJ4QaKNc21obuklDEpG68_vtOq5vBdnvHRotYpZotkqfKBXO-p2EWQ3HjwDZ2IE"/>
+</div>
+<span class="text-sm font-medium">Danny B</span>
+<button class="text-text-muted hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+<!-- Participant 2 -->
+<div class="flex items-center gap-2 bg-surface-hover pl-1 pr-2 py-1 rounded-full border border-border group">
+<div class="w-8 h-8 rounded-full border border-primary overflow-hidden ring-1 ring-primary/30">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AP1WRLt94aotfqZEUGz-TXk9IG5k8-2AUZjisguquBC4cpS2x7upo87NHCq-s8kVGYysCGETwmgPv_C3F26iVibpxB4BiQI8BK9QkL2YHzvU54Jg6QKVTAwFONUf2AtN47pdnJh2uczncvC_-bgNRta9LWkrboRRHgIYSpkeH1nKvePM51MI-TXqhYpgxUe4o7km1Oxt9Q1PhxQAqaqoe2YIduepyCEu4r7O8Wjz5y-BziPu96dBoHQBsDa47IU"/>
+</div>
+<span class="text-sm font-medium">Marcus Rivera</span>
+<button class="text-text-muted hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+<!-- Add Participant Button -->
+<button class="flex items-center justify-center w-10 h-10 rounded-full border-2 border-dashed border-border text-text-muted active:border-primary active:text-primary transition-all">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Form Fields Stack -->
+<div class="space-y-4">
+<!-- Match Type -->
+<div class="group">
+<label class="block text-text-muted text-xs font-bold uppercase tracking-widest mb-2 px-1">Match Type</label>
+<div class="relative bg-surface rounded-xl border border-border group-focus-within:border-primary transition-colors">
+<select class="w-full bg-transparent border-none py-4 px-4 pr-10 appearance-none focus:ring-0 text-text-primary text-sm font-medium">
+<option>Singles</option>
+<option>Tag Team</option>
+<option>Triple Threat</option>
+<option>Fatal 4-Way</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">keyboard_arrow_down</span>
+</div>
+</div>
+<!-- Stipulation -->
+<div class="group">
+<label class="block text-text-muted text-xs font-bold uppercase tracking-widest mb-2 px-1">Stipulation</label>
+<div class="relative bg-surface rounded-xl border border-border group-focus-within:border-primary transition-colors">
+<select class="w-full bg-transparent border-none py-4 px-4 pr-10 appearance-none focus:ring-0 text-text-primary text-sm font-medium">
+<option selected="">Steel Cage</option>
+<option>Normal</option>
+<option>Hardcore</option>
+<option>Hell in a Cell</option>
+<option>Ladder Match</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">keyboard_arrow_down</span>
+</div>
+</div>
+<!-- Championship Toggle -->
+<div class="bg-surface rounded-xl border border-border p-4 flex items-center justify-between">
+<div>
+<p class="text-sm font-bold text-text-primary uppercase tracking-tight">Championship Match</p>
+<p class="text-xs text-text-muted">This match will be for a title</p>
+</div>
+<label class="inline-flex relative items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<!-- Championship Select (Conditional) -->
+<div class="group">
+<label class="block text-text-muted text-xs font-bold uppercase tracking-widest mb-2 px-1">Championship</label>
+<div class="relative bg-surface rounded-xl border border-border group-focus-within:border-primary transition-colors overflow-hidden">
+<div class="absolute left-4 top-1/2 -translate-y-1/2">
+<span class="material-symbols-outlined text-primary text-xl" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+</div>
+<select class="w-full bg-transparent border-none py-4 pl-12 pr-10 appearance-none focus:ring-0 text-text-primary text-sm font-medium">
+<option selected="">World Heavyweight</option>
+<option>Intercontinental</option>
+<option>United States</option>
+<option>Tag Team Championships</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">keyboard_arrow_down</span>
+</div>
+</div>
+<!-- Event Select -->
+<div class="group">
+<label class="block text-text-muted text-xs font-bold uppercase tracking-widest mb-2 px-1">Event</label>
+<div class="relative bg-surface rounded-xl border border-border group-focus-within:border-primary transition-colors">
+<select class="w-full bg-transparent border-none py-4 px-4 pr-10 appearance-none focus:ring-0 text-text-primary text-sm font-medium">
+<option selected="">SummerSlam Showdown</option>
+<option>Royal Rumble</option>
+<option>WrestleMania</option>
+<option>Weekly Live Event</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">keyboard_arrow_down</span>
+</div>
+</div>
+<!-- Date & Time -->
+<div class="group">
+<label class="block text-text-muted text-xs font-bold uppercase tracking-widest mb-2 px-1">Date &amp; Time</label>
+<button class="w-full flex items-center justify-between bg-surface rounded-xl border border-border py-4 px-4 text-left group-active:scale-[0.98] transition-all">
+<span class="text-text-primary text-sm font-medium">Jul 26, 2026 · 8:00 PM</span>
+<span class="material-symbols-outlined text-text-muted">calendar_today</span>
+</button>
+</div>
+<!-- Season Select -->
+<div class="group">
+<label class="block text-text-muted text-xs font-bold uppercase tracking-widest mb-2 px-1">Season</label>
+<div class="relative bg-surface rounded-xl border border-border group-focus-within:border-primary transition-colors">
+<select class="w-full bg-transparent border-none py-4 px-4 pr-10 appearance-none focus:ring-0 text-text-primary text-sm font-medium">
+<option selected="">Season 5</option>
+<option>Season 6 (Upcoming)</option>
+<option>Season 4 (Archive)</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">keyboard_arrow_down</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Sticky Actions -->
+<footer class="fixed bottom-0 left-0 right-0 bg-[#0f0f0f]/95 backdrop-blur-md px-4 py-6 border-t border-border z-50">
+<div class="max-w-lg mx-auto space-y-3">
+<button class="w-full bg-primary hover:bg-primary-pressed text-background py-4 rounded-xl font-bold text-base uppercase tracking-tight shadow-lg shadow-primary/10 active:scale-95 transition-all">
+                Schedule Match
+            </button>
+<button class="w-full bg-transparent text-text-muted py-2 font-medium text-sm hover:text-text-primary transition-colors">
+                Cancel
+            </button>
+</div>
+</footer>
+<!-- Atmosphere Effects -->
+<div class="fixed top-0 left-0 w-full h-full pointer-events-none z-[-1] overflow-hidden">
+<!-- Subtle gold glow in background -->
+<div class="absolute -top-1/4 -right-1/4 w-[60%] h-[60%] bg-primary/5 blur-[120px] rounded-full"></div>
+<div class="absolute -bottom-1/4 -left-1/4 w-[50%] h-[50%] bg-primary/5 blur-[100px] rounded-full"></div>
+</div>
+<script>
+        // Simple micro-interaction for form elements
+        document.querySelectorAll('select, button').forEach(el => {
+            el.addEventListener('mousedown', () => {
+                if (el.tagName === 'BUTTON') {
+                    el.classList.add('active:scale-95');
+                }
+            });
+        });
+    </script>
+</body></html>

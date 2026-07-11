@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>League SZN | Rivalries Hub</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Oswald:wght@400;700&amp;family=Public+Sans:wght@700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        background: "#0f0f0f",
+                        surface: "#1a1a1a",
+                        surfaceHover: "#252525",
+                        border: "#333333",
+                        primary: "#d4af37",
+                        primaryPressed: "#b8941f",
+                        onPrimary: "#1a1a1a",
+                        textPrimary: "#ffffff",
+                        textSecondary: "#bbbbbb",
+                        textMuted: "#666666",
+                        statusWin: "#4ade80",
+                        statusLoss: "#dc3545",
+                        scorching: "#ef4444",
+                        hot: "#f97316",
+                        warm: "#fbbf24",
+                        cold: "#60a5fa",
+                        frozen: "#94a3b8"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Oswald", "sans-serif"],
+                        display: ["Public Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            background-color: #0f0f0f;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+        }
+        .font-headline { font-family: 'Oswald', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex flex-col min-h-screen pb-20">
+<!-- TopAppBar -->
+<header class="bg-[#0f0f0f] border-b border-[#333333] fixed top-0 w-full z-50 flex justify-between items-center px-4 h-16">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#d4af37]">sports_kabaddi</span>
+<h1 class="font-headline uppercase tracking-tighter text-2xl font-black text-[#d4af37]">LEAGUE SZN</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-[#666666] hover:bg-[#252525] transition-colors p-2 rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="mt-16 px-4 pt-6 flex-grow">
+<!-- Screen Title -->
+<h2 class="font-headline text-3xl uppercase tracking-tighter text-[#d4af37] mb-6">Rivalries</h2>
+<!-- Segmented Control -->
+<div class="bg-[#1a1a1a] p-1 rounded-lg flex mb-6">
+<button class="flex-1 py-2 text-sm font-bold uppercase font-headline bg-[#d4af37] text-[#1a1a1a] rounded-md transition-all">Active</button>
+<button class="flex-1 py-2 text-sm font-bold uppercase font-headline text-[#666666] hover:text-[#bbbbbb] transition-all">Mine</button>
+<button class="flex-1 py-2 text-sm font-bold uppercase font-headline text-[#666666] hover:text-[#bbbbbb] transition-all">Archive</button>
+</div>
+<!-- Chips/Filters -->
+<div class="flex overflow-x-auto gap-2 mb-8 hide-scrollbar">
+<button class="whitespace-nowrap px-6 py-2 rounded-full bg-[#d4af37] text-[#1a1a1a] font-bold text-xs uppercase tracking-wider">All</button>
+<button class="whitespace-nowrap px-6 py-2 rounded-full bg-[#1a1a1a] border border-[#333333] text-[#bbbbbb] font-bold text-xs uppercase tracking-wider hover:border-[#d4af37]">Heated 🔥</button>
+<button class="whitespace-nowrap px-6 py-2 rounded-full bg-[#1a1a1a] border border-[#333333] text-[#bbbbbb] font-bold text-xs uppercase tracking-wider hover:border-[#d4af37]">Brewing</button>
+<button class="whitespace-nowrap px-6 py-2 rounded-full bg-[#1a1a1a] border border-[#333333] text-[#bbbbbb] font-bold text-xs uppercase tracking-wider hover:border-[#d4af37]">Slow Burn</button>
+</div>
+<!-- Rivalry Cards -->
+<section class="space-y-4 mb-10">
+<!-- Rivalry 1: Scorching -->
+<div class="bg-[#1a1a1a] border border-[#333333] rounded-xl p-4 active:bg-[#252525] transition-all">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-4 flex-1 justify-center">
+<div class="relative">
+<div class="w-16 h-16 rounded-full border-2 border-[#d4af37] p-0.5 overflow-hidden">
+<img class="w-full h-full object-cover rounded-full" data-alt="A portrait of a fierce professional wrestler with a short beard and intense gaze, wearing high-end gold and black gear, studio lighting with dramatic shadows against a dark backstage arena background, 8k resolution cinematic style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyMT3bc0coZI_DRhbQhQ08bCANMaGax9MkZgwk-XPFn7lQvpS-X-UWJqEWevPESF1b3_Es0mvsMLlYsXGCVLThZXvjRVqGz2A9dVik7ym9A4XCVVbZrrqJgaPS7kKbO6jZp_1lZEpykFOYxhzAzUBS8oLvJcbewkd1nw2U6HAQyPIF1EUKoYxDENr8MYJg5IyNGkCxzeGi5qp1Gcrj_-aSzMXJtVXKA7dJeoFNPoc0D8xKMuFdxjQDjgxk9LRjFJe0PVhLhbGweUk"/>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-[#d4af37] text-[#1a1a1a] rounded-full p-1 leading-none border-2 border-[#1a1a1a]">
+<span class="material-symbols-outlined text-[12px] font-bold" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+<span class="font-headline font-black text-2xl italic text-[#666666]">VS</span>
+<div class="w-16 h-16 rounded-full border-2 border-[#333333] p-0.5 overflow-hidden">
+<img class="w-full h-full object-cover rounded-full" data-alt="A portrait of a technical powerhouse wrestler with short hair and a determined expression, wearing silver and black wrestling attire, atmospheric lighting with soft glows in a dark gym setting, sharp focus and highly detailed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAN-hkS0F2yiOhDwoCAZWLtRyLBTBR9fuTmC_v0KM4U_LW3ZxdxqZUOqGdDXUlgR0ENENDXfajdhUchziI2Sakz_t-kI6ysPU2PLK2Eq6rPXgDSaXevmHvpGtAdlBsD827c6YU-W5zQfmUW_SyU7lwKmRyLMfY3a9LkHqa_y6J1fWntTqJfrFmOEbCU7hPE2zWtSqGHX474A0i44H6O2fevbuvoRwRuau_E3Oipch2qZi1zEOA5TkP5il5UIJSV-5H7y46FuwxoOps"/>
+</div>
+</div>
+</div>
+<div class="flex justify-between items-end mb-3">
+<div class="text-center w-full">
+<div class="flex justify-between items-center px-4 mb-2">
+<span class="font-headline text-lg uppercase text-white">Marcus Rivera</span>
+<span class="font-headline text-lg uppercase text-white text-right">Danny B</span>
+</div>
+<div class="flex justify-center">
+<span class="inline-flex items-center gap-1 bg-[#ef4444] text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
+<span class="material-symbols-outlined text-[14px]">local_fire_department</span>
+                                Scorching
+                            </span>
+</div>
+</div>
+</div>
+<!-- Heat Meter -->
+<div class="w-full h-1.5 bg-[#333333] rounded-full overflow-hidden mb-3">
+<div class="h-full bg-[#ef4444] w-[92%]"></div>
+</div>
+<div class="flex justify-between items-center text-[10px] font-bold text-[#666666] uppercase tracking-tighter">
+<span>3 Matches · 5 Promos</span>
+<span class="text-[#ef4444]">LIVE NOW</span>
+</div>
+</div>
+<!-- Rivalry 2: Hot -->
+<div class="bg-[#1a1a1a] border border-[#333333] rounded-xl p-4 active:bg-[#252525] transition-all">
+<div class="flex items-center gap-4 justify-center mb-4">
+<div class="w-14 h-14 rounded-full border border-[#333333] p-0.5 overflow-hidden">
+<img class="w-full h-full object-cover rounded-full" data-alt="A rugged professional wrestler with long hair and facial hair, looking defiant, wearing leather vest, dark moody lighting, cinematic sports photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDexJswGEdEh0HnCRpP_8UMvbjEiFohDHYPhsfZORPpUdoW-WankNqRnSSJQ1vsOswucFCPAUhucTAa1LP-o2DKdZfev_w1EVeIxIXBRKdKxyLf8TRgzVw9JIlDM6j1ed_nnO-tFuP4SavShQgxgYqi37Y_6O176DSdOCsFryDZAh9IdylZpiDIzkzdpSVKR4snP4Fc7dnNVzv4X_RB-t1JC6C1--MPlgYKpW5uDn5wZML8uf_iFytFiuEU43lX1PkTSrXjezGJrvU"/>
+</div>
+<span class="font-headline font-black text-xl italic text-[#666666]">VS</span>
+<div class="w-14 h-14 rounded-full border border-[#333333] p-0.5 overflow-hidden">
+<img class="w-full h-full object-cover rounded-full" data-alt="A charismatic high-flying wrestler with a colorful mask and athletic build, vibrant lighting in a dark arena, focus on the intricate textures of the mask." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCT19Ln0PpbH3wmZgQarhCvuX4qUMbmGFXUCEOoT-Mw4BxxjZ2_zKC3ww0RfxKss1wqnpI0uGFsNrKML-a89IqKJDXtxIYxiz0g4FYeq3TTumpNGfqcx4ifg5fybqdwXBoQkbo7pk7MlZOUKz_x7aQUZFp4_9EwiwiCgOSTx4dusZhYahyjhNeUoaqhOmiL7Fjzt9EafuXwYB16jcVGhnKQoXzJg7R3YinTelm7yqSPRVqfaNed3OAeczOd1X5D7Mbb7xE8JoW20JI"/>
+</div>
+</div>
+<div class="text-center mb-3">
+<div class="flex justify-between items-center px-2 mb-2">
+<span class="font-headline text-base uppercase text-white">Jaxson Reed</span>
+<span class="font-headline text-base uppercase text-white text-right">Kidd Neon</span>
+</div>
+<div class="flex justify-center">
+<span class="inline-flex items-center gap-1 bg-[#f97316] text-[#1a1a1a] px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                            Hot
+                        </span>
+</div>
+</div>
+<div class="w-full h-1 bg-[#333333] rounded-full overflow-hidden mb-3">
+<div class="h-full bg-[#f97316] w-[75%]"></div>
+</div>
+<div class="text-[10px] font-bold text-[#666666] uppercase tracking-tighter">
+                    1 Match · 2 Promos
+                </div>
+</div>
+<!-- Rivalry 3: Cold -->
+<div class="bg-[#1a1a1a] border border-[#333333] rounded-xl p-4 active:bg-[#252525] transition-all opacity-80">
+<div class="flex items-center gap-4 justify-center mb-4">
+<div class="w-14 h-14 rounded-full border border-[#333333] p-0.5 overflow-hidden grayscale">
+<img class="w-full h-full object-cover rounded-full" data-alt="A grizzled veteran wrestler with salt-and-pepper hair, looking exhausted, wearing simple black trunks, harsh overhead lighting in a gym." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMyqj4iOm8C5e38aJrkl40NNoSjJCDk6OMGnHdoFbVfgP4jZBPvjQvZsTMoutqqKbYO49sUF0NzdLYiDV6CDlUH1HoY-8JXvOTExtPatqY4vrS80iEqemhi4r4_j6vwsyBaSvIb_7t0NCKU-51hORKwXaaY4gplo_htR9v95Cjyyn-ihHDfu6pF_r8_c9IVIm6dTOQvQsM-jWFOlYXNVUTpbulPH2SFoxrl76lnG8bb5FCikd_j6k-Q2WNCSm5bjrXA7p6LRs4d1U"/>
+</div>
+<span class="font-headline font-black text-xl italic text-[#666666]">VS</span>
+<div class="w-14 h-14 rounded-full border border-[#333333] p-0.5 overflow-hidden grayscale">
+<img class="w-full h-full object-cover rounded-full" data-alt="A young upstart wrestler with an arrogant smirk, wearing flashy sequins, colorful lighting in the background, sharp focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4lpajYKMz_aAeiMlM46h4rFCQm1792vVHW6F4ByshIFhstDR5yhv14Y31Mm7-pVAG4_HVzMSIyJYbFXMRmnNgmGHUGAqDEWIh8Psns7U5QCruWkHFhUF4giCEx-6E8vRIXGtfheS3ADvvLpQSBIi-Rmey_VWnqz4FyRht_0_JIRFUa-cisxetTdp14C4FbT0Q6sp526YvmJIcm-ECEErDrZXRaJqAKmblcvmE87leeVJp18HU60LuHEpsOnXZ2oMWKC4rPlx4mF8"/>
+</div>
+</div>
+<div class="text-center mb-3">
+<div class="flex justify-between items-center px-2 mb-2">
+<span class="font-headline text-base uppercase text-white">The Old Guard</span>
+<span class="font-headline text-base uppercase text-white text-right">S. Money</span>
+</div>
+<div class="flex justify-center">
+<span class="inline-flex items-center gap-1 bg-[#60a5fa] text-[#1a1a1a] px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                            Cold
+                        </span>
+</div>
+</div>
+<div class="w-full h-1 bg-[#333333] rounded-full overflow-hidden mb-3">
+<div class="h-full bg-[#60a5fa] w-[15%]"></div>
+</div>
+<div class="text-[10px] font-bold text-[#666666] uppercase tracking-tighter">
+                    0 Matches · 0 Promos
+                </div>
+</div>
+</section>
+<!-- Activity Feed Section -->
+<section class="mb-12">
+<h3 class="font-headline text-sm uppercase text-[#d4af37] tracking-widest mb-4">Activity</h3>
+<div class="space-y-4">
+<div class="flex gap-4 p-4 bg-[#1a1a1a] rounded-xl border border-[#333333]">
+<div class="w-10 h-10 flex-shrink-0 bg-[#252525] rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[#d4af37]">mic</span>
+</div>
+<div>
+<p class="text-sm text-white">
+<span class="font-bold">Danny B</span> cut a promo on <span class="font-bold">Marcus Rivera</span>
+</p>
+<p class="text-[10px] text-[#666666] mt-1 uppercase font-bold tracking-tighter">2h ago</p>
+</div>
+</div>
+<div class="flex gap-4 p-4 bg-[#1a1a1a] rounded-xl border border-[#333333]">
+<div class="w-10 h-10 flex-shrink-0 bg-[#252525] rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[#d4af37]">sports_mma</span>
+</div>
+<div>
+<p class="text-sm text-white">
+<span class="font-bold text-[#ef4444]">Steel Cage</span> match added to their rivalry
+                        </p>
+<p class="text-[10px] text-[#666666] mt-1 uppercase font-bold tracking-tighter">1d ago</p>
+</div>
+</div>
+<button class="w-full py-4 text-[#666666] text-xs font-bold uppercase tracking-widest hover:text-white transition-colors">
+                    Load more
+                </button>
+</div>
+</section>
+</main>
+<!-- FAB (Admin Add) -->
+<button class="fixed bottom-20 right-6 w-14 h-14 bg-[#d4af37] text-[#1a1a1a] rounded-full shadow-2xl flex items-center justify-center active:scale-95 transition-all z-40">
+<span class="material-symbols-outlined text-3xl font-bold">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 pb-safe px-2 bg-[#1a1a1a] border-t border-[#333333] shadow-2xl">
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">Standings</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#d4af37] scale-110 active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">whatshot</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">Rivalries</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">Profile</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">menu</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">More</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interactions for segment buttons
+        document.querySelectorAll('.flex-1.py-2').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const parent = this.parentElement;
+                parent.querySelectorAll('button').forEach(b => {
+                    b.classList.remove('bg-[#d4af37]', 'text-[#1a1a1a]');
+                    b.classList.add('text-[#666666]');
+                });
+                this.classList.add('bg-[#d4af37]', 'text-[#1a1a1a]');
+                this.classList.remove('text-[#666666]');
+            });
+        });
+
+        // Chip selection interaction
+        document.querySelectorAll('button.whitespace-nowrap').forEach(chip => {
+            chip.addEventListener('click', function() {
+                const parent = this.parentElement;
+                parent.querySelectorAll('button').forEach(c => {
+                    c.classList.remove('bg-[#d4af37]', 'text-[#1a1a1a]');
+                    c.classList.add('bg-[#1a1a1a]', 'text-[#bbbbbb]', 'border', 'border-[#333333]');
+                });
+                this.classList.add('bg-[#d4af37]', 'text-[#1a1a1a]');
+                this.classList.remove('bg-[#1a1a1a]', 'text-[#bbbbbb]', 'border', 'border-[#333333]');
+            });
+        });
+    </script>
+</body></html>

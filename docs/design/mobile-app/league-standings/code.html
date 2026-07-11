@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>League SZN | Standings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Oswald:wght@500;700&amp;family=Public+Sans:wght@700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#d4af37",
+                        surface: "#1a1a1a",
+                        background: "#0f0f0f",
+                        border: "#333333",
+                        onSurface: "#ffffff",
+                        secondaryText: "#bbbbbb",
+                        mutedText: "#666666",
+                        win: "#4ade80",
+                        loss: "#dc3545",
+                        draw: "#6b7280"
+                    },
+                    fontFamily: {
+                        headline: ["Oswald", "Public Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0f0f0f;
+            color: #ffffff;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .active-tab-indicator {
+            box-shadow: 0 -2px 10px rgba(212, 175, 55, 0.3);
+        }
+        .gold-gradient-border {
+            position: relative;
+        }
+        .gold-gradient-border::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            padding: 1px;
+            background: linear-gradient(135deg, #d4af37 0%, #1a1a1a 50%, #d4af37 100%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="font-body selection:bg-primary/30">
+<!-- Top App Bar (From Shared Components) -->
+<header class="fixed top-0 left-0 w-full z-50 bg-[#0f0f0f] border-b border-[#333333] h-16 flex justify-between items-center px-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#d4af37] text-2xl">sports_kabaddi</span>
+<h1 class="font-headline font-black text-[#d4af37] uppercase tracking-tighter text-2xl leading-none">LEAGUE SZN</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative hover:bg-[#252525] transition-colors p-2 rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined text-[#d4af37]">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full border border-[#0f0f0f]"></span>
+</button>
+</div>
+</header>
+<main class="pt-20 pb-24 px-4 min-h-screen max-w-lg mx-auto">
+<!-- Screen Header -->
+<div class="flex items-end justify-between mb-6">
+<div class="flex items-center gap-3">
+<h2 class="font-headline text-4xl text-[#d4af37] uppercase tracking-tight leading-none">STANDINGS</h2>
+<span class="bg-[#d4af37] text-[#1a1a1a] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest mb-1 shadow-[0_0_15px_rgba(212,175,55,0.4)]">Season 5</span>
+</div>
+</div>
+<!-- Filter Chips (Horizontally Scrollable) -->
+<div class="flex overflow-x-auto no-scrollbar gap-2 mb-4 pb-1">
+<button class="flex-shrink-0 px-5 py-2 bg-[#d4af37] text-[#1a1a1a] rounded-full text-sm font-bold shadow-lg shadow-black/20">All Divisions</button>
+<button class="flex-shrink-0 px-5 py-2 bg-[#1a1a1a] text-[#ffffff] border border-[#333333] rounded-full text-sm font-semibold hover:bg-[#252525] transition-colors">Heavyweight</button>
+<button class="flex-shrink-0 px-5 py-2 bg-[#1a1a1a] text-[#ffffff] border border-[#333333] rounded-full text-sm font-semibold hover:bg-[#252525] transition-colors">Cruiserweight</button>
+<button class="flex-shrink-0 px-5 py-2 bg-[#1a1a1a] text-[#ffffff] border border-[#333333] rounded-full text-sm font-semibold hover:bg-[#252525] transition-colors">Tag Division</button>
+</div>
+<!-- Segmented Control -->
+<div class="flex justify-start mb-8">
+<div class="bg-[#1a1a1a] p-1 rounded-lg flex border border-[#333333]">
+<button class="px-6 py-1.5 bg-[#d4af37] text-[#1a1a1a] rounded-md text-xs font-bold uppercase tracking-wide">All</button>
+<button class="px-6 py-1.5 text-[#666666] hover:text-[#bbbbbb] transition-colors text-xs font-bold uppercase tracking-wide">Face</button>
+<button class="px-6 py-1.5 text-[#666666] hover:text-[#bbbbbb] transition-colors text-xs font-bold uppercase tracking-wide">Heel</button>
+</div>
+</div>
+<!-- Rankings List -->
+<div class="space-y-3">
+<!-- Rank 1 Card (Special) -->
+<div class="bg-[#1a1a1a] rounded-xl p-4 flex items-center border border-[#d4af37]/50 relative overflow-hidden active:scale-[0.98] transition-transform shadow-xl shadow-primary/5">
+<div class="absolute top-0 right-0 p-2 opacity-10">
+<span class="material-symbols-outlined text-6xl text-[#d4af37]">military_tech</span>
+</div>
+<div class="w-12 text-center mr-2">
+<span class="font-headline text-4xl text-[#d4af37] leading-none">1</span>
+</div>
+<div class="relative">
+<img class="w-14 h-14 rounded-full border-2 border-[#d4af37] object-cover shadow-[0_0_10px_rgba(212,175,55,0.3)]" src="https://lh3.googleusercontent.com/aida/AP1WRLt94aotfqZEUGz-TXk9IG5k8-2AUZjisguquBC4cpS2x7upo87NHCq-s8kVGYysCGETwmgPv_C3F26iVibpxB4BiQI8BK9QkL2YHzvU54Jg6QKVTAwFONUf2AtN47pdnJh2uczncvC_-bgNRta9LWkrboRRHgIYSpkeH1nKvePM51MI-TXqhYpgxUe4o7km1Oxt9Q1PhxQAqaqoe2YIduepyCEu4r7O8Wjz5y-BziPu96dBoHQBsDa47IU"/>
+<span class="absolute -bottom-1 -right-1 bg-[#d4af37] text-[#1a1a1a] text-[8px] font-bold px-1 rounded border border-[#1a1a1a]">CHAMP</span>
+</div>
+<div class="ml-4 flex-grow">
+<div class="flex items-center justify-between">
+<div>
+<p class="font-bold text-white text-lg leading-tight">Ray "The Ace" Rivera</p>
+<p class="text-[#bbbbbb] text-xs uppercase font-semibold tracking-wider">The Ace</p>
+</div>
+<div class="text-right">
+<div class="w-10 h-10 border-2 border-[#d4af37] rounded flex flex-col items-center justify-center">
+<span class="text-[8px] text-[#d4af37] font-bold leading-none uppercase">OVR</span>
+<span class="text-sm font-headline text-white leading-none">92</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between mt-3">
+<div class="flex items-center gap-3">
+<span class="font-headline text-[#ffffff] text-sm tracking-widest">18-4-1 <span class="text-[#666666] ml-1">78%</span></span>
+<div class="flex gap-1">
+<span class="w-2 h-2 rounded-full bg-win"></span>
+<span class="w-2 h-2 rounded-full bg-win"></span>
+<span class="w-2 h-2 rounded-full bg-win"></span>
+<span class="w-2 h-2 rounded-full bg-win"></span>
+<span class="w-2 h-2 rounded-full bg-win"></span>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-red-900/30 px-2 py-0.5 rounded border border-red-500/30">
+<span class="material-symbols-outlined text-orange-500 text-sm" style="font-variation-settings: 'FILL' 1;">whatshot</span>
+<span class="text-xs font-bold text-orange-400">W5</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Rank 2 Card -->
+<div class="bg-[#1a1a1a] rounded-xl p-4 flex items-center border border-[#333333] relative active:scale-[0.98] transition-transform gold-gradient-border">
+<div class="w-12 text-center mr-2">
+<span class="font-headline text-3xl text-[#bbbbbb] leading-none">2</span>
+</div>
+<div class="w-12 h-12 rounded-full bg-cover bg-center border border-[#333333]" data-alt="A cinematic close-up headshot of a rugged, bearded wrestler with intense eyes, wearing distressed leather gear in a dark, atmospheric locker room setting. Professional sports photography style with dramatic side lighting and a deep, moody color palette of shadows and metallic accents." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDUmKVO-N5fwJsjkn4c-gWVNY_LTmObNFnqRb2LDmBpugBYuazuk40-QWWGtkLZgRv5IUWLgkABlPPZ9tSN7eZveHMX8F6n5C6wZsZB4sj4hQia5i8hTJjrj02oozFKmH6mEIY_vQK87_pjZR21qmx9BqnrQOBSZlpcAE6YeV2d_V0k-rucuRhrBDhAfTPs3ek7oM8Bl5xw8aukCuVZ6yntFHtkwXJGJzEZRqSLJ9UF8y6ZP-lMQCxJKV0qHHRH-mjgXJgyXAMGch0')"></div>
+<div class="ml-4 flex-grow">
+<div class="flex items-center justify-between">
+<div>
+<p class="font-bold text-white leading-tight">Roman Reigns</p>
+<p class="text-[#666666] text-xs uppercase font-semibold">The Tribal Chief</p>
+</div>
+<div class="w-8 h-8 border border-[#333333] rounded flex items-center justify-center">
+<span class="text-xs font-headline text-white leading-none">91</span>
+</div>
+</div>
+<div class="flex items-center justify-between mt-2">
+<div class="flex items-center gap-3">
+<span class="font-headline text-[#ffffff] text-xs tracking-widest">16-5-0 <span class="text-[#666666] ml-1">76%</span></span>
+</div>
+<div class="flex items-center gap-1 bg-[#1a1a1a] px-2 py-0.5 rounded border border-[#333333]">
+<span class="text-[10px] font-bold text-blue-400">L1</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Rank 3 Card -->
+<div class="bg-[#1a1a1a] rounded-xl p-4 flex items-center border border-[#333333] active:scale-[0.98] transition-transform gold-gradient-border">
+<div class="w-12 text-center mr-2">
+<span class="font-headline text-3xl text-orange-800 leading-none">3</span>
+</div>
+<div class="w-12 h-12 rounded-full bg-cover bg-center border border-[#333333]" data-alt="A portrait of a powerful female wrestler with vibrant dyed hair and tactical wrestling attire, standing confidently against a backdrop of arena lights and mist. Cinematic, high-contrast sports portraiture with a focus on athleticism and gritty aesthetic using a professional dark-mode color scheme." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCmPIIgaEixHKM7MW3hHhuOdxq1YTqHcXJWlve8QRhQfwQf-zAtsN3htLTUs84w6q7wND3vja1HzEEfLFJMCxUsbss1LE8rYFcx9l8k1080CEvsioP8xuS7MMQMuAzWuTIkwrnq8OYnT6UZOJM8KwIZU29918Q7w_c8Z5LGtdc7qknvj5EltoMsi5JQDiBAAwLAsrAoi_zlZC6hohKsAjRIW376Zj_VDeV9tJiIDF3mD_k-CXhJZh0vogoxatjCrJT9CWmjm5dTIug')"></div>
+<div class="ml-4 flex-grow">
+<div class="flex items-center justify-between">
+<div>
+<p class="font-bold text-white leading-tight">Seth Rollins</p>
+<p class="text-[#666666] text-xs uppercase font-semibold">The Visionary</p>
+</div>
+<div class="w-8 h-8 border border-[#333333] rounded flex items-center justify-center">
+<span class="text-xs font-headline text-white leading-none">89</span>
+</div>
+</div>
+<div class="flex items-center justify-between mt-2">
+<div class="flex items-center gap-3">
+<span class="font-headline text-[#ffffff] text-xs tracking-widest">14-6-2 <span class="text-[#666666] ml-1">70%</span></span>
+</div>
+<div class="flex items-center gap-1 bg-[#1a1a1a] px-2 py-0.5 rounded border border-[#333333]">
+<span class="text-[10px] font-bold text-win">W2</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Generic Rank Cards (4-8) -->
+<div class="space-y-3 opacity-90">
+<!-- Rank 4 -->
+<div class="bg-[#1a1a1a] rounded-xl p-4 flex items-center border border-[#333333] active:scale-[0.98] transition-transform">
+<div class="w-12 text-center mr-2"><span class="font-headline text-2xl text-[#666666]">4</span></div>
+<div class="w-12 h-12 rounded-full bg-cover bg-center bg-[#252525]" data-alt="Dynamic shot of a masked lucha-libre style wrestler in a vibrant gold and emerald mask, posing in a dimly lit gymnasium. The lighting captures the intricate textures of the mask and the athletic build, following a premium sports broadcast visual style." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCsBZ1Wyk3kx_-Pcq3qQXehDKFXI_szVLKYxyvvFTLqddxYnGEAaoU0seUU9jQlhPpoUG0bP8FLmccsQOO71Oot1k5wxA9UwFrvK8pA4ZOpUcgKyoLnNjr01E-6pXLoGX5ZGTyoF4VXWWsylAm6aW9aoCiDUvuzNrCL5bNYtNjjcHxeRhnya9_svQlI9NCtLDcwnvWql7-z2cFAEuhnnKzZlsJDkqQGqNlTJ0hXSHPv3jX1KET90lNhgCYf0DQ1oN-9FdmcLPvZPuE')"></div>
+<div class="ml-4 flex-grow flex justify-between items-center">
+<div>
+<p class="font-bold text-white text-sm">Cody Rhodes</p>
+<p class="text-[#666666] text-[10px] uppercase">The American Nightmare</p>
+</div>
+<div class="text-right">
+<p class="text-xs font-bold text-white tracking-widest">12-7-1</p>
+<span class="text-[10px] font-bold text-blue-400">L2</span>
+</div>
+</div>
+</div>
+<!-- Rank 5 -->
+<div class="bg-[#1a1a1a] rounded-xl p-4 flex items-center border border-[#333333] active:scale-[0.98] transition-transform">
+<div class="w-12 text-center mr-2"><span class="font-headline text-2xl text-[#666666]">5</span></div>
+<div class="w-12 h-12 rounded-full bg-cover bg-center bg-[#252525]" data-alt="Studio portrait of a heavyweight wrestler with tribal tattoos across his shoulder, looking directly into the camera with a stoic expression. Dark atmospheric background, harsh rim lighting highlighting the muscle definition, consistent with a premium pro-wrestling league aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCb3g203HBO4D6MtDgXWxdkTa2lePVoDXL1B9amInGrDJzQXgBR1rsEdb4DHULFw_nh9tscxH49cRIBfOHeyLvLLILDXGse96ZA18y3W9TXC0G4qBbg4wupYy3y59HzmpJlov7H0zYm_jD2bIU7nMsvhp1o9n71RyyGCgZSShbcSzkjiufrObH2FzPdr213C5oT2xmnUr1AXkM9Q4yp--czSOZ3n8ilU2w5QepiGwG-_PYu-pI8F4tUZUZulf93jGhrdxkaW75z4H0')"></div>
+<div class="ml-4 flex-grow flex justify-between items-center">
+<div>
+<p class="font-bold text-white text-sm">Drew McIntyre</p>
+<p class="text-[#666666] text-[10px] uppercase">The Scottish Warrior</p>
+</div>
+<div class="text-right">
+<p class="text-xs font-bold text-white tracking-widest">11-8-0</p>
+<span class="text-[10px] font-bold text-gray-500">D1</span>
+</div>
+</div>
+</div>
+<!-- Rank 6 -->
+<div class="bg-[#1a1a1a] rounded-xl p-4 flex items-center border border-[#333333] active:scale-[0.98] transition-transform">
+<div class="w-12 text-center mr-2"><span class="font-headline text-2xl text-[#666666]">6</span></div>
+<div class="w-12 h-12 rounded-full bg-cover bg-center bg-[#252525]" data-alt="Aggressive portrait of a wrestler with long wet hair and eye black, wearing a sleeveless dark leather jacket. Cinematic studio lighting with deep blacks and vibrant blue highlights, emphasizing a gritty, professional sports brand energy." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBOCEIZixkmSWo1oLCRoKLkuukr5PcwIjLdAhwS4-eDF5iK1nAgTO3-KueDop9bCLz4MF5agY22TD2pOzhN19QNicuR3X4q028S6HB7hwsV7q5VXIVffVmbakCU3HkH8SCNGiUSa7lvLcx4xQUaRNCtdRHzFCeBYqkSX5EidhZzKYXklRhV_vnwZGSOUdGDEUVy2DUKsdr-z37id9rdqwHyns7CtQM-P2BmxxaekHyesnWgIB3HCoqS1fQ_KnRzXko81O7sQC1rYJI')"></div>
+<div class="ml-4 flex-grow flex justify-between items-center">
+<div>
+<p class="font-bold text-white text-sm">Finn Balor</p>
+<p class="text-[#666666] text-[10px] uppercase">The Prince</p>
+</div>
+<div class="text-right">
+<p class="text-xs font-bold text-white tracking-widest">10-8-2</p>
+<span class="text-[10px] font-bold text-win">W1</span>
+</div>
+</div>
+</div>
+<!-- Rank 7 -->
+<div class="bg-[#1a1a1a] rounded-xl p-4 flex items-center border border-[#333333] active:scale-[0.98] transition-transform">
+<div class="w-12 text-center mr-2"><span class="font-headline text-2xl text-[#666666]">7</span></div>
+<div class="w-12 h-12 rounded-full bg-cover bg-center bg-[#252525]" data-alt="High-detail headshot of a veteran wrestler with short graying hair and a sharp jawline, dressed in high-quality wrestling trunks. The lighting is sophisticated and dramatic, creating a premium feel typical of professional sports league marketing." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAgwGHxDhzl47bClYAkW-2Nkd4E1mjsMrSrkr6clEmw9wThYOu8Dbpv7m8GUlopl6g-D6jqu4JRWU0-ZTSb6ed34qxNNmbtb6hC74oquBpKlYaYZtoOUv0fnGP8Qnfal_k2nYQtypPUYa2Q6csCZLzi2O2FMw1jXuSyrFkNO_bB017JypFiW12GmeObL_7c2Ft_jEYL6hj8AJIl8XL0o-hXi0-u1AjPCJRLCOGPyIaYrQg0pLmVFaEkxN385vPeK67guqiCTvt6LkQ')"></div>
+<div class="ml-4 flex-grow flex justify-between items-center">
+<div>
+<p class="font-bold text-white text-sm">AJ Styles</p>
+<p class="text-[#666666] text-[10px] uppercase">The Phenomenal One</p>
+</div>
+<div class="text-right">
+<p class="text-xs font-bold text-white tracking-widest">9-10-1</p>
+<span class="text-[10px] font-bold text-blue-400">L3</span>
+</div>
+</div>
+</div>
+<!-- Rank 8 -->
+<div class="bg-[#1a1a1a] rounded-xl p-4 flex items-center border border-[#333333] active:scale-[0.98] transition-transform">
+<div class="w-12 text-center mr-2"><span class="font-headline text-2xl text-[#666666]">8</span></div>
+<div class="w-12 h-12 rounded-full bg-cover bg-center bg-[#252525]" data-alt="Modern professional headshot of a younger wrestler with a confident smirk and stylishly cut hair. Shot against a dark gray textured background with professional key lighting that highlights facial features and texture of the athletic apparel." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA5OqTSx9DCgB6vTbunmRcymXbY6dSdZvJ8WPIP-umDiKzKvWn6kcH7KglagFYIHOxkbferZxE5LRS2fqKR-OswqG0ErWxtP43qxOlMkTLtSDKbr5K4fq6_twESTNNci2PyEWEKsNogogSe8ss9yeyeh4-bPShFYQbktquXI1FY1MZ7F5xp93HXWXauDktStXrB26agz5oFl2DKxyQ0O7N6rWGcN9s-eb8yVrg5Q4HriYc1MKQX1DTomeey-bpQUWsm3JuE-xYX20Y')"></div>
+<div class="ml-4 flex-grow flex justify-between items-center">
+<div>
+<p class="font-bold text-white text-sm">Kevin Owens</p>
+<p class="text-[#666666] text-[10px] uppercase">The Prizefighter</p>
+</div>
+<div class="text-right">
+<p class="text-xs font-bold text-white tracking-widest">8-11-2</p>
+<span class="text-[10px] font-bold text-win">W3</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- FAB for Admin Actions -->
+<button class="fixed bottom-20 right-6 w-14 h-14 bg-[#d4af37] text-[#1a1a1a] rounded-full shadow-[0_4px_20px_rgba(212,175,55,0.4)] flex items-center justify-center active:scale-90 transition-all z-40">
+<span class="material-symbols-outlined font-bold text-3xl">add</span>
+</button>
+</main>
+<!-- Bottom Nav Bar (From Shared Components) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-[#1a1a1a] border-t border-[#333333] flex justify-around items-center h-16 pb-safe px-2 shadow-2xl">
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#d4af37] scale-110 active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">leaderboard</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">Standings</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">whatshot</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">Rivalries</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">Profile</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">menu</span>
+<span class="font-label text-[10px] uppercase font-bold mt-0.5">More</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions for chips
+        const chips = document.querySelectorAll('.flex-shrink-0');
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                chips.forEach(c => {
+                    c.classList.remove('bg-[#d4af37]', 'text-[#1a1a1a]');
+                    c.classList.add('bg-[#1a1a1a]', 'text-[#ffffff]', 'border-[#333333]');
+                });
+                chip.classList.add('bg-[#d4af37]', 'text-[#1a1a1a]');
+                chip.classList.remove('bg-[#1a1a1a]', 'text-[#ffffff]', 'border-[#333333]');
+            });
+        });
+
+        // Micro-interactions for segmented control
+        const segments = document.querySelectorAll('.segmented-control button');
+        // Simple logic for the segmented control above
+        const segContainer = document.querySelector('.bg-\\[\\#1a1a1a\\]\\.p-1');
+        const segButtons = segContainer.querySelectorAll('button');
+        segButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                segButtons.forEach(b => {
+                    b.classList.remove('bg-[#d4af37]', 'text-[#1a1a1a]');
+                    b.classList.add('text-[#666666]');
+                });
+                btn.classList.add('bg-[#d4af37]', 'text-[#1a1a1a]');
+                btn.classList.remove('text-[#666666]');
+            });
+        });
+    </script>
+</body></html>

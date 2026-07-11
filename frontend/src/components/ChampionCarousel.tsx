@@ -115,6 +115,7 @@ export default function ChampionCarousel({
           onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
           alt={current.championName}
         />
+        <span className="db-hero-pill">{t('dashboard.championBadge', 'Champion')}</span>
       </div>
       <div className="db-hero-content" aria-live="polite" aria-atomic="true">
         <span className="db-hero-belt">{current.championshipName}</span>
@@ -166,6 +167,23 @@ export default function ChampionCarousel({
               </button>
             );
           })}
+        </div>
+      )}
+
+      {total > 1 && (
+        <div className="db-hero-dots">
+          {champions.map((c, idx) => (
+            <button
+              key={c.championshipId}
+              type="button"
+              className={
+                idx === currentIndex ? 'db-hero-dot db-hero-dot--active' : 'db-hero-dot'
+              }
+              onClick={() => setCurrentIndex(idx)}
+              aria-label={c.championshipName}
+              aria-current={idx === currentIndex}
+            />
+          ))}
         </div>
       )}
     </section>

@@ -68,6 +68,12 @@
   letter-spacing: 0.05em;
 }
 
+/* Gradient heat meter is a mobile-app-shell affordance; desktop keeps
+   the heat badge in the stats strip untouched. */
+.rivalry-detail__heat-meter {
+  display: none;
+}
+
 .rivalry-detail__title {
   margin: 1.5rem 0 0.5rem;
   font-size: 1.6rem;
@@ -235,6 +241,210 @@
 
 @keyframes rivalry-detail-skeleton {
   to { background-position: -200% 0; }
+}
+
+/* ── Mobile app shell (≤768px) —
+      docs/design/mobile-app/rivalry-detail-danny-b-vs-marcus-rivera ── */
+
+@media (max-width: 768px) {
+  .rivalry-detail {
+    padding: 0.25rem 0 0;
+  }
+
+  /* Hero: circular avatars, white names, big italic gold VS, flush on
+     the page background. */
+  .rivalry-detail__hero {
+    padding: 1rem 0.5rem 0.5rem;
+    background: transparent;
+    border: none;
+  }
+
+  .rivalry-detail__portrait img {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    border: 2px solid var(--color-border, #333);
+  }
+
+  .rivalry-detail__name {
+    font-size: 1rem;
+    color: var(--color-text, #fff);
+  }
+
+  .rivalry-detail__vs {
+    font-size: 2.25rem;
+    font-style: italic;
+    transform: skewX(-12deg);
+  }
+
+  /* Gradient heat meter card. */
+  .rivalry-detail__heat-meter {
+    display: block;
+    padding: 1rem;
+    background: var(--color-surface, #1a1a1a);
+    border: 1px solid var(--color-border, #333);
+    border-radius: 16px;
+    margin-top: 0.5rem;
+  }
+
+  .rivalry-detail__heat-meter-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .rivalry-detail__heat-meter-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--color-text-muted, #666);
+  }
+
+  .rivalry-detail__heat-track {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--color-border, #333);
+    overflow: hidden;
+  }
+
+  .rivalry-detail__heat-fill {
+    position: relative;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      var(--heat-tier-cold) 0%,
+      var(--heat-tier-warm) 50%,
+      var(--heat-tier-scorching) 100%
+    );
+  }
+
+  /* Position indicator at the leading edge of the fill. */
+  .rivalry-detail__heat-fill::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Fill-width ladder (5% steps) so the meter position stays out of
+     inline styles. */
+  .rivalry-detail__heat-fill--p0 { width: 0; }
+  .rivalry-detail__heat-fill--p5 { width: 5%; }
+  .rivalry-detail__heat-fill--p10 { width: 10%; }
+  .rivalry-detail__heat-fill--p15 { width: 15%; }
+  .rivalry-detail__heat-fill--p20 { width: 20%; }
+  .rivalry-detail__heat-fill--p25 { width: 25%; }
+  .rivalry-detail__heat-fill--p30 { width: 30%; }
+  .rivalry-detail__heat-fill--p35 { width: 35%; }
+  .rivalry-detail__heat-fill--p40 { width: 40%; }
+  .rivalry-detail__heat-fill--p45 { width: 45%; }
+  .rivalry-detail__heat-fill--p50 { width: 50%; }
+  .rivalry-detail__heat-fill--p55 { width: 55%; }
+  .rivalry-detail__heat-fill--p60 { width: 60%; }
+  .rivalry-detail__heat-fill--p65 { width: 65%; }
+  .rivalry-detail__heat-fill--p70 { width: 70%; }
+  .rivalry-detail__heat-fill--p75 { width: 75%; }
+  .rivalry-detail__heat-fill--p80 { width: 80%; }
+  .rivalry-detail__heat-fill--p85 { width: 85%; }
+  .rivalry-detail__heat-fill--p90 { width: 90%; }
+  .rivalry-detail__heat-fill--p95 { width: 95%; }
+  .rivalry-detail__heat-fill--p100 { width: 100%; }
+
+  .rivalry-detail__heat-scale {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted, #666);
+  }
+
+  .rivalry-detail__heat-score {
+    color: var(--color-text-secondary, #bbb);
+  }
+
+  .rivalry-detail__title {
+    margin-top: 1rem;
+    font-size: 1.2rem;
+  }
+
+  /* Stats strip: two-up centered cards, larger values. */
+  .rivalry-detail__stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    border-radius: 16px;
+  }
+
+  .rivalry-detail__stat {
+    align-items: center;
+    text-align: center;
+    gap: 0.35rem;
+  }
+
+  .rivalry-detail__stat-label {
+    letter-spacing: 0.15em;
+  }
+
+  .rivalry-detail__stat-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+  }
+
+  /* Tab strip: horizontally scrollable, gold underline on the active
+     tab (colors already set by the base rules). */
+  .rivalry-detail__tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 0.75rem;
+  }
+
+  .rivalry-detail__tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rivalry-detail__tab {
+    white-space: nowrap;
+    padding: 0.6rem 0.25rem;
+    letter-spacing: 0.08em;
+  }
+
+  /* Overview cards: rounded, gold uppercase section headings. */
+  .rivalry-tab__card {
+    border-radius: 16px;
+    padding: 1.25rem;
+  }
+
+  .rivalry-tab__heading {
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    color: var(--color-primary, #d4af37);
+  }
+
+  .rivalry-tab__empty {
+    border-radius: 12px;
+  }
+
+  /* Keep the floating message button clear of the bottom tab bar. */
+  .rivalry-detail__message-gm {
+    bottom: calc(72px + env(safe-area-inset-bottom) + 0.75rem);
+  }
 }
 
 /* ─── Tabs (shared) ──────────────────────────────────────────────── */

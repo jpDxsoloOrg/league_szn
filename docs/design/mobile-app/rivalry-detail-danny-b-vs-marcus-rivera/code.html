@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>League SZN — Rivalry Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Oswald:wght@500;600;700&amp;family=Public+Sans:wght@700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#d4af37",
+                        "primary-pressed": "#b8941f",
+                        surface: "#1a1a1a",
+                        "surface-hover": "#252525",
+                        background: "#0f0f0f",
+                        border: "#333333",
+                        "on-primary": "#1a1a1a",
+                        secondary: "#bbbbbb",
+                        muted: "#666666",
+                        scorching: "#ef4444",
+                        win: "#4ade80",
+                        loss: "#dc3545",
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Oswald", "sans-serif"],
+                        display: ["Public Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .heat-gradient {
+            background: linear-gradient(90deg, #60a5fa 0%, #fbbf24 50%, #ef4444 100%);
+        }
+        .safe-pb {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-white font-body selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar from JSON Authority -->
+<header class="bg-[#0f0f0f] border-b border-[#333333] flex justify-between items-center px-4 h-16 w-full fixed top-0 z-50">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-[#252525] active:scale-95 transition-transform text-[#d4af37]">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline uppercase tracking-tighter text-white text-lg">RIVALRY DETAIL</h1>
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-[#252525] active:scale-95 transition-transform text-[#d4af37]">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</header>
+<main class="pt-20 pb-32 px-4 max-w-md mx-auto">
+<!-- Hero Section -->
+<section class="flex flex-col items-center mb-8">
+<div class="flex items-center justify-between w-full mb-6">
+<!-- Competitor 1: Danny B -->
+<div class="flex flex-col items-center flex-1">
+<div class="relative group">
+<div class="w-24 h-24 rounded-full overflow-hidden border-2 border-border mb-3 ring-2 ring-transparent group-hover:ring-primary transition-all duration-300">
+<img class="w-full h-full object-cover" data-alt="A portrait of a charismatic professional wrestler named Danny B, with short-cropped dark hair and a confident gaze, wearing a black and silver athletic tank top. The background is a moody, out-of-focus wrestling arena backstage with dramatic spotlights and metallic textures. The lighting is high-contrast and professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1eL3XwTsy-FYx4Jzj9zpAVQjSFmUoWjaU_aqFSFEDH6oN6yPue2nm-51-Xt6_6N5wpAjMKSyJMmxwgCh0y7Y_CIv7wqKoNR6vb0-fn_o8FRWSNa2aDbWQ2yy-lzGish9RCXB3n9kxJGm8wpPXBSfsDwW5Fe6m6WAuTVgHJBQUThHl9cpMt1v68ieR6TrITh4XKpNxNkyo0bIBiUguzqKh4wDl2GuzdEZtu7deaMCRyQz1Ch_YNMJSSuR4siXJcjOwmOK07RhVCa0"/>
+</div>
+</div>
+<span class="font-headline text-lg uppercase tracking-wide">Danny B</span>
+</div>
+<!-- VS Divider -->
+<div class="flex flex-col items-center px-4">
+<span class="font-headline text-4xl text-primary italic transform -skew-x-12">VS</span>
+</div>
+<!-- Competitor 2: Marcus Rivera -->
+<div class="flex flex-col items-center flex-1">
+<div class="relative group">
+<div class="w-24 h-24 rounded-full overflow-hidden border-2 border-primary mb-3 ring-2 ring-primary/30 transition-all duration-300">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AP1WRLt94aotfqZEUGz-TXk9IG5k8-2AUZjisguquBC4cpS2x7upo87NHCq-s8kVGYysCGETwmgPv_C3F26iVibpxB4BiQI8BK9QkL2YHzvU54Jg6QKVTAwFONUf2AtN47pdnJh2uczncvC_-bgNRta9LWkrboRRHgIYSpkeH1nKvePM51MI-TXqhYpgxUe4o7km1Oxt9Q1PhxQAqaqoe2YIduepyCEu4r7O8Wjz5y-BziPu96dBoHQBsDa47IU"/>
+</div>
+</div>
+<span class="font-headline text-lg uppercase tracking-wide">Marcus Rivera</span>
+</div>
+</div>
+<!-- Heat Meter -->
+<div class="w-full bg-surface p-4 rounded-xl border border-border">
+<div class="flex justify-between items-center mb-3">
+<span class="text-xs font-bold uppercase tracking-widest text-muted">Rivalry Heat</span>
+<div class="flex items-center gap-1.5 px-2.5 py-1 bg-scorching/10 text-scorching rounded-full border border-scorching/20">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">SCORCHING</span>
+</div>
+</div>
+<div class="relative h-2 w-full bg-border rounded-full overflow-hidden">
+<div class="heat-gradient h-full rounded-full" style="width: 87%;"></div>
+</div>
+<div class="flex justify-between mt-2 text-[10px] font-medium text-muted uppercase">
+<span>Cold</span>
+<span>87 / 100</span>
+<span>Extreme</span>
+</div>
+</div>
+</section>
+<!-- Tabs -->
+<nav class="flex overflow-x-auto gap-6 border-b border-border mb-6 no-scrollbar">
+<a class="pb-3 border-b-2 border-primary text-primary font-bold text-sm uppercase tracking-wider whitespace-nowrap" href="#">Overview</a>
+<a class="pb-3 border-b-2 border-transparent text-muted font-medium text-sm uppercase tracking-wider whitespace-nowrap hover:text-white transition-colors" href="#">Matches</a>
+<a class="pb-3 border-b-2 border-transparent text-muted font-medium text-sm uppercase tracking-wider whitespace-nowrap hover:text-white transition-colors" href="#">Promos</a>
+<a class="pb-3 border-b-2 border-transparent text-muted font-medium text-sm uppercase tracking-wider whitespace-nowrap hover:text-white transition-colors" href="#">Messages</a>
+<a class="pb-3 border-b-2 border-transparent text-muted font-medium text-sm uppercase tracking-wider whitespace-nowrap hover:text-white transition-colors" href="#">Notes</a>
+</nav>
+<!-- Content Grid (Bento Style) -->
+<div class="grid grid-cols-1 gap-4">
+<!-- STORYLINE Card -->
+<div class="bg-surface p-5 rounded-xl border border-border">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-primary text-xl">auto_stories</span>
+<h3 class="font-headline text-sm uppercase tracking-widest text-primary">Storyline</h3>
+</div>
+<p class="text-secondary text-sm leading-relaxed">
+                    Once the most dominant tag team in the league, the alliance shattered when Marcus Rivera cost Danny B the World Title at WrestleGenesis. Now, the blood feud has escalated into a chaotic war of words and brutal backstage ambushes, leading both men to their ultimate reckoning.
+                </p>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<!-- HEAD TO HEAD Card -->
+<div class="bg-surface p-5 rounded-xl border border-border flex flex-col items-center justify-center">
+<h3 class="font-headline text-[10px] uppercase tracking-[0.2em] text-muted mb-4 text-center">Head To Head</h3>
+<div class="flex items-baseline gap-2 mb-4">
+<span class="text-3xl font-headline text-white">3</span>
+<span class="text-muted font-headline">—</span>
+<span class="text-3xl font-headline text-white">1</span>
+</div>
+<div class="flex w-full h-1.5 rounded-full overflow-hidden bg-border">
+<div class="bg-win h-full" style="width: 75%;"></div>
+<div class="bg-loss h-full" style="width: 25%;"></div>
+</div>
+<div class="flex justify-between w-full mt-2">
+<span class="text-[9px] font-bold text-win uppercase">Danny</span>
+<span class="text-[9px] font-bold text-loss uppercase">Marcus</span>
+</div>
+</div>
+<!-- NEXT MATCH Card -->
+<div class="bg-surface p-5 rounded-xl border border-border flex flex-col justify-between">
+<div>
+<h3 class="font-headline text-[10px] uppercase tracking-[0.2em] text-primary mb-2">Next Match</h3>
+<p class="font-headline text-sm uppercase tracking-wide leading-tight mb-1">Hell in a Cell</p>
+<p class="text-[10px] text-secondary">SummerSlam Showdown</p>
+<p class="text-[10px] text-muted font-bold mt-1">JUL 26</p>
+</div>
+<a class="text-primary text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 mt-4 hover:opacity-80" href="#">
+                        View Event <span class="material-symbols-outlined text-xs">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- RECENT ACTIVITY Card -->
+<div class="bg-surface p-5 rounded-xl border border-border">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary text-xl">history</span>
+<h3 class="font-headline text-sm uppercase tracking-widest text-primary">Recent Activity</h3>
+</div>
+<div class="space-y-5">
+<!-- Activity Item 1 -->
+<div class="flex gap-4">
+<div class="w-10 h-10 rounded-full bg-[#252525] flex items-center justify-center shrink-0 border border-border text-primary">
+<span class="material-symbols-outlined text-lg">mic</span>
+</div>
+<div class="flex flex-col justify-center flex-1 border-b border-border pb-4">
+<p class="text-sm text-secondary leading-tight mb-1">
+<span class="text-white font-semibold">Danny B</span> cut a promo on Marcus Rivera
+                            </p>
+<span class="text-[10px] text-muted font-medium uppercase tracking-tighter">2h ago</span>
+</div>
+</div>
+<!-- Activity Item 2 -->
+<div class="flex gap-4">
+<div class="w-10 h-10 rounded-full bg-[#252525] flex items-center justify-center shrink-0 border border-border text-primary">
+<span class="material-symbols-outlined text-lg">sports_mma</span>
+</div>
+<div class="flex flex-col justify-center flex-1">
+<p class="text-sm text-secondary leading-tight mb-1">
+<span class="text-white font-semibold">Marcus Rivera</span> def. Danny B via Pinfall
+                            </p>
+<span class="text-[10px] text-muted font-medium uppercase tracking-tighter">1d ago</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB for Admin Actions -->
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform z-40">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+<!-- BottomNavBar from JSON Authority -->
+<nav class="bg-[#1a1a1a] border-t border-[#333333] fixed bottom-0 w-full z-50 pb-safe shadow-2xl flex justify-around items-center h-16 px-2">
+<!-- Roster / Home -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-white transition-colors active:opacity-80" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-label text-[10px] uppercase tracking-widest mt-0.5">Roster</span>
+</a>
+<!-- Schedule -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-white transition-colors active:opacity-80" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="font-label text-[10px] uppercase tracking-widest mt-0.5">Schedule</span>
+</a>
+<!-- Rivalries (ACTIVE) -->
+<a class="flex flex-col items-center justify-center text-[#d4af37] hover:text-white transition-colors active:opacity-80" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-label text-[10px] uppercase tracking-widest mt-0.5">Rivalries</span>
+</a>
+<!-- Championships -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-white transition-colors active:opacity-80" href="#">
+<span class="material-symbols-outlined">military_tech</span>
+<span class="font-label text-[10px] uppercase tracking-widest mt-0.5">Championships</span>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-white transition-colors active:opacity-80" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label text-[10px] uppercase tracking-widest mt-0.5">Settings</span>
+</a>
+</nav>
+<script>
+        // Simple haptic-like feedback for buttons
+        document.querySelectorAll('button, a').forEach(el => {
+            el.addEventListener('click', () => {
+                if (window.navigator.vibrate) {
+                    window.navigator.vibrate(5);
+                }
+            });
+        });
+    </script>
+</body></html>

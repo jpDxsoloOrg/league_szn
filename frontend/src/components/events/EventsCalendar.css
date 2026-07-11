@@ -39,6 +39,38 @@
   background: #e5c44d;
 }
 
+/* ── Mobile Segmented Control (Upcoming/Past) ─────────────────────────────── */
+/* Rendered only at ≤768px (docs/design/mobile-app/league-szn-events). */
+
+.events-segmented-control {
+  display: flex;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+
+.events-segment {
+  flex: 1;
+  background: none;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 12px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.events-segment.active {
+  background: #d4af37;
+  color: #1a1a1a;
+}
+
 /* ── Filter Tabs ───────────────────────────────────────────────────────────── */
 
 .events-filter-tabs {
@@ -449,5 +481,35 @@
 
   .recent-results-title {
     font-size: 1.1rem;
+  }
+
+  /* App-style list: the segmented control does the labelling, so section
+     headings and the in-progress alert framing are dropped on phones. */
+  .in-progress-events-title,
+  .upcoming-events-title,
+  .recent-results-title {
+    display: none;
+  }
+
+  .in-progress-events-section {
+    margin: 0 0 12px;
+    padding: 0;
+    border: none;
+    background: none;
+  }
+
+  .upcoming-events-section {
+    margin-top: 0;
+  }
+
+  .recent-results-section {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .no-events-message {
+    background: #1a1a1a;
+    border: 1px dashed #333;
   }
 }

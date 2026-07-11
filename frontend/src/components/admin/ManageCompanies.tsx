@@ -113,7 +113,7 @@ export default function ManageCompanies() {
       <div className="companies-header">
         <h2>{t('companies.title')}</h2>
         {!showAddForm && (
-          <button onClick={() => setShowAddForm(true)}>
+          <button onClick={() => setShowAddForm(true)} className="am-fab">
             {t('companies.create')}
           </button>
         )}

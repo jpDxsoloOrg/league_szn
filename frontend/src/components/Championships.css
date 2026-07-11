@@ -81,6 +81,11 @@
   margin: 1rem 0;
 }
 
+/* Champion avatars are a mobile-only affordance; keep the desktop card unchanged. */
+.champion-avatars {
+  display: none;
+}
+
 .current-champion label {
   display: block;
   font-size: 0.875rem;
@@ -168,20 +173,128 @@
 }
 
 @media (max-width: 768px) {
+  /* App-style stacked cards (docs/design/mobile-app/championships): full-bleed
+     belt image, condensed uppercase title overlaid, champion row, gold
+     "view history" text link. */
   .championships-grid {
     grid-template-columns: 1fr;
+    gap: 1.25rem;
   }
 
   .championship-card {
-    padding: 1rem;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    border-width: 1px;
   }
 
   .championship-image-container {
-    height: 150px;
+    height: 180px;
+    margin-bottom: 0;
+    border-radius: 0;
+  }
+
+  /* Pull the header up over the bottom of the image with a fade-to-surface
+     gradient so the title reads as overlaid on the belt photo. */
+  .championship-header {
+    position: relative;
+    z-index: 1;
+    margin: -3.25rem 0 0.75rem;
+    padding: 2.5rem 1rem 0;
+    background: linear-gradient(to top, var(--color-surface) 35%, rgba(26, 26, 26, 0.65) 70%, transparent);
   }
 
   .championship-header h3 {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
+    color: var(--color-text);
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+  }
+
+  .championship-type {
+    display: none;
+  }
+
+  .current-champion {
+    margin: 0;
+    padding: 0 1rem;
+  }
+
+  .current-champion label {
+    display: none;
+  }
+
+  .champion-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .champion-avatars {
+    display: flex;
+    flex-shrink: 0;
+  }
+
+  .champion-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--color-primary);
+    background-color: var(--color-bg);
+    padding: 2px;
+  }
+
+  /* Tag titles: overlap the two champion avatars. */
+  .champion-avatar + .champion-avatar {
+    margin-left: -16px;
+  }
+
+  .champion-row p {
+    color: var(--color-text);
+    font-size: 1.05rem;
+    line-height: 1.3;
+  }
+
+  .current-champion .vacant-pill {
+    display: inline-block;
+    background-color: var(--color-border);
+    color: var(--color-neutral-light);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    margin: 0.35rem 0;
+  }
+
+  .view-history-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 0.85rem;
+    padding: 0.9rem 1rem;
+    background: none;
+    border: none;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0;
+    color: var(--color-primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .view-history-btn::after {
+    content: '\203A';
+    font-size: 1.25rem;
+    line-height: 1;
+    font-weight: 700;
   }
 
   .history-content {

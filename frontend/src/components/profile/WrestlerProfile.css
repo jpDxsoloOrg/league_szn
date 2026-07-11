@@ -540,25 +540,6 @@
 }
 
 @media (max-width: 480px) {
-  .profile-image-wrapper {
-    width: 44px;
-    height: 44px;
-  }
-
-  .profile-name {
-    font-size: 1.1rem;
-    letter-spacing: 0.5px;
-  }
-
-  .profile-wrestler-name {
-    font-size: 0.8rem;
-  }
-
-  .edit-icon-btn {
-    width: 32px;
-    height: 32px;
-  }
-
   .stat-value.percentage {
     font-size: 2rem;
   }
@@ -901,4 +882,422 @@ label:focus-visible {
 
 .needs-wrestler-banner p {
   margin: 0;
+}
+
+/* ==========================================================================
+   Mobile app experience (≤768px) — my-profile design
+   (docs/design/mobile-app/my-profile/screen.png). These rules restyle the
+   page into the app-shell look: centered avatar header, 3-up stat strip,
+   grouped detail rows, alignment pills, and division/transfer card. All
+   `.mobile-*` classes only render at this breakpoint (isMobile swap), and
+   everything here is scoped so desktop stays visually unchanged.
+   ========================================================================== */
+@media (max-width: 768px) {
+  .wrestler-profile {
+    padding: 1rem 1rem 1.5rem;
+  }
+
+  /* --- Header card: centered avatar with gold ring + identity stack --- */
+  .profile-header {
+    position: relative;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.85rem;
+    padding: 1.75rem 1.25rem 1.5rem;
+    border: 1px solid var(--color-border, #333);
+    border-radius: 16px;
+    margin-bottom: 1rem;
+  }
+
+  .profile-image-wrapper {
+    width: 128px;
+    height: 128px;
+  }
+
+  .profile-image {
+    border-width: 3px;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
+  }
+
+  .profile-header-info {
+    align-items: center;
+  }
+
+  .profile-name {
+    order: 0;
+    color: var(--color-text, #fff);
+    font-size: 1.6rem;
+  }
+
+  .profile-alignment {
+    order: 1;
+    margin-top: 0.45rem;
+  }
+
+  .profile-wrestler-name {
+    order: 2;
+    margin-top: 0.45rem;
+    color: var(--color-primary, #d4af37);
+    font-style: normal;
+    font-weight: 600;
+    font-size: 1.05rem;
+  }
+
+  .profile-alternate-wrestler {
+    order: 3;
+    font-style: normal;
+    font-size: 0.85rem;
+    color: #999;
+  }
+
+  .profile-psn-id {
+    order: 4;
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: var(--color-text-muted, #666);
+  }
+
+  /* Filled alignment pill next to the name (design: HEEL = filled red).
+     Colors mirror the existing face/heel/neutral palette used app-wide. */
+  .profile-alignment.alignment-face {
+    background: #2ecc71;
+    border-color: #2ecc71;
+    color: #0f0f0f;
+  }
+
+  .profile-alignment.alignment-heel {
+    background: #e74c3c;
+    border-color: #e74c3c;
+    color: #fff;
+  }
+
+  .profile-alignment.alignment-neutral {
+    background: #6b7280;
+    border-color: #6b7280;
+    color: #fff;
+  }
+
+  /* Edit affordance: gold pencil bubble overlapping the avatar's corner.
+     Offsets derive from header padding-top (1.75rem) + avatar size (128px). */
+  .edit-icon-btn {
+    position: absolute;
+    top: calc(1.75rem + 92px);
+    left: calc(50% + 28px);
+    margin-left: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background-color: var(--color-primary, #d4af37);
+    border: 2px solid var(--color-surface, #1a1a1a);
+    color: var(--color-on-primary, #1a1a1a);
+    font-size: 0.95rem;
+  }
+
+  .edit-icon-btn:hover,
+  .edit-icon-btn:active {
+    background-color: var(--color-primary-hover, #b8941f);
+    border-color: var(--color-surface, #1a1a1a);
+    color: var(--color-on-primary, #1a1a1a);
+  }
+
+  /* --- 3-up stat strip: wins / losses / win rate --- */
+  .mobile-stats-card {
+    display: flex;
+    background-color: var(--color-surface, #1a1a1a);
+    border: 1px solid var(--color-border, #333);
+    border-radius: 16px;
+    padding: 1.1rem 0.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .mobile-stat {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .mobile-stat + .mobile-stat {
+    border-left: 1px solid #2e2e2e;
+  }
+
+  .mobile-stat-value {
+    font-family: monospace;
+    font-size: 1.9rem;
+    font-weight: bold;
+    line-height: 1;
+    color: var(--color-text, #fff);
+  }
+
+  .mobile-stat-value.losses {
+    color: var(--color-danger-alt, #f87171);
+  }
+
+  .mobile-stat-value.win-high {
+    color: #4ade80;
+  }
+
+  .mobile-stat-value.win-medium {
+    color: #fbbf24;
+  }
+
+  .mobile-stat-value.win-low {
+    color: #f87171;
+  }
+
+  .mobile-stat-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+  }
+
+  /* --- Grouped cards (details / alignment / division) --- */
+  .mobile-profile-card {
+    background-color: var(--color-surface, #1a1a1a);
+    border: 1px solid var(--color-border, #333);
+    border-radius: 16px;
+    padding: 1rem 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .mobile-card-title {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #888;
+  }
+
+  .mobile-detail-rows {
+    display: flex;
+    flex-direction: column;
+    margin-top: 0.25rem;
+  }
+
+  .mobile-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.9rem 0;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #2a2a2a;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .mobile-detail-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0.25rem;
+  }
+
+  .mobile-detail-label {
+    flex-shrink: 0;
+    font-size: 0.95rem;
+    color: #ccc;
+  }
+
+  .mobile-detail-value {
+    margin-left: auto;
+    min-width: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text, #fff);
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-detail-value.placeholder {
+    color: #777;
+    font-weight: 400;
+    font-style: italic;
+  }
+
+  .mobile-detail-chevron {
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: #666;
+  }
+
+  /* --- Alignment pills (view mode) --- */
+  .mobile-alignment-pills {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.85rem;
+  }
+
+  .mobile-alignment-pill {
+    flex: 1;
+    padding: 0.7rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid #3a3a3a;
+    background-color: #242424;
+    color: #ddd;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  }
+
+  .mobile-alignment-pill.selected.pill-face {
+    background-color: #2ecc71;
+    border-color: #2ecc71;
+    color: #0f0f0f;
+  }
+
+  .mobile-alignment-pill.selected.pill-heel {
+    background-color: #e74c3c;
+    border-color: #e74c3c;
+    color: #fff;
+  }
+
+  .mobile-alignment-pill.selected.pill-neutral {
+    background-color: #6b7280;
+    border-color: #6b7280;
+    color: #fff;
+  }
+
+  .mobile-alignment-hint {
+    margin: 0.85rem 0 0;
+    font-size: 0.75rem;
+    color: #777;
+  }
+
+  /* --- Division / transfer card --- */
+  .mobile-division-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .mobile-transfer-pending-badge {
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.35);
+  }
+
+  .mobile-division-name {
+    margin: 0.4rem 0 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-text, #fff);
+  }
+
+  .mobile-transfer-btn {
+    display: block;
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.8rem 1rem;
+    border-radius: 999px;
+    background: none;
+    border: 1.5px solid var(--color-primary, #d4af37);
+    color: var(--color-primary, #d4af37);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .mobile-transfer-btn:hover,
+  .mobile-transfer-btn:active {
+    background-color: rgba(212, 175, 55, 0.12);
+  }
+
+  /* --- Edit form: stacked field cards + alignment pills --- */
+  .profile-edit-section {
+    padding: 1.25rem 1rem;
+    border-width: 1px;
+    border-color: var(--color-border, #333);
+    border-radius: 16px;
+  }
+
+  .profile-form {
+    gap: 1rem;
+  }
+
+  .profile-form > .form-group {
+    background-color: #212121;
+    border: 1px solid #2e2e2e;
+    border-radius: 12px;
+    padding: 0.85rem;
+  }
+
+  .alignment-radio-group {
+    gap: 0.5rem;
+  }
+
+  .alignment-radio-label {
+    position: relative;
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0.65rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid #3a3a3a;
+    background-color: #2a2a2a;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #ddd;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  }
+
+  /* Visually hide the radio dot but keep it focusable/clickable. */
+  .alignment-radio-label input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+  }
+
+  .alignment-radio-label:has(input:focus-visible) {
+    outline: 2px solid var(--color-primary, #d4af37);
+    outline-offset: 2px;
+  }
+
+  .alignment-radio-label.alignment-radio-face:has(input:checked) {
+    background-color: #2ecc71;
+    border-color: #2ecc71;
+    color: #0f0f0f;
+  }
+
+  .alignment-radio-label.alignment-radio-heel:has(input:checked) {
+    background-color: #e74c3c;
+    border-color: #e74c3c;
+    color: #fff;
+  }
+
+  .alignment-radio-label.alignment-radio-neutral:has(input:checked) {
+    background-color: #6b7280;
+    border-color: #6b7280;
+    color: #fff;
+  }
+
+  .alignment-radio-label.alignment-radio-unset:has(input:checked) {
+    background-color: #3a3a3a;
+    border-color: #555;
+    color: #fff;
+  }
 }

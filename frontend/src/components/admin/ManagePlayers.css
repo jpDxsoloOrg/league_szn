@@ -285,6 +285,13 @@ label.file-input-label:hover {
     gap: 0.75rem;
   }
 
+  /* Stack the heading over the (full-width) division filter row */
+  .players-list-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
   .player-form-container {
     padding: 1rem;
   }

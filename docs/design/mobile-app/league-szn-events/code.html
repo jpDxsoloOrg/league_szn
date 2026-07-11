@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>League SZN - Events Calendar</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Oswald:wght@500;600;700&amp;family=Public+Sans:wght@700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        background: "#0f0f0f",
+                        surface: "#1a1a1a",
+                        "surface-hover": "#252525",
+                        border: "#333333",
+                        primary: "#d4af37",
+                        "primary-pressed": "#b8941f",
+                        onPrimary: "#1a1a1a",
+                        secondaryText: "#bbbbbb",
+                        mutedText: "#666666",
+                        success: "#4ade80",
+                        danger: "#dc3545",
+                        warning: "#fbbf24"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Oswald", "sans-serif"],
+                        display: ["Public Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+        .animate-pulse-red {
+            animation: pulse-red 2s infinite;
+        }
+        body {
+            background-color: #0f0f0f;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .oswald-headline {
+            font-family: 'Oswald', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="antialiased">
+<!-- Top App Bar (Shared Component) -->
+<header class="bg-[#0f0f0f] border-b border-[#333333] docked full-width top-0 z-50 fixed w-full">
+<div class="flex justify-between items-center w-full px-4 h-16">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#d4af37]" data-icon="sports_kabaddi">sports_kabaddi</span>
+<h1 class="font-headline font-black text-[#d4af37] uppercase tracking-tighter text-2xl">LEAGUE SZN</h1>
+</div>
+<div class="flex items-center">
+<button class="p-2 hover:bg-[#252525] transition-colors rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined text-[#d4af37]" data-icon="notifications">notifications</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-20 pb-32 px-4 max-w-2xl mx-auto">
+<!-- Screen Title -->
+<div class="mb-6">
+<h2 class="text-4xl oswald-headline text-[#d4af37] font-bold">EVENTS</h2>
+</div>
+<!-- Segmented Control -->
+<div class="bg-surface p-1 rounded-xl mb-8 flex border border-border">
+<button class="flex-1 py-2 text-sm font-bold uppercase rounded-lg transition-all bg-primary text-onPrimary">
+                Upcoming
+            </button>
+<button class="flex-1 py-2 text-sm font-bold uppercase rounded-lg transition-all text-mutedText hover:text-white">
+                Past
+            </button>
+</div>
+<!-- Events List -->
+<div class="space-y-4">
+<!-- Active Event Card -->
+<div class="bg-surface border border-border rounded-xl p-4 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer">
+<div class="flex gap-4">
+<!-- Date Block -->
+<div class="flex flex-col items-center justify-center bg-border rounded-lg w-16 h-16 shrink-0 border border-primary/20">
+<span class="text-[10px] font-bold text-mutedText uppercase tracking-widest">JUL</span>
+<span class="text-2xl oswald-headline font-bold text-white leading-none">19</span>
+</div>
+<!-- Content -->
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<div class="flex items-center gap-1 bg-danger px-2 py-0.5 rounded-full animate-pulse-red">
+<span class="w-1.5 h-1.5 bg-white rounded-full"></span>
+<span class="text-[10px] font-bold text-white tracking-wider uppercase">LIVE</span>
+</div>
+<span class="text-xs text-mutedText font-medium">MAIN EVENT SOON</span>
+</div>
+<h3 class="text-lg oswald-headline font-bold text-white">Friday Night Mayhem</h3>
+<p class="text-sm text-secondaryText">4 of 7 matches complete</p>
+</div>
+<span class="material-symbols-outlined text-primary" data-icon="chevron_right">chevron_right</span>
+</div>
+<!-- Progress Bar -->
+<div class="mt-4 w-full bg-border h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 57%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Featured Upcoming Card -->
+<div class="bg-surface border border-border rounded-xl p-4 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer group">
+<!-- Background Image Aspect for "Premium" feel -->
+<div class="absolute inset-0 opacity-10 pointer-events-none transition-opacity group-hover:opacity-20">
+<div class="w-full h-full bg-cover bg-center" data-alt="A cinematic, wide-angle shot of a grand sports arena like Madison Square Garden, empty but perfectly lit with dramatic spotlights and golden atmospheric haze. The camera is low, looking up at the rafters, capturing the epic scale of the venue. The lighting is high-contrast, emphasizing deep shadows and brilliant golden glints, matching a premium sports-broadcast aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCfjr-2RLONlVIiFfjI95sO7DyXcczCTynQodGmUT7MXOjGMQCKcHl633QYCde-42OOvbrQaN1v6LatuV29ha1qANnf2ncx5qEpI6Zvo-7JTLrJtYZghMNqL8GRYo-zCus-lWZDRwUYQThTY1s4uF-3dhbOXTRGNRXQzDqDOhmg68BzFUr-_QyHadryFKkbK2R7c0Uo1RhXXbQdVmkjtlC-vAheXJTdQAlWOcGnjceJJZRDAdXp4vKri_sBQPXjxbm-wZF6Wc7vYlQ')"></div>
+</div>
+<div class="relative z-10 flex gap-4">
+<!-- Date Block -->
+<div class="flex flex-col items-center justify-center bg-border rounded-lg w-16 h-16 shrink-0">
+<span class="text-[10px] font-bold text-mutedText uppercase tracking-widest">JUL</span>
+<span class="text-2xl oswald-headline font-bold text-white leading-none">26</span>
+</div>
+<!-- Content -->
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<div class="flex gap-2 mb-1">
+<span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-bold border border-primary/20 uppercase tracking-wider">7 matches</span>
+<span class="bg-border text-secondaryText text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Featured</span>
+</div>
+<h3 class="text-lg oswald-headline font-bold text-white uppercase italic">SummerSlam Showdown</h3>
+<div class="flex items-center gap-1 text-sm text-secondaryText">
+<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span>
+                                    Madison Square Garden
+                                </div>
+</div>
+<span class="material-symbols-outlined text-primary" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Upcoming Card 3 -->
+<div class="bg-surface border border-border rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer">
+<div class="flex gap-4">
+<!-- Date Block -->
+<div class="flex flex-col items-center justify-center bg-border rounded-lg w-16 h-16 shrink-0">
+<span class="text-[10px] font-bold text-mutedText uppercase tracking-widest">AUG</span>
+<span class="text-2xl oswald-headline font-bold text-white leading-none">11</span>
+</div>
+<!-- Content -->
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<div class="mb-1">
+<span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-bold border border-primary/20 uppercase tracking-wider">6 matches</span>
+</div>
+<h3 class="text-lg oswald-headline font-bold text-white">Money in the Bank</h3>
+<div class="flex items-center gap-1 text-sm text-secondaryText">
+<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span>
+                                    O2 Arena, London
+                                </div>
+</div>
+<span class="material-symbols-outlined text-primary" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Upcoming Card 4 -->
+<div class="bg-surface border border-border rounded-xl p-4 active:scale-[0.98] transition-transform cursor-pointer">
+<div class="flex gap-4">
+<!-- Date Block -->
+<div class="flex flex-col items-center justify-center bg-border rounded-lg w-16 h-16 shrink-0">
+<span class="text-[10px] font-bold text-mutedText uppercase tracking-widest">SEP</span>
+<span class="text-2xl oswald-headline font-bold text-white leading-none">01</span>
+</div>
+<!-- Content -->
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<div class="mb-1">
+<span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-bold border border-primary/20 uppercase tracking-wider">8 matches</span>
+</div>
+<h3 class="text-lg oswald-headline font-bold text-white">Payback</h3>
+<div class="flex items-center gap-1 text-sm text-secondaryText">
+<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span>
+                                    PPG Paints Arena
+                                </div>
+</div>
+<span class="material-symbols-outlined text-primary" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Call to Action -->
+<div class="mt-8 flex flex-col items-center gap-4 text-center p-6 border-2 border-dashed border-border rounded-2xl">
+<span class="material-symbols-outlined text-mutedText text-4xl" data-icon="calendar_add_on">calendar_add_on</span>
+<div>
+<p class="text-white font-bold">Have a custom event?</p>
+<p class="text-sm text-mutedText">Schedule a private lobby session with league members.</p>
+</div>
+<button class="bg-primary text-onPrimary px-6 py-3 rounded-lg font-bold uppercase text-sm active:scale-95 transition-transform">
+                Create Event
+            </button>
+</div>
+</main>
+<!-- FAB -->
+<button class="fixed right-6 bottom-24 w-14 h-14 bg-primary text-onPrimary rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-transform z-40">
+<span class="material-symbols-outlined text-3xl font-bold" data-icon="add">add</span>
+</button>
+<!-- Bottom Navigation Bar (Shared Component) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 pb-safe px-2 bg-[#1a1a1a] border-t border-[#333333] shadow-2xl">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label text-[10px] uppercase font-bold">Home</span>
+</a>
+<!-- Standings -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span class="font-label text-[10px] uppercase font-bold">Standings</span>
+</a>
+<!-- Rivalries -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="Whatshot">whatshot</span>
+<span class="font-label text-[10px] uppercase font-bold">Rivalries</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label text-[10px] uppercase font-bold">Profile</span>
+</a>
+<!-- More (Active) -->
+<a class="flex flex-col items-center justify-center text-[#d4af37] scale-110 active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="menu" data-weight="fill">menu</span>
+<span class="font-label text-[10px] uppercase font-bold">More</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions for Segmented Controls
+        const tabs = document.querySelectorAll('.bg-surface button');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => {
+                    t.classList.remove('bg-primary', 'text-onPrimary');
+                    t.classList.add('text-mutedText');
+                });
+                tab.classList.add('bg-primary', 'text-onPrimary');
+                tab.classList.remove('text-mutedText');
+            });
+        });
+
+        // Simple haptic feedback simulation on click
+        document.querySelectorAll('button, a, .cursor-pointer').forEach(el => {
+            el.addEventListener('click', () => {
+                if (window.navigator.vibrate) {
+                    window.navigator.vibrate(5);
+                }
+            });
+        });
+    </script>
+</body></html>

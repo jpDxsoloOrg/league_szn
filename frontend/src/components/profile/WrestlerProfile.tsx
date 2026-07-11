@@ -11,6 +11,7 @@ import {
   resolveImageSrc,
 } from '../../constants/imageFallbacks';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import   EmbeddedPlayerStats   from "../statistics/EmbeddedPlayerStats";
 import type { Player, WrestlerOverall, TransferRequestWithDetails, Division, MyStorylineRequest, StorylineRequestType, Wrestler, WrestlerPromotion } from '../../types';
 import './WrestlerProfile.css';
@@ -76,6 +77,8 @@ export default function WrestlerProfile() {
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const { features } = useSiteConfig();
+  // Matches the mobile app shell breakpoint (MobileHeader + BottomTabBar).
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   // Overalls state
   const [overall, setOverall] = useState<WrestlerOverall | null>(null);
@@ -513,6 +516,8 @@ export default function WrestlerProfile() {
   }
 
   const needsWrestlerPick = !player.currentWrestlerId;
+  const pendingTransfer = transferRequests.find((req) => req.status === 'pending');
+  const currentDivisionName = divisions.find((d) => d.divisionId === player.divisionId)?.name;
 
   return (
     <div className={`wrestler-profile ${editing ? 'edit-mode' : 'view-mode'}`}>
@@ -539,12 +544,12 @@ export default function WrestlerProfile() {
           <h1 className="profile-name">{player.name}</h1>
           {player.currentWrestler && (
             <p className="profile-wrestler-name">
-              Playing as {player.currentWrestler}
+              {isMobile ? player.currentWrestler : `Playing as ${player.currentWrestler}`}
             </p>
           )}
           {player.alternateWrestler && (
             <p className="profile-alternate-wrestler">
-              Alternate: {player.alternateWrestler}
+              {isMobile ? `Alt: ${player.alternateWrestler}` : `Alternate: ${player.alternateWrestler}`}
             </p>
           )}
           {player.psnId && (
@@ -789,24 +794,125 @@ export default function WrestlerProfile() {
         </div>
       )}
 
-      {/* All-Time Stats */}
-      <div className="stats-section">
-        <h3 className="stats-section-title">All-Time Record</h3>
-        <div className="profile-stats">
-          <div className="stat-card">
-            <span className="stat-label">Record</span>
-            <span className="stat-value record">
-              {player.wins}-{player.losses}-{player.draws}
-            </span>
+      {/* All-Time Stats — mobile gets the app-style 3-up stat strip, desktop
+          keeps the two-card record layout. Same data, different markup. */}
+      {isMobile ? (
+        <div className="mobile-stats-card">
+          <div className="mobile-stat">
+            <span className="mobile-stat-value wins">{player.wins}</span>
+            <span className="mobile-stat-label">{t('standings.table.wins', 'Wins')}</span>
           </div>
-          <div className="stat-card">
-            <span className="stat-label">Win %</span>
-            <span className={`stat-value percentage ${getWinPercentageClass(player.wins, player.losses, player.draws)}`}>
-              {getWinPercentage(player.wins, player.losses, player.draws)}%
+          <div className="mobile-stat">
+            <span className="mobile-stat-value losses">{player.losses}</span>
+            <span className="mobile-stat-label">{t('standings.table.losses', 'Losses')}</span>
+          </div>
+          <div className="mobile-stat">
+            <span className={`mobile-stat-value ${getWinPercentageClass(player.wins, player.losses, player.draws)}`}>
+              {Math.round(Number(getWinPercentage(player.wins, player.losses, player.draws)))}%
             </span>
+            <span className="mobile-stat-label">{t('standings.table.winPercent', 'Win %')}</span>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="stats-section">
+          <h3 className="stats-section-title">All-Time Record</h3>
+          <div className="profile-stats">
+            <div className="stat-card">
+              <span className="stat-label">Record</span>
+              <span className="stat-value record">
+                {player.wins}-{player.losses}-{player.draws}
+              </span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-label">Win %</span>
+              <span className={`stat-value percentage ${getWinPercentageClass(player.wins, player.losses, player.draws)}`}>
+                {getWinPercentage(player.wins, player.losses, player.draws)}%
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile app-style grouped cards (view mode only). Every row/pill is a
+          shortcut into the existing edit form — no new submission flows. */}
+      {isMobile && !editing && (
+        <>
+          <div className="mobile-profile-card mobile-details-card">
+            <h3 className="mobile-card-title">{t('profile.mobile.details', 'Details')}</h3>
+            <div className="mobile-detail-rows">
+              <button type="button" className="mobile-detail-row" onClick={handleEdit}>
+                <span className="mobile-detail-label">{t('profile.mobile.displayName', 'Display Name')}</span>
+                <span className="mobile-detail-value">{player.name}</span>
+                <span className="mobile-detail-chevron" aria-hidden="true">&#8250;</span>
+              </button>
+              <button type="button" className="mobile-detail-row" onClick={handleEdit}>
+                <span className="mobile-detail-label">{t('standings.table.wrestler', 'Wrestler')}</span>
+                <span className={`mobile-detail-value ${player.currentWrestler ? '' : 'placeholder'}`}>
+                  {player.currentWrestler || t('profile.mobile.notSet', 'Not set')}
+                </span>
+                <span className="mobile-detail-chevron" aria-hidden="true">&#8250;</span>
+              </button>
+              <button type="button" className="mobile-detail-row" onClick={handleEdit}>
+                <span className="mobile-detail-label">{t('profile.alternateWrestler', 'Alternate Wrestler')}</span>
+                <span className={`mobile-detail-value ${player.alternateWrestler ? '' : 'placeholder'}`}>
+                  {player.alternateWrestler || t('profile.mobile.notSet', 'Not set')}
+                </span>
+                <span className="mobile-detail-chevron" aria-hidden="true">&#8250;</span>
+              </button>
+              <button type="button" className="mobile-detail-row" onClick={handleEdit}>
+                <span className="mobile-detail-label">{t('auth.psnId', 'PSN ID')}</span>
+                <span className={`mobile-detail-value ${player.psnId ? '' : 'placeholder'}`}>
+                  {player.psnId || t('profile.mobile.notSet', 'Not set')}
+                </span>
+                <span className="mobile-detail-chevron" aria-hidden="true">&#8250;</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="mobile-profile-card mobile-alignment-card">
+            <h3 className="mobile-card-title">{t('profile.mobile.alignment', 'Alignment')}</h3>
+            <div className="mobile-alignment-pills">
+              {([
+                { value: 'face', label: t('profile.mobile.face', 'Face') },
+                { value: 'heel', label: t('profile.mobile.heel', 'Heel') },
+                { value: 'neutral', label: t('profile.mobile.neutral', 'Neutral') },
+              ] as const).map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`mobile-alignment-pill pill-${value} ${player.alignment === value ? 'selected' : ''}`}
+                  aria-pressed={player.alignment === value}
+                  onClick={handleEdit}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="mobile-alignment-hint">
+              Helps GMs with booking and other players with promos. Doesn't affect matchups.
+            </p>
+          </div>
+
+          {player.divisionId && (
+            <div className="mobile-profile-card mobile-division-card">
+              <div className="mobile-division-header">
+                <h3 className="mobile-card-title">{t('publicProfile.division', 'Division')}</h3>
+                {pendingTransfer && (
+                  <span className="mobile-transfer-pending-badge">
+                    {t('profile.mobile.transferPending', 'Transfer pending')}
+                  </span>
+                )}
+              </div>
+              <p className="mobile-division-name">{currentDivisionName || '—'}</p>
+              {!pendingTransfer && (
+                <button type="button" className="mobile-transfer-btn" onClick={handleEdit}>
+                  {t('profile.mobile.requestTransfer', 'Request Transfer')}
+                </button>
+              )}
+            </div>
+          )}
+        </>
+      )}
 
       {/* Wrestler Overalls */}
       {overall && (

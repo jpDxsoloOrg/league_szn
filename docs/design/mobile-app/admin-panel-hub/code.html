@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>League SZN Admin Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Oswald:wght@400;500;600;700&amp;family=Public+Sans:wght@400;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#d4af37',
+                        'primary-pressed': '#b8941f',
+                        surface: '#1a1a1a',
+                        'surface-hover': '#252525',
+                        border: '#333333',
+                        background: '#0f0f0f',
+                        'text-primary': '#ffffff',
+                        'text-secondary': '#bbbbbb',
+                        'text-muted': '#666666',
+                        danger: '#dc3545'
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline": ["Oswald", "sans-serif"],
+                        "display": ["Public Sans", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0f0f0f;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .admin-row:active {
+            background-color: #252525;
+            transform: scale(0.99);
+        }
+        .safe-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="antialiased select-none overflow-x-hidden bg-background">
+<!-- Top AppBar (Admin Styled) -->
+<header class="sticky top-0 z-50 bg-[#0f0f0f] border-b border-[#333333] h-16 flex justify-between items-center px-4">
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#252525] active:scale-90 transition-all">
+<span class="material-symbols-outlined text-[#d4af37]">chevron_left</span>
+</button>
+<h1 class="font-headline text-2xl font-bold uppercase tracking-tighter text-[#d4af37]">ADMIN PANEL</h1>
+</div>
+<div class="flex items-center">
+<span class="material-symbols-outlined text-[#d4af37]" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+</header>
+<main class="p-4 space-y-6 pb-20 max-w-2xl mx-auto">
+<!-- SECTION: ROSTER & PEOPLE -->
+<section>
+<h2 class="font-headline text-xs font-bold text-[#d4af37] tracking-widest uppercase mb-2 px-1">ROSTER &amp; PEOPLE</h2>
+<div class="bg-[#1a1a1a] border border-[#333333] rounded-xl overflow-hidden">
+<!-- Row -->
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">person</span>
+<span class="font-medium text-sm">Manage Players</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<!-- Row -->
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">sports_martial_arts</span>
+<span class="font-medium text-sm">Manage Wrestlers</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<!-- Row -->
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">grid_view</span>
+<span class="font-medium text-sm">Manage Divisions</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<!-- Row -->
+<div class="admin-row flex items-center justify-between p-4 transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">trending_up</span>
+<span class="font-medium text-sm">Manage Overalls</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- SECTION: MATCH & COMPETITION -->
+<section>
+<h2 class="font-headline text-xs font-bold text-[#d4af37] tracking-widest uppercase mb-2 px-1">MATCH &amp; COMPETITION</h2>
+<div class="bg-[#1a1a1a] border border-[#333333] rounded-xl overflow-hidden">
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">calendar_add_on</span>
+<span class="font-medium text-sm">Schedule Match</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">style</span>
+<span class="font-medium text-sm">Match Card Builder</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">reorder</span>
+<span class="font-medium text-sm">Standalone Matches</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">settings</span>
+<span class="font-medium text-sm">Match Config</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">emoji_events</span>
+<span class="font-medium text-sm">Championships</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">account_tree</span>
+<span class="font-medium text-sm">Tournaments</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">leaderboard</span>
+<span class="font-medium text-sm">Contender Config</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">rule</span>
+<span class="font-medium text-sm">Contender Overrides</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- SECTION: CONTENT & STORYLINES -->
+<section>
+<h2 class="font-headline text-xs font-bold text-[#d4af37] tracking-widest uppercase mb-2 px-1">CONTENT &amp; STORYLINES</h2>
+<div class="bg-[#1a1a1a] border border-[#333333] rounded-xl overflow-hidden">
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">campaign</span>
+<span class="font-medium text-sm">Announcements</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">videocam</span>
+<span class="font-medium text-sm">Videos</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">history_edu</span>
+<span class="font-medium text-sm">Storyline Requests</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">mic</span>
+<span class="font-medium text-sm">Promos</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">whatshot</span>
+<span class="font-medium text-sm">Rivalries</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">local_fire_department</span>
+<span class="font-medium text-sm">Heat Config</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- SECTION: LEAGUE CONFIG -->
+<section>
+<h2 class="font-headline text-xs font-bold text-[#d4af37] tracking-widest uppercase mb-2 px-1">LEAGUE CONFIG</h2>
+<div class="bg-[#1a1a1a] border border-[#333333] rounded-xl overflow-hidden">
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">business</span>
+<span class="font-medium text-sm">Companies</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">location_on</span>
+<span class="font-medium text-sm">Locations</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">tv</span>
+<span class="font-medium text-sm">Shows</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">event_repeat</span>
+<span class="font-medium text-sm">Seasons</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">military_tech</span>
+<span class="font-medium text-sm">Season Awards</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">groups</span>
+<span class="font-medium text-sm">Factions</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">group_add</span>
+<span class="font-medium text-sm">Tag Teams</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">flag</span>
+<span class="font-medium text-sm">Feature Flags</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- SECTION: USERS & ACCESS -->
+<section>
+<h2 class="font-headline text-xs font-bold text-[#d4af37] tracking-widest uppercase mb-2 px-1">USERS &amp; ACCESS</h2>
+<div class="bg-[#1a1a1a] border border-[#333333] rounded-xl overflow-hidden">
+<div class="admin-row flex items-center justify-between p-4 border-b border-[#333333] transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">manage_accounts</span>
+<span class="font-medium text-sm">Manage Users</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+<div class="admin-row flex items-center justify-between p-4 transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#666666]">swap_horiz</span>
+<span class="font-medium text-sm">Division Transfers</span>
+</div>
+<span class="material-symbols-outlined text-[#333333] text-sm">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- SECTION: DANGER ZONE -->
+<section>
+<h2 class="font-headline text-xs font-bold text-[#dc3545] tracking-widest uppercase mb-2 px-1">DANGER ZONE</h2>
+<div class="bg-[#1a1a1a] border border-[#333333] rounded-xl overflow-hidden ring-1 ring-red-900/20">
+<div class="admin-row flex items-center justify-between p-4 transition-all cursor-pointer bg-red-900/5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#dc3545]">warning</span>
+<div>
+<span class="font-bold text-sm text-[#dc3545]">Clear All Data</span>
+<p class="text-[10px] text-[#666666] uppercase tracking-tighter">Super-admin only</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-[#dc3545]/30 text-sm">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- Aesthetic Branding Footer -->
+<footer class="pt-8 flex flex-col items-center justify-center opacity-20">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-xs">sports_kabaddi</span>
+<span class="font-headline text-lg font-black tracking-tighter">LEAGUE SZN</span>
+</div>
+<p class="text-[10px] font-mono">CORE_VERSION_8.4.1_ADMIN</p>
+</footer>
+</main>
+<!-- Floating Action for Quick Add (Admin Context) -->
+<button class="fixed bottom-6 right-6 w-14 h-14 bg-[#d4af37] rounded-full shadow-[0_8px_30px_rgb(212,175,55,0.4)] flex items-center justify-center active:scale-90 transition-all z-50">
+<span class="material-symbols-outlined text-[#0f0f0f] font-bold">add</span>
+</button>
+<script>
+        // Simple ripple-like effect on admin-rows
+        document.querySelectorAll('.admin-row').forEach(row => {
+            row.addEventListener('click', function(e) {
+                // Future expansion: route handling
+                console.log('Navigating to:', this.querySelector('span:nth-child(2)').innerText);
+            });
+        });
+    </script>
+</body></html>

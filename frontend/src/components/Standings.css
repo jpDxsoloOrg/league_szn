@@ -295,23 +295,24 @@
   margin-bottom: 1rem;
 }
 
-/* Mobile card list — rendered instead of the table below 640px (the
-   useMediaQuery switch in Standings.tsx). Cards keep record, form, and
-   streak visible without horizontal scrolling. */
+/* Mobile card list — rendered instead of the table below 768px (the
+   useMediaQuery switch in Standings.tsx, matching the mobile app shell).
+   Cards keep record, form, and streak visible without horizontal
+   scrolling. Layout follows docs/design/mobile-app/league-standings. */
 .standings-cards {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
 
 .standings-card {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem 0.75rem;
+  gap: 0.85rem;
+  padding: 0.85rem 0.9rem;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 14px;
   cursor: pointer;
 }
 
@@ -319,20 +320,38 @@
   border-color: var(--color-primary);
 }
 
+/* Big condensed rank numeral — muted for the pack, gold for the top 3.
+   Cards are always rendered in rank order, so nth-child == rank. */
 .standings-card-rank {
-  flex: 0 0 1.6rem;
+  flex: 0 0 2.4rem;
   text-align: center;
-  font-weight: 700;
-  font-size: 1.05rem;
+  font-weight: 800;
+  font-stretch: condensed;
+  font-size: 1.7rem;
+  line-height: 1;
+  color: var(--color-text-muted);
+}
+
+.standings-cards .standings-card:nth-child(-n + 3) .standings-card-rank {
   color: var(--color-primary);
 }
 
+.standings-cards .standings-card:nth-child(-n + 3) {
+  border-color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
+}
+
 .standings-card-avatar {
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   object-fit: cover;
+  border: 2px solid var(--color-border);
+}
+
+.standings-cards .standings-card:nth-child(-n + 3) .standings-card-avatar {
+  border-color: var(--color-primary);
 }
 
 .standings-card-main {
@@ -344,7 +363,8 @@
 }
 
 .standings-card-name {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1rem;
   color: var(--color-text);
   white-space: nowrap;
   overflow: hidden;
@@ -352,7 +372,10 @@
 }
 
 .standings-card-wrestler {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -364,8 +387,8 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.15rem;
-  font-size: 0.8rem;
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
 }
 
 .standings-card-record {
@@ -374,11 +397,21 @@
 }
 
 .standings-card-winpct {
+  font-weight: 600;
   color: var(--color-text-secondary);
 }
 
-.standings-card-ovr {
+/* OVR number in a gold-bordered rounded square on the right (overrides the
+   gold-filled .overall-badge-sm used by the desktop table). */
+.standings-card .standings-card-ovr {
   flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
 @media (max-width: 768px) {
@@ -486,6 +519,55 @@
   .alignment-filter-select {
     font-size: 0.8rem;
   }
+}
+
+/* Mobile filter chips — horizontally scrollable pill rows rendered instead
+   of the select-based filters below 768px (isMobile switch in Standings.tsx). */
+.standings-filter-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.filter-chip-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.filter-chip-row::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-chip {
+  flex-shrink: 0;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.filter-chip.selected {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+  font-weight: 700;
+}
+
+.filter-chip:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .overall-cell {

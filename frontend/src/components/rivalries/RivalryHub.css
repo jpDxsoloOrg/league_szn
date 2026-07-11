@@ -239,6 +239,169 @@
   cursor: pointer;
 }
 
+/* ── Mobile app shell (≤768px) — docs/design/mobile-app/rivalries-hub ── */
+
+@media (max-width: 768px) {
+  .rivalry-hub {
+    padding: 0.25rem 0 0;
+    gap: 1.25rem;
+  }
+
+  .rivalry-hub__header {
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  .rivalry-hub__title {
+    font-size: 1.75rem;
+    color: var(--color-primary, #d4af37);
+    letter-spacing: 0.01em;
+  }
+
+  .rivalry-hub__tagline {
+    display: none;
+  }
+
+  /* Active / Mine / Archive as a rounded segmented control. */
+  .rivalry-hub__tabs {
+    display: flex;
+    gap: 0;
+    padding: 4px;
+    background: var(--color-surface, #1a1a1a);
+    border: 1px solid var(--color-border, #333);
+    border-bottom: 1px solid var(--color-border, #333);
+    border-radius: 10px;
+  }
+
+  .rivalry-hub__tab {
+    flex: 1 1 0;
+    padding: 0.55rem 0.5rem;
+    border-bottom: none;
+    border-radius: 7px;
+    text-align: center;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .rivalry-hub__tab.is-active {
+    background: var(--color-primary, #d4af37);
+    color: var(--color-on-primary, #1a1a1a);
+    border-bottom-color: transparent;
+  }
+
+  /* Heat filter chips: horizontally scrollable pill row. */
+  .rivalry-hub__chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .rivalry-hub__chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rivalry-hub__chip {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 0.5rem 1.35rem;
+    border-radius: 999px;
+    background: var(--color-surface, #1a1a1a);
+    color: var(--color-text-secondary, #bbb);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .rivalry-hub__chip.is-active {
+    background: var(--color-primary, #d4af37);
+    color: var(--color-on-primary, #1a1a1a);
+    border-color: var(--color-primary, #d4af37);
+  }
+
+  .rivalry-hub__skeleton {
+    border-radius: 16px;
+  }
+
+  .rivalry-hub__empty {
+    border-radius: 16px;
+  }
+
+  /* Activity feed: gold section label, card rows, ghost load-more. */
+  .rivalry-hub__activity {
+    border-top: none;
+    padding-top: 0.25rem;
+  }
+
+  .rivalry-hub__activity-heading {
+    font-size: 0.8rem;
+    color: var(--color-primary, #d4af37);
+    letter-spacing: 0.15em;
+  }
+
+  .rivalry-hub__activity-list {
+    gap: 0.75rem;
+  }
+
+  .rivalry-hub__activity-row {
+    grid-template-columns: 40px 1fr auto;
+    grid-template-areas:
+      'icon kind link'
+      'icon time link';
+    row-gap: 0.2rem;
+    padding: 0.85rem 1rem;
+    background: var(--color-surface, #1a1a1a);
+    border: 1px solid var(--color-border, #333);
+    border-radius: 16px;
+  }
+
+  .rivalry-hub__activity-icon {
+    grid-area: icon;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--color-surface-hover, #252525);
+    font-size: 1.1rem;
+  }
+
+  .rivalry-hub__activity-kind {
+    grid-area: kind;
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    color: var(--color-text, #fff);
+  }
+
+  .rivalry-hub__activity-time {
+    grid-area: time;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .rivalry-hub__activity-link {
+    grid-area: link;
+    align-self: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .rivalry-hub__activity-more {
+    display: block;
+    width: 100%;
+    padding: 0.9rem 1.2rem;
+    border: none;
+    color: var(--color-text-muted, #666);
+    letter-spacing: 0.15em;
+  }
+
+  .rivalry-hub__activity-more:active {
+    color: var(--color-text, #fff);
+  }
+}
+
 /* ─── Dashboard surface card ─────────────────────────────────────── */
 
 .db-rivalries {

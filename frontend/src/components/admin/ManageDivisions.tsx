@@ -107,7 +107,7 @@ export default function ManageDivisions() {
       <div className="divisions-header">
         <h2>Manage Divisions</h2>
         {!showAddForm && (
-          <button onClick={() => setShowAddForm(true)}>
+          <button onClick={() => setShowAddForm(true)} className="am-fab">
             Create Division
           </button>
         )}
@@ -117,9 +117,9 @@ export default function ManageDivisions() {
       {success && <div className="success-message">{success}</div>}
 
       {showAddForm && (
-        <div className="division-form-container">
+        <div className="division-form-container am-sheet">
           <h3>{editingDivision ? 'Edit Division' : 'Create New Division'}</h3>
-          <form onSubmit={handleSubmit} className="division-form">
+          <form onSubmit={handleSubmit} className="division-form am-form">
             <div className="form-group">
               <label htmlFor="name">Division Name</label>
               <input
@@ -143,7 +143,7 @@ export default function ManageDivisions() {
               />
             </div>
 
-            <div className="form-actions">
+            <div className="form-actions am-actionbar">
               <button type="submit">
                 {editingDivision ? 'Update Division' : 'Create Division'}
               </button>

@@ -300,35 +300,119 @@
 @media (max-width: 768px) {
   .clear-all-data {
     padding: 0;
+    display: flex;
+    flex-direction: column;
   }
 
-  .seed-banner,
+  /* Keep the section heading first, then hoist the red warning banner to the
+     top of the page (visual order only — DOM order is unchanged). */
+  .clear-all-header {
+    order: -3;
+  }
+
+  .clear-all-header h2 {
+    font-size: 1.25rem;
+  }
+
+  /* ── Red warning banner at the top ─────────────────────────────────────── */
+
   .warning-banner {
-    padding: 14px;
+    order: -2;
+    background: linear-gradient(180deg, rgba(220, 53, 69, 0.18) 0%, rgba(220, 53, 69, 0.08) 100%);
+    border: 1px solid var(--color-danger);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
   }
 
-  .seed-details {
-    padding: 10px;
+  .warning-banner h3 {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
   }
 
-  .confirmation-section {
-    padding: 14px;
-  }
-
-  .confirm-input {
-    max-width: 100%;
-  }
-
-  .seed-btn,
-  .clear-all-btn {
-    width: 100%;
+  .warning-banner p {
+    font-size: 0.85rem;
   }
 
   .warning-banner ul {
     padding-left: 18px;
+    font-size: 0.85rem;
+  }
+
+  .warning-banner .warning-text {
+    color: var(--color-danger-alt);
+  }
+
+  /* ── Seed (constructive) card ──────────────────────────────────────────── */
+
+  .seed-banner {
+    padding: 16px;
+    border-width: 1px;
+    border-radius: 12px;
+  }
+
+  .seed-details,
+  .seed-options {
+    padding: 12px;
+    border-radius: 8px;
   }
 
   .seed-details ul {
     padding-left: 16px;
+  }
+
+  .seed-btn {
+    width: 100%;
+    padding: 13px 16px;
+    border-radius: 8px;
+  }
+
+  /* ── Destructive action card (red-tinted, most prominent) ──────────────── */
+
+  .confirmation-section {
+    background: var(--color-surface);
+    border: 1px solid rgba(220, 53, 69, 0.5);
+    border-radius: 12px;
+    padding: 18px 16px;
+    text-align: center;
+  }
+
+  .confirmation-section label {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+  }
+
+  .confirm-input {
+    max-width: 100%;
+    background-color: #000;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--color-danger-alt);
+  }
+
+  .confirm-input:focus {
+    border-color: var(--color-danger);
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25);
+  }
+
+  .clear-all-btn {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .error-message,
+  .success-message {
+    border-radius: 10px;
   }
 }
