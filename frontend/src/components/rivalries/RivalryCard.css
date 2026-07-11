@@ -117,3 +117,135 @@
   font-size: 0.75rem;
   color: var(--color-text-muted, #888888);
 }
+
+/* Heat meter is a mobile-app-shell affordance; desktop keeps the
+   existing card layout untouched. */
+.rivalry-card__meter {
+  display: none;
+}
+
+/* ── Mobile app shell (≤768px) — docs/design/mobile-app/rivalries-hub ── */
+
+@media (max-width: 768px) {
+  .rivalry-card {
+    gap: 0.85rem;
+    border-radius: 16px;
+    padding: 1rem;
+  }
+
+  .rivalry-card:active {
+    background: var(--color-surface-hover, #252525);
+  }
+
+  /* Circular avatars pulled toward the centre with an italic VS.
+     NOTE: keep default justify-items (stretch) — centering the grid items
+     sizes them to max-content, so long names blow past the card edges and
+     overlap in the middle. Content is centered inside each column instead. */
+  .rivalry-card__faceoff {
+    column-gap: 1rem;
+  }
+
+  .rivalry-card__avatar {
+    gap: 0.5rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .rivalry-card__avatar img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid var(--color-border, #333);
+    padding: 2px;
+  }
+
+  /* Long names wrap to at most two centered lines instead of the desktop
+     single-line ellipsis (names here include the wrestler in parens). */
+  .rivalry-card__avatar-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .rivalry-card__vs {
+    font-size: 1.25rem;
+    font-weight: 900;
+    font-style: italic;
+    color: var(--color-text-muted, #666);
+    /* Lift the VS up level with the avatars (names hang below). */
+    align-self: start;
+    margin-top: 1.1rem;
+  }
+
+  .rivalry-card__title {
+    font-size: 0.85rem;
+    text-align: center;
+    color: var(--color-text-secondary, #bbb);
+  }
+
+  /* Centered tier pill; the status chip is implied by the hub tab. */
+  .rivalry-card__meta {
+    justify-content: center;
+  }
+
+  .rivalry-card__status {
+    display: none;
+  }
+
+  /* Thin per-tier heat meter. */
+  .rivalry-card__meter {
+    display: block;
+    width: 100%;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--color-border, #333);
+    overflow: hidden;
+  }
+
+  .rivalry-card__meter-fill {
+    height: 100%;
+    border-radius: 999px;
+  }
+
+  .rivalry-card__meter-fill--frozen {
+    width: 8%;
+    background: var(--heat-tier-frozen);
+  }
+
+  .rivalry-card__meter-fill--cold {
+    width: 22%;
+    background: var(--heat-tier-cold);
+  }
+
+  .rivalry-card__meter-fill--warm {
+    width: 50%;
+    background: var(--heat-tier-warm);
+  }
+
+  .rivalry-card__meter-fill--hot {
+    width: 75%;
+    background: var(--heat-tier-hot);
+  }
+
+  .rivalry-card__meter-fill--scorching {
+    width: 92%;
+    background: var(--heat-tier-scorching);
+  }
+
+  .rivalry-card__footer {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--color-text-muted, #666);
+  }
+}

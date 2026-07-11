@@ -53,6 +53,16 @@ export function resolveWrestlerFullLabel(
 }
 
 /**
+ * Normalize a raw rivalry heat score (clamped to ±100 by the backend
+ * policy module) onto a 0–100 meter scale for the mobile heat meters:
+ * -100 (deep frozen) → 0, 0 (neutral warm) → 50, +100 (scorching) → 100.
+ */
+export function heatScorePercent(heatScore: number): number {
+  const clamped = Math.max(-100, Math.min(100, heatScore));
+  return Math.round((clamped + 100) / 2);
+}
+
+/**
  * Variant of `resolveWrestlerFullLabel` for callers that only have a
  * Player (no RivalryParticipant), e.g. match-history lists where the
  * participant set is a flat playerId[] on the match itself. Always uses

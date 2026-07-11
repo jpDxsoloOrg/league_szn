@@ -72,8 +72,11 @@ h2 {
 }
 
 /* Fallback for buttons without explicit variant (e.g. legacy markup in main content only) */
-/* Exclude nav/sidebar/topnav/language/hamburger so their own styles (e.g. gold text on dark) apply */
-button:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggle):not(.nav-subgroup-toggle):not(.user-nav-toggle):not(.topnav-menu-btn):not(.topnav-logout):not(.topnav-layout-btn):not(.top-bar-layout-toggle):not(.hamburger-btn):not(.language-switcher-btn):not(.promo-type-option):not(.preview-toggle):not(.cancel-btn):not(.filter-tab):not(.factions-toggle-btn):not(.tag-teams-list__toggle-btn):not(.tag-team-mode-btn):not(.remove-team-btn):not(.remove-member-btn):not(.add-team-btn):not(.delete-match-btn):not(.notification-bell-btn):not(.notification-mark-all-btn):not(.notification-item-content):not(.notification-delete-btn):not(.promo-read-more):not(.faction-members__menu-trigger):not(.faction-members__menu-item):not(.faction-messages__channel-pin):not(.faction-messages__thread-row):not(.faction-messages__new-dm-trigger):not(.faction-messages__new-dm-item):not(.rate-match-widget__half):not(.motn-toggle-button) {
+/* :where() keeps this at element specificity (0,0,1) so ANY component class rule
+   (e.g. the mobile shell's .bottom-tab-bar__item, .more-sheet-row, chips, dots)
+   overrides it without :not() additions or !important. The :not() list inside is
+   kept for buttons whose own styles don't set background/color at all. */
+button:where(:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggle):not(.nav-subgroup-toggle):not(.user-nav-toggle):not(.hamburger-btn):not(.language-switcher-btn):not(.promo-type-option):not(.preview-toggle):not(.cancel-btn):not(.filter-tab):not(.factions-toggle-btn):not(.tag-teams-list__toggle-btn):not(.tag-team-mode-btn):not(.remove-team-btn):not(.remove-member-btn):not(.add-team-btn):not(.delete-match-btn):not(.notification-bell-btn):not(.notification-mark-all-btn):not(.notification-item-content):not(.notification-delete-btn):not(.promo-read-more):not(.faction-members__menu-trigger):not(.faction-members__menu-item):not(.faction-messages__channel-pin):not(.faction-messages__thread-row):not(.faction-messages__new-dm-trigger):not(.faction-messages__new-dm-item):not(.rate-match-widget__half):not(.motn-toggle-button)) {
   background-color: var(--color-primary);
   color: var(--color-on-primary);
   border: none;
@@ -85,7 +88,10 @@ button:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggl
   transition: background-color 0.3s;
 }
 
-button:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggle):not(.nav-subgroup-toggle):not(.user-nav-toggle):not(.topnav-menu-btn):not(.topnav-logout):not(.topnav-layout-btn):not(.top-bar-layout-toggle):not(.hamburger-btn):not(.language-switcher-btn):not(.promo-type-option):not(.preview-toggle):not(.cancel-btn):not(.filter-tab):not(.factions-toggle-btn):not(.tag-teams-list__toggle-btn):not(.tag-team-mode-btn):not(.remove-team-btn):not(.remove-member-btn):not(.add-team-btn):not(.delete-match-btn):not(.notification-bell-btn):not(.notification-mark-all-btn):not(.notification-item-content):not(.notification-delete-btn):not(.faction-members__menu-trigger):not(.faction-members__menu-item):not(.faction-messages__channel-pin):not(.faction-messages__thread-row):not(.faction-messages__new-dm-trigger):not(.faction-messages__new-dm-item):not(.rate-match-widget__half):not(.motn-toggle-button):hover {
+/* :hover is wrapped in :where() too — otherwise the pseudo-class raises this
+   to (0,1,1), which beats component class rules (0,1,0) and repaints them
+   gold on hover, defeating the point of the :where() fallback above. */
+button:where(:not([class*="btn-"]):not(.sidebar-collapse-toggle):not(.nav-section-toggle):not(.nav-subgroup-toggle):not(.user-nav-toggle):not(.hamburger-btn):not(.language-switcher-btn):not(.promo-type-option):not(.preview-toggle):not(.cancel-btn):not(.filter-tab):not(.factions-toggle-btn):not(.tag-teams-list__toggle-btn):not(.tag-team-mode-btn):not(.remove-team-btn):not(.remove-member-btn):not(.add-team-btn):not(.delete-match-btn):not(.notification-bell-btn):not(.notification-mark-all-btn):not(.notification-item-content):not(.notification-delete-btn):not(.faction-members__menu-trigger):not(.faction-members__menu-item):not(.faction-messages__channel-pin):not(.faction-messages__thread-row):not(.faction-messages__new-dm-trigger):not(.faction-messages__new-dm-item):not(.rate-match-widget__half):not(.motn-toggle-button)):where(:hover) {
   background-color: var(--color-primary-hover);
 }
 
@@ -138,15 +144,29 @@ tr:hover {
   }
 }
 
+/* Mobile app shell (MobileHeader + BottomTabBar replace Sidebar + TopBar).
+   Scoped to .app-layout--mobile so desktop rules are untouched. */
+.app-layout--mobile main {
+  margin-left: 0;
+  transition: none;
+  padding: 1rem;
+  padding-top: calc(56px + env(safe-area-inset-top) + 1rem);
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
+/* In the mobile shell the MobileHeader already shows the screen title, so
+   in-page page-title headings tagged with this class are redundant there.
+   Desktop never renders .app-layout--mobile, so it is unaffected. */
+.app-layout--mobile .page-title--mobile-hidden {
+  display: none;
+}
+
 /* Print: hide app chrome and ensure readable contrast */
 @media print {
   .sidebar,
   .hamburger-btn,
   .sidebar-overlay,
-  .top-bar,
-  .topnav,
-  .topnav-bar,
-  .topnav-overlay {
+  .top-bar {
     display: none !important;
   }
 

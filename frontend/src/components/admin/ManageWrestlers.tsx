@@ -1,4 +1,5 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { wrestlersApi } from '../../services/api';
 import {
   OVERALL_CAP_MAX,
@@ -27,6 +28,8 @@ const DEFAULT_FORM_DATA = {
   name: '',
   overallCap: OVERALL_CAP_MIN,
 };
+
+const PAGE_SIZE = 25;
 
 function isWrestlerPromotion(value: string): value is WrestlerPromotion {
   return (WRESTLER_PROMOTIONS as readonly string[]).includes(value);
@@ -245,6 +248,7 @@ function parseImportText(text: string, filename: string): ParseOutcome {
 }
 
 export default function ManageWrestlers() {
+  const { t } = useTranslation();
   const [wrestlers, setWrestlers] = useState<Wrestler[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -253,6 +257,8 @@ export default function ManageWrestlers() {
   const [editingWrestler, setEditingWrestler] = useState<Wrestler | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [releasing, setReleasing] = useState<string | null>(null);
+  const [resettingAssignments, setResettingAssignments] = useState(false);
+  const [page, setPage] = useState(1);
 
   const [formData, setFormData] = useState<{
     promotion: WrestlerPromotion;
@@ -397,6 +403,33 @@ export default function ManageWrestlers() {
     resetForm();
   };
 
+  const handleResetAssignments = async () => {
+    if (!confirm(t('admin.manageWrestlers.resetConfirm'))) {
+      return;
+    }
+
+    setResettingAssignments(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await wrestlersApi.resetAssignments();
+      setSuccess(
+        t('admin.manageWrestlers.resetSuccess', {
+          wrestlers: result.clearedWrestlers,
+          players: result.clearedPlayers,
+        }),
+      );
+      await loadWrestlers();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : t('admin.manageWrestlers.resetError'),
+      );
+    } finally {
+      setResettingAssignments(false);
+    }
+  };
+
   const handleImportFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     setImportResult(null);
     setImportParseErrors([]);
@@ -454,6 +487,13 @@ export default function ManageWrestlers() {
     return true;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredWrestlers.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedWrestlers = filteredWrestlers.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
+
   if (loading) {
     return <Skeleton variant="block" count={4} />;
   }
@@ -468,6 +508,16 @@ export default function ManageWrestlers() {
           )}
           <button className="wrestlers-import-btn" onClick={() => setShowImport(true)}>
             Import from file
+          </button>
+          <button
+            className="wrestlers-reset-assignments-btn"
+            onClick={handleResetAssignments}
+            disabled={resettingAssignments}
+            title={t('admin.manageWrestlers.resetTitle')}
+          >
+            {resettingAssignments
+              ? t('admin.manageWrestlers.resetting')
+              : t('admin.manageWrestlers.resetAll')}
           </button>
         </div>
       </div>
@@ -546,12 +596,13 @@ export default function ManageWrestlers() {
           <select
             id="filter-promotion"
             value={filter.promotion}
-            onChange={(e) =>
+            onChange={(e) => {
               setFilter({
                 ...filter,
                 promotion: e.target.value === '' ? '' : (e.target.value as WrestlerPromotion),
-              })
-            }
+              });
+              setPage(1);
+            }}
           >
             <option value="">All promotions</option>
             {WRESTLER_PROMOTIONS.map((p) => (
@@ -565,7 +616,10 @@ export default function ManageWrestlers() {
           <input
             type="checkbox"
             checked={filter.onlyAvailable}
-            onChange={(e) => setFilter({ ...filter, onlyAvailable: e.target.checked })}
+            onChange={(e) => {
+              setFilter({ ...filter, onlyAvailable: e.target.checked });
+              setPage(1);
+            }}
           />
           Show only available
         </label>
@@ -592,7 +646,7 @@ export default function ManageWrestlers() {
                 </tr>
               </thead>
               <tbody>
-                {filteredWrestlers.map((wrestler) => (
+                {pagedWrestlers.map((wrestler) => (
                   <tr key={wrestler.wrestlerId}>
                     <td>{wrestler.promotion}</td>
                     <td>{wrestler.name}</td>
@@ -647,6 +701,30 @@ export default function ManageWrestlers() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {totalPages > 1 && (
+          <div className="wrestlers-pager">
+            <button
+              type="button"
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              disabled={safePage <= 1}
+            >
+              {t('admin.manageWrestlers.pagePrev')}
+            </button>
+            <span className="wrestlers-pager-status">
+              {t('admin.manageWrestlers.pageStatus', {
+                page: safePage,
+                total: totalPages,
+              })}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              disabled={safePage >= totalPages}
+            >
+              {t('admin.manageWrestlers.pageNext')}
+            </button>
           </div>
         )}
       </div>

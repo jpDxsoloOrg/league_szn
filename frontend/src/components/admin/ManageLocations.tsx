@@ -325,7 +325,7 @@ export default function ManageLocations() {
         </div>
         <div className="locations-header-actions">
           {!showAddForm && (
-            <button onClick={() => setShowAddForm(true)}>
+            <button onClick={() => setShowAddForm(true)} className="am-fab">
               {t('admin.locations.add')}
             </button>
           )}

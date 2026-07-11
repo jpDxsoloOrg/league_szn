@@ -14,22 +14,11 @@ import {
   getUserGroupForPath,
   getAdminGroupForPath,
   getBasicNavItems,
+  isUserItemVisible,
   type NavItem,
 } from '../config/navConfig';
 import type { SiteFeatures } from '../services/api';
 import './Sidebar.css';
-
-function isUserItemVisible(
-  item: NavItem,
-  features: SiteFeatures,
-  isWrestler: boolean
-): { show: boolean; disabled: boolean; disabledLabel?: string } {
-  if (item.feature && !features[item.feature]) return { show: false, disabled: false };
-  if (item.role === 'Wrestler') {
-    return { show: true, disabled: !isWrestler, disabledLabel: item.roleLockedLabel };
-  }
-  return { show: true, disabled: false };
-}
 
 function shouldShowGroup(
   group: { key: string; items: NavItem[] },

@@ -152,7 +152,7 @@ export default function ContenderRankings() {
     return (
       <div className="contender-rankings">
         <header className="rankings-header">
-          <h2>{t('contenders.title')}</h2>
+          <h2 className="page-title--mobile-hidden">{t('contenders.title')}</h2>
           <p className="subtitle">{t('contenders.subtitle')}</p>
         </header>
         <EmptyState
@@ -166,7 +166,7 @@ export default function ContenderRankings() {
   return (
     <div className="contender-rankings">
       <header className="rankings-header">
-        <h2>{t('contenders.title')}</h2>
+        <h2 className="page-title--mobile-hidden">{t('contenders.title')}</h2>
         <p className="subtitle">{t('contenders.subtitle')}</p>
       </header>
 

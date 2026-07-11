@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Danger Zone - League SZN</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Oswald:wght@500;700&amp;family=Public+Sans:wght@700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#dc3545",
+                        surface: "#1a1a1a",
+                        background: "#0f0f0f",
+                        border: "#333333",
+                        onSurface: "#ffffff",
+                        onSurfaceMuted: "#bbbbbb",
+                        onSurfaceDisabled: "#666666"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Oswald", "sans-serif"],
+                        display: ["Oswald", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hold-progress-ring {
+            transition: stroke-dashoffset 3s linear;
+            stroke-dasharray: 283;
+            stroke-dashoffset: 283;
+        }
+        .holding .hold-progress-ring {
+            stroke-dashoffset: 0;
+        }
+        .danger-gradient {
+            background: linear-gradient(180deg, rgba(220, 53, 69, 0.1) 0%, rgba(15, 15, 15, 0) 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-onSurface font-body min-h-screen flex flex-col selection:bg-primary selection:text-white">
+<!-- TopAppBar from Shared Components JSON -->
+<header class="flex items-center justify-between px-4 h-16 w-full bg-[#0f0f0f] border-b border-[#333333] fixed top-0 z-50">
+<div class="flex items-center gap-4">
+<button class="hover:bg-[#252525] p-2 rounded-full active:scale-95 transition-transform text-[#dc3545]">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline uppercase tracking-tight text-xl text-[#dc3545]">DANGER ZONE</h1>
+</div>
+<div class="flex items-center">
+<button class="hover:bg-[#252525] p-2 rounded-full active:scale-95 transition-transform text-[#dc3545]">
+<span class="material-symbols-outlined">warning</span>
+</button>
+</div>
+</header>
+<main class="flex-1 pt-16 pb-32">
+<!-- Warning Banner -->
+<div class="bg-[#dc3545]/20 border-b border-[#dc3545] px-4 py-3 flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-0.5" style="font-variation-settings: 'FILL' 1;">report</span>
+<p class="text-sm font-medium leading-snug">
+                These actions are destructive and cannot be undone. Super-admin only.
+            </p>
+</div>
+<div class="px-4 py-6 space-y-4">
+<!-- Action Cards -->
+<div class="space-y-3">
+<section class="bg-surface border border-[#dc3545]/30 p-4 rounded-lg flex items-center justify-between gap-4">
+<div>
+<h3 class="font-headline uppercase text-lg text-primary leading-tight">Clear Matches</h3>
+<p class="text-sm text-onSurfaceMuted">Delete all match records and results</p>
+</div>
+<button class="border border-primary text-primary px-4 py-2 rounded font-bold uppercase text-xs hover:bg-primary/10 transition-colors">
+                        Clear
+                    </button>
+</section>
+<section class="bg-surface border border-[#dc3545]/30 p-4 rounded-lg flex items-center justify-between gap-4">
+<div>
+<h3 class="font-headline uppercase text-lg text-primary leading-tight">Clear Players</h3>
+<p class="text-sm text-onSurfaceMuted">Delete all player profiles and roster data</p>
+</div>
+<button class="border border-primary text-primary px-4 py-2 rounded font-bold uppercase text-xs hover:bg-primary/10 transition-colors">
+                        Clear
+                    </button>
+</section>
+<section class="bg-surface border border-[#dc3545]/30 p-4 rounded-lg flex items-center justify-between gap-4">
+<div>
+<h3 class="font-headline uppercase text-lg text-primary leading-tight">Reset Season Standings</h3>
+<p class="text-sm text-onSurfaceMuted">Reset all points and records for the current season</p>
+</div>
+<button class="border border-primary text-primary px-4 py-2 rounded font-bold uppercase text-xs hover:bg-primary/10 transition-colors">
+                        Clear
+                    </button>
+</section>
+</div>
+<!-- CLEAR ALL DATA Prominent Card -->
+<section class="bg-surface border-2 border-primary p-6 rounded-xl mt-8 text-center relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-primary/20"></div>
+<h2 class="font-headline uppercase text-2xl text-primary mb-2">FACTORY RESET</h2>
+<p class="text-sm text-onSurfaceMuted mb-8">This will purge the entire database. This action is the point of no return.</p>
+<div class="relative inline-flex items-center justify-center group" id="hold-container">
+<!-- Progress Ring -->
+<svg class="absolute w-32 h-32 transform -rotate-90">
+<circle class="text-white/10" cx="64" cy="64" fill="transparent" r="45" stroke="currentColor" stroke-width="4"></circle>
+<circle class="text-primary hold-progress-ring" cx="64" cy="64" fill="transparent" id="progress-circle" r="45" stroke="currentColor" stroke-width="4"></circle>
+</svg>
+<!-- Solid Red Button -->
+<button class="relative z-10 w-24 h-24 bg-primary text-white font-bold rounded-full flex flex-col items-center justify-center text-center leading-tight active:scale-90 transition-transform shadow-lg shadow-primary/20" id="hold-button">
+<span class="text-[10px] uppercase tracking-widest opacity-80">Hold to</span>
+<span class="text-sm uppercase font-headline">Confirm</span>
+</button>
+</div>
+<p class="mt-4 text-xs text-onSurfaceDisabled uppercase tracking-widest">Hold for 3 seconds</p>
+</section>
+</div>
+</main>
+<!-- Confirmation Modal (Partially visible/Overlay) -->
+<div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-end sm:items-center justify-center p-4">
+<div class="bg-surface w-full max-w-md rounded-t-2xl sm:rounded-2xl border-t border-white/10 p-6 space-y-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
+<div class="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-2 sm:hidden"></div>
+<div class="space-y-2">
+<h4 class="font-headline uppercase text-xl text-primary text-center">Type DELETE to confirm</h4>
+<p class="text-sm text-onSurfaceMuted text-center">Please type the word in all caps to proceed with the destruction of all match data.</p>
+</div>
+<div class="space-y-4">
+<input class="w-full bg-black border border-border rounded-lg px-4 py-4 text-center font-bold tracking-widest text-primary focus:ring-2 focus:ring-primary focus:border-transparent outline-none" placeholder="DELETE" type="text"/>
+<button class="w-full bg-primary text-white font-headline uppercase py-4 rounded-lg text-lg tracking-wide active:scale-95 transition-transform">
+                    Confirm Destruction
+                </button>
+<button class="w-full text-onSurfaceDisabled text-sm font-medium hover:text-white py-2 transition-colors">
+                    Cancel and Return
+                </button>
+</div>
+</div>
+</div>
+<script>
+        const holdButton = document.getElementById('hold-button');
+        const holdContainer = document.getElementById('hold-container');
+        let holdTimer;
+
+        holdButton.addEventListener('mousedown', startHold);
+        holdButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startHold();
+        });
+
+        holdButton.addEventListener('mouseup', cancelHold);
+        holdButton.addEventListener('mouseleave', cancelHold);
+        holdButton.addEventListener('touchend', cancelHold);
+
+        function startHold() {
+            holdContainer.classList.add('holding');
+            holdTimer = setTimeout(() => {
+                // Action on complete
+                alert('Database Purge Initialized');
+                cancelHold();
+            }, 3000);
+        }
+
+        function cancelHold() {
+            holdContainer.classList.remove('holding');
+            clearTimeout(holdTimer);
+        }
+
+        // Close modal logic (visual demo only)
+        document.querySelector('button[class*="text-onSurfaceDisabled"]').addEventListener('click', () => {
+            document.querySelector('.fixed.inset-0').style.display = 'none';
+        });
+    </script>
+</body></html>

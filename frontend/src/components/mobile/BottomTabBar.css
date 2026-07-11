@@ -1,0 +1,90 @@
+/* BottomTabBar — fixed native-app-style tab bar for mobile viewports.
+   Matches docs/design/mobile-app/league-szn-home-dashboard (bottom nav). */
+
+/* Isolation reset: the shell must never inherit global element-level rules
+   (e.g. App.css's legacy button fallback or its :hover variant). :where()
+   keeps this at class specificity (0,1,0) so the design rules below — same
+   specificity, later in this file — re-establish everything the tab bar
+   needs. `outline: revert` keeps the UA focus outline `all: unset` removes
+   (a component :focus-visible style is also defined below). */
+.bottom-tab-bar :where(a, button) {
+  all: unset;
+  outline: revert;
+  box-sizing: border-box;
+}
+
+.bottom-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-tab-bar__item {
+  flex: 1 1 0;
+  min-width: 44px;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin: 0;
+  padding: 6px 2px;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  text-align: center;
+  background: none;
+  border: none;
+  border-radius: 0;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.2;
+  appearance: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+/* Explicit :hover — global element rules like `button:where(...):hover`
+   carry (0,1,1) specificity and would otherwise repaint the More button. */
+.bottom-tab-bar__item:hover {
+  background: none;
+}
+
+.bottom-tab-bar__item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.bottom-tab-bar__item:active {
+  opacity: 0.8;
+}
+
+.bottom-tab-bar__item--active {
+  color: var(--color-primary);
+  transform: scale(1.08);
+}
+
+.bottom-tab-bar__icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.bottom-tab-bar__label {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}

@@ -86,6 +86,15 @@ export default function RivalryCard({
         <HeatBadge heat={rivalry.heat} heatScore={rivalry.heatScore} size="sm" />
       </div>
 
+      {/* Thin per-tier heat meter — mobile app shell only (hidden on
+          desktop via RivalryCard.css). Purely decorative; the badge
+          above carries the tier for assistive tech. */}
+      <div className="rivalry-card__meter" aria-hidden="true">
+        <div
+          className={`rivalry-card__meter-fill rivalry-card__meter-fill--${rivalry.heat}`}
+        />
+      </div>
+
       <div className="rivalry-card__footer">
         <span>{t('rivalries.card.matchCount', { count: matchCount })}</span>
         <span>{lastActivityLabel}</span>

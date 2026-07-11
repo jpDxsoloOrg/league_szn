@@ -467,7 +467,7 @@ export default function ScheduleMatch() {
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
 
-      <form onSubmit={handleSubmit} className="match-form">
+      <form onSubmit={handleSubmit} className="match-form am-form">
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="matchFormat">{t('scheduleMatch.matchFormat', 'Match Format')}</label>
@@ -565,9 +565,10 @@ export default function ScheduleMatch() {
         )}
 
         <div className="form-group">
-          <label>
+          <label className="am-toggle-row">
             <input
               type="checkbox"
+              className="am-toggle"
               checked={formData.isChampionship}
               onChange={(e) => setFormData({ ...formData, isChampionship: e.target.checked, championshipId: '' })}
             />
@@ -615,9 +616,10 @@ export default function ScheduleMatch() {
         {/* Slot-mode toggle (MSL-02) — incompatible with tag-team formats */}
         {!isTagTeamMatch && formData.matchFormat && (
           <div className="form-group slot-mode-toggle">
-            <label className="slot-mode-toggle-label">
+            <label className="slot-mode-toggle-label am-toggle-row">
               <input
                 type="checkbox"
+                className="am-toggle"
                 checked={slotMode}
                 onChange={(e) => setSlotMode(e.target.checked)}
               />
@@ -732,11 +734,11 @@ export default function ScheduleMatch() {
                   <div className="team-members">
                     {team.length > 0 ? (
                       team.map(playerId => (
-                        <span key={playerId} className="team-member-tag">
+                        <span key={playerId} className="team-member-tag am-chip">
                           {getPlayerName(playerId)}
                           <button
                             type="button"
-                            className="remove-member-btn"
+                            className="remove-member-btn am-chip-remove"
                             onClick={() => handleTeamMemberToggle(teamIndex, playerId)}
                           >
                             ×
@@ -867,9 +869,11 @@ export default function ScheduleMatch() {
           </div>
         )}
 
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Scheduling...' : t('scheduleMatch.submit')}
-        </button>
+        <div className="am-actionbar">
+          <button type="submit" disabled={submitting}>
+            {submitting ? 'Scheduling...' : t('scheduleMatch.submit')}
+          </button>
+        </div>
       </form>
     </div>
   );

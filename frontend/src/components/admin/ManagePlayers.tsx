@@ -394,7 +394,7 @@ export default function ManagePlayers() {
       {success && <div className="success-message">{success}</div>}
 
       {showAddForm && (
-        <div className="player-form-container">
+        <div className="player-form-container am-sheet">
           <h3>{editingPlayer ? 'Edit Player' : 'Add New Player'}</h3>
           {rosterEmpty && (
             <div className="error-message">
@@ -402,7 +402,7 @@ export default function ManagePlayers() {
               <Link to="/admin/wrestlers">Manage Wrestlers</Link> before creating players.
             </div>
           )}
-          <form onSubmit={handleSubmit} className="player-form">
+          <form onSubmit={handleSubmit} className="player-form am-form">
             <div className="form-group">
               <label htmlFor="name">Player Name</label>
               <input
@@ -488,9 +488,10 @@ export default function ManagePlayers() {
             </div>
 
             <div className="form-group form-checkbox">
-              <label htmlFor="canUploadVideos">
+              <label htmlFor="canUploadVideos" className="am-toggle-row">
                 <input
                   type="checkbox"
+                  className="am-toggle"
                   id="canUploadVideos"
                   checked={formData.canUploadVideos}
                   onChange={(e) => setFormData({ ...formData, canUploadVideos: e.target.checked })}
@@ -527,7 +528,7 @@ export default function ManagePlayers() {
               </div>
             </div>
 
-            <div className="form-actions">
+            <div className="form-actions am-actionbar">
               <button type="submit" disabled={submitting || uploading || rosterEmpty}>
                 {submitting ? 'Saving...' : uploading ? 'Uploading...' : editingPlayer ? 'Update Player' : 'Add Player'}
               </button>
@@ -545,7 +546,7 @@ export default function ManagePlayers() {
             All Players ({filteredPlayers.length}
             {filteredPlayers.length !== players.length ? ` of ${players.length}` : ''})
           </h3>
-          <div className="players-filter">
+          <div className="players-filter am-filter-row">
             <label htmlFor="divisionFilter">Division:</label>
             <select
               id="divisionFilter"
@@ -568,7 +569,7 @@ export default function ManagePlayers() {
           <p>No players match the selected division.</p>
         ) : (
           <div className="players-table-wrapper">
-          <table className="players-table">
+          <table className="players-table am-card-table">
             <thead>
               <tr>
                 <th>Image</th>
@@ -585,8 +586,8 @@ export default function ManagePlayers() {
             </thead>
             <tbody>
               {filteredPlayers.map((player) => (
-                <tr key={player.playerId}>
-                  <td>
+                <tr key={player.playerId} className="am-list-row">
+                  <td className="am-row-media">
                     <img
                       src={resolveImageSrc(player.imageUrl, DEFAULT_WRESTLER_IMAGE)}
                       onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
@@ -594,23 +595,23 @@ export default function ManagePlayers() {
                       className="player-thumbnail"
                     />
                   </td>
-                  <td>{player.name}</td>
-                  <td>{player.currentWrestler}</td>
-                  <td>{player.alternateWrestler || '-'}</td>
-                  <td>{player.psnId || '-'}</td>
-                  <td className="division-cell">{getDivisionName(player.divisionId)}</td>
-                  <td className="alignment-cell">
+                  <td className="am-row-title">{player.name}</td>
+                  <td className="am-row-sub">{player.currentWrestler}</td>
+                  <td className="am-row-extra">{player.alternateWrestler || '-'}</td>
+                  <td className="am-row-extra">{player.psnId || '-'}</td>
+                  <td className="division-cell am-row-badge">{getDivisionName(player.divisionId)}</td>
+                  <td className="alignment-cell am-row-extra">
                     {player.alignment === 'face' && <span className="alignment-badge face">😇 Face</span>}
                     {player.alignment === 'heel' && <span className="alignment-badge heel">😈 Heel</span>}
                     {player.alignment === 'neutral' && <span className="alignment-badge neutral">⚖️ Neutral</span>}
                     {!player.alignment && <span className="alignment-badge unset">-</span>}
                   </td>
-                  <td>
+                  <td className="am-row-extra">
                     <span className="record">
                       {player.wins}W - {player.losses}L - {player.draws}D
                     </span>
                   </td>
-                  <td>
+                  <td className="am-row-extra">
                     {player.userId ? (
                       <span className="linked-badge" title="This player is linked to a user account">
                         Linked
@@ -621,7 +622,7 @@ export default function ManagePlayers() {
                       </span>
                     )}
                   </td>
-                  <td>
+                  <td className="am-row-actions">
                     <div className="actions-cell">
                       <button
                         onClick={() => handleEdit(player)}

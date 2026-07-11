@@ -6,6 +6,7 @@ import type { Show } from '../../types';
 import { eventsApi, showsApi, companiesApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { toCalendarDate, dateToCalendarDate } from '../../utils/dateUtils';
 import Skeleton from '../ui/Skeleton';
 import EmptyState from '../ui/EmptyState';
@@ -57,6 +58,10 @@ export default function EventsCalendar() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creatingEvent, setCreatingEvent] = useState<string | null>(null);
+  // Mobile app view (docs/design/mobile-app/league-szn-events): the calendar
+  // grid is swapped out for an Upcoming/Past segmented list of event cards.
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const [mobileEventsView, setMobileEventsView] = useState<'upcoming' | 'past'>('upcoming');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -294,7 +299,7 @@ export default function EventsCalendar() {
   if (loading) {
     return (
       <div className="events-calendar-page">
-        <h2 className="events-title">{t('events.title')}</h2>
+        <h2 className="events-title page-title--mobile-hidden">{t('events.title')}</h2>
         <Skeleton variant="calendar" />
       </div>
     );
@@ -303,7 +308,7 @@ export default function EventsCalendar() {
   if (error) {
     return (
       <div className="events-calendar-page">
-        <h2 className="events-title">{t('events.title')}</h2>
+        <h2 className="events-title page-title--mobile-hidden">{t('events.title')}</h2>
         <div className="error-message">{error}</div>
       </div>
     );
@@ -314,7 +319,7 @@ export default function EventsCalendar() {
   if (!hasContent) {
     return (
       <div className="events-calendar-page">
-        <h2 className="events-title">{t('events.title')}</h2>
+        <h2 className="events-title page-title--mobile-hidden">{t('events.title')}</h2>
         <EmptyState
           title={t('events.title')}
           description={t('emptyState.checkBackSoon')}
@@ -326,7 +331,7 @@ export default function EventsCalendar() {
   return (
     <div className="events-calendar-page">
       <div className="events-title-row">
-        <h2 className="events-title">{t('events.title')}</h2>
+        <h2 className="events-title page-title--mobile-hidden">{t('events.title')}</h2>
         {isAdminOrModerator && (
           <button
             className="create-event-calendar-btn"
@@ -337,6 +342,30 @@ export default function EventsCalendar() {
         )}
       </div>
 
+      {/* Mobile: Upcoming/Past segmented control replaces the calendar view */}
+      {isMobile && (
+        <div className="events-segmented-control" role="group" aria-label={t('events.title')}>
+          <button
+            type="button"
+            className={`events-segment ${mobileEventsView === 'upcoming' ? 'active' : ''}`}
+            aria-pressed={mobileEventsView === 'upcoming'}
+            onClick={() => setMobileEventsView('upcoming')}
+          >
+            {t('events.status.upcoming')}
+          </button>
+          <button
+            type="button"
+            className={`events-segment ${mobileEventsView === 'past' ? 'active' : ''}`}
+            aria-pressed={mobileEventsView === 'past'}
+            onClick={() => setMobileEventsView('past')}
+          >
+            {t('events.calendar.past', 'Past')}
+          </button>
+        </div>
+      )}
+
+      {!isMobile && (
+      <>
       {/* Filter Tabs */}
       <div className="events-filter-tabs">
         {filterTabs.map((tab) => (
@@ -466,9 +495,11 @@ export default function EventsCalendar() {
           </div>
         </div>
       </div>
+      </>
+      )}
 
       {/* In-Progress Events */}
-      {inProgressEvents.length > 0 && (
+      {(!isMobile || mobileEventsView === 'upcoming') && inProgressEvents.length > 0 && (
         <div className="in-progress-events-section">
           <h3 className="in-progress-events-title">
             <span className="in-progress-live-dot" aria-hidden="true" />
@@ -483,6 +514,7 @@ export default function EventsCalendar() {
       )}
 
       {/* Upcoming Events */}
+      {(!isMobile || mobileEventsView === 'upcoming') && (
       <div className="upcoming-events-section">
         <h3 className="upcoming-events-title">{t('events.calendar.upcoming')}</h3>
         {upcomingEvents.length === 0 ? (
@@ -495,8 +527,10 @@ export default function EventsCalendar() {
           </div>
         )}
       </div>
+      )}
 
       {/* Recent Results */}
+      {(!isMobile || mobileEventsView === 'past') && (
       <div className="recent-results-section">
         <h3 className="recent-results-title">{t('events.calendar.recentResults', 'Recent Results')}</h3>
         {recentResults.length === 0 ? (
@@ -509,6 +543,7 @@ export default function EventsCalendar() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

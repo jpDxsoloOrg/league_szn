@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import type { EventCalendarEntry } from '../../types/event';
 import { formatCalendarDate } from '../../utils/dateUtils';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import './EventCard.css';
 
 interface EventCardProps {
@@ -24,6 +25,10 @@ const statusColors: Record<string, string> = {
 
 export default function EventCard({ event }: EventCardProps) {
   const { t } = useTranslation();
+  // Mobile app card (docs/design/mobile-app/league-szn-events): square date
+  // block, LIVE badge + progress bar, chevron. JSDOM has no matchMedia, so
+  // tests keep exercising the desktop markup.
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const typeColor = eventTypeColors[event.eventType] || '#9ca3af';
   const statusColor = statusColors[event.status] || '#9ca3af';
@@ -35,13 +40,23 @@ export default function EventCard({ event }: EventCardProps) {
     day: 'numeric',
   });
 
+  const dateBlockMonth = formatCalendarDate(event.date, undefined, { month: 'short' });
+  const dateBlockDay = formatCalendarDate(event.date, undefined, { day: '2-digit' });
+  const isLive = event.status === 'in-progress';
+
   return (
     <Link to={`/events/${event.eventId}`} className="event-card-link">
       <div
-        className={`event-card${event.status === 'completed' ? ' completed' : ''}${event.imageUrl ? ' has-thumb' : ''}`}
+        className={`event-card${event.status === 'completed' ? ' completed' : ''}${event.imageUrl && !isMobile ? ' has-thumb' : ''}${isLive ? ' live' : ''}`}
         style={{ borderLeftColor: typeColor }}
       >
-        {event.imageUrl && (
+        {isMobile && (
+          <div className="event-card-dateblock" aria-hidden="true">
+            <span className="event-card-dateblock-month">{dateBlockMonth}</span>
+            <span className="event-card-dateblock-day">{dateBlockDay}</span>
+          </div>
+        )}
+        {event.imageUrl && !isMobile && (
           <div className="event-card-thumb">
             <img src={event.imageUrl} alt="" className="event-card-thumb-img" />
           </div>
@@ -65,10 +80,10 @@ export default function EventCard({ event }: EventCardProps) {
 
           <div className="event-card-meta">
             <span
-              className="event-status-badge"
+              className={`event-status-badge event-status-${event.status}`}
               style={{ color: statusColor, borderColor: statusColor }}
             >
-              {t(`events.status.${event.status}`)}
+              {isMobile && isLive ? t('dashboard.liveBadge', 'Live') : t(`events.status.${event.status}`)}
             </span>
 
             <span className="event-match-count">
@@ -85,8 +100,18 @@ export default function EventCard({ event }: EventCardProps) {
 
         {event.status === 'completed' && (
           <div className="event-card-view-results">
-            <span>{t('events.card.viewResults', 'View Results')}</span>
+            <span>
+              {isMobile
+                ? t('events.card.resultsAvailable', 'Results available')
+                : t('events.card.viewResults', 'View Results')}
+            </span>
             <span className="event-card-view-results-arrow">&rarr;</span>
+          </div>
+        )}
+
+        {isMobile && isLive && (
+          <div className="event-card-live-bar" aria-hidden="true">
+            <div className="event-card-live-bar-fill" />
           </div>
         )}
         </div>

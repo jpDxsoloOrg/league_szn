@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
@@ -9,6 +10,11 @@ import ScrollToTop from './components/ScrollToTop';
 import NotFound from './components/NotFound';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
+// Mobile app shell
+import MobileHeader from './components/mobile/MobileHeader';
+import BottomTabBar from './components/mobile/BottomTabBar';
+import MoreSheet from './components/mobile/MoreSheet';
+import { useMediaQuery } from './hooks/useMediaQuery';
 import Dashboard from './components/Dashboard';
 import Standings from './components/Standings';
 import ActivityFeed from './components/ActivityFeed';
@@ -110,10 +116,19 @@ function App() {
 }
 
 function AppLayout() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+
   return (
-    <div className="App layout-sidebar">
-      <Sidebar />
-      <TopBar />
+    <div className={isMobile ? 'App layout-sidebar app-layout--mobile' : 'App layout-sidebar'}>
+      {isMobile ? (
+        <MobileHeader />
+      ) : (
+        <>
+          <Sidebar />
+          <TopBar />
+        </>
+      )}
       <ProfileCompletionModal />
       <AnnouncementModal />
       <main>
@@ -322,6 +337,12 @@ function AppLayout() {
             <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
+      {isMobile && (
+        <>
+          <BottomTabBar onMoreClick={() => setIsMoreOpen(true)} isMoreOpen={isMoreOpen} />
+          <MoreSheet open={isMoreOpen} onClose={() => setIsMoreOpen(false)} />
+        </>
+      )}
     </div>
   );
 }

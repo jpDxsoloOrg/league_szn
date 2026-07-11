@@ -209,7 +209,7 @@ export default function Tournaments() {
 
   return (
     <div className="tournaments-container">
-      <h2>{t('tournaments.title')}</h2>
+      <h2 className="page-title--mobile-hidden">{t('tournaments.title')}</h2>
 
       <div className="tournaments-grid">
         {tournaments.map((tournament) => (

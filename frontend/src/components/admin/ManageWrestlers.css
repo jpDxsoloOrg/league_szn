@@ -25,6 +25,20 @@
   background-color: #2563eb;
 }
 
+.wrestlers-reset-assignments-btn {
+  background-color: #7f1d1d;
+  color: #fecaca;
+}
+
+.wrestlers-reset-assignments-btn:hover:not(:disabled) {
+  background-color: #991b1b;
+}
+
+.wrestlers-reset-assignments-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .wrestler-form-container {
   background-color: #1a1a1a;
   border: 2px solid #d4af37;
@@ -238,6 +252,39 @@
   border-radius: 4px;
   margin-bottom: 1rem;
   border: 1px solid #166534;
+}
+
+.wrestlers-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.wrestlers-pager button {
+  background-color: #222;
+  border: 2px solid #444;
+  color: #eee;
+  padding: 0.4rem 1rem;
+  font-size: 0.875rem;
+}
+
+.wrestlers-pager button:hover:not(:disabled) {
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+.wrestlers-pager button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.wrestlers-pager-status {
+  color: #bbb;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 /* Import modal */

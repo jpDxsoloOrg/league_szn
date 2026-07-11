@@ -153,6 +153,11 @@ export default function Dashboard() {
                   <span className="db-live-badge">{t('dashboard.liveBadge')}</span>
                   <div className="db-event-name">{e.name}</div>
                   <div className="db-event-date">{formatCalendarDate(e.date, undefined, { dateStyle: 'medium' })}</div>
+                  {typeof e.matchCount === 'number' && e.matchCount > 0 && (
+                    <div className="db-event-matches">
+                      {t('rivalries.card.matchCount', { count: e.matchCount })}
+                    </div>
+                  )}
                 </Link>
               ))}
             </div>
@@ -171,6 +176,7 @@ export default function Dashboard() {
                 <Link key={e.eventId} to={`/events/${e.eventId}`} className="db-event-card">
                   <div className="db-event-name">{e.name}</div>
                   <div className="db-event-countdown">{formatCountdown(e.date, now, t)}</div>
+                  {e.venue && <span className="db-event-venue">{e.venue}</span>}
                   <div className="db-event-date">{formatCalendarDate(e.date, undefined, { dateStyle: 'medium' })}</div>
                 </Link>
               ))}
@@ -229,9 +235,19 @@ export default function Dashboard() {
                 className="db-result-card"
               >
                 <div className="db-result-outcome">
-                  <span className="db-result-winner">{m.winnerName}</span>
+                  <div className="db-result-line">
+                    <span className="db-result-winner">{m.winnerName}</span>
+                    <span className="db-result-tag db-result-tag--win">
+                      {t('dashboard.winTag', 'Win')}
+                    </span>
+                  </div>
                   <span className="db-result-vs">def.</span>
-                  <span className="db-result-loser">{m.loserName}</span>
+                  <div className="db-result-line">
+                    <span className="db-result-loser">{m.loserName}</span>
+                    <span className="db-result-tag db-result-tag--loss">
+                      {t('dashboard.lossTag', 'Loss')}
+                    </span>
+                  </div>
                 </div>
                 <div className="db-result-type">
                   {m.matchType}

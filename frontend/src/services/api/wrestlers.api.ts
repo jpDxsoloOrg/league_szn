@@ -8,6 +8,11 @@ type WrestlerCreatePayload = {
   overallCap: number;
 };
 
+export type WrestlerResetAssignmentsResult = {
+  clearedWrestlers: number;
+  clearedPlayers: number;
+};
+
 const baseWrestlersApi = createCrudApi<Wrestler, WrestlerCreatePayload>('wrestlers');
 
 export const wrestlersApi = {
@@ -31,6 +36,12 @@ export const wrestlersApi = {
     return fetchWithAuth(`${API_BASE_URL}/wrestlers/import`, {
       method: 'POST',
       body: JSON.stringify({ wrestlers }),
+    });
+  },
+
+  resetAssignments: async (): Promise<WrestlerResetAssignmentsResult> => {
+    return fetchWithAuth(`${API_BASE_URL}/wrestlers/reset-assignments`, {
+      method: 'POST',
     });
   },
 };

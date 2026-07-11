@@ -159,8 +159,30 @@
 }
 
 @media (max-width: 768px) {
+  /* App-style event card (docs/design/mobile-app/league-szn-events): square
+     date block on the left, chevron on the right, pill badges. */
   .event-card {
-    padding: 12px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    position: relative;
+    padding: 16px 34px 16px 14px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-left-width: 0;
+    border-radius: 14px;
+  }
+
+  .event-card::after {
+    content: '\203A';
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    color: #d4af37;
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1;
   }
 
   .event-card.has-thumb {
@@ -176,11 +198,124 @@
     height: 56px;
   }
 
-  .event-card-name {
-    font-size: 0.95rem;
+  .event-card-dateblock {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    background: #2d2d2d;
+    border: 1px solid #3f3f3f;
+    border-radius: 10px;
   }
 
+  .event-card-dateblock-month {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+  }
+
+  .event-card-dateblock-day {
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1;
+    color: white;
+  }
+
+  .event-card-name {
+    font-size: 1rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  .event-card-header {
+    margin-bottom: 8px;
+  }
+
+  /* The date block replaces the inline date row on phones. */
   .event-card-date {
-    font-size: 0.8rem;
+    display: none;
+  }
+
+  .event-type-badge {
+    background-color: #2d2d2d !important;
+    color: #9ca3af;
+    border-radius: 999px;
+  }
+
+  .event-match-count {
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    color: #d4af37;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.7rem;
+    border-radius: 999px;
+    padding: 2px 10px;
+  }
+
+  .event-status-badge {
+    border-radius: 999px;
+    padding: 2px 10px;
+  }
+
+  /* Live card: red LIVE pill + thin gold progress bar. */
+  .event-status-badge.event-status-in-progress {
+    background: #dc2626;
+    color: white !important;
+    border-color: #dc2626 !important;
+  }
+
+  .event-card-live-bar {
+    margin-top: 12px;
+    height: 4px;
+    border-radius: 999px;
+    background: #3a3a3a;
+    overflow: hidden;
+  }
+
+  .event-card-live-bar-fill {
+    height: 100%;
+    width: 60%;
+    border-radius: 999px;
+    background: #d4af37;
+    animation: event-live-bar-pulse 1.8s ease-in-out infinite;
+  }
+
+  @keyframes event-live-bar-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+
+  /* Past events: slightly desaturated with a muted COMPLETED pill and a gold
+     "Results available" link. */
+  .event-card.completed {
+    filter: saturate(0.55);
+    opacity: 0.85;
+  }
+
+  .event-status-badge.event-status-completed {
+    background: #2d2d2d;
+    color: #9ca3af !important;
+    border-color: #3f3f3f !important;
+  }
+
+  .event-card-view-results {
+    color: #d4af37;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.75rem;
+  }
+
+  .event-card-view-results-arrow {
+    color: #d4af37;
   }
 }

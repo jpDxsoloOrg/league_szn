@@ -16,7 +16,7 @@ import FutureMatchesTab from './tabs/FutureMatchesTab';
 import PromosTab from './tabs/PromosTab';
 import NotesPlansTab from './tabs/NotesPlansTab';
 import MessagesTab from './tabs/MessagesTab';
-import { resolveWrestlerName, resolveWrestlerFullLabel } from './rivalryUtils';
+import { resolveWrestlerName, resolveWrestlerFullLabel, heatScorePercent } from './rivalryUtils';
 import HeatBadge from './HeatBadge';
 import './RivalryDetail.css';
 
@@ -146,6 +146,12 @@ export default function RivalryDetail() {
   const winsA = (pidA && hydrated.headToHead.winsByParticipant[pidA]) ?? 0;
   const winsB = (pidB && hydrated.headToHead.winsByParticipant[pidB]) ?? 0;
 
+  // Mobile heat meter position, quantized to 5% steps so the fill width
+  // stays in CSS (no inline styles) — RivalryDetail.css declares the
+  // .rivalry-detail__heat-fill--p{0..100} ladder.
+  const heatPercent = heatScorePercent(r.heatScore);
+  const heatStep = Math.round(heatPercent / 5) * 5;
+
   return (
     <div className="rivalry-detail">
       <Link to="/rivalries" className="rivalry-detail__back">
@@ -175,6 +181,33 @@ export default function RivalryDetail() {
           <h2 className="rivalry-detail__name">{labelB}</h2>
         </div>
       </header>
+
+      {/* Gradient heat meter — mobile app shell only (hidden on desktop
+          via RivalryDetail.css; the stats strip below keeps carrying the
+          heat badge for desktop). */}
+      <section className="rivalry-detail__heat-meter">
+        <div className="rivalry-detail__heat-meter-top">
+          <span className="rivalry-detail__heat-meter-label">
+            {t('rivalries.detail.heatMeterLabel', 'Rivalry Heat')}
+          </span>
+          <HeatBadge heat={r.heat} heatScore={r.heatScore} size="sm" />
+        </div>
+        <div className="rivalry-detail__heat-track" aria-hidden="true">
+          <div
+            className={`rivalry-detail__heat-fill rivalry-detail__heat-fill--p${heatStep}`}
+          />
+        </div>
+        <div className="rivalry-detail__heat-scale">
+          <span>{t('rivalries.detail.heatScaleCold', 'Cold')}</span>
+          <span className="rivalry-detail__heat-score">
+            {t('rivalries.detail.heatScoreOutOf', {
+              defaultValue: 'Heat: {{score}}/100',
+              score: heatPercent,
+            })}
+          </span>
+          <span>{t('rivalries.detail.heatScaleExtreme', 'Extreme')}</span>
+        </div>
+      </section>
 
       <h1 className="rivalry-detail__title">{r.title}</h1>
 

@@ -157,7 +157,18 @@
     "alternateWrestler": "Alternate Wrestler",
     "alternateWrestlerPlaceholder": "Your backup wrestler",
     "alternate": "Alternate",
-    "mainWrestler": "Main Wrestler"
+    "mainWrestler": "Main Wrestler",
+    "mobile": {
+      "details": "Details",
+      "displayName": "Display Name",
+      "notSet": "Not set",
+      "alignment": "Alignment",
+      "face": "Face",
+      "heel": "Heel",
+      "neutral": "Neutral",
+      "transferPending": "Transfer pending",
+      "requestTransfer": "Request Transfer"
+    }
   },
   "publicProfile": {
     "title": "Player Profile",
@@ -226,8 +237,6 @@
       "wrestler": "Wrestler Zone",
       "extras": "More"
     },
-    "switchToTopMenu": "Top menu",
-    "switchToSidebar": "Sidebar menu",
     "switchToBasic": "Switch to basic menu",
     "switchToAdvanced": "Switch to advanced menu",
     "basicMenu": "Basic menu",
@@ -235,6 +244,12 @@
     "basicMenuShort": "Basic",
     "advancedMenuShort": "Advanced",
     "menuModeToggleLabel": "Menu mode"
+  },
+  "mobileNav": {
+    "ariaLabel": "Primary",
+    "home": "Home",
+    "profile": "Profile",
+    "more": "More"
   },
   "header": {
     "title": "WWE 2K League"
@@ -272,7 +287,10 @@
     "defenses": "Defenses",
     "viewAllChampions": "View All Champions",
     "noChallenges": "No pending challenges",
-    "viewChallenges": "View Challenges"
+    "viewChallenges": "View Challenges",
+    "championBadge": "Champion",
+    "winTag": "Win",
+    "lossTag": "Loss"
   },
   "activity": {
     "title": "Activity",
@@ -514,9 +532,13 @@
       "clearAll": "Clear Filters"
     },
     "resultsCount": "{{count}} match(es) found",
+    "searchPlaceholder": "Search matches, players...",
     "noResults": "No Matches Found",
     "noResultsFiltered": "No matches match your current filters. Try adjusting or clearing the filters.",
-    "noMatches": "No matches have been recorded yet."
+    "noMatches": "No matches have been recorded yet.",
+    "card": {
+      "titleMatch": "Title Match"
+    }
   },
   "recordResult": {
     "title": "Record Match Results",
@@ -567,6 +589,17 @@
     }
   },
   "admin": {
+    "manageWrestlers": {
+      "resetAll": "Reset All Assignments",
+      "resetting": "Resetting...",
+      "resetTitle": "Clear every player's assigned wrestlers and make all wrestlers available again",
+      "resetConfirm": "Reset ALL wrestler assignments? Every player's assigned wrestlers will be cleared and all wrestlers become available again. This cannot be undone.",
+      "resetSuccess": "Assignments reset: {{wrestlers}} wrestler(s) released across {{players}} player(s).",
+      "resetError": "Failed to reset wrestler assignments",
+      "pagePrev": "Previous",
+      "pageNext": "Next",
+      "pageStatus": "Page {{page}} of {{total}}"
+    },
     "heatConfig": {
       "title": "Rivalry Heat Tunables",
       "subtitle": "Tune the rivalry heat formula. Changes apply on the next rivalry write (match rating, promo create, manual recompute).",
@@ -589,6 +622,18 @@
       "promoBonusCapHint": "Max magnitude of the reaction bonus per promo.",
       "promoMaxReactionCount": "Reactions counted per type",
       "promoMaxReactionCountHint": "Only the first N fire / trash reactions affect the bonus."
+    },
+    "hub": {
+      "back": "Admin Panel",
+      "superAdminOnly": "Super-admin only",
+      "groups": {
+        "rosterPeople": "Roster & People",
+        "matchCompetition": "Match & Competition",
+        "contentStorylines": "Content & Storylines",
+        "leagueConfig": "League Config",
+        "usersAccess": "Users & Access",
+        "dangerZone": "Danger Zone"
+      }
     },
     "panel": {
       "title": "Admin Panel",
@@ -1108,7 +1153,11 @@
       "bookerBadge": "Booked by {{name}}",
       "assignBooker": "I'll book this",
       "takeBooker": "Take over booking",
-      "clearBooker": "Clear booker"
+      "clearBooker": "Clear booker",
+      "heatMeterLabel": "Rivalry Heat",
+      "heatScaleCold": "Cold",
+      "heatScaleExtreme": "Extreme",
+      "heatScoreOutOf": "Heat: {{score}}/100"
     },
     "messages": {
       "heading": "Messages",
@@ -1237,11 +1286,13 @@
     },
     "card": {
       "matches": "matches",
-      "titleMatches": "title matches"
+      "titleMatches": "title matches",
+      "resultsAvailable": "Results available"
     },
     "calendar": {
       "upcoming": "Upcoming Events",
       "inProgress": "In Progress",
+      "past": "Past",
       "noUpcoming": "No upcoming events scheduled.",
       "months": {
         "january": "January",

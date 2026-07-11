@@ -221,7 +221,7 @@ export default function ManageShows() {
       <div className="shows-header">
         <h2>{t('shows.title')}</h2>
         {!showAddForm && (
-          <button onClick={() => setShowAddForm(true)}>{t('shows.create')}</button>
+          <button onClick={() => setShowAddForm(true)} className="am-fab">{t('shows.create')}</button>
         )}
       </div>
 

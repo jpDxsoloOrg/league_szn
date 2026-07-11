@@ -127,6 +127,7 @@ export default function MatchCardBuilder() {
   const availableToAdd = availableMatches.filter(
     (m) => !usedMatchIds.has(m.matchId)
   );
+  const selectedEvent = events.find((event) => event.eventId === selectedEventId);
 
   const handleDesignationChange = (index: number, designation: MatchDesignation) => {
     setCardMatches((prev) =>
@@ -216,18 +217,18 @@ export default function MatchCardBuilder() {
   return (
     <div className="match-card-builder">
       <h3 className="builder-title">{t('events.admin.matchCardBuilder')}</h3>
-      <p className="config-subtitle" style={{ marginBottom: '1rem', color: '#9ca3af', fontSize: '0.85rem' }}>
+      <p className="config-subtitle builder-hint">
         {t('events.admin.matchCardBuilderHint', 'Reorder matches, change designations, or add unassigned matches to an event card. Matches can be assigned to events when scheduling them.')}
       </p>
 
       {loadError && (
-        <div className="save-error-msg" style={{ color: '#f87171', marginBottom: '1rem' }}>
+        <div className="save-error-msg builder-load-error">
           {loadError}
         </div>
       )}
 
       {/* Event Selector */}
-      <div className="builder-event-selector" style={{ marginBottom: '1rem' }}>
+      <div className="builder-event-selector">
         <label className="config-label" htmlFor="event-select">
           {t('events.admin.selectEvent', 'Select Event')}
         </label>
@@ -245,6 +246,22 @@ export default function MatchCardBuilder() {
           ]}
         />
       </div>
+
+      {/* Mobile-only event summary card (hidden on desktop via CSS) */}
+      {selectedEvent && (
+        <div className="builder-event-summary">
+          <div className="builder-event-summary-heading">
+            <span className="builder-event-summary-name">{selectedEvent.name}</span>
+            <span className={`builder-event-status builder-event-status--${selectedEvent.status}`}>
+              {t(`events.status.${selectedEvent.status}`)}
+            </span>
+          </div>
+          <div className="builder-event-summary-meta">
+            {formatCalendarDate(selectedEvent.date)}
+            {selectedEvent.venue ? ` · ${selectedEvent.venue}` : ''}
+          </div>
+        </div>
+      )}
 
       {!selectedEventId ? (
         <p className="builder-empty">{t('events.admin.selectEventFirst', 'Select an event above to manage its match card.')}</p>
@@ -300,22 +317,24 @@ export default function MatchCardBuilder() {
                   </div>
 
                   <div className="builder-match-actions">
-                    <button
-                      className="builder-action-btn"
-                      onClick={() => handleMoveUp(index)}
-                      disabled={index === 0}
-                      title={t('events.admin.moveUp')}
-                    >
-                      &#9650;
-                    </button>
-                    <button
-                      className="builder-action-btn"
-                      onClick={() => handleMoveDown(index)}
-                      disabled={index === cardMatches.length - 1}
-                      title={t('events.admin.moveDown')}
-                    >
-                      &#9660;
-                    </button>
+                    <div className="builder-reorder-controls">
+                      <button
+                        className="builder-action-btn"
+                        onClick={() => handleMoveUp(index)}
+                        disabled={index === 0}
+                        title={t('events.admin.moveUp')}
+                      >
+                        &#9650;
+                      </button>
+                      <button
+                        className="builder-action-btn"
+                        onClick={() => handleMoveDown(index)}
+                        disabled={index === cardMatches.length - 1}
+                        title={t('events.admin.moveDown')}
+                      >
+                        &#9660;
+                      </button>
+                    </div>
                     <button
                       className="builder-action-btn remove-btn"
                       onClick={() => handleRemove(index)}
@@ -355,7 +374,7 @@ export default function MatchCardBuilder() {
           )}
 
           {/* Save Button */}
-          <div className="config-actions" style={{ marginTop: '1rem' }}>
+          <div className="config-actions builder-save-bar">
             <button
               className="btn-save"
               onClick={handleSaveMatchCard}
@@ -369,8 +388,9 @@ export default function MatchCardBuilder() {
 
           {message && (
             <div
-              className={message.type === 'success' ? 'save-success-msg' : 'save-error-msg'}
-              style={message.type === 'error' ? { color: '#f87171', marginTop: '0.5rem' } : { marginTop: '0.5rem' }}
+              className={`builder-save-message ${
+                message.type === 'success' ? 'save-success-msg' : 'save-error-msg'
+              }`}
             >
               {message.text}
             </div>

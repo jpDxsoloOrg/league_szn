@@ -1,6 +1,8 @@
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
+import AdminHub, { AdminHubBackRow } from './AdminHub';
 
 import ManagePlayers from './ManagePlayers';
 import ManageDivisions from './ManageDivisions';
@@ -17,6 +19,9 @@ import ClearAllData from './ClearAllData';
 import ManageUsers from './ManageUsers';
 import ManageFeatures from './ManageFeatures';
 import './AdminPanel.css';
+// Shared mobile (≤768px) `am-` template classes for all admin sections
+// rendered by this panel — imported once here so they cascade everywhere.
+import './mobile/adminMobile.css';
 
 import ManageSeasonAwards from './ManageSeasonAwards';
 import AdminContenderConfig from './AdminContenderConfig';
@@ -42,6 +47,7 @@ const VALID_TABS: AdminTab[] = ['players', 'divisions', 'wrestlers', 'match-conf
 export default function AdminPanel() {
   const { tab } = useParams<{ tab: string }>();
   const { isAuthenticated, isAdminOrModerator, isSuperAdmin } = useAuth();
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const activeTab: AdminTab = (tab && VALID_TABS.includes(tab as AdminTab)) ? tab as AdminTab : 'players';
 
@@ -68,6 +74,16 @@ export default function AdminPanel() {
           <h2>Full Admin Access Required</h2>
           <p>This action requires full Admin privileges.</p>
         </div>
+      </div>
+    );
+  }
+
+  // Mobile hub: at /admin with no tab selected, show the grouped app-style hub
+  // list instead of defaulting into the players tab.
+  if (isMobile && !tab) {
+    return (
+      <div className="admin-panel">
+        <AdminHub isSuperAdmin={isSuperAdmin} />
       </div>
     );
   }
@@ -102,6 +118,18 @@ export default function AdminPanel() {
     'heat-config': <AdminHeatConfig />,
     danger: <ClearAllData />,
   };
+
+  // Mobile tab view: full-width tab content with a small back row to the hub.
+  if (isMobile) {
+    return (
+      <div className="admin-panel">
+        <AdminHubBackRow />
+        <div className="admin-content">
+          {tabContent[activeTab]}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-panel">

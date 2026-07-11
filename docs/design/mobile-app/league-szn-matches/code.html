@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>League SZN - Matches</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Oswald:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            bg: "#0f0f0f",
+                            surface: "#1a1a1a",
+                            hover: "#252525",
+                            border: "#333333",
+                            primary: "#d4af37",
+                            primaryPressed: "#b8941f",
+                            onPrimary: "#1a1a1a",
+                            textPrimary: "#ffffff",
+                            textSecondary: "#bbbbbb",
+                            textMuted: "#666666",
+                            win: "#4ade80",
+                            loss: "#dc3545",
+                            warning: "#fbbf24"
+                        }
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Oswald", "sans-serif"],
+                        display: ["Oswald", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0f0f0f;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-headline { font-family: 'Oswald', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        /* Custom scrollbar for horizontal chips */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Subtle glow for the championship belt */
+        .belt-glow {
+            filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.4));
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-brand-bg text-brand-textPrimary antialiased overflow-x-hidden">
+<!-- Top AppBar -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-[#0f0f0f] border-b border-[#333333] flex justify-between items-center w-full px-4 h-16">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#d4af37]" style="font-size: 28px;">sports_kabaddi</span>
+<h1 class="font-headline font-black text-[#d4af37] uppercase tracking-tighter text-2xl">MATCHES</h1>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 hover:bg-[#252525] transition-colors active:scale-95 duration-100 rounded-full text-[#666666]">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</header>
+<main class="pt-20 pb-24 px-4 max-w-md mx-auto">
+<!-- Search Bar -->
+<div class="relative mb-6">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-brand-primary" style="font-size: 20px;">search</span>
+</div>
+<input class="w-full bg-brand-surface border-none text-brand-textPrimary rounded-xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-brand-primary/50 placeholder-brand-textMuted text-sm" placeholder="Search matches, players..." type="text"/>
+</div>
+<!-- Filters Scrollable Row -->
+<div class="flex overflow-x-auto no-scrollbar gap-2 mb-8 -mx-4 px-4">
+<button class="flex-shrink-0 px-5 py-2 rounded-full bg-brand-primary text-brand-onPrimary font-bold text-sm">All</button>
+<button class="flex-shrink-0 px-5 py-2 rounded-full bg-brand-surface border border-brand-border text-brand-textPrimary font-medium text-sm hover:bg-brand-hover">Completed</button>
+<button class="flex-shrink-0 px-5 py-2 rounded-full bg-brand-surface border border-brand-border text-brand-textPrimary font-medium text-sm hover:bg-brand-hover">Scheduled</button>
+<button class="flex-shrink-0 px-5 py-2 rounded-full bg-brand-surface border border-brand-border text-brand-textPrimary font-medium text-sm hover:bg-brand-hover">Championship</button>
+<button class="flex-shrink-0 px-5 py-2 rounded-full bg-brand-surface border border-brand-border text-brand-textPrimary font-medium text-sm hover:bg-brand-hover">Ladder</button>
+<button class="flex-shrink-0 px-5 py-2 rounded-full bg-brand-surface border border-brand-border text-brand-textPrimary font-medium text-sm hover:bg-brand-hover">Steel Cage</button>
+</div>
+<!-- Match List -->
+<div class="space-y-4">
+<!-- Match 1: Completed Title Ladder -->
+<div class="bg-brand-surface border border-brand-border rounded-xl p-4 relative overflow-hidden group">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-1.5 px-2 py-0.5 bg-brand-primary/10 border border-brand-primary/30 rounded text-[10px] font-bold text-brand-primary uppercase tracking-wider">
+<span class="material-symbols-outlined text-[12px] belt-glow" style="font-variation-settings: 'FILL' 1;">emoji_events</span>
+                        Title Match
+                    </div>
+<div class="text-brand-primary font-bold text-sm">★★★★½</div>
+</div>
+<div class="flex items-center justify-between mb-4">
+<div class="flex-1 text-center">
+<div class="w-12 h-12 mx-auto mb-2 rounded-full border-2 border-brand-primary p-0.5 overflow-hidden">
+<img class="w-full h-full object-cover rounded-full" data-alt="A professional close-up studio portrait of a charismatic Hispanic wrestler named Marcus Rivera, with sharp features and a confident smirk, under dramatic golden sports broadcast lighting, hyper-realistic style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKaH8q59LrVMl7JoJc8tcXDmTajIDjZxYMXIzhZKAYMBAvgsktP90gn_7td7H9lzBHlyihOJJkUEIv5SsLONMH9PS6JSXcS_tTXBCRDj9FA9Uo8DJZcHBqN-6FKMu75y9maGndDLXgVAg882bnmW5yxQ4VtwGEw1_XXezp2hXnvjFNH8HMPlj3UPmbOzaWST3CfrHjxB0onOqpxPDIPP2RyATAfLYl4elgr91LO75WBvMOc-ir5rZvMyvdl7GEWFOZkfPx3WyWVaY"/>
+</div>
+<div class="flex items-center justify-center gap-1">
+<span class="text-white font-bold truncate">Marcus Rivera</span>
+<span class="bg-brand-win text-[10px] text-black font-black px-1 rounded">W</span>
+</div>
+</div>
+<div class="px-3 flex flex-col items-center">
+<span class="text-brand-textMuted text-[10px] uppercase font-bold mb-1">def.</span>
+<div class="h-[1px] w-8 bg-brand-border"></div>
+</div>
+<div class="flex-1 text-center opacity-70">
+<div class="w-12 h-12 mx-auto mb-2 rounded-full border border-brand-border overflow-hidden">
+<img class="w-full h-full object-cover rounded-full" data-alt="A studio headshot of a gritty veteran wrestler named Johnny Nitro, with long dark hair and intense eyes, shadowed cinematic lighting, gritty sports aesthetic, dark background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBc9XJfrDyIwjjw0rvOJg1GfVeofnxUl_eiru31-B2-Y-BjJADrZsJ3RzhOiq01awM7mE6xMfzeLieaLncZFxPtwrEUZHH9LwUa7jdqB91GN6gBcuVQLw2Kn6w6LWJkNuJyzApd-_xX0pZ_aTIgkPZIkGCOrdbYjNOsnhgZrV8tFhUE0vi30WUKoijthojSMQCxQYqcA4GOZbu_iqDgl2a33Mn2LrRqH95QtuXbQ1xCgjUHfXsBeREZKs2acWzo4R_Qvk507TxTDFM"/>
+</div>
+<div class="flex items-center justify-center gap-1">
+<span class="text-brand-textSecondary font-medium truncate">Johnny Nitro</span>
+<span class="bg-brand-loss text-[10px] text-white font-black px-1 rounded">L</span>
+</div>
+</div>
+</div>
+<div class="border-t border-brand-border pt-3 flex justify-between items-center text-[11px]">
+<div class="text-brand-textSecondary font-medium">Ladder Match</div>
+<div class="text-brand-textMuted italic">Friday Night Mayhem · Jul 4</div>
+</div>
+</div>
+<!-- Match 2: Scheduled -->
+<div class="bg-brand-surface border border-brand-border rounded-xl p-4 relative">
+<div class="absolute top-4 right-4">
+<span class="bg-brand-warning/10 text-brand-warning border border-brand-warning/30 text-[10px] font-black px-2 py-1 rounded-full tracking-widest uppercase">SCHEDULED</span>
+</div>
+<div class="flex items-center gap-4 mb-4">
+<div class="flex -space-x-3">
+<div class="w-10 h-10 rounded-full border-2 border-brand-bg bg-brand-hover overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Powerful Roman Reigns wrestling persona, stoic expression, long hair, tribal tattoos visible, cinematic lighting with blue and gold accents, high contrast sports photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjPR90w4FRKSeXJnb5JG95xbWv0Lnik1Kz-vOb26gRo9Miba5ZWi_6SymyAKo8j57p0cLDx6rCeA_uvll78PpkL-yiVzXzz4PS9mEKs_T73k6b5aqA0S0XllcP2BqRmQ2-NqJKnBTmnRUiZkpBCTWQvqrzu83Ebu0XvDhjgSMH2xMwhQxypleYLQHSXiVUPBsiIO6S-3lNWn7ILYuA6pc2syRjnwP-6Qke2ybb_G3IfDk50lEKvUfVNFDNB6VrIIuRld7c2i7nXxI"/>
+</div>
+<div class="w-10 h-10 rounded-full border-2 border-brand-bg bg-brand-hover overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Cody Rhodes wrestling persona, blonde hair, focused and heroic expression, patriotic red white and blue theme subtle in background, premium sports broadcast lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAieP4Ks0fL1hn6lqnlEysvQiJuEyRcFOhxY4A-jZghaPDDM4I7pyVNY3eLM0MUx33WN15OTqJHkacY2ZLGUtkLk16BU6OF0-Nhi98Deh9B0AAHRZGrM7IRCKjo2FRekX-8vf3QMK9lSJdbwgBdhw6qxy48qPbIJSbjynUcbfUA0UzatqtD-f0dL4wVLglmOYM5yD0sApdUWuKIO_X6EmDCJuomIzI5xHEhkbHMY5oH73_2nMKQiDZTogMAqoLTzTUjqxgUp4x2J4Q"/>
+</div>
+</div>
+<div>
+<div class="text-white font-bold">Roman Reigns <span class="text-brand-primary text-xs mx-1">VS</span> Cody Rhodes</div>
+<div class="text-brand-textMuted text-[11px] mt-0.5">SummerSlam Showdown · Jul 26</div>
+</div>
+</div>
+</div>
+<!-- Match 3: Completed Singles -->
+<div class="bg-brand-surface border border-brand-border rounded-xl p-4">
+<div class="flex justify-between items-start mb-4">
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center gap-2">
+<span class="text-white font-bold">Seth Rollins</span>
+<span class="bg-brand-win text-[10px] text-black font-black px-1 rounded">W</span>
+</div>
+<div class="flex items-center gap-2 opacity-60">
+<span class="text-brand-textSecondary font-medium">AJ Styles</span>
+<span class="bg-brand-loss text-[10px] text-white font-black px-1 rounded">L</span>
+</div>
+</div>
+<div class="text-right">
+<div class="text-brand-textMuted text-[10px] font-bold uppercase">Singles Match</div>
+<div class="text-brand-primary font-bold text-sm">★★★½</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="h-1 w-full bg-brand-border rounded-full overflow-hidden">
+<div class="h-full bg-brand-primary w-2/3"></div>
+</div>
+<span class="text-[10px] text-brand-textMuted font-bold">RECAP</span>
+</div>
+</div>
+<!-- Match 4: Completed Steel Cage -->
+<div class="bg-brand-surface border border-brand-border rounded-xl p-4 overflow-hidden relative">
+<!-- Background Pattern -->
+<div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 10px 10px;"></div>
+<div class="flex justify-between items-center mb-4">
+<div class="px-2 py-1 bg-zinc-800 rounded text-[10px] font-bold text-zinc-300 uppercase flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">grid_4x4</span> Steel Cage
+                    </div>
+<div class="text-brand-primary font-bold text-sm">★★★★½</div>
+</div>
+<div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+<div class="text-right">
+<span class="block text-white font-bold">Rhea Ripley</span>
+<span class="text-brand-win text-[10px] font-black">WINNER</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-brand-border flex items-center justify-center">
+<span class="text-[10px] font-black text-brand-textMuted">V</span>
+</div>
+<div class="text-left opacity-60">
+<span class="block text-brand-textSecondary font-medium">Bianca Belair</span>
+<span class="text-brand-loss text-[10px] font-black uppercase">Subbed</span>
+</div>
+</div>
+</div>
+<!-- Match 5: Scheduled -->
+<div class="bg-brand-surface border border-brand-border rounded-xl p-4 relative group">
+<div class="absolute top-4 right-4">
+<span class="bg-brand-warning/10 text-brand-warning border border-brand-warning/30 text-[10px] font-black px-2 py-1 rounded-full tracking-widest uppercase">SCHEDULED</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded bg-brand-hover flex items-center justify-center border border-brand-border">
+<span class="material-symbols-outlined text-brand-textMuted">event_repeat</span>
+</div>
+<div>
+<div class="text-white font-bold">Gunther VS Drew McIntyre</div>
+<div class="text-brand-textMuted text-[11px] mt-0.5">Money in the Bank · Aug 11</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB (Contextual for Matches) -->
+<button class="fixed bottom-20 right-6 w-14 h-14 bg-brand-primary text-brand-onPrimary rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform z-40">
+<span class="material-symbols-outlined" style="font-size: 32px;">add</span>
+</button>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 pb-safe px-2 bg-[#1a1a1a] border-t border-[#333333] shadow-2xl">
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">Standings</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">whatshot</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">Rivalries</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">Profile</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#d4af37] scale-110 active:opacity-80 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">More</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions
+        document.querySelectorAll('button, a').forEach(el => {
+            el.addEventListener('click', () => {
+                if (window.navigator.vibrate) {
+                    window.navigator.vibrate(5);
+                }
+            });
+        });
+
+        // Simple search filtering simulation
+        const searchInput = document.querySelector('input');
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('main > div.space-y-4 > div');
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(term) ? 'block' : 'none';
+            });
+        });
+    </script>
+</body></html>

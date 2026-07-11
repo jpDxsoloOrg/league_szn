@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>League SZN - My Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Oswald:wght@400;600;700&amp;family=Public+Sans:wght@700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#d4af37",
+                        surface: "#1a1a1a",
+                        background: "#0f0f0f",
+                        border: "#333333",
+                        onSurface: "#ffffff",
+                        onSurfaceMuted: "#bbbbbb",
+                        onSurfaceDisabled: "#666666",
+                        win: "#4ade80",
+                        loss: "#dc3545",
+                        warning: "#fbbf24",
+                        heel: "#ef4444"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Oswald", "sans-serif"],
+                        display: ["Public Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0f0f0f;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-headline { font-family: 'Oswald', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid #333333;
+        }
+        .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+</head>
+<body class="antialiased select-none">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-[#0f0f0f] border-b border-[#333333] h-16 flex justify-between items-center px-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#d4af37]">sports_kabaddi</span>
+<h1 class="font-headline uppercase tracking-tighter text-2xl text-[#d4af37]">MY PROFILE</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#252525] transition-colors active:scale-95">
+<span class="material-symbols-outlined text-[#bbbbbb]">settings</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-20 pb-24 px-4 space-y-4 max-w-2xl mx-auto">
+<!-- Profile Header Card -->
+<section class="bg-[#1a1a1a] rounded-xl p-6 border border-[#333333] relative overflow-hidden">
+<div class="flex flex-col items-center text-center relative z-10">
+<div class="relative mb-4">
+<div class="w-28 h-28 rounded-full border-4 border-[#d4af37] p-1">
+<img alt="Rey Fenix" class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida/AP1WRLt94aotfqZEUGz-TXk9IG5k8-2AUZjisguquBC4cpS2x7upo87NHCq-s8kVGYysCGETwmgPv_C3F26iVibpxB4BiQI8BK9QkL2YHzvU54Jg6QKVTAwFONUf2AtN47pdnJh2uczncvC_-bgNRta9LWkrboRRHgIYSpkeH1nKvePM51MI-TXqhYpgxUe4o7km1Oxt9Q1PhxQAqaqoe2YIduepyCEu4r7O8Wjz5y-BziPu96dBoHQBsDa47IU"/>
+</div>
+<button class="absolute bottom-0 right-0 bg-[#d4af37] text-[#1a1a1a] w-8 h-8 rounded-full flex items-center justify-center border-4 border-[#1a1a1a] active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">edit</span>
+</button>
+</div>
+<div class="space-y-1">
+<div class="flex items-center justify-center gap-2">
+<h2 class="text-2xl font-headline uppercase tracking-tight">Danny B</h2>
+<span class="bg-[#dc3545] text-white text-[10px] px-2 py-0.5 rounded-full font-bold tracking-widest">HEEL</span>
+</div>
+<p class="text-[#d4af37] font-semibold text-lg">Rey Fenix</p>
+<p class="text-[#666666] text-sm">Alt: Kenny Omega</p>
+<p class="text-[#666666] font-mono text-xs mt-1">PSN: dannyb_wwe</p>
+</div>
+</div>
+<!-- Atmospheric BG Detail -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-[#d4af37] opacity-5 blur-[80px] rounded-full -mr-16 -mt-16"></div>
+</section>
+<!-- Stats Row -->
+<section class="bg-[#1a1a1a] rounded-xl p-4 border border-[#333333] grid grid-cols-3 gap-2">
+<div class="text-center border-r border-[#333333]">
+<p class="font-headline text-3xl text-white">31</p>
+<p class="text-[10px] uppercase font-bold text-[#666666] tracking-wider">Wins</p>
+</div>
+<div class="text-center border-r border-[#333333]">
+<p class="font-headline text-3xl text-[#dc3545]">12</p>
+<p class="text-[10px] uppercase font-bold text-[#666666] tracking-wider">Losses</p>
+</div>
+<div class="text-center">
+<p class="font-headline text-3xl text-[#4ade80]">72%</p>
+<p class="text-[10px] uppercase font-bold text-[#666666] tracking-wider">Win Rate</p>
+</div>
+</section>
+<!-- Details Card -->
+<section class="bg-[#1a1a1a] rounded-xl border border-[#333333] divide-y divide-[#333333]">
+<div class="p-4 flex items-center justify-between">
+<h3 class="font-headline text-sm uppercase text-[#666666] tracking-widest">Details</h3>
+</div>
+<div class="p-4 flex items-center justify-between hover:bg-[#252525] transition-colors cursor-pointer group">
+<span class="text-sm text-[#bbbbbb]">Display Name</span>
+<div class="flex items-center gap-2">
+<span class="text-sm font-medium">Danny B</span>
+<span class="material-symbols-outlined text-[#666666] text-lg group-hover:text-white">chevron_right</span>
+</div>
+</div>
+<div class="p-4 flex items-center justify-between hover:bg-[#252525] transition-colors cursor-pointer group">
+<span class="text-sm text-[#bbbbbb]">Wrestler</span>
+<div class="flex items-center gap-2">
+<span class="text-sm font-medium">Rey Fenix</span>
+<span class="material-symbols-outlined text-[#666666] text-lg group-hover:text-white">chevron_right</span>
+</div>
+</div>
+<div class="p-4 flex items-center justify-between hover:bg-[#252525] transition-colors cursor-pointer group">
+<span class="text-sm text-[#bbbbbb]">Alternate Wrestler</span>
+<div class="flex items-center gap-2">
+<span class="text-sm font-medium">Kenny Omega</span>
+<span class="material-symbols-outlined text-[#666666] text-lg group-hover:text-white">chevron_right</span>
+</div>
+</div>
+<div class="p-4 flex items-center justify-between hover:bg-[#252525] transition-colors cursor-pointer group">
+<span class="text-sm text-[#bbbbbb]">PSN ID</span>
+<div class="flex items-center gap-2">
+<span class="text-sm font-medium font-mono">dannyb_wwe</span>
+<span class="material-symbols-outlined text-[#666666] text-lg group-hover:text-white">chevron_right</span>
+</div>
+</div>
+<div class="p-4 flex items-center justify-between hover:bg-[#252525] transition-colors cursor-pointer group">
+<span class="text-sm text-[#bbbbbb]">Bio</span>
+<div class="flex items-center gap-2">
+<span class="text-sm italic text-[#666666]">Set your bio...</span>
+<span class="material-symbols-outlined text-[#666666] text-lg group-hover:text-white">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- Alignment Card -->
+<section class="bg-[#1a1a1a] rounded-xl p-4 border border-[#333333] space-y-3">
+<div class="flex items-center justify-between">
+<h3 class="font-headline text-sm uppercase text-[#666666] tracking-widest">Alignment</h3>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 py-2 px-3 rounded-lg border border-[#333333] text-sm font-bold uppercase hover:bg-[#252525] transition-all">Face</button>
+<button class="flex-1 py-2 px-3 rounded-lg bg-[#dc3545] text-white text-sm font-bold uppercase shadow-lg shadow-[#dc3545]/20">Heel</button>
+<button class="flex-1 py-2 px-3 rounded-lg border border-[#333333] text-sm font-bold uppercase hover:bg-[#252525] transition-all">Tweener</button>
+</div>
+<p class="text-[10px] text-[#666666] flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">info</span>
+                Used by the GM for booking
+            </p>
+</section>
+<!-- Division Card -->
+<section class="bg-[#1a1a1a] rounded-xl p-4 border border-[#333333] space-y-4">
+<div class="flex justify-between items-start">
+<div class="space-y-1">
+<h3 class="font-headline text-sm uppercase text-[#666666] tracking-widest">Division</h3>
+<p class="text-lg font-bold">Heavyweight Division</p>
+</div>
+<div class="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter flex items-center gap-1">
+<span class="w-1 h-1 bg-amber-500 rounded-full animate-pulse"></span>
+                    Transfer pending
+                </div>
+</div>
+<button class="w-full py-3 border border-[#d4af37] text-[#d4af37] rounded-xl text-sm font-bold uppercase tracking-widest hover:bg-[#d4af37]/5 active:scale-95 transition-all">
+                Request transfer
+            </button>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-[#1a1a1a] border-t border-[#333333] h-16 flex justify-around items-center pb-safe px-2 shadow-2xl">
+<button class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">Standings</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all">
+<span class="material-symbols-outlined">whatshot</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">Rivalries</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#d4af37] scale-110 active:opacity-80 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">Profile</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#666666] hover:text-[#bbbbbb] active:opacity-80 transition-all">
+<span class="material-symbols-outlined">menu</span>
+<span class="font-label text-[10px] uppercase font-bold mt-1">More</span>
+</button>
+</nav>
+<script>
+        // Micro-interaction for buttons
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('touchstart', function() {
+                this.style.opacity = '0.7';
+            });
+            button.addEventListener('touchend', function() {
+                this.style.opacity = '1';
+            });
+        });
+
+        // Add active states to alignment pills (simple JS toggle demo)
+        const alignmentButtons = document.querySelectorAll('.alignment-btn');
+        alignmentButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                alignmentButtons.forEach(b => {
+                    b.classList.remove('bg-[#dc3545]', 'text-white', 'shadow-lg');
+                    b.classList.add('border', 'border-[#333333]');
+                });
+                btn.classList.remove('border', 'border-[#333333]');
+                btn.classList.add('bg-[#dc3545]', 'text-white', 'shadow-lg');
+            });
+        });
+    </script>
+</body></html>

@@ -10,6 +10,7 @@ import Skeleton from './ui/Skeleton';
 import EmptyState from './ui/EmptyState';
 import {
   DEFAULT_CHAMPIONSHIP_IMAGE,
+  DEFAULT_WRESTLER_IMAGE,
   applyImageFallback,
   resolveImageSrc,
 } from '../constants/imageFallbacks';
@@ -135,6 +136,15 @@ export default function Championships() {
     return player ? player.name : t('common.unknown');
   };
 
+  // Avatar sources for the mobile champion row (hidden on desktop via CSS).
+  const getChampionAvatars = (champion: string | string[]) => {
+    const ids = Array.isArray(champion) ? champion : [champion];
+    return ids.map((id) => {
+      const player = players.find((p) => p.playerId === id);
+      return { id, src: resolveImageSrc(player?.imageUrl, DEFAULT_WRESTLER_IMAGE) };
+    });
+  };
+
   if (loading) {
     return <Skeleton variant="cards" />;
   }
@@ -159,7 +169,7 @@ export default function Championships() {
 
   return (
     <div className="championships-container">
-      <h2>{t('championships.title')}</h2>
+      <h2 className="page-title--mobile-hidden">{t('championships.title')}</h2>
         {divisions.length > 0 && (
             <DivisionFilter
               divisions={divisions}
@@ -189,11 +199,24 @@ export default function Championships() {
 
             <div className="current-champion">
               <label>{t('championships.currentChampion')}:</label>
-              <p>
-                {championship.currentChampion
-                  ? getPlayerName(championship.currentChampion)
-                  : t('common.vacant')}
-              </p>
+              {championship.currentChampion ? (
+                <div className="champion-row">
+                  <div className="champion-avatars" aria-hidden="true">
+                    {getChampionAvatars(championship.currentChampion).map((avatar) => (
+                      <img
+                        key={avatar.id}
+                        src={avatar.src}
+                        onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
+                        alt=""
+                        className="champion-avatar"
+                      />
+                    ))}
+                  </div>
+                  <p>{getPlayerName(championship.currentChampion)}</p>
+                </div>
+              ) : (
+                <p className="vacant-pill">{t('common.vacant')}</p>
+              )}
             </div>
 
             <button

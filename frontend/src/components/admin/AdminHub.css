@@ -1,0 +1,186 @@
+/* AdminHub — mobile grouped hub list for the admin panel (rendered at ≤768px only) */
+
+/* Isolation reset: hub links and group headings must never pick up global
+   element-level rules (present or future). :where() keeps the resets at
+   class specificity (0,1,0) so the design rules below — same specificity,
+   later in this file — re-establish everything. .admin-hub-back-row renders
+   outside the .admin-hub nav, so it is reset by its own class name here and
+   restyled by the later .admin-hub-back-row rule (same-file order wins).
+   `outline: revert` preserves the UA focus outline `all: unset` removes. */
+.admin-hub :where(a),
+.admin-hub-back-row {
+  all: unset;
+  outline: revert;
+  box-sizing: border-box;
+}
+
+.admin-hub :where(h3) {
+  all: unset;
+  display: block;
+  box-sizing: border-box;
+}
+
+.admin-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 12px 0 24px;
+}
+
+.admin-hub-group-title {
+  margin: 0 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-primary);
+}
+
+.admin-hub-card {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+/* Rows */
+
+.admin-hub-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  margin: 0;
+  padding: 8px 14px;
+  background: none;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: normal;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease;
+}
+
+.admin-hub-row:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.admin-hub-card .admin-hub-row + .admin-hub-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.admin-hub-row:hover,
+.admin-hub-row:active {
+  background: var(--color-surface-hover);
+}
+
+.admin-hub-row-leading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-hub-icon-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-text-secondary);
+}
+
+.admin-hub-row-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-hub-row-chevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+/* Danger zone group (super-admin only) */
+
+.admin-hub-group-title-danger {
+  color: var(--color-danger-alt);
+}
+
+.admin-hub-card-danger {
+  border-color: color-mix(in srgb, var(--color-danger) 45%, transparent);
+  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
+}
+
+.admin-hub-row-danger:hover,
+.admin-hub-row-danger:active {
+  background: color-mix(in srgb, var(--color-danger) 14%, var(--color-surface));
+}
+
+.admin-hub-icon-chip-danger {
+  background: color-mix(in srgb, var(--color-danger) 15%, transparent);
+  color: var(--color-danger-alt);
+}
+
+.admin-hub-row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.admin-hub-row-label-danger {
+  font-weight: 600;
+  color: var(--color-danger-alt);
+}
+
+.admin-hub-row-caption {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.admin-hub-row-chevron-danger {
+  color: color-mix(in srgb, var(--color-danger-alt) 60%, transparent);
+}
+
+/* Back row shown above a tab's content on mobile */
+
+.admin-hub-back-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: 4px 0;
+  padding: 4px 4px 4px 0;
+  background: none;
+  color: var(--color-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: normal;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.admin-hub-back-row:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.admin-hub-back-row:hover,
+.admin-hub-back-row:active {
+  color: var(--color-primary-hover);
+}
+
+.admin-hub-back-chevron {
+  flex-shrink: 0;
+}

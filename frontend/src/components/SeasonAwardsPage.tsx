@@ -59,7 +59,7 @@ export default function SeasonAwardsPage() {
   if (loading) {
     return (
       <div className="season-awards-page">
-        <h2>{t('seasonAwards.title')}</h2>
+        <h2 className="page-title--mobile-hidden">{t('seasonAwards.title')}</h2>
         <Skeleton variant="block" count={2} />
       </div>
     );
@@ -68,7 +68,7 @@ export default function SeasonAwardsPage() {
   if (error) {
     return (
       <div className="season-awards-page">
-        <h2>{t('seasonAwards.title')}</h2>
+        <h2 className="page-title--mobile-hidden">{t('seasonAwards.title')}</h2>
         <p>{t('common.error')}: {error}</p>
       </div>
     );
@@ -87,7 +87,7 @@ export default function SeasonAwardsPage() {
 
   return (
     <div className="season-awards-page">
-      <h2>{t('seasonAwards.title')}</h2>
+      <h2 className="page-title--mobile-hidden">{t('seasonAwards.title')}</h2>
       <SeasonSelector
         seasons={seasons}
         selectedSeasonId={selectedSeasonId}
