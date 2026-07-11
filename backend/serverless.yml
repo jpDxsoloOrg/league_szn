@@ -651,6 +651,10 @@ functions:
           path: wrestlers/import
           method: post
           cors: *corsConfig
+      - http:
+          path: wrestlers/reset-assignments
+          method: post
+          cors: *corsConfig
 
   # Stipulations (Phase 1 consolidated: getStipulations, createStipulation, updateStipulation, deleteStipulation)
   stipulations:

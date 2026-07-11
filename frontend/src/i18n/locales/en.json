@@ -587,6 +587,17 @@
     }
   },
   "admin": {
+    "manageWrestlers": {
+      "resetAll": "Reset All Assignments",
+      "resetting": "Resetting...",
+      "resetTitle": "Clear every player's assigned wrestlers and make all wrestlers available again",
+      "resetConfirm": "Reset ALL wrestler assignments? Every player's assigned wrestlers will be cleared and all wrestlers become available again. This cannot be undone.",
+      "resetSuccess": "Assignments reset: {{wrestlers}} wrestler(s) released across {{players}} player(s).",
+      "resetError": "Failed to reset wrestler assignments",
+      "pagePrev": "Previous",
+      "pageNext": "Next",
+      "pageStatus": "Page {{page}} of {{total}}"
+    },
     "heatConfig": {
       "title": "Rivalry Heat Tunables",
       "subtitle": "Tune the rivalry heat formula. Changes apply on the next rivalry write (match rating, promo create, manual recompute).",

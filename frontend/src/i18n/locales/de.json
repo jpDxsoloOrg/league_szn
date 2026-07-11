@@ -587,6 +587,17 @@
     }
   },
   "admin": {
+    "manageWrestlers": {
+      "resetAll": "Alle Zuweisungen zurücksetzen",
+      "resetting": "Wird zurückgesetzt...",
+      "resetTitle": "Alle zugewiesenen Wrestler aller Spieler entfernen und alle Wrestler wieder verfügbar machen",
+      "resetConfirm": "ALLE Wrestler-Zuweisungen zurücksetzen? Die zugewiesenen Wrestler aller Spieler werden entfernt und alle Wrestler sind wieder verfügbar. Dies kann nicht rückgängig gemacht werden.",
+      "resetSuccess": "Zuweisungen zurückgesetzt: {{wrestlers}} Wrestler bei {{players}} Spieler(n) freigegeben.",
+      "resetError": "Zurücksetzen der Wrestler-Zuweisungen fehlgeschlagen",
+      "pagePrev": "Zurück",
+      "pageNext": "Weiter",
+      "pageStatus": "Seite {{page}} von {{total}}"
+    },
     "heatConfig": {
       "title": "Rivalitäts-Heat-Einstellungen",
       "subtitle": "Stelle die Heat-Formel ein. Änderungen greifen beim nächsten Rivalitäts-Update (Match-Bewertung, Promo-Erstellung, manuelle Neuberechnung).",
