@@ -184,7 +184,7 @@ export default function MatchSearch() {
 
   return (
     <div className="match-search-container">
-      <div className="match-search-header">
+      <div className="match-search-header page-title--mobile-hidden">
         <h2>{t('matchSearch.title')}</h2>
       </div>
       {isMobile && (

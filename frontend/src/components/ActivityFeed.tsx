@@ -119,7 +119,7 @@ export default function ActivityFeed() {
   if (loading && items.length === 0) {
     return (
       <div className="activity-feed">
-        <h1 className="activity-feed__title">{t('activity.title')}</h1>
+        <h1 className="activity-feed__title page-title--mobile-hidden">{t('activity.title')}</h1>
         <Skeleton variant="block" count={5} />
       </div>
     );
@@ -132,7 +132,7 @@ export default function ActivityFeed() {
 
   return (
     <div className="activity-feed">
-      <h1 className="activity-feed__title">{t('activity.title')}</h1>
+      <h1 className="activity-feed__title page-title--mobile-hidden">{t('activity.title')}</h1>
 
       <div className="activity-feed__filters" role="tablist" aria-label={t('activity.filters.label')}>
         {TYPE_FILTERS.map(({ value, key }) => (

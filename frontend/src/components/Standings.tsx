@@ -182,7 +182,7 @@ export default function Standings() {
   return (
     <div className="standings-container">
       <div className="standings-header">
-        <h2>{t('standings.title')}</h2>
+        <h2 className="page-title--mobile-hidden">{t('standings.title')}</h2>
         {seasons.length > 0 && (
           <div className="season-selector">
             <label htmlFor="season-select">{t('standings.season')}:</label>

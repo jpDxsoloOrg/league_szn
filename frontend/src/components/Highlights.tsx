@@ -82,7 +82,7 @@ export default function Highlights() {
   return (
     <div className="highlights-page">
       <div className="highlights-header">
-        <h1>{t('highlights.title')}</h1>
+        <h1 className="page-title--mobile-hidden">{t('highlights.title')}</h1>
         <p className="highlights-subtitle">{t('highlights.subtitle')}</p>
       </div>
 

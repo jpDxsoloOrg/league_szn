@@ -169,7 +169,7 @@ export default function Championships() {
 
   return (
     <div className="championships-container">
-      <h2>{t('championships.title')}</h2>
+      <h2 className="page-title--mobile-hidden">{t('championships.title')}</h2>
         {divisions.length > 0 && (
             <DivisionFilter
               divisions={divisions}

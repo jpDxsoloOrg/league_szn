@@ -184,7 +184,7 @@ export default function RivalryHub() {
     <div className="rivalry-hub">
       <header className="rivalry-hub__header">
         <div>
-          <h1 className="rivalry-hub__title">{t('rivalries.hub.heading')}</h1>
+          <h1 className="rivalry-hub__title page-title--mobile-hidden">{t('rivalries.hub.heading')}</h1>
           <p className="rivalry-hub__tagline">{t('rivalries.hub.tagline')}</p>
         </div>
         <div className="rivalry-hub__header-actions">

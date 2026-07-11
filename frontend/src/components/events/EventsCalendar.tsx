@@ -299,7 +299,7 @@ export default function EventsCalendar() {
   if (loading) {
     return (
       <div className="events-calendar-page">
-        <h2 className="events-title">{t('events.title')}</h2>
+        <h2 className="events-title page-title--mobile-hidden">{t('events.title')}</h2>
         <Skeleton variant="calendar" />
       </div>
     );
@@ -308,7 +308,7 @@ export default function EventsCalendar() {
   if (error) {
     return (
       <div className="events-calendar-page">
-        <h2 className="events-title">{t('events.title')}</h2>
+        <h2 className="events-title page-title--mobile-hidden">{t('events.title')}</h2>
         <div className="error-message">{error}</div>
       </div>
     );
@@ -319,7 +319,7 @@ export default function EventsCalendar() {
   if (!hasContent) {
     return (
       <div className="events-calendar-page">
-        <h2 className="events-title">{t('events.title')}</h2>
+        <h2 className="events-title page-title--mobile-hidden">{t('events.title')}</h2>
         <EmptyState
           title={t('events.title')}
           description={t('emptyState.checkBackSoon')}
@@ -331,7 +331,7 @@ export default function EventsCalendar() {
   return (
     <div className="events-calendar-page">
       <div className="events-title-row">
-        <h2 className="events-title">{t('events.title')}</h2>
+        <h2 className="events-title page-title--mobile-hidden">{t('events.title')}</h2>
         {isAdminOrModerator && (
           <button
             className="create-event-calendar-btn"

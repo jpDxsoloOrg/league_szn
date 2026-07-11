@@ -154,6 +154,13 @@ tr:hover {
   padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 
+/* In the mobile shell the MobileHeader already shows the screen title, so
+   in-page page-title headings tagged with this class are redundant there.
+   Desktop never renders .app-layout--mobile, so it is unaffected. */
+.app-layout--mobile .page-title--mobile-hidden {
+  display: none;
+}
+
 /* Print: hide app chrome and ensure readable contrast */
 @media print {
   .sidebar,
