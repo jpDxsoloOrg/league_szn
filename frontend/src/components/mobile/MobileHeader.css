@@ -1,3 +1,12 @@
+/* Isolation reset: the title must never pick up global heading rules
+   (present or future — e.g. App.css's h2 rule pattern). :where() keeps this
+   at class specificity (0,1,0) so .mobile-header__title below wins. */
+.mobile-header :where(h1) {
+  all: unset;
+  display: block;
+  box-sizing: border-box;
+}
+
 .mobile-header {
   position: fixed;
   top: 0;
@@ -15,8 +24,10 @@
 }
 
 .mobile-header__title {
+  margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
+  line-height: normal;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-primary);

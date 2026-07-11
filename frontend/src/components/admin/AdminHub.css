@@ -1,5 +1,25 @@
 /* AdminHub — mobile grouped hub list for the admin panel (rendered at ≤768px only) */
 
+/* Isolation reset: hub links and group headings must never pick up global
+   element-level rules (present or future). :where() keeps the resets at
+   class specificity (0,1,0) so the design rules below — same specificity,
+   later in this file — re-establish everything. .admin-hub-back-row renders
+   outside the .admin-hub nav, so it is reset by its own class name here and
+   restyled by the later .admin-hub-back-row rule (same-file order wins).
+   `outline: revert` preserves the UA focus outline `all: unset` removes. */
+.admin-hub :where(a),
+.admin-hub-back-row {
+  all: unset;
+  outline: revert;
+  box-sizing: border-box;
+}
+
+.admin-hub :where(h3) {
+  all: unset;
+  display: block;
+  box-sizing: border-box;
+}
+
 .admin-hub {
   display: flex;
   flex-direction: column;
@@ -30,11 +50,23 @@
   align-items: center;
   justify-content: space-between;
   min-height: 52px;
+  margin: 0;
   padding: 8px 14px;
+  background: none;
   color: var(--color-text);
+  font-family: inherit;
   font-size: 1rem;
+  font-weight: 400;
+  line-height: normal;
   text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   transition: background-color 0.15s ease;
+}
+
+.admin-hub-row:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 .admin-hub-card .admin-hub-row + .admin-hub-row {
@@ -128,10 +160,20 @@
   min-height: 44px;
   margin: 4px 0;
   padding: 4px 4px 4px 0;
+  background: none;
   color: var(--color-primary);
+  font-family: inherit;
   font-size: 0.9rem;
   font-weight: 600;
+  line-height: normal;
   text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.admin-hub-back-row:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .admin-hub-back-row:hover,

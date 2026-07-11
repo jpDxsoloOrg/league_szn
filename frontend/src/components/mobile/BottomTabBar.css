@@ -1,6 +1,18 @@
 /* BottomTabBar — fixed native-app-style tab bar for mobile viewports.
    Matches docs/design/mobile-app/league-szn-home-dashboard (bottom nav). */
 
+/* Isolation reset: the shell must never inherit global element-level rules
+   (e.g. App.css's legacy button fallback or its :hover variant). :where()
+   keeps this at class specificity (0,1,0) so the design rules below — same
+   specificity, later in this file — re-establish everything the tab bar
+   needs. `outline: revert` keeps the UA focus outline `all: unset` removes
+   (a component :focus-visible style is also defined below). */
+.bottom-tab-bar :where(a, button) {
+  all: unset;
+  outline: revert;
+  box-sizing: border-box;
+}
+
 .bottom-tab-bar {
   position: fixed;
   bottom: 0;
@@ -25,15 +37,32 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
+  margin: 0;
   padding: 6px 2px;
   color: var(--color-text-muted);
   text-decoration: none;
+  text-align: center;
   background: none;
   border: none;
+  border-radius: 0;
   font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.2;
+  appearance: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: color 0.15s ease, transform 0.15s ease;
+}
+
+/* Explicit :hover — global element rules like `button:where(...):hover`
+   carry (0,1,1) specificity and would otherwise repaint the More button. */
+.bottom-tab-bar__item:hover {
+  background: none;
+}
+
+.bottom-tab-bar__item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 .bottom-tab-bar__item:active {

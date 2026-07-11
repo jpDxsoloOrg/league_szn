@@ -436,6 +436,19 @@
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    /* Gold primary set explicitly — the base .btn-save rule lives in
+       AdminContenderConfig.css (a different, lazily-loaded stylesheet) and
+       the "btn-" class name is excluded from App.css's button fallback, so
+       without this the save button could render with UA defaults. */
+    background-color: var(--color-primary);
+    border: none;
+    color: var(--color-on-primary);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .match-card-builder .btn-save:hover:not(:disabled) {
+    background-color: var(--color-primary-hover);
   }
 
   .builder-sidebar {

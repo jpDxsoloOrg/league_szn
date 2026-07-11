@@ -397,6 +397,12 @@
     padding: 0.75rem 1rem !important;
     border-radius: 999px !important;
     font-weight: 700;
+    /* Gold primary set explicitly — this used to lean on App.css's legacy
+       element-level button fallback, which class rules now override. */
+    background-color: var(--color-primary);
+    border: none;
+    color: var(--color-on-primary);
+    cursor: pointer;
   }
 
   .am-actionbar .cancel-btn {
