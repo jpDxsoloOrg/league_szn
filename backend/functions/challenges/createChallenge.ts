@@ -30,7 +30,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('matchType is required');
     }
 
-    const { roster: { players, tagTeams }, user: { challenges } } = getRepositories();
+    const { roster: { players, tagTeams }, user: { challenges }, competition: { championships } } = getRepositories();
+
+    if (championshipId) {
+      const championship = await championships.findById(championshipId);
+      if (!championship) {
+        return badRequest('Championship not found');
+      }
+      if (championship.isActive === false) {
+        return badRequest('This championship is inactive and cannot be challenged for');
+      }
+    }
 
     // Find the challenger's player record via their user sub
     const challengerPlayer = await players.findByUserId(auth.sub);

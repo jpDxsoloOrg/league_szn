@@ -77,6 +77,21 @@
   color: var(--color-text-secondary);
 }
 
+.championship-card--inactive .championship-image {
+  filter: grayscale(0.8);
+  opacity: 0.75;
+}
+
+.championship-inactive-badge {
+  background-color: #7f1d1d;
+  color: #fca5a5;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
 .current-champion {
   margin: 1rem 0;
 }

@@ -103,6 +103,36 @@ describe('createChallenge', () => {
     expect(body.message).toBeUndefined();
   });
 
+  it('returns 400 when the championship does not exist', async () => {
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockGet.mockResolvedValueOnce({ Item: undefined }); // championship lookup
+    mockPut.mockResolvedValue({});
+
+    const result = await createChallenge(
+      wrestlerEvent({ challengedId: 'p2', matchType: 'Singles', championshipId: 'ghost-title' }),
+      ctx, cb,
+    );
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toBe('Championship not found');
+    expect(mockPut).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when the championship is inactive', async () => {
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockGet.mockResolvedValueOnce({ Item: { championshipId: 'title-1', isActive: false } }); // championship lookup
+    mockPut.mockResolvedValue({});
+
+    const result = await createChallenge(
+      wrestlerEvent({ challengedId: 'p2', matchType: 'Singles', championshipId: 'title-1' }),
+      ctx, cb,
+    );
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toBe('This championship is inactive and cannot be challenged for');
+    expect(mockPut).not.toHaveBeenCalled();
+  });
+
   it('returns 400 when user does not have Wrestler role', async () => {
     const event = withAuth(makeEvent({ body: JSON.stringify({ challengedId: 'p2', matchType: 'Singles' }) }), 'Fantasy');
     const result = await createChallenge(event, ctx, cb);

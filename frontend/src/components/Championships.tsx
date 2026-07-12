@@ -35,8 +35,9 @@ export default function Championships() {
     try {
       setLoading(true);
       setError(null);
+      // Include inactive titles so their history stays publicly viewable
       const [champData, playerData, divisionsData] = await Promise.all([
-        championshipsApi.getAll(),
+        championshipsApi.getAll(undefined, { includeInactive: true }),
         playersApi.getAll(),
         divisionsApi.getAll(),
       ]);
@@ -58,7 +59,7 @@ export default function Championships() {
         setLoading(true);
         setError(null);
         const [champData, playerData, divisionsData] = await Promise.all([
-          championshipsApi.getAll(abortController.signal),
+          championshipsApi.getAll(abortController.signal, { includeInactive: true }),
           playersApi.getAll(abortController.signal),
           divisionsApi.getAll(abortController.signal),
         ]);
@@ -116,13 +117,14 @@ export default function Championships() {
   }, [selectedChampionship]);
 
   const filteredChampionships = useMemo((): Championship[] => {
-    if (selectedDivision === 'all') {
-      return championships;
-    }
+    let result = championships;
     if (selectedDivision === 'none') {
-      return championships.filter(c => !c.divisionId);
+      result = championships.filter(c => !c.divisionId);
+    } else if (selectedDivision !== 'all') {
+      result = championships.filter(c => c.divisionId === selectedDivision);
     }
-    return championships.filter(c => c.divisionId === selectedDivision);
+    // Active titles first; inactive ones stay listed so their history remains viewable
+    return [...result].sort((a, b) => Number(b.isActive !== false) - Number(a.isActive !== false));
   }, [championships, selectedDivision]);
 
   const getPlayerName = (playerId: string | string[]) => {
@@ -181,7 +183,10 @@ export default function Championships() {
           )}
       <div className="championships-grid">
         {filteredChampionships.map((championship) => (
-          <div key={championship.championshipId} className="championship-card">
+          <div
+            key={championship.championshipId}
+            className={`championship-card${championship.isActive === false ? ' championship-card--inactive' : ''}`}
+          >
             <div className="championship-image-container">
               <img
                 src={resolveImageSrc(championship.imageUrl, DEFAULT_CHAMPIONSHIP_IMAGE)}
@@ -195,6 +200,9 @@ export default function Championships() {
               <span className="championship-type">
                 {championship.type === 'singles' ? t('championships.singles') : t('championships.tagTeam')}
               </span>
+              {championship.isActive === false && (
+                <span className="championship-inactive-badge">{t('championships.inactive')}</span>
+              )}
             </div>
 
             <div className="current-champion">

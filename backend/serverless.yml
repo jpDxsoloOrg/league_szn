@@ -460,6 +460,10 @@ functions:
           path: championships/{championshipId}/vacate
           method: post
           cors: *corsConfig
+      - http:
+          path: championships/{championshipId}/assign
+          method: post
+          cors: *corsConfig
 
   # Tournaments (Phase 3 consolidated: getTournaments, createTournament, updateTournament)
   tournaments:

@@ -17,6 +17,7 @@ import { handler as getChampionshipHistory } from '../getChampionshipHistory';
 import { handler as updateChampionship } from '../updateChampionship';
 import { handler as deleteChampionship } from '../deleteChampionship';
 import { handler as vacateChampionship } from '../vacateChampionship';
+import { handler as assignChampion } from '../assignChampion';
 
 let repos: Repositories;
 const ctx = {} as Context;
@@ -110,6 +111,18 @@ describe('getChampionships', () => {
     const items = body(r);
     expect(items).toHaveLength(2);
     expect(items.map((c: { name: string }) => c.name).sort()).toEqual(['Active', 'Default']);
+  });
+
+  it('returns inactive championships when includeInactive=true', async () => {
+    const store = (repos.competition as unknown as { championshipsStore: Map<string, Record<string, unknown>> }).championshipsStore;
+    store.set('c1', { championshipId: 'c1', name: 'Active', isActive: true, type: 'singles', createdAt: '' } as Record<string, unknown>);
+    store.set('c2', { championshipId: 'c2', name: 'Retired', isActive: false, type: 'singles', createdAt: '' } as Record<string, unknown>);
+
+    const r = await getChampionships(ev({ queryStringParameters: { includeInactive: 'true' } }), ctx, cb);
+    expect(r!.statusCode).toBe(200);
+    const items = body(r);
+    expect(items).toHaveLength(2);
+    expect(items.map((c: { name: string }) => c.name).sort()).toEqual(['Active', 'Retired']);
   });
 
   it('returns empty array when no championships exist', async () => {
@@ -213,6 +226,25 @@ describe('updateChampionship', () => {
     }), ctx, cb);
     expect(r!.statusCode).toBe(200);
     expect(body(r).currentChampion).toBe('p1');
+  });
+
+  it('updates isActive field to deactivate and reactivate a championship', async () => {
+    await repos.competition.championships.create({ name: 'Belt', type: 'singles' });
+    const champ = (await repos.competition.championships.list())[0];
+
+    const deactivate = await updateChampionship(ev({
+      pathParameters: { championshipId: champ.championshipId },
+      body: JSON.stringify({ isActive: false }),
+    }), ctx, cb);
+    expect(deactivate!.statusCode).toBe(200);
+    expect(body(deactivate).isActive).toBe(false);
+
+    const reactivate = await updateChampionship(ev({
+      pathParameters: { championshipId: champ.championshipId },
+      body: JSON.stringify({ isActive: true }),
+    }), ctx, cb);
+    expect(reactivate!.statusCode).toBe(200);
+    expect(body(reactivate).isActive).toBe(true);
   });
 
   it('updates divisionId field', async () => {
@@ -340,6 +372,171 @@ describe('vacateChampionship', () => {
 
   it('returns 400 when championshipId is missing', async () => {
     const r = await vacateChampionship(ev({ pathParameters: null }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(body(r).message).toBe('Championship ID is required');
+  });
+});
+
+describe('assignChampion', () => {
+  const seedPlayers = (...playerIds: string[]) => {
+    const playersStore = (repos.roster as unknown as { playersStore: Map<string, Record<string, unknown>> }).playersStore;
+    for (const playerId of playerIds) {
+      playersStore.set(playerId, { playerId, name: `Player ${playerId}` } as Record<string, unknown>);
+    }
+  };
+  const champStore = () =>
+    (repos.competition as unknown as { championshipsStore: Map<string, Record<string, unknown>> }).championshipsStore;
+  const historyStore = () =>
+    (repos.competition as unknown as { historyStore: Record<string, unknown>[] }).historyStore;
+
+  it('assigns a champion to a vacant title and opens a reign without a matchId', async () => {
+    seedPlayers('p1');
+    champStore().set('c1', {
+      championshipId: 'c1', name: 'World Title', type: 'singles',
+      isActive: true, createdAt: new Date().toISOString(),
+    });
+
+    const r = await assignChampion(ev({
+      pathParameters: { championshipId: 'c1' },
+      body: JSON.stringify({ champion: 'p1' }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(200);
+    expect(body(r).currentChampion).toBe('p1');
+
+    const reigns = historyStore().filter(h => h.championshipId === 'c1');
+    expect(reigns).toHaveLength(1);
+    expect(reigns[0].champion).toBe('p1');
+    expect(reigns[0].matchId).toBeUndefined();
+    expect(reigns[0].lostDate).toBeUndefined();
+    expect(reigns[0].defenses).toBe(0);
+  });
+
+  it('closes the previous reign when replacing an existing champion', async () => {
+    seedPlayers('p1', 'p2');
+    champStore().set('c1', {
+      championshipId: 'c1', name: 'World Title', type: 'singles',
+      currentChampion: 'p1', isActive: true, createdAt: new Date().toISOString(),
+    });
+    historyStore().push({ championshipId: 'c1', wonDate: '2024-01-01', champion: 'p1' });
+
+    const r = await assignChampion(ev({
+      pathParameters: { championshipId: 'c1' },
+      body: JSON.stringify({ champion: 'p2' }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(200);
+    expect(body(r).currentChampion).toBe('p2');
+
+    const oldReign = historyStore().find(h => h.championshipId === 'c1' && h.wonDate === '2024-01-01');
+    expect(oldReign!.lostDate).toBeDefined();
+    expect(oldReign!.daysHeld).toBeDefined();
+
+    const openReigns = historyStore().filter(h => h.championshipId === 'c1' && h.lostDate === undefined);
+    expect(openReigns).toHaveLength(1);
+    expect(openReigns[0].champion).toBe('p2');
+  });
+
+  it('assigns tag team champions as an array', async () => {
+    seedPlayers('p1', 'p2');
+    champStore().set('c1', {
+      championshipId: 'c1', name: 'Tag Titles', type: 'tag',
+      isActive: true, createdAt: new Date().toISOString(),
+    });
+
+    const r = await assignChampion(ev({
+      pathParameters: { championshipId: 'c1' },
+      body: JSON.stringify({ champion: ['p1', 'p2'] }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(200);
+    expect(body(r).currentChampion).toEqual(['p1', 'p2']);
+  });
+
+  it('returns 400 when the player is already the champion', async () => {
+    seedPlayers('p1');
+    champStore().set('c1', {
+      championshipId: 'c1', name: 'World Title', type: 'singles',
+      currentChampion: 'p1', isActive: true, createdAt: new Date().toISOString(),
+    });
+
+    const r = await assignChampion(ev({
+      pathParameters: { championshipId: 'c1' },
+      body: JSON.stringify({ champion: 'p1' }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(body(r).message).toBe('This player is already the champion');
+  });
+
+  it('returns 400 for multiple champions on a singles title', async () => {
+    seedPlayers('p1', 'p2');
+    champStore().set('c1', {
+      championshipId: 'c1', name: 'World Title', type: 'singles',
+      isActive: true, createdAt: new Date().toISOString(),
+    });
+
+    const r = await assignChampion(ev({
+      pathParameters: { championshipId: 'c1' },
+      body: JSON.stringify({ champion: ['p1', 'p2'] }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(body(r).message).toBe('A singles championship must have exactly one champion');
+  });
+
+  it('returns 400 for a single champion on a tag title', async () => {
+    seedPlayers('p1');
+    champStore().set('c1', {
+      championshipId: 'c1', name: 'Tag Titles', type: 'tag',
+      isActive: true, createdAt: new Date().toISOString(),
+    });
+
+    const r = await assignChampion(ev({
+      pathParameters: { championshipId: 'c1' },
+      body: JSON.stringify({ champion: 'p1' }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(body(r).message).toBe('A tag championship requires at least two champions');
+  });
+
+  it('returns 400 when a player does not exist', async () => {
+    champStore().set('c1', {
+      championshipId: 'c1', name: 'World Title', type: 'singles',
+      isActive: true, createdAt: new Date().toISOString(),
+    });
+
+    const r = await assignChampion(ev({
+      pathParameters: { championshipId: 'c1' },
+      body: JSON.stringify({ champion: 'ghost' }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(body(r).message).toBe('Player not found: ghost');
+  });
+
+  it('returns 400 when champion is missing', async () => {
+    champStore().set('c1', {
+      championshipId: 'c1', name: 'World Title', type: 'singles',
+      isActive: true, createdAt: new Date().toISOString(),
+    });
+
+    const r = await assignChampion(ev({
+      pathParameters: { championshipId: 'c1' },
+      body: JSON.stringify({}),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+  });
+
+  it('returns 404 if championship not found', async () => {
+    seedPlayers('p1');
+    const r = await assignChampion(ev({
+      pathParameters: { championshipId: 'missing' },
+      body: JSON.stringify({ champion: 'p1' }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(404);
+    expect(body(r).message).toBe('Championship not found');
+  });
+
+  it('returns 400 when championshipId is missing', async () => {
+    const r = await assignChampion(ev({
+      pathParameters: null,
+      body: JSON.stringify({ champion: 'p1' }),
+    }), ctx, cb);
     expect(r!.statusCode).toBe(400);
     expect(body(r).message).toBe('Championship ID is required');
   });
