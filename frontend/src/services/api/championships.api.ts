@@ -2,8 +2,9 @@ import type { Championship, ChampionshipReign } from '../../types';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
 export const championshipsApi = {
-  getAll: async (signal?: AbortSignal): Promise<Championship[]> => {
-    return fetchWithAuth(`${API_BASE_URL}/championships`, {}, signal);
+  getAll: async (signal?: AbortSignal, options?: { includeInactive?: boolean }): Promise<Championship[]> => {
+    const query = options?.includeInactive ? '?includeInactive=true' : '';
+    return fetchWithAuth(`${API_BASE_URL}/championships${query}`, {}, signal);
   },
 
   create: async (championship: Omit<Championship, 'championshipId' | 'createdAt'>): Promise<Championship> => {
@@ -33,6 +34,13 @@ export const championshipsApi = {
   vacate: async (championshipId: string): Promise<Championship> => {
     return fetchWithAuth(`${API_BASE_URL}/championships/${championshipId}/vacate`, {
       method: 'POST',
+    });
+  },
+
+  assignChampion: async (championshipId: string, champion: string | string[]): Promise<Championship> => {
+    return fetchWithAuth(`${API_BASE_URL}/championships/${championshipId}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({ champion }),
     });
   },
 };

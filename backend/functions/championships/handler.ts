@@ -4,6 +4,7 @@ import { handler as getChampionshipHistoryHandler } from './getChampionshipHisto
 import { handler as updateChampionshipHandler } from './updateChampionship';
 import { handler as deleteChampionshipHandler } from './deleteChampionship';
 import { handler as vacateChampionshipHandler } from './vacateChampionship';
+import { handler as assignChampionHandler } from './assignChampion';
 import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
@@ -43,6 +44,12 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/championships/{championshipId}/vacate',
     method: 'POST',
     handler: vacateChampionshipHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/championships/{championshipId}/assign',
+    method: 'POST',
+    handler: assignChampionHandler,
     requireAuth: true,
   },
 ];

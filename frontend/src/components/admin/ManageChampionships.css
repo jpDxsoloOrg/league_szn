@@ -218,7 +218,9 @@ label.file-input-label:hover {
 /* Shared action button layout and polish */
 .championship-edit-btn,
 .championship-vacate-btn,
-.championship-delete-btn {
+.championship-delete-btn,
+.championship-assign-btn,
+.championship-toggle-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -276,6 +278,73 @@ label.file-input-label:hover {
   cursor: not-allowed;
 }
 
+.championship-assign-btn {
+  background-color: #14532d !important;
+  color: #bbf7d0;
+  flex: 1;
+  min-width: 0;
+}
+
+.championship-assign-btn:hover {
+  background-color: #166534 !important;
+}
+
+.championship-toggle-btn {
+  background-color: #374151 !important;
+  color: #e5e7eb;
+  flex: 1;
+  min-width: 0;
+}
+
+.championship-toggle-btn:hover {
+  background-color: #4b5563 !important;
+}
+
+.championship-toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Assign champion modal */
+.assign-champion-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.assign-champion-modal {
+  background-color: #1a1a1a;
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.assign-champion-modal h3 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: #d4af37;
+}
+
+.assign-champion-hint {
+  color: #bbb;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.assign-champion-form {
+  display: grid;
+  gap: 1.5rem;
+}
+
 .championship-division {
   color: #bbb;
   margin-bottom: 0.5rem;
@@ -314,8 +383,14 @@ label.file-input-label:hover {
 
   .championship-edit-btn,
   .championship-vacate-btn,
-  .championship-delete-btn {
+  .championship-delete-btn,
+  .championship-assign-btn,
+  .championship-toggle-btn {
     min-width: 100%;
+  }
+
+  .assign-champion-modal {
+    padding: 1.25rem;
   }
 
   .form-actions {

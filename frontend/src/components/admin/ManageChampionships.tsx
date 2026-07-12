@@ -22,6 +22,13 @@ export default function ManageChampionships() {
   const [editingChampionship, setEditingChampionship] = useState<Championship | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [vacating, setVacating] = useState<string | null>(null);
+  const [togglingActive, setTogglingActive] = useState<string | null>(null);
+
+  // Assign-champion modal state
+  const [assigningChampionship, setAssigningChampionship] = useState<Championship | null>(null);
+  const [assignChampion1, setAssignChampion1] = useState('');
+  const [assignChampion2, setAssignChampion2] = useState('');
+  const [assigning, setAssigning] = useState(false);
 
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -46,7 +53,8 @@ export default function ManageChampionships() {
   const loadChampionships = async () => {
     try {
       setLoading(true);
-      const data = await championshipsApi.getAll();
+      // Include inactive titles so admins can see and reactivate them
+      const data = await championshipsApi.getAll(undefined, { includeInactive: true });
       setChampionships(data);
     } catch (_err) {
       setError('Failed to load championships');
@@ -277,6 +285,71 @@ export default function ManageChampionships() {
     }
   };
 
+  const handleToggleActive = async (championship: Championship) => {
+    const isCurrentlyActive = championship.isActive !== false;
+    if (isCurrentlyActive && !confirm(`Deactivate "${championship.name}"? It will no longer be available for new matches or challenges, but its title history stays visible.`)) {
+      return;
+    }
+
+    setTogglingActive(championship.championshipId);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await championshipsApi.update(championship.championshipId, { isActive: !isCurrentlyActive });
+      setSuccess(isCurrentlyActive ? 'Championship deactivated.' : 'Championship reactivated.');
+      await loadChampionships();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update championship status');
+    } finally {
+      setTogglingActive(null);
+    }
+  };
+
+  const openAssignChampion = (championship: Championship) => {
+    setAssigningChampionship(championship);
+    setAssignChampion1('');
+    setAssignChampion2('');
+    setError(null);
+    setSuccess(null);
+  };
+
+  const closeAssignChampion = () => {
+    if (assigning) return;
+    setAssigningChampionship(null);
+  };
+
+  const handleAssignChampion = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!assigningChampionship || assigning) return;
+
+    const isTag = assigningChampionship.type === 'tag';
+    if (!assignChampion1 || (isTag && !assignChampion2)) {
+      setError(isTag ? 'Select both tag team champions' : 'Select a champion');
+      return;
+    }
+    if (isTag && assignChampion1 === assignChampion2) {
+      setError('Tag team champions must be two different players');
+      return;
+    }
+
+    setAssigning(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const champion = isTag ? [assignChampion1, assignChampion2] : assignChampion1;
+      await championshipsApi.assignChampion(assigningChampionship.championshipId, champion);
+      setSuccess('Champion assigned successfully!');
+      setAssigningChampionship(null);
+      await loadChampionships();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to assign champion');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading championships...</div>;
   }
@@ -405,7 +478,7 @@ export default function ManageChampionships() {
                   Champion: {getChampionName(championship.currentChampion)}
                 </div>
                 <div className="championship-status">
-                  {championship.isActive ? (
+                  {championship.isActive !== false ? (
                     <span className="status-active">Active</span>
                   ) : (
                     <span className="status-inactive">Inactive</span>
@@ -417,6 +490,21 @@ export default function ManageChampionships() {
                     className="championship-edit-btn"
                   >
                     Edit
+                  </button>
+                  <button
+                    onClick={() => openAssignChampion(championship)}
+                    className="championship-assign-btn"
+                  >
+                    Assign Champion
+                  </button>
+                  <button
+                    onClick={() => handleToggleActive(championship)}
+                    className="championship-toggle-btn"
+                    disabled={togglingActive === championship.championshipId}
+                  >
+                    {togglingActive === championship.championshipId
+                      ? 'Updating...'
+                      : championship.isActive !== false ? 'Deactivate' : 'Activate'}
                   </button>
                   {championship.currentChampion && (
                     <button
@@ -440,6 +528,74 @@ export default function ManageChampionships() {
           </div>
         )}
       </div>
+
+      {assigningChampionship && (
+        <div className="assign-champion-overlay" onClick={closeAssignChampion}>
+          <div
+            className="assign-champion-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="assign-champion-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="assign-champion-title">Assign Champion — {assigningChampionship.name}</h3>
+            <p className="assign-champion-hint">
+              Crown a champion directly without a match. The current reign (if any) will be
+              closed and the new reign recorded in the title history.
+            </p>
+            <form onSubmit={handleAssignChampion} className="assign-champion-form">
+              <div className="form-group">
+                <label htmlFor="assign-champion-1">
+                  {assigningChampionship.type === 'tag' ? 'Champion 1' : 'New Champion'}
+                </label>
+                <select
+                  id="assign-champion-1"
+                  value={assignChampion1}
+                  onChange={(e) => setAssignChampion1(e.target.value)}
+                  required
+                >
+                  <option value="">Select a player</option>
+                  {players.map((player) => (
+                    <option key={player.playerId} value={player.playerId}>
+                      {player.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {assigningChampionship.type === 'tag' && (
+                <div className="form-group">
+                  <label htmlFor="assign-champion-2">Champion 2</label>
+                  <select
+                    id="assign-champion-2"
+                    value={assignChampion2}
+                    onChange={(e) => setAssignChampion2(e.target.value)}
+                    required
+                  >
+                    <option value="">Select a player</option>
+                    {players
+                      .filter((player) => player.playerId !== assignChampion1)
+                      .map((player) => (
+                        <option key={player.playerId} value={player.playerId}>
+                          {player.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="form-actions">
+                <button type="submit" disabled={assigning}>
+                  {assigning ? 'Assigning...' : 'Assign Champion'}
+                </button>
+                <button type="button" onClick={closeAssignChampion} className="cancel-btn" disabled={assigning}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
