@@ -4,10 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockUsersApi, mockPlayersApi, mockDivisionsApi, mockUseAuth } = vi.hoisted(() => ({
+const { mockUsersApi, mockPlayersApi, mockDivisionsApi, mockWrestlersApi, mockUseAuth } = vi.hoisted(() => ({
   mockUsersApi: { list: vi.fn(), updateRole: vi.fn(), toggleEnabled: vi.fn() },
   mockPlayersApi: { getAll: vi.fn(), update: vi.fn() },
   mockDivisionsApi: { getAll: vi.fn() },
+  mockWrestlersApi: { getAll: vi.fn() },
   mockUseAuth: vi.fn(),
 }));
 
@@ -15,6 +16,7 @@ vi.mock('../../../services/api', () => ({
   usersApi: mockUsersApi,
   playersApi: mockPlayersApi,
   divisionsApi: mockDivisionsApi,
+  wrestlersApi: mockWrestlersApi,
 }));
 
 vi.mock('../../../contexts/AuthContext', () => ({
@@ -22,11 +24,11 @@ vi.mock('../../../contexts/AuthContext', () => ({
 }));
 
 import ManageUsers from '../ManageUsers';
-import type { Division } from '../../../types';
+import type { Division, Wrestler } from '../../../types';
 
 // --- Test data ---
 interface LinkedPlayer {
-  playerId: string; divisionId: string; currentWrestler: string;
+  playerId: string; divisionId: string; currentWrestler: string; currentWrestlerId: string;
 }
 
 interface CognitoUser {
@@ -40,6 +42,22 @@ const mockDivisions: Division[] = [
   { divisionId: 'div-2', name: 'SmackDown', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
 ];
 
+const mockWrestlers: Wrestler[] = [
+  {
+    wrestlerId: 'w-rock', promotion: 'WWE', name: 'The Rock', overallCap: 95,
+    isInUse: true, assignedPlayerId: 'pl-1', assignedSlot: 'primary',
+    createdAt: '2024-01-01', updatedAt: '2024-01-01',
+  },
+  {
+    wrestlerId: 'w-austin', promotion: 'WWE', name: 'Stone Cold', overallCap: 94,
+    isInUse: false, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+  },
+  {
+    wrestlerId: 'w-omega', promotion: 'AEW', name: 'Kenny Omega', overallCap: 93,
+    isInUse: false, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+  },
+];
+
 const mockUsers: CognitoUser[] = [
   {
     username: 'admin-user', sub: 'sub-1', email: 'admin@league.com', name: 'Admin',
@@ -50,7 +68,7 @@ const mockUsers: CognitoUser[] = [
     username: 'wrestler-user', sub: 'sub-2', email: 'wrestler@league.com', name: 'Wrestler',
     wrestlerName: 'The Rock', status: 'CONFIRMED', enabled: true,
     created: '2024-02-01T00:00:00Z', groups: ['Wrestler'],
-    player: { playerId: 'pl-1', divisionId: 'div-1', currentWrestler: 'The Rock' },
+    player: { playerId: 'pl-1', divisionId: 'div-1', currentWrestler: 'The Rock', currentWrestlerId: 'w-rock' },
   },
   {
     username: 'request-user', sub: 'sub-3', email: 'request@league.com', name: 'Requester',
@@ -74,7 +92,7 @@ const mockUsers: CognitoUser[] = [
     username: 'no-wrestler-user', sub: 'sub-6', email: 'nowrestler@league.com', name: 'No Wrestler',
     wrestlerName: '', status: 'CONFIRMED', enabled: true,
     created: '2024-04-01T00:00:00Z', groups: ['Wrestler'],
-    player: { playerId: 'pl-2', divisionId: '', currentWrestler: '' },
+    player: { playerId: 'pl-2', divisionId: '', currentWrestler: '', currentWrestlerId: '' },
   },
 ];
 
@@ -82,6 +100,7 @@ function setupMocks(overrides: { isSuperAdmin?: boolean } = {}) {
   mockUseAuth.mockReturnValue({ isSuperAdmin: overrides.isSuperAdmin ?? false });
   mockUsersApi.list.mockResolvedValue({ users: mockUsers });
   mockDivisionsApi.getAll.mockResolvedValue(mockDivisions);
+  mockWrestlersApi.getAll.mockResolvedValue(mockWrestlers);
 }
 
 function renderComponent() {
@@ -211,7 +230,7 @@ describe('ManageUsers', () => {
     await waitFor(() => { expect(screen.getByText('wrestler@league.com')).toBeInTheDocument(); });
 
     const wrestlerRow = screen.getByText('wrestler@league.com').closest('tr')!;
-    const divisionSelect = within(wrestlerRow).getByRole('combobox');
+    const divisionSelect = within(wrestlerRow).getByLabelText('Division for wrestler@league.com');
     expect(divisionSelect).toHaveValue('div-1');
 
     await user.selectOptions(divisionSelect, 'div-2');
@@ -231,7 +250,7 @@ describe('ManageUsers', () => {
     await waitFor(() => { expect(screen.getByText('nowrestler@league.com')).toBeInTheDocument(); });
 
     const row = screen.getByText('nowrestler@league.com').closest('tr')!;
-    const divisionSelect = within(row).getByRole('combobox');
+    const divisionSelect = within(row).getByLabelText('Division for nowrestler@league.com');
     expect(divisionSelect).toHaveValue('');
 
     await user.selectOptions(divisionSelect, 'div-1');
@@ -241,7 +260,62 @@ describe('ManageUsers', () => {
     });
   });
 
-  it('shows no division control for a user with no linked player', async () => {
+  it('assigns a wrestler to a linked player with no wrestler yet', async () => {
+    const user = userEvent.setup();
+    setupMocks();
+    mockPlayersApi.update.mockResolvedValue({
+      playerId: 'pl-2', currentWrestlerId: 'w-austin', currentWrestler: 'Stone Cold',
+    });
+
+    renderComponent();
+    await waitFor(() => { expect(screen.getByText('nowrestler@league.com')).toBeInTheDocument(); });
+
+    const select = screen.getByLabelText('Assigned wrestler for nowrestler@league.com');
+    expect(select).toHaveValue('');
+
+    // The in-use wrestler is hidden; free ones are offered.
+    expect(within(select).queryByRole('option', { name: 'The Rock' })).not.toBeInTheDocument();
+    expect(within(select).getByRole('option', { name: 'Stone Cold' })).toBeInTheDocument();
+
+    await user.selectOptions(select, 'w-austin');
+
+    await waitFor(() => {
+      expect(mockPlayersApi.update).toHaveBeenCalledWith('pl-2', { currentWrestlerId: 'w-austin' });
+    });
+    // Roster is re-read so the now-used wrestler leaves the other dropdowns.
+    await waitFor(() => { expect(mockWrestlersApi.getAll).toHaveBeenCalledTimes(2); });
+    await waitFor(() => { expect(select).toHaveValue('w-austin'); });
+  });
+
+  it('keeps the current pick selectable even though it is in use', async () => {
+    setupMocks();
+    renderComponent();
+    await waitFor(() => { expect(screen.getByText('wrestler@league.com')).toBeInTheDocument(); });
+
+    const select = screen.getByLabelText('Assigned wrestler for wrestler@league.com');
+    expect(select).toHaveValue('w-rock');
+    expect(within(select).getByRole('option', { name: 'The Rock' })).toBeInTheDocument();
+  });
+
+  it('surfaces an error when wrestler assignment fails', async () => {
+    const user = userEvent.setup();
+    setupMocks();
+    mockPlayersApi.update.mockRejectedValue(new Error('Wrestler already assigned'));
+
+    renderComponent();
+    await waitFor(() => { expect(screen.getByText('nowrestler@league.com')).toBeInTheDocument(); });
+
+    await user.selectOptions(
+      screen.getByLabelText('Assigned wrestler for nowrestler@league.com'),
+      'w-omega',
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('Wrestler already assigned');
+    });
+  });
+
+  it('shows no wrestler or division control for a user with no linked player', async () => {
     setupMocks();
     renderComponent();
     await waitFor(() => { expect(screen.getByText('admin@league.com')).toBeInTheDocument(); });

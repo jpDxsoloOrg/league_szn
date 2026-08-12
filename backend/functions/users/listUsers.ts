@@ -91,6 +91,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
                 playerId: linkedPlayer.playerId,
                 divisionId: linkedPlayer.divisionId || '',
                 currentWrestler: linkedPlayer.currentWrestler || '',
+                currentWrestlerId: linkedPlayer.currentWrestlerId || '',
               }
             : null,
         };

@@ -271,7 +271,8 @@
   text-decoration: underline;
 }
 
-.division-select {
+.division-select,
+.wrestler-select {
   background: var(--card-bg, #1a1a2e);
   border: 1px solid var(--border-color, #444);
   color: var(--text-primary, #fff);
@@ -282,11 +283,13 @@
   min-width: 120px;
 }
 
-.division-select:hover {
+.division-select:hover,
+.wrestler-select:hover {
   border-color: var(--accent-color, #e50914);
 }
 
-.division-select:focus {
+.division-select:focus,
+.wrestler-select:focus {
   outline: none;
   border-color: var(--accent-color, #e50914);
   box-shadow: 0 0 0 1px var(--accent-color, #e50914);
@@ -322,7 +325,8 @@
     font-size: 0.7rem;
   }
 
-  .division-select {
+  .division-select,
+  .wrestler-select {
     min-width: 90px;
     font-size: 0.75rem;
   }

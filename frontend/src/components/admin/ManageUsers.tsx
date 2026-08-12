@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { usersApi, playersApi, divisionsApi } from '../../services/api';
+import { usersApi, playersApi, divisionsApi, wrestlersApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import type { Division } from '../../types';
+import type { Division, Wrestler } from '../../types';
+import { buildWrestlerOptionGroups } from '../../utils/wrestlerOptions';
 import './ManageUsers.css';
 
 /**
@@ -14,6 +15,7 @@ interface LinkedPlayer {
   playerId: string;
   divisionId: string;
   currentWrestler: string;
+  currentWrestlerId: string;
 }
 
 interface CognitoUser {
@@ -37,22 +39,26 @@ export default function ManageUsers() {
   const { isSuperAdmin } = useAuth();
   const [users, setUsers] = useState<CognitoUser[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
+  const [wrestlers, setWrestlers] = useState<Wrestler[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [divisionLoading, setDivisionLoading] = useState<string | null>(null);
+  const [wrestlerLoading, setWrestlerLoading] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const [usersResult, divisionsData] = await Promise.all([
+      const [usersResult, divisionsData, wrestlersData] = await Promise.all([
         usersApi.list(),
         divisionsApi.getAll(),
+        wrestlersApi.getAll(),
       ]);
       setUsers(usersResult.users);
       setDivisions(divisionsData);
+      setWrestlers(wrestlersData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
@@ -79,6 +85,43 @@ export default function ManageUsers() {
       setError(err instanceof Error ? err.message : 'Failed to update division');
     } finally {
       setDivisionLoading(null);
+    }
+  };
+
+  /**
+   * Assign (or clear) the primary wrestler slot for a user's player. The
+   * backend denormalizes the wrestler's name onto `currentWrestler`, which is
+   * what standings, check-ins and the dashboard filter on — so this is what
+   * takes an approved Wrestler from "invisible" to a full roster member.
+   */
+  const handleWrestlerChange = async (playerId: string, wrestlerId: string) => {
+    setWrestlerLoading(playerId);
+    setError(null);
+    try {
+      const updated = await playersApi.update(playerId, {
+        currentWrestlerId: wrestlerId,
+      });
+      setUsers(prev =>
+        prev.map(u =>
+          u.player?.playerId === playerId
+            ? {
+                ...u,
+                player: {
+                  ...u.player,
+                  currentWrestler: updated.currentWrestler || '',
+                  currentWrestlerId: updated.currentWrestlerId || '',
+                },
+              }
+            : u
+        )
+      );
+      // Refresh the roster so the newly-used wrestler drops out of the other
+      // rows' dropdowns (and any released one comes back).
+      setWrestlers(await wrestlersApi.getAll());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to assign wrestler');
+    } finally {
+      setWrestlerLoading(null);
     }
   };
 
@@ -231,6 +274,7 @@ export default function ManageUsers() {
               <th>Email</th>
               <th>Wrestler Name</th>
               <th>Roles</th>
+              <th>Assigned Wrestler</th>
               <th>Division</th>
               <th>Status</th>
               <th>Joined</th>
@@ -259,11 +303,43 @@ export default function ManageUsers() {
                   {(() => {
                     const linkedPlayer = user.player;
                     if (!linkedPlayer) return <span className="no-value">-</span>;
+                    if (wrestlerLoading === linkedPlayer.playerId) {
+                      return <span className="action-loading">Saving...</span>;
+                    }
+                    const options = buildWrestlerOptionGroups(
+                      wrestlers,
+                      linkedPlayer.currentWrestlerId || undefined,
+                      undefined,
+                    );
+                    return (
+                      <select
+                        className="wrestler-select"
+                        aria-label={`Assigned wrestler for ${user.email}`}
+                        value={linkedPlayer.currentWrestlerId}
+                        onChange={(e) => handleWrestlerChange(linkedPlayer.playerId, e.target.value)}
+                      >
+                        <option value="">No Wrestler</option>
+                        {options.map(({ promotion, wrestlers: group }) => (
+                          <optgroup key={promotion} label={promotion}>
+                            {group.map((w) => (
+                              <option key={w.wrestlerId} value={w.wrestlerId}>{w.name}</option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    );
+                  })()}
+                </td>
+                <td>
+                  {(() => {
+                    const linkedPlayer = user.player;
+                    if (!linkedPlayer) return <span className="no-value">-</span>;
                     return divisionLoading === linkedPlayer.playerId ? (
                       <span className="action-loading">Saving...</span>
                     ) : (
                       <select
                         className="division-select"
+                        aria-label={`Division for ${user.email}`}
                         value={linkedPlayer.divisionId || ''}
                         onChange={(e) => handleDivisionChange(linkedPlayer.playerId, e.target.value)}
                       >
@@ -396,7 +472,7 @@ export default function ManageUsers() {
             ))}
             {filteredUsers.length === 0 && (
               <tr>
-                <td colSpan={7} className="empty-state">
+                <td colSpan={8} className="empty-state">
                   No users found for this filter.
                 </td>
               </tr>

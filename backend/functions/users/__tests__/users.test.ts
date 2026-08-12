@@ -126,7 +126,7 @@ describe('listUsers', () => {
 
   it('links the player record even when it has no wrestler assigned', async () => {
     mockPlayersList.mockResolvedValue([
-      { playerId: 'pl-1', userId: 'sub-1', currentWrestler: '', divisionId: undefined },
+      { playerId: 'pl-1', userId: 'sub-1', currentWrestler: '', currentWrestlerId: undefined, divisionId: undefined },
       { playerId: 'pl-2', userId: 'other-sub', currentWrestler: 'The Rock' },
     ]);
     mockSend
@@ -143,7 +143,7 @@ describe('listUsers', () => {
 
     expect(result!.statusCode).toBe(200);
     expect(body(result).users[0].player).toEqual({
-      playerId: 'pl-1', divisionId: '', currentWrestler: '',
+      playerId: 'pl-1', divisionId: '', currentWrestler: '', currentWrestlerId: '',
     });
   });
 
