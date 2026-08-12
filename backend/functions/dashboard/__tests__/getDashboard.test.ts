@@ -95,6 +95,45 @@ describe('getDashboard', () => {
     expect(body.activeChallengesCount).toBe(0);
   });
 
+  it('excludes role-less players from totalPlayers and most-wins', async () => {
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Alice', currentWrestler: 'A', wins: 5, hasWrestlerRole: true },
+      { playerId: 'p2', name: 'Demoted', currentWrestler: 'B', wins: 99, hasWrestlerRole: false },
+      { playerId: 'p3', name: 'Unsynced', currentWrestler: 'C', wins: 1 },
+    ]);
+
+    const result = await getDashboard({} as never, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    // Demoted is not counted, and does not take the most-wins slot despite
+    // having the highest total.
+    expect(body.quickStats.totalPlayers).toBe(2);
+    expect(body.quickStats.mostWinsPlayer).toMatchObject({ name: 'A', wins: 5 });
+  });
+
+  it('still resolves names of role-less players on recent results', async () => {
+    const recent = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    mockMatchesList.mockResolvedValue([
+      {
+        matchId: 'm1', date: recent, updatedAt: recent, status: 'completed',
+        winners: ['p1'], losers: ['p2'], matchFormat: 'singles',
+      },
+    ]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Alice', currentWrestler: 'A', hasWrestlerRole: true },
+      { playerId: 'p2', name: 'Demoted', currentWrestler: 'B', hasWrestlerRole: false },
+    ]);
+
+    const result = await getDashboard({} as never, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.recentResults).toHaveLength(1);
+    // History keeps its participants even though B no longer counts.
+    expect(JSON.stringify(body.recentResults[0])).toContain('B');
+  });
+
   it('handles empty tables gracefully', async () => {
     const result = await getDashboard({} as never, ctx, cb);
 

@@ -19,6 +19,12 @@ export interface Player {
   mainOverall?: number;
   /** Admin-managed flag granting access to wrestler video submissions. */
   canUploadVideos?: boolean;
+  /**
+   * Mirror of the linked Cognito user's Wrestler group membership. `false`
+   * hides the player from roster screens; `undefined` means never synced and
+   * is treated as visible.
+   */
+  hasWrestlerRole?: boolean;
   createdAt: string;
   updatedAt: string;
   /** Last 5 match results (newest first): W win, L loss, D draw */

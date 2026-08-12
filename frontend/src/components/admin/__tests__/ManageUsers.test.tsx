@@ -5,7 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
 const { mockUsersApi, mockPlayersApi, mockDivisionsApi, mockWrestlersApi, mockUseAuth } = vi.hoisted(() => ({
-  mockUsersApi: { list: vi.fn(), updateRole: vi.fn(), toggleEnabled: vi.fn() },
+  mockUsersApi: { list: vi.fn(), updateRole: vi.fn(), toggleEnabled: vi.fn(), syncRoles: vi.fn() },
   mockPlayersApi: { getAll: vi.fn(), update: vi.fn() },
   mockDivisionsApi: { getAll: vi.fn() },
   mockWrestlersApi: { getAll: vi.fn() },
@@ -131,6 +131,42 @@ describe('ManageUsers', () => {
 
     // Wrestler request banner (request-user has wrestlerName but no Wrestler group)
     expect(screen.getByText(/1 wrestler request/)).toBeInTheDocument();
+  });
+
+  it('syncs wrestler roles and reports the result', async () => {
+    const user = userEvent.setup();
+    setupMocks();
+    mockUsersApi.syncRoles.mockResolvedValue({
+      message: 'ok', totalPlayers: 12, granted: 9, revoked: 3, unchanged: 0, skipped: 0,
+    });
+
+    renderComponent();
+    await waitFor(() => { expect(screen.getByText('admin@league.com')).toBeInTheDocument(); });
+
+    await user.click(screen.getByRole('button', { name: 'Sync Wrestler Roles' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Synced 12 players — 9 shown, 3 hidden, 0 unchanged',
+      );
+    });
+    // The list is reloaded so the screen reflects the new flags.
+    await waitFor(() => { expect(mockUsersApi.list).toHaveBeenCalledTimes(2); });
+  });
+
+  it('surfaces an error when the role sync fails', async () => {
+    const user = userEvent.setup();
+    setupMocks();
+    mockUsersApi.syncRoles.mockRejectedValue(new Error('Cognito unavailable'));
+
+    renderComponent();
+    await waitFor(() => { expect(screen.getByText('admin@league.com')).toBeInTheDocument(); });
+
+    await user.click(screen.getByRole('button', { name: 'Sync Wrestler Roles' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('Cognito unavailable');
+    });
   });
 
   it('filters users by tab selection', async () => {

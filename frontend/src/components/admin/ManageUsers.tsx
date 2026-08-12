@@ -45,6 +45,8 @@ export default function ManageUsers() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [divisionLoading, setDivisionLoading] = useState<string | null>(null);
   const [wrestlerLoading, setWrestlerLoading] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
 
   const fetchData = useCallback(async () => {
@@ -122,6 +124,29 @@ export default function ManageUsers() {
       setError(err instanceof Error ? err.message : 'Failed to assign wrestler');
     } finally {
       setWrestlerLoading(null);
+    }
+  };
+
+  /**
+   * Backfill every player's wrestler-role flag from Cognito. Needed once
+   * after this filter ships: players created before it have no flag and stay
+   * visible until stamped. Safe to re-run.
+   */
+  const handleSyncRoles = async () => {
+    setSyncing(true);
+    setError(null);
+    setSyncResult(null);
+    try {
+      const result = await usersApi.syncRoles();
+      setSyncResult(
+        `Synced ${result.totalPlayers} players — ${result.granted} shown, ${result.revoked} hidden, ${result.unchanged} unchanged` +
+          (result.skipped > 0 ? `, ${result.skipped} skipped` : '')
+      );
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sync wrestler roles');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -216,10 +241,27 @@ export default function ManageUsers() {
     <div className="manage-users">
       <div className="users-header">
         <h2>User Management</h2>
-        <button className="btn-refresh" onClick={fetchData}>
-          Refresh
-        </button>
+        <div className="users-header-actions">
+          <button
+            className="btn-refresh"
+            onClick={handleSyncRoles}
+            disabled={syncing}
+            title="Update every player's visibility from their Cognito Wrestler role"
+          >
+            {syncing ? 'Syncing...' : 'Sync Wrestler Roles'}
+          </button>
+          <button className="btn-refresh" onClick={fetchData}>
+            Refresh
+          </button>
+        </div>
       </div>
+
+      {syncResult && (
+        <div className="success-message" role="status">
+          {syncResult}
+          <button onClick={() => setSyncResult(null)} className="dismiss-btn">Dismiss</button>
+        </div>
+      )}
 
       {wrestlerRequests.length > 0 && (
         <div className="wrestler-requests-banner">

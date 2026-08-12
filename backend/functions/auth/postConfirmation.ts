@@ -89,6 +89,7 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
                 tx.updatePlayer(newPlayer.playerId, {
                   userId: sub,
                   currentWrestlerId: match.wrestlerId,
+                  hasWrestlerRole: true,
                 });
               });
               linked = true;
@@ -105,7 +106,12 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
         }
 
         if (!linked) {
-          await players.update(newPlayer.playerId, { userId: sub });
+          // The Wrestler group is granted above, so the player is a wrestler
+          // whether or not the roster link resolved.
+          await players.update(newPlayer.playerId, {
+            userId: sub,
+            hasWrestlerRole: true,
+          });
         }
         console.log(
           `Player record created for user ${username}: ${newPlayer.playerId}` +

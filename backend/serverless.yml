@@ -270,6 +270,11 @@ functions:
           method: post
           cors: *corsConfig
           authorizer: adminAuthorizer
+      - http:
+          path: admin/users/sync-roles
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
 
   # Site Configuration + Admin tools (Phase 3 consolidated: getSiteConfig, updateSiteConfig, clearAll, seedData)
   admin:

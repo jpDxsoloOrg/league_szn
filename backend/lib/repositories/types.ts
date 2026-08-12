@@ -122,6 +122,20 @@ export interface SeasonAward {
 export interface Player {
   playerId: string;
   userId?: string;
+  /**
+   * Denormalized copy of "this player's Cognito user is in the Wrestler
+   * group". Public read paths (standings, roster pickers) are unauthenticated
+   * and cannot call Cognito per request, so the flag is maintained by
+   * postConfirmation / updateUserRole and backfilled by the sync-roles
+   * endpoint.
+   *
+   * Tri-state on purpose:
+   *   true      — confirmed Wrestler, always shown
+   *   false     — confirmed non-Wrestler (or no linked account), hidden
+   *   undefined — never synced; treated as shown, so deploying this filter
+   *               cannot blank the roster before the backfill has run.
+   */
+  hasWrestlerRole?: boolean;
   name: string;
   currentWrestler: string;
   alternateWrestler?: string;

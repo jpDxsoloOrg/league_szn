@@ -331,3 +331,32 @@
     font-size: 0.75rem;
   }
 }
+
+.users-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.success-message {
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  color: #81c784;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.success-message .dismiss-btn {
+  color: #81c784;
+}

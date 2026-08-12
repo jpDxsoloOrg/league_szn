@@ -180,6 +180,7 @@ describe('postConfirmation handler', () => {
     expect(tx.updatePlayer).toHaveBeenCalledWith('p-new', {
       userId: 'sub-123',
       currentWrestlerId: 'w-rock',
+      hasWrestlerRole: true,
     });
     // When the UoW path runs, the non-transactional fallback update is skipped.
     expect(mockPlayers.update).not.toHaveBeenCalled();
@@ -213,7 +214,10 @@ describe('postConfirmation handler', () => {
     await handler(event, dummyContext, dummyCallback);
 
     expect(mockRunInTransaction).not.toHaveBeenCalled();
-    expect(mockPlayers.update).toHaveBeenCalledWith('p-new', { userId: 'sub-123' });
+    expect(mockPlayers.update).toHaveBeenCalledWith('p-new', {
+      userId: 'sub-123',
+      hasWrestlerRole: true,
+    });
   });
 
   it('falls back to non-FK player.update when the wrestler name does not match any roster entry', async () => {
@@ -243,7 +247,10 @@ describe('postConfirmation handler', () => {
     await handler(event, dummyContext, dummyCallback);
 
     expect(mockRunInTransaction).not.toHaveBeenCalled();
-    expect(mockPlayers.update).toHaveBeenCalledWith('p-new', { userId: 'sub-123' });
+    expect(mockPlayers.update).toHaveBeenCalledWith('p-new', {
+      userId: 'sub-123',
+      hasWrestlerRole: true,
+    });
   });
 
   it('assigns the Young Boys division when it exists (case-insensitive)', async () => {

@@ -57,6 +57,26 @@ function makeSeasonEvent(seasonId: string): APIGatewayProxyEvent {
 describe('getStandings — season-specific (with seasonId)', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('excludes players whose Cognito user lost the Wrestler role', async () => {
+    mockSeasonStandingsListBySeason.mockResolvedValue([
+      { seasonId: 's1', playerId: 'p1', wins: 5, losses: 2, draws: 1 },
+      { seasonId: 's1', playerId: 'p2', wins: 8, losses: 3, draws: 0 },
+    ]);
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Alice', currentWrestler: 'Wrestler A', hasWrestlerRole: true },
+      { playerId: 'p2', name: 'Demoted', currentWrestler: 'Wrestler B', hasWrestlerRole: false },
+      { playerId: 'p3', name: 'Unsynced', currentWrestler: 'Wrestler C' },
+    ]);
+
+    const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.players.map((p: { name: string }) => p.name)).toEqual(['Alice', 'Unsynced']);
+  });
+
   it('returns season standings merged with all players', async () => {
     mockSeasonStandingsListBySeason.mockResolvedValue([
       { seasonId: 's1', playerId: 'p1', wins: 5, losses: 2, draws: 1 },

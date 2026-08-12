@@ -2,6 +2,7 @@ import { handler as listUsersHandler } from './listUsers';
 import { handler as updateUserRoleHandler } from './updateUserRole';
 import { handler as toggleUserEnabledHandler } from './toggleUserEnabled';
 import { handler as deleteUserHandler } from './deleteUser';
+import { handler as syncWrestlerRolesHandler } from './syncWrestlerRoles';
 import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
@@ -28,6 +29,11 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/admin/users/delete',
     method: 'POST',
     handler: deleteUserHandler,
+  },
+  {
+    resource: '/admin/users/sync-roles',
+    method: 'POST',
+    handler: syncWrestlerRolesHandler,
   },
 ];
 
