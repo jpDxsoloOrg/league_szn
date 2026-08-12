@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { Match } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import { hasWrestlerRole } from '../../lib/wrestlerRole';
 
 type FormResult = 'W' | 'L' | 'D';
 
@@ -73,8 +74,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       // Get all player details with pagination support
       const allPlayers = await players.list();
 
-      // Only include players who have a wrestler assigned.
-      const filteredPlayers = allPlayers.filter((p) => p.currentWrestler);
+      // Only include players who have a wrestler assigned and whose Cognito
+      // user still holds the Wrestler role.
+      const filteredPlayers = allPlayers
+        .filter((p) => p.currentWrestler)
+        .filter(hasWrestlerRole);
 
       // Build a map of season standings by playerId
       const standingsMap = new Map(
@@ -118,8 +122,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Default: get all-time standings from Players table with pagination support
     const allPlayers = await players.list();
 
-    // Only include players who have a wrestler assigned.
-    const wrestlers = allPlayers.filter((p) => p.currentWrestler);
+    // Only include players who have a wrestler assigned and whose Cognito
+    // user still holds the Wrestler role.
+    const wrestlers = allPlayers
+      .filter((p) => p.currentWrestler)
+      .filter(hasWrestlerRole);
 
     // Sort players by wins descending, then by losses ascending
     const sortedPlayers = wrestlers.sort((a, b) => {

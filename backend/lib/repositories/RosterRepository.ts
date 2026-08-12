@@ -48,6 +48,7 @@ export interface PlayerPatch {
   alignment?: 'face' | 'heel' | 'neutral';
   userId?: string;
   canUploadVideos?: boolean;
+  hasWrestlerRole?: boolean;
 }
 
 // ─── Tag Team input types ───────────────────────────────────────────

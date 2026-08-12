@@ -84,7 +84,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
               name: '',
               currentWrestler: wrestlerName || '',
             });
-            await players.update(newPlayer.playerId, { userId: sub });
+            await players.update(newPlayer.playerId, {
+              userId: sub,
+              hasWrestlerRole: true,
+            });
+          } else if (existingPlayer.hasWrestlerRole !== true) {
+            // Re-granting the role has to re-show a player who was hidden by
+            // an earlier demote.
+            await players.update(existingPlayer.playerId, {
+              hasWrestlerRole: true,
+            });
           }
         } catch (playerError) {
           console.error('Failed to auto-create player for wrestler:', playerError);
@@ -99,6 +108,32 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           GroupName: role,
         })
       );
+
+      if (role === 'Wrestler') {
+        // Mirror the removal onto the player so the public roster filters
+        // drop them. Non-blocking, same as the promote path.
+        try {
+          const userResult = await cognitoClient.send(
+            new AdminGetUserCommand({
+              UserPoolId: USER_POOL_ID,
+              Username: username,
+            })
+          );
+          const sub = (userResult.UserAttributes || []).find(
+            (a) => a.Name === 'sub'
+          )?.Value;
+
+          if (sub) {
+            const { roster: { players } } = getRepositories();
+            const player = await players.findByUserId(sub);
+            if (player) {
+              await players.update(player.playerId, { hasWrestlerRole: false });
+            }
+          }
+        } catch (playerError) {
+          console.error('Failed to clear wrestler flag on demote:', playerError);
+        }
+      }
     }
 
     // Return updated groups

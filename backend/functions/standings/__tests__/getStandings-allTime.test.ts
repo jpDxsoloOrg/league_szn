@@ -55,6 +55,24 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
 describe('getStandings — all-time (no seasonId)', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('excludes players whose Cognito user lost the Wrestler role', async () => {
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Alice', currentWrestler: 'W1', wins: 10, hasWrestlerRole: true },
+      { playerId: 'p2', name: 'Demoted', currentWrestler: 'W2', wins: 15, hasWrestlerRole: false },
+      // Never synced: stays visible so shipping the filter cannot blank the
+      // standings before the backfill runs.
+      { playerId: 'p3', name: 'Unsynced', currentWrestler: 'W3', wins: 8 },
+    ]);
+
+    const result = await getStandings(makeEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.players.map((p: { name: string }) => p.name)).toEqual(['Alice', 'Unsynced']);
+  });
+
   it('returns all players sorted by wins descending', async () => {
     mockOverallsListAll.mockResolvedValue([]);
     mockMatchesListCompleted.mockResolvedValue([]);

@@ -47,6 +47,23 @@ export const usersApi = {
     });
   },
 
+  /**
+   * Backfill every player's `hasWrestlerRole` from Cognito group membership.
+   * Until this runs, unsynced players stay visible on roster screens.
+   */
+  syncRoles: async (): Promise<{
+    message: string;
+    totalPlayers: number;
+    granted: number;
+    revoked: number;
+    unchanged: number;
+    skipped: number;
+  }> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/users/sync-roles`, {
+      method: 'POST',
+    });
+  },
+
   deleteUser: async (username: string): Promise<{
     message: string;
     username: string;

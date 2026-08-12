@@ -299,13 +299,38 @@ describe('updateUserRole', () => {
 
   it('demotes user and returns updated groups', async () => {
     mockSend
-      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})                                                   // remove from group
+      .mockResolvedValueOnce({ UserAttributes: [{ Name: 'sub', Value: 'jane-sub' }] }) // AdminGetUser
       .mockResolvedValueOnce({ Groups: [] });
+    mockPlayersFindByUserId.mockResolvedValueOnce({ playerId: 'jane-player' });
 
     const result = await updateUserRole(ev({ username: 'jane', role: 'Wrestler', action: 'demote' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
     expect(body(result).message).toBe('User jane removed from Wrestler group');
     expect(body(result).groups).toEqual([]);
+    // Losing the role hides the player from standings and the dashboard.
+    expect(mockPlayersUpdate).toHaveBeenCalledWith('jane-player', { hasWrestlerRole: false });
+  });
+
+  it('demoting from Wrestler still succeeds when the player lookup fails', async () => {
+    mockSend
+      .mockResolvedValueOnce({})
+      .mockRejectedValueOnce(new Error('AdminGetUser failed'))
+      .mockResolvedValueOnce({ Groups: [] });
+
+    const result = await updateUserRole(ev({ username: 'jane', role: 'Wrestler', action: 'demote' }), ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    expect(body(result).groups).toEqual([]);
+  });
+
+  it('demoting a non-Wrestler role leaves the player flag alone', async () => {
+    mockSend
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ Groups: ['Wrestler'] });
+
+    const result = await updateUserRole(ev({ username: 'jane', role: 'Moderator', action: 'demote' }), ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    expect(mockPlayersUpdate).not.toHaveBeenCalled();
   });
 
   it('promotes to Wrestler and creates Player record', async () => {
@@ -335,7 +360,10 @@ describe('updateUserRole', () => {
       name: '',
       currentWrestler: 'Stone Cold',
     }));
-    expect(mockPlayersUpdate).toHaveBeenCalledWith('test-uuid-1234', { userId: 'user-cognito-sub' });
+    expect(mockPlayersUpdate).toHaveBeenCalledWith('test-uuid-1234', {
+      userId: 'user-cognito-sub',
+      hasWrestlerRole: true,
+    });
   });
 
   it('promotes to Wrestler but skips Player creation if player exists', async () => {
@@ -343,11 +371,31 @@ describe('updateUserRole', () => {
       .mockResolvedValueOnce({}) // Wrestler group
       .mockResolvedValueOnce({ UserAttributes: [{ Name: 'sub', Value: 'existing-sub' }] })
       .mockResolvedValueOnce({ Groups: [{ GroupName: 'Wrestler' }] });
-    mockPlayersFindByUserId.mockResolvedValueOnce({ playerId: 'existing-player' });
+    mockPlayersFindByUserId.mockResolvedValueOnce({
+      playerId: 'existing-player',
+      hasWrestlerRole: false,
+    });
 
     const result = await updateUserRole(ev({ username: 'steve', role: 'Wrestler', action: 'promote' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
     expect(mockPlayersCreate).not.toHaveBeenCalled();
+    // Re-granting the role un-hides a previously demoted player.
+    expect(mockPlayersUpdate).toHaveBeenCalledWith('existing-player', { hasWrestlerRole: true });
+  });
+
+  it('re-promoting an already-flagged player writes nothing', async () => {
+    mockSend
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ UserAttributes: [{ Name: 'sub', Value: 'existing-sub' }] })
+      .mockResolvedValueOnce({ Groups: [{ GroupName: 'Wrestler' }] });
+    mockPlayersFindByUserId.mockResolvedValueOnce({
+      playerId: 'existing-player',
+      hasWrestlerRole: true,
+    });
+
+    const result = await updateUserRole(ev({ username: 'steve', role: 'Wrestler', action: 'promote' }), ctx, cb);
+    expect(result!.statusCode).toBe(200);
+    expect(mockPlayersUpdate).not.toHaveBeenCalled();
   });
 
   it('promotes to Wrestler: player creation failure is non-blocking', async () => {

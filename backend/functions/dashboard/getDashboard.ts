@@ -2,6 +2,7 @@ import type { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { Player, Championship, ChampionshipHistoryEntry } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import { hasWrestlerRole } from '../../lib/wrestlerRole';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
 
@@ -112,6 +113,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Only include players who have a wrestler assigned (exclude Fantasy-only users)
     const wrestlerPlayers = playerList.filter((p) => p.currentWrestler);
+
+    // Roster-facing subset: players whose Cognito user still holds the
+    // Wrestler role. Used for counts and leaderboards. `playerMap` below
+    // deliberately keeps every wrestler so historical recent-results rows
+    // still resolve their participants' names.
+    const rosterPlayers = wrestlerPlayers.filter(hasWrestlerRole);
 
     const playerMap = new Map<string, Player>();
     for (const p of wrestlerPlayers) {
@@ -334,17 +341,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       for (const s of standings) {
         const w = s.wins ?? 0;
         if (w > maxWins) {
-          maxWins = w;
+          // Resolve before raising the bar: a hidden player must not claim
+          // the slot *or* block a lower-scoring wrestler from taking it.
           const p = playerMap.get(s.playerId);
+          if (!p || !hasWrestlerRole(p)) continue;
+          maxWins = w;
           mostWinsPlayer = {
-            name: p?.currentWrestler || p?.name || '\u2014',
+            name: p.currentWrestler || p.name || '\u2014',
             wins: w,
           };
         }
       }
     } else {
       let maxWins = 0;
-      for (const p of wrestlerPlayers) {
+      for (const p of rosterPlayers) {
         const w = p.wins ?? 0;
         if (w > maxWins) {
           maxWins = w;
@@ -357,7 +367,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const quickStats: DashboardQuickStats = {
-      totalPlayers: wrestlerPlayers.length,
+      totalPlayers: rosterPlayers.length,
       totalMatches,
       activeChampionships: championshipList.filter(
         (c) => c.isActive !== false
