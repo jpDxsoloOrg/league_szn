@@ -18,6 +18,7 @@ export const usersApi = {
         playerId: string;
         divisionId: string;
         currentWrestler: string;
+        currentWrestlerId: string;
       } | null;
     }>;
   }> => {
