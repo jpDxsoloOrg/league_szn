@@ -249,6 +249,9 @@ functions:
   # User Management (Phase 3 consolidated: listUsers, updateUserRole, toggleUserEnabled)
   users:
     handler: functions/users/handler.handler
+    # sync-roles walks every Cognito user and every player, so it needs more
+    # than the 6s default. 29s is the API Gateway REST integration ceiling.
+    timeout: 29
     events:
       - http:
           path: admin/users

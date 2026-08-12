@@ -152,6 +152,40 @@ describe('syncWrestlerRoles', () => {
     expect(body(result)).toMatchObject({ granted: 2 });
   });
 
+  it('hides a player whose linked account no longer exists in Cognito', async () => {
+    mockCognito([{ username: 'wrestler', sub: 'sub-w', groups: ['Wrestler'] }]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p-stale', userId: 'sub-deleted', hasWrestlerRole: true },
+    ]);
+
+    const result = await syncWrestlerRoles(makeEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    // Not "skipped" — the account is gone, not merely unreadable.
+    expect(mockPlayersUpdate).toHaveBeenCalledWith('p-stale', { hasWrestlerRole: false });
+    expect(body(result)).toMatchObject({ revoked: 1, skipped: 0 });
+  });
+
+  it('handles a production-sized pool without per-user quadratic work', async () => {
+    const users = Array.from({ length: 45 }, (_, i) => ({
+      username: `u${i}`,
+      sub: `sub-${i}`,
+      groups: i % 3 === 0 ? ['Wrestler'] : ['Admin'],
+    }));
+    mockCognito(users);
+    mockPlayersList.mockResolvedValue(
+      users.map((u, i) => ({ playerId: `p-${i}`, userId: u.sub })),
+    );
+
+    const result = await syncWrestlerRoles(makeEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    // One ListUsers page + exactly one group lookup per user.
+    expect(mockSend).toHaveBeenCalledTimes(1 + users.length);
+    expect(mockPlayersUpdate).toHaveBeenCalledTimes(45);
+    expect(body(result)).toMatchObject({ totalPlayers: 45, granted: 15, revoked: 30 });
+  });
+
   it('returns 500 when Cognito fails', async () => {
     mockSend.mockRejectedValueOnce(new Error('Cognito down'));
 
