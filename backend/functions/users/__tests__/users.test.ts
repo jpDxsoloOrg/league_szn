@@ -3,11 +3,18 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Hoisted mocks ──────────────────────────────────────────────────
 
-const { mockSend, mockPlayersFindByUserId, mockPlayersCreate, mockPlayersUpdate } = vi.hoisted(() => ({
+const {
+  mockSend,
+  mockPlayersFindByUserId,
+  mockPlayersCreate,
+  mockPlayersUpdate,
+  mockPlayersList,
+} = vi.hoisted(() => ({
   mockSend: vi.fn(),
   mockPlayersFindByUserId: vi.fn(),
   mockPlayersCreate: vi.fn(),
   mockPlayersUpdate: vi.fn(),
+  mockPlayersList: vi.fn(),
 }));
 
 vi.mock('../../../lib/repositories', () => ({
@@ -17,6 +24,7 @@ vi.mock('../../../lib/repositories', () => ({
         findByUserId: mockPlayersFindByUserId,
         create: mockPlayersCreate,
         update: mockPlayersUpdate,
+        list: mockPlayersList,
       },
     },
   }),
@@ -69,7 +77,10 @@ const body = (r: unknown) => JSON.parse((r as { body: string })!.body);
 // ─── listUsers ──────────────────────────────────────────────────────
 
 describe('listUsers', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPlayersList.mockResolvedValue([]);
+  });
 
   it('returns 403 if caller is not Admin', async () => {
     const result = await listUsers(withAuth(makeEvent(), 'Wrestler'), ctx, cb);
@@ -111,6 +122,63 @@ describe('listUsers', () => {
     const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
     expect(result!.statusCode).toBe(500);
     expect(body(result).message).toBe('Failed to list users');
+  });
+
+  it('links the player record even when it has no wrestler assigned', async () => {
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'pl-1', userId: 'sub-1', currentWrestler: '', divisionId: undefined },
+      { playerId: 'pl-2', userId: 'other-sub', currentWrestler: 'The Rock' },
+    ]);
+    mockSend
+      .mockResolvedValueOnce({
+        Users: [{
+          Username: 'john',
+          Attributes: [{ Name: 'sub', Value: 'sub-1' }],
+          Enabled: true,
+        }],
+      })
+      .mockResolvedValueOnce({ Groups: [{ GroupName: 'Wrestler' }] });
+
+    const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(body(result).users[0].player).toEqual({
+      playerId: 'pl-1', divisionId: '', currentWrestler: '',
+    });
+  });
+
+  it('returns a null player for users with no linked player record', async () => {
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'pl-2', userId: 'other-sub', currentWrestler: 'The Rock' },
+    ]);
+    mockSend
+      .mockResolvedValueOnce({
+        Users: [{
+          Username: 'john',
+          Attributes: [{ Name: 'sub', Value: 'sub-1' }],
+          Enabled: true,
+        }],
+      })
+      .mockResolvedValueOnce({ Groups: [] });
+
+    const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(body(result).users[0].player).toBeNull();
+  });
+
+  it('still returns users when the player lookup fails', async () => {
+    mockPlayersList.mockRejectedValue(new Error('dynamo down'));
+    mockSend
+      .mockResolvedValueOnce({
+        Users: [{ Username: 'john', Attributes: [{ Name: 'sub', Value: 'sub-1' }], Enabled: true }],
+      })
+      .mockResolvedValueOnce({ Groups: [] });
+
+    const result = await listUsers(withAuth(makeEvent(), 'Admin'), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(body(result).users[0].player).toBeNull();
   });
 
   it('handles group fetch failure per user gracefully', async () => {

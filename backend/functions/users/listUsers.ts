@@ -7,6 +7,8 @@ import {
 import type { UserType } from '@aws-sdk/client-cognito-identity-provider';
 import { success, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
+import { getRepositories } from '../../lib/repositories';
+import type { Player } from '../../lib/repositories';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
@@ -16,6 +18,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   if (denied) return denied;
 
   try {
+    // Linked players are read straight from the repository rather than via
+    // `GET /players`, which drops any player without a `currentWrestler`.
+    // Admins need to see (and slot) a Wrestler-role user whose player record
+    // exists but has no wrestler assigned yet.
+    const playersByUserId = new Map<string, Player>();
+    try {
+      const allPlayers = await getRepositories().roster.players.list();
+      for (const player of allPlayers) {
+        if (player.userId) {
+          playersByUserId.set(player.userId, player);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load players for user linkage:', err);
+    }
+
     const allCognitoUsers: UserType[] = [];
     let paginationToken: string | undefined;
 
@@ -54,6 +72,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           console.error(`Failed to get groups for ${user.Username}:`, err);
         }
 
+        const linkedPlayer = attrs['sub'] ? playersByUserId.get(attrs['sub']) : undefined;
+
         return {
           username: user.Username,
           sub: attrs['sub'] || '',
@@ -66,6 +86,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           enabled: user.Enabled,
           created: user.UserCreateDate?.toISOString(),
           groups,
+          player: linkedPlayer
+            ? {
+                playerId: linkedPlayer.playerId,
+                divisionId: linkedPlayer.divisionId || '',
+                currentWrestler: linkedPlayer.currentWrestler || '',
+              }
+            : null,
         };
       })
     );

@@ -14,6 +14,11 @@ export const usersApi = {
       enabled: boolean;
       created: string;
       groups: string[];
+      player: {
+        playerId: string;
+        divisionId: string;
+        currentWrestler: string;
+      } | null;
     }>;
   }> => {
     return fetchWithAuth(`${API_BASE_URL}/admin/users`, {}, signal);
