@@ -1,8 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usersApi, playersApi, divisionsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import type { Player, Division } from '../../types';
+import type { Division } from '../../types';
 import './ManageUsers.css';
+
+/**
+ * The player record linked to a Cognito user, as returned by `GET /admin/users`.
+ * This comes from the users endpoint rather than `GET /players` on purpose:
+ * that roster endpoint hides players without a `currentWrestler`, which would
+ * leave a newly-approved Wrestler with no way to be slotted into a division.
+ */
+interface LinkedPlayer {
+  playerId: string;
+  divisionId: string;
+  currentWrestler: string;
+}
 
 interface CognitoUser {
   username: string;
@@ -16,6 +28,7 @@ interface CognitoUser {
   enabled: boolean;
   created: string;
   groups: string[];
+  player: LinkedPlayer | null;
 }
 
 type FilterTab = 'all' | 'wrestler-requests' | 'wrestlers' | 'admins' | 'disabled';
@@ -23,7 +36,6 @@ type FilterTab = 'all' | 'wrestler-requests' | 'wrestlers' | 'admins' | 'disable
 export default function ManageUsers() {
   const { isSuperAdmin } = useAuth();
   const [users, setUsers] = useState<CognitoUser[]>([]);
-  const [players, setPlayers] = useState<Player[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,13 +47,11 @@ export default function ManageUsers() {
     try {
       setLoading(true);
       setError(null);
-      const [usersResult, playersData, divisionsData] = await Promise.all([
+      const [usersResult, divisionsData] = await Promise.all([
         usersApi.list(),
-        playersApi.getAll(),
         divisionsApi.getAll(),
       ]);
       setUsers(usersResult.users);
-      setPlayers(playersData);
       setDivisions(divisionsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -54,18 +64,17 @@ export default function ManageUsers() {
     fetchData();
   }, [fetchData]);
 
-  const getLinkedPlayer = useCallback((user: CognitoUser): Player | undefined => {
-    if (!user.sub) return undefined;
-    return players.find(p => p.userId === user.sub);
-  }, [players]);
-
   const handleDivisionChange = async (playerId: string, divisionId: string) => {
     setDivisionLoading(playerId);
     try {
-      const updated = await playersApi.update(playerId, {
-        divisionId: divisionId || undefined,
-      } as Partial<Player>);
-      setPlayers(prev => prev.map(p => p.playerId === playerId ? updated : p));
+      await playersApi.update(playerId, { divisionId: divisionId || undefined });
+      setUsers(prev =>
+        prev.map(u =>
+          u.player?.playerId === playerId
+            ? { ...u, player: { ...u.player, divisionId } }
+            : u
+        )
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update division');
     } finally {
@@ -83,10 +92,11 @@ export default function ManageUsers() {
           u.username === username ? { ...u, groups: result.groups } : u
         )
       );
-      // Re-fetch players since promoting to Wrestler auto-creates a Player record
+      // Re-fetch users since promoting to Wrestler auto-creates a Player
+      // record, and the division slot only renders once that link exists.
       if (action === 'promote' && role === 'Wrestler') {
-        const playersData = await playersApi.getAll();
-        setPlayers(playersData);
+        const refreshed = await usersApi.list();
+        setUsers(refreshed.users);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update role');
@@ -247,7 +257,7 @@ export default function ManageUsers() {
                 </td>
                 <td>
                   {(() => {
-                    const linkedPlayer = getLinkedPlayer(user);
+                    const linkedPlayer = user.player;
                     if (!linkedPlayer) return <span className="no-value">-</span>;
                     return divisionLoading === linkedPlayer.playerId ? (
                       <span className="action-loading">Saving...</span>

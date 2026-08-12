@@ -22,13 +22,17 @@ vi.mock('../../../contexts/AuthContext', () => ({
 }));
 
 import ManageUsers from '../ManageUsers';
-import type { Player, Division } from '../../../types';
+import type { Division } from '../../../types';
 
 // --- Test data ---
+interface LinkedPlayer {
+  playerId: string; divisionId: string; currentWrestler: string;
+}
+
 interface CognitoUser {
   username: string; sub: string; email: string; name: string;
   wrestlerName: string; status: string; enabled: boolean;
-  created: string; groups: string[];
+  created: string; groups: string[]; player: LinkedPlayer | null;
 }
 
 const mockDivisions: Division[] = [
@@ -36,46 +40,47 @@ const mockDivisions: Division[] = [
   { divisionId: 'div-2', name: 'SmackDown', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
 ];
 
-const mockPlayers: Player[] = [
-  {
-    playerId: 'pl-1', name: 'John', currentWrestler: 'The Rock',
-    wins: 10, losses: 3, draws: 1, userId: 'sub-2', divisionId: 'div-1',
-    createdAt: '2024-01-01', updatedAt: '2024-01-01',
-  },
-];
-
 const mockUsers: CognitoUser[] = [
   {
     username: 'admin-user', sub: 'sub-1', email: 'admin@league.com', name: 'Admin',
     wrestlerName: '', status: 'CONFIRMED', enabled: true,
-    created: '2024-01-01T00:00:00Z', groups: ['Admin'],
+    created: '2024-01-01T00:00:00Z', groups: ['Admin'], player: null,
   },
   {
     username: 'wrestler-user', sub: 'sub-2', email: 'wrestler@league.com', name: 'Wrestler',
     wrestlerName: 'The Rock', status: 'CONFIRMED', enabled: true,
     created: '2024-02-01T00:00:00Z', groups: ['Wrestler'],
+    player: { playerId: 'pl-1', divisionId: 'div-1', currentWrestler: 'The Rock' },
   },
   {
     username: 'request-user', sub: 'sub-3', email: 'request@league.com', name: 'Requester',
     wrestlerName: 'Stone Cold', status: 'CONFIRMED', enabled: true,
-    created: '2024-03-01T00:00:00Z', groups: [],
+    created: '2024-03-01T00:00:00Z', groups: [], player: null,
   },
   {
     username: 'disabled-user', sub: 'sub-4', email: 'disabled@league.com', name: 'Disabled',
     wrestlerName: '', status: 'CONFIRMED', enabled: false,
-    created: '2024-01-15T00:00:00Z', groups: [],
+    created: '2024-01-15T00:00:00Z', groups: [], player: null,
   },
   {
     username: 'mod-user', sub: 'sub-5', email: 'mod@league.com', name: 'Moderator',
     wrestlerName: '', status: 'CONFIRMED', enabled: true,
-    created: '2024-01-20T00:00:00Z', groups: ['Moderator'],
+    created: '2024-01-20T00:00:00Z', groups: ['Moderator'], player: null,
+  },
+  // Regression case: approved Wrestler whose auto-created Player has no
+  // wrestler assigned yet. `GET /players` hides these, so the admin used to
+  // get "-" in the Division column with no way to slot them.
+  {
+    username: 'no-wrestler-user', sub: 'sub-6', email: 'nowrestler@league.com', name: 'No Wrestler',
+    wrestlerName: '', status: 'CONFIRMED', enabled: true,
+    created: '2024-04-01T00:00:00Z', groups: ['Wrestler'],
+    player: { playerId: 'pl-2', divisionId: '', currentWrestler: '' },
   },
 ];
 
 function setupMocks(overrides: { isSuperAdmin?: boolean } = {}) {
   mockUseAuth.mockReturnValue({ isSuperAdmin: overrides.isSuperAdmin ?? false });
   mockUsersApi.list.mockResolvedValue({ users: mockUsers });
-  mockPlayersApi.getAll.mockResolvedValue(mockPlayers);
   mockDivisionsApi.getAll.mockResolvedValue(mockDivisions);
 }
 
@@ -102,7 +107,7 @@ describe('ManageUsers', () => {
 
     // Role badges
     expect(screen.getByText('Admin')).toBeInTheDocument();
-    expect(screen.getByText('Wrestler')).toBeInTheDocument();
+    expect(screen.getAllByText('Wrestler').length).toBeGreaterThan(0);
     expect(screen.getByText('Moderator')).toBeInTheDocument();
 
     // Wrestler request banner (request-user has wrestlerName but no Wrestler group)
@@ -154,9 +159,10 @@ describe('ManageUsers', () => {
     await waitFor(() => {
       expect(mockUsersApi.updateRole).toHaveBeenCalledWith('request-user', 'Wrestler', 'promote');
     });
-    // After promote to Wrestler, players are re-fetched (auto-creates Player record)
+    // After promote to Wrestler, users are re-fetched so the newly
+    // auto-created Player link (and its division slot) appears.
     await waitFor(() => {
-      expect(mockPlayersApi.getAll).toHaveBeenCalledTimes(2);
+      expect(mockUsersApi.list).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -199,12 +205,11 @@ describe('ManageUsers', () => {
   it('assigns division to linked wrestler player', async () => {
     const user = userEvent.setup();
     setupMocks();
-    mockPlayersApi.update.mockResolvedValue({ ...mockPlayers[0], divisionId: 'div-2' });
+    mockPlayersApi.update.mockResolvedValue({ playerId: 'pl-1', divisionId: 'div-2' });
 
     renderComponent();
     await waitFor(() => { expect(screen.getByText('wrestler@league.com')).toBeInTheDocument(); });
 
-    // wrestler-user (sub-2) is linked to mockPlayers[0] (userId: sub-2)
     const wrestlerRow = screen.getByText('wrestler@league.com').closest('tr')!;
     const divisionSelect = within(wrestlerRow).getByRole('combobox');
     expect(divisionSelect).toHaveValue('div-1');
@@ -214,6 +219,35 @@ describe('ManageUsers', () => {
     await waitFor(() => {
       expect(mockPlayersApi.update).toHaveBeenCalledWith('pl-1', { divisionId: 'div-2' });
     });
+    await waitFor(() => { expect(divisionSelect).toHaveValue('div-2'); });
+  });
+
+  it('offers a division slot to a Wrestler whose player has no wrestler assigned', async () => {
+    const user = userEvent.setup();
+    setupMocks();
+    mockPlayersApi.update.mockResolvedValue({ playerId: 'pl-2', divisionId: 'div-1' });
+
+    renderComponent();
+    await waitFor(() => { expect(screen.getByText('nowrestler@league.com')).toBeInTheDocument(); });
+
+    const row = screen.getByText('nowrestler@league.com').closest('tr')!;
+    const divisionSelect = within(row).getByRole('combobox');
+    expect(divisionSelect).toHaveValue('');
+
+    await user.selectOptions(divisionSelect, 'div-1');
+
+    await waitFor(() => {
+      expect(mockPlayersApi.update).toHaveBeenCalledWith('pl-2', { divisionId: 'div-1' });
+    });
+  });
+
+  it('shows no division control for a user with no linked player', async () => {
+    setupMocks();
+    renderComponent();
+    await waitFor(() => { expect(screen.getByText('admin@league.com')).toBeInTheDocument(); });
+
+    const adminRow = screen.getByText('admin@league.com').closest('tr')!;
+    expect(within(adminRow).queryByRole('combobox')).not.toBeInTheDocument();
   });
 
   it('shows SuperAdmin-only actions when isSuperAdmin is true', async () => {
