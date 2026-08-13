@@ -227,17 +227,13 @@ export default function ManagePlayers() {
         setError('Player name cannot be empty');
         return;
       }
-      if (!formData.currentWrestlerId) {
-        setError('Please pick a wrestler from the roster');
-        return;
-      }
-
       if (editingPlayer) {
         await playersApi.update(editingPlayer.playerId, {
           name: sanitizedName,
-          currentWrestlerId: formData.currentWrestlerId,
           // Empty string clears the FK server-side (mirrors how divisionId
-          // and alignment are cleared on this same endpoint).
+          // and alignment are cleared on this same endpoint) — clearing the
+          // primary slot drops the player back to "Needs Wrestler".
+          currentWrestlerId: formData.currentWrestlerId,
           alternateWrestlerId: formData.alternateWrestlerId || '',
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || '',
@@ -248,10 +244,13 @@ export default function ManagePlayers() {
       } else {
         await playersApi.create({
           name: sanitizedName,
-          // Kept to satisfy the legacy Player type; backend overwrites this
-          // from the selected wrestler's name.
+          // Kept to satisfy the legacy Player type; the backend overwrites it
+          // from the selected wrestler's name, or falls back to the
+          // "Needs Wrestler" placeholder when no wrestler is picked.
           currentWrestler: '',
-          currentWrestlerId: formData.currentWrestlerId,
+          ...(formData.currentWrestlerId
+            ? { currentWrestlerId: formData.currentWrestlerId }
+            : {}),
           ...(formData.alternateWrestlerId
             ? { alternateWrestlerId: formData.alternateWrestlerId }
             : {}),
@@ -360,9 +359,10 @@ export default function ManagePlayers() {
         <div className="player-form-container am-sheet">
           <h3>{editingPlayer ? 'Edit Player' : 'Add New Player'}</h3>
           {rosterEmpty && (
-            <div className="error-message">
-              No wrestlers in the roster yet. Add wrestlers via{' '}
-              <Link to="/admin/wrestlers">Manage Wrestlers</Link> before creating players.
+            <div className="info-message">
+              No wrestlers in the roster yet. You can still create players — they stay on
+              &ldquo;Needs Wrestler&rdquo; until you add wrestlers via{' '}
+              <Link to="/admin/wrestlers">Manage Wrestlers</Link> and assign one.
             </div>
           )}
           <form onSubmit={handleSubmit} className="player-form am-form">
@@ -386,10 +386,9 @@ export default function ManagePlayers() {
                 onChange={(e) =>
                   setFormData({ ...formData, currentWrestlerId: e.target.value })
                 }
-                required
                 disabled={rosterEmpty}
               >
-                <option value="">Pick from the roster…</option>
+                <option value="">Needs Wrestler — assign later</option>
                 {renderWrestlerOptions(currentWrestlerOptions)}
               </select>
             </div>

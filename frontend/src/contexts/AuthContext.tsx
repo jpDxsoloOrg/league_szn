@@ -16,7 +16,7 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, options?: { wrestlerName?: string; psnId?: string; playerName?: string }) => Promise<{ isConfirmed: boolean }>;
+  signUp: (email: string, password: string, options?: { psnId?: string; playerName?: string }) => Promise<{ isConfirmed: boolean }>;
   confirmSignUp: (email: string, code: string) => Promise<boolean>;
   resendConfirmationCode: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -168,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const handleSignUp = useCallback(async (email: string, password: string, options?: { wrestlerName?: string; psnId?: string; playerName?: string }) => {
+  const handleSignUp = useCallback(async (email: string, password: string, options?: { psnId?: string; playerName?: string }) => {
     return cognitoAuth.signUp(email, password, options);
   }, []);
 

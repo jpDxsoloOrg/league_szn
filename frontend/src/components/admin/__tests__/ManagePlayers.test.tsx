@@ -226,8 +226,9 @@ describe('ManagePlayers', () => {
     });
   });
 
-  it('rejects submit when no wrestler is selected', async () => {
+  it('clears the wrestler slot when the placeholder option is picked', async () => {
     const user = userEvent.setup();
+    mockPlayersApi.update.mockResolvedValue({ playerId: 'p1' });
     renderComponent();
     await waitFor(() => { expect(screen.getByText('John')).toBeInTheDocument(); });
 
@@ -235,13 +236,17 @@ describe('ManagePlayers', () => {
     await user.click(editButtons[0]);
 
     const wrestlerSelect = screen.getByLabelText('Wrestler') as HTMLSelectElement;
-    // Clear the required select by picking the placeholder option.
+    // A wrestler is optional — picking the placeholder drops the player back
+    // to "Needs Wrestler" instead of blocking the save.
     await user.selectOptions(wrestlerSelect, '');
 
-    // Browser-level required-attribute blocks submission; the update API must
-    // never be called when the primary wrestler is empty.
     await user.click(screen.getByRole('button', { name: 'Update Player' }));
-    expect(mockPlayersApi.update).not.toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(mockPlayersApi.update).toHaveBeenCalledWith('p1', expect.objectContaining({
+        currentWrestlerId: '',
+      }));
+    });
   });
 
   it('deletes player with confirmation dialog', async () => {

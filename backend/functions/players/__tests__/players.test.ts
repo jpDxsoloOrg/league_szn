@@ -38,6 +38,7 @@ vi.mock('uuid', () => ({
 }));
 
 import { buildInMemoryRepositories } from '../../../lib/repositories/inMemory';
+import { NEEDS_WRESTLER } from '../../../lib/needsWrestler';
 import {
   setRepositoriesForTesting,
   resetRepositoriesForTesting,
@@ -124,14 +125,26 @@ describe('createPlayer', () => {
     expect(JSON.parse(result!.body).message).toBe('name is required');
   });
 
-  it('returns 400 when currentWrestler is missing', async () => {
+  it('creates a player on the Needs Wrestler placeholder when no wrestler is given', async () => {
     const event = makeEvent({
       body: JSON.stringify({ name: 'John' }),
     });
 
     const result = await createPlayer(event, ctx, cb);
 
-    expect(result!.statusCode).toBe(400);
+    expect(result!.statusCode).toBe(201);
+    expect(JSON.parse(result!.body).currentWrestler).toBe(NEEDS_WRESTLER);
+  });
+
+  it('falls back to the placeholder when currentWrestler is blank', async () => {
+    const event = makeEvent({
+      body: JSON.stringify({ name: 'John', currentWrestler: '   ' }),
+    });
+
+    const result = await createPlayer(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(201);
+    expect(JSON.parse(result!.body).currentWrestler).toBe(NEEDS_WRESTLER);
   });
 
   it('validates divisionId exists when provided', async () => {

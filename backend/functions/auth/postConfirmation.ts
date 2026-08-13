@@ -4,6 +4,7 @@ import {
   AdminAddUserToGroupCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { getRepositories } from '../../lib/repositories';
+import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 
@@ -34,11 +35,13 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
     // Don't throw - we don't want to block account confirmation
   }
 
-  // Auto-create a Player record from signup attributes. When the picked
-  // wrestler matches a row in the curated roster (Wrestlers table), also
-  // link the Player.currentWrestlerId FK and flip that wrestler to
-  // isInUse=true inside the same UoW — best-effort, so a failure here
-  // never blocks confirmation.
+  // Auto-create a Player record from signup attributes. Sign-up no longer
+  // asks for a wrestler, so the player starts on the NEEDS_WRESTLER
+  // placeholder until one is assigned. Legacy sign-ups (and any client that
+  // still sends `custom:wrestler_name`) keep the old behaviour: when the name
+  // matches a row in the curated roster (Wrestlers table) we link the
+  // Player.currentWrestlerId FK and flip that wrestler to isInUse=true inside
+  // the same UoW — best-effort, so a failure here never blocks confirmation.
   try {
     const sub = attrs['sub'];
     const wrestlerName = attrs['custom:wrestler_name'] || '';
@@ -66,7 +69,7 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
 
         const newPlayer = await players.create({
           name: playerName,
-          currentWrestler: wrestlerName,
+          currentWrestler: wrestlerName || NEEDS_WRESTLER,
           psnId: psnId || undefined,
           divisionId,
         });

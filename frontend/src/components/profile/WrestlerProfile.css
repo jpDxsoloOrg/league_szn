@@ -884,6 +884,17 @@ label:focus-visible {
   margin: 0;
 }
 
+/* Informational note in the edit form when the roster has no wrestlers yet —
+   the profile is still saveable, so this must not read like an error. */
+.roster-empty-notice {
+  background: var(--color-warning-bg, #fff5d9);
+  border: 1px solid var(--color-warning, #d4a400);
+  color: var(--color-warning-text, #6b4e00);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
 /* ==========================================================================
    Mobile app experience (≤768px) — my-profile design
    (docs/design/mobile-app/my-profile/screen.png). These rules restyle the

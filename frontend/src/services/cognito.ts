@@ -158,12 +158,15 @@ export const cognitoAuth = {
   },
 
   /**
-   * Sign up a new user with email, password, and optional wrestler name
+   * Sign up a new user with email, password, and profile details.
+   *
+   * No wrestler is collected at sign-up: the account is created on the
+   * "Needs Wrestler" placeholder and a wrestler is assigned afterwards.
    */
   signUp: async (
     email: string,
     password: string,
-    options?: { wrestlerName?: string; psnId?: string; playerName?: string }
+    options?: { psnId?: string; playerName?: string }
   ): Promise<{ isConfirmed: boolean; userId?: string }> => {
     try {
       logger.debug('Attempting sign up');
@@ -171,10 +174,6 @@ export const cognitoAuth = {
       const userAttributes: Record<string, string> = {
         email,
       };
-
-      if (options?.wrestlerName) {
-        userAttributes['custom:wrestler_name'] = options.wrestlerName;
-      }
 
       if (options?.psnId) {
         userAttributes['custom:psn_id'] = options.psnId;

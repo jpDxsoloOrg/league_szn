@@ -9,6 +9,7 @@ import {
   serverError,
 } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
+import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
 import type { PlayerCreateInput } from '../../lib/repositories';
 import {
   rejectDuplicateSlotAssignment,
@@ -16,8 +17,10 @@ import {
 } from './wrestlerAssignment';
 
 /**
- * Create a player. Accepts either the legacy free-text `currentWrestler`
- * string (kept for migration) or the new `currentWrestlerId` FK. When FKs
+ * Create a player. The wrestler is optional: a player created without one
+ * holds the NEEDS_WRESTLER placeholder until a wrestler is assigned. Accepts
+ * either the legacy free-text `currentWrestler` string (kept for migration)
+ * or the new `currentWrestlerId` FK. When FKs
  * are provided, the wrestlers' `isInUse` + `assignedPlayerId` + `assignedSlot`
  * are staged in a single UoW after the player row is written. The player
  * record carries both the denormalized name (display cache) and the FK.
@@ -73,14 +76,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       resolvedAlternate = r.wrestler.name;
     }
 
-    // Legacy path: admin supplies `currentWrestler` as free text. Required
-    // unless the new FK path is used.
+    // Legacy path: admin supplies `currentWrestler` as free text. Neither the
+    // FK nor the free text is required — a player with no wrestler yet is
+    // created on the NEEDS_WRESTLER placeholder and can be assigned one later.
     const currentWrestlerFreeText =
-      typeof raw.currentWrestler === 'string' ? raw.currentWrestler : undefined;
-    const currentWrestler = resolvedCurrent ?? currentWrestlerFreeText;
-    if (!currentWrestler) {
-      return badRequest('currentWrestler or currentWrestlerId is required');
-    }
+      typeof raw.currentWrestler === 'string' && raw.currentWrestler.trim().length > 0
+        ? raw.currentWrestler
+        : undefined;
+    const currentWrestler =
+      resolvedCurrent ?? currentWrestlerFreeText ?? NEEDS_WRESTLER;
 
     const alternateWrestlerFreeText =
       typeof raw.alternateWrestler === 'string'

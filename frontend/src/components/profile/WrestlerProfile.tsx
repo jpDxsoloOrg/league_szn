@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { profileApi, imagesApi, overallsApi, transfersApi, divisionsApi, storylineRequestsApi, playersApi, wrestlersApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeName } from '../../utils/sanitize';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
 import { logger } from '../../utils/logger';
 import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
 import {
@@ -423,11 +424,9 @@ export default function WrestlerProfile() {
         setError('Player name cannot be empty');
         return;
       }
-      if (!formData.currentWrestlerId) {
-        setError('Please pick a wrestler from the roster');
-        return;
-      }
-
+      // A wrestler is not required — a player with none stays on the
+      // "Needs Wrestler" placeholder and can still edit the rest of their
+      // profile.
       const updates: {
         name?: string;
         currentWrestlerId?: string;
@@ -545,7 +544,7 @@ export default function WrestlerProfile() {
         </div>
         <div className="profile-header-info">
           <h1 className="profile-name">{player.name}</h1>
-          {player.currentWrestler && (
+          {!isNeedsWrestler(player.currentWrestler) && (
             <p className="profile-wrestler-name">
               {isMobile ? player.currentWrestler : `Playing as ${player.currentWrestler}`}
             </p>
@@ -597,9 +596,9 @@ export default function WrestlerProfile() {
             </div>
 
             {rosterEmpty && (
-              <div className="error-message">
-                The wrestler roster is empty — ask an admin to add wrestlers
-                before updating your profile.
+              <div className="roster-empty-notice">
+                The wrestler roster is empty — you can still save the rest of your
+                profile. An admin can add wrestlers and set yours.
               </div>
             )}
 
@@ -609,10 +608,9 @@ export default function WrestlerProfile() {
                 id="profile-wrestler"
                 value={formData.currentWrestlerId}
                 onChange={(e) => setFormData({ ...formData, currentWrestlerId: e.target.value })}
-                required
                 disabled={rosterEmpty}
               >
-                <option value="">Pick from the roster…</option>
+                <option value="">Needs Wrestler — none picked</option>
                 {renderWrestlerOptions(currentWrestlerOptions)}
               </select>
             </div>

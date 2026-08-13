@@ -9,6 +9,7 @@ import {
   applyImageFallback,
   resolveImageSrc,
 } from '../../constants/imageFallbacks';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
 import type { Player, Division } from '../../types';
 import type { Stable } from '../../types/stable';
 import type { TagTeam } from '../../types/tagTeam';
@@ -172,7 +173,7 @@ export default function PublicProfile() {
         </div>
         <div className="profile-header-info">
           <h1 className="profile-name">{player.name}</h1>
-          {player.currentWrestler && (
+          {!isNeedsWrestler(player.currentWrestler) && (
             <p className="profile-wrestler-name">
               {t('publicProfile.playingAs')} {player.currentWrestler}
             </p>

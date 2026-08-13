@@ -173,17 +173,21 @@ describe('cognito service — auth flows', () => {
       expect(result).toEqual({ isConfirmed: false, userId: 'user-123' });
     });
 
-    it('passes wrestlerName as custom attribute when provided', async () => {
+    it('passes the player details as custom attributes, never a wrestler', async () => {
       mockAmplifySignUp.mockResolvedValue({ isSignUpComplete: false, userId: 'u-1' });
 
-      await cognitoAuth.signUp('a@b.com', 'Pass1234', { wrestlerName: 'The Rock' });
+      await cognitoAuth.signUp('a@b.com', 'Pass1234', {
+        playerName: 'DiscordGuy',
+        psnId: 'PSN_1',
+      });
 
       expect(mockAmplifySignUp).toHaveBeenCalledWith(
         expect.objectContaining({
           options: {
             userAttributes: {
               email: 'a@b.com',
-              'custom:wrestler_name': 'The Rock',
+              'custom:psn_id': 'PSN_1',
+              'custom:player_name': 'DiscordGuy',
             },
           },
         }),
