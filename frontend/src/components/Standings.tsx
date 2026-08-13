@@ -15,6 +15,7 @@ import {
   applyImageFallback,
   resolveImageSrc,
 } from '../constants/imageFallbacks';
+import { isNeedsWrestler } from '../utils/needsWrestler';
 import './Standings.css';
 
 /** Mirrors the desktop alignment <select> options (same hardcoded labels). */
@@ -331,7 +332,13 @@ export default function Standings() {
                 {player.alignment === 'neutral' && ' ⚖️'}
                 {player.alignment === 'heel' && ' 😈'}
               </span>
-              <span className="standings-card-wrestler">{player.currentWrestler}</span>
+              <span className="standings-card-wrestler">
+                {isNeedsWrestler(player.currentWrestler) ? (
+                  <span className="needs-wrestler-pill">{t('auth.needsWrestlerBadge')}</span>
+                ) : (
+                  player.currentWrestler
+                )}
+              </span>
               <div className="standings-card-stats">
                 <span className="standings-card-record">
                   {player.wins}-{player.losses}-{player.draws}
@@ -430,7 +437,7 @@ export default function Standings() {
                   )}
                 </td>
                 <td className="wrestler-name">
-                  {player.currentWrestler}
+                  {!isNeedsWrestler(player.currentWrestler) && player.currentWrestler}
                   {!player.currentWrestlerId && (
                     <span
                       className="needs-wrestler-pill"

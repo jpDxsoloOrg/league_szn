@@ -3,6 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import { NotFoundError } from '../../lib/repositories/errors';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
+import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
   filterExistingWrestlerIds,
@@ -151,6 +152,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }
       } else {
         patch.currentWrestlerId = null;
+        // Clearing the slot must clear the denormalized name too, otherwise
+        // the player keeps displaying a wrestler they no longer hold.
+        patch.currentWrestler = NEEDS_WRESTLER;
       }
       hasChanges = true;
     }

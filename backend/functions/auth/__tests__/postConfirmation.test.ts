@@ -43,6 +43,7 @@ vi.mock('../../../lib/repositories', () => ({
 }));
 
 import { handler } from '../postConfirmation';
+import { NEEDS_WRESTLER } from '../../../lib/needsWrestler';
 
 function makePostConfirmationEvent(
   overrides: Partial<PostConfirmationTriggerEvent> = {}
@@ -126,6 +127,37 @@ describe('postConfirmation handler', () => {
       UserPoolId: 'eu-west-1_CustomPool',
       Username: 'custom-user@test.com',
       GroupName: 'Wrestler',
+    });
+  });
+
+  it('creates the Player on the Needs Wrestler placeholder when signup sent no wrestler', async () => {
+    mockSend.mockResolvedValue({});
+
+    const event = makePostConfirmationEvent({
+      request: {
+        userAttributes: {
+          sub: 'sub-123',
+          email: 'test@example.com',
+          'custom:player_name': 'TestPlayer',
+          'custom:psn_id': 'PSN_123',
+        },
+      },
+    });
+    await handler(event, dummyContext, dummyCallback);
+
+    expect(mockPlayers.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'TestPlayer',
+        currentWrestler: NEEDS_WRESTLER,
+        psnId: 'PSN_123',
+      }),
+    );
+    // No wrestler name to match — the roster is never consulted and the
+    // player is flagged as a wrestler without an FK link.
+    expect(mockWrestlers.list).not.toHaveBeenCalled();
+    expect(mockPlayers.update).toHaveBeenCalledWith('p-new', {
+      userId: 'sub-123',
+      hasWrestlerRole: true,
     });
   });
 

@@ -9,6 +9,7 @@ import {
 import { success, badRequest, forbidden, serverError } from '../../lib/response';
 import { requireRole, getAuthContext, isSuperAdmin } from '../../lib/auth';
 import { getRepositories } from '../../lib/repositories';
+import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
 
 const cognitoClient = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
@@ -82,7 +83,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           if (!existingPlayer) {
             const newPlayer = await players.create({
               name: '',
-              currentWrestler: wrestlerName || '',
+              currentWrestler: wrestlerName || NEEDS_WRESTLER,
             });
             await players.update(newPlayer.playerId, {
               userId: sub,
