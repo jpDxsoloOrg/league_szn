@@ -206,6 +206,7 @@
     "promos": "Promos",
     "rivalries": "Rivalitäten",
     "statistics": "Statistiken",
+    "leagueRules": "Liga-Regeln",
     "help": "Hilfe",
     "wiki": "Wiki",
     "admin": "Admin",
@@ -330,6 +331,7 @@
     },
     "articles": {
       "gettingStarted": "Erste Schritte",
+      "leagueRules": "Liga-Regeln",
       "userQuickstart": "Benutzer: Schnellstart",
       "faqs": "Häufige Fragen",
       "standings": "Tabelle",

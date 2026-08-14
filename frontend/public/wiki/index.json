@@ -1,5 +1,6 @@
 [
   {"slug":"getting-started","titleKey":"wiki.articles.gettingStarted","file":"getting-started.md"},
+  {"slug":"league-rules","titleKey":"wiki.articles.leagueRules","file":"league-rules.md"},
   {"slug":"user-quickstart","titleKey":"wiki.articles.userQuickstart","file":"user-quickstart.md"},
   {"slug":"faqs","titleKey":"wiki.articles.faqs","file":"faqs.md"},
   {"slug":"standings","titleKey":"wiki.articles.standings","file":"standings.md"},
