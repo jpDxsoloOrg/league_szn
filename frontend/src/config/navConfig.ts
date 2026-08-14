@@ -95,8 +95,13 @@ export const USER_NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-/** Standalone user links (no subgroup): Help */
+/** Standalone user links (no subgroup): League Rules, Help */
 export const USER_NAV_STANDALONE: (NavItem & { type: 'link' })[] = [
+  {
+    type: 'link',
+    path: '/guide/wiki/league-rules',
+    i18nKey: 'nav.leagueRules',
+  },
   {
     type: 'link',
     path: '/guide',
