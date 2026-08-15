@@ -230,6 +230,13 @@ functions:
   postConfirmation:
     handler: functions/auth/postConfirmation.handler
 
+  # TEMPORARY: auto-confirms signups so no verification email is sent
+  # (account-wide Cognito email cap workaround). Remove after the SES
+  # cutover — see functions/auth/preSignUp.ts. Attached to the pool via
+  # setup-cognito.sh, same as postConfirmation.
+  preSignUp:
+    handler: functions/auth/preSignUp.handler
+
   createAdminUser:
     handler: functions/auth/createAdminUser.handler
     events:

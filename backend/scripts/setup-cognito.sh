@@ -5,6 +5,12 @@
 # This script:
 #   1. Adds the custom:wrestler_name attribute (idempotent)
 #   2. Attaches the PostConfirmation Lambda trigger (idempotent)
+#      2b. TEMPORARY: also attaches the PreSignUp auto-confirm trigger
+#          (Cognito email cap workaround — see functions/auth/preSignUp.ts).
+#          To remove it after the SES cutover, replace the PreSignUp merge
+#          in Step 2 with `del(.PreSignUp)` for one deploy (the script
+#          merges the pool's existing LambdaConfig, so simply deleting the
+#          Lambda would leave a dangling trigger and break signups).
 #   3. (OPTIONAL) Migrates ALL existing users into the Admin group.
 #      Only runs when MIGRATE_USERS_TO_ADMIN=true. Skipped by default
 #      because CI runs the script on every deploy and bulk-promoting
@@ -54,15 +60,40 @@ fi
 
 echo "  Lambda ARN: $LAMBDA_ARN"
 
+# TEMPORARY (Step 2b): PreSignUp auto-confirm trigger — see header comment.
+PRESIGNUP_LAMBDA_ARN=$(aws lambda get-function \
+  --function-name "${SERVICE_NAME}-${STAGE}-preSignUp" \
+  --query 'Configuration.FunctionArn' \
+  --output text \
+  --region "$REGION" 2>/dev/null)
+
+if [ -z "$PRESIGNUP_LAMBDA_ARN" ] || [ "$PRESIGNUP_LAMBDA_ARN" = "None" ]; then
+  echo "  ERROR: PreSignUp Lambda not found. Deploy the stack first."
+  exit 1
+fi
+
+echo "  PreSignUp Lambda ARN: $PRESIGNUP_LAMBDA_ARN"
+
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
 # Add Lambda permission for Cognito to invoke it
 aws lambda add-permission \
   --function-name "${SERVICE_NAME}-${STAGE}-postConfirmation" \
   --statement-id "CognitoPostConfirmation" \
   --action "lambda:InvokeFunction" \
   --principal "cognito-idp.amazonaws.com" \
-  --source-arn "arn:aws:cognito-idp:${REGION}:$(aws sts get-caller-identity --query Account --output text):userpool/${USER_POOL_ID}" \
+  --source-arn "arn:aws:cognito-idp:${REGION}:${ACCOUNT_ID}:userpool/${USER_POOL_ID}" \
   --region "$REGION" \
   2>/dev/null && echo "  Lambda permission added" || echo "  Permission already exists (skipping)"
+
+aws lambda add-permission \
+  --function-name "${SERVICE_NAME}-${STAGE}-preSignUp" \
+  --statement-id "CognitoPreSignUp" \
+  --action "lambda:InvokeFunction" \
+  --principal "cognito-idp.amazonaws.com" \
+  --source-arn "arn:aws:cognito-idp:${REGION}:${ACCOUNT_ID}:userpool/${USER_POOL_ID}" \
+  --region "$REGION" \
+  2>/dev/null && echo "  PreSignUp Lambda permission added" || echo "  Permission already exists (skipping)"
 
 # Update the User Pool to use the PostConfirmation trigger.
 #
@@ -77,14 +108,18 @@ CURRENT_POOL=$(aws cognito-idp describe-user-pool \
   --user-pool-id "$USER_POOL_ID" \
   --region "$REGION")
 
+# TEMPORARY: PreSignUp is merged in below — after the SES cutover, change
+# `.PreSignUp = $preSignUpArn` to `del(.PreSignUp)` for one deploy to
+# detach the trigger (see header comment).
 UPDATE_PAYLOAD=$(echo "$CURRENT_POOL" | jq \
   --arg lambdaArn "$LAMBDA_ARN" \
+  --arg preSignUpArn "$PRESIGNUP_LAMBDA_ARN" \
   --arg userPoolId "$USER_POOL_ID" \
   '{
     UserPoolId: $userPoolId,
     Policies: .UserPool.Policies,
     DeletionProtection: .UserPool.DeletionProtection,
-    LambdaConfig: ((.UserPool.LambdaConfig // {}) | .PostConfirmation = $lambdaArn),
+    LambdaConfig: ((.UserPool.LambdaConfig // {}) | .PostConfirmation = $lambdaArn | .PreSignUp = $preSignUpArn),
     AutoVerifiedAttributes: .UserPool.AutoVerifiedAttributes,
     SmsVerificationMessage: .UserPool.SmsVerificationMessage,
     EmailVerificationMessage: .UserPool.EmailVerificationMessage,
@@ -105,7 +140,7 @@ UPDATE_PAYLOAD=$(echo "$CURRENT_POOL" | jq \
 aws cognito-idp update-user-pool \
   --cli-input-json "$UPDATE_PAYLOAD" \
   --region "$REGION"
-echo "  PostConfirmation trigger attached (preserving existing pool config)"
+echo "  PostConfirmation + PreSignUp triggers attached (preserving existing pool config)"
 
 # Step 3: (Optional, opt-in) Migrate existing users to Admin group.
 # Skipped by default — see header comment.
@@ -138,6 +173,7 @@ echo ""
 echo "=== Setup complete ==="
 echo "  Custom attribute: wrestler_name"
 echo "  PostConfirmation trigger: attached"
+echo "  PreSignUp trigger (TEMPORARY auto-confirm): attached"
 if [ "${MIGRATE_USERS_TO_ADMIN:-false}" = "true" ]; then
   echo "  Users migrated to Admin: $COUNT"
 fi
