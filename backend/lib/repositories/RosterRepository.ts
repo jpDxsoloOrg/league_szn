@@ -1,5 +1,6 @@
 import type { CrudRepository } from './CrudRepository';
 import type {
+  ActiveOverride,
   Player,
   TagTeam,
   TagTeamStatus,
@@ -49,6 +50,9 @@ export interface PlayerPatch {
   userId?: string;
   canUploadVideos?: boolean;
   hasWrestlerRole?: boolean;
+  /** `null` clears the field (see DynamoUnitOfWork.updatePlayer semantics). */
+  lastActiveSeasonId?: string | null;
+  activeOverride?: ActiveOverride | null;
 }
 
 // ─── Tag Team input types ───────────────────────────────────────────

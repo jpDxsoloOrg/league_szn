@@ -331,11 +331,16 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     ];
 
     // ── Players ────────────────────────────────────────────────
+    // The season id is minted up-front so seeded players can be marked active
+    // in it — every seeded player gets season standings and completed matches,
+    // so they would otherwise be filtered out of the season standings view.
+    const seasonId = uuidv4();
     console.log('Creating players...');
     const players = playerNames.map((name, index) => ({
       playerId: uuidv4(),
       name,
       currentWrestler: wrestlers[index],
+      lastActiveSeasonId: seasonId,
       wins: Math.floor(Math.random() * 15) + 3,
       losses: Math.floor(Math.random() * 12) + 2,
       draws: Math.floor(Math.random() * 3),
@@ -347,7 +352,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     // ── Seasons ────────────────────────────────────────────────
     console.log('Creating seasons...');
     const season = {
-      seasonId: uuidv4(),
+      seasonId,
       name: 'Season 1',
       startDate: daysAgo(30).toISOString(),
       status: 'active',

@@ -52,6 +52,9 @@ vi.mock('react-i18next', () => ({
         'common.error': 'Error',
         'common.retry': 'Retry',
         'common.active': 'Active',
+        'common.inactive': 'Inactive',
+        'standings.showInactive': 'Show inactive wrestlers',
+        'standings.inactiveHidden': 'Wrestlers with no completed match this season are hidden',
       };
       return map[key] || key;
     },
@@ -285,13 +288,60 @@ describe('Standings', () => {
 
     // Verify the API was called with the season ID
     await waitFor(() => {
-      expect(mockGetStandings).toHaveBeenCalledWith('s1', expect.any(AbortSignal));
+      expect(mockGetStandings).toHaveBeenCalledWith('s1', expect.any(AbortSignal), {
+        includeInactive: false,
+      });
     });
 
     // Season badge appears
     await waitFor(() => {
       expect(screen.getByText(/Showing for/)).toBeInTheDocument();
     });
+  });
+
+  it('badges inactive wrestlers and re-fetches with includeInactive when toggled', async () => {
+    mockGetStandings.mockResolvedValue({
+      players: [mockPlayers[0], { ...mockPlayers[1], isActive: false }],
+      seasonId: 's2',
+      sortedByWins: true,
+      activeFiltered: true,
+    });
+    mockGetAllSeasons.mockResolvedValue(mockSeasons);
+    mockGetAllDivisions.mockResolvedValue(mockDivisions);
+
+    const user = userEvent.setup();
+    renderStandings();
+
+    // Defaults to the active season, so the toggle and note are shown.
+    await waitFor(() => {
+      expect(
+        screen.getByText('Wrestlers with no completed match this season are hidden'),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByText('Inactive')).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('Show inactive wrestlers'));
+
+    await waitFor(() => {
+      expect(mockGetStandings).toHaveBeenCalledWith('s2', expect.any(AbortSignal), {
+        includeInactive: true,
+      });
+    });
+  });
+
+  it('hides the inactive toggle on the all-time view', async () => {
+    mockGetStandings.mockResolvedValue({
+      players: mockPlayers,
+      sortedByWins: true,
+      activeFiltered: false,
+    });
+    mockGetAllSeasons.mockResolvedValue([]);
+    mockGetAllDivisions.mockResolvedValue(mockDivisions);
+
+    renderStandings();
+
+    await waitFor(() => expect(screen.getByText('Standings')).toBeInTheDocument());
+    expect(screen.queryByLabelText('Show inactive wrestlers')).not.toBeInTheDocument();
   });
 
   it('shows empty state when no players exist', async () => {

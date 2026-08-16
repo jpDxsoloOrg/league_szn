@@ -3,11 +3,18 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockOverallsListAll, mockMatchesListCompleted, mockPlayersList, mockSeasonStandingsListBySeason } = vi.hoisted(() => ({
+const {
+  mockOverallsListAll,
+  mockMatchesListCompleted,
+  mockPlayersList,
+  mockSeasonStandingsListBySeason,
+  mockSeasonsFindActive,
+} = vi.hoisted(() => ({
   mockOverallsListAll: vi.fn(),
   mockMatchesListCompleted: vi.fn(),
   mockPlayersList: vi.fn(),
   mockSeasonStandingsListBySeason: vi.fn(),
+  mockSeasonsFindActive: vi.fn(),
 }));
 
 vi.mock('../../../lib/repositories', () => ({
@@ -17,7 +24,10 @@ vi.mock('../../../lib/repositories', () => ({
       players: { list: mockPlayersList },
     },
     competition: { matches: { listCompleted: mockMatchesListCompleted } },
-    season: { standings: { listBySeason: mockSeasonStandingsListBySeason } },
+    season: {
+      standings: { listBySeason: mockSeasonStandingsListBySeason },
+      seasons: { findActive: mockSeasonsFindActive },
+    },
   }),
 }));
 
@@ -52,10 +62,23 @@ function makeSeasonEvent(seasonId: string): APIGatewayProxyEvent {
   });
 }
 
+/**
+ * Season views hide wrestlers who did not compete in that season. Tests below
+ * that are about merging/sorting rather than the active filter opt out of it.
+ */
+function makeSeasonEventAll(seasonId: string): APIGatewayProxyEvent {
+  return makeEvent({
+    queryStringParameters: { seasonId, includeInactive: 'true' },
+  });
+}
+
 // ─── Season-specific standings ───────────────────────────────────────
 
 describe('getStandings — season-specific (with seasonId)', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSeasonsFindActive.mockResolvedValue(null);
+  });
 
   it('excludes players whose Cognito user lost the Wrestler role', async () => {
     mockSeasonStandingsListBySeason.mockResolvedValue([
@@ -70,7 +93,7 @@ describe('getStandings — season-specific (with seasonId)', () => {
       { playerId: 'p3', name: 'Unsynced', currentWrestler: 'Wrestler C' },
     ]);
 
-    const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
+    const result = await getStandings(makeSeasonEventAll('s1'), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
@@ -90,7 +113,7 @@ describe('getStandings — season-specific (with seasonId)', () => {
       { playerId: 'p3', name: 'Carol', currentWrestler: 'Wrestler C' },
     ]);
 
-    const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
+    const result = await getStandings(makeSeasonEventAll('s1'), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
@@ -125,7 +148,7 @@ describe('getStandings — season-specific (with seasonId)', () => {
       { playerId: 'p2', name: 'Bob', currentWrestler: 'W2' },
     ]);
 
-    const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
+    const result = await getStandings(makeSeasonEventAll('s1'), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
@@ -213,7 +236,7 @@ describe('getStandings — season-specific (with seasonId)', () => {
       { playerId: 'p2', name: 'Bob', currentWrestler: 'W2' },
     ]);
 
-    const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
+    const result = await getStandings(makeSeasonEventAll('s1'), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
@@ -243,12 +266,112 @@ describe('getStandings — season-specific (with seasonId)', () => {
     expect(body.players[0].divisionId).toBe('div-1');
     expect(body.players[0].wins).toBe(3);
   });
+
+  // ── Active / inactive filtering ──────────────────────────────────
+
+  it('hides wrestlers who have not competed in the current season', async () => {
+    mockSeasonsFindActive.mockResolvedValue({ seasonId: 's1', status: 'active' });
+    mockSeasonStandingsListBySeason.mockResolvedValue([
+      { seasonId: 's1', playerId: 'p1', wins: 2, losses: 0, draws: 0 },
+    ]);
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Active', currentWrestler: 'W1', lastActiveSeasonId: 's1' },
+      { playerId: 'p2', name: 'Idle', currentWrestler: 'W2', lastActiveSeasonId: 's0' },
+      { playerId: 'p3', name: 'NeverWrestled', currentWrestler: 'W3' },
+    ]);
+
+    const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.players.map((p: { name: string }) => p.name)).toEqual(['Active']);
+    expect(body.activeFiltered).toBe(true);
+  });
+
+  it('honours an admin override for the current season', async () => {
+    mockSeasonsFindActive.mockResolvedValue({ seasonId: 's1', status: 'active' });
+    mockSeasonStandingsListBySeason.mockResolvedValue([]);
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([
+      {
+        playerId: 'p1',
+        name: 'Forced In',
+        currentWrestler: 'W1',
+        activeOverride: { seasonId: 's1', value: true, setBy: 'admin', setAt: 'now' },
+      },
+      {
+        playerId: 'p2',
+        name: 'Forced Out',
+        currentWrestler: 'W2',
+        lastActiveSeasonId: 's1',
+        activeOverride: { seasonId: 's1', value: false, setBy: 'admin', setAt: 'now' },
+      },
+      {
+        playerId: 'p3',
+        name: 'Stale Override',
+        currentWrestler: 'W3',
+        activeOverride: { seasonId: 's0', value: true, setBy: 'admin', setAt: 'now' },
+      },
+    ]);
+
+    const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.players.map((p: { name: string }) => p.name)).toEqual(['Forced In']);
+  });
+
+  it('returns inactive wrestlers flagged when includeInactive=true', async () => {
+    mockSeasonsFindActive.mockResolvedValue({ seasonId: 's1', status: 'active' });
+    mockSeasonStandingsListBySeason.mockResolvedValue([]);
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Active', currentWrestler: 'W1', lastActiveSeasonId: 's1' },
+      { playerId: 'p2', name: 'Idle', currentWrestler: 'W2' },
+    ]);
+
+    const result = await getStandings(makeSeasonEventAll('s1'), ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.players).toHaveLength(2);
+    expect(body.players.find((p: { name: string }) => p.name === 'Active').isActive).toBe(true);
+    expect(body.players.find((p: { name: string }) => p.name === 'Idle').isActive).toBe(false);
+    expect(body.activeFiltered).toBe(false);
+  });
+
+  it('falls back to season standings for a past season, ignoring the current flag', async () => {
+    mockSeasonsFindActive.mockResolvedValue({ seasonId: 's2', status: 'active' });
+    mockSeasonStandingsListBySeason.mockResolvedValue([
+      { seasonId: 's1', playerId: 'p1', wins: 4, losses: 1, draws: 0 },
+      { seasonId: 's1', playerId: 'p3', wins: 0, losses: 0, draws: 0 },
+    ]);
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([]);
+    mockPlayersList.mockResolvedValue([
+      // Competed in s1, inactive now — still belongs in the s1 table.
+      { playerId: 'p1', name: 'Veteran', currentWrestler: 'W1' },
+      // Active now, but never wrestled in s1.
+      { playerId: 'p2', name: 'Newcomer', currentWrestler: 'W2', lastActiveSeasonId: 's2' },
+      // Has an s1 standings row but never actually competed.
+      { playerId: 'p3', name: 'Ghost', currentWrestler: 'W3' },
+    ]);
+
+    const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.players.map((p: { name: string }) => p.name)).toEqual(['Veteran']);
+  });
 });
 
 // ─── Error handling (season path) ────────────────────────────────────
 
 describe('getStandings — error handling (season)', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSeasonsFindActive.mockResolvedValue(null);
+  });
 
   it('returns 500 when seasonStandings.listBySeason throws', async () => {
     mockOverallsListAll.mockResolvedValue([]);

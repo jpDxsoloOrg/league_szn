@@ -1,4 +1,4 @@
-import type { Player } from '../../types';
+import type { ActiveOverride, Player } from '../../types';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
 export const playersApi = {
@@ -22,6 +22,20 @@ export const playersApi = {
 
   getById: async (playerId: string, signal?: AbortSignal): Promise<Player> => {
     return fetchWithAuth(`${API_BASE_URL}/players/${playerId}`, {}, signal);
+  },
+
+  /**
+   * Admin override for active status. `true` forces active, `false` forces
+   * inactive, `null` reverts to derived (has-completed-a-match-this-season).
+   */
+  setActiveStatus: async (
+    playerId: string,
+    value: boolean | null
+  ): Promise<{ playerId: string; isActive: boolean; activeOverride: ActiveOverride | null }> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${playerId}/active-status`, {
+      method: 'PUT',
+      body: JSON.stringify({ value }),
+    });
   },
 
   delete: async (playerId: string): Promise<void> => {

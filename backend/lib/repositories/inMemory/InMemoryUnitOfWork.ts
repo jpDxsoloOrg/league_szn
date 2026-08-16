@@ -55,13 +55,21 @@ export class InMemoryUnitOfWork implements UnitOfWork {
     });
   }
 
-  incrementPlayerRecord(playerId: string, delta: RecordDelta): void {
+  incrementPlayerRecord(
+    playerId: string,
+    delta: RecordDelta,
+    set?: Record<string, unknown>,
+  ): void {
     this.staged.push(() => {
       const existing = this.stores.players.get(playerId);
       if (existing) {
         if (delta.wins) existing.wins = ((existing.wins as number) || 0) + delta.wins;
         if (delta.losses) existing.losses = ((existing.losses as number) || 0) + delta.losses;
         if (delta.draws) existing.draws = ((existing.draws as number) || 0) + delta.draws;
+        for (const [key, val] of Object.entries(set ?? {})) {
+          if (val === undefined || val === null) continue;
+          existing[key] = val;
+        }
         existing.updatedAt = new Date().toISOString();
       }
     });

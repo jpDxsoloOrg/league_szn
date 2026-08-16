@@ -119,6 +119,19 @@ export interface SeasonAward {
 
 // ─── Wave 4 types ──────────────────────────────────────────────────
 
+/**
+ * Admin forcing a player active (or inactive) regardless of whether they have
+ * completed a match. Stamped with the season it was set in, so it expires
+ * automatically at season rollover instead of needing a reset job — an
+ * override only counts while `seasonId` matches the active season.
+ */
+export interface ActiveOverride {
+  seasonId: string;
+  value: boolean;
+  setBy: string;
+  setAt: string;
+}
+
 export interface Player {
   playerId: string;
   userId?: string;
@@ -157,6 +170,19 @@ export interface Player {
   mainOverall?: number;
   /** When true, this wrestler may submit videos via /my-videos. Admin-managed. */
   canUploadVideos?: boolean;
+  /**
+   * Season in which this player most recently completed a match. Active status
+   * is derived from it (`lastActiveSeasonId === activeSeason.seasonId`) rather
+   * than stored as a boolean, so a new season makes everyone inactive without
+   * a bulk reset. See lib/activeStatus.ts. Stored as DynamoDB NULL once
+   * cleared by the recompute endpoint, hence the nullable type.
+   */
+  lastActiveSeasonId?: string | null;
+  /**
+   * Admin force-active / force-inactive for the current season. Stored as
+   * DynamoDB NULL when cleared, hence the nullable type.
+   */
+  activeOverride?: ActiveOverride | null;
   createdAt: string;
   updatedAt: string;
 }

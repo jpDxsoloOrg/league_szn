@@ -3,11 +3,18 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockOverallsListAll, mockMatchesListCompleted, mockPlayersList, mockSeasonStandingsListBySeason } = vi.hoisted(() => ({
+const {
+  mockOverallsListAll,
+  mockMatchesListCompleted,
+  mockPlayersList,
+  mockSeasonStandingsListBySeason,
+  mockSeasonsFindActive,
+} = vi.hoisted(() => ({
   mockOverallsListAll: vi.fn(),
   mockMatchesListCompleted: vi.fn(),
   mockPlayersList: vi.fn(),
   mockSeasonStandingsListBySeason: vi.fn(),
+  mockSeasonsFindActive: vi.fn(),
 }));
 
 vi.mock('../../../lib/repositories', () => ({
@@ -21,6 +28,7 @@ vi.mock('../../../lib/repositories', () => ({
     },
     season: {
       standings: { listBySeason: mockSeasonStandingsListBySeason },
+      seasons: { findActive: mockSeasonsFindActive },
     },
   }),
 }));
@@ -53,7 +61,10 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
 // ─── All-time standings (no seasonId) ────────────────────────────────
 
 describe('getStandings — all-time (no seasonId)', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSeasonsFindActive.mockResolvedValue(null);
+  });
 
   it('excludes players whose Cognito user lost the Wrestler role', async () => {
     mockOverallsListAll.mockResolvedValue([]);
@@ -230,7 +241,10 @@ describe('getStandings — all-time (no seasonId)', () => {
 // ─── Error handling (all-time path) ──────────────────────────────────
 
 describe('getStandings — error handling (all-time)', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSeasonsFindActive.mockResolvedValue(null);
+  });
 
   it('returns 500 when a repository method throws', async () => {
     mockOverallsListAll.mockRejectedValue(new Error('DynamoDB connection failed'));

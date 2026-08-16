@@ -322,6 +322,11 @@ functions:
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
+      - http:
+          path: admin/recompute-active-status
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
 
   # Players (Phase 2 consolidated: getPlayers, createPlayer, updatePlayer, deletePlayer, getMyProfile, updateMyProfile)
   players:
@@ -348,6 +353,10 @@ functions:
       - http:
           path: players/{playerId}/statistics
           method: get
+          cors: *corsConfig
+      - http:
+          path: players/{playerId}/active-status
+          method: any
           cors: *corsConfig
 
   # Overalls (Wrestler Overalls: submit, get own, admin get all)

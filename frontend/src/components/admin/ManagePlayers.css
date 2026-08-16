@@ -378,3 +378,52 @@ label.file-input-label:hover {
   border-color: transparent;
   color: #555;
 }
+
+/* ── Active / inactive status column ───────────────────────────────
+   Badge shows the resolved status; the select is the three-state
+   override (auto / force active / force inactive). */
+.active-status-cell {
+  display: table-cell;
+  white-space: nowrap;
+}
+
+.active-status-cell .status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.active-status-cell .status-badge.active {
+  color: #14532d;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+}
+
+.active-status-cell .status-badge.inactive {
+  color: #57534e;
+  background: #ececec;
+  border: 1px solid #c9c9c9;
+}
+
+.active-mode-select {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.25rem;
+}
+
+.recompute-status-btn {
+  margin-right: 0.75rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.recompute-status-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

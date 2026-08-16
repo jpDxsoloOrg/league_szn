@@ -37,6 +37,7 @@ export default function Standings() {
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>('');
   const [defaultsResolved, setDefaultsResolved] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -46,14 +47,16 @@ export default function Standings() {
     try {
       setLoading(true);
       setError(null);
-      const data = await standingsApi.get(selectedSeasonId || undefined);
+      const data = await standingsApi.get(selectedSeasonId || undefined, undefined, {
+        includeInactive: showInactive,
+      });
       setStandings(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load standings');
     } finally {
       setLoading(false);
     }
-  }, [selectedSeasonId]);
+  }, [selectedSeasonId, showInactive]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -95,7 +98,9 @@ export default function Standings() {
       try {
         setLoading(true);
         setError(null);
-        const data = await standingsApi.get(selectedSeasonId || undefined, abortController.signal);
+        const data = await standingsApi.get(selectedSeasonId || undefined, abortController.signal, {
+          includeInactive: showInactive,
+        });
         if (!abortController.signal.aborted) {
           setStandings(data);
         }
@@ -112,7 +117,7 @@ export default function Standings() {
 
     fetchStandings();
     return () => abortController.abort();
-  }, [selectedSeasonId, defaultsResolved]);
+  }, [selectedSeasonId, defaultsResolved, showInactive]);
 
   // Memoize filtered players to avoid recalculation on every render
   const filteredPlayers = useMemo((): Player[] => {
@@ -215,6 +220,24 @@ export default function Standings() {
         </div>
       )}
 
+      {/* Season standings hide wrestlers who have not competed this season.
+          All-time standings list everyone, so the toggle is season-only. */}
+      {selectedSeasonId && (
+        <div className="standings-inactive-toggle">
+          <label>
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+            />
+            {t('standings.showInactive')}
+          </label>
+          {!showInactive && (
+            <span className="standings-inactive-note">{t('standings.inactiveHidden')}</span>
+          )}
+        </div>
+      )}
+
       {/* On mobile the select-based filters become horizontally scrollable
           pill chips (matching the app-shell design); desktop keeps selects. */}
       {isMobile ? (
@@ -306,7 +329,7 @@ export default function Standings() {
         {playersWithStats.map((player, index) => (
           <div
             key={player.playerId}
-            className="standings-card"
+            className={`standings-card${player.isActive === false ? ' standings-inactive' : ''}`}
             role="button"
             tabIndex={0}
             onClick={() => navigate(`/player/${player.playerId}`)}
@@ -328,6 +351,9 @@ export default function Standings() {
             <div className="standings-card-main">
               <span className="standings-card-name">
                 {player.name}
+                {player.isActive === false && (
+                  <span className="inactive-badge">{t('common.inactive')}</span>
+                )}
                 {player.alignment === 'face' && ' 😇'}
                 {player.alignment === 'neutral' && ' ⚖️'}
                 {player.alignment === 'heel' && ' 😈'}
@@ -397,7 +423,7 @@ export default function Standings() {
             {playersWithStats.map((player, index) => (
               <tr
                 key={player.playerId}
-                className="standings-row-clickable"
+                className={`standings-row-clickable${player.isActive === false ? ' standings-inactive' : ''}`}
                 role="button"
                 tabIndex={0}
                 onClick={() => navigate(`/player/${player.playerId}`)}
@@ -428,6 +454,9 @@ export default function Standings() {
                       {player.name}
                     </Link>
                   </PlayerHoverCard>
+                  {player.isActive === false && (
+                    <span className="inactive-badge">{t('common.inactive')}</span>
+                  )}
                   {player.alignment && (
                     <span className={`alignment-badge alignment-${player.alignment}`} title={player.alignment.charAt(0).toUpperCase() + player.alignment.slice(1)}>
                       {player.alignment === 'face' && '😇'}
