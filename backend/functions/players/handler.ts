@@ -7,6 +7,7 @@ import { handler as updateMyProfileHandler } from './updateMyProfile';
 import { createRouter, type RouteConfig } from '../../lib/router';
 import { handler as getPlayerHandler } from './getPlayer';
 import { handler as getPlayerStatisticsHandler } from './getPlayerStatistics';
+import { handler as setActiveStatusHandler } from './setActiveStatus';
 
 
 /**
@@ -53,6 +54,12 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/players/{playerId}',
     method: 'PUT',
     handler: updatePlayerHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/players/{playerId}/active-status',
+    method: 'PUT',
+    handler: setActiveStatusHandler,
     requireAuth: true,
   },
   {

@@ -36,7 +36,8 @@
     "accessDenied": "Access Denied",
     "back": "Back",
     "backToHome": "Back to Home",
-    "actions": "Actions"
+    "actions": "Actions",
+    "inactive": "Inactive"
   },
   "notFound": {
     "title": "Page Not Found",
@@ -406,7 +407,9 @@
     "winStreak": "Win Streak",
     "lossStreak": "Loss Streak",
     "drawStreak": "Draw Streak",
-    "lastResult": "Last result"
+    "lastResult": "Last result",
+    "showInactive": "Show inactive wrestlers",
+    "inactiveHidden": "Wrestlers with no completed match this season are hidden"
   },
   "championships": {
     "title": "Championships",

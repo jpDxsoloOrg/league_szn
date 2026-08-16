@@ -71,13 +71,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         // 1. Update match with results
         tx.updateMatch(matchId, match.date, matchPatch);
 
-        // 2. Update player standings (all-time)
+        // 2. Update player standings (all-time). A season match also marks
+        // every participant active for that season — participation, not
+        // victory, is what counts (see lib/activeStatus.ts). This rides along
+        // with the record increment because a transaction cannot contain two
+        // operations on the same player item.
+        const activeSeasonPatch = match.seasonId
+          ? { lastActiveSeasonId: match.seasonId }
+          : undefined;
+
         for (const playerId of body.winners) {
-          tx.incrementPlayerRecord(playerId, isDraw ? { draws: 1 } : { wins: 1 });
+          tx.incrementPlayerRecord(playerId, isDraw ? { draws: 1 } : { wins: 1 }, activeSeasonPatch);
         }
         if (!isDraw) {
           for (const playerId of body.losers) {
-            tx.incrementPlayerRecord(playerId, { losses: 1 });
+            tx.incrementPlayerRecord(playerId, { losses: 1 }, activeSeasonPatch);
           }
         }
 

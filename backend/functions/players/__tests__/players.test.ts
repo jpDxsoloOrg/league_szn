@@ -51,6 +51,7 @@ import { handler as updatePlayer } from '../updatePlayer';
 import { handler as deletePlayer } from '../deletePlayer';
 import { handler as getMyProfile } from '../getMyProfile';
 import { handler as updateMyProfile } from '../updateMyProfile';
+import { handler as setActiveStatus } from '../setActiveStatus';
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -625,5 +626,89 @@ describe('updateMyProfile', () => {
 
     expect(result!.statusCode).toBe(500);
     expect(JSON.parse(result!.body).message).toBe('Failed to update player profile');
+  });
+});
+
+// ─── setActiveStatus ─────────────────────────────────────────────────
+
+describe('setActiveStatus', () => {
+  async function seedPlayer() {
+    return repos.roster.players.create({ name: 'Alice', currentWrestler: 'The Rock' });
+  }
+
+  function statusEvent(playerId: string, value: boolean | null) {
+    return withAuth(
+      makeEvent({
+        pathParameters: { playerId },
+        body: JSON.stringify({ value }),
+      }),
+      'Admin',
+    );
+  }
+
+  it('forces a player active for the current season', async () => {
+    const player = await seedPlayer();
+    const season = await repos.season.seasons.create({ name: 'S1', startDate: '2026-01-01' });
+
+    const result = await setActiveStatus(statusEvent(player.playerId, true), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.isActive).toBe(true);
+    expect(body.activeOverride).toMatchObject({ seasonId: season.seasonId, value: true });
+  });
+
+  it('forces a player inactive despite a match this season', async () => {
+    const player = await seedPlayer();
+    const season = await repos.season.seasons.create({ name: 'S1', startDate: '2026-01-01' });
+    await repos.roster.players.update(player.playerId, { lastActiveSeasonId: season.seasonId });
+
+    const result = await setActiveStatus(statusEvent(player.playerId, false), ctx, cb);
+
+    expect(JSON.parse(result!.body).isActive).toBe(false);
+  });
+
+  it('clears the override and reverts to derived status', async () => {
+    const player = await seedPlayer();
+    const season = await repos.season.seasons.create({ name: 'S1', startDate: '2026-01-01' });
+    await repos.roster.players.update(player.playerId, { lastActiveSeasonId: season.seasonId });
+    await setActiveStatus(statusEvent(player.playerId, false), ctx, cb);
+
+    const result = await setActiveStatus(statusEvent(player.playerId, null), ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.activeOverride).toBeNull();
+    expect(body.isActive).toBe(true);
+  });
+
+  it('returns 409 when there is no active season', async () => {
+    const player = await seedPlayer();
+
+    const result = await setActiveStatus(statusEvent(player.playerId, true), ctx, cb);
+
+    expect(result!.statusCode).toBe(409);
+  });
+
+  it('returns 404 for an unknown player', async () => {
+    await repos.season.seasons.create({ name: 'S1', startDate: '2026-01-01' });
+
+    const result = await setActiveStatus(statusEvent('nope', true), ctx, cb);
+
+    expect(result!.statusCode).toBe(404);
+  });
+
+  it('returns 400 for a non-boolean, non-null value', async () => {
+    const player = await seedPlayer();
+    const event = withAuth(
+      makeEvent({
+        pathParameters: { playerId: player.playerId },
+        body: JSON.stringify({ value: 'yes' }),
+      }),
+      'Admin',
+    );
+
+    const result = await setActiveStatus(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
   });
 });

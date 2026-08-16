@@ -31,6 +31,23 @@ export interface Player {
   recentForm?: ('W' | 'L' | 'D')[];
   /** Current consecutive result streak from most recent match */
   currentStreak?: { type: 'W' | 'L' | 'D'; count: number };
+  /**
+   * Whether this wrestler counts as active — i.e. has completed a match in the
+   * current season (or has an admin override). Server-derived; season views
+   * and contenders hide inactive wrestlers, all-time standings do not.
+   */
+  isActive?: boolean;
+  /** Season of this wrestler's most recent completed match. */
+  lastActiveSeasonId?: string;
+  /** Admin force-active / force-inactive, scoped to the season it was set in. */
+  activeOverride?: ActiveOverride | null;
+}
+
+export interface ActiveOverride {
+  seasonId: string;
+  value: boolean;
+  setBy: string;
+  setAt: string;
 }
 
 export type MatchStatus = 'scheduled' | 'completed' | 'cancelled' | 'open-signups';
@@ -187,6 +204,8 @@ export interface Standings {
   players: Player[];
   seasonId?: string;
   sortedByWins: boolean;
+  /** True when inactive wrestlers were filtered out of `players`. */
+  activeFiltered?: boolean;
 }
 
 /** Dashboard API response types */

@@ -36,7 +36,8 @@
     "accessDenied": "Zugriff verweigert",
     "back": "Zurück",
     "backToHome": "Zurück zur Startseite",
-    "actions": "Aktionen"
+    "actions": "Aktionen",
+    "inactive": "Inaktiv"
   },
   "notFound": {
     "title": "Seite nicht gefunden",
@@ -406,7 +407,9 @@
     "winStreak": "Siegesserie",
     "lossStreak": "Niederlagenserie",
     "drawStreak": "Unentschiedenserie",
-    "lastResult": "Letztes Ergebnis"
+    "lastResult": "Letztes Ergebnis",
+    "showInactive": "Inaktive Wrestler anzeigen",
+    "inactiveHidden": "Wrestler ohne abgeschlossenen Kampf in dieser Saison werden ausgeblendet"
   },
   "championships": {
     "title": "Meisterschaften",

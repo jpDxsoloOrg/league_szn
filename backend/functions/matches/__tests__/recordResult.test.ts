@@ -236,9 +236,9 @@ describe('recordResult — core transaction', () => {
       losers: ['p2'],
     }));
     // Winner gets +1 win
-    expect(tx.incrementPlayerRecord).toHaveBeenCalledWith('p1', { wins: 1 });
+    expect(tx.incrementPlayerRecord).toHaveBeenCalledWith('p1', { wins: 1 }, undefined);
     // Loser gets +1 loss
-    expect(tx.incrementPlayerRecord).toHaveBeenCalledWith('p2', { losses: 1 });
+    expect(tx.incrementPlayerRecord).toHaveBeenCalledWith('p2', { losses: 1 }, undefined);
   });
 
   it('includes season standings updates when match has seasonId', async () => {
@@ -264,6 +264,36 @@ describe('recordResult — core transaction', () => {
     expect(tx.incrementStanding).toHaveBeenCalledWith('s1', 'p1', { wins: 1 });
     expect(tx.incrementStanding).toHaveBeenCalledWith('s1', 'p2', { losses: 1 });
     expect(tx.incrementStanding).toHaveBeenCalledTimes(2);
+
+    // Every participant is marked active for the season — the field rides
+    // along with the record increment because a transaction cannot contain
+    // two operations on the same player item.
+    expect(tx.incrementPlayerRecord).toHaveBeenCalledWith('p1', { wins: 1 }, { lastActiveSeasonId: 's1' });
+    expect(tx.incrementPlayerRecord).toHaveBeenCalledWith('p2', { losses: 1 }, { lastActiveSeasonId: 's1' });
+  });
+
+  it('does not mark anyone active for a match with no season', async () => {
+    stubSuccess();
+    await recordResult(ev({
+      pathParameters: { matchId: 'm1' },
+      body: JSON.stringify({ winners: ['p1'], losers: ['p2'] }),
+    }), ctx, cb);
+
+    const txFn = mockRunInTransaction.mock.calls[0][0];
+    const tx = {
+      updateMatch: vi.fn(),
+      incrementPlayerRecord: vi.fn(),
+      incrementStanding: vi.fn(),
+      updateChampionship: vi.fn(),
+      closeReign: vi.fn(),
+      startReign: vi.fn(),
+    };
+    await txFn(tx);
+
+    expect(tx.incrementStanding).not.toHaveBeenCalled();
+    for (const call of tx.incrementPlayerRecord.mock.calls) {
+      expect(call[2]).toBeUndefined();
+    }
   });
 
   // Note: Draw detection (isDraw) requires winners === losers (sorted),

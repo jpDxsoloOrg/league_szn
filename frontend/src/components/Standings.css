@@ -602,3 +602,45 @@
   letter-spacing: 0.03em;
   vertical-align: middle;
 }
+
+/* ── Active / inactive ─────────────────────────────────────────────
+   Inactive wrestlers (no completed match this season) are hidden from
+   season standings by default; the toggle brings them back dimmed. */
+.standings-inactive-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 1rem;
+  font-size: 0.85rem;
+}
+
+.standings-inactive-toggle label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+.standings-inactive-note {
+  color: var(--color-text-muted, #8a8a8a);
+}
+
+.standings-inactive {
+  opacity: 0.55;
+}
+
+.inactive-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #6b6b6b);
+  background: var(--color-surface-alt, #ececec);
+  border: 1px solid var(--color-border, #c9c9c9);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+}

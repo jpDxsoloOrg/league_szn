@@ -113,10 +113,13 @@ function champ(id: string, name: string, extra: Record<string, unknown> = {}) {
   };
 }
 
+// Active by default (competed in season s1) — contenders hides inactive
+// wrestlers, so tests about ranking/movement need players who qualify.
 function player(id: string, name: string, wrestler: string, img?: string) {
   return {
     playerId: id, name, currentWrestler: wrestler,
     wins: 0, losses: 0, draws: 0,
+    lastActiveSeasonId: 's1',
     createdAt: '2025-01-01T00:00:00Z', updatedAt: '2025-01-01T00:00:00Z',
     ...(img ? { imageUrl: img } : {}),
   };
@@ -246,7 +249,10 @@ describe('calculateRankings', () => {
 // ─── getContenders ──────────────────────────────────────────────────
 
 describe('getContenders', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSeasonsRepo.findActive.mockResolvedValue({ seasonId: 's1', status: 'active' });
+  });
 
   it('returns contenders for a championship ranked by rank', async () => {
     mockChampionshipsRepo.findById.mockResolvedValue(champ('c1', 'World Title', { divisionId: 'raw' }));
@@ -323,6 +329,38 @@ describe('getContenders', () => {
     expect(body.contenders[0].isNew).toBe(false);
     expect(body.contenders[1].movement).toBe(0);   // new entry
     expect(body.contenders[1].isNew).toBe(true);
+  });
+
+  it('drops inactive contenders and renumbers ranks contiguously', async () => {
+    mockChampionshipsRepo.findById.mockResolvedValue(champ('c1', 'Title'));
+    mockContendersRepo.listByChampionshipRanked.mockResolvedValue([
+      rankRow('c1', 'p1', 1, 1), rankRow('c1', 'p2', 2, 2), rankRow('c1', 'p3', 3, 3),
+    ]);
+    mockPlayersRepo.findById
+      .mockResolvedValueOnce(player('p1', 'A', 'X'))
+      // Last competed in a previous season — no longer a contender.
+      .mockResolvedValueOnce({ ...player('p2', 'B', 'Y'), lastActiveSeasonId: 's0' })
+      .mockResolvedValueOnce(player('p3', 'C', 'Z'));
+
+    const result = await getContenders(makeEvent({ pathParameters: { championshipId: 'c1' } }), ctx, cb);
+    const body = JSON.parse(result!.body);
+
+    expect(body.contenders.map((c: { playerId: string }) => c.playerId)).toEqual(['p1', 'p3']);
+    expect(body.contenders.map((c: { rank: number }) => c.rank)).toEqual([1, 2]);
+  });
+
+  it('still shows an inactive champion as the belt holder', async () => {
+    mockChampionshipsRepo.findById.mockResolvedValue(champ('c1', 'World', { currentChampion: 'champ' }));
+    mockContendersRepo.listByChampionshipRanked.mockResolvedValue([rankRow('c1', 'p1', 1, 1)]);
+    mockPlayersRepo.findById
+      .mockResolvedValueOnce(player('p1', 'Contender', 'X'))
+      .mockResolvedValueOnce({ ...player('champ', 'The Champ', 'Roman'), lastActiveSeasonId: undefined });
+
+    const result = await getContenders(makeEvent({ pathParameters: { championshipId: 'c1' } }), ctx, cb);
+    const body = JSON.parse(result!.body);
+
+    expect(body.currentChampion).toMatchObject({ playerId: 'champ', playerName: 'The Champ' });
+    expect(body.contenders.map((c: { playerId: string }) => c.playerId)).toEqual(['p1']);
   });
 
   it('returns 400 when championshipId path parameter is missing', async () => {

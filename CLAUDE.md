@@ -426,6 +426,31 @@ aws cloudformation describe-stacks --stack-name wwe-2k-league-api-devtest \
 8. ~~**Seasons Support**: Track standings per season, season resets.~~ **DONE** - Full season management implemented
 9. **Advanced Search**: No filtering/search beyond basic status filters.
 
+### Active / inactive wrestlers
+
+A wrestler is **active** once they have completed a match in the current season,
+and stays active until the next season starts. Rather than a stored boolean that
+needs resetting at rollover, `Player.lastActiveSeasonId` records the season of
+their most recent completed match and status is derived in
+`backend/lib/activeStatus.ts` (`isPlayerActive`). Starting a new season makes
+everyone inactive automatically.
+
+- **Set** in `recordResult.ts` for every participant of a season match. It rides
+  along with `tx.incrementPlayerRecord(...)` because a DynamoDB transaction
+  cannot contain two operations on the same item.
+- **Admin override**: `Player.activeOverride` = `{ seasonId, value, setBy, setAt }`,
+  set via `PUT /players/{playerId}/active-status` (`{ value: true | false | null }`)
+  from Manage Players. It is stamped with the season, so it expires at rollover
+  too. `null` reverts to derived.
+- **Backfill / repair**: `POST /admin/recompute-active-status` rebuilds the field
+  from the active season's completed matches. Needed for pre-existing data and
+  after match deletions (`deleteMatch` deliberately does not walk activity back).
+- **Where it filters**: season standings and contenders hide inactive wrestlers;
+  all-time standings show everyone; champions always render as belt holders;
+  `GET /players` (match scheduling, pickers, matchmaking) stays unfiltered so an
+  inactive wrestler can be booked back into action. `GET /standings` accepts
+  `?includeInactive=true` and returns `isActive` on every player either way.
+
 ### Heat tunables (RIV-21)
 
 The rivalry heat formula lives in `backend/lib/policies/rivalryHeat.ts`.

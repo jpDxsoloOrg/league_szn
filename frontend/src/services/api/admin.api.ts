@@ -32,6 +32,18 @@ export const adminApi = {
     });
   },
 
+  recomputeActiveStatus: async (): Promise<{
+    seasonId: string;
+    playersScanned: number;
+    completedMatches: number;
+    marked: number;
+    cleared: number;
+  }> => {
+    return fetchWithAuth(`${API_BASE_URL}/admin/recompute-active-status`, {
+      method: 'POST',
+    });
+  },
+
   exportData: async (): Promise<SeedExportResponse> => {
     return fetchWithAuth(`${API_BASE_URL}/admin/export-data`, {
       method: 'GET',

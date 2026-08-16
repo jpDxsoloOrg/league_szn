@@ -3,6 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import type { Match } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { hasWrestlerRole } from '../../lib/wrestlerRole';
+import { isPlayerActive } from '../../lib/activeStatus';
 
 type FormResult = 'W' | 'L' | 'D';
 
@@ -49,14 +50,21 @@ function computeRecentFormAndStreak(
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const { competition: { matches }, roster: { players, overalls }, season: { standings: seasonStandings } } = getRepositories();
+    const {
+      competition: { matches },
+      roster: { players, overalls },
+      season: { standings: seasonStandings, seasons },
+    } = getRepositories();
     const seasonId = event.queryStringParameters?.seasonId;
+    const includeInactive = event.queryStringParameters?.includeInactive === 'true';
 
-    // Fetch overalls and matches in parallel
-    const [overallItems, rawMatches] = await Promise.all([
+    // Fetch overalls, matches and the active season in parallel
+    const [overallItems, rawMatches, activeSeason] = await Promise.all([
       overalls.listAll(),
       matches.listCompleted(),
+      seasons.findActive(),
     ]);
+    const activeSeasonId = activeSeason?.seasonId;
 
     const overallsByPlayerId = new Map<string, number>(
       overallItems
@@ -85,8 +93,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         seasonStandingsList.map((s) => [s.playerId, s])
       );
 
-      // Show ALL players - those with standings get season W-L-D, others get 0-0-0
-      const standings = filteredPlayers.map((player) => {
+      // Season views show active wrestlers only. For the current season that
+      // is the active flag; for a past season the flag is meaningless (it only
+      // tracks the most recent season), so "did they compete in it" is read
+      // off that season's standings instead.
+      const isCurrentSeason = seasonId === activeSeasonId;
+      const competedInSeason = (playerId: string): boolean => {
+        const standing = standingsMap.get(playerId);
+        if (!standing) return false;
+        return (standing.wins || 0) + (standing.losses || 0) + (standing.draws || 0) > 0;
+      };
+      const visiblePlayers = includeInactive
+        ? filteredPlayers
+        : filteredPlayers.filter((player) =>
+            isCurrentSeason
+              ? isPlayerActive(player, activeSeasonId)
+              : competedInSeason(player.playerId)
+          );
+
+      const standings = visiblePlayers.map((player) => {
         const standing = standingsMap.get(player.playerId);
         const { recentForm, currentStreak } = computeRecentFormAndStreak(
           player.playerId,
@@ -100,6 +125,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           draws: standing ? (standing.draws || 0) : 0,
           recentForm,
           currentStreak,
+          isActive: isCurrentSeason
+            ? isPlayerActive(player, activeSeasonId)
+            : competedInSeason(player.playerId),
           ...(mainOverall !== undefined ? { mainOverall } : {}),
         };
       });
@@ -116,10 +144,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         players: standings,
         seasonId,
         sortedByWins: true,
+        activeFiltered: !includeInactive,
       });
     }
 
-    // Default: get all-time standings from Players table with pagination support
+    // Default: all-time standings show EVERY wrestler, active or not — the
+    // active/inactive rule is season-scoped, so it does not apply here. The
+    // flag is still returned so the UI can badge inactive wrestlers.
     const allPlayers = await players.list();
 
     // Only include players who have a wrestler assigned and whose Cognito
@@ -147,12 +178,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         completedMatches
       );
       const mainOverall = overallsByPlayerId.get(player.playerId);
-      return { ...player, recentForm, currentStreak, ...(mainOverall !== undefined ? { mainOverall } : {}) };
+      return {
+        ...player,
+        recentForm,
+        currentStreak,
+        isActive: isPlayerActive(player, activeSeasonId),
+        ...(mainOverall !== undefined ? { mainOverall } : {}),
+      };
     });
 
     return success({
       players: playersWithForm,
       sortedByWins: true,
+      activeFiltered: false,
     });
   } catch (err) {
     console.error('Error fetching standings:', err);

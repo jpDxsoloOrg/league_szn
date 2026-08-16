@@ -35,8 +35,17 @@ export interface UnitOfWork {
   /** Stage a player field update (SET fields). */
   updatePlayer(playerId: string, patch: Record<string, unknown>): void;
 
-  /** Stage a player record increment/decrement. */
-  incrementPlayerRecord(playerId: string, delta: RecordDelta): void;
+  /**
+   * Stage a player record increment/decrement, optionally SETting extra
+   * fields on the same item. The extra fields exist because a DynamoDB
+   * transaction cannot contain two operations on one item, so callers that
+   * need both (e.g. recordResult stamping `lastActiveSeasonId`) must merge.
+   */
+  incrementPlayerRecord(
+    playerId: string,
+    delta: RecordDelta,
+    set?: Record<string, unknown>,
+  ): void;
 
   /** Stage a player field removal (REMOVE field, SET updatedAt). */
   clearPlayerField(playerId: string, field: string): void;

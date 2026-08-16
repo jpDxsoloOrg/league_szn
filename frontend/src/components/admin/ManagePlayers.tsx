@@ -5,6 +5,8 @@ import {
   imagesApi,
   divisionsApi,
   wrestlersApi,
+  seasonsApi,
+  adminApi,
 } from '../../services/api';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
@@ -37,6 +39,11 @@ export default function ManagePlayers() {
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  // Active-status override state. `activeSeasonId` is null when the league is
+  // between seasons — overrides are season-scoped, so the control is disabled.
+  const [activeSeasonId, setActiveSeasonId] = useState<string | null>(null);
+  const [savingStatus, setSavingStatus] = useState<string | null>(null);
+  const [recomputing, setRecomputing] = useState(false);
 
   // Form state — FK-backed. The legacy `currentWrestler` / `alternateWrestler`
   // string inputs are gone; the backend denormalizes the name from the
@@ -77,18 +84,70 @@ export default function ManagePlayers() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [playersData, divisionsData, wrestlersData] = await Promise.all([
+      const [playersData, divisionsData, wrestlersData, seasonsData] = await Promise.all([
         playersApi.getAll(),
         divisionsApi.getAll(),
         wrestlersApi.getAll(),
+        seasonsApi.getAll(),
       ]);
       setPlayers(playersData);
       setDivisions(divisionsData);
       setWrestlers(wrestlersData);
+      setActiveSeasonId(seasonsData.find((s) => s.status === 'active')?.seasonId ?? null);
     } catch (_err) {
       setError('Failed to load data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  /**
+   * Three-state active override: 'auto' derives from whether the wrestler has
+   * completed a match this season, 'active'/'inactive' force it. The override
+   * expires at season rollover, so it is only meaningful while a season runs.
+   */
+  const getActiveMode = (player: Player): 'auto' | 'active' | 'inactive' => {
+    const override = player.activeOverride;
+    if (!override || !activeSeasonId || override.seasonId !== activeSeasonId) return 'auto';
+    return override.value ? 'active' : 'inactive';
+  };
+
+  const handleActiveModeChange = async (player: Player, mode: string) => {
+    const value = mode === 'auto' ? null : mode === 'active';
+    try {
+      setSavingStatus(player.playerId);
+      setError(null);
+      const result = await playersApi.setActiveStatus(player.playerId, value);
+      setPlayers((prev) =>
+        prev.map((p) =>
+          p.playerId === player.playerId
+            ? { ...p, isActive: result.isActive, activeOverride: result.activeOverride }
+            : p,
+        ),
+      );
+      setSuccess(`${player.name} is now ${result.isActive ? 'active' : 'inactive'}`);
+    } catch (err) {
+      logger.error('Failed to update active status');
+      setError(err instanceof Error ? err.message : 'Failed to update active status');
+    } finally {
+      setSavingStatus(null);
+    }
+  };
+
+  const handleRecomputeActiveStatus = async () => {
+    try {
+      setRecomputing(true);
+      setError(null);
+      const result = await adminApi.recomputeActiveStatus();
+      setSuccess(
+        `Active status recomputed: ${result.marked} marked active, ${result.cleared} cleared.`,
+      );
+      await loadData();
+    } catch (err) {
+      logger.error('Failed to recompute active status');
+      setError(err instanceof Error ? err.message : 'Failed to recompute active status');
+    } finally {
+      setRecomputing(false);
     }
   };
 
@@ -509,6 +568,19 @@ export default function ManagePlayers() {
             {filteredPlayers.length !== players.length ? ` of ${players.length}` : ''})
           </h3>
           <div className="players-filter am-filter-row">
+            <button
+              type="button"
+              className="recompute-status-btn"
+              onClick={handleRecomputeActiveStatus}
+              disabled={recomputing || !activeSeasonId}
+              title={
+                activeSeasonId
+                  ? 'Rebuild active status from this season\u2019s completed matches'
+                  : 'No active season'
+              }
+            >
+              {recomputing ? 'Recomputing...' : 'Recompute active status'}
+            </button>
             <label htmlFor="divisionFilter">Division:</label>
             <select
               id="divisionFilter"
@@ -542,6 +614,7 @@ export default function ManagePlayers() {
                 <th>Division</th>
                 <th>Alignment</th>
                 <th>Record</th>
+                <th>Status</th>
                 <th>Linked</th>
                 <th>Actions</th>
               </tr>
@@ -572,6 +645,25 @@ export default function ManagePlayers() {
                     <span className="record">
                       {player.wins}W - {player.losses}L - {player.draws}D
                     </span>
+                  </td>
+                  <td className="active-status-cell am-row-extra">
+                    <span
+                      className={`status-badge ${player.isActive ? 'active' : 'inactive'}`}
+                    >
+                      {player.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                    <select
+                      className="active-mode-select"
+                      aria-label={`Active status for ${player.name}`}
+                      value={getActiveMode(player)}
+                      disabled={!activeSeasonId || savingStatus === player.playerId}
+                      title={activeSeasonId ? undefined : 'No active season'}
+                      onChange={(e) => handleActiveModeChange(player, e.target.value)}
+                    >
+                      <option value="auto">Auto</option>
+                      <option value="active">Force active</option>
+                      <option value="inactive">Force inactive</option>
+                    </select>
                   </td>
                   <td className="am-row-extra">
                     {player.userId ? (

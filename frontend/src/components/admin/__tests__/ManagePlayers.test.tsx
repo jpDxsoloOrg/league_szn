@@ -4,17 +4,20 @@ import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockPlayersApi, mockDivisionsApi, mockImagesApi, mockWrestlersApi } =
+const { mockPlayersApi, mockDivisionsApi, mockImagesApi, mockWrestlersApi, mockSeasonsApi, mockAdminApi } =
   vi.hoisted(() => ({
     mockPlayersApi: {
       getAll: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+      setActiveStatus: vi.fn(),
     },
     mockDivisionsApi: { getAll: vi.fn() },
     mockImagesApi: { generateUploadUrl: vi.fn(), uploadToS3: vi.fn() },
     mockWrestlersApi: { getAll: vi.fn() },
+    mockSeasonsApi: { getAll: vi.fn() },
+    mockAdminApi: { recomputeActiveStatus: vi.fn() },
   }));
 
 vi.mock('../../../services/api', () => ({
@@ -22,6 +25,8 @@ vi.mock('../../../services/api', () => ({
   divisionsApi: mockDivisionsApi,
   imagesApi: mockImagesApi,
   wrestlersApi: mockWrestlersApi,
+  seasonsApi: mockSeasonsApi,
+  adminApi: mockAdminApi,
 }));
 
 import ManagePlayers from '../ManagePlayers';
@@ -70,6 +75,7 @@ const mockPlayers: Player[] = [
   {
     playerId: 'p1', name: 'John', currentWrestler: 'The Rock',
     currentWrestlerId: 'w-rock',
+    isActive: true, lastActiveSeasonId: 's1',
     wins: 10, losses: 3, draws: 1, divisionId: 'div-1',
     imageUrl: 'https://img.example.com/rock.png',
     createdAt: '2024-01-01', updatedAt: '2024-01-01',
@@ -77,6 +83,7 @@ const mockPlayers: Player[] = [
   {
     playerId: 'p2', name: 'Jane', currentWrestler: 'Becky Lynch',
     currentWrestlerId: 'w-becky',
+    isActive: false,
     wins: 8, losses: 5, draws: 0, userId: 'user-abc',
     createdAt: '2024-01-01', updatedAt: '2024-01-01',
   },
@@ -92,12 +99,16 @@ describe('ManagePlayers', () => {
     mockPlayersApi.getAll.mockResolvedValue(mockPlayers);
     mockDivisionsApi.getAll.mockResolvedValue(mockDivisions);
     mockWrestlersApi.getAll.mockResolvedValue(mockWrestlers);
+    mockSeasonsApi.getAll.mockResolvedValue([
+      { seasonId: 's1', name: 'Season 1', startDate: '2026-01-01', status: 'active', createdAt: '', updatedAt: '' },
+    ]);
   });
 
   it('shows loading state during initial fetch', () => {
     mockPlayersApi.getAll.mockReturnValue(new Promise(() => {}));
     mockDivisionsApi.getAll.mockReturnValue(new Promise(() => {}));
     mockWrestlersApi.getAll.mockReturnValue(new Promise(() => {}));
+    mockSeasonsApi.getAll.mockReturnValue(new Promise(() => {}));
     renderComponent();
     expect(screen.getByText('Loading players...')).toBeInTheDocument();
   });
@@ -379,5 +390,92 @@ describe('ManagePlayers', () => {
       .map((g) => g.getAttribute('label'));
     expect(primaryLabels).toContain('AEW');
     expect(primaryLabels).toContain('WWE');
+  });
+
+  // ── Active / inactive status ─────────────────────────────────────
+
+  it('badges each player active or inactive', async () => {
+    renderComponent();
+
+    await waitFor(() => expect(screen.getByText('All Players (2)')).toBeInTheDocument());
+
+    expect(screen.getByText('Active')).toBeInTheDocument();
+    expect(screen.getByText('Inactive')).toBeInTheDocument();
+  });
+
+  it('forces a player active through the three-state override control', async () => {
+    const user = userEvent.setup();
+    mockPlayersApi.setActiveStatus.mockResolvedValue({
+      playerId: 'p2',
+      isActive: true,
+      activeOverride: { seasonId: 's1', value: true, setBy: 'admin', setAt: 'now' },
+    });
+    renderComponent();
+
+    await waitFor(() => expect(screen.getByText('All Players (2)')).toBeInTheDocument());
+
+    const select = screen.getByLabelText('Active status for Jane');
+    expect((select as HTMLSelectElement).value).toBe('auto');
+    await user.selectOptions(select, 'active');
+
+    expect(mockPlayersApi.setActiveStatus).toHaveBeenCalledWith('p2', true);
+    await waitFor(() =>
+      expect(screen.getByText('Jane is now active')).toBeInTheDocument(),
+    );
+  });
+
+  it('reverts to auto by clearing the override', async () => {
+    const user = userEvent.setup();
+    mockPlayersApi.getAll.mockResolvedValue([
+      {
+        ...mockPlayers[1],
+        activeOverride: { seasonId: 's1', value: false, setBy: 'admin', setAt: 'now' },
+      },
+    ]);
+    mockPlayersApi.setActiveStatus.mockResolvedValue({
+      playerId: 'p2',
+      isActive: false,
+      activeOverride: null,
+    });
+    renderComponent();
+
+    await waitFor(() => expect(screen.getByText('All Players (1)')).toBeInTheDocument());
+
+    const select = screen.getByLabelText('Active status for Jane');
+    expect((select as HTMLSelectElement).value).toBe('inactive');
+    await user.selectOptions(select, 'auto');
+
+    expect(mockPlayersApi.setActiveStatus).toHaveBeenCalledWith('p2', null);
+  });
+
+  it('disables the override control when no season is active', async () => {
+    mockSeasonsApi.getAll.mockResolvedValue([
+      { seasonId: 's0', name: 'Season 0', startDate: '2025-01-01', status: 'completed', createdAt: '', updatedAt: '' },
+    ]);
+    renderComponent();
+
+    await waitFor(() => expect(screen.getByText('All Players (2)')).toBeInTheDocument());
+
+    expect(screen.getByLabelText('Active status for Jane')).toBeDisabled();
+    expect(screen.getByRole('button', { name: /recompute active status/i })).toBeDisabled();
+  });
+
+  it('recomputes active status and reloads', async () => {
+    const user = userEvent.setup();
+    mockAdminApi.recomputeActiveStatus.mockResolvedValue({
+      seasonId: 's1', playersScanned: 2, completedMatches: 3, marked: 1, cleared: 0,
+    });
+    renderComponent();
+
+    await waitFor(() => expect(screen.getByText('All Players (2)')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: /recompute active status/i }));
+
+    expect(mockAdminApi.recomputeActiveStatus).toHaveBeenCalled();
+    await waitFor(() =>
+      expect(
+        screen.getByText('Active status recomputed: 1 marked active, 0 cleared.'),
+      ).toBeInTheDocument(),
+    );
   });
 });

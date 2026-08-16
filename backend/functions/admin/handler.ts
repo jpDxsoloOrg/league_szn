@@ -5,6 +5,7 @@ import { handler as seedDataHandler } from './seedData';
 import { handler as exportDataHandler } from './exportData';
 import { handler as getHeatConfigHandler } from './getHeatConfig';
 import { handler as updateHeatConfigHandler } from './updateHeatConfig';
+import { handler as recomputeActiveStatusHandler } from './recomputeActiveStatus';
 import { createRouter, type RouteConfig } from '../../lib/router';
 
 /**
@@ -47,6 +48,11 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/admin/heat-config',
     method: 'PUT',
     handler: updateHeatConfigHandler,
+  },
+  {
+    resource: '/admin/recompute-active-status',
+    method: 'POST',
+    handler: recomputeActiveStatusHandler,
   },
 ];
 

@@ -72,8 +72,13 @@ export class DynamoUnitOfWork implements UnitOfWork {
     });
   }
 
-  incrementPlayerRecord(playerId: string, delta: RecordDelta): void {
+  incrementPlayerRecord(
+    playerId: string,
+    delta: RecordDelta,
+    set?: Record<string, unknown>,
+  ): void {
     const parts: string[] = [];
+    const names: Record<string, string> = {};
     const values: Record<string, unknown> = { ':timestamp': new Date().toISOString() };
     if (delta.wins) {
       parts.push(`wins = if_not_exists(wins, :zero) + :dw`);
@@ -91,11 +96,22 @@ export class DynamoUnitOfWork implements UnitOfWork {
       if (!values[':zero']) values[':zero'] = 0;
     }
     parts.push('updatedAt = :timestamp');
+    let i = 0;
+    for (const [key, val] of Object.entries(set ?? {})) {
+      if (val === undefined || val === null) continue;
+      const nameKey = `#s${i}`;
+      const valKey = `:s${i}`;
+      names[nameKey] = key;
+      values[valKey] = val;
+      parts.push(`${nameKey} = ${valKey}`);
+      i++;
+    }
     this.staged.push({
       Update: {
         TableName: TableNames.PLAYERS,
         Key: { playerId },
         UpdateExpression: `SET ${parts.join(', ')}`,
+        ...(Object.keys(names).length > 0 ? { ExpressionAttributeNames: names } : {}),
         ExpressionAttributeValues: values,
       },
     });
