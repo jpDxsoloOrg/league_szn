@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { profileApi, imagesApi, overallsApi, transfersApi, divisionsApi, storylineRequestsApi, playersApi, wrestlersApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeName } from '../../utils/sanitize';
-import { isNeedsWrestler } from '../../utils/needsWrestler';
+import { isNeedsWrestler, NEEDS_WRESTLER } from '../../utils/needsWrestler';
+import { WRESTLER_NAME_ENTRY_MODE } from '../../config/wrestlerNameEntry';
 import { logger } from '../../utils/logger';
 import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
 import {
@@ -116,10 +117,17 @@ export default function WrestlerProfile() {
     name: '',
     currentWrestlerId: '',
     alternateWrestlerId: '',
+    // Free-text names, used when WRESTLER_NAME_ENTRY_MODE is 'text'. Kept in
+    // form state alongside the FK fields so switching the mode back needs no
+    // other change here.
+    currentWrestler: '',
+    alternateWrestler: '',
     imageUrl: '',
     psnId: '',
     alignment: '' as '' | 'face' | 'heel' | 'neutral',
   });
+
+  const textWrestlerEntry = WRESTLER_NAME_ENTRY_MODE === 'text';
 
   // Roster (for the wrestler dropdowns).
   const [wrestlers, setWrestlers] = useState<Wrestler[]>([]);
@@ -148,6 +156,8 @@ export default function WrestlerProfile() {
         name: profile.name,
         currentWrestlerId: profile.currentWrestlerId || '',
         alternateWrestlerId: profile.alternateWrestlerId || '',
+        currentWrestler: isNeedsWrestler(profile.currentWrestler) ? '' : profile.currentWrestler,
+        alternateWrestler: profile.alternateWrestler || '',
         imageUrl: profile.imageUrl || '',
         psnId: profile.psnId || '',
         alignment: profile.alignment || '',
@@ -378,6 +388,8 @@ export default function WrestlerProfile() {
         name: player.name,
         currentWrestlerId: player.currentWrestlerId || '',
         alternateWrestlerId: player.alternateWrestlerId || '',
+        currentWrestler: isNeedsWrestler(player.currentWrestler) ? '' : player.currentWrestler,
+        alternateWrestler: player.alternateWrestler || '',
         imageUrl: player.imageUrl || '',
         psnId: player.psnId || '',
         alignment: player.alignment || '',
@@ -400,6 +412,8 @@ export default function WrestlerProfile() {
         name: player.name,
         currentWrestlerId: player.currentWrestlerId || '',
         alternateWrestlerId: player.alternateWrestlerId || '',
+        currentWrestler: isNeedsWrestler(player.currentWrestler) ? '' : player.currentWrestler,
+        alternateWrestler: player.alternateWrestler || '',
         imageUrl: player.imageUrl || '',
         psnId: player.psnId || '',
         alignment: player.alignment || '',
@@ -429,18 +443,31 @@ export default function WrestlerProfile() {
       // profile.
       const updates: {
         name?: string;
+        currentWrestler?: string;
+        alternateWrestler?: string;
         currentWrestlerId?: string;
         alternateWrestlerId?: string;
         imageUrl?: string;
         psnId?: string;
         alignment?: 'face' | 'heel' | 'neutral' | '';
-      } = {
-        name: sanitizedName,
-        currentWrestlerId: formData.currentWrestlerId,
+      } = { name: sanitizedName };
+
+      if (textWrestlerEntry) {
+        // Send only the names. The FK fields are deliberately omitted: the
+        // backend lets an FK on a slot win over the text, and omitting them
+        // also leaves any existing roster assignment untouched rather than
+        // releasing it.
+        // Blank falls back to the placeholder rather than '': GET /players
+        // drops players with no currentWrestler, and clearing the FK
+        // server-side stamps the same placeholder.
+        updates.currentWrestler = formData.currentWrestler.trim() || NEEDS_WRESTLER;
+        updates.alternateWrestler = formData.alternateWrestler.trim();
+      } else {
+        updates.currentWrestlerId = formData.currentWrestlerId;
         // Empty string clears the FK server-side (matches the
         // ManagePlayers contract).
-        alternateWrestlerId: formData.alternateWrestlerId || '',
-      };
+        updates.alternateWrestlerId = formData.alternateWrestlerId || '';
+      }
 
       if (imageUrl) {
         updates.imageUrl = imageUrl;
@@ -517,7 +544,10 @@ export default function WrestlerProfile() {
     );
   }
 
-  const needsWrestlerPick = !player.currentWrestlerId;
+  // In text mode there is no FK to key off, so the banner follows the name.
+  const needsWrestlerPick = textWrestlerEntry
+    ? isNeedsWrestler(player.currentWrestler)
+    : !player.currentWrestlerId;
   const pendingTransfer = transferRequests.find((req) => req.status === 'pending');
   const currentDivisionName = divisions.find((d) => d.divisionId === player.divisionId)?.name;
 
@@ -595,38 +625,68 @@ export default function WrestlerProfile() {
               />
             </div>
 
-            {rosterEmpty && (
-              <div className="roster-empty-notice">
-                The wrestler roster is empty — you can still save the rest of your
-                profile. An admin can add wrestlers and set yours.
-              </div>
+            {textWrestlerEntry ? (
+              <>
+                <div className="form-group">
+                  <label htmlFor="profile-wrestler-name">Current Wrestler</label>
+                  <input
+                    type="text"
+                    id="profile-wrestler-name"
+                    value={formData.currentWrestler}
+                    onChange={(e) => setFormData({ ...formData, currentWrestler: e.target.value })}
+                    maxLength={100}
+                    placeholder="e.g., Stone Cold Steve Austin"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="profile-alternate-wrestler-name">Alternate Wrestler</label>
+                  <input
+                    type="text"
+                    id="profile-alternate-wrestler-name"
+                    value={formData.alternateWrestler}
+                    onChange={(e) => setFormData({ ...formData, alternateWrestler: e.target.value })}
+                    maxLength={100}
+                    placeholder="Optional"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                {rosterEmpty && (
+                  <div className="roster-empty-notice">
+                    The wrestler roster is empty — you can still save the rest of your
+                    profile. An admin can add wrestlers and set yours.
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label htmlFor="profile-wrestler">Current Wrestler</label>
+                  <select
+                    id="profile-wrestler"
+                    value={formData.currentWrestlerId}
+                    onChange={(e) => setFormData({ ...formData, currentWrestlerId: e.target.value })}
+                    disabled={rosterEmpty}
+                  >
+                    <option value="">Needs Wrestler — none picked</option>
+                    {renderWrestlerOptions(currentWrestlerOptions)}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="profile-alternate-wrestler">Alternate Wrestler</label>
+                  <select
+                    id="profile-alternate-wrestler"
+                    value={formData.alternateWrestlerId}
+                    onChange={(e) => setFormData({ ...formData, alternateWrestlerId: e.target.value })}
+                    disabled={rosterEmpty}
+                  >
+                    <option value="">None</option>
+                    {renderWrestlerOptions(alternateWrestlerOptions)}
+                  </select>
+                </div>
+              </>
             )}
-
-            <div className="form-group">
-              <label htmlFor="profile-wrestler">Current Wrestler</label>
-              <select
-                id="profile-wrestler"
-                value={formData.currentWrestlerId}
-                onChange={(e) => setFormData({ ...formData, currentWrestlerId: e.target.value })}
-                disabled={rosterEmpty}
-              >
-                <option value="">Needs Wrestler — none picked</option>
-                {renderWrestlerOptions(currentWrestlerOptions)}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="profile-alternate-wrestler">Alternate Wrestler</label>
-              <select
-                id="profile-alternate-wrestler"
-                value={formData.alternateWrestlerId}
-                onChange={(e) => setFormData({ ...formData, alternateWrestlerId: e.target.value })}
-                disabled={rosterEmpty}
-              >
-                <option value="">None</option>
-                {renderWrestlerOptions(alternateWrestlerOptions)}
-              </select>
-            </div>
 
             <div className="form-group">
               <label htmlFor="profile-psn">PSN ID</label>

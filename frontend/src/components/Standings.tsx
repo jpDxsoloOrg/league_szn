@@ -438,7 +438,7 @@ export default function Standings() {
                 </td>
                 <td className="wrestler-name">
                   {!isNeedsWrestler(player.currentWrestler) && player.currentWrestler}
-                  {!player.currentWrestlerId && (
+                  {isNeedsWrestler(player.currentWrestler) && (
                     <span
                       className="needs-wrestler-pill"
                       title={t('auth.needsWrestlerBannerBody')}
