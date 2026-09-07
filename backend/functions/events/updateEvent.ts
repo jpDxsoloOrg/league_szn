@@ -68,6 +68,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    if (body.venue !== undefined) {
+      if (typeof body.venue !== 'string') {
+        return badRequest('venue must be a string');
+      }
+      body.venue = body.venue.trim();
+    }
+
     if (body.date !== undefined) {
       const normalized = normalizeCalendarDate(body.date);
       if (!normalized) {

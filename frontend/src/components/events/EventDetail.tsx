@@ -80,6 +80,10 @@ export default function EventDetail() {
   const [dateDraft, setDateDraft] = useState('');
   const [savingDate, setSavingDate] = useState(false);
   const [dateError, setDateError] = useState<string | null>(null);
+  const [editingVenue, setEditingVenue] = useState(false);
+  const [venueDraft, setVenueDraft] = useState('');
+  const [savingVenue, setSavingVenue] = useState(false);
+  const [venueError, setVenueError] = useState<string | null>(null);
   const [togglingLock, setTogglingLock] = useState(false);
   const [lockError, setLockError] = useState<string | null>(null);
 
@@ -248,6 +252,38 @@ export default function EventDetail() {
       setDateError(err instanceof Error ? err.message : t('events.admin.editDate.error', 'Failed to update date.'));
     } finally {
       setSavingDate(false);
+    }
+  };
+
+  const handleStartEditVenue = () => {
+    if (!eventData) return;
+    setVenueDraft(eventData.venue ?? '');
+    setVenueError(null);
+    setEditingVenue(true);
+  };
+
+  const handleCancelEditVenue = () => {
+    setEditingVenue(false);
+    setVenueError(null);
+  };
+
+  const handleSaveVenue = async () => {
+    if (!eventData || !eventId || savingVenue) return;
+    const trimmed = venueDraft.trim();
+    if (trimmed === (eventData.venue ?? '')) {
+      setEditingVenue(false);
+      return;
+    }
+    setSavingVenue(true);
+    setVenueError(null);
+    try {
+      const updated = await eventsApi.update(eventId, { venue: trimmed });
+      setEventData({ ...eventData, venue: updated.venue });
+      setEditingVenue(false);
+    } catch (err) {
+      setVenueError(err instanceof Error ? err.message : t('events.admin.editVenue.error', 'Failed to update location.'));
+    } finally {
+      setSavingVenue(false);
     }
   };
 
@@ -745,10 +781,57 @@ export default function EventDetail() {
               {dateError}
             </div>
           )}
-          {eventData.venue && (
-            <div className="event-detail-info-item">
+          {(eventData.venue || isAdminOrModerator) && (
+            <div className="event-detail-info-item event-detail-date-row">
               <span className="info-label">{t('events.detail.venue')}:</span>
-              <span>{eventData.venue}</span>
+              {isAdminOrModerator && editingVenue ? (
+                <span className="event-detail-date-edit">
+                  <input
+                    type="text"
+                    value={venueDraft}
+                    onChange={(e) => setVenueDraft(e.target.value)}
+                    disabled={savingVenue}
+                    maxLength={120}
+                    placeholder={t('events.admin.editVenue.placeholder', 'e.g., Madison Square Garden, New York')}
+                    aria-label={t('events.admin.editVenue.label', 'Event location')}
+                  />
+                  <button
+                    type="button"
+                    className="event-detail-date-save"
+                    onClick={handleSaveVenue}
+                    disabled={savingVenue}
+                  >
+                    {savingVenue ? t('common.saving') : t('common.save', 'Save')}
+                  </button>
+                  <button
+                    type="button"
+                    className="event-detail-date-cancel"
+                    onClick={handleCancelEditVenue}
+                    disabled={savingVenue}
+                  >
+                    {t('common.cancel', 'Cancel')}
+                  </button>
+                </span>
+              ) : (
+                <>
+                  <span>{eventData.venue || t('events.admin.editVenue.empty', 'Not set')}</span>
+                  {isAdminOrModerator && (
+                    <button
+                      type="button"
+                      className="event-detail-date-edit-btn"
+                      onClick={handleStartEditVenue}
+                      aria-label={t('events.admin.editVenue.label', 'Event location')}
+                    >
+                      {t('common.edit', 'Edit')}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+          {venueError && (
+            <div className="event-detail-date-error" role="alert">
+              {venueError}
             </div>
           )}
           {eventData.attendance && (

@@ -1371,6 +1371,12 @@
         "invalid": "Pick a valid date.",
         "error": "Failed to update date."
       },
+      "editVenue": {
+        "label": "Event location",
+        "placeholder": "e.g., Madison Square Garden, New York",
+        "empty": "Not set",
+        "error": "Failed to update location."
+      },
       "lockSignups": {
         "lock": "Lock sign-ups",
         "unlock": "Unlock sign-ups",

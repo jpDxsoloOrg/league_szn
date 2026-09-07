@@ -1368,6 +1368,12 @@
         "invalid": "Bitte ein gültiges Datum wählen.",
         "error": "Datum konnte nicht aktualisiert werden."
       },
+      "editVenue": {
+        "label": "Veranstaltungsort",
+        "placeholder": "z.B. Madison Square Garden, New York",
+        "empty": "Nicht festgelegt",
+        "error": "Veranstaltungsort konnte nicht aktualisiert werden."
+      },
       "lockSignups": {
         "lock": "Anmeldung sperren",
         "unlock": "Anmeldung freigeben",
