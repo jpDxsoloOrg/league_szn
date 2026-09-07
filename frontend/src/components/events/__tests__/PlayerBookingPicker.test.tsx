@@ -220,6 +220,23 @@ describe('PlayerBookingPicker', () => {
       expect(screen.getByText('Charlie (Carol)')).toBeInTheDocument();
     });
 
+    it('closes from the visible Done button', async () => {
+      renderMulti(['p1']);
+      await openMulti(1);
+      expect(screen.getByText('Alpha (Alice)')).toBeInTheDocument();
+
+      // The count rides along so it is clear what is being confirmed.
+      await userEvent.click(screen.getByRole('button', { name: 'Done (1)' }));
+      expect(screen.queryByText('Alpha (Alice)')).not.toBeInTheDocument();
+    });
+
+    it('shows a bare Done when nothing is picked yet', async () => {
+      renderMulti();
+      await openMulti();
+
+      expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument();
+    });
+
     it('closes on Escape', async () => {
       renderMulti();
       await openMulti();

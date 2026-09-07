@@ -496,6 +496,7 @@
         "noMatches": "Keine passenden Spieler.",
         "addParticipants": "Teilnehmer hinzufügen…",
         "selectedCount": "{{count}} ausgewählt",
+        "done": "Fertig",
         "alreadyBooked": "Auf der Card",
         "showAll": "{{count}} anzeigen, die sich nicht als verfügbar gemeldet haben",
         "showBookableOnly": "Nur verfügbar & vielleicht anzeigen"

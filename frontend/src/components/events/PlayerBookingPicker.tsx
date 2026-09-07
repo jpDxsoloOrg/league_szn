@@ -316,6 +316,23 @@ export default function PlayerBookingPicker({
               })}
             </button>
           )}
+
+          {multi && (
+            // Multi mode has no implicit close (the menu deliberately survives
+            // each pick), and click-outside/Escape are both invisible, so it
+            // needs a button people can actually see.
+            <button
+              type="button"
+              className="booking-picker-done"
+              onClick={() => {
+                setOpen(false);
+                setSearch('');
+              }}
+            >
+              {t('matches.slots.picker.done', { defaultValue: 'Done' })}
+              {selectedCount > 0 && ` (${selectedCount})`}
+            </button>
+          )}
         </div>
       )}
     </div>
