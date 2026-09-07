@@ -199,3 +199,15 @@
 .booking-picker-show-all:hover {
   background-color: rgba(212, 175, 55, 0.1);
 }
+
+.booking-picker-check {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: #d4af37;
+  font-weight: 700;
+}
+
+/* In multi mode the badge and the tick can both appear; keep them apart. */
+.booking-picker-booked-badge + .booking-picker-check {
+  margin-left: 6px;
+}

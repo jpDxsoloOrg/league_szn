@@ -160,6 +160,17 @@ async function selectEvent(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByText(/WrestleMania/));
 }
 
+/** Opens the participants popup and clicks each named player's option. */
+async function pickParticipants(
+  user: ReturnType<typeof userEvent.setup>,
+  optionLabels: string[],
+) {
+  await user.click(screen.getByRole('button', { name: /Add participants…|\d+ selected/ }));
+  for (const label of optionLabels) {
+    await user.click(screen.getByText(label));
+  }
+}
+
 function renderScheduleMatch() {
   return render(
     <BrowserRouter>
@@ -211,16 +222,15 @@ describe('ScheduleMatch', () => {
     expect(screen.getByText('Ladder Match')).toBeInTheDocument();
     expect(screen.getByText('Steel Cage')).toBeInTheDocument();
 
-    // Player cards are rendered in participants grid (use participant-name class)
-    expect(screen.getByText('John Cena')).toBeInTheDocument();
-    expect(screen.getByText('Dwayne Johnson')).toBeInTheDocument();
-    expect(screen.getByText('Mark Calaway')).toBeInTheDocument();
-    expect(screen.getByText('Paul Levesque')).toBeInTheDocument();
-
-    // Wrestler names are also shown
-    expect(screen.getByText('The Champ')).toBeInTheDocument();
-    expect(screen.getByText('The Rock')).toBeInTheDocument();
-
+    // Participants are picked from a popup, so nobody is listed until it opens
+    expect(screen.queryByText('The Champ (John Cena)')).not.toBeInTheDocument();
+    await userEvent.setup().click(
+      screen.getByRole('button', { name: /Add participants…/ }),
+    );
+    expect(screen.getByText('The Champ (John Cena)')).toBeInTheDocument();
+    expect(screen.getByText('The Rock (Dwayne Johnson)')).toBeInTheDocument();
+    expect(screen.getByText('Undertaker (Mark Calaway)')).toBeInTheDocument();
+    expect(screen.getByText('Triple H (Paul Levesque)')).toBeInTheDocument();
     // Submit button
     expect(screen.getByRole('button', { name: 'Schedule Match' })).toBeInTheDocument();
 
@@ -278,15 +288,14 @@ describe('ScheduleMatch', () => {
     renderScheduleMatch();
 
     await waitFor(() => {
-      expect(screen.getByText('John Cena')).toBeInTheDocument();
+      expect(screen.getByLabelText('Match Format')).toBeInTheDocument();
     });
 
     // Select match format (no longer defaults to singles)
     await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
 
-    // Click participant cards to select two players
-    await user.click(screen.getByText('John Cena').closest('.participant-card')!);
-    await user.click(screen.getByText('Dwayne Johnson').closest('.participant-card')!);
+    // Pick two players from the popup
+    await pickParticipants(user, ['The Champ (John Cena)', 'The Rock (Dwayne Johnson)']);
 
     // Verify selected count
     expect(screen.getByText('Selected: 2')).toBeInTheDocument();
@@ -312,14 +321,14 @@ describe('ScheduleMatch', () => {
     renderScheduleMatch();
 
     await waitFor(() => {
-      expect(screen.getByText('John Cena')).toBeInTheDocument();
+      expect(screen.getByLabelText('Match Format')).toBeInTheDocument();
     });
 
     // Select match format first (no longer defaults to singles)
     await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
 
     // Select only one participant
-    await user.click(screen.getByText('John Cena').closest('.participant-card')!);
+    await pickParticipants(user, ['The Champ (John Cena)']);
 
     // Submit
     await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
@@ -339,7 +348,7 @@ describe('ScheduleMatch', () => {
     setupDefaultMocks();
     renderScheduleMatch();
 
-    await waitFor(() => expect(screen.getByText('John Cena')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
     await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
 
     expect(screen.queryByLabelText('Open match for signups')).toBeInTheDocument();
@@ -356,7 +365,7 @@ describe('ScheduleMatch', () => {
     mockScheduleMatch.mockResolvedValue({});
     renderScheduleMatch();
 
-    await waitFor(() => expect(screen.getByText('John Cena')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
     await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
     await user.click(screen.getByLabelText('Open match for signups'));
 
@@ -385,12 +394,11 @@ describe('ScheduleMatch', () => {
     mockScheduleMatch.mockResolvedValue({});
     renderScheduleMatch();
 
-    await waitFor(() => expect(screen.getByText('John Cena')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
     await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
 
     // Don't toggle slot mode. Pick two participants.
-    await user.click(screen.getByText('John Cena').closest('.participant-card')!);
-    await user.click(screen.getByText('Dwayne Johnson').closest('.participant-card')!);
+    await pickParticipants(user, ['The Champ (John Cena)', 'The Rock (Dwayne Johnson)']);
 
     await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
 
@@ -402,49 +410,54 @@ describe('ScheduleMatch', () => {
   });
 
   describe('check-in aware participant picking', () => {
-    it('lists everyone when no event is selected', async () => {
-      setupDefaultMocks();
-      renderScheduleMatch();
+    /** Opens the participants popup without picking anyone. */
+    async function openParticipantsPopup(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByRole('button', { name: /Add participants…/ }));
+    }
 
-      await waitFor(() => expect(screen.getByText('John Cena')).toBeInTheDocument());
-
-      expect(screen.getByText('Mark Calaway')).toBeInTheDocument();
-      expect(screen.getByText('Paul Levesque')).toBeInTheDocument();
-      expect(mockGetCheckIns).not.toHaveBeenCalled();
-    });
-
-    it('filters the participants grid to available and tentative once an event is picked', async () => {
+    it('lists everyone in the popup when no event is selected', async () => {
       const user = userEvent.setup();
       setupDefaultMocks();
       renderScheduleMatch();
 
-      await waitFor(() => expect(screen.getByText('John Cena')).toBeInTheDocument());
-      await selectEvent(user);
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+      await openParticipantsPopup(user);
 
-      await waitFor(() => expect(mockGetCheckIns).toHaveBeenCalledWith('e1'));
-
-      // Available + tentative stay; unavailable and no-response drop out.
-      await waitFor(() =>
-        expect(screen.queryByText('Mark Calaway')).not.toBeInTheDocument(),
-      );
-      expect(screen.getByText('John Cena')).toBeInTheDocument();
-      expect(screen.getByText('Dwayne Johnson')).toBeInTheDocument();
-      expect(screen.queryByText('Paul Levesque')).not.toBeInTheDocument();
+      expect(screen.getByText('Undertaker (Mark Calaway)')).toBeInTheDocument();
+      expect(screen.getByText('Triple H (Paul Levesque)')).toBeInTheDocument();
+      expect(mockGetCheckIns).not.toHaveBeenCalled();
     });
 
-    it('groups the remaining players under coloured status headings', async () => {
+    it('filters the popup to available and tentative once an event is picked', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      renderScheduleMatch();
+
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+      await selectEvent(user);
+      await waitFor(() => expect(mockGetCheckIns).toHaveBeenCalledWith('e1'));
+
+      await openParticipantsPopup(user);
+
+      expect(screen.getByText('The Champ (John Cena)')).toBeInTheDocument();
+      expect(screen.getByText('The Rock (Dwayne Johnson)')).toBeInTheDocument();
+      expect(screen.queryByText('Undertaker (Mark Calaway)')).not.toBeInTheDocument();
+      expect(screen.queryByText('Triple H (Paul Levesque)')).not.toBeInTheDocument();
+    });
+
+    it('groups the popup options under coloured status headings', async () => {
       const user = userEvent.setup();
       setupDefaultMocks();
       const { container } = renderScheduleMatch();
 
-      await waitFor(() => expect(screen.getByText('John Cena')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
       await selectEvent(user);
+      await waitFor(() => expect(mockGetCheckIns).toHaveBeenCalledWith('e1'));
+      await openParticipantsPopup(user);
 
-      await waitFor(() =>
-        expect(container.querySelector('.participant-status-title--available')).toBeTruthy(),
-      );
-      expect(container.querySelector('.participant-status-title--tentative')).toBeTruthy();
-      expect(container.querySelector('.participant-status-dot--available')).toBeTruthy();
+      expect(container.querySelector('.booking-picker-group-title--available')).toBeTruthy();
+      expect(container.querySelector('.booking-picker-group-title--tentative')).toBeTruthy();
+      expect(container.querySelector('.booking-picker-dot--available')).toBeTruthy();
     });
 
     it('reveals the filtered-out players behind the show-all toggle', async () => {
@@ -452,18 +465,49 @@ describe('ScheduleMatch', () => {
       setupDefaultMocks();
       renderScheduleMatch();
 
-      await waitFor(() => expect(screen.getByText('John Cena')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
       await selectEvent(user);
+      await waitFor(() => expect(mockGetCheckIns).toHaveBeenCalledWith('e1'));
+      await openParticipantsPopup(user);
 
-      await waitFor(() =>
-        expect(screen.queryByText('Mark Calaway')).not.toBeInTheDocument(),
-      );
       await user.click(
         screen.getByRole('button', { name: /Show 2 who didn't check in available/ }),
       );
 
-      expect(screen.getByText('Mark Calaway')).toBeInTheDocument();
-      expect(screen.getByText('Paul Levesque')).toBeInTheDocument();
+      expect(screen.getByText('Undertaker (Mark Calaway)')).toBeInTheDocument();
+      expect(screen.getByText('Triple H (Paul Levesque)')).toBeInTheDocument();
+    });
+
+    it('keeps the popup open across picks and shows a chip per selection', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      renderScheduleMatch();
+
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+      await openParticipantsPopup(user);
+
+      await user.click(screen.getByText('The Champ (John Cena)'));
+      // Menu stays open, so the second pick needs no re-open.
+      await user.click(screen.getByText('The Rock (Dwayne Johnson)'));
+
+      expect(screen.getByText('Selected: 2')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Remove John Cena' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Remove Dwayne Johnson' })).toBeInTheDocument();
+    });
+
+    it('removes a participant from its chip', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      renderScheduleMatch();
+
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+      await pickParticipants(user, ['The Champ (John Cena)', 'The Rock (Dwayne Johnson)']);
+      await user.keyboard('{Escape}');
+
+      await user.click(screen.getByRole('button', { name: 'Remove John Cena' }));
+
+      expect(screen.getByText('Selected: 1')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Remove John Cena' })).not.toBeInTheDocument();
     });
 
     it('falls back to the full roster when the check-in fetch fails', async () => {
@@ -472,12 +516,13 @@ describe('ScheduleMatch', () => {
       mockGetCheckIns.mockRejectedValue(new Error('boom'));
       renderScheduleMatch();
 
-      await waitFor(() => expect(screen.getByText('John Cena')).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
       await selectEvent(user);
-
       await waitFor(() => expect(mockGetCheckIns).toHaveBeenCalled());
-      expect(screen.getByText('Mark Calaway')).toBeInTheDocument();
-      expect(screen.getByText('Paul Levesque')).toBeInTheDocument();
+      await openParticipantsPopup(user);
+
+      expect(screen.getByText('Undertaker (Mark Calaway)')).toBeInTheDocument();
+      expect(screen.getByText('Triple H (Paul Levesque)')).toBeInTheDocument();
     });
   });
 });
