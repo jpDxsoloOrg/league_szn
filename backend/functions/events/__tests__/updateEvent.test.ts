@@ -188,6 +188,50 @@ describe('updateEvent', () => {
     }
   });
 
+  it('trims a venue edit before persisting it', async () => {
+    mockGet.mockResolvedValue({ Item: { eventId: 'e1' } });
+    mockUpdate.mockResolvedValue({ Attributes: { eventId: 'e1', venue: 'Tokyo Dome, Tokyo' } });
+    const event = makeEvent({
+      pathParameters: { eventId: 'e1' },
+      body: JSON.stringify({ venue: '  Tokyo Dome, Tokyo  ' }),
+    });
+
+    const result = await updateEvent(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body).venue).toBe('Tokyo Dome, Tokyo');
+    const values = mockUpdate.mock.calls[0][0].ExpressionAttributeValues;
+    expect(Object.values(values)).toContain('Tokyo Dome, Tokyo');
+  });
+
+  it('accepts an empty venue to clear the location', async () => {
+    mockGet.mockResolvedValue({ Item: { eventId: 'e1', venue: 'Old Arena' } });
+    mockUpdate.mockResolvedValue({ Attributes: { eventId: 'e1', venue: '' } });
+    const event = makeEvent({
+      pathParameters: { eventId: 'e1' },
+      body: JSON.stringify({ venue: '' }),
+    });
+
+    const result = await updateEvent(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body).venue).toBe('');
+  });
+
+  it('returns 400 when venue is not a string', async () => {
+    mockGet.mockResolvedValue({ Item: { eventId: 'e1' } });
+    const event = makeEvent({
+      pathParameters: { eventId: 'e1' },
+      body: JSON.stringify({ venue: 42 }),
+    });
+
+    const result = await updateEvent(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toBe('venue must be a string');
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
   it('returns 500 when DynamoDB update fails', async () => {
     mockGet.mockResolvedValue({ Item: { eventId: 'e1' } });
     mockUpdate.mockRejectedValue(new Error('DynamoDB error'));

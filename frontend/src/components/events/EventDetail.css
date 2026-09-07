@@ -288,13 +288,19 @@
   gap: 8px;
 }
 
-.event-detail-date-edit input[type='date'] {
+.event-detail-date-edit input[type='date'],
+.event-detail-date-edit input[type='text'] {
   padding: 4px 8px;
   background-color: #1a1a1a;
   color: #fff;
   border: 1px solid #444;
   border-radius: 4px;
   font-size: 0.9rem;
+}
+
+.event-detail-date-edit input[type='text'] {
+  min-width: 260px;
+  max-width: 100%;
 }
 
 .event-detail-date-edit-btn,
