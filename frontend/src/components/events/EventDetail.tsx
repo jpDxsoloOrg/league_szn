@@ -9,6 +9,7 @@ import type {
   EventCheckIn as EventCheckInRow,
   EventCheckInStatus,
   EventCheckInSummary,
+  EventCheckInRoster,
 } from '../../types/event';
 import type { Match, Player, MatchStatus } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
@@ -19,6 +20,7 @@ import EventCheckIn from './EventCheckIn';
 import EventCheckInRosterPanel from './EventCheckInRosterPanel';
 import MatchSlots from './MatchSlots';
 import SlotEditDialog from './SlotEditDialog';
+import { buildCheckInStatusMap } from '../../utils/checkInStatus';
 import type { HydratedMatchSlot } from '../../types';
 import { StarRating } from '../matches/StarRating';
 import { RateMatchWidget } from '../matches/RateMatchWidget';
@@ -120,18 +122,24 @@ export default function EventDetail() {
   const loadAdminData = useCallback(async () => {
     if (!isAdminOrModerator) return;
     try {
-      const [scheduled, playersData, tagTeamsData] = await Promise.all([
+      const [scheduled, playersData, tagTeamsData, rosterData] = await Promise.all([
         matchesApi.getAll({ status: 'scheduled' }),
         playersApi.getAll(),
         tagTeamsApi.getAll({ status: 'active' }).catch(() => [] as TagTeam[]),
+        // Drives the colour-coded slot picker. A failure here only costs the
+        // check-in grouping, so fall back to an unfiltered picker.
+        eventId
+          ? eventsApi.getCheckIns(eventId).catch(() => null)
+          : Promise.resolve(null),
       ]);
       setScheduledMatches(scheduled);
       setPlayers(playersData);
       setTagTeams(tagTeamsData as HydratedTagTeam[]);
+      setCheckInRoster(rosterData);
     } catch (err) {
       console.error('Failed to load admin data for event:', err);
     }
-  }, [isAdminOrModerator]);
+  }, [isAdminOrModerator, eventId]);
 
   const refreshAfterMutation = useCallback(async () => {
     await Promise.all([loadEvent(), loadAdminData()]);
@@ -184,6 +192,7 @@ export default function EventDetail() {
 
   // ── Admin slot-edit dialog ────────────────────────────────────────────────
   const [editingSlot, setEditingSlot] = useState<{ matchId: string; slot: HydratedMatchSlot } | null>(null);
+  const [checkInRoster, setCheckInRoster] = useState<EventCheckInRoster | null>(null);
 
   const handleAdminEditSlot = useCallback((matchId: string, slot: HydratedMatchSlot) => {
     setEditingSlot({ matchId, slot });
@@ -457,6 +466,11 @@ export default function EventDetail() {
     }
     return ids;
   }, [eventData?.enrichedMatches]);
+
+  const checkInStatusByPlayerId = useMemo(
+    () => buildCheckInStatusMap(checkInRoster),
+    [checkInRoster],
+  );
 
   if (loading) {
     return (
@@ -958,6 +972,8 @@ export default function EventDetail() {
       <SlotEditDialog
         slot={editingSlot?.slot ?? null}
         players={players}
+        checkInStatusByPlayerId={checkInStatusByPlayerId}
+        bookedPlayerIds={bookedPlayerIds}
         onSave={handleSlotEditSave}
         onClose={() => setEditingSlot(null)}
       />

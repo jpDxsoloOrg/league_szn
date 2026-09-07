@@ -1,12 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { HydratedMatchSlot, Player } from '../../types';
+import PlayerBookingPicker, { type PickerCheckInStatus } from './PlayerBookingPicker';
 import './SlotEditDialog.css';
 
 export interface SlotEditDialogProps {
   /** Slot under edit. When null, the dialog is closed. */
   slot: HydratedMatchSlot | null;
   players: Player[];
+  /**
+   * Per-player check-in status for the event being booked. The picker uses it
+   * to show available/tentative first (colour-coded) and tuck everyone else
+   * behind a "show all" toggle. Omit it and the picker lists everyone.
+   */
+  checkInStatusByPlayerId?: ReadonlyMap<string, PickerCheckInStatus>;
+  /** Players already booked in another match on this event's card. */
+  bookedPlayerIds?: ReadonlySet<string>;
   /**
    * Patch shape mirrors the adminUpdateSlot endpoint: undefined = leave alone,
    * null = clear, string = set. The dialog only fills in fields the admin
@@ -21,7 +30,14 @@ export interface SlotEditDialogProps {
   onClose: () => void;
 }
 
-export default function SlotEditDialog({ slot, players, onSave, onClose }: SlotEditDialogProps) {
+export default function SlotEditDialog({
+  slot,
+  players,
+  checkInStatusByPlayerId,
+  bookedPlayerIds,
+  onSave,
+  onClose,
+}: SlotEditDialogProps) {
   const { t } = useTranslation();
   const [playerId, setPlayerId] = useState<string>('');
   const [locked, setLocked] = useState(false);
@@ -133,21 +149,15 @@ export default function SlotEditDialog({ slot, players, onSave, onClose }: SlotE
           <label htmlFor="slot-edit-player">
             {t('matches.slots.editPlayerLabel', { defaultValue: 'Player' })}
           </label>
-          <select
+          <PlayerBookingPicker
             id="slot-edit-player"
+            players={players}
             value={playerId}
-            onChange={(e) => setPlayerId(e.target.value)}
+            onChange={setPlayerId}
+            checkInStatusByPlayerId={checkInStatusByPlayerId}
+            bookedPlayerIds={bookedPlayerIds}
             disabled={saving}
-          >
-            <option value="">
-              {t('matches.slots.openOption', { defaultValue: '— Open spot —' })}
-            </option>
-            {players.map((p) => (
-              <option key={p.playerId} value={p.playerId}>
-                {p.currentWrestler} ({p.name})
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         {showWrestlerRadio && pickedPlayer && (

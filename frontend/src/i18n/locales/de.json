@@ -430,6 +430,7 @@
     "filterByDivision": "Nach Division filtern"
   },
   "scheduleMatch": {
+    "removeParticipant": "{{name}} entfernen",
     "title": "Kampf planen",
     "dateTime": "Datum & Uhrzeit",
     "matchType": "Kampftyp",
@@ -490,6 +491,16 @@
       "locked": "Gesperrt",
       "open": "Freier Platz",
       "openOption": "— Freier Platz —",
+      "picker": {
+        "search": "Name oder Wrestler suchen…",
+        "noMatches": "Keine passenden Spieler.",
+        "addParticipants": "Teilnehmer hinzufügen…",
+        "selectedCount": "{{count}} ausgewählt",
+        "done": "Fertig",
+        "alreadyBooked": "Auf der Card",
+        "showAll": "{{count}} anzeigen, die sich nicht als verfügbar gemeldet haben",
+        "showBookableOnly": "Nur verfügbar & vielleicht anzeigen"
+      },
       "openCountBadge": "{{open}} von {{total}} Plätzen frei",
       "adminEdit": "Bearbeiten",
       "editTitle": "Platz {{position}} bearbeiten",

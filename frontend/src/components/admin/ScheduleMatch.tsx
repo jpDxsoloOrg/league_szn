@@ -1,8 +1,14 @@
-import { useState, useEffect, useRef, FormEvent } from 'react';
+import { useState, useEffect, useMemo, useRef, FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi, stipulationsApi, matchTypesApi, tagTeamsApi, divisionsApi } from '../../services/api';
 import type { Player, Championship, Tournament, Season, Stipulation, MatchType, Division } from '../../types';
+import type { EventCheckInRoster } from '../../types/event';
+import PlayerBookingPicker from '../events/PlayerBookingPicker';
+import {
+  type CheckInStatus,
+  buildCheckInStatusMap,
+} from '../../utils/checkInStatus';
 import type { TagTeam } from '../../types/tagTeam';
 import type { LeagueEvent, MatchDesignation } from '../../types/event';
 import type { ChallengeWithPlayers } from '../../types/challenge';
@@ -34,6 +40,10 @@ export default function ScheduleMatch() {
   const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [divisionFilter, setDivisionFilter] = useState<string>('');
+  // Check-in roster for the selected event. Booking pickers use it to lead
+  // with the people who said they can wrestle. Null until an event is picked
+  // (check-ins are per-event), and on any fetch failure.
+  const [checkInRoster, setCheckInRoster] = useState<EventCheckInRoster | null>(null);
   const [activeTagTeams, setActiveTagTeams] = useState<(TagTeam & { player1Name?: string; player2Name?: string })[]>([]);
   const [tagTeamSelectionMode, setTagTeamSelectionMode] = useState<'tag-teams' | 'individuals'>('tag-teams');
   const [loading, setLoading] = useState(true);
@@ -85,6 +95,43 @@ export default function ScheduleMatch() {
   const updateSlotRow = (index: number, patch: Partial<SlotRow>) => {
     setSlotRows((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   };
+
+  // Check-ins are per-event, so the roster only loads once an event is
+  // chosen. A failure leaves the map empty and every picker falls back to
+  // listing the whole roster — booking never depends on this succeeding.
+  useEffect(() => {
+    const eventId = formData.eventId;
+    if (!eventId) {
+      setCheckInRoster(null);
+      return;
+    }
+    let cancelled = false;
+    eventsApi
+      .getCheckIns(eventId)
+      .then((roster) => {
+        if (!cancelled) setCheckInRoster(roster);
+      })
+      .catch(() => {
+        if (!cancelled) setCheckInRoster(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.eventId]);
+
+  const checkInStatusByPlayerId = useMemo(
+    () => buildCheckInStatusMap(checkInRoster),
+    [checkInRoster],
+  );
+
+  const statusOf = (playerId: string): CheckInStatus =>
+    checkInStatusByPlayerId.get(playerId) ?? 'noResponse';
+
+  /** Players already placed in a slot row, so the picker can flag repeats. */
+  const slotRowPlayerIds = useMemo(
+    () => new Set(slotRows.map((row) => row.playerId).filter(Boolean)),
+    [slotRows],
+  );
 
   useEffect(() => {
     loadData();
@@ -403,6 +450,12 @@ export default function ScheduleMatch() {
     : divisionFilter === 'none'
       ? players.filter(p => !p.divisionId)
       : players.filter(p => p.divisionId === divisionFilter);
+
+  /** Selection set for the participants picker. */
+  const selectedParticipantIds = useMemo(
+    () => new Set(formData.participants),
+    [formData.participants],
+  );
 
   const handleMatchFormatChange = (newFormat: string) => {
     setFormData(prev => ({ ...prev, matchFormat: newFormat, participants: [] }));
@@ -759,10 +812,16 @@ export default function ScheduleMatch() {
                         return (
                           <div
                             key={player.playerId}
-                            className={`participant-card ${isInOtherTeam ? 'in-other-team' : ''}`}
+                            className={`participant-card participant-card--${statusOf(player.playerId)} ${isInOtherTeam ? 'in-other-team' : ''}`}
                             onClick={() => !isInOtherTeam && handleTeamMemberToggle(teamIndex, player.playerId)}
                           >
-                            <div className="participant-name">{player.name}</div>
+                            <div className="participant-name">
+                              <span
+                                className={`participant-status-dot participant-status-dot--${statusOf(player.playerId)}`}
+                                aria-hidden="true"
+                              />
+                              {player.name}
+                            </div>
                             <div className="participant-wrestler">{player.currentWrestler}</div>
                             {isInOtherTeam && (
                               <div className="other-team-label">
@@ -796,20 +855,15 @@ export default function ScheduleMatch() {
               {slotRows.map((row, index) => (
                 <div key={index} className="slot-mode-row">
                   <span className="slot-mode-row-position">{index + 1}</span>
-                  <select
-                    className="slot-mode-row-player"
-                    value={row.playerId}
-                    onChange={(e) => updateSlotRow(index, { playerId: e.target.value })}
-                  >
-                    <option value="">
-                      {t('matches.slots.openOption', { defaultValue: '— Open spot —' })}
-                    </option>
-                    {players.map((p) => (
-                      <option key={p.playerId} value={p.playerId}>
-                        {p.currentWrestler} ({p.name})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="slot-mode-row-player">
+                    <PlayerBookingPicker
+                      players={players}
+                      value={row.playerId}
+                      onChange={(playerId) => updateSlotRow(index, { playerId })}
+                      checkInStatusByPlayerId={checkInStatusByPlayerId}
+                      bookedPlayerIds={slotRowPlayerIds}
+                    />
+                  </div>
                   <label className="slot-mode-row-lock">
                     <input
                       type="checkbox"
@@ -851,18 +905,49 @@ export default function ScheduleMatch() {
                 </select>
               </div>
             )}
-            <div className="participants-grid">
-              {filteredPlayers.map(player => (
-                <div
-                  key={player.playerId}
-                  className={`participant-card ${formData.participants.includes(player.playerId) ? 'selected' : ''}`}
-                  onClick={() => handleParticipantToggle(player.playerId)}
-                >
-                  <div className="participant-name">{player.name}</div>
-                  <div className="participant-wrestler">{player.currentWrestler}</div>
-                </div>
-              ))}
-            </div>
+            <PlayerBookingPicker
+              mode="multi"
+              players={filteredPlayers}
+              selectedPlayerIds={selectedParticipantIds}
+              onToggle={handleParticipantToggle}
+              checkInStatusByPlayerId={checkInStatusByPlayerId}
+              placeholder={t('matches.slots.picker.addParticipants', {
+                defaultValue: 'Add participants…',
+              })}
+            />
+            {formData.participants.length > 0 && (
+              <ul className="selected-participants">
+                {formData.participants.map(playerId => {
+                  const player = players.find(p => p.playerId === playerId);
+                  const status = statusOf(playerId);
+                  return (
+                    <li
+                      key={playerId}
+                      className={`selected-participant selected-participant--${status}`}
+                    >
+                      <span
+                        className={`participant-status-dot participant-status-dot--${status}`}
+                        aria-hidden="true"
+                      />
+                      <span className="selected-participant-text">
+                        {player ? `${player.currentWrestler} (${player.name})` : playerId}
+                      </span>
+                      <button
+                        type="button"
+                        className="selected-participant-remove"
+                        onClick={() => handleParticipantToggle(playerId)}
+                        aria-label={t('scheduleMatch.removeParticipant', {
+                          name: player?.name ?? playerId,
+                          defaultValue: `Remove ${player?.name ?? playerId}`,
+                        })}
+                      >
+                        &times;
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
             <div className="selected-count">
               {t('scheduleMatch.selected')}: {formData.participants.length}
             </div>
