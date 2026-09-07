@@ -1,29 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Player } from '../../types';
+import {
+  type CheckInStatus,
+  CHECK_IN_STATUS_ORDER,
+  isBookable,
+} from '../../utils/checkInStatus';
 import './PlayerBookingPicker.css';
 
-/**
- * Check-in standing for one player on the event being booked. Mirrors the
- * roster buckets returned by GET /events/{eventId}/check-ins, plus the
- * 'noResponse' bucket for players who never answered.
- */
-export type PickerCheckInStatus =
-  | 'available'
-  | 'tentative'
-  | 'unavailable'
-  | 'noResponse';
-
-/** Buckets shown by default — the people who actually said they can wrestle. */
-const BOOKABLE: PickerCheckInStatus[] = ['available', 'tentative'];
-
-/** Render order for the grouped list. */
-const GROUP_ORDER: PickerCheckInStatus[] = [
-  'available',
-  'tentative',
-  'noResponse',
-  'unavailable',
-];
+/** @deprecated Use CheckInStatus from utils/checkInStatus. Kept for callers. */
+export type PickerCheckInStatus = CheckInStatus;
 
 export interface PlayerBookingPickerProps {
   id?: string;
@@ -32,14 +18,14 @@ export interface PlayerBookingPickerProps {
   value: string;
   onChange: (playerId: string) => void;
   /** Per-player check-in status for this event. Missing = 'noResponse'. */
-  checkInStatusByPlayerId?: ReadonlyMap<string, PickerCheckInStatus>;
+  checkInStatusByPlayerId?: ReadonlyMap<string, CheckInStatus>;
   /** Players already booked elsewhere on this event's card. */
   bookedPlayerIds?: ReadonlySet<string>;
   disabled?: boolean;
 }
 
 interface PickerGroup {
-  status: PickerCheckInStatus;
+  status: CheckInStatus;
   players: Player[];
 }
 
@@ -59,7 +45,7 @@ export default function PlayerBookingPicker({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const statusOf = useMemo(
-    () => (playerId: string): PickerCheckInStatus =>
+    () => (playerId: string): CheckInStatus =>
       checkInStatusByPlayerId?.get(playerId) ?? 'noResponse',
     [checkInStatusByPlayerId],
   );
@@ -74,7 +60,7 @@ export default function PlayerBookingPicker({
 
   const groups = useMemo<PickerGroup[]>(() => {
     const term = search.trim().toLowerCase();
-    const buckets = new Map<PickerCheckInStatus, Player[]>();
+    const buckets = new Map<CheckInStatus, Player[]>();
 
     for (const player of players) {
       const status = statusOf(player.playerId);
@@ -85,7 +71,7 @@ export default function PlayerBookingPicker({
         hasCheckInData &&
         !showAll &&
         !isSelected &&
-        !BOOKABLE.includes(status)
+        !isBookable(status)
       ) {
         continue;
       }
@@ -99,7 +85,7 @@ export default function PlayerBookingPicker({
     }
 
     const ordered: PickerGroup[] = [];
-    for (const status of GROUP_ORDER) {
+    for (const status of CHECK_IN_STATUS_ORDER) {
       const bucket = buckets.get(status);
       if (bucket && bucket.length > 0) {
         bucket.sort((a, b) => a.name.localeCompare(b.name));
@@ -112,7 +98,7 @@ export default function PlayerBookingPicker({
   const hiddenCount = useMemo(() => {
     if (!hasCheckInData || showAll) return 0;
     return players.filter(
-      (p) => p.playerId !== value && !BOOKABLE.includes(statusOf(p.playerId)),
+      (p) => p.playerId !== value && !isBookable(statusOf(p.playerId)),
     ).length;
   }, [players, showAll, statusOf, value, hasCheckInData]);
 
@@ -136,7 +122,7 @@ export default function PlayerBookingPicker({
 
   const openLabel = t('matches.slots.openOption', { defaultValue: '— Open spot —' });
 
-  const statusLabel = (status: PickerCheckInStatus) =>
+  const statusLabel = (status: CheckInStatus) =>
     t(`events.checkIn.roster.${status}`, {
       defaultValue:
         status === 'noResponse'

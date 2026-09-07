@@ -20,7 +20,7 @@ import EventCheckIn from './EventCheckIn';
 import EventCheckInRosterPanel from './EventCheckInRosterPanel';
 import MatchSlots from './MatchSlots';
 import SlotEditDialog from './SlotEditDialog';
-import type { PickerCheckInStatus } from './PlayerBookingPicker';
+import { buildCheckInStatusMap } from '../../utils/checkInStatus';
 import type { HydratedMatchSlot } from '../../types';
 import { StarRating } from '../matches/StarRating';
 import { RateMatchWidget } from '../matches/RateMatchWidget';
@@ -467,25 +467,10 @@ export default function EventDetail() {
     return ids;
   }, [eventData?.enrichedMatches]);
 
-  // Flatten the roster buckets into one playerId -> status lookup for the
-  // slot picker. Players with no check-in row simply stay out of the map and
-  // the picker treats them as 'noResponse'.
-  const checkInStatusByPlayerId = useMemo(() => {
-    const map = new Map<string, PickerCheckInStatus>();
-    if (!checkInRoster) return map;
-    const buckets: PickerCheckInStatus[] = [
-      'available',
-      'tentative',
-      'unavailable',
-      'noResponse',
-    ];
-    for (const bucket of buckets) {
-      for (const player of checkInRoster[bucket]) {
-        map.set(player.playerId, bucket);
-      }
-    }
-    return map;
-  }, [checkInRoster]);
+  const checkInStatusByPlayerId = useMemo(
+    () => buildCheckInStatusMap(checkInRoster),
+    [checkInRoster],
+  );
 
   if (loading) {
     return (
