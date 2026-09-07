@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Player } from '../../types';
 import {
@@ -14,9 +14,20 @@ export type PickerCheckInStatus = CheckInStatus;
 export interface PlayerBookingPickerProps {
   id?: string;
   players: Player[];
-  /** Currently selected player, or '' for an open spot. */
-  value: string;
-  onChange: (playerId: string) => void;
+  /**
+   * 'single' fills one slot with one player. 'multi' toggles a set of
+   * participants — the menu stays open and there is no "open spot" option.
+   */
+  mode?: 'single' | 'multi';
+  /** Single mode: the selected player, or '' for an open spot. */
+  value?: string;
+  onChange?: (playerId: string) => void;
+  /** Multi mode: the currently selected participants. */
+  selectedPlayerIds?: ReadonlySet<string>;
+  /** Multi mode: called with the player whose selection should flip. */
+  onToggle?: (playerId: string) => void;
+  /** Trigger text when nothing is selected. */
+  placeholder?: string;
   /** Per-player check-in status for this event. Missing = 'noResponse'. */
   checkInStatusByPlayerId?: ReadonlyMap<string, CheckInStatus>;
   /** Players already booked elsewhere on this event's card. */
@@ -32,8 +43,12 @@ interface PickerGroup {
 export default function PlayerBookingPicker({
   id,
   players,
-  value,
+  mode = 'single',
+  value = '',
   onChange,
+  selectedPlayerIds,
+  onToggle,
+  placeholder,
   checkInStatusByPlayerId,
   bookedPlayerIds,
   disabled = false,
@@ -50,9 +65,19 @@ export default function PlayerBookingPicker({
     [checkInStatusByPlayerId],
   );
 
-  const selectedPlayer = value
+  const multi = mode === 'multi';
+
+  const isSelected = useCallback(
+    (playerId: string) =>
+      multi ? (selectedPlayerIds?.has(playerId) ?? false) : playerId === value,
+    [multi, selectedPlayerIds, value],
+  );
+
+  const selectedPlayer = !multi && value
     ? players.find((p) => p.playerId === value)
     : undefined;
+
+  const selectedCount = multi ? (selectedPlayerIds?.size ?? 0) : 0;
 
   // When no check-in data has loaded, filtering to available/tentative would
   // empty the list, so fall back to showing everyone.
@@ -66,11 +91,11 @@ export default function PlayerBookingPicker({
       const status = statusOf(player.playerId);
       // The already-selected player stays visible regardless of filters, so
       // an admin can always see and clear what is currently booked.
-      const isSelected = player.playerId === value;
+      const selected = isSelected(player.playerId);
       if (
         hasCheckInData &&
         !showAll &&
-        !isSelected &&
+        !selected &&
         !isBookable(status)
       ) {
         continue;
@@ -93,29 +118,47 @@ export default function PlayerBookingPicker({
       }
     }
     return ordered;
-  }, [players, search, showAll, statusOf, value, hasCheckInData]);
+  }, [players, search, showAll, statusOf, isSelected, hasCheckInData]);
 
   const hiddenCount = useMemo(() => {
     if (!hasCheckInData || showAll) return 0;
     return players.filter(
-      (p) => p.playerId !== value && !isBookable(statusOf(p.playerId)),
+      (p) => !isSelected(p.playerId) && !isBookable(statusOf(p.playerId)),
     ).length;
-  }, [players, showAll, statusOf, value, hasCheckInData]);
+  }, [players, showAll, statusOf, isSelected, hasCheckInData]);
 
   useEffect(() => {
     if (!open) return;
+    const close = () => {
+      setOpen(false);
+      setSearch('');
+    };
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setSearch('');
+        close();
       }
     };
+    // Multi mode has no confirm button — the menu stays open across picks —
+    // so Escape is the way out without reaching for the mouse.
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [open]);
 
   const handleSelect = (playerId: string) => {
-    onChange(playerId);
+    if (multi) {
+      // Booking several people in a row is the normal case, so the menu
+      // stays open and the search term survives the click.
+      onToggle?.(playerId);
+      return;
+    }
+    onChange?.(playerId);
     setOpen(false);
     setSearch('');
   };
@@ -141,7 +184,21 @@ export default function PlayerBookingPicker({
         aria-expanded={open}
         onClick={() => setOpen((prev) => !prev)}
       >
-        {selectedPlayer ? (
+        {multi ? (
+          <span
+            className={`booking-picker-trigger-text${selectedCount === 0 ? ' booking-picker-trigger-text--empty' : ''}`}
+          >
+            {selectedCount === 0
+              ? (placeholder ??
+                t('matches.slots.picker.addParticipants', {
+                  defaultValue: 'Add participants…',
+                }))
+              : t('matches.slots.picker.selectedCount', {
+                  count: selectedCount,
+                  defaultValue: `${selectedCount} selected`,
+                })}
+          </span>
+        ) : selectedPlayer ? (
           <span className="booking-picker-trigger-text">
             <span
               className={`booking-picker-dot booking-picker-dot--${statusOf(selectedPlayer.playerId)}`}
@@ -151,7 +208,7 @@ export default function PlayerBookingPicker({
           </span>
         ) : (
           <span className="booking-picker-trigger-text booking-picker-trigger-text--empty">
-            {openLabel}
+            {placeholder ?? openLabel}
           </span>
         )}
         <span className="booking-picker-caret" aria-hidden="true">▾</span>
@@ -173,15 +230,17 @@ export default function PlayerBookingPicker({
             })}
           />
 
-          <button
-            type="button"
-            className="booking-picker-option booking-picker-option--open"
-            role="option"
-            aria-selected={value === ''}
-            onClick={() => handleSelect('')}
-          >
-            {openLabel}
-          </button>
+          {!multi && (
+            <button
+              type="button"
+              className="booking-picker-option booking-picker-option--open"
+              role="option"
+              aria-selected={value === ''}
+              onClick={() => handleSelect('')}
+            >
+              {openLabel}
+            </button>
+          )}
 
           {groups.length === 0 && (
             <p className="booking-picker-empty">
@@ -208,7 +267,7 @@ export default function PlayerBookingPicker({
                       isBooked ? ' booking-picker-option--booked' : ''
                     }`}
                     role="option"
-                    aria-selected={player.playerId === value}
+                    aria-selected={isSelected(player.playerId)}
                     onClick={() => handleSelect(player.playerId)}
                   >
                     <span
@@ -218,6 +277,9 @@ export default function PlayerBookingPicker({
                     <span className="booking-picker-option-text">
                       {player.currentWrestler} ({player.name})
                     </span>
+                    {multi && isSelected(player.playerId) && (
+                      <span className="booking-picker-check" aria-hidden="true">✓</span>
+                    )}
                     {isBooked && (
                       <span className="booking-picker-booked-badge">
                         {t('matches.slots.picker.alreadyBooked', {
@@ -252,6 +314,23 @@ export default function PlayerBookingPicker({
               {t('matches.slots.picker.showBookableOnly', {
                 defaultValue: 'Show available & tentative only',
               })}
+            </button>
+          )}
+
+          {multi && (
+            // Multi mode has no implicit close (the menu deliberately survives
+            // each pick), and click-outside/Escape are both invisible, so it
+            // needs a button people can actually see.
+            <button
+              type="button"
+              className="booking-picker-done"
+              onClick={() => {
+                setOpen(false);
+                setSearch('');
+              }}
+            >
+              {t('matches.slots.picker.done', { defaultValue: 'Done' })}
+              {selectedCount > 0 && ` (${selectedCount})`}
             </button>
           )}
         </div>

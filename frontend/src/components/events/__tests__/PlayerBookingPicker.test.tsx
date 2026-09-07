@@ -167,4 +167,83 @@ describe('PlayerBookingPicker', () => {
       screen.queryByRole('button', { name: /Show \d+ who didn't check in/ }),
     ).not.toBeInTheDocument();
   });
+
+  describe('multi mode', () => {
+    function renderMulti(selected: string[] = []) {
+      const onToggle = vi.fn();
+      const view = render(
+        <PlayerBookingPicker
+          mode="multi"
+          players={players}
+          selectedPlayerIds={new Set(selected)}
+          onToggle={onToggle}
+          checkInStatusByPlayerId={statuses}
+        />,
+      );
+      return { onToggle, ...view };
+    }
+
+    async function openMulti(selected = 0) {
+      const name = selected === 0 ? /Add participants…/ : new RegExp(`${selected} selected`);
+      await userEvent.click(screen.getByRole('button', { name }));
+    }
+
+    it('has no open-spot row', async () => {
+      renderMulti();
+      await openMulti();
+
+      expect(screen.queryByText('— Open spot —')).not.toBeInTheDocument();
+    });
+
+    it('toggles a player without closing the menu', async () => {
+      const { onToggle } = renderMulti();
+      await openMulti();
+
+      await userEvent.click(screen.getByText('Alpha (Alice)'));
+      expect(onToggle).toHaveBeenCalledWith('p1');
+      // Still open, so a second pick needs no re-open.
+      expect(screen.getByText('Bravo (Bob)')).toBeInTheDocument();
+    });
+
+    it('counts the selection on the trigger and ticks the chosen rows', async () => {
+      renderMulti(['p1']);
+
+      expect(screen.getByRole('button', { name: /1 selected/ })).toBeInTheDocument();
+      await openMulti(1);
+      expect(screen.getByText('✓')).toBeInTheDocument();
+    });
+
+    it('keeps a selected player visible even when filtered out', async () => {
+      renderMulti(['p3']);
+      await openMulti(1);
+
+      expect(screen.getByText('Charlie (Carol)')).toBeInTheDocument();
+    });
+
+    it('closes from the visible Done button', async () => {
+      renderMulti(['p1']);
+      await openMulti(1);
+      expect(screen.getByText('Alpha (Alice)')).toBeInTheDocument();
+
+      // The count rides along so it is clear what is being confirmed.
+      await userEvent.click(screen.getByRole('button', { name: 'Done (1)' }));
+      expect(screen.queryByText('Alpha (Alice)')).not.toBeInTheDocument();
+    });
+
+    it('shows a bare Done when nothing is picked yet', async () => {
+      renderMulti();
+      await openMulti();
+
+      expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument();
+    });
+
+    it('closes on Escape', async () => {
+      renderMulti();
+      await openMulti();
+      expect(screen.getByText('Alpha (Alice)')).toBeInTheDocument();
+
+      await userEvent.keyboard('{Escape}');
+      expect(screen.queryByText('Alpha (Alice)')).not.toBeInTheDocument();
+    });
+  });
 });

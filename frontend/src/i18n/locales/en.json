@@ -430,6 +430,7 @@
     "filterByDivision": "Filter by Division"
   },
   "scheduleMatch": {
+    "removeParticipant": "Remove {{name}}",
     "title": "Schedule Match",
     "dateTime": "Date & Time",
     "matchType": "Match Type",
@@ -493,6 +494,9 @@
       "picker": {
         "search": "Search name or wrestler…",
         "noMatches": "No players match.",
+        "addParticipants": "Add participants…",
+        "selectedCount": "{{count}} selected",
+        "done": "Done",
         "alreadyBooked": "On card",
         "showAll": "Show {{count}} who didn't check in available",
         "showBookableOnly": "Show available & tentative only"
