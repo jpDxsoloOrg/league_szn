@@ -98,7 +98,9 @@ export default function HeadToHeadStrip({ participants, headToHead, asList = fal
           <caption className="h2h-caption">{t('events.commentary.gridCaption')}</caption>
           <thead>
             <tr>
-              <th scope="col" aria-hidden="true" />
+              <th scope="col">
+                <span className="visually-hidden">{t('events.commentary.gridCorner')}</span>
+              </th>
               {participants.map((p) => (
                 <th key={p.playerId} scope="col">{p.wrestlerName}</th>
               ))}
@@ -110,18 +112,25 @@ export default function HeadToHeadStrip({ participants, headToHead, asList = fal
                 <th scope="row">{row.wrestlerName}</th>
                 {participants.map((col) => {
                   if (row.playerId === col.playerId) {
-                    return <td key={col.playerId} className="h2h-cell h2h-cell--self">—</td>;
+                    return (
+                      <td key={col.playerId} className="h2h-cell h2h-cell--self">
+                        <span aria-hidden="true">—</span>
+                        <span className="visually-hidden">{t('events.commentary.gridSelf')}</span>
+                      </td>
+                    );
                   }
                   const rec = recordBetween(headToHead, row.playerId, col.playerId);
                   const empty = !rec || rec.wins + rec.losses + rec.draws === 0;
+                  const meta = rec ? lastMetText(t, rec.entry, nameOf) : t('events.commentary.firstMeeting');
                   return (
                     <td
                       key={col.playerId}
                       className={`h2h-cell${empty ? ' h2h-cell--empty' : ''}`}
-                      title={rec ? lastMetText(t, rec.entry, nameOf) : undefined}
+                      title={meta}
                     >
                       {rec ? `${rec.wins}–${rec.losses}` : '0–0'}
                       {rec && rec.draws > 0 && <span className="h2h-draws">–{rec.draws}</span>}
+                      <span className="visually-hidden">, {meta}</span>
                     </td>
                   );
                 })}

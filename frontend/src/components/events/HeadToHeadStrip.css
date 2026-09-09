@@ -1,3 +1,12 @@
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .h2h-strip {
   background: #161616;
   border: 1px solid #2c2c2c;

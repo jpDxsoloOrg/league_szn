@@ -1385,7 +1385,7 @@
       "noMatches": "No matches on this card yet.",
       "backToEvent": "← Back to event",
       "upNext": "Up next",
-      "live": "Live",
+      "upcoming": "Upcoming",
       "completed": "Completed",
       "cancelled": "Cancelled",
       "prevMatch": "◀ Prev match",
@@ -1398,7 +1398,6 @@
       "multiMan": "Multi-man",
       "headToHead": "Head to head",
       "firstMeeting": "First meeting",
-      "lastMet": "Last met {{date}}",
       "lastMetWinner": "Last met {{date}} ({{winner}} won)",
       "lastMetDraw": "Last met {{date}} (draw)",
       "noMoves": "No moves entered yet.",
@@ -1408,6 +1407,8 @@
       "vs": "vs",
       "team": "Team {{n}}",
       "gridCaption": "Row wrestler's record vs column wrestler",
+      "gridCorner": "Wrestler",
+      "gridSelf": "Same wrestler",
       "jumpTo": "Jump to wrestler"
     },
     "results": {

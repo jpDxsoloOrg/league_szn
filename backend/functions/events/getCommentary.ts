@@ -70,9 +70,12 @@ function participantIdsOf(match: Match): string[] {
 function multiManRecord(playerId: string, completed: Match[]): Record3 {
   const rec: Record3 = { ...ZERO };
   for (const m of completed) {
-    if ((m.participants?.length ?? 0) < 3 || !m.participants.includes(playerId)) continue;
+    const ids = participantIdsOf(m);
+    if (ids.length < 3 || !ids.includes(playerId)) continue;
     if (m.winners?.includes(playerId)) rec.wins++;
-    else if (m.isDraw) rec.draws++;
+    // A draw, or a no-contest with nobody declared the winner, is not a loss
+    // — same reading computeHeadToHead uses for a pair.
+    else if (m.isDraw || !m.winners?.length) rec.draws++;
     else rec.losses++;
   }
   return rec;
@@ -99,39 +102,56 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const eventItem = await events.findById(eventId);
     if (!eventItem) return notFound('Event not found');
 
-    // Card order: pre-show first, then by position (mirrors EventDetail).
-    const cards = [...(eventItem.matchCards ?? [])]
-      .filter((c) => typeof c.matchId === 'string' && c.matchId.length > 0)
-      .sort((a, b) => {
-        const aPre = a.designation === 'pre-show' ? 0 : 1;
-        const bPre = b.designation === 'pre-show' ? 0 : 1;
-        return aPre - bPre || a.position - b.position;
-      });
+    // Card order mirrors EventDetail: stored order, pre-show matches first.
+    const stored = (eventItem.matchCards ?? []).filter(
+      (c) => typeof c.matchId === 'string' && c.matchId.length > 0,
+    );
+    const cards = [
+      ...stored.filter((c) => c.designation === 'pre-show'),
+      ...stored.filter((c) => c.designation !== 'pre-show'),
+    ];
 
     const loadedMatches = await Promise.all(cards.map((c) => matches.findById(c.matchId)));
 
-    // Season for the season record: the event's, else the active one.
-    const season = eventItem.seasonId
-      ? await seasons.findById(eventItem.seasonId)
-      : await seasons.findActive();
+    // Season for the season record: the event's, else (or if that season
+    // has since been deleted) the active one.
+    const season =
+      (eventItem.seasonId ? await seasons.findById(eventItem.seasonId) : null) ??
+      (await seasons.findActive());
 
-    const [completed, seasonStandings, divisionList] = await Promise.all([
-      matches.listByStatus('completed'),
-      season ? standings.listBySeason(season.seasonId) : Promise.resolve([]),
-      divisions.list(),
-    ]);
+    // Everything else is loaded up front in parallel: one roster read covers
+    // every participant (a 6-match card of 6-mans would otherwise be 36
+    // point reads), and championship / stipulation lookups are deduped
+    // across the card instead of fetched per match.
+    const presentMatches = loadedMatches.filter((m): m is Match => m !== null);
+    const championshipIds = [
+      ...new Set(
+        presentMatches
+          .filter((m) => m.isChampionship && m.championshipId)
+          .map((m) => m.championshipId as string),
+      ),
+    ];
+    const stipulationIds = [
+      ...new Set(presentMatches.filter((m) => m.stipulationId).map((m) => m.stipulationId as string)),
+    ];
+
+    const [completed, seasonStandings, divisionList, roster, championshipList, stipulationList] =
+      await Promise.all([
+        matches.listByStatus('completed'),
+        season ? standings.listBySeason(season.seasonId) : Promise.resolve([]),
+        divisions.list(),
+        players.list(),
+        Promise.all(championshipIds.map((id) => championships.findById(id))),
+        Promise.all(stipulationIds.map((id) => stipulations.findById(id))),
+      ]);
     const standingByPlayer = new Map(seasonStandings.map((s) => [s.playerId, s]));
     const divisionNameById = new Map(divisionList.map((d) => [d.divisionId, d.name]));
-
-    // Load every distinct participant on the card once.
-    const allIds = new Set<string>();
-    for (const m of loadedMatches) if (m) for (const id of participantIdsOf(m)) allIds.add(id);
-    const playerById = new Map<string, Player>();
-    await Promise.all(
-      [...allIds].map(async (id) => {
-        const p = await players.findById(id);
-        if (p) playerById.set(id, p);
-      }),
+    const playerById = new Map<string, Player>(roster.map((p) => [p.playerId, p]));
+    const championshipNameById = new Map(
+      championshipList.flatMap((c) => (c ? [[c.championshipId, c.name] as const] : [])),
+    );
+    const stipulationNameById = new Map(
+      stipulationList.flatMap((s) => (s ? [[s.stipulationId, s.name] as const] : [])),
     );
 
     const toParticipant = (playerId: string, match: Match): CommentaryParticipant | null => {
@@ -182,21 +202,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         },
       );
 
-      const [championship, stipulation] = await Promise.all([
-        match.isChampionship && match.championshipId
-          ? championships.findById(match.championshipId)
-          : Promise.resolve(null),
-        match.stipulationId ? stipulations.findById(match.stipulationId) : Promise.resolve(null),
-      ]);
-
       commentaryMatches.push({
         matchId: match.matchId,
         position: card.position,
         designation: card.designation,
         matchFormat: match.matchFormat ?? 'singles',
-        stipulationName: stipulation?.name,
+        stipulationName: match.stipulationId ? stipulationNameById.get(match.stipulationId) : undefined,
         isChampionship: match.isChampionship || false,
-        championshipName: championship?.name,
+        championshipName:
+          match.isChampionship && match.championshipId
+            ? championshipNameById.get(match.championshipId)
+            : undefined,
         status: match.status,
         teams: match.teams,
         participants,

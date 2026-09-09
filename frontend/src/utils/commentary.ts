@@ -1,4 +1,39 @@
-import type { CommentaryHeadToHead, CommentaryMatch, WinLossDraw } from '../types/event';
+import type {
+  CommentaryHeadToHead,
+  CommentaryMatch,
+  CommentaryParticipant,
+  WinLossDraw,
+} from '../types/event';
+
+export interface TeamGroup {
+  index: number;
+  members: CommentaryParticipant[];
+  /** True for the catch-all group of players who aren't on any team. */
+  unlabelled: boolean;
+}
+
+/**
+ * Group participants by `teams`. A player listed on two teams stays on the
+ * first; anyone on no team is shown in an unlabelled trailing group.
+ */
+export function groupByTeam(match: CommentaryMatch): TeamGroup[] | null {
+  if (!match.teams || match.teams.length < 2) return null;
+  const byId = new Map(match.participants.map((p) => [p.playerId, p]));
+  const placed = new Set<string>();
+  const groups: TeamGroup[] = match.teams.map((team, index) => {
+    const members: CommentaryParticipant[] = [];
+    for (const id of team) {
+      const p = byId.get(id);
+      if (!p || placed.has(id)) continue;
+      placed.add(id);
+      members.push(p);
+    }
+    return { index, members, unlabelled: false };
+  });
+  const leftovers = match.participants.filter((p) => !placed.has(p.playerId));
+  if (leftovers.length > 0) groups.push({ index: groups.length, members: leftovers, unlabelled: true });
+  return groups.filter((g) => g.members.length > 0);
+}
 
 /** The match a commentator most likely wants: the first one still to happen. */
 export function defaultMatchIndex(matches: CommentaryMatch[]): number {

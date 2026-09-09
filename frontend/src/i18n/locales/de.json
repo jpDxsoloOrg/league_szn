@@ -1382,7 +1382,7 @@
       "noMatches": "Noch keine Matches auf dieser Card.",
       "backToEvent": "← Zurück zum Event",
       "upNext": "Als Nächstes",
-      "live": "Live",
+      "upcoming": "Demnächst",
       "completed": "Beendet",
       "cancelled": "Abgesagt",
       "prevMatch": "◀ Vorheriges Match",
@@ -1395,7 +1395,6 @@
       "multiMan": "Multi-Man",
       "headToHead": "Direktvergleich",
       "firstMeeting": "Erstes Aufeinandertreffen",
-      "lastMet": "Zuletzt {{date}}",
       "lastMetWinner": "Zuletzt {{date}} ({{winner}} gewann)",
       "lastMetDraw": "Zuletzt {{date}} (Unentschieden)",
       "noMoves": "Noch keine Moves eingetragen.",
@@ -1405,6 +1404,8 @@
       "vs": "vs",
       "team": "Team {{n}}",
       "gridCaption": "Bilanz des Zeilen-Wrestlers gegen den Spalten-Wrestler",
+      "gridCorner": "Wrestler",
+      "gridSelf": "Gleicher Wrestler",
       "jumpTo": "Zu Wrestler springen"
     },
     "results": {

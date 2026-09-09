@@ -1,4 +1,6 @@
 .commentary-card {
+  /* Keep the header visible when a sticky chip link scrolls to the card. */
+  scroll-margin-top: 3.25rem;
   background: #161616;
   border: 1px solid #2c2c2c;
   border-top: 3px solid #d4af37;

@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { eventsApi } from '../../services/api';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { formatDate } from '../../utils/dateUtils';
-import type { CommentaryMatch, CommentaryParticipant, EventCommentary, MatchDesignation } from '../../types/event';
-import { defaultMatchIndex } from '../../utils/commentary';
+import type { CommentaryParticipant, EventCommentary, MatchDesignation } from '../../types/event';
+import { defaultMatchIndex, groupByTeam } from '../../utils/commentary';
 import CommentaryWrestlerCard from './CommentaryWrestlerCard';
 import HeadToHeadStrip from './HeadToHeadStrip';
 import './CommentaryView.css';
@@ -25,28 +25,6 @@ function prettyFormat(format: string): string {
     .filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
-}
-
-interface TeamGroup {
-  index: number;
-  members: CommentaryParticipant[];
-}
-
-/** Group participants by `teams`; anyone not on a team gets their own group. */
-function groupByTeam(match: CommentaryMatch): TeamGroup[] | null {
-  if (!match.teams || match.teams.length < 2) return null;
-  const byId = new Map(match.participants.map((p) => [p.playerId, p]));
-  const placed = new Set<string>();
-  const groups: TeamGroup[] = match.teams.map((team, index) => {
-    const members = team
-      .map((id) => byId.get(id))
-      .filter((p): p is CommentaryParticipant => p !== undefined);
-    members.forEach((p) => placed.add(p.playerId));
-    return { index, members };
-  });
-  const leftovers = match.participants.filter((p) => !placed.has(p.playerId));
-  if (leftovers.length > 0) groups.push({ index: groups.length, members: leftovers });
-  return groups.filter((g) => g.members.length > 0);
 }
 
 export default function CommentaryView() {
@@ -91,7 +69,17 @@ export default function CommentaryView() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      // Leave browser shortcuts (Alt+←) and form controls alone.
+      if (e.altKey || e.metaKey || e.ctrlKey) return;
+      const target = e.target;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
+      ) {
+        return;
+      }
       if (e.key === 'ArrowLeft') goPrev();
       if (e.key === 'ArrowRight') goNext();
     };
@@ -127,12 +115,14 @@ export default function CommentaryView() {
     count <= 1 ? 'one' : count === 2 ? 'two' : count === 3 ? 'three' : count === 4 ? 'four' : 'six';
   const teamGroups = match ? groupByTeam(match) : null;
 
+  // There is no "in progress" signal on a match, so anything after the
+  // default one is simply upcoming.
   const statusPill = (() => {
     if (!match) return null;
     if (match.status === 'completed') return { key: 'completed', cls: 'done' };
     if (match.status === 'cancelled') return { key: 'cancelled', cls: 'done' };
     if (index === nextIndex) return { key: 'upNext', cls: 'next' };
-    return { key: 'live', cls: 'live' };
+    return { key: 'upcoming', cls: 'later' };
   })();
 
   const renderCard = (p: CommentaryParticipant, teamIndex?: number, teamLabel?: string) => (
@@ -213,7 +203,11 @@ export default function CommentaryView() {
                   {gi > 0 && <div className="commentary-vs" aria-hidden="true">{t('events.commentary.vs')}</div>}
                   <div className={`commentary-team commentary-team--${group.index % 4}`}>
                     {group.members.map((p) =>
-                      renderCard(p, group.index, t('events.commentary.team', { n: group.index + 1 })),
+                      renderCard(
+                        p,
+                        group.index,
+                        group.unlabelled ? undefined : t('events.commentary.team', { n: group.index + 1 }),
+                      ),
                     )}
                   </div>
                 </div>

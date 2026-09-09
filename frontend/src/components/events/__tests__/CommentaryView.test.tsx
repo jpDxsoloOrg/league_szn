@@ -28,7 +28,7 @@ vi.mock('../HeadToHeadStrip.css', () => ({}));
 vi.mock('../../profile/MoveList.css', () => ({}));
 
 import CommentaryView from '../CommentaryView';
-import { defaultMatchIndex } from '../../../utils/commentary';
+import { defaultMatchIndex, groupByTeam } from '../../../utils/commentary';
 
 function participant(id: string, extra: Partial<CommentaryParticipant> = {}): CommentaryParticipant {
   return {
@@ -124,8 +124,8 @@ describe('CommentaryView', () => {
     await userEvent.click(next);
     expect(screen.getByText('Match 3 of 3')).toBeInTheDocument();
     expect(next).toBeDisabled();
-    // Not the default match and not completed → LIVE pill instead of UP NEXT.
-    expect(screen.getByText('events.commentary.live')).toBeInTheDocument();
+    // Not the default match and not completed → it's simply upcoming.
+    expect(screen.getByText('events.commentary.upcoming')).toBeInTheDocument();
 
     await userEvent.click(prev);
     await userEvent.click(prev);
@@ -134,14 +134,24 @@ describe('CommentaryView', () => {
     expect(screen.getByText('events.commentary.completed')).toBeInTheDocument();
   });
 
-  it('arrow keys change the match', async () => {
+  it('arrow keys change the match but modifier combos are left to the browser', async () => {
     renderView({ ...base, matches: [match('a', ['1', '2']), match('b', ['3', '4'])] });
     await screen.findByText('Match 1 of 2');
 
+    await userEvent.keyboard('{Alt>}{ArrowRight}{/Alt}');
+    expect(screen.getByText('Match 1 of 2')).toBeInTheDocument();
     await userEvent.keyboard('{ArrowRight}');
     expect(screen.getByText('Match 2 of 2')).toBeInTheDocument();
     await userEvent.keyboard('{ArrowLeft}');
     expect(screen.getByText('Match 1 of 2')).toBeInTheDocument();
+  });
+
+  it('groupByTeam keeps a doubly-listed player on the first team and leaves extras unlabelled', () => {
+    const m = match('tag', ['1', '2', '3', '4'], { teams: [['1', '2'], ['2', '3']] });
+    const groups = groupByTeam(m)!;
+    expect(groups.map((g) => g.members.map((p) => p.playerId))).toEqual([['1', '2'], ['3'], ['4']]);
+    expect(groups.map((g) => g.unlabelled)).toEqual([false, false, true]);
+    expect(groupByTeam(match('s', ['1', '2']))).toBeNull();
   });
 
   it('renders a two-wrestler head-to-head line with the last meeting', async () => {
@@ -169,9 +179,11 @@ describe('CommentaryView', () => {
     const table = screen.getByRole('table');
     const rows = within(table).getAllByRole('row');
     expect(rows).toHaveLength(4); // header + 3
-    const row1 = within(rows[1]).getAllByRole('cell').map((c) => c.textContent);
+    // Cells also carry a visually-hidden "last met" note; read the visible score only.
+    const visible = (c: HTMLElement) => c.textContent?.split(',')[0].replace('events.commentary.gridSelf', '');
+    const row1 = within(rows[1]).getAllByRole('cell').map(visible);
     expect(row1).toEqual(['—', '2–1', '0–0']);
-    const row3 = within(rows[3]).getAllByRole('cell').map((c) => c.textContent);
+    const row3 = within(rows[3]).getAllByRole('cell').map(visible);
     // Wrestler 3 vs Wrestler 2 is the mirror of (2 vs 3): 4–0 with 1 draw.
     expect(row3).toEqual(['0–0', '4–0–1', '—']);
     expect(screen.getAllByRole('article')).toHaveLength(3);

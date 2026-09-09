@@ -76,15 +76,46 @@ describe('getCommentary', () => {
     expect((await call('nope')).status).toBe(404);
   });
 
-  it('returns matches in card order with pre-show first', async () => {
+  it('resolves championship and stipulation names and drops unknown players', async () => {
+    const [a, b] = [await player('A'), await player('B')];
+    const title = await repos.competition.championships.create({ name: 'World', type: 'singles' });
+    const stip = await repos.competition.stipulations.create({ name: 'Ladder Match' });
+    await cardMatch('m1', [a, b, 'ghost-player'], {
+      isChampionship: true, championshipId: title.championshipId, stipulationId: stip.stipulationId,
+    });
+    const eventId = await eventWith([{ matchId: 'm1', position: 1, designation: 'main-event' }]);
+
+    const { body } = await call(eventId);
+    const m = body.matches[0];
+
+    expect(m.championshipName).toBe('World');
+    expect(m.stipulationName).toBe('Ladder Match');
+    expect(m.participants.map((p: { playerId: string }) => p.playerId)).toEqual([a, b]);
+    expect(m.headToHead).toHaveLength(1);
+  });
+
+  it('falls back to the active season when the event points at a deleted season', async () => {
+    const [a, b] = [await player('A'), await player('B')];
+    const active = await repos.season.seasons.create({ name: 'Active', startDate: '2029-01-01' });
+    await repos.season.standings.increment(active.seasonId, a, { wins: 4 });
+    await cardMatch('m1', [a, b]);
+    const eventId = await eventWith([{ matchId: 'm1', position: 1, designation: 'opener' }], 'deleted-season');
+
+    const { body } = await call(eventId);
+
+    expect(body.seasonName).toBe('Active');
+    expect(body.matches[0].participants[0].seasonRecord).toEqual({ wins: 4, losses: 0, draws: 0 });
+  });
+
+  it('returns matches in stored card order with pre-show matches pulled first (as EventDetail does)', async () => {
     const [a, b] = [await player('A'), await player('B')];
     await cardMatch('main', [a, b]);
     await cardMatch('pre', [a, b]);
     await cardMatch('opener', [a, b]);
     const eventId = await eventWith([
-      { matchId: 'main', position: 3, designation: 'main-event' },
       { matchId: 'opener', position: 1, designation: 'opener' },
-      { matchId: 'pre', position: 2, designation: 'pre-show' },
+      { matchId: 'main', position: 2, designation: 'main-event' },
+      { matchId: 'pre', position: 3, designation: 'pre-show' },
     ]);
 
     const { status, body } = await call(eventId);
@@ -180,13 +211,14 @@ describe('getCommentary', () => {
     await completedMatch([a, b, c], [a], '2029-02-01'); // win
     await completedMatch([a, b, c], [c], '2029-03-01'); // loss
     await completedMatch([a, b, c], [], '2029-04-01', { isDraw: true }); // draw
+    await completedMatch([a, b, c], [], '2029-05-01'); // no-contest: nobody won → not a loss
     await cardMatch('m', [a, b]);
     const eventId = await eventWith([{ matchId: 'm', position: 1, designation: 'opener' }]);
 
     const { body } = await call(eventId);
 
-    expect(body.matches[0].participants[0].multiManRecord).toEqual({ wins: 1, losses: 1, draws: 1 });
-    expect(body.matches[0].participants[1].multiManRecord).toEqual({ wins: 0, losses: 2, draws: 1 });
+    expect(body.matches[0].participants[0].multiManRecord).toEqual({ wins: 1, losses: 1, draws: 2 });
+    expect(body.matches[0].participants[1].multiManRecord).toEqual({ wins: 0, losses: 2, draws: 2 });
   });
 
   it('passes teams through and reads participants from filled slots', async () => {

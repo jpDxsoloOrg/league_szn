@@ -67,7 +67,7 @@
 }
 
 .commentary-pill--next { background: #dc2626; color: #fff; }
-.commentary-pill--live { background: #1f2937; color: #d4af37; border: 1px solid #d4af37; }
+.commentary-pill--later { background: #1f2937; color: #d4af37; border: 1px solid #d4af37; }
 .commentary-pill--done { background: #2a2a2a; color: #999; }
 
 .commentary-nav {
