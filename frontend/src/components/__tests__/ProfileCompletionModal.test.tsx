@@ -26,6 +26,7 @@ vi.mock('react-i18next', () => ({
 vi.mock('../ProfileCompletionModal.css', () => ({}));
 
 import ProfileCompletionModal from '../ProfileCompletionModal';
+import { setAnnouncementOpen } from '../../hooks/useAnnouncementOpen';
 import { PROFILE_SETUP_SNOOZE_KEY } from '../../utils/profileSetup';
 
 const complete = {
@@ -51,6 +52,7 @@ function renderAt(path = '/') {
 beforeEach(() => {
   vi.clearAllMocks();
   sessionStorage.clear();
+  setAnnouncementOpen(false);
   authState.isAuthenticated = true;
   authState.isAdminOrModerator = false;
   mockUpdateMyProfile.mockImplementation(async (updates: Partial<Player>) => ({ ...complete, ...updates }));
@@ -297,6 +299,18 @@ describe('ProfileCompletionModal — setup gate', () => {
         <ProfileCompletionModal />
       </MemoryRouter>,
     );
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('waits behind an open announcement modal and appears once it closes', async () => {
+    setAnnouncementOpen(true);
+    mockGetMyProfile.mockResolvedValue({ ...complete, finishers: [] });
+    renderAt();
+    await waitFor(() => expect(mockGetMyProfile).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    setAnnouncementOpen(false);
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });
 });

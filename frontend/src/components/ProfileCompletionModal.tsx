@@ -7,6 +7,7 @@ import type { Player, Wrestler, WrestlerMove } from '../types';
 import { MAX_MOVE_NAME_LENGTH } from '../types';
 import { WRESTLER_NAME_ENTRY_MODE } from '../config/wrestlerNameEntry';
 import { buildWrestlerOptionGroups } from '../utils/wrestlerOptions';
+import { useAnnouncementOpen } from '../hooks/useAnnouncementOpen';
 import {
   PROFILE_SETUP_SNOOZE_KEY,
   getProfileSetupGaps,
@@ -59,6 +60,8 @@ export default function ProfileCompletionModal() {
   const { isAuthenticated, isLoading, isAdminOrModerator } = useAuth();
   const location = useLocation();
   const dialogRef = useRef<HTMLDivElement>(null);
+  // Announcements go first; this modal appears once they are dismissed.
+  const announcementOpen = useAnnouncementOpen();
   const [profile, setProfile] = useState<Player | null>(null);
   const [show, setShow] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -140,12 +143,12 @@ export default function ProfileCompletionModal() {
   // Move focus into the dialog: the first input if there is one, else the
   // heading, so keyboard and screen-reader users land inside aria-modal.
   useEffect(() => {
-    if (!show || excluded) return;
+    if (!show || excluded || announcementOpen) return;
     const root = dialogRef.current;
     if (!root) return;
     const first = root.querySelector<HTMLElement>('input, select');
     (first ?? root.querySelector<HTMLElement>('h2'))?.focus();
-  }, [show, excluded, missing]);
+  }, [show, excluded, missing, announcementOpen]);
 
   const handleSubmit = useCallback(async () => {
     setError(null);
@@ -218,7 +221,7 @@ export default function ProfileCompletionModal() {
     setDismissed(true);
   };
 
-  if (!show || !profile || excluded) return null;
+  if (!show || !profile || excluded || announcementOpen) return null;
 
   const setupItems = missing.wrestler || missing.signature || missing.finisher;
   const showChecklist = setupItems || !missing.name || !missing.psnId;
