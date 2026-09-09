@@ -332,6 +332,47 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
     // ── Players ────────────────────────────────────────────────
     console.log('Creating players...');
+    // Only the first few players get a bio and moveset. The rest stay
+    // empty on purpose so the profile-setup nudge has someone to nudge.
+    const seededMovesets: Array<{
+      bio: string;
+      signatures: Array<{ gameName: string; customName: string }>;
+      finishers: Array<{ gameName: string; customName: string }>;
+    }> = [
+      {
+        bio: 'Second-generation star chasing the one title that eluded the family. Never backs down from a main event.',
+        signatures: [
+          { gameName: 'Cody Cutter', customName: 'The American Nightmare Cutter' },
+          { gameName: 'Disaster Kick', customName: '' },
+        ],
+        finishers: [{ gameName: 'Cross Rhodes', customName: '' }],
+      },
+      {
+        bio: 'The Visionary. Will burn it all down if that is what it takes to hold the gold.',
+        signatures: [
+          { gameName: 'Sling Blade', customName: '' },
+          { gameName: 'Superkick', customName: 'The Pop-Up Superkick' },
+          { gameName: 'Falcon Arrow', customName: '' },
+        ],
+        finishers: [
+          { gameName: 'Curb Stomp', customName: 'The Stomp' },
+          { gameName: 'Pedigree', customName: '' },
+        ],
+      },
+      {
+        bio: 'The Ring General. Every chop is a statement.',
+        signatures: [{ gameName: 'Big Boot', customName: '' }],
+        finishers: [{ gameName: 'Powerbomb', customName: 'The Last Symphony' }],
+      },
+      {
+        bio: 'YEAH! The megastar of the league and he wants everyone to know it.',
+        signatures: [
+          { gameName: 'Jumping Neckbreaker', customName: '' },
+          { gameName: 'Running Powerslam', customName: 'The Megastar Slam' },
+        ],
+        finishers: [{ gameName: 'BFT', customName: 'Blunt Force Trauma' }],
+      },
+    ];
     const players = playerNames.map((name, index) => ({
       playerId: uuidv4(),
       name,
@@ -340,6 +381,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       losses: Math.floor(Math.random() * 12) + 2,
       draws: Math.floor(Math.random() * 3),
       divisionId: divisions[index % divisions.length].divisionId,
+      ...(seededMovesets[index] ?? {}),
       createdAt: now,
       updatedAt: now,
     }));

@@ -10,6 +10,7 @@ import {
   resolveImageSrc,
 } from '../../constants/imageFallbacks';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
+import MoveList from './MoveList';
 import type { Player, Division } from '../../types';
 import type { Stable } from '../../types/stable';
 import type { TagTeam } from '../../types/tagTeam';
@@ -222,6 +223,18 @@ export default function PublicProfile() {
           </Link>
         )}
       </div>
+
+      {/* Bio + moveset — only when the player has entered something */}
+      {(player.bio || (player.signatures?.length ?? 0) > 0 || (player.finishers?.length ?? 0) > 0) && (
+        <div className="stats-section profile-moveset-section">
+          <h3 className="stats-section-title">{t('publicProfile.moveset')}</h3>
+          {player.bio && <p className="profile-bio">{player.bio}</p>}
+          <div className="moveset-columns">
+            <MoveList title={t('profile.moves.signatures')} moves={player.signatures} />
+            <MoveList title={t('profile.moves.finishers')} moves={player.finishers} />
+          </div>
+        </div>
+      )}
 
       {/* All-Time Record */}
       <div className="stats-section">

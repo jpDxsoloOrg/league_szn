@@ -4,6 +4,9 @@ import { profileApi, imagesApi, overallsApi, transfersApi, divisionsApi, storyli
 import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeName } from '../../utils/sanitize';
 import { isNeedsWrestler, NEEDS_WRESTLER } from '../../utils/needsWrestler';
+import { compactMoves, movesEqual, padMoves } from '../../utils/movesets';
+import MovesetEditor from './MovesetEditor';
+import MoveList from './MoveList';
 import { WRESTLER_NAME_ENTRY_MODE } from '../../config/wrestlerNameEntry';
 import { logger } from '../../utils/logger';
 import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
@@ -15,7 +18,8 @@ import {
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import   EmbeddedPlayerStats   from "../statistics/EmbeddedPlayerStats";
-import type { Player, WrestlerOverall, TransferRequestWithDetails, Division, MyStorylineRequest, StorylineRequestType, Wrestler, WrestlerPromotion } from '../../types';
+import type { Player, WrestlerOverall, TransferRequestWithDetails, Division, MyStorylineRequest, StorylineRequestType, Wrestler, WrestlerPromotion, WrestlerMove } from '../../types';
+import { MAX_BIO_LENGTH } from '../../types';
 import './WrestlerProfile.css';
 
 type WrestlerSlotOptions = ReadonlyArray<{
@@ -125,6 +129,9 @@ export default function WrestlerProfile() {
     imageUrl: '',
     psnId: '',
     alignment: '' as '' | 'face' | 'heel' | 'neutral',
+    bio: '',
+    signatures: padMoves(undefined),
+    finishers: padMoves(undefined),
   });
 
   const textWrestlerEntry = WRESTLER_NAME_ENTRY_MODE === 'text';
@@ -161,6 +168,9 @@ export default function WrestlerProfile() {
         imageUrl: profile.imageUrl || '',
         psnId: profile.psnId || '',
         alignment: profile.alignment || '',
+        bio: profile.bio || '',
+        signatures: padMoves(profile.signatures),
+        finishers: padMoves(profile.finishers),
       });
     } catch (err) {
       if (err instanceof Error && err.message.includes('404')) {
@@ -393,6 +403,9 @@ export default function WrestlerProfile() {
         imageUrl: player.imageUrl || '',
         psnId: player.psnId || '',
         alignment: player.alignment || '',
+        bio: player.bio || '',
+        signatures: padMoves(player.signatures),
+        finishers: padMoves(player.finishers),
       });
       setImagePreview(player.imageUrl || null);
       setSelectedFile(null);
@@ -417,6 +430,9 @@ export default function WrestlerProfile() {
         imageUrl: player.imageUrl || '',
         psnId: player.psnId || '',
         alignment: player.alignment || '',
+        bio: player.bio || '',
+        signatures: padMoves(player.signatures),
+        finishers: padMoves(player.finishers),
       });
     }
   };
@@ -450,6 +466,9 @@ export default function WrestlerProfile() {
         imageUrl?: string;
         psnId?: string;
         alignment?: 'face' | 'heel' | 'neutral' | '';
+        bio?: string;
+        signatures?: WrestlerMove[];
+        finishers?: WrestlerMove[];
       } = { name: sanitizedName };
 
       if (textWrestlerEntry) {
@@ -478,6 +497,19 @@ export default function WrestlerProfile() {
       }
 
       updates.alignment = formData.alignment || '';
+
+      // Moveset fields go only when changed so an untouched save stays a
+      // no-op for them (and never resets what an admin may have entered).
+      const bio = formData.bio.trim();
+      if (bio !== (player?.bio ?? '')) {
+        updates.bio = bio;
+      }
+      if (!movesEqual(formData.signatures, player?.signatures)) {
+        updates.signatures = compactMoves(formData.signatures);
+      }
+      if (!movesEqual(formData.finishers, player?.finishers)) {
+        updates.finishers = compactMoves(formData.finishers);
+      }
 
       const updated = await profileApi.updateMyProfile(updates);
       setPlayer(updated);
@@ -724,6 +756,42 @@ export default function WrestlerProfile() {
             </div>
 
             <div className="form-group">
+              <label htmlFor="profile-bio">{t('profile.bio.label', 'Bio')}</label>
+              <textarea
+                id="profile-bio"
+                className="profile-bio-input"
+                value={formData.bio}
+                maxLength={MAX_BIO_LENGTH}
+                rows={4}
+                placeholder={t('profile.bio.placeholder', 'Tell the league who you are…')}
+                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+              />
+              <p className="profile-bio-counter">
+                {t('profile.bio.counter', { count: formData.bio.length, max: MAX_BIO_LENGTH, defaultValue: `${formData.bio.length} / ${MAX_BIO_LENGTH}` })}
+              </p>
+            </div>
+
+            <div className="form-group">
+              <MovesetEditor
+                label={t('profile.moves.signatures', 'Signature Moves')}
+                helperText={t('profile.moves.helperSignature', 'Up to 5. Add at least one so commentary can call your matches.')}
+                idPrefix="profile-signature"
+                value={formData.signatures}
+                onChange={(signatures) => setFormData({ ...formData, signatures })}
+              />
+            </div>
+
+            <div className="form-group">
+              <MovesetEditor
+                label={t('profile.moves.finishers', 'Finishers')}
+                helperText={t('profile.moves.helperFinisher', 'Up to 5. Add at least one so commentary can call your matches.')}
+                idPrefix="profile-finisher"
+                value={formData.finishers}
+                onChange={(finishers) => setFormData({ ...formData, finishers })}
+              />
+            </div>
+
+            <div className="form-group">
               <label htmlFor="main-overall">{t('overalls.profile.mainOverall')}</label>
               <input
                 type="number"
@@ -890,6 +958,30 @@ export default function WrestlerProfile() {
                 {getWinPercentage(player.wins, player.losses, player.draws)}%
               </span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bio + moveset (view mode only; the edit form has its own inputs). */}
+      {!editing && (
+        <div className="stats-section profile-moveset-section">
+          <h3 className="stats-section-title">{t('profile.moves.sectionTitle', 'Moveset')}</h3>
+          {player.bio ? (
+            <p className="profile-bio">{player.bio}</p>
+          ) : (
+            <p className="profile-bio profile-bio-empty">{t('profile.bio.empty', 'No bio yet.')}</p>
+          )}
+          <div className="moveset-columns">
+            <MoveList
+              title={t('profile.moves.signatures', 'Signature Moves')}
+              moves={player.signatures}
+              emptyText={t('profile.moves.noSignatures', 'No signatures entered yet.')}
+            />
+            <MoveList
+              title={t('profile.moves.finishers', 'Finishers')}
+              moves={player.finishers}
+              emptyText={t('profile.moves.noFinishers', 'No finishers entered yet.')}
+            />
           </div>
         </div>
       )}

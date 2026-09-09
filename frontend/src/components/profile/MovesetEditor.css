@@ -1,0 +1,93 @@
+.moveset-editor {
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem 1.25rem 1.25rem;
+  margin: 0;
+  min-width: 0;
+  background-color: #161616;
+}
+
+.moveset-editor-legend {
+  color: #d4af37;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.95rem;
+  padding: 0 0.5rem;
+}
+
+.moveset-editor-helper {
+  margin: 0 0 0.75rem;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.moveset-editor-header,
+.moveset-editor-row {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr 1fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.moveset-editor-header {
+  color: #777;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.35rem;
+}
+
+.moveset-editor-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.moveset-editor-index {
+  color: #666;
+  font-size: 0.85rem;
+  text-align: right;
+}
+
+.moveset-editor-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.5rem 0.65rem;
+  background-color: #1f1f1f;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  color: #eee;
+  font-size: 0.9rem;
+}
+
+.moveset-editor-input::placeholder {
+  color: #5a5a5a;
+}
+
+.moveset-editor-input:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+.moveset-editor:disabled .moveset-editor-input {
+  opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+  .moveset-editor-header {
+    display: none;
+  }
+
+  .moveset-editor-row {
+    grid-template-columns: 1.5rem 1fr;
+    row-gap: 0.35rem;
+  }
+
+  .moveset-editor-row .moveset-editor-input:last-child {
+    grid-column: 2;
+  }
+}

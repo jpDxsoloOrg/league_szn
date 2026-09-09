@@ -4,6 +4,7 @@ import { NotFoundError } from '../../lib/repositories/errors';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
+import { applyMovesetFields } from './movesetFields';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
   filterExistingWrestlerIds,
@@ -72,6 +73,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       } else {
         return badRequest('Invalid alignment. Must be face, heel, or neutral');
       }
+    }
+
+    const movesetError = applyMovesetFields(body, patch);
+    if (movesetError) return movesetError;
+    if (body.bio !== undefined || body.signatures !== undefined || body.finishers !== undefined) {
+      hasChanges = true;
     }
 
     if (body.divisionId !== undefined) {

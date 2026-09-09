@@ -1,4 +1,4 @@
-import type { Player, Season } from '../../types';
+import type { Player, Season, WrestlerMove } from '../../types';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 import { playersApi } from './players.api';
 import { seasonsApi } from './seasons.api';
@@ -51,6 +51,9 @@ export const profileApi = {
     imageUrl?: string;
     psnId?: string;
     alignment?: 'face' | 'heel' | 'neutral' | '';
+    bio?: string;
+    signatures?: WrestlerMove[];
+    finishers?: WrestlerMove[];
   }): Promise<Player> => {
     return fetchWithAuth(`${API_BASE_URL}/players/me`, {
       method: 'PUT',

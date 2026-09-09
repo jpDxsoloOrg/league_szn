@@ -1312,3 +1312,35 @@ label:focus-visible {
     color: #fff;
   }
 }
+
+/* Bio + moveset (feat/wrestler-movesets) */
+.profile-bio-input {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 6rem;
+  padding: 0.75rem;
+  background-color: #1f1f1f;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  color: #eee;
+  font: inherit;
+  line-height: 1.5;
+}
+
+.profile-bio-input:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+.profile-bio-counter {
+  margin: 0.35rem 0 0;
+  text-align: right;
+  color: #777;
+  font-size: 0.8rem;
+}
+
+.profile-bio-empty {
+  color: #666;
+  font-style: italic;
+}

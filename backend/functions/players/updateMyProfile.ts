@@ -4,6 +4,7 @@ import { NotFoundError } from '../../lib/repositories/errors';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
+import { applyMovesetFields } from './movesetFields';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
@@ -115,6 +116,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       hasChanges = true;
     }
 
+    const movesetError = applyMovesetFields(body, patch);
+    if (movesetError) return movesetError;
+    if (body.bio !== undefined || body.signatures !== undefined || body.finishers !== undefined) {
+      hasChanges = true;
+    }
+
     // Parse FK changes.
     const currentChange = parseSlotChange(body.currentWrestlerId);
     const alternateChange = parseSlotChange(body.alternateWrestlerId);
@@ -185,7 +192,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     if (!hasChanges) {
-      const all = [...STRING_FIELDS, ...FK_FIELDS].join(', ');
+      const all = [...STRING_FIELDS, ...FK_FIELDS, 'bio', 'signatures', 'finishers'].join(', ');
       return badRequest(`No valid fields to update. Allowed fields: ${all}`);
     }
 
