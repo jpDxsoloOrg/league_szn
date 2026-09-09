@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { setAnnouncementOpen } from '../hooks/useAnnouncementOpen';
 import { announcementsApi } from '../services/api';
 import type { Announcement } from '../types';
 import { toMediaUrl } from '../utils/mediaUrl';
@@ -78,6 +79,13 @@ export default function AnnouncementModal() {
       controller.abort();
     };
   }, [isAuthenticated, isLoading]);
+
+  // Let other overlays (the profile-setup modal) wait while this is up.
+  const isOpen = announcements.length > 0 && announcements[currentIndex] !== undefined;
+  useEffect(() => {
+    setAnnouncementOpen(isOpen);
+    return () => setAnnouncementOpen(false);
+  }, [isOpen]);
 
   if (announcements.length === 0) return null;
 

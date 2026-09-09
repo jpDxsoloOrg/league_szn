@@ -143,7 +143,19 @@
     "psnIdPlaceholder": "Deine PlayStation Network ID eingeben",
     "later": "Später",
     "fillRequired": "Bitte fülle mindestens ein Feld aus.",
-    "saveFailed": "Speichern fehlgeschlagen. Bitte versuche es erneut."
+    "saveFailed": "Speichern fehlgeschlagen. Bitte versuche es erneut.",
+    "setupTitle": "Richte deinen Wrestler fertig ein",
+    "setupSubtitle": "Die Kommentatoren brauchen das, um deine Matches anzusagen.",
+    "pickWrestler": "Wähle deinen Wrestler",
+    "listedAsNeedsWrestler": "Du bist aktuell als „Needs Wrestler“ eingetragen.",
+    "wrestlerPlaceholder": "z. B. Cody Rhodes",
+    "addSignature": "Trag mindestens einen Signature Move ein",
+    "addFinisher": "Trag mindestens einen Finisher ein",
+    "saveAndContinue": "Speichern und weiter",
+    "openFullProfile": "Vollständiges Profil öffnen",
+    "remindLater": "Später erinnern",
+    "done": "Erledigt",
+    "todo": "Fehlt"
   },
   "profile": {
     "alternateWrestler": "Alternativer Wrestler",
