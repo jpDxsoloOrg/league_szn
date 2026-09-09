@@ -160,6 +160,26 @@
       "neutral": "Neutral",
       "transferPending": "Transfer ausstehend",
       "requestTransfer": "Transfer anfragen"
+    },
+    "bio": {
+      "label": "Bio",
+      "placeholder": "Erzähl der Liga, wer du bist…",
+      "counter": "{{count}} / {{max}}",
+      "empty": "Noch keine Bio."
+    },
+    "moves": {
+      "sectionTitle": "Moveset",
+      "signatures": "Signature Moves",
+      "finishers": "Finisher",
+      "gameName": "Name im Spiel",
+      "customName": "Dein Name dafür",
+      "gameNamePlaceholder": "z. B. Cody Cutter",
+      "customNamePlaceholder": "Wie im Spiel",
+      "helperSignature": "Bis zu 5. Trag mindestens einen ein, damit die Kommentatoren deine Matches ansagen können.",
+      "helperFinisher": "Bis zu 5. Trag mindestens einen ein, damit die Kommentatoren deine Matches ansagen können.",
+      "inGame": "im Spiel: {{name}}",
+      "noSignatures": "Noch keine Signature Moves eingetragen.",
+      "noFinishers": "Noch keine Finisher eingetragen."
     }
   },
   "publicProfile": {
@@ -185,7 +205,9 @@
     "playingAs": "Spielt als",
     "alternateWrestler": "Alternativ",
     "psnId": "PSN-ID",
-    "active": "Aktiv"
+    "active": "Aktiv",
+    "bio": "Bio",
+    "moveset": "Moveset"
   },
   "emptyState": {
     "checkBackSoon": "Schau bald wieder vorbei",

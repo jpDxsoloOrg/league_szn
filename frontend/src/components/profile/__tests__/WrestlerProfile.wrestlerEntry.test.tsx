@@ -47,6 +47,8 @@ vi.mock('../../statistics/EmbeddedPlayerStats', () => ({
 }));
 
 vi.mock('../WrestlerProfile.css', () => ({}));
+vi.mock('../MovesetEditor.css', () => ({}));
+vi.mock('../MoveList.css', () => ({}));
 
 import WrestlerProfile from '../WrestlerProfile';
 
@@ -139,5 +141,76 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
     await openEditForm();
 
     expect(screen.getByLabelText('Current Wrestler')).toHaveValue('');
+  });
+
+  it('sends bio and compacted movesets only when they changed', async () => {
+    await openEditForm();
+
+    // The i18n mock returns raw keys, so labels are keys here.
+    await userEvent.type(screen.getByLabelText('profile.bio.label'), 'The Nightmare');
+    await userEvent.type(
+      screen.getByLabelText('profile.moves.signatures 1 — profile.moves.gameName'),
+      'Cody Cutter',
+    );
+    await userEvent.type(
+      screen.getByLabelText('profile.moves.signatures 1 — profile.moves.customName'),
+      'The Cutter',
+    );
+    await userEvent.click(screen.getByRole('button', { name: /save profile/i }));
+
+    await waitFor(() => expect(mockUpdateMyProfile).toHaveBeenCalled());
+    const payload = mockUpdateMyProfile.mock.calls[0][0];
+    expect(payload.bio).toBe('The Nightmare');
+    expect(payload.signatures).toEqual([{ gameName: 'Cody Cutter', customName: 'The Cutter' }]);
+    // Finishers were never touched, so they must not be in the payload.
+    expect(payload).not.toHaveProperty('finishers');
+  });
+
+  it('leaves moveset fields out of the payload when untouched', async () => {
+    await openEditForm();
+
+    await userEvent.click(screen.getByRole('button', { name: /save profile/i }));
+
+    await waitFor(() => expect(mockUpdateMyProfile).toHaveBeenCalled());
+    const payload = mockUpdateMyProfile.mock.calls[0][0];
+    expect(payload).not.toHaveProperty('bio');
+    expect(payload).not.toHaveProperty('signatures');
+    expect(payload).not.toHaveProperty('finishers');
+  });
+
+  it('sends an empty list when an existing move is cleared', async () => {
+    mockGetMyProfile.mockResolvedValue({
+      ...basePlayer,
+      signatures: [{ gameName: 'Cody Cutter', customName: 'The Cutter' }],
+    });
+    await openEditForm();
+
+    const game = screen.getByLabelText('profile.moves.signatures 1 — profile.moves.gameName');
+    expect(game).toHaveValue('Cody Cutter');
+    await userEvent.clear(game);
+    await userEvent.click(screen.getByRole('button', { name: /save profile/i }));
+
+    await waitFor(() => expect(mockUpdateMyProfile).toHaveBeenCalled());
+    expect(mockUpdateMyProfile.mock.calls[0][0].signatures).toEqual([]);
+  });
+
+  it('cancel restores the stored bio and moves', async () => {
+    mockGetMyProfile.mockResolvedValue({
+      ...basePlayer,
+      bio: 'Stored bio',
+      finishers: [{ gameName: 'Cross Rhodes', customName: '' }],
+    });
+    await openEditForm();
+
+    await userEvent.type(screen.getByLabelText('profile.bio.label'), ' edited');
+    await userEvent.clear(screen.getByLabelText('profile.moves.finishers 1 — profile.moves.gameName'));
+    await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
+
+    // Reopen: the form must reflect the stored values again.
+    await userEvent.click(await screen.findByRole('button', { name: /edit profile/i }));
+    expect(screen.getByLabelText('profile.bio.label')).toHaveValue('Stored bio');
+    expect(
+      screen.getByLabelText('profile.moves.finishers 1 — profile.moves.gameName'),
+    ).toHaveValue('Cross Rhodes');
   });
 });

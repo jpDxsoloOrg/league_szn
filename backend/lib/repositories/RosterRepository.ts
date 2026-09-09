@@ -13,6 +13,7 @@ import type {
   WrestlerPatch,
   WrestlerPromotion,
   WrestlerImportResult,
+  WrestlerMove,
 } from './types';
 
 // ─── Player input types ─────────────────────────────────────────────
@@ -31,6 +32,9 @@ export interface PlayerCreateInput {
   divisionId?: string;
   companyId?: string;
   alignment?: 'face' | 'heel' | 'neutral';
+  bio?: string;
+  signatures?: WrestlerMove[];
+  finishers?: WrestlerMove[];
 }
 
 export interface PlayerPatch {
@@ -49,6 +53,9 @@ export interface PlayerPatch {
   userId?: string;
   canUploadVideos?: boolean;
   hasWrestlerRole?: boolean;
+  bio?: string;
+  signatures?: WrestlerMove[];
+  finishers?: WrestlerMove[];
 }
 
 // ─── Tag Team input types ───────────────────────────────────────────

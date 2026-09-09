@@ -25,6 +25,12 @@ export interface Player {
    * is treated as visible.
    */
   hasWrestlerRole?: boolean;
+  /** Free-text intro shown on the profile and read out on commentary. */
+  bio?: string;
+  /** Up to 5 signature moves. */
+  signatures?: WrestlerMove[];
+  /** Up to 5 finishers. */
+  finishers?: WrestlerMove[];
   createdAt: string;
   updatedAt: string;
   /** Last 5 match results (newest first): W win, L loss, D draw */
@@ -32,6 +38,21 @@ export interface Player {
   /** Current consecutive result streak from most recent match */
   currentStreak?: { type: 'W' | 'L' | 'D'; count: number };
 }
+
+/**
+ * One signature or finisher. `gameName` is the move as WWE 2K labels it;
+ * `customName` is what the player wants commentary to call it (blank means
+ * "use the in-game name").
+ */
+export interface WrestlerMove {
+  gameName: string;
+  customName: string;
+}
+
+/** Max signatures / max finishers per player (each list). Mirrors backend/lib/movesets.ts. */
+export const MAX_MOVES = 5;
+export const MAX_MOVE_NAME_LENGTH = 60;
+export const MAX_BIO_LENGTH = 500;
 
 export type MatchStatus = 'scheduled' | 'completed' | 'cancelled' | 'open-signups';
 

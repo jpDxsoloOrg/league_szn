@@ -157,8 +157,24 @@ export interface Player {
   mainOverall?: number;
   /** When true, this wrestler may submit videos via /my-videos. Admin-managed. */
   canUploadVideos?: boolean;
+  /** Free-text intro shown on the profile and read out on commentary. */
+  bio?: string;
+  /** Up to MAX_MOVES signature moves; see lib/movesets.ts for the limits. */
+  signatures?: WrestlerMove[];
+  /** Up to MAX_MOVES finishers; see lib/movesets.ts for the limits. */
+  finishers?: WrestlerMove[];
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * One signature or finisher. `gameName` is the move as WWE 2K labels it;
+ * `customName` is what the player wants commentary to call it (may be
+ * blank, in which case the UI falls back to `gameName`).
+ */
+export interface WrestlerMove {
+  gameName: string;
+  customName: string;
 }
 
 export type ChallengeStatus = 'pending' | 'accepted' | 'declined' | 'countered' | 'scheduled' | 'expired' | 'cancelled';

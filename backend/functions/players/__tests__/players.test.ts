@@ -231,6 +231,32 @@ describe('getPlayers', () => {
 // ─── updatePlayer ────────────────────────────────────────────────────
 
 describe('updatePlayer', () => {
+  it('returns 403 for a Wrestler-role user (staff only)', async () => {
+    const player = await repos.roster.players.create({ name: 'Old Name', currentWrestler: 'Rock' });
+    const event = makeEvent({
+      pathParameters: { playerId: player.playerId },
+      body: JSON.stringify({ bio: 'not yours' }),
+    });
+
+    const result = await updatePlayer(withAuth(event, 'Wrestler'), ctx, cb);
+
+    expect(result!.statusCode).toBe(403);
+    const stored = await repos.roster.players.findById(player.playerId);
+    expect(stored?.bio).toBeUndefined();
+  });
+
+  it('allows a Moderator', async () => {
+    const player = await repos.roster.players.create({ name: 'Old Name', currentWrestler: 'Rock' });
+    const event = makeEvent({
+      pathParameters: { playerId: player.playerId },
+      body: JSON.stringify({ name: 'Renamed' }),
+    });
+
+    const result = await updatePlayer(withAuth(event, 'Moderator'), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+  });
+
   it('updates player fields and returns updated player', async () => {
     const player = await repos.roster.players.create({ name: 'Old Name', currentWrestler: 'Rock' });
 
@@ -239,7 +265,7 @@ describe('updatePlayer', () => {
       body: JSON.stringify({ name: 'New Name' }),
     });
 
-    const result = await updatePlayer(event, ctx, cb);
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body).name).toBe('New Name');
@@ -251,7 +277,7 @@ describe('updatePlayer', () => {
       body: JSON.stringify({ name: 'X' }),
     });
 
-    const result = await updatePlayer(event, ctx, cb);
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
 
     expect(result!.statusCode).toBe(404);
   });
@@ -262,7 +288,7 @@ describe('updatePlayer', () => {
       body: JSON.stringify({ name: 'X' }),
     });
 
-    const result = await updatePlayer(event, ctx, cb);
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
 
     expect(result!.statusCode).toBe(400);
     expect(JSON.parse(result!.body).message).toBe('Player ID is required');
@@ -276,7 +302,7 @@ describe('updatePlayer', () => {
       body: JSON.stringify({}),
     });
 
-    const result = await updatePlayer(event, ctx, cb);
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
 
     expect(result!.statusCode).toBe(400);
     expect(JSON.parse(result!.body).message).toBe('No valid fields to update');
@@ -290,7 +316,7 @@ describe('updatePlayer', () => {
       body: JSON.stringify({ divisionId: '' }),
     });
 
-    const result = await updatePlayer(event, ctx, cb);
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
   });
@@ -303,7 +329,7 @@ describe('updatePlayer', () => {
       body: JSON.stringify({ currentWrestler: 'New Wrestler' }),
     });
 
-    const result = await updatePlayer(event, ctx, cb);
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body).currentWrestler).toBe('New Wrestler');
@@ -317,7 +343,7 @@ describe('updatePlayer', () => {
       body: JSON.stringify({ imageUrl: 'https://example.com/new.png' }),
     });
 
-    const result = await updatePlayer(event, ctx, cb);
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body).imageUrl).toBe('https://example.com/new.png');
@@ -334,7 +360,7 @@ describe('updatePlayer', () => {
       body: JSON.stringify({ divisionId }),
     });
 
-    const result = await updatePlayer(event, ctx, cb);
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
 
     expect(result!.statusCode).toBe(200);
     expect(JSON.parse(result!.body).divisionId).toBe(divisionId);
@@ -348,7 +374,7 @@ describe('updatePlayer', () => {
       body: JSON.stringify({ divisionId: 'bad-div' }),
     });
 
-    const result = await updatePlayer(event, ctx, cb);
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
 
     expect(result!.statusCode).toBe(404);
     expect(JSON.parse(result!.body).message).toContain('Division');
@@ -362,7 +388,7 @@ describe('updatePlayer', () => {
       body: JSON.stringify({ name: 'X' }),
     });
 
-    const result = await updatePlayer(event, ctx, cb);
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
 
     expect(result!.statusCode).toBe(500);
     expect(JSON.parse(result!.body).message).toBe('Failed to update player');
@@ -502,6 +528,125 @@ describe('getMyProfile', () => {
 });
 
 // ─── updateMyProfile ─────────────────────────────────────────────────
+
+describe('moveset fields', () => {
+  async function ownProfile() {
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(player.playerId, { userId: 'user-sub-1' });
+    return player;
+  }
+
+  it('updateMyProfile stores bio, signatures and finishers (compacted)', async () => {
+    await ownProfile();
+    const event = withAuth(
+      makeEvent({
+        body: JSON.stringify({
+          bio: '  The American Nightmare  ',
+          signatures: [
+            { gameName: 'Cody Cutter', customName: 'The Cutter' },
+            { gameName: '', customName: '' },
+          ],
+          finishers: [{ gameName: 'Cross Rhodes' }],
+        }),
+      }),
+      'Wrestler',
+    );
+
+    const result = await updateMyProfile(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.bio).toBe('The American Nightmare');
+    expect(body.signatures).toEqual([{ gameName: 'Cody Cutter', customName: 'The Cutter' }]);
+    expect(body.finishers).toEqual([{ gameName: 'Cross Rhodes', customName: '' }]);
+  });
+
+  it('updateMyProfile clears lists with an empty array and bio with empty string', async () => {
+    const player = await ownProfile();
+    await repos.roster.players.update(player.playerId, {
+      bio: 'old',
+      signatures: [{ gameName: 'a', customName: '' }],
+    });
+    const event = withAuth(
+      makeEvent({ body: JSON.stringify({ bio: '', signatures: [] }) }),
+      'Wrestler',
+    );
+
+    const result = await updateMyProfile(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.bio).toBe('');
+    expect(body.signatures).toEqual([]);
+  });
+
+  it('updateMyProfile rejects more than five moves', async () => {
+    await ownProfile();
+    const six = Array.from({ length: 6 }, (_, i) => ({ gameName: `m${i}`, customName: '' }));
+    const event = withAuth(
+      makeEvent({ body: JSON.stringify({ finishers: six }) }),
+      'Wrestler',
+    );
+
+    const result = await updateMyProfile(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toContain('at most 5');
+  });
+
+  it('updateMyProfile rejects a bio over 500 characters', async () => {
+    await ownProfile();
+    const event = withAuth(
+      makeEvent({ body: JSON.stringify({ bio: 'x'.repeat(501) }) }),
+      'Wrestler',
+    );
+
+    const result = await updateMyProfile(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toContain('500');
+  });
+
+  it('updateMyProfile rejects a move name over 60 characters', async () => {
+    await ownProfile();
+    const event = withAuth(
+      makeEvent({ body: JSON.stringify({ signatures: [{ gameName: 'y'.repeat(61) }] }) }),
+      'Wrestler',
+    );
+
+    const result = await updateMyProfile(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(JSON.parse(result!.body).message).toContain('60');
+  });
+
+  it('updateMyProfile rejects a non-string bio', async () => {
+    await ownProfile();
+    const event = withAuth(makeEvent({ body: JSON.stringify({ bio: 7 }) }), 'Wrestler');
+
+    const result = await updateMyProfile(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+  });
+
+  it('updatePlayer (admin) accepts the same fields', async () => {
+    const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    const event = makeEvent({
+      pathParameters: { playerId: player.playerId },
+      body: JSON.stringify({
+        bio: 'Admin wrote this',
+        finishers: [{ gameName: 'Pedigree', customName: 'The Pedigree' }],
+      }),
+    });
+
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.bio).toBe('Admin wrote this');
+    expect(body.finishers).toEqual([{ gameName: 'Pedigree', customName: 'The Pedigree' }]);
+  });
+});
 
 describe('updateMyProfile', () => {
   it('returns 403 if not Wrestler role', async () => {

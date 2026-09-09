@@ -66,7 +66,11 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
     multiValueQueryStringParameters: null,
     stageVariables: null,
     resource: '',
-    requestContext: { authorizer: {} } as unknown as APIGatewayProxyEvent['requestContext'],
+    // updatePlayer is staff-only; default every event to an Admin caller and
+    // let withWrestlerAuth override for the self-service handler.
+    requestContext: {
+      authorizer: { groups: 'Admin', username: 'admin', email: 'a@a', principalId: 'admin-sub' },
+    } as unknown as APIGatewayProxyEvent['requestContext'],
     ...overrides,
   };
 }
