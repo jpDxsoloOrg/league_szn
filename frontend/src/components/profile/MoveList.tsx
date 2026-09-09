@@ -16,7 +16,7 @@ export interface MoveListProps {
  */
 export default function MoveList({ title, moves, emptyText }: MoveListProps) {
   const { t } = useTranslation();
-  const list = (moves ?? []).filter((m) => m.gameName.trim().length > 0);
+  const list = (moves ?? []).filter((m) => (m.gameName ?? '').trim().length > 0);
 
   if (list.length === 0 && !emptyText) return null;
 

@@ -333,7 +333,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     // ── Players ────────────────────────────────────────────────
     console.log('Creating players...');
     // Only the first few players get a bio and moveset. The rest stay
-    // empty on purpose so the profile-setup nudge has someone to nudge.
+    // empty on purpose so the (upcoming) profile-setup nudge has someone
+    // to nudge and the empty states on the profile get exercised.
     const seededMovesets: Array<{
       bio: string;
       signatures: Array<{ gameName: string; customName: string }>;

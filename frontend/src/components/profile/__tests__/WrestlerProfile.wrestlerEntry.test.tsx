@@ -177,4 +177,40 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
     expect(payload).not.toHaveProperty('signatures');
     expect(payload).not.toHaveProperty('finishers');
   });
+
+  it('sends an empty list when an existing move is cleared', async () => {
+    mockGetMyProfile.mockResolvedValue({
+      ...basePlayer,
+      signatures: [{ gameName: 'Cody Cutter', customName: 'The Cutter' }],
+    });
+    await openEditForm();
+
+    const game = screen.getByLabelText('profile.moves.signatures 1 — profile.moves.gameName');
+    expect(game).toHaveValue('Cody Cutter');
+    await userEvent.clear(game);
+    await userEvent.click(screen.getByRole('button', { name: /save profile/i }));
+
+    await waitFor(() => expect(mockUpdateMyProfile).toHaveBeenCalled());
+    expect(mockUpdateMyProfile.mock.calls[0][0].signatures).toEqual([]);
+  });
+
+  it('cancel restores the stored bio and moves', async () => {
+    mockGetMyProfile.mockResolvedValue({
+      ...basePlayer,
+      bio: 'Stored bio',
+      finishers: [{ gameName: 'Cross Rhodes', customName: '' }],
+    });
+    await openEditForm();
+
+    await userEvent.type(screen.getByLabelText('profile.bio.label'), ' edited');
+    await userEvent.clear(screen.getByLabelText('profile.moves.finishers 1 — profile.moves.gameName'));
+    await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
+
+    // Reopen: the form must reflect the stored values again.
+    await userEvent.click(await screen.findByRole('button', { name: /edit profile/i }));
+    expect(screen.getByLabelText('profile.bio.label')).toHaveValue('Stored bio');
+    expect(
+      screen.getByLabelText('profile.moves.finishers 1 — profile.moves.gameName'),
+    ).toHaveValue('Cross Rhodes');
+  });
 });

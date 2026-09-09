@@ -4,6 +4,7 @@ import { NotFoundError } from '../../lib/repositories/errors';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
+import { requireRole } from '../../lib/auth';
 import { applyMovesetFields } from './movesetFields';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
@@ -28,6 +29,11 @@ function parseSlotChange(value: unknown): SlotChange {
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
+  // Any signed-in user could previously hit this route; with free-text bio
+  // and move names now flowing through it, restrict it to league staff.
+  const denied = requireRole(event, 'Admin', 'Moderator');
+  if (denied) return denied;
+
   try {
     const playerId = event.pathParameters?.playerId;
     if (!playerId) return badRequest('Player ID is required');

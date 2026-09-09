@@ -7,6 +7,19 @@ export const MAX_BIO_LENGTH = 500;
 
 type ParseResult<T> = { value: T } | { error: string };
 
+/** Single-line text: drop control characters, collapse runs of whitespace. */
+function normalizeName(text: string): string {
+  return text.replace(/[\p{Cc}]/gu, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Multi-line text: keep newlines, drop other control characters, trim. */
+function normalizeBio(text: string): string {
+  return text
+    .replace(/\r\n?/g, '\n')
+    .replace(/[^\P{Cc}\n]/gu, '')
+    .trim();
+}
+
 /**
  * Validates a signatures/finishers list from a request body.
  *
@@ -35,8 +48,8 @@ export function parseMoveList(value: unknown, field: string): ParseResult<Wrestl
     if (customName !== undefined && typeof customName !== 'string') {
       return { error: `${field}.customName must be a string` };
     }
-    const trimmedGame = (gameName ?? '').trim();
-    const trimmedCustom = (customName ?? '').trim();
+    const trimmedGame = normalizeName(gameName ?? '');
+    const trimmedCustom = normalizeName(customName ?? '');
     if (trimmedGame.length > MAX_MOVE_NAME_LENGTH || trimmedCustom.length > MAX_MOVE_NAME_LENGTH) {
       return { error: `${field} names must be ${MAX_MOVE_NAME_LENGTH} characters or less` };
     }
@@ -51,7 +64,7 @@ export function parseBio(value: unknown): ParseResult<string> {
   if (typeof value !== 'string') {
     return { error: 'Field bio must be a string' };
   }
-  const trimmed = value.trim();
+  const trimmed = normalizeBio(value);
   if (trimmed.length > MAX_BIO_LENGTH) {
     return { error: `Bio must be ${MAX_BIO_LENGTH} characters or less` };
   }

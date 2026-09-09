@@ -52,6 +52,12 @@ describe('parseMoveList', () => {
     });
   });
 
+  it('collapses internal whitespace and strips control characters', () => {
+    expect(
+      parseMoveList([{ gameName: 'Cross\nRhodes', customName: 'The\u0000  Cutter' }], 'signatures'),
+    ).toEqual({ value: [{ gameName: 'Cross Rhodes', customName: 'The Cutter' }] });
+  });
+
   it('accepts an empty array (clears the list)', () => {
     expect(parseMoveList([], 'finishers')).toEqual({ value: [] });
   });
@@ -60,6 +66,10 @@ describe('parseMoveList', () => {
 describe('parseBio', () => {
   it('rejects non-strings', () => {
     expect(parseBio(42)).toEqual({ error: 'Field bio must be a string' });
+  });
+
+  it('keeps newlines but strips other control characters', () => {
+    expect(parseBio('line one\r\nline\u0007 two')).toEqual({ value: 'line one\nline two' });
   });
 
   it('trims and accepts empty', () => {

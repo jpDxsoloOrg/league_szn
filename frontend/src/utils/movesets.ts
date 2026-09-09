@@ -12,13 +12,13 @@ export function padMoves(moves: WrestlerMove[] | undefined): WrestlerMove[] {
 /** Drops rows with a blank in-game name and trims the rest — what we send to the API. */
 export function compactMoves(moves: WrestlerMove[]): WrestlerMove[] {
   return moves
-    .map((m) => ({ gameName: m.gameName.trim(), customName: m.customName.trim() }))
+    .map((m) => ({ gameName: (m.gameName ?? '').trim(), customName: (m.customName ?? '').trim() }))
     .filter((m) => m.gameName.length > 0);
 }
 
 /** The name commentary should use: the custom name, else the in-game name. */
 export function displayMoveName(move: WrestlerMove): string {
-  return move.customName.trim() || move.gameName;
+  return (move.customName ?? '').trim() || move.gameName;
 }
 
 export function movesEqual(a: WrestlerMove[] | undefined, b: WrestlerMove[] | undefined): boolean {
