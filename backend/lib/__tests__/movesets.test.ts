@@ -70,6 +70,7 @@ describe('parseBio', () => {
 
   it('keeps newlines but strips other control characters', () => {
     expect(parseBio('line one\r\nline\u0007 two')).toEqual({ value: 'line one\nline two' });
+    expect(parseBio('trailing.  \n  indented')).toEqual({ value: 'trailing.\nindented' });
   });
 
   it('trims and accepts empty', () => {
