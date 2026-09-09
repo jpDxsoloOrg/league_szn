@@ -1,0 +1,180 @@
+.h2h-strip {
+  background: #161616;
+  border: 1px solid #2c2c2c;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+
+.h2h-title {
+  margin: 0 0 0.75rem;
+  color: #d4af37;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.h2h-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 0;
+  flex-wrap: wrap;
+}
+
+.h2h-name {
+  color: #f5f5f5;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.h2h-score {
+  color: #d4af37;
+  font-size: 2.25rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.h2h-draws {
+  color: #888;
+  font-size: 0.75em;
+  font-weight: 500;
+}
+
+.h2h-meta {
+  margin: 0.5rem 0 0;
+  text-align: center;
+  color: #999;
+}
+
+.h2h-multi-label {
+  margin: 0 0 0.35rem;
+  color: #888;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.h2h-multi-row {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.h2h-multi-chip {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  background: #1e1e1e;
+  border: 1px solid #2c2c2c;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+}
+
+.h2h-multi-name {
+  color: #ddd;
+  font-size: 0.85rem;
+}
+
+.h2h-multi-record {
+  color: #d4af37;
+  font-weight: 700;
+}
+
+.h2h-grid-wrap {
+  overflow-x: auto;
+}
+
+.h2h-grid {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 0;
+}
+
+.h2h-caption {
+  caption-side: bottom;
+  color: #666;
+  font-size: 0.75rem;
+  padding-top: 0.5rem;
+  text-align: left;
+}
+
+.h2h-grid th,
+.h2h-grid td {
+  border: 1px solid #2c2c2c;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+}
+
+.h2h-grid th {
+  color: #ccc;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #1e1e1e;
+}
+
+.h2h-grid th[scope='row'] {
+  text-align: left;
+}
+
+.h2h-cell {
+  color: #f0f0f0;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.h2h-cell--self {
+  color: #444;
+  background: #121212;
+}
+
+.h2h-cell--empty {
+  color: #666;
+  font-weight: 500;
+}
+
+.h2h-pair-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.h2h-pair {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.15rem 0.75rem;
+  background: #1e1e1e;
+  border: 1px solid #2c2c2c;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.h2h-pair-names {
+  color: #eee;
+  font-weight: 600;
+}
+
+.h2h-vs {
+  color: #888;
+  font-weight: 400;
+  font-size: 0.8em;
+}
+
+.h2h-pair-score {
+  color: #d4af37;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.h2h-pair-meta {
+  grid-column: 1 / -1;
+  color: #888;
+  font-size: 0.8rem;
+}

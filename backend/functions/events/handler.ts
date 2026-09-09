@@ -1,5 +1,6 @@
 import { handler as getEventsHandler } from './getEvents';
 import { handler as getEventHandler } from './getEvent';
+import { handler as getCommentaryHandler } from './getCommentary';
 import { handler as createEventHandler } from './createEvent';
 import { handler as updateEventHandler } from './updateEvent';
 import { handler as deleteEventHandler } from './deleteEvent';
@@ -20,6 +21,11 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/events/{eventId}',
     method: 'GET',
     handler: getEventHandler,
+  },
+  {
+    resource: '/events/{eventId}/commentary',
+    method: 'GET',
+    handler: getCommentaryHandler,
   },
   {
     resource: '/events',

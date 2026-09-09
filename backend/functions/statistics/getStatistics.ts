@@ -1,5 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
+import { computeHeadToHead } from '../../lib/headToHead';
 import type { Match, Player, Championship, ChampionshipHistoryEntry } from '../../lib/repositories';
 import { success, badRequest, serverError } from '../../lib/response';
 
@@ -271,30 +272,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           return success({ players: playerList });
         }
 
-        // Get matches where both players participated
-        const h2hMatches = completedMatches.filter(
-          (m) => m.participants.includes(player1Id) && m.participants.includes(player2Id)
-        );
-
-        let p1Wins = 0;
-        let p2Wins = 0;
-        let h2hDraws = 0;
-        let championshipMatches = 0;
-
-        for (const match of h2hMatches) {
-          if (match.isChampionship) championshipMatches++;
-          const p1Won = match.winners?.includes(player1Id);
-          const p2Won = match.winners?.includes(player2Id);
-          if (p1Won) p1Wins++;
-          else if (p2Won) p2Wins++;
-          else h2hDraws++;
-        }
+        const h2h = computeHeadToHead(completedMatches, player1Id, player2Id);
+        const championshipMatches = h2h.matches.filter((m) => m.isChampionship).length;
 
         // Recent results (last 5)
-        const sorted = [...h2hMatches].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-        const recentResults = sorted.slice(0, 5).map((m) => ({
+        const recentResults = h2h.matches.slice(0, 5).map((m) => ({
           matchId: m.matchId,
           winnerId: m.winners?.[0] || '',
           date: m.date,
@@ -315,16 +297,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           updatedAt: new Date().toISOString(),
         };
 
-        const headToHead = h2hMatches.length > 0 ? {
+        const headToHead = h2h.totalMatches > 0 ? {
           matchupKey: `${player1Id}-vs-${player2Id}`,
           player1Id,
           player2Id,
-          player1Wins: p1Wins,
-          player2Wins: p2Wins,
-          draws: h2hDraws,
-          totalMatches: h2hMatches.length,
-          lastMatchDate: sorted[0]?.date,
-          lastMatchId: sorted[0]?.matchId,
+          player1Wins: h2h.player1Wins,
+          player2Wins: h2h.player2Wins,
+          draws: h2h.draws,
+          totalMatches: h2h.totalMatches,
+          lastMatchDate: h2h.lastMatchDate,
+          lastMatchId: h2h.lastMatchId,
           championshipMatches,
           recentResults,
           updatedAt: new Date().toISOString(),

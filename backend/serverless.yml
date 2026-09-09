@@ -724,6 +724,10 @@ functions:
           method: any
           cors: *corsConfig
       - http:
+          path: events/{eventId}/commentary
+          method: any
+          cors: *corsConfig
+      - http:
           path: events/{eventId}/check-in
           method: any
           cors: *corsConfig

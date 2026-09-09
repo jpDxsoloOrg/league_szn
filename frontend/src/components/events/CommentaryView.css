@@ -1,0 +1,208 @@
+.commentary-page {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.commentary-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #2c2c2c;
+  padding-bottom: 0.75rem;
+}
+
+.commentary-topbar-left {
+  min-width: 0;
+}
+
+.commentary-event-name {
+  margin: 0.25rem 0 0;
+  color: #f5f5f5;
+  font-size: 1.6rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.commentary-event-date {
+  color: #999;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 1rem;
+}
+
+.commentary-match-label {
+  margin: 0.35rem 0 0;
+  color: #ccc;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 1rem;
+}
+
+.commentary-sep {
+  color: #555;
+}
+
+.commentary-title-match {
+  color: #d4af37;
+  font-weight: 600;
+}
+
+.commentary-pill {
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.commentary-pill--next { background: #dc2626; color: #fff; }
+.commentary-pill--live { background: #1f2937; color: #d4af37; border: 1px solid #d4af37; }
+.commentary-pill--done { background: #2a2a2a; color: #999; }
+
+.commentary-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.commentary-nav-btn {
+  background: transparent;
+  color: #d4af37;
+  border: 1px solid #d4af37;
+  border-radius: 4px;
+  padding: 0.45rem 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.commentary-nav-btn:hover:not(:disabled) {
+  background: rgba(212, 175, 55, 0.12);
+}
+
+.commentary-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.commentary-empty {
+  color: #888;
+  text-align: center;
+  padding: 3rem 0;
+}
+
+/* Card grid: 2 / 3 / 2×2 / 3×2 */
+.commentary-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.commentary-grid--one { grid-template-columns: minmax(0, 720px); justify-content: center; }
+.commentary-grid--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.commentary-grid--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.commentary-grid--four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.commentary-grid--six { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* Team layouts */
+.commentary-teams {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.commentary-team-block {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.commentary-team {
+  display: grid;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem;
+  border-radius: 10px;
+  border: 1px dashed #333;
+}
+
+.commentary-team--0 { border-color: rgba(212, 175, 55, 0.5); }
+.commentary-team--1 { border-color: rgba(220, 38, 38, 0.5); }
+.commentary-team--2 { border-color: rgba(56, 189, 248, 0.5); }
+.commentary-team--3 { border-color: rgba(168, 85, 247, 0.5); }
+
+.commentary-vs {
+  align-self: center;
+  color: #d4af37;
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 0 0.25rem;
+}
+
+/* Mobile jump chips */
+.commentary-chips {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.5rem 0;
+  background: #1a1a1a;
+}
+
+.commentary-chip {
+  flex-shrink: 0;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid #d4af37;
+  border-radius: 999px;
+  color: #d4af37;
+  text-decoration: none;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .commentary-grid--three,
+  .commentary-grid--six {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .commentary-page {
+    padding: 0.75rem 0.75rem 2rem;
+  }
+
+  .commentary-grid--two,
+  .commentary-grid--three,
+  .commentary-grid--four,
+  .commentary-grid--six {
+    grid-template-columns: 1fr;
+  }
+
+  .commentary-teams,
+  .commentary-team-block {
+    flex-direction: column;
+  }
+
+  .commentary-vs {
+    text-align: center;
+  }
+
+  .commentary-topbar {
+    align-items: flex-start;
+  }
+}

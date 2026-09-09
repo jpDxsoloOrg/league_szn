@@ -57,6 +57,7 @@ import MyContenderStatus from './components/contenders/MyContenderStatus';
 import EventsCalendar from './components/events/EventsCalendar';
 import EventDetail from './components/events/EventDetail';
 import EventResults from './components/events/EventResults';
+import CommentaryView from './components/events/CommentaryView';
 // Factions components
 import FactionsList from './components/factions/FactionsList';
 import FactionStandings from './components/factions/FactionStandings';
@@ -277,6 +278,7 @@ function AppLayout() {
             <Route path="/events" element={<EventsCalendar />} />
             <Route path="/events/:eventId" element={<EventDetail />} />
             <Route path="/events/:eventId/results" element={<EventResults />} />
+            <Route path="/events/:eventId/commentary" element={<CommentaryView />} />
 
             {/* Factions Routes - feature-gated */}
             <Route path="/factions" element={
