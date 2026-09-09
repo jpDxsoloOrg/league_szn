@@ -7,6 +7,7 @@ import type {
   EventCheckInStatus,
   EventCheckInSummary,
   EventCheckInRoster,
+  EventCommentary,
 } from '../../types/event';
 import { API_BASE_URL, fetchWithAuth, getAuthToken } from './apiClient';
 
@@ -22,6 +23,10 @@ export const eventsApi = {
 
   getById: async (eventId: string, signal?: AbortSignal): Promise<EventWithMatches> => {
     return fetchWithAuth(`${API_BASE_URL}/events/${eventId}`, {}, signal);
+  },
+
+  getCommentary: async (eventId: string, signal?: AbortSignal): Promise<EventCommentary> => {
+    return fetchWithAuth(`${API_BASE_URL}/events/${eventId}/commentary`, {}, signal);
   },
 
   create: async (event: CreateEventInput): Promise<LeagueEvent> => {

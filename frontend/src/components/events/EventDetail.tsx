@@ -885,6 +885,14 @@ export default function EventDetail() {
           </>
         )}
 
+        {enrichedMatches.length > 0 && (
+          <Link
+            to={`/events/${eventData.eventId}/commentary`}
+            className="view-results-btn commentary-view-btn"
+          >
+            {t('events.detail.openCommentary')}
+          </Link>
+        )}
         {enrichedMatches.some(m => m.matchData?.status === 'completed') && (
           <Link
             to={`/events/${eventData.eventId}/results`}

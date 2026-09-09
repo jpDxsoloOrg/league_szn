@@ -379,6 +379,17 @@
   background: #e5c44d;
 }
 
+.commentary-view-btn {
+  background: transparent;
+  color: #d4af37;
+  border: 1px solid #d4af37;
+  margin-right: 8px;
+}
+
+.commentary-view-btn:hover {
+  background: rgba(212, 175, 55, 0.12);
+}
+
 /* ── Match Card Section ────────────────────────────────────────────────────── */
 
 .event-match-card-section {
