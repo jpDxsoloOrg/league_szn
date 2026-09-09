@@ -15,7 +15,9 @@
   border-radius: 12px;
   padding: 2rem;
   width: 100%;
-  max-width: 420px;
+  max-width: 560px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
@@ -117,10 +119,8 @@
 }
 
 /* Setup checklist (feat/profile-setup-gate) */
-.profile-modal {
-  max-width: 560px;
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
+.profile-modal h2:focus {
+  outline: none;
 }
 
 .profile-modal-checklist {
@@ -135,6 +135,8 @@
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 0.75rem 0.9rem;
+  margin: 0;
+  min-width: 0;
   background: var(--color-bg);
 }
 
@@ -142,13 +144,16 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-}
-
-.profile-modal-item-head label {
-  margin: 0;
+  padding: 0;
+  float: left;
+  width: 100%;
   color: var(--color-text);
   font-weight: 600;
   font-size: 0.95rem;
+}
+
+.profile-modal-item-body {
+  clear: both;
 }
 
 .profile-modal-status {

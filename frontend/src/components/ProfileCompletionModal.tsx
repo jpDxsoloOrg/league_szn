@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -56,8 +56,9 @@ function writeSnoozed(): void {
  */
 export default function ProfileCompletionModal() {
   const { t } = useTranslation();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isAdminOrModerator } = useAuth();
   const location = useLocation();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState<Player | null>(null);
   const [show, setShow] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -89,23 +90,29 @@ export default function ProfileCompletionModal() {
         setProfile(p);
 
         const gaps = getProfileSetupGaps(p);
+        // Every sign-up gets a player row on the "Needs Wrestler" placeholder,
+        // staff included. A GM who never picked a wrestler isn't competing,
+        // so don't nag them about a moveset; one who *has* a wrestler is.
+        const staffNotCompeting = isAdminOrModerator && gaps.needsWrestler;
         const next: MissingFields = {
           name: !p.name || p.name.trim() === '',
           psnId: !p.psnId || p.psnId.trim() === '',
-          wrestler: gaps.needsWrestler,
-          signature: gaps.needsSignature,
-          finisher: gaps.needsFinisher,
+          wrestler: gaps.needsWrestler && !staffNotCompeting,
+          signature: gaps.needsSignature && !staffNotCompeting,
+          finisher: gaps.needsFinisher && !staffNotCompeting,
         };
 
-        if (next.name || next.psnId || hasSetupGaps(gaps)) {
-          setMissing(next);
-          setShow(true);
-          if (next.wrestler && !textWrestlerEntry) {
-            wrestlersApi
-              .getAll()
-              .then((list) => { if (mounted) setWrestlers(list); })
-              .catch(() => { /* dropdown stays empty; the profile link still works */ });
-          }
+        // This is the source of truth: a re-probe (e.g. after finishing the
+        // full form on /profile and coming back) must be able to hide the
+        // modal again, not only show it.
+        setMissing(next);
+        const needed = next.name || next.psnId || next.wrestler || next.signature || next.finisher;
+        setShow(needed);
+        if (needed && next.wrestler && !textWrestlerEntry) {
+          wrestlersApi
+            .getAll()
+            .then((list) => { if (mounted) setWrestlers(list); })
+            .catch(() => { /* dropdown stays empty; the profile link still works */ });
         }
       } catch {
         // No profile or error — don't show modal
@@ -118,7 +125,27 @@ export default function ProfileCompletionModal() {
       mounted = false;
       controller.abort();
     };
-  }, [isAuthenticated, isLoading, dismissed, excluded, textWrestlerEntry]);
+  }, [isAuthenticated, isLoading, dismissed, excluded, textWrestlerEntry, isAdminOrModerator]);
+
+  // Sign-out resets everything so the next account in this tab gets its own
+  // check (the snooze key is cleared by AuthContext).
+  useEffect(() => {
+    if (isAuthenticated) return;
+    setShow(false);
+    setDismissed(false);
+    setProfile(null);
+    setMissing(NONE_MISSING);
+  }, [isAuthenticated]);
+
+  // Move focus into the dialog: the first input if there is one, else the
+  // heading, so keyboard and screen-reader users land inside aria-modal.
+  useEffect(() => {
+    if (!show || excluded) return;
+    const root = dialogRef.current;
+    if (!root) return;
+    const first = root.querySelector<HTMLElement>('input, select');
+    (first ?? root.querySelector<HTMLElement>('h2'))?.focus();
+  }, [show, excluded, missing]);
 
   const handleSubmit = useCallback(async () => {
     setError(null);
@@ -132,16 +159,19 @@ export default function ProfileCompletionModal() {
         if (textWrestlerEntry && wrestlerName.trim()) updates.currentWrestler = wrestlerName.trim();
         if (!textWrestlerEntry && wrestlerId) updates.currentWrestlerId = wrestlerId;
       }
-      // New moves are appended to whatever is already stored, never replacing it.
+      // New moves are appended to whatever is already stored (minus any
+      // blank legacy rows, which would only eat into the five-move cap).
+      const keep = (moves: WrestlerMove[] | undefined) =>
+        (moves ?? []).filter((m) => (m.gameName ?? '').trim().length > 0);
       if (missing.signature && signature.gameName.trim()) {
         updates.signatures = [
-          ...(profile?.signatures ?? []),
+          ...keep(profile?.signatures),
           { gameName: signature.gameName.trim(), customName: signature.customName.trim() },
         ];
       }
       if (missing.finisher && finisher.gameName.trim()) {
         updates.finishers = [
-          ...(profile?.finishers ?? []),
+          ...keep(profile?.finishers),
           { gameName: finisher.gameName.trim(), customName: finisher.customName.trim() },
         ];
       }
@@ -196,6 +226,7 @@ export default function ProfileCompletionModal() {
   const renderStatus = (done: boolean) => (
     <span
       className={`profile-modal-status ${done ? 'profile-modal-status--done' : 'profile-modal-status--todo'}`}
+      role="img"
       aria-label={done ? t('profileModal.done') : t('profileModal.todo')}
     >
       {done ? '✓' : '✗'}
@@ -204,6 +235,7 @@ export default function ProfileCompletionModal() {
 
   const moveRow = (
     id: string,
+    itemLabel: string,
     value: WrestlerMove,
     onChange: (next: WrestlerMove) => void,
   ) => (
@@ -211,7 +243,7 @@ export default function ProfileCompletionModal() {
       <input
         type="text"
         id={`${id}-game`}
-        aria-label={t('profile.moves.gameName')}
+        aria-label={`${itemLabel} — ${t('profile.moves.gameName')}`}
         placeholder={t('profile.moves.gameNamePlaceholder')}
         value={value.gameName}
         maxLength={MAX_MOVE_NAME_LENGTH}
@@ -220,7 +252,7 @@ export default function ProfileCompletionModal() {
       <input
         type="text"
         id={`${id}-custom`}
-        aria-label={t('profile.moves.customName')}
+        aria-label={`${itemLabel} — ${t('profile.moves.customName')}`}
         placeholder={value.gameName.trim() || t('profile.moves.customNamePlaceholder')}
         value={value.customName}
         maxLength={MAX_MOVE_NAME_LENGTH}
@@ -229,17 +261,31 @@ export default function ProfileCompletionModal() {
     </div>
   );
 
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' && !saving) handleSnooze();
+  };
+
   return (
-    <div className="profile-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <div
+      className="profile-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="profile-modal-title"
+      ref={dialogRef}
+      onKeyDown={onKeyDown}
+    >
       <div className="profile-modal">
-        <h2 id="profile-modal-title">
+        <h2 id="profile-modal-title" tabIndex={-1}>
           {setupItems ? t('profileModal.setupTitle') : t('profileModal.title')}
         </h2>
         <p className="profile-modal-subtitle">
           {setupItems ? t('profileModal.setupSubtitle') : t('profileModal.subtitle')}
         </p>
 
-        <div className={`profile-modal-form${showChecklist ? ' profile-modal-form--checklist' : ''}`}>
+        <form
+          className={`profile-modal-form${showChecklist ? ' profile-modal-form--checklist' : ''}`}
+          onSubmit={(e) => { e.preventDefault(); void handleSubmit(); }}
+        >
           {missing.name && (
             <div className="form-group">
               <label htmlFor="modal-name">{t('profileModal.playerName')}</label>
@@ -249,7 +295,6 @@ export default function ProfileCompletionModal() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t('profileModal.playerNamePlaceholder')}
-                autoFocus
               />
             </div>
           )}
@@ -263,19 +308,16 @@ export default function ProfileCompletionModal() {
                 value={psnId}
                 onChange={(e) => setPsnId(e.target.value)}
                 placeholder={t('profileModal.psnIdPlaceholder')}
-                autoFocus={!missing.name}
               />
             </div>
           )}
 
-          <ul className="profile-modal-checklist">
-            <li className="profile-modal-item">
-              <div className="profile-modal-item-head">
+          <div className="profile-modal-checklist">
+            <fieldset className="profile-modal-item">
+              <legend className="profile-modal-item-head">
                 {renderStatus(!missing.wrestler)}
-                <label htmlFor={textWrestlerEntry ? 'modal-wrestler' : 'modal-wrestler-id'}>
-                  {t('profileModal.pickWrestler')}
-                </label>
-              </div>
+                <span>{t('profileModal.pickWrestler')}</span>
+              </legend>
               {missing.wrestler && (
                 <div className="profile-modal-item-body">
                   <p className="profile-modal-hint">{t('profileModal.listedAsNeedsWrestler')}</p>
@@ -283,14 +325,15 @@ export default function ProfileCompletionModal() {
                     <input
                       type="text"
                       id="modal-wrestler"
+                      aria-label={t('profileModal.pickWrestler')}
                       value={wrestlerName}
                       onChange={(e) => setWrestlerName(e.target.value)}
                       placeholder={t('profileModal.wrestlerPlaceholder')}
-                      autoFocus={!missing.name && !missing.psnId}
                     />
                   ) : (
                     <select
                       id="modal-wrestler-id"
+                      aria-label={t('profileModal.pickWrestler')}
                       value={wrestlerId}
                       onChange={(e) => setWrestlerId(e.target.value)}
                     >
@@ -306,32 +349,32 @@ export default function ProfileCompletionModal() {
                   )}
                 </div>
               )}
-            </li>
+            </fieldset>
 
-            <li className="profile-modal-item">
-              <div className="profile-modal-item-head">
+            <fieldset className="profile-modal-item">
+              <legend className="profile-modal-item-head">
                 {renderStatus(!missing.signature)}
-                <label htmlFor="modal-signature-game">{t('profileModal.addSignature')}</label>
-              </div>
+                <span>{t('profileModal.addSignature')}</span>
+              </legend>
               {missing.signature && (
                 <div className="profile-modal-item-body">
-                  {moveRow('modal-signature', signature, setSignature)}
+                  {moveRow('modal-signature', t('profileModal.addSignature'), signature, setSignature)}
                 </div>
               )}
-            </li>
+            </fieldset>
 
-            <li className="profile-modal-item">
-              <div className="profile-modal-item-head">
+            <fieldset className="profile-modal-item">
+              <legend className="profile-modal-item-head">
                 {renderStatus(!missing.finisher)}
-                <label htmlFor="modal-finisher-game">{t('profileModal.addFinisher')}</label>
-              </div>
+                <span>{t('profileModal.addFinisher')}</span>
+              </legend>
               {missing.finisher && (
                 <div className="profile-modal-item-body">
-                  {moveRow('modal-finisher', finisher, setFinisher)}
+                  {moveRow('modal-finisher', t('profileModal.addFinisher'), finisher, setFinisher)}
                 </div>
               )}
-            </li>
-          </ul>
+            </fieldset>
+          </div>
 
           {error && (
             <div className="error-message" role="alert">{error}</div>
@@ -339,8 +382,8 @@ export default function ProfileCompletionModal() {
 
           <div className="profile-modal-actions">
             <button
+              type="submit"
               className="btn-primary"
-              onClick={handleSubmit}
               disabled={saving}
               aria-busy={saving}
             >
@@ -355,7 +398,7 @@ export default function ProfileCompletionModal() {
               {t('profileModal.remindLater')}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
