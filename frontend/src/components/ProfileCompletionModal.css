@@ -115,3 +115,130 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Setup checklist (feat/profile-setup-gate) */
+.profile-modal {
+  max-width: 560px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.profile-modal-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.profile-modal-item {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  background: var(--color-bg);
+}
+
+.profile-modal-item-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.profile-modal-item-head label {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.profile-modal-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.profile-modal-status--done {
+  background: rgba(40, 167, 69, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(40, 167, 69, 0.5);
+}
+
+.profile-modal-status--todo {
+  background: rgba(220, 53, 69, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(220, 53, 69, 0.5);
+}
+
+.profile-modal-item-body {
+  margin-top: 0.6rem;
+  padding-left: 2.1rem;
+}
+
+.profile-modal-hint {
+  margin: 0 0 0.5rem;
+  color: var(--color-danger-alt, #f87171);
+  font-size: 0.8rem;
+}
+
+.profile-modal-move-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.profile-modal-form select {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.profile-modal-form--checklist .profile-modal-actions {
+  margin-top: 1.25rem;
+}
+
+.profile-modal-links {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.profile-modal-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.profile-modal-link:hover {
+  text-decoration: underline;
+}
+
+.profile-modal-link--muted {
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 480px) {
+  .profile-modal-move-row {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-modal-item-body {
+    padding-left: 0;
+  }
+}
