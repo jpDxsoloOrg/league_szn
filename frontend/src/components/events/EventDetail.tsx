@@ -11,7 +11,7 @@ import type {
   EventCheckInSummary,
   EventCheckInRoster,
 } from '../../types/event';
-import type { Match, Player, MatchStatus } from '../../types';
+import type { Match, Player, MatchStatus, PlayerBookingInfo } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
 import Skeleton from '../ui/Skeleton';
 import MatchResultForm from './MatchResultForm';
@@ -122,7 +122,7 @@ export default function EventDetail() {
   const loadAdminData = useCallback(async () => {
     if (!isAdminOrModerator) return;
     try {
-      const [scheduled, playersData, tagTeamsData, rosterData] = await Promise.all([
+      const [scheduled, playersData, tagTeamsData, rosterData, bookingSummary] = await Promise.all([
         matchesApi.getAll({ status: 'scheduled' }),
         playersApi.getAll(),
         tagTeamsApi.getAll({ status: 'active' }).catch(() => [] as TagTeam[]),
@@ -131,11 +131,15 @@ export default function EventDetail() {
         eventId
           ? eventsApi.getCheckIns(eventId).catch(() => null)
           : Promise.resolve(null),
+        // Last-booked / streak for the picker. Optional: without it the
+        // picker just sorts by name.
+        playersApi.getBookingSummary().catch(() => null),
       ]);
       setScheduledMatches(scheduled);
       setPlayers(playersData);
       setTagTeams(tagTeamsData as HydratedTagTeam[]);
       setCheckInRoster(rosterData);
+      setBookingInfo(bookingSummary ? new Map(Object.entries(bookingSummary)) : undefined);
     } catch (err) {
       console.error('Failed to load admin data for event:', err);
     }
@@ -193,6 +197,7 @@ export default function EventDetail() {
   // ── Admin slot-edit dialog ────────────────────────────────────────────────
   const [editingSlot, setEditingSlot] = useState<{ matchId: string; slot: HydratedMatchSlot } | null>(null);
   const [checkInRoster, setCheckInRoster] = useState<EventCheckInRoster | null>(null);
+  const [bookingInfo, setBookingInfo] = useState<Map<string, PlayerBookingInfo> | undefined>(undefined);
 
   const handleAdminEditSlot = useCallback((matchId: string, slot: HydratedMatchSlot) => {
     setEditingSlot({ matchId, slot });
@@ -982,6 +987,7 @@ export default function EventDetail() {
         players={players}
         checkInStatusByPlayerId={checkInStatusByPlayerId}
         bookedPlayerIds={bookedPlayerIds}
+        bookingInfoByPlayerId={bookingInfo}
         onSave={handleSlotEditSave}
         onClose={() => setEditingSlot(null)}
       />

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi, stipulationsApi, matchTypesApi, tagTeamsApi, divisionsApi } from '../../services/api';
-import type { Player, Championship, Tournament, Season, Stipulation, MatchType, Division } from '../../types';
+import type { Player, Championship, Tournament, Season, Stipulation, MatchType, Division, PlayerBookingInfo } from '../../types';
 import type { EventCheckInRoster } from '../../types/event';
 import PlayerBookingPicker from '../events/PlayerBookingPicker';
 import {
@@ -32,6 +32,7 @@ export default function ScheduleMatch() {
   const [linkChallengeId, setLinkChallengeId] = useState<string | null>(null);
   const [linkPromoId, setLinkPromoId] = useState<string | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [bookingInfo, setBookingInfo] = useState<Map<string, PlayerBookingInfo> | undefined>(undefined);
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [seasons, setSeasons] = useState<Season[]>([]);
@@ -154,6 +155,12 @@ export default function ScheduleMatch() {
       ]);
       setPlayers(playersData);
       setChampionships(championshipsData);
+      // Optional: last-booked / streak for the pickers. Kept off the main
+      // Promise.all so a failure can't block the form from loading.
+      Promise.resolve()
+        .then(() => playersApi.getBookingSummary())
+        .then((summary) => setBookingInfo(new Map(Object.entries(summary))))
+        .catch(() => setBookingInfo(undefined));
       setTournaments(tournamentsData.filter(t => t.status !== 'completed'));
       setSeasons(seasonsData);
       setEvents(eventsData.filter(e => e.status === 'upcoming' || e.status === 'in-progress'));
@@ -862,6 +869,7 @@ export default function ScheduleMatch() {
                       onChange={(playerId) => updateSlotRow(index, { playerId })}
                       checkInStatusByPlayerId={checkInStatusByPlayerId}
                       bookedPlayerIds={slotRowPlayerIds}
+                      bookingInfoByPlayerId={bookingInfo}
                     />
                   </div>
                   <label className="slot-mode-row-lock">
@@ -911,6 +919,7 @@ export default function ScheduleMatch() {
               selectedPlayerIds={selectedParticipantIds}
               onToggle={handleParticipantToggle}
               checkInStatusByPlayerId={checkInStatusByPlayerId}
+              bookingInfoByPlayerId={bookingInfo}
               placeholder={t('matches.slots.picker.addParticipants', {
                 defaultValue: 'Add participants…',
               })}

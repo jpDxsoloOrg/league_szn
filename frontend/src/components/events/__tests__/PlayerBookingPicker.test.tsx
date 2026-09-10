@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Player } from '../../../types';
+import type { Player, PlayerBookingInfo } from '../../../types';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -244,6 +244,80 @@ describe('PlayerBookingPicker', () => {
 
       await userEvent.keyboard('{Escape}');
       expect(screen.queryByText('Alpha (Alice)')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('last booked + streak', () => {
+    const info = (lastBookedAt: string | null, streak: PlayerBookingInfo['currentStreak'] = { type: 'W', count: 0 }): PlayerBookingInfo => ({
+      lastBookedAt,
+      currentStreak: streak,
+    });
+    // p1 and p2 are both "available" in the shared statuses map; put both in
+    // the same bucket to test ordering within it.
+    const sameBucket = new Map<string, PickerCheckInStatus>([
+      ['p1', 'available'],
+      ['p2', 'available'],
+      ['p3', 'available'],
+      ['p4', 'tentative'],
+    ]);
+
+    it('sorts never-booked first, then oldest, most recent last, within a bucket', async () => {
+      const booking = new Map<string, PlayerBookingInfo>([
+        ['p1', info('2026-09-07T20:00:00.000Z')], // Alice, most recent
+        ['p2', info(null)],                        // Bob, never
+        ['p3', info('2026-08-01T20:00:00.000Z')], // Carol, oldest
+      ]);
+      renderPicker({ checkInStatusByPlayerId: sameBucket, bookingInfoByPlayerId: booking });
+      await userEvent.click(screen.getByRole('button'));
+
+      const names = screen.getAllByRole('option').map((o) => o.textContent ?? '');
+      const idx = (w: string) => names.findIndex((n) => n.includes(w));
+      expect(idx('Bravo')).toBeLessThan(idx('Charlie'));
+      expect(idx('Charlie')).toBeLessThan(idx('Alpha'));
+      // p4 is tentative → still after every available player, whatever the recency.
+      expect(idx('Delta')).toBeGreaterThan(idx('Alpha'));
+    });
+
+    it('shows a meta column: never booked, last booked date, and a streak chip only at 2+', async () => {
+      const booking = new Map<string, PlayerBookingInfo>([
+        ['p1', info('2026-08-29T20:00:00.000Z', { type: 'W', count: 3 })],
+        ['p2', info(null, { type: 'L', count: 1 })],
+        ['p3', info('2026-09-01T20:00:00.000Z', { type: 'L', count: 2 })],
+      ]);
+      renderPicker({ checkInStatusByPlayerId: sameBucket, bookingInfoByPlayerId: booking });
+      await userEvent.click(screen.getByRole('button'));
+
+      expect(screen.getByText('Never booked')).toBeInTheDocument();
+      expect(screen.getByText(/Last booked Aug 29/)).toBeInTheDocument();
+      expect(screen.getByText('W3')).toBeInTheDocument();
+      expect(screen.getByText('L2')).toBeInTheDocument();
+      expect(screen.queryByText('L1')).not.toBeInTheDocument();
+    });
+
+    it('marks never-booked and 14+ day rows as fresh', async () => {
+      const recent = new Date(Date.now() - 2 * 86400000).toISOString();
+      const stale = new Date(Date.now() - 20 * 86400000).toISOString();
+      const booking = new Map<string, PlayerBookingInfo>([
+        ['p1', info(recent)],
+        ['p2', info(null)],
+        ['p3', info(stale)],
+      ]);
+      renderPicker({ checkInStatusByPlayerId: sameBucket, bookingInfoByPlayerId: booking });
+      await userEvent.click(screen.getByRole('button'));
+
+      const byName = (w: string) => screen.getAllByRole('option').find((o) => o.textContent?.includes(w))!;
+      expect(byName('Alpha').className).not.toContain('booking-picker-option--fresh');
+      expect(byName('Bravo').className).toContain('booking-picker-option--fresh');
+      expect(byName('Charlie').className).toContain('booking-picker-option--fresh');
+    });
+
+    it('falls back to name order and no meta when booking info is omitted', async () => {
+      renderPicker({ checkInStatusByPlayerId: sameBucket });
+      await userEvent.click(screen.getByRole('button'));
+
+      const names = screen.getAllByRole('option').map((o) => o.textContent ?? '');
+      expect(names.findIndex((n) => n.includes('Alpha'))).toBeLessThan(names.findIndex((n) => n.includes('Bravo')));
+      expect(screen.queryByText('Never booked')).not.toBeInTheDocument();
     });
   });
 });

@@ -232,3 +232,44 @@
 .booking-picker-done:hover {
   background-color: #e6c34d;
 }
+
+/* Last booked + streak meta column (feat/booking-picker-last-booked) */
+.booking-picker-option--fresh {
+  box-shadow: inset 3px 0 0 rgba(212, 175, 55, 0.7);
+}
+
+.booking-picker-meta {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.booking-picker-last {
+  color: #888;
+}
+
+.booking-picker-last--never {
+  color: #d4af37;
+}
+
+.booking-picker-streak {
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+}
+
+.booking-picker-streak--W { background: rgba(40, 167, 69, 0.18); color: #4ade80; }
+.booking-picker-streak--L { background: rgba(220, 53, 69, 0.18); color: #f87171; }
+.booking-picker-streak--D { background: rgba(160, 160, 160, 0.18); color: #bbb; }
+
+@media (max-width: 480px) {
+  .booking-picker-last {
+    display: none;
+  }
+}

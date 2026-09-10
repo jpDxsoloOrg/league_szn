@@ -6,6 +6,7 @@ import { handler as getMyProfileHandler } from './getMyProfile';
 import { handler as updateMyProfileHandler } from './updateMyProfile';
 import { createRouter, type RouteConfig } from '../../lib/router';
 import { handler as getPlayerHandler } from './getPlayer';
+import { handler as getBookingSummaryHandler } from './getBookingSummary';
 import { handler as getPlayerStatisticsHandler } from './getPlayerStatistics';
 
 
@@ -25,6 +26,12 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/players/me',
     method: 'GET',
     handler: getMyProfileHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/players/booking-summary',
+    method: 'GET',
+    handler: getBookingSummaryHandler,
     requireAuth: true,
   },
   {

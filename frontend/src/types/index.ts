@@ -54,6 +54,16 @@ export const MAX_MOVES = 5;
 export const MAX_MOVE_NAME_LENGTH = 60;
 export const MAX_BIO_LENGTH = 500;
 
+/** GET /players/booking-summary — per-player booking recency and streak (staff only). */
+export interface PlayerBookingInfo {
+  /** ISO date of the most recent match the player is on; null = never booked. */
+  lastBookedAt: string | null;
+  lastBookedMatchId?: string;
+  lastBookedEventId?: string;
+  /** Current run of identical results, newest first. count 0 = no completed matches. */
+  currentStreak: { type: 'W' | 'L' | 'D'; count: number };
+}
+
 export type MatchStatus = 'scheduled' | 'completed' | 'cancelled' | 'open-signups';
 
 export interface MatchSlot {

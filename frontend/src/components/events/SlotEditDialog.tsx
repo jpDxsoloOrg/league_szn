@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { HydratedMatchSlot, Player } from '../../types';
+import type { HydratedMatchSlot, Player, PlayerBookingInfo } from '../../types';
 import PlayerBookingPicker, { type PickerCheckInStatus } from './PlayerBookingPicker';
 import './SlotEditDialog.css';
 
@@ -16,6 +16,8 @@ export interface SlotEditDialogProps {
   checkInStatusByPlayerId?: ReadonlyMap<string, PickerCheckInStatus>;
   /** Players already booked in another match on this event's card. */
   bookedPlayerIds?: ReadonlySet<string>;
+  /** Last-booked / streak per player; passed straight to the picker. */
+  bookingInfoByPlayerId?: ReadonlyMap<string, PlayerBookingInfo>;
   /**
    * Patch shape mirrors the adminUpdateSlot endpoint: undefined = leave alone,
    * null = clear, string = set. The dialog only fills in fields the admin
@@ -37,6 +39,7 @@ export default function SlotEditDialog({
   bookedPlayerIds,
   onSave,
   onClose,
+  bookingInfoByPlayerId,
 }: SlotEditDialogProps) {
   const { t } = useTranslation();
   const [playerId, setPlayerId] = useState<string>('');
@@ -156,6 +159,7 @@ export default function SlotEditDialog({
             onChange={setPlayerId}
             checkInStatusByPlayerId={checkInStatusByPlayerId}
             bookedPlayerIds={bookedPlayerIds}
+            bookingInfoByPlayerId={bookingInfoByPlayerId}
             disabled={saving}
           />
         </div>

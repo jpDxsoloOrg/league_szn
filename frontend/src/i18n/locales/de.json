@@ -1481,6 +1481,12 @@
       "selectMatch": "Kampf zum Hinzufügen auswählen...",
       "addMatch": "Kampf hinzufügen"
     },
+    "booking": {
+      "neverBooked": "Noch nie gebucht",
+      "lastBooked": "Zuletzt gebucht {{when}}",
+      "streakTitle": "{{count}} Matches in Serie: {{type}}",
+      "streakType": { "W": "Siege", "L": "Niederlagen", "D": "Unentschieden" }
+    },
     "checkIn": {
       "title": "Bist du dabei?",
       "available": "Verfügbar",
