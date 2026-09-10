@@ -119,10 +119,23 @@ export default function EventDetail() {
     }
   }, [eventId]);
 
+  // Last-booked / streak for the slot picker. Loaded once per admin visit —
+  // it changes rarely and the current card's own bookings are already
+  // covered by bookedPlayerIds. Optional: without it the picker sorts by name.
+  useEffect(() => {
+    if (!isAdminOrModerator) return;
+    let mounted = true;
+    playersApi
+      .getBookingSummary()
+      .then((summary) => { if (mounted) setBookingInfo(new Map(Object.entries(summary))); })
+      .catch(() => { if (mounted) setBookingInfo(undefined); });
+    return () => { mounted = false; };
+  }, [isAdminOrModerator]);
+
   const loadAdminData = useCallback(async () => {
     if (!isAdminOrModerator) return;
     try {
-      const [scheduled, playersData, tagTeamsData, rosterData, bookingSummary] = await Promise.all([
+      const [scheduled, playersData, tagTeamsData, rosterData] = await Promise.all([
         matchesApi.getAll({ status: 'scheduled' }),
         playersApi.getAll(),
         tagTeamsApi.getAll({ status: 'active' }).catch(() => [] as TagTeam[]),
@@ -131,15 +144,11 @@ export default function EventDetail() {
         eventId
           ? eventsApi.getCheckIns(eventId).catch(() => null)
           : Promise.resolve(null),
-        // Last-booked / streak for the picker. Optional: without it the
-        // picker just sorts by name.
-        playersApi.getBookingSummary().catch(() => null),
       ]);
       setScheduledMatches(scheduled);
       setPlayers(playersData);
       setTagTeams(tagTeamsData as HydratedTagTeam[]);
       setCheckInRoster(rosterData);
-      setBookingInfo(bookingSummary ? new Map(Object.entries(bookingSummary)) : undefined);
     } catch (err) {
       console.error('Failed to load admin data for event:', err);
     }

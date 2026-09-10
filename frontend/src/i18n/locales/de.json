@@ -1483,6 +1483,7 @@
     },
     "booking": {
       "neverBooked": "Noch nie gebucht",
+      "bookedUpcoming": "Gebucht {{when}}",
       "lastBooked": "Zuletzt gebucht {{when}}",
       "streakTitle": "{{count}} Matches in Serie: {{type}}",
       "streakType": { "W": "Siege", "L": "Niederlagen", "D": "Unentschieden" }

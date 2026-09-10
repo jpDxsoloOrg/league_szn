@@ -238,8 +238,14 @@
   box-shadow: inset 3px 0 0 rgba(212, 175, 55, 0.7);
 }
 
+/* The text takes all free space so the trailing tick / badge / meta hug
+   the right edge in order instead of splitting the row's auto margins. */
+.booking-picker-option-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .booking-picker-meta {
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -269,7 +275,8 @@
 .booking-picker-streak--D { background: rgba(160, 160, 160, 0.18); color: #bbb; }
 
 @media (max-width: 480px) {
-  .booking-picker-last {
+  /* Keep the "never booked" signal on phones; drop only the dates. */
+  .booking-picker-last:not(.booking-picker-last--never) {
     display: none;
   }
 }

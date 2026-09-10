@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Player, PlayerBookingInfo } from '../../types';
-import { compareByBookingRecency, formatShortDate, isFreshBooking } from '../../utils/bookingRecency';
-import { formatDateTime } from '../../utils/dateUtils';
+import {
+  compareByBookingRecency,
+  formatBookingTooltip,
+  formatShortDate,
+  isFreshBooking,
+  isUpcomingBooking,
+} from '../../utils/bookingRecency';
 import {
   type CheckInStatus,
   CHECK_IN_STATUS_ORDER,
@@ -140,7 +145,7 @@ export default function PlayerBookingPicker({
             title={t('events.booking.streakTitle', {
               count: streak.count,
               type: t(`events.booking.streakType.${streak.type}`),
-              defaultValue: `On a ${streak.count}-match streak`,
+              defaultValue: `On a ${streak.count}-match ${streak.type} streak`,
             })}
           >
             {streak.type}
@@ -148,11 +153,16 @@ export default function PlayerBookingPicker({
           </span>
         )}
         {info.lastBookedAt ? (
-          <span className="booking-picker-last" title={formatDateTime(info.lastBookedAt)}>
-            {t('events.booking.lastBooked', {
-              when: formatShortDate(info.lastBookedAt),
-              defaultValue: `Last booked ${formatShortDate(info.lastBookedAt)}`,
-            })}
+          <span className="booking-picker-last" title={formatBookingTooltip(info.lastBookedAt)}>
+            {isUpcomingBooking(info.lastBookedAt)
+              ? t('events.booking.bookedUpcoming', {
+                  when: formatShortDate(info.lastBookedAt),
+                  defaultValue: `Booked ${formatShortDate(info.lastBookedAt)}`,
+                })
+              : t('events.booking.lastBooked', {
+                  when: formatShortDate(info.lastBookedAt),
+                  defaultValue: `Last booked ${formatShortDate(info.lastBookedAt)}`,
+                })}
           </span>
         ) : (
           <span className="booking-picker-last booking-picker-last--never">

@@ -79,15 +79,32 @@ describe('getBookingSummary', () => {
     expect(body[p.playerId].lastBookedEventId).toBe('ev1');
   });
 
-  it('counts a player holding a slot but not yet in participants', async () => {
+  it('counts slot holders on an open-signups match (partly filled card)', async () => {
     const p = await repos.roster.players.create({ name: 'A', currentWrestler: 'A' });
-    await match([], '2026-09-15T20:00:00.000Z', {
-      slots: [{ slotId: 's1', position: 1, playerId: p.playerId }],
+    const q = await repos.roster.players.create({ name: 'B', currentWrestler: 'B' });
+    await match([p.playerId], '2026-09-15', {
+      status: 'open-signups',
+      slotsRequired: 2,
+      slots: [
+        { slotId: 's1', position: 1, playerId: p.playerId },
+        { slotId: 's2', position: 2 },
+      ],
     });
 
     const { body } = await call();
 
-    expect(body[p.playerId].lastBookedAt).toBe('2026-09-15T20:00:00.000Z');
+    expect(body[p.playerId].lastBookedAt).toBe('2026-09-15');
+    expect(body[q.playerId].lastBookedAt).toBeNull();
+  });
+
+  it('compares calendar-date and timestamp dates correctly', async () => {
+    const p = await repos.roster.players.create({ name: 'A', currentWrestler: 'A' });
+    await match([p.playerId], '2026-09-20'); // event-linked matches store a calendar day
+    await match([p.playerId], '2026-09-19T23:59:00.000Z');
+
+    const { body } = await call();
+
+    expect(body[p.playerId].lastBookedAt).toBe('2026-09-20');
   });
 
   it('streak matches what the standings endpoint reports', async () => {
@@ -97,6 +114,8 @@ describe('getBookingSummary', () => {
     await done([p.playerId, q.playerId], [p.playerId], '2026-07-08T20:00:00.000Z');
     await done([p.playerId, q.playerId], [p.playerId], '2026-07-15T20:00:00.000Z');
     await done([p.playerId, q.playerId], [p.playerId], '2026-07-22T20:00:00.000Z');
+    // A legacy completed row with no updatedAt is ignored by both endpoints.
+    await done([p.playerId, q.playerId], [p.playerId], '2026-07-29T20:00:00.000Z', { updatedAt: undefined });
 
     const { body } = await call();
     const standings = JSON.parse((await getStandings(makeEvent(), ctx, cb))!.body).players;

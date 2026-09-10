@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import type { Match, MatchSlot } from '../../lib/repositories/types';
+import type { Match } from '../../lib/repositories/types';
 import { success, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 import { computeRecentFormAndStreak, type FormResult } from '../../lib/recentForm';
@@ -17,17 +17,20 @@ export interface PlayerBookingInfo {
 /** Everyone on the match: explicit participants plus anyone holding a slot. */
 function playerIdsOn(match: Match): string[] {
   const ids = new Set<string>(match.participants ?? []);
-  for (const slot of (match.slots as MatchSlot[] | undefined) ?? []) {
+  for (const slot of match.slots ?? []) {
     if (slot.playerId) ids.add(slot.playerId);
   }
   return [...ids];
 }
 
+/** A match that puts its players "on a card": anything not cancelled. */
+const BOOKED_STATUSES = new Set<Match['status']>(['scheduled', 'open-signups', 'completed']);
+
 /**
  * GET /players/booking-summary — staff only. One row per player with when
- * they were last put on a card (scheduled or completed; cancelled ignored)
- * and their current streak, so booking pickers can surface under-used
- * wrestlers first.
+ * they were last put on a card (scheduled, open-signups or completed;
+ * cancelled ignored) and their current streak, so booking pickers can
+ * surface under-used wrestlers first.
  */
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Admin', 'Moderator');
@@ -35,14 +38,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
   try {
     const { roster: { players }, competition: { matches } } = getRepositories();
-    const [allPlayers, scheduled, completed] = await Promise.all([
-      players.list(),
-      matches.listByStatus('scheduled'),
-      matches.listByStatus('completed'),
-    ]);
+    // One scan, partitioned in memory — a filtered scan reads every item
+    // anyway, so separate per-status calls would just multiply the cost.
+    const [allPlayers, allMatches] = await Promise.all([players.list(), matches.list()]);
+    const booked = allMatches.filter((m) => BOOKED_STATUSES.has(m.status));
+    const completed = booked.filter((m) => m.status === 'completed');
 
     const latestByPlayer = new Map<string, Match>();
-    for (const match of [...scheduled, ...completed]) {
+    for (const match of booked) {
       if (!match.date) continue;
       for (const playerId of playerIdsOn(match)) {
         const current = latestByPlayer.get(playerId);

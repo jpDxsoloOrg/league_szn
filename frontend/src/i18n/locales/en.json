@@ -1486,6 +1486,7 @@
     },
     "booking": {
       "neverBooked": "Never booked",
+      "bookedUpcoming": "Booked {{when}}",
       "lastBooked": "Last booked {{when}}",
       "streakTitle": "On a {{count}}-match {{type}} streak",
       "streakType": { "W": "winning", "L": "losing", "D": "draw" }

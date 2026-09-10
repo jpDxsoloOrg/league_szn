@@ -22,8 +22,10 @@ export function computeRecentFormAndStreak(
   playerId: string,
   completedMatches: CompletedMatchForForm[]
 ): { recentForm: FormResult[]; currentStreak: { type: FormResult; count: number } } {
+  // Rows with no updatedAt can't be ordered, so they're left out — the same
+  // rule getStandings applies; keeping it here means every caller agrees.
   const playerMatches = completedMatches
-    .filter((m) => (m.participants || []).includes(playerId))
+    .filter((m) => m.updatedAt && (m.participants || []).includes(playerId))
     .sort((a, b) => {
       const aTime = new Date(a.updatedAt ?? 0).getTime();
       const bTime = new Date(b.updatedAt ?? 0).getTime();

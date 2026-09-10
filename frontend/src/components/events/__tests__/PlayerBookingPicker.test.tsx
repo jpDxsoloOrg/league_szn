@@ -289,9 +289,22 @@ describe('PlayerBookingPicker', () => {
 
       expect(screen.getByText('Never booked')).toBeInTheDocument();
       expect(screen.getByText(/Last booked Aug 29/)).toBeInTheDocument();
+      // Sep 1 2026 is in the past relative to the test clock, so "Last booked".
+      expect(screen.getByText(/Last booked Sep 1/)).toBeInTheDocument();
       expect(screen.getByText('W3')).toBeInTheDocument();
       expect(screen.getByText('L2')).toBeInTheDocument();
       expect(screen.queryByText('L1')).not.toBeInTheDocument();
+    });
+
+    it('says "Booked" rather than "Last booked" for an upcoming card', async () => {
+      const future = new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10);
+      renderPicker({
+        checkInStatusByPlayerId: sameBucket,
+        bookingInfoByPlayerId: new Map([['p1', info(future)]]),
+      });
+      await userEvent.click(screen.getByRole('button'));
+      expect(screen.getByText(/^Booked /)).toBeInTheDocument();
+      expect(screen.queryByText(/Last booked/)).not.toBeInTheDocument();
     });
 
     it('marks never-booked and 14+ day rows as fresh', async () => {
