@@ -120,6 +120,15 @@ jobs:
         working-directory: frontend
         run: aws s3 sync dist s3://leagueszn.jpdxsolo.com --delete --exclude "*.map"
 
+      # The sync above uploads index.html with no Cache-Control, so browsers
+      # cache it heuristically and keep pointing at an old JS bundle. Re-upload
+      # it as no-cache; the hashed assets/* files stay long-lived.
+      - name: Upload index.html as no-cache
+        run: |
+          aws s3 cp dist/index.html s3://leagueszn.jpdxsolo.com/index.html \
+            --cache-control "no-cache, no-store, must-revalidate" \
+            --content-type "text/html"
+
       - name: Get CloudFront Distribution ID
         id: cloudfront
         run: |

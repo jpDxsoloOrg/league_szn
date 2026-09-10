@@ -57,7 +57,7 @@ function writeSnoozed(): void {
  */
 export default function ProfileCompletionModal() {
   const { t } = useTranslation();
-  const { isAuthenticated, isLoading, isAdminOrModerator } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
   const dialogRef = useRef<HTMLDivElement>(null);
   // Announcements go first; this modal appears once they are dismissed.
@@ -92,17 +92,16 @@ export default function ProfileCompletionModal() {
         if (!mounted) return;
         setProfile(p);
 
+        // Everyone with a player row gets the same checklist, staff
+        // included — admins wrestle too, and "Remind me later" covers the
+        // ones who don't.
         const gaps = getProfileSetupGaps(p);
-        // Every sign-up gets a player row on the "Needs Wrestler" placeholder,
-        // staff included. A GM who never picked a wrestler isn't competing,
-        // so don't nag them about a moveset; one who *has* a wrestler is.
-        const staffNotCompeting = isAdminOrModerator && gaps.needsWrestler;
         const next: MissingFields = {
           name: !p.name || p.name.trim() === '',
           psnId: !p.psnId || p.psnId.trim() === '',
-          wrestler: gaps.needsWrestler && !staffNotCompeting,
-          signature: gaps.needsSignature && !staffNotCompeting,
-          finisher: gaps.needsFinisher && !staffNotCompeting,
+          wrestler: gaps.needsWrestler,
+          signature: gaps.needsSignature,
+          finisher: gaps.needsFinisher,
         };
 
         // This is the source of truth: a re-probe (e.g. after finishing the
@@ -128,7 +127,7 @@ export default function ProfileCompletionModal() {
       mounted = false;
       controller.abort();
     };
-  }, [isAuthenticated, isLoading, dismissed, excluded, textWrestlerEntry, isAdminOrModerator]);
+  }, [isAuthenticated, isLoading, dismissed, excluded, textWrestlerEntry]);
 
   // Sign-out resets everything so the next account in this tab gets its own
   // check (the snooze key is cleared by AuthContext).
