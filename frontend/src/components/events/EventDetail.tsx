@@ -11,7 +11,7 @@ import type {
   EventCheckInSummary,
   EventCheckInRoster,
 } from '../../types/event';
-import type { Match, Player, MatchStatus } from '../../types';
+import type { Match, Player, MatchStatus, PlayerBookingInfo } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
 import Skeleton from '../ui/Skeleton';
 import MatchResultForm from './MatchResultForm';
@@ -119,6 +119,19 @@ export default function EventDetail() {
     }
   }, [eventId]);
 
+  // Last-booked / streak for the slot picker. Loaded once per admin visit —
+  // it changes rarely and the current card's own bookings are already
+  // covered by bookedPlayerIds. Optional: without it the picker sorts by name.
+  useEffect(() => {
+    if (!isAdminOrModerator) return;
+    let mounted = true;
+    playersApi
+      .getBookingSummary()
+      .then((summary) => { if (mounted) setBookingInfo(new Map(Object.entries(summary))); })
+      .catch(() => { if (mounted) setBookingInfo(undefined); });
+    return () => { mounted = false; };
+  }, [isAdminOrModerator]);
+
   const loadAdminData = useCallback(async () => {
     if (!isAdminOrModerator) return;
     try {
@@ -193,6 +206,7 @@ export default function EventDetail() {
   // ── Admin slot-edit dialog ────────────────────────────────────────────────
   const [editingSlot, setEditingSlot] = useState<{ matchId: string; slot: HydratedMatchSlot } | null>(null);
   const [checkInRoster, setCheckInRoster] = useState<EventCheckInRoster | null>(null);
+  const [bookingInfo, setBookingInfo] = useState<Map<string, PlayerBookingInfo> | undefined>(undefined);
 
   const handleAdminEditSlot = useCallback((matchId: string, slot: HydratedMatchSlot) => {
     setEditingSlot({ matchId, slot });
@@ -982,6 +996,7 @@ export default function EventDetail() {
         players={players}
         checkInStatusByPlayerId={checkInStatusByPlayerId}
         bookedPlayerIds={bookedPlayerIds}
+        bookingInfoByPlayerId={bookingInfo}
         onSave={handleSlotEditSave}
         onClose={() => setEditingSlot(null)}
       />

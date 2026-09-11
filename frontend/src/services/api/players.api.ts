@@ -1,9 +1,14 @@
-import type { Player } from '../../types';
+import type { Player, PlayerBookingInfo } from '../../types';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
 export const playersApi = {
   getAll: async (signal?: AbortSignal): Promise<Player[]> => {
     return fetchWithAuth(`${API_BASE_URL}/players`, {}, signal);
+  },
+
+  /** Staff only. Keyed by playerId. */
+  getBookingSummary: async (signal?: AbortSignal): Promise<Record<string, PlayerBookingInfo>> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/booking-summary`, {}, signal);
   },
 
   create: async (player: Omit<Player, 'playerId' | 'createdAt' | 'updatedAt'>): Promise<Player> => {

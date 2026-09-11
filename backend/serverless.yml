@@ -342,6 +342,10 @@ functions:
           method: any
           cors: *corsConfig
       - http:
+          path: players/booking-summary
+          method: get
+          cors: *corsConfig
+      - http:
           path: players/{playerId}
           method: any
           cors: *corsConfig

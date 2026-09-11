@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Player } from '../../types';
+import type { Player, PlayerBookingInfo } from '../../types';
+import {
+  compareByBookingRecency,
+  formatBookingTooltip,
+  formatShortDate,
+  isFreshBooking,
+  isUpcomingBooking,
+} from '../../utils/bookingRecency';
 import {
   type CheckInStatus,
   CHECK_IN_STATUS_ORDER,
@@ -32,6 +39,11 @@ export interface PlayerBookingPickerProps {
   checkInStatusByPlayerId?: ReadonlyMap<string, CheckInStatus>;
   /** Players already booked elsewhere on this event's card. */
   bookedPlayerIds?: ReadonlySet<string>;
+  /**
+   * Per-player last-booked date and streak (staff only). Sorts the most
+   * recently booked to the bottom of each group and shows a meta column.
+   */
+  bookingInfoByPlayerId?: ReadonlyMap<string, PlayerBookingInfo>;
   disabled?: boolean;
 }
 
@@ -51,6 +63,7 @@ export default function PlayerBookingPicker({
   placeholder,
   checkInStatusByPlayerId,
   bookedPlayerIds,
+  bookingInfoByPlayerId,
   disabled = false,
 }: PlayerBookingPickerProps) {
   const { t } = useTranslation();
@@ -113,12 +126,52 @@ export default function PlayerBookingPicker({
     for (const status of CHECK_IN_STATUS_ORDER) {
       const bucket = buckets.get(status);
       if (bucket && bucket.length > 0) {
-        bucket.sort((a, b) => a.name.localeCompare(b.name));
+        bucket.sort((a, b) => compareByBookingRecency(a, b, bookingInfoByPlayerId));
         ordered.push({ status, players: bucket });
       }
     }
     return ordered;
-  }, [players, search, showAll, statusOf, isSelected, hasCheckInData]);
+  }, [players, search, showAll, statusOf, isSelected, hasCheckInData, bookingInfoByPlayerId]);
+
+  const renderBookingMeta = (playerId: string) => {
+    const info = bookingInfoByPlayerId?.get(playerId);
+    if (!info) return null;
+    const streak = info.currentStreak;
+    return (
+      <span className="booking-picker-meta">
+        {streak.count >= 2 && (
+          <span
+            className={`booking-picker-streak booking-picker-streak--${streak.type}`}
+            title={t('events.booking.streakTitle', {
+              count: streak.count,
+              type: t(`events.booking.streakType.${streak.type}`),
+              defaultValue: `On a ${streak.count}-match ${streak.type} streak`,
+            })}
+          >
+            {streak.type}
+            {streak.count}
+          </span>
+        )}
+        {info.lastBookedAt ? (
+          <span className="booking-picker-last" title={formatBookingTooltip(info.lastBookedAt)}>
+            {isUpcomingBooking(info.lastBookedAt)
+              ? t('events.booking.bookedUpcoming', {
+                  when: formatShortDate(info.lastBookedAt),
+                  defaultValue: `Booked ${formatShortDate(info.lastBookedAt)}`,
+                })
+              : t('events.booking.lastBooked', {
+                  when: formatShortDate(info.lastBookedAt),
+                  defaultValue: `Last booked ${formatShortDate(info.lastBookedAt)}`,
+                })}
+          </span>
+        ) : (
+          <span className="booking-picker-last booking-picker-last--never">
+            {t('events.booking.neverBooked', { defaultValue: 'Never booked' })}
+          </span>
+        )}
+      </span>
+    );
+  };
 
   const hiddenCount = useMemo(() => {
     if (!hasCheckInData || showAll) return 0;
@@ -259,13 +312,15 @@ export default function PlayerBookingPicker({
               </div>
               {group.players.map((player) => {
                 const isBooked = bookedPlayerIds?.has(player.playerId) ?? false;
+                const info = bookingInfoByPlayerId?.get(player.playerId);
+                const fresh = info !== undefined && isFreshBooking(info.lastBookedAt);
                 return (
                   <button
                     key={player.playerId}
                     type="button"
                     className={`booking-picker-option booking-picker-option--${group.status}${
                       isBooked ? ' booking-picker-option--booked' : ''
-                    }`}
+                    }${fresh ? ' booking-picker-option--fresh' : ''}`}
                     role="option"
                     aria-selected={isSelected(player.playerId)}
                     onClick={() => handleSelect(player.playerId)}
@@ -287,6 +342,7 @@ export default function PlayerBookingPicker({
                         })}
                       </span>
                     )}
+                    {renderBookingMeta(player.playerId)}
                   </button>
                 );
               })}

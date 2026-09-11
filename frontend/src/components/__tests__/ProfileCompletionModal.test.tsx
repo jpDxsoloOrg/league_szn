@@ -205,17 +205,12 @@ describe('ProfileCompletionModal — setup gate', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('does not nag staff who never picked a wrestler, but does when they have one', async () => {
+  it('nags staff on Needs Wrestler exactly like everyone else', async () => {
     authState.isAdminOrModerator = true;
     mockGetMyProfile.mockResolvedValue({ ...complete, currentWrestler: 'Needs Wrestler', signatures: [], finishers: [] });
-    const first = renderAt();
-    await waitFor(() => expect(mockGetMyProfile).toHaveBeenCalled());
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    first.unmount();
-
-    mockGetMyProfile.mockResolvedValue({ ...complete, finishers: [] });
     renderAt();
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.getAllByLabelText('profileModal.todo')).toHaveLength(3);
   });
 
   it('focuses the first input on open and Escape snoozes', async () => {

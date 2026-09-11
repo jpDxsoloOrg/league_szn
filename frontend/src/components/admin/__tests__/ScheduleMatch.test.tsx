@@ -32,7 +32,7 @@ const {
 
 vi.mock('../../../services/api', () => ({
   matchesApi: { schedule: mockScheduleMatch },
-  playersApi: { getAll: mockGetAllPlayers },
+  playersApi: { getAll: mockGetAllPlayers, getBookingSummary: vi.fn().mockResolvedValue({}) },
   championshipsApi: { getAll: mockGetAllChampionships },
   tournamentsApi: { getAll: mockGetAllTournaments },
   seasonsApi: { getAll: mockGetAllSeasons },
