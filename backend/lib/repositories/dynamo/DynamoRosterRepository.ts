@@ -88,6 +88,24 @@ export class DynamoRosterRepository implements RosterRepository {
       }
       return result.Items[0] as Player;
     },
+
+    clearSuspension: async (playerId: string): Promise<void> => {
+      await dynamoDb
+        .update({
+          TableName: TableNames.PLAYERS,
+          Key: { playerId },
+          UpdateExpression: 'REMOVE #suspension SET #updatedAt = :now',
+          ExpressionAttributeNames: { '#suspension': 'suspension', '#updatedAt': 'updatedAt' },
+          ExpressionAttributeValues: { ':now': new Date().toISOString() },
+          ConditionExpression: 'attribute_exists(playerId)',
+        })
+        .catch((err: { name?: string }) => {
+          if (err.name === 'ConditionalCheckFailedException') {
+            throw new NotFoundError('Player', playerId);
+          }
+          throw err;
+        });
+    },
   };
 
   // ─── Tag Teams (CRUD + listByStatus, listByPlayer) ─────────────

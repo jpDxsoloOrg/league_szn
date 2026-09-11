@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { PROFILE_SETUP_SNOOZE_KEY } from '../utils/profileSetup';
+import { SUSPENSION_REINSTATE_SNOOZE_KEY } from '../utils/suspensionModal';
 import { cognitoAuth, type UserRole } from '../services/cognito';
 import { profileApi } from '../services/api';
 
@@ -186,6 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('devPlayer');
     // The profile-setup nudge is per account; don't carry a snooze over.
     sessionStorage.removeItem(PROFILE_SETUP_SNOOZE_KEY);
+    sessionStorage.removeItem(SUSPENSION_REINSTATE_SNOOZE_KEY);
     setState({
       isAuthenticated: false,
       isLoading: false,

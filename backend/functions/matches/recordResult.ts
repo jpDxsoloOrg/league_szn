@@ -5,6 +5,7 @@ import { success, badRequest, conflict, notFound, serverError } from '../../lib/
 import { invokeAsync } from '../../lib/asyncLambda';
 import { parseBody } from '../../lib/parseBody';
 import { updateGroupStats } from './updateGroupStats';
+import { applyDivisionLadder } from '../../lib/applyDivisionLadder';
 
 interface RecordResultBody {
   winners: string[];
@@ -109,6 +110,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // ── Tournament progression ─────────────────────────────────────────
     if (match.tournamentId) {
       await handleTournamentProgression(match, body.winners, body.losers, isDraw, allParticipants);
+    }
+
+    // ── Division ladder (auto promotion/demotion) ──────────────────────
+    // Runs after the completed match is persisted so listCompleted() sees it.
+    // Draws never move anyone. Never throws.
+    if (!isDraw) {
+      await applyDivisionLadder({ matchId, winners: body.winners, losers: body.losers });
     }
 
     // ── Auto-complete event ────────────────────────────────────────────

@@ -1,0 +1,304 @@
+.manage-division-ladder {
+  width: 100%;
+  max-width: 900px;
+}
+
+.ladder-header {
+  margin-bottom: 1.5rem;
+}
+
+.ladder-header h2 {
+  margin: 0 0 0.5rem 0;
+}
+
+.ladder-subtitle {
+  margin: 0;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.ladder-card {
+  background-color: #1a1a1a;
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.ladder-card h3 {
+  margin: 0 0 0.5rem 0;
+  color: #d4af37;
+}
+
+.ladder-card h4 {
+  margin: 1.5rem 0 0.75rem 0;
+  color: #bbb;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ladder-help,
+.ladder-empty {
+  margin: 0 0 1rem 0;
+  color: #888;
+  font-size: 0.875rem;
+}
+
+.ladder-list,
+.ladder-unranked-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ladder-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: #222;
+  border: 1px solid #333;
+  border-radius: 6px;
+}
+
+.ladder-row--unranked {
+  border-style: dashed;
+}
+
+.ladder-row-main {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  min-width: 0;
+}
+
+.ladder-row-name {
+  font-weight: 600;
+  color: #fff;
+}
+
+.ladder-rank-badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background-color: #2a2a2a;
+  border: 1px solid #d4af37;
+  color: #d4af37;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ladder-caption {
+  font-size: 0.75rem;
+  color: #888;
+  font-style: italic;
+}
+
+.ladder-caption--top {
+  color: #4ade80;
+}
+
+.ladder-caption--bottom {
+  color: #f87171;
+}
+
+.ladder-row-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.ladder-move-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  font-size: 0.8rem;
+  line-height: 1;
+  background-color: #333;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.ladder-move-btn:hover:not(:disabled) {
+  background-color: #444;
+  border-color: #d4af37;
+}
+
+.ladder-move-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ladder-add-btn {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.8rem;
+  background-color: #3b82f6;
+  border-radius: 4px;
+}
+
+.ladder-add-btn:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.ladder-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.ladder-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  color: #ddd;
+}
+
+.ladder-checkbox-label input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: #d4af37;
+  cursor: pointer;
+}
+
+.ladder-rule-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-width: 320px;
+}
+
+.ladder-rule-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #bbb;
+}
+
+.ladder-rule-input {
+  width: 100%;
+  padding: 0.6rem 0.9rem;
+  background-color: #222;
+  border: 2px solid #333;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.ladder-rule-input:focus {
+  outline: none;
+  border-color: #d4af37;
+}
+
+.ladder-rule-hint {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.ladder-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+}
+
+.ladder-save-btn {
+  padding: 0.75rem 1.5rem;
+}
+
+.ladder-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ladder-table-wrap {
+  overflow-x: auto;
+}
+
+.ladder-movements-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.ladder-movements-table th,
+.ladder-movements-table td {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #333;
+  white-space: nowrap;
+}
+
+.ladder-movements-table th {
+  color: #888;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ladder-direction-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.ladder-direction-badge--promoted {
+  background-color: #14532d;
+  color: #4ade80;
+}
+
+.ladder-direction-badge--demoted {
+  background-color: #7f1d1d;
+  color: #fecaca;
+}
+
+.ladder-direction-badge--manual {
+  background-color: #1e3a8a;
+  color: #bfdbfe;
+}
+
+.error-message {
+  background-color: #7f1d1d;
+  color: #fecaca;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border: 1px solid #991b1b;
+}
+
+.success-message {
+  background-color: #14532d;
+  color: #4ade80;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border: 1px solid #166534;
+}
+
+@media (max-width: 768px) {
+  .ladder-card {
+    padding: 1rem;
+  }
+
+  .ladder-row {
+    align-items: flex-start;
+  }
+
+  .ladder-actions {
+    justify-content: stretch;
+  }
+
+  .ladder-save-btn {
+    width: 100%;
+  }
+}

@@ -18,6 +18,7 @@ provider:
     SEASONS_TABLE: ${self:service}-seasons-${self:provider.stage}
     SEASON_STANDINGS_TABLE: ${self:service}-season-standings-${self:provider.stage}
     DIVISIONS_TABLE: ${self:service}-divisions-${self:provider.stage}
+    DIVISION_MOVEMENTS_TABLE: ${self:service}-division-movements-${self:provider.stage}
     EVENTS_TABLE: ${self:service}-events-${self:provider.stage}
     EVENT_CHECK_INS_TABLE: ${self:service}-event-check-ins-${self:provider.stage}
     CONTENDER_RANKINGS_TABLE: ${self:service}-contender-rankings-${self:provider.stage}
@@ -90,6 +91,7 @@ provider:
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SEASON_STANDINGS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.SEASON_STANDINGS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DIVISIONS_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DIVISION_MOVEMENTS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EVENTS_TABLE}
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EVENTS_TABLE}/index/*
             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.EVENT_CHECK_INS_TABLE}
@@ -322,6 +324,16 @@ functions:
           method: put
           cors: *corsConfig
           authorizer: adminAuthorizer
+      - http:
+          path: admin/division-ladder
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: admin/division-ladder
+          method: put
+          cors: *corsConfig
+          authorizer: adminAuthorizer
 
   # Players (Phase 2 consolidated: getPlayers, createPlayer, updatePlayer, deletePlayer, getMyProfile, updateMyProfile)
   players:
@@ -346,6 +358,11 @@ functions:
           method: get
           cors: *corsConfig
       - http:
+          path: players/suspensions
+          method: get
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
           path: players/{playerId}
           method: any
           cors: *corsConfig
@@ -353,6 +370,16 @@ functions:
           path: players/{playerId}/statistics
           method: get
           cors: *corsConfig
+      - http:
+          path: players/{playerId}/suspend
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
+      - http:
+          path: players/{playerId}/reinstate
+          method: post
+          cors: *corsConfig
+          authorizer: adminAuthorizer
 
   # Overalls (Wrestler Overalls: submit, get own, admin get all)
   overalls:
@@ -2334,6 +2361,22 @@ resources:
         TimeToLiveSpecification:
           AttributeName: ttl
           Enabled: true
+
+    DivisionMovementsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DIVISION_MOVEMENTS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: playerId
+            AttributeType: S
+          - AttributeName: movedAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: playerId
+            KeyType: HASH
+          - AttributeName: movedAt
+            KeyType: RANGE
 
     ImagesBucket:
       Type: AWS::S3::Bucket

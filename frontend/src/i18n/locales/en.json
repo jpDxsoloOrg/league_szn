@@ -334,7 +334,8 @@
       "season_event": "Seasons",
       "tournament_result": "Tournaments",
       "challenge_event": "Challenges",
-      "promo_posted": "Promos"
+      "promo_posted": "Promos",
+      "division_movement": "Divisions"
     },
     "timeAgo": {
       "justNow": "Just now",
@@ -629,6 +630,90 @@
     }
   },
   "admin": {
+    "divisionLadder": {
+      "title": "Division Ladder",
+      "subtitle": "Order divisions from the jobber tier up to the top tier and set the streaks that move players between them.",
+      "orderTitle": "Ladder order",
+      "orderHelp": "Top of the list is the most prestigious division. Use the arrows to reorder.",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "topTierCaption": "Top tier — nobody is promoted above this",
+      "bottomTierCaption": "Jobber tier — nobody is demoted below this",
+      "unrankedTitle": "Not in ladder",
+      "addToLadder": "Add to ladder",
+      "rulesTitle": "Movement rules",
+      "enabled": "Automatic promotion and demotion",
+      "promoteWinStreak": "Promote after win streak",
+      "promoteHelp": "Win {{count}} in a row → move up one division",
+      "demoteLossStreak": "Demote after loss streak",
+      "demoteHelp": "Lose {{count}} in a row → move down one division",
+      "save": "Save ladder",
+      "saved": "Ladder saved.",
+      "saveError": "Could not save the ladder.",
+      "loadError": "Could not load the division ladder.",
+      "movementsTitle": "Recent movements",
+      "movementsEmpty": "No division movements yet.",
+      "colDate": "Date",
+      "colPlayer": "Player",
+      "colFrom": "From",
+      "colTo": "To",
+      "colDirection": "Direction",
+      "colTrigger": "Trigger",
+      "direction": {
+        "promoted": "Promoted",
+        "demoted": "Demoted",
+        "manual": "Manual"
+      },
+      "trigger": {
+        "streak": "Streak",
+        "admin": "Admin",
+        "transfer": "Transfer"
+      },
+      "rankBadge": "Rank {{rank}}",
+      "manageLadderLink": "Manage division ladder"
+    },
+    "suspensions": {
+      "title": "Suspensions",
+      "subtitle": "Search for a player to suspend them, or reinstate a suspended player early.",
+      "searchLabel": "Find a player",
+      "searchPlaceholder": "Search players...",
+      "currentTitle": "Current suspensions",
+      "currentEmpty": "Nobody is suspended right now.",
+      "colPlayer": "Player",
+      "colSince": "Since",
+      "colCondition": "Condition",
+      "colProgress": "Progress",
+      "colStatus": "Status",
+      "colActions": "Actions",
+      "reinstate": "Reinstate",
+      "reinstateEarly": "Reinstate early",
+      "reinstateNow": "Reinstate now",
+      "eligible": "Eligible for reinstatement",
+      "notEligible": "Still serving",
+      "untilDate": "Until {{date}}",
+      "forShows": "{{count}} shows",
+      "showsProgress": "{{served}} / {{required}} shows",
+      "datePassed": "Date passed {{date}}",
+      "showsServed": "{{served}} of {{required}} shows served",
+      "suspendTitle": "Suspend {{name}}",
+      "conditionLabel": "Suspended",
+      "conditionDate": "Until a date",
+      "conditionShows": "For a number of shows",
+      "dateLabel": "Suspended until",
+      "showsLabel": "Number of shows",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "Why is this player being suspended?",
+      "cancel": "Cancel",
+      "confirmSuspend": "Suspend",
+      "suspended": "Suspended",
+      "suspendedSuccess": "{{name}} has been suspended.",
+      "reinstatedSuccess": "{{name}} has been reinstated.",
+      "error": "Something went wrong. Please try again.",
+      "loadError": "Could not load suspensions.",
+      "reinstateTitle": "Reinstate {{name}}",
+      "suspendedSince": "Suspended since {{date}}",
+      "reason": "Reason: {{reason}}"
+    },
     "manageWrestlers": {
       "resetAll": "Reset All Assignments",
       "resetting": "Resetting...",
@@ -708,7 +793,9 @@
         "storylineRequests": "Storyline Requests",
         "rivalries": "Rivalries",
         "heatConfig": "Heat Tunables",
-        "dangerZone": "Danger Zone"
+        "dangerZone": "Danger Zone",
+        "divisionLadder": "Division Ladder",
+        "suspensions": "Suspensions"
       },
       "groups": {
         "matchOps": "Match Operations",
@@ -1489,7 +1576,10 @@
       "bookedUpcoming": "Booked {{when}}",
       "lastBooked": "Last booked {{when}}",
       "streakTitle": "On a {{count}}-match {{type}} streak",
-      "streakType": { "W": "winning", "L": "losing", "D": "draw" }
+      "streakType": { "W": "winning", "L": "losing", "D": "draw" },
+      "suspended": "Suspended",
+      "suspendedUntil": "Suspended until {{date}}",
+      "suspendedShows": "Suspended for {{count}} shows since {{date}}"
     },
     "checkIn": {
       "title": "Will you be there?",
@@ -2103,7 +2193,17 @@
     "deleteAllRead": "Delete read",
     "typeStable": "Stable",
     "typeTagTeam": "Tag Team",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "Transfer",
+    "typeDivision": "Division",
+    "typeSuspension": "Suspension"
+  },
+  "suspensionsModal": {
+    "title": "Suspensions served",
+    "subtitle": "These players have served their suspension and can be reinstated.",
+    "reinstate": "Reinstate",
+    "reinstateAll": "Reinstate all",
+    "remindLater": "Remind me later",
+    "working": "Reinstating..."
   },
   "findMatch": {
     "title": "Find a Match",

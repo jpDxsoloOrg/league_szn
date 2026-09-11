@@ -7,5 +7,5 @@ export const handler = updateHandlerFactory<DivisionPatch, Division>({
   repo: () => getRepositories().leagueOps.divisions,
   entityName: 'division',
   idParam: 'divisionId',
-  patchFields: ['name', 'description'],
+  patchFields: ['name', 'description', 'rank'],
 });

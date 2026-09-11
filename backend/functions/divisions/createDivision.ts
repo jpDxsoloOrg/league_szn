@@ -7,5 +7,5 @@ export const handler = createHandlerFactory<DivisionCreateInput, Division>({
   repo: () => getRepositories().leagueOps.divisions,
   entityName: 'division',
   requiredFields: ['name'],
-  optionalFields: ['description'],
+  optionalFields: ['description', 'rank'],
 });

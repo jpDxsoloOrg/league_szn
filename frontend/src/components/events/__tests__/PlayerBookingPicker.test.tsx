@@ -1,15 +1,25 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Player, PlayerBookingInfo } from '../../../types';
+import type { Player, PlayerBookingInfo, PlayerSuspension } from '../../../types';
+
+// The suspension tooltip helper calls t() without a defaultValue, so give
+// those keys real strings and interpolate every option generically.
+const messages: Record<string, string> = {
+  'events.booking.suspendedUntil': 'Suspended until {{date}}',
+  'events.booking.suspendedShows': 'Suspended for {{count}} shows since {{date}}',
+};
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string; count?: number }) => {
-      const value = options?.defaultValue ?? key;
-      return typeof options?.count === 'number'
-        ? value.replace('{{count}}', String(options.count))
-        : value;
+    t: (key: string, options?: Record<string, unknown>) => {
+      const defaultValue =
+        typeof options?.defaultValue === 'string' ? options.defaultValue : undefined;
+      let value = messages[key] ?? defaultValue ?? key;
+      for (const [name, raw] of Object.entries(options ?? {})) {
+        value = value.replace(`{{${name}}}`, String(raw));
+      }
+      return value;
     },
   }),
 }));
@@ -331,6 +341,86 @@ describe('PlayerBookingPicker', () => {
       const names = screen.getAllByRole('option').map((o) => o.textContent ?? '');
       expect(names.findIndex((n) => n.includes('Alpha'))).toBeLessThan(names.findIndex((n) => n.includes('Bravo')));
       expect(screen.queryByText('Never booked')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('suspended players', () => {
+    const suspendedUntil: PlayerSuspension = {
+      suspendedAt: '2026-09-01T12:00:00.000Z',
+      until: '2026-09-30',
+    };
+    const suspendedShows: PlayerSuspension = {
+      suspendedAt: '2026-09-10',
+      showsRequired: 3,
+    };
+    const withSuspended: Player[] = [
+      { ...players[0], suspension: suspendedUntil },
+      players[1],
+      { ...players[2], suspension: suspendedShows },
+      players[3],
+    ];
+
+    it('shows the chip with a tooltip on suspended rows only', async () => {
+      renderPicker({ players: withSuspended });
+      await openMenu();
+
+      const chips = screen.getAllByText('Suspended');
+      expect(chips).toHaveLength(1);
+      expect(chips[0]).toHaveAttribute('title', 'Suspended until Sep 30');
+      expect(chips[0].closest('[role="option"]')).toHaveClass('booking-picker-option--suspended');
+
+      const bob = screen.getByText('Bravo (Bob)').closest('[role="option"]');
+      expect(bob).not.toHaveClass('booking-picker-option--suspended');
+      expect(bob?.querySelector('.booking-picker-suspended')).toBeNull();
+    });
+
+    it('describes show-based suspensions and keeps the row in its check-in bucket', async () => {
+      renderPicker({ players: withSuspended });
+      await openMenu();
+      await userEvent.click(screen.getByRole('button', { name: /Show 2 who/ }));
+
+      const carol = screen.getByText('Charlie (Carol)').closest('[role="option"]');
+      expect(carol).toHaveClass('booking-picker-option--unavailable');
+      expect(carol?.querySelector('.booking-picker-suspended')).toHaveAttribute(
+        'title',
+        'Suspended for 3 shows since Sep 10',
+      );
+    });
+
+    it('still reports the pick in single mode', async () => {
+      const { onChange } = renderPicker({ players: withSuspended });
+      await openMenu();
+
+      await userEvent.click(screen.getByText('Alpha (Alice)'));
+      expect(onChange).toHaveBeenCalledWith('p1');
+    });
+
+    it('shows the chip on the trigger once a suspended player is selected', () => {
+      renderPicker({ players: withSuspended, value: 'p1' });
+
+      const trigger = screen.getByRole('button', { name: /Alpha \(Alice\)/ });
+      expect(trigger.querySelector('.booking-picker-suspended')).toHaveAttribute(
+        'title',
+        'Suspended until Sep 30',
+      );
+    });
+
+    it('still toggles the row in multi mode', async () => {
+      const onToggle = vi.fn();
+      render(
+        <PlayerBookingPicker
+          mode="multi"
+          players={withSuspended}
+          selectedPlayerIds={new Set()}
+          onToggle={onToggle}
+          checkInStatusByPlayerId={statuses}
+        />,
+      );
+      await userEvent.click(screen.getByRole('button', { name: /Add participants…/ }));
+
+      await userEvent.click(screen.getByText('Alpha (Alice)'));
+      expect(onToggle).toHaveBeenCalledWith('p1');
+      expect(screen.getByText('Suspended')).toBeInTheDocument();
     });
   });
 });

@@ -48,6 +48,19 @@ const HUB_ICON_SHAPES: Record<string, JSX.Element> = {
       <rect x="3" y="14" width="7" height="7" />
     </>
   ),
+  suspensions: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+    </>
+  ),
+  'division-ladder': (
+    <>
+      <line x1="12" y1="3" x2="12" y2="21" />
+      <polyline points="7 8 12 3 17 8" />
+      <polyline points="7 16 12 21 17 16" />
+    </>
+  ),
   overalls: (
     <>
       <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
@@ -267,6 +280,8 @@ const HUB_GROUPS: HubGroup[] = [
       { path: '/admin/players', labelKey: 'admin.panel.tabs.managePlayers', iconKey: 'players' },
       { path: '/admin/wrestlers', labelKey: 'admin.panel.tabs.wrestlers', iconKey: 'wrestlers' },
       { path: '/admin/divisions', labelKey: 'admin.panel.tabs.divisions', iconKey: 'divisions' },
+      { path: '/admin/division-ladder', labelKey: 'admin.panel.tabs.divisionLadder', iconKey: 'division-ladder' },
+      { path: '/admin/suspensions', labelKey: 'admin.panel.tabs.suspensions', iconKey: 'suspensions' },
       { path: '/admin/overalls', labelKey: 'overalls.admin.title', iconKey: 'overalls' },
     ],
   },

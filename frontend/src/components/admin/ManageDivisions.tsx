@@ -1,10 +1,25 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useMemo, FormEvent } from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { divisionsApi } from '../../services/api';
 import type { Division } from '../../types';
 import Skeleton from '../ui/Skeleton';
 import './ManageDivisions.css';
 
+/** Ranked divisions first (highest rank on top), then unranked by creation date. */
+function sortDivisionsForDisplay(divisions: Division[]): Division[] {
+  return [...divisions].sort((a, b) => {
+    const aRanked = typeof a.rank === 'number';
+    const bRanked = typeof b.rank === 'number';
+    if (aRanked && bRanked) return (b.rank ?? 0) - (a.rank ?? 0);
+    if (aRanked) return -1;
+    if (bRanked) return 1;
+    return a.createdAt.localeCompare(b.createdAt);
+  });
+}
+
 export default function ManageDivisions() {
+  const { t } = useTranslation();
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +107,8 @@ export default function ManageDivisions() {
     }
   };
 
+  const sortedDivisions = useMemo(() => sortDivisionsForDisplay(divisions), [divisions]);
+
   const handleCancel = () => {
     setFormData({ name: '', description: '' });
     setShowAddForm(false);
@@ -156,14 +173,26 @@ export default function ManageDivisions() {
       )}
 
       <div className="divisions-list">
-        <h3>All Divisions ({divisions.length})</h3>
+        <div className="divisions-list-header">
+          <h3>All Divisions ({divisions.length})</h3>
+          <Link to="/admin/division-ladder" className="divisions-ladder-link">
+            {t('admin.divisionLadder.manageLadderLink')}
+          </Link>
+        </div>
         {divisions.length === 0 ? (
           <p>No divisions yet. Create your first division to group players!</p>
         ) : (
           <div className="divisions-grid">
-            {divisions.map(division => (
+            {sortedDivisions.map(division => (
               <div key={division.divisionId} className="division-card">
-                <h4>{division.name}</h4>
+                <div className="division-card-title">
+                  <h4>{division.name}</h4>
+                  {typeof division.rank === 'number' && (
+                    <span className="division-rank-badge">
+                      {t('admin.divisionLadder.rankBadge', { rank: division.rank })}
+                    </span>
+                  )}
+                </div>
                 {division.description && (
                   <p className="division-description">{division.description}</p>
                 )}

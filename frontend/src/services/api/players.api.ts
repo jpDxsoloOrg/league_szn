@@ -1,4 +1,4 @@
-import type { Player, PlayerBookingInfo } from '../../types';
+import type { Player, PlayerBookingInfo, SuspendPlayerInput, SuspensionRow } from '../../types';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
 export const playersApi = {
@@ -32,6 +32,26 @@ export const playersApi = {
   delete: async (playerId: string): Promise<void> => {
     return fetchWithAuth(`${API_BASE_URL}/players/${playerId}`, {
       method: 'DELETE',
+    });
+  },
+
+  /** Staff only. Active suspensions with computed eligibility, eligible rows first. */
+  getSuspensions: async (signal?: AbortSignal): Promise<SuspensionRow[]> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/suspensions`, {}, signal);
+  },
+
+  /** Staff only. Exactly one of `until` / `showsRequired` must be set. 409 if already suspended. */
+  suspend: async (playerId: string, input: SuspendPlayerInput): Promise<Player> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${playerId}/suspend`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
+  /** Staff only. Clears the suspension. 404 if the player is not suspended. */
+  reinstate: async (playerId: string): Promise<Player> => {
+    return fetchWithAuth(`${API_BASE_URL}/players/${playerId}/reinstate`, {
+      method: 'POST',
     });
   },
 };

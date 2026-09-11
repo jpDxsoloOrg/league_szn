@@ -9,6 +9,7 @@ interface TableConfig {
 
 const ALL_TABLES: TableConfig[] = [
   { key: 'divisions', tableName: TableNames.DIVISIONS, partitionKey: 'divisionId' },
+  { key: 'divisionMovements', tableName: TableNames.DIVISION_MOVEMENTS, partitionKey: 'playerId', sortKey: 'movedAt' },
   { key: 'players', tableName: TableNames.PLAYERS, partitionKey: 'playerId' },
   { key: 'seasons', tableName: TableNames.SEASONS, partitionKey: 'seasonId' },
   { key: 'seasonStandings', tableName: TableNames.SEASON_STANDINGS, partitionKey: 'seasonId', sortKey: 'playerId' },

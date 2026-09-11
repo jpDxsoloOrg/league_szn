@@ -11,6 +11,8 @@ import type {
   CompanyPatch,
   DivisionCreateInput,
   DivisionPatch,
+  DivisionMovementCreateInput,
+  DivisionMovementsRepository,
   LocationCreateInput,
   LocationPatch,
   LocationBulkImportResult,
@@ -28,6 +30,7 @@ import type {
   Show,
   Company,
   Division,
+  DivisionMovement,
   Location,
 } from '../types';
 import type { CrudRepository } from '../CrudRepository';
@@ -246,6 +249,40 @@ class LocationsSubRepo
   }
 }
 
+// ─── Division movements ────────────────────────────────────────────
+
+export class InMemoryDivisionMovementsRepository implements DivisionMovementsRepository {
+  readonly store: DivisionMovement[] = [];
+
+  async create(input: DivisionMovementCreateInput): Promise<DivisionMovement> {
+    const item: DivisionMovement = {
+      playerId: input.playerId,
+      movedAt: input.movedAt ?? new Date().toISOString(),
+      movementId: input.movementId ?? uuidv4(),
+      ...(input.fromDivisionId !== undefined ? { fromDivisionId: input.fromDivisionId } : {}),
+      toDivisionId: input.toDivisionId,
+      direction: input.direction,
+      trigger: input.trigger,
+      ...(input.matchId !== undefined ? { matchId: input.matchId } : {}),
+      ...(input.streakCount !== undefined ? { streakCount: input.streakCount } : {}),
+    };
+    this.store.push(item);
+    return item;
+  }
+
+  async listByPlayer(playerId: string): Promise<DivisionMovement[]> {
+    return this.store
+      .filter((m) => m.playerId === playerId)
+      .sort((a, b) => b.movedAt.localeCompare(a.movedAt));
+  }
+
+  async listRecent(limit: number): Promise<DivisionMovement[]> {
+    return [...this.store]
+      .sort((a, b) => b.movedAt.localeCompare(a.movedAt))
+      .slice(0, Math.max(0, limit));
+  }
+}
+
 // ─── Matchmaking ───────────────────────────────────────────────────
 
 function createMatchmakingSubRepo(): MatchmakingMethods {
@@ -322,6 +359,7 @@ export class InMemoryLeagueOpsRepository implements LeagueOpsRepository {
   readonly shows: ShowsCrud;
   readonly companies: InMemoryCrudRepository<Company, CompanyCreateInput, CompanyPatch>;
   readonly divisions: InMemoryCrudRepository<Division, DivisionCreateInput, DivisionPatch>;
+  readonly divisionMovements: InMemoryDivisionMovementsRepository;
   readonly locations: LocationsMethods;
   readonly matchmaking: MatchmakingMethods;
 
@@ -351,10 +389,13 @@ export class InMemoryLeagueOpsRepository implements LeagueOpsRepository {
         divisionId: id,
         name: input.name,
         ...(input.description !== undefined ? { description: input.description } : {}),
+        ...(input.rank !== undefined ? { rank: input.rank } : {}),
         createdAt: now,
         updatedAt: now,
       }),
     });
+
+    this.divisionMovements = new InMemoryDivisionMovementsRepository();
 
     this.locations = new LocationsSubRepo();
 

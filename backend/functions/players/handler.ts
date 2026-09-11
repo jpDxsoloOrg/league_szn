@@ -8,6 +8,9 @@ import { createRouter, type RouteConfig } from '../../lib/router';
 import { handler as getPlayerHandler } from './getPlayer';
 import { handler as getBookingSummaryHandler } from './getBookingSummary';
 import { handler as getPlayerStatisticsHandler } from './getPlayerStatistics';
+import { handler as getSuspensionsHandler } from './getSuspensions';
+import { handler as suspendPlayerHandler } from './suspendPlayer';
+import { handler as reinstatePlayerHandler } from './reinstatePlayer';
 
 
 /**
@@ -46,6 +49,14 @@ const routes: ReadonlyArray<RouteConfig> = [
     handler: createPlayerHandler,
     requireAuth: true,
   },
+  // Static segment: declared before '/players/{playerId}'. The router prefers
+  // the match with the fewest path params anyway, but keep the order explicit.
+  {
+    resource: '/players/suspensions',
+    method: 'GET',
+    handler: getSuspensionsHandler,
+    requireAuth: true,
+  },
   {
     resource: '/players/{playerId}',
     method: 'GET',
@@ -66,6 +77,18 @@ const routes: ReadonlyArray<RouteConfig> = [
     resource: '/players/{playerId}',
     method: 'DELETE',
     handler: deletePlayerHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/players/{playerId}/suspend',
+    method: 'POST',
+    handler: suspendPlayerHandler,
+    requireAuth: true,
+  },
+  {
+    resource: '/players/{playerId}/reinstate',
+    method: 'POST',
+    handler: reinstatePlayerHandler,
     requireAuth: true,
   },
 ];

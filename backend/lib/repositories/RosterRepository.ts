@@ -14,6 +14,7 @@ import type {
   WrestlerPromotion,
   WrestlerImportResult,
   WrestlerMove,
+  PlayerSuspension,
 } from './types';
 
 // ─── Player input types ─────────────────────────────────────────────
@@ -56,6 +57,8 @@ export interface PlayerPatch {
   bio?: string;
   signatures?: WrestlerMove[];
   finishers?: WrestlerMove[];
+  divisionChangedAt?: string;
+  suspension?: PlayerSuspension;
 }
 
 // ─── Tag Team input types ───────────────────────────────────────────
@@ -189,6 +192,8 @@ export interface WrestlersMethods
 export interface RosterRepository {
   players: CrudRepository<Player, PlayerCreateInput, PlayerPatch> & {
     findByUserId(userId: string): Promise<Player | null>;
+    /** Removes the `suspension` attribute (REMOVE, not a null write). */
+    clearSuspension(playerId: string): Promise<void>;
   };
   tagTeams: CrudRepository<TagTeam, TagTeamCreateInput, TagTeamPatch> & {
     listByStatus(status: TagTeamStatus): Promise<TagTeam[]>;

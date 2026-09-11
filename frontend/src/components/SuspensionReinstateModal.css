@@ -1,0 +1,182 @@
+.suspension-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.suspension-modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.suspension-modal h2 {
+  margin: 0 0 0.5rem;
+  color: var(--color-text);
+  font-size: 1.4rem;
+}
+
+.suspension-modal h2:focus {
+  outline: none;
+}
+
+.suspension-modal-subtitle {
+  color: var(--color-text-secondary);
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.suspension-modal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.suspension-modal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  background: var(--color-bg);
+}
+
+.suspension-modal-player {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.suspension-modal-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.suspension-modal-avatar--placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.suspension-modal-player-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.suspension-modal-wrestler {
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suspension-modal-name {
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suspension-modal-reason {
+  color: var(--color-success, #4ade80);
+  font-size: 0.8rem;
+}
+
+.suspension-modal .error-message {
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  color: var(--color-danger-alt);
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-top: 1rem;
+}
+
+.suspension-modal .btn-primary {
+  padding: 0.55rem 0.9rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-primary);
+  color: #000;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.suspension-modal .btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.suspension-modal .btn-secondary {
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.suspension-modal .btn-secondary:hover:not(:disabled) {
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.05));
+}
+
+.suspension-modal .btn-primary:disabled,
+.suspension-modal .btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.suspension-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.suspension-modal-actions .btn-primary,
+.suspension-modal-actions .btn-secondary {
+  flex: 1;
+}
+
+@media (max-width: 480px) {
+  .suspension-modal-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .suspension-modal-reinstate {
+    width: 100%;
+  }
+}

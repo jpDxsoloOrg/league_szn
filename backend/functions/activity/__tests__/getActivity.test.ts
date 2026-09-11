@@ -10,6 +10,8 @@ const {
   mockChallengesList,
   mockPromosList,
   mockPlayersList,
+  mockDivisionsList,
+  mockDivisionMovementsListRecent,
 } = vi.hoisted(() => ({
   mockMatchesListCompleted: vi.fn(),
   mockChampionshipsListAllHistory: vi.fn(),
@@ -19,6 +21,8 @@ const {
   mockChallengesList: vi.fn(),
   mockPromosList: vi.fn(),
   mockPlayersList: vi.fn(),
+  mockDivisionsList: vi.fn(),
+  mockDivisionMovementsListRecent: vi.fn(),
 }));
 
 vi.mock('../../../lib/repositories', () => ({
@@ -39,6 +43,10 @@ vi.mock('../../../lib/repositories', () => ({
     },
     roster: {
       players: { list: mockPlayersList },
+    },
+    leagueOps: {
+      divisions: { list: mockDivisionsList },
+      divisionMovements: { listRecent: mockDivisionMovementsListRecent },
     },
   }),
 }));
@@ -75,6 +83,8 @@ function mockAllEmpty() {
   mockChallengesList.mockResolvedValue([]);
   mockPromosList.mockResolvedValue([]);
   mockPlayersList.mockResolvedValue([]);
+  mockDivisionsList.mockResolvedValue([]);
+  mockDivisionMovementsListRecent.mockResolvedValue([]);
 }
 
 describe('getActivity', () => {

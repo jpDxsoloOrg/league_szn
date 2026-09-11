@@ -16,6 +16,7 @@ const TYPE_TO_PARAM: Record<ActivityItemType, string> = {
   tournament_result: 'tournament',
   challenge_event: 'challenge',
   promo_posted: 'promo',
+  division_movement: 'division',
 };
 
 const TYPE_FILTERS: { value: '' | ActivityItemType; key: string }[] = [
@@ -25,6 +26,7 @@ const TYPE_FILTERS: { value: '' | ActivityItemType; key: string }[] = [
   { value: 'season_event', key: 'activity.types.season_event' },
   { value: 'tournament_result', key: 'activity.types.tournament_result' },
   { value: 'promo_posted', key: 'activity.types.promo_posted' },
+  { value: 'division_movement', key: 'activity.types.division_movement' },
 ];
 
 function getDetailLink(item: ActivityItem): string {
@@ -43,6 +45,8 @@ function getDetailLink(item: ActivityItem): string {
       return '/activity';
     case 'promo_posted':
       return meta['promoId'] ? `/promos/${meta['promoId']}` : '/promos';
+    case 'division_movement':
+      return '/standings';
     default:
       return '/';
   }
@@ -68,6 +72,7 @@ const TYPE_ICONS: Record<ActivityItemType, string> = {
   tournament_result: '🏅',
   challenge_event: '🤝',
   promo_posted: '🎤',
+  division_movement: '🪜',
 };
 
 export default function ActivityFeed() {

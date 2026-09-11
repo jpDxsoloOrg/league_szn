@@ -101,6 +101,18 @@ const tables = [
     BillingMode: 'PAY_PER_REQUEST',
   },
   {
+    TableName: `wwe-2k-league-api-division-movements-${STAGE}`,
+    KeySchema: [
+      { AttributeName: 'playerId', KeyType: 'HASH' },
+      { AttributeName: 'movedAt', KeyType: 'RANGE' },
+    ],
+    AttributeDefinitions: [
+      { AttributeName: 'playerId', AttributeType: 'S' },
+      { AttributeName: 'movedAt', AttributeType: 'S' },
+    ],
+    BillingMode: 'PAY_PER_REQUEST',
+  },
+  {
     TableName: `wwe-2k-league-api-events-${STAGE}`,
     KeySchema: [{ AttributeName: 'eventId', KeyType: 'HASH' }],
     AttributeDefinitions: [

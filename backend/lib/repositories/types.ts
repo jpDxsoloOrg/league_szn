@@ -2,8 +2,46 @@ export interface Division {
   divisionId: string;
   name: string;
   description?: string;
+  /**
+   * Position in the ladder. 0 = bottom (jobber tier). Higher = more
+   * prestigious. Divisions without a rank are unranked: sorted after ranked
+   * ones by `createdAt` and excluded from automatic promotion/demotion.
+   */
+  rank?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Active suspension on a player. Absent = not suspended. Reinstating removes
+ * the attribute (`players.clearSuspension`) rather than writing a null.
+ */
+export interface PlayerSuspension {
+  /** ISO timestamp. */
+  suspendedAt: string;
+  /** Admin userId/email that issued the suspension. */
+  suspendedBy?: string;
+  reason?: string;
+  /** Exactly one of `until` / `showsRequired` is set. YYYY-MM-DD. */
+  until?: string;
+  /** Number of completed events after `suspendedAt` required to serve. */
+  showsRequired?: number;
+}
+
+export type DivisionMovementDirection = 'promoted' | 'demoted' | 'manual';
+export type DivisionMovementTrigger = 'streak' | 'admin' | 'transfer';
+
+/** One row in the DivisionMovements table (PK playerId, SK movedAt). */
+export interface DivisionMovement {
+  playerId: string;
+  movedAt: string;
+  movementId: string;
+  fromDivisionId?: string;
+  toDivisionId: string;
+  direction: DivisionMovementDirection;
+  trigger: DivisionMovementTrigger;
+  matchId?: string;
+  streakCount?: number;
 }
 
 export interface Stipulation {
@@ -163,6 +201,12 @@ export interface Player {
   signatures?: WrestlerMove[];
   /** Up to MAX_MOVES finishers; see lib/movesets.ts for the limits. */
   finishers?: WrestlerMove[];
+  /**
+   * ISO timestamp of the last division change (manual, transfer, or
+   * automatic). Ladder streaks count only matches dated after this.
+   */
+  divisionChangedAt?: string;
+  suspension?: PlayerSuspension;
   createdAt: string;
   updatedAt: string;
 }

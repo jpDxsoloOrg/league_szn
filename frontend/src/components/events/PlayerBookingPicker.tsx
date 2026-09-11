@@ -13,6 +13,7 @@ import {
   CHECK_IN_STATUS_ORDER,
   isBookable,
 } from '../../utils/checkInStatus';
+import { formatSuspensionTooltip } from '../../utils/suspensions';
 import './PlayerBookingPicker.css';
 
 /** @deprecated Use CheckInStatus from utils/checkInStatus. Kept for callers. */
@@ -173,6 +174,18 @@ export default function PlayerBookingPicker({
     );
   };
 
+  // Purely informational: a suspended player is still bookable, the chip just
+  // makes sure whoever is booking knows before they commit the card.
+  const renderSuspendedChip = (player: Player) =>
+    player.suspension ? (
+      <span
+        className="booking-picker-suspended"
+        title={formatSuspensionTooltip(player.suspension, t)}
+      >
+        {t('events.booking.suspended', { defaultValue: 'Suspended' })}
+      </span>
+    ) : null;
+
   const hiddenCount = useMemo(() => {
     if (!hasCheckInData || showAll) return 0;
     return players.filter(
@@ -258,6 +271,7 @@ export default function PlayerBookingPicker({
               aria-hidden="true"
             />
             {selectedPlayer.currentWrestler} ({selectedPlayer.name})
+            {renderSuspendedChip(selectedPlayer)}
           </span>
         ) : (
           <span className="booking-picker-trigger-text booking-picker-trigger-text--empty">
@@ -314,13 +328,16 @@ export default function PlayerBookingPicker({
                 const isBooked = bookedPlayerIds?.has(player.playerId) ?? false;
                 const info = bookingInfoByPlayerId?.get(player.playerId);
                 const fresh = info !== undefined && isFreshBooking(info.lastBookedAt);
+                const suspended = player.suspension !== undefined;
                 return (
                   <button
                     key={player.playerId}
                     type="button"
                     className={`booking-picker-option booking-picker-option--${group.status}${
                       isBooked ? ' booking-picker-option--booked' : ''
-                    }${fresh ? ' booking-picker-option--fresh' : ''}`}
+                    }${fresh ? ' booking-picker-option--fresh' : ''}${
+                      suspended ? ' booking-picker-option--suspended' : ''
+                    }`}
                     role="option"
                     aria-selected={isSelected(player.playerId)}
                     onClick={() => handleSelect(player.playerId)}
@@ -332,6 +349,7 @@ export default function PlayerBookingPicker({
                     <span className="booking-picker-option-text">
                       {player.currentWrestler} ({player.name})
                     </span>
+                    {renderSuspendedChip(player)}
                     {multi && isSelected(player.playerId) && (
                       <span className="booking-picker-check" aria-hidden="true">✓</span>
                     )}

@@ -16,7 +16,11 @@ export type NotificationType =
   | 'rivalry_reviewed'
   | 'rivalry_message'
   | 'rivalry_request'
-  | 'rivalry_status_change';
+  | 'rivalry_status_change'
+  | 'division_promoted'
+  | 'division_demoted'
+  | 'player_suspended'
+  | 'player_reinstated';
 
 /** Set of notification types scoped to a rivalry source. */
 export type RivalryNotificationType =
@@ -25,7 +29,7 @@ export type RivalryNotificationType =
   | 'rivalry_status_change'
   | 'rivalry_reviewed';
 
-export type NotificationSourceType = 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'match_invitation' | 'rivalry';
+export type NotificationSourceType = 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'storyline_request' | 'match_invitation' | 'rivalry' | 'division' | 'suspension';
 
 export interface CreateNotificationParams {
   userId: string;

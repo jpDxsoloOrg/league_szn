@@ -103,6 +103,14 @@ export class InMemoryRosterRepository implements RosterRepository {
       }
       return null;
     },
+
+    clearSuspension: async (playerId: string): Promise<void> => {
+      const existing = this.playersStore.get(playerId);
+      if (!existing) throw new NotFoundError('Player', playerId);
+      const updated: Player = { ...existing, updatedAt: new Date().toISOString() };
+      delete updated.suspension;
+      this.playersStore.set(playerId, updated);
+    },
   };
 
   // ─── tagTeams ───────────────────────────────────────────────────────

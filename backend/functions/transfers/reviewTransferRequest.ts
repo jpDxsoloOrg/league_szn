@@ -51,10 +51,25 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const playerId = transferRequest.playerId;
 
-    // If approved, update the player's divisionId
+    // If approved, move the player and record the movement so the ladder
+    // streak window resets from the transfer date.
     if (status === 'approved') {
       const toDivisionId = transferRequest.toDivisionId;
-      await repos.roster.players.update(playerId, { divisionId: toDivisionId });
+      const now = new Date().toISOString();
+      const before = await repos.roster.players.findById(playerId);
+      await repos.roster.players.update(playerId, { divisionId: toDivisionId, divisionChangedAt: now });
+      try {
+        await repos.leagueOps.divisionMovements.create({
+          playerId,
+          fromDivisionId: before?.divisionId ?? transferRequest.fromDivisionId,
+          toDivisionId,
+          direction: 'manual',
+          trigger: 'transfer',
+          movedAt: now,
+        });
+      } catch (movementError: unknown) {
+        console.error('Failed to record division movement:', movementError);
+      }
     }
 
     // Look up the player's userId to send a notification

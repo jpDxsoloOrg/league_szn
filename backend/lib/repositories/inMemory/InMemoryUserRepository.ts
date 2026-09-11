@@ -1,7 +1,11 @@
 import { v4 as uuidv4 } from 'uuid';
 import { NotFoundError } from '../errors';
-import type { FeatureFlags, RivalryHeatTunables } from '../SiteConfigRepository';
-import { DEFAULT_FEATURES, DEFAULT_HEAT_TUNABLES } from '../SiteConfigRepository';
+import type { FeatureFlags, RivalryHeatTunables, DivisionLadderRules } from '../SiteConfigRepository';
+import {
+  DEFAULT_FEATURES,
+  DEFAULT_HEAT_TUNABLES,
+  DEFAULT_DIVISION_LADDER_RULES,
+} from '../SiteConfigRepository';
 import type {
   UserRepository,
   NotificationPage,
@@ -315,6 +319,7 @@ class FantasyImpl implements FantasyMethods {
 class SiteConfigImpl implements SiteConfigMethods {
   features: FeatureFlags = { ...DEFAULT_FEATURES };
   heatTunables: RivalryHeatTunables = { ...DEFAULT_HEAT_TUNABLES };
+  divisionLadderRules: DivisionLadderRules = { ...DEFAULT_DIVISION_LADDER_RULES };
 
   async getFeatures(): Promise<FeatureFlags> {
     return { ...this.features };
@@ -332,6 +337,15 @@ class SiteConfigImpl implements SiteConfigMethods {
   async updateHeatTunables(patch: Partial<RivalryHeatTunables>): Promise<RivalryHeatTunables> {
     this.heatTunables = { ...this.heatTunables, ...patch };
     return { ...this.heatTunables };
+  }
+
+  async getDivisionLadderRules(): Promise<DivisionLadderRules> {
+    return { ...this.divisionLadderRules };
+  }
+
+  async updateDivisionLadderRules(patch: Partial<DivisionLadderRules>): Promise<DivisionLadderRules> {
+    this.divisionLadderRules = { ...this.divisionLadderRules, ...patch };
+    return { ...this.divisionLadderRules };
   }
 }
 

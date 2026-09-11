@@ -334,7 +334,8 @@
       "season_event": "Saisons",
       "tournament_result": "Turniere",
       "challenge_event": "Herausforderungen",
-      "promo_posted": "Promos"
+      "promo_posted": "Promos",
+      "division_movement": "Divisionen"
     },
     "timeAgo": {
       "justNow": "Gerade eben",
@@ -629,6 +630,90 @@
     }
   },
   "admin": {
+    "divisionLadder": {
+      "title": "Divisions-Leiter",
+      "subtitle": "Ordne die Divisionen von der Jobber-Stufe bis zur Top-Stufe und lege fest, welche Serien Spieler zwischen ihnen bewegen.",
+      "orderTitle": "Reihenfolge",
+      "orderHelp": "Ganz oben steht die prestigeträchtigste Division. Mit den Pfeilen kannst du die Reihenfolge ändern.",
+      "moveUp": "Nach oben",
+      "moveDown": "Nach unten",
+      "topTierCaption": "Top-Stufe — darüber wird niemand befördert",
+      "bottomTierCaption": "Jobber-Stufe — darunter wird niemand abgestuft",
+      "unrankedTitle": "Nicht in der Leiter",
+      "addToLadder": "Zur Leiter hinzufügen",
+      "rulesTitle": "Bewegungsregeln",
+      "enabled": "Automatische Beförderung und Abstufung",
+      "promoteWinStreak": "Beförderung nach Siegesserie",
+      "promoteHelp": "{{count}} Siege in Folge → eine Division nach oben",
+      "demoteLossStreak": "Abstufung nach Niederlagenserie",
+      "demoteHelp": "{{count}} Niederlagen in Folge → eine Division nach unten",
+      "save": "Leiter speichern",
+      "saved": "Leiter gespeichert.",
+      "saveError": "Die Leiter konnte nicht gespeichert werden.",
+      "loadError": "Die Divisions-Leiter konnte nicht geladen werden.",
+      "movementsTitle": "Letzte Bewegungen",
+      "movementsEmpty": "Noch keine Divisionswechsel.",
+      "colDate": "Datum",
+      "colPlayer": "Spieler",
+      "colFrom": "Von",
+      "colTo": "Nach",
+      "colDirection": "Richtung",
+      "colTrigger": "Auslöser",
+      "direction": {
+        "promoted": "Befördert",
+        "demoted": "Abgestuft",
+        "manual": "Manuell"
+      },
+      "trigger": {
+        "streak": "Serie",
+        "admin": "Admin",
+        "transfer": "Transfer"
+      },
+      "rankBadge": "Rang {{rank}}",
+      "manageLadderLink": "Divisions-Leiter verwalten"
+    },
+    "suspensions": {
+      "title": "Sperren",
+      "subtitle": "Suche einen Spieler, um ihn zu sperren, oder hebe eine Sperre vorzeitig auf.",
+      "searchLabel": "Spieler finden",
+      "searchPlaceholder": "Spieler suchen...",
+      "currentTitle": "Aktuelle Sperren",
+      "currentEmpty": "Aktuell ist niemand gesperrt.",
+      "colPlayer": "Spieler",
+      "colSince": "Seit",
+      "colCondition": "Bedingung",
+      "colProgress": "Fortschritt",
+      "colStatus": "Status",
+      "colActions": "Aktionen",
+      "reinstate": "Sperre aufheben",
+      "reinstateEarly": "Vorzeitig aufheben",
+      "reinstateNow": "Jetzt aufheben",
+      "eligible": "Sperre abgesessen",
+      "notEligible": "Noch gesperrt",
+      "untilDate": "Bis {{date}}",
+      "forShows": "{{count}} Shows",
+      "showsProgress": "{{served}} / {{required}} Shows",
+      "datePassed": "Datum {{date}} erreicht",
+      "showsServed": "{{served}} von {{required}} Shows abgesessen",
+      "suspendTitle": "{{name}} sperren",
+      "conditionLabel": "Gesperrt",
+      "conditionDate": "Bis zu einem Datum",
+      "conditionShows": "Für eine Anzahl Shows",
+      "dateLabel": "Gesperrt bis",
+      "showsLabel": "Anzahl Shows",
+      "reasonLabel": "Grund (optional)",
+      "reasonPlaceholder": "Warum wird dieser Spieler gesperrt?",
+      "cancel": "Abbrechen",
+      "confirmSuspend": "Sperren",
+      "suspended": "Gesperrt",
+      "suspendedSuccess": "{{name}} wurde gesperrt.",
+      "reinstatedSuccess": "Die Sperre von {{name}} wurde aufgehoben.",
+      "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+      "loadError": "Die Sperren konnten nicht geladen werden.",
+      "reinstateTitle": "Sperre von {{name}} aufheben",
+      "suspendedSince": "Gesperrt seit {{date}}",
+      "reason": "Grund: {{reason}}"
+    },
     "manageWrestlers": {
       "resetAll": "Alle Zuweisungen zurücksetzen",
       "resetting": "Wird zurückgesetzt...",
@@ -708,7 +793,9 @@
         "storylineRequests": "Storyline-Anfragen",
         "rivalries": "Rivalitäten",
         "heatConfig": "Heat-Einstellungen",
-        "dangerZone": "Gefahrenzone"
+        "dangerZone": "Gefahrenzone",
+        "divisionLadder": "Divisions-Leiter",
+        "suspensions": "Sperren"
       },
       "groups": {
         "matchOps": "Match-Operationen",
@@ -1486,7 +1573,10 @@
       "bookedUpcoming": "Gebucht {{when}}",
       "lastBooked": "Zuletzt gebucht {{when}}",
       "streakTitle": "{{count}} Matches in Serie: {{type}}",
-      "streakType": { "W": "Siege", "L": "Niederlagen", "D": "Unentschieden" }
+      "streakType": { "W": "Siege", "L": "Niederlagen", "D": "Unentschieden" },
+      "suspended": "Gesperrt",
+      "suspendedUntil": "Gesperrt bis {{date}}",
+      "suspendedShows": "Gesperrt für {{count}} Shows seit {{date}}"
     },
     "checkIn": {
       "title": "Bist du dabei?",
@@ -2100,7 +2190,17 @@
     "deleteAllRead": "Gelesene löschen",
     "typeStable": "Stable",
     "typeTagTeam": "Tag Team",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "Transfer",
+    "typeDivision": "Division",
+    "typeSuspension": "Sperre"
+  },
+  "suspensionsModal": {
+    "title": "Sperren abgesessen",
+    "subtitle": "Diese Spieler haben ihre Sperre abgesessen und können wieder freigegeben werden.",
+    "reinstate": "Sperre aufheben",
+    "reinstateAll": "Alle aufheben",
+    "remindLater": "Später erinnern",
+    "working": "Wird aufgehoben..."
   },
   "findMatch": {
     "title": "Match finden",

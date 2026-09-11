@@ -9,10 +9,12 @@ import type {
   Promo,
   Player,
   Championship,
+  Division,
+  DivisionMovement,
 } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 
-const ACTIVITY_TYPES = ['match', 'championship', 'challenge', 'promo', 'tournament', 'season'] as const;
+const ACTIVITY_TYPES = ['match', 'championship', 'challenge', 'promo', 'tournament', 'season', 'division'] as const;
 type ActivityTypeFilter = (typeof ACTIVITY_TYPES)[number];
 
 export type ActivityItemType =
@@ -21,7 +23,8 @@ export type ActivityItemType =
   | 'season_event'
   | 'tournament_result'
   | 'challenge_event'
-  | 'promo_posted';
+  | 'promo_posted'
+  | 'division_movement';
 
 export interface ActivityItem {
   id: string;
@@ -59,6 +62,37 @@ function buildPlayerNameMap(allPlayers: Player[]): Record<string, string> {
   return names;
 }
 
+function buildDivisionNameMap(allDivisions: Division[]): Record<string, string> {
+  const names: Record<string, string> = {};
+  for (const division of allDivisions) {
+    names[division.divisionId] = division.name || division.divisionId;
+  }
+  return names;
+}
+
+const DIVISION_MOVEMENTS_LIMIT = 50;
+
+function describeMovement(
+  movement: DivisionMovement,
+  playerName: string,
+  toDivisionName: string,
+): string {
+  const streak = movement.streakCount;
+  if (movement.direction === 'promoted') {
+    return streak
+      ? `${playerName} was promoted to ${toDivisionName} after a ${streak}-match win streak`
+      : `${playerName} was promoted to ${toDivisionName}`;
+  }
+  if (movement.direction === 'demoted') {
+    return streak
+      ? `${playerName} was demoted to ${toDivisionName} after a ${streak}-match losing streak`
+      : `${playerName} was demoted to ${toDivisionName}`;
+  }
+  return movement.trigger === 'transfer'
+    ? `${playerName} transferred to ${toDivisionName}`
+    : `${playerName} was moved to ${toDivisionName}`;
+}
+
 function buildChampionshipNameMap(allChampionships: Championship[]): Record<string, string> {
   const names: Record<string, string> = {};
   for (const championship of allChampionships) {
@@ -70,7 +104,14 @@ function buildChampionshipNameMap(allChampionships: Championship[]): Record<stri
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { limit, cursor, typeFilter } = parseQuery(event);
-    const { competition: { matches, championships, tournaments }, season: { seasons }, user: { challenges }, content: { promos }, roster: { players } } = getRepositories();
+    const {
+      competition: { matches, championships, tournaments },
+      season: { seasons },
+      user: { challenges },
+      content: { promos },
+      roster: { players },
+      leagueOps: { divisions, divisionMovements },
+    } = getRepositories();
 
     const includeMatch = !typeFilter || typeFilter === 'match';
     const includeChampionship = !typeFilter || typeFilter === 'championship';
@@ -78,6 +119,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const includeTournament = !typeFilter || typeFilter === 'tournament';
     const includeChallenge = !typeFilter || typeFilter === 'challenge';
     const includePromo = !typeFilter || typeFilter === 'promo';
+    const includeDivision = !typeFilter || typeFilter === 'division';
 
     const rawItems: { type: ActivityItemType; timestamp: string; id: string; summary: string; metadata: Record<string, unknown> }[] = [];
     const playerIds = new Set<string>();
@@ -244,14 +286,42 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    const divisionIds = new Set<string>();
+    if (includeDivision) {
+      const movements: DivisionMovement[] = await divisionMovements.listRecent(DIVISION_MOVEMENTS_LIMIT);
+      for (const movement of movements) {
+        playerIds.add(movement.playerId);
+        divisionIds.add(movement.toDivisionId);
+        if (movement.fromDivisionId) divisionIds.add(movement.fromDivisionId);
+        rawItems.push({
+          type: 'division_movement',
+          timestamp: movement.movedAt,
+          id: `division-movement-${movement.movementId}`,
+          summary: '',
+          metadata: {
+            movementId: movement.movementId,
+            playerId: movement.playerId,
+            fromDivisionId: movement.fromDivisionId,
+            toDivisionId: movement.toDivisionId,
+            direction: movement.direction,
+            trigger: movement.trigger,
+            matchId: movement.matchId,
+            streakCount: movement.streakCount,
+          },
+        });
+      }
+    }
+
     // Batch-fetch all players and championships to build name maps (eliminates N+1 lookups)
-    const [allPlayers, allChampionships] = await Promise.all([
+    const [allPlayers, allChampionships, allDivisions] = await Promise.all([
       players.list(),
       championshipIds.size > 0 ? championships.list() : Promise.resolve([]),
+      divisionIds.size > 0 ? divisions.list() : Promise.resolve([]),
     ]);
 
     const playerNames = buildPlayerNameMap(allPlayers);
     const championshipNames = buildChampionshipNameMap(allChampionships);
+    const divisionNames = buildDivisionNameMap(allDivisions);
 
     for (const item of rawItems) {
       if (item.type === 'match_result') {
@@ -295,6 +365,26 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const meta = item.metadata;
         meta.playerName = playerNames[meta.playerId as string] || meta.playerId;
         item.summary = `${meta.playerName} posted a promo`;
+      } else if (item.type === 'division_movement') {
+        const meta = item.metadata;
+        const toDivisionId = meta.toDivisionId as string;
+        const fromDivisionId = meta.fromDivisionId as string | undefined;
+        meta.playerName = playerNames[meta.playerId as string] || meta.playerId;
+        meta.toDivisionName = divisionNames[toDivisionId] || toDivisionId;
+        if (fromDivisionId) meta.fromDivisionName = divisionNames[fromDivisionId] || fromDivisionId;
+        item.summary = describeMovement(
+          {
+            playerId: meta.playerId as string,
+            movedAt: item.timestamp,
+            movementId: meta.movementId as string,
+            toDivisionId,
+            direction: meta.direction as DivisionMovement['direction'],
+            trigger: meta.trigger as DivisionMovement['trigger'],
+            streakCount: meta.streakCount as number | undefined,
+          },
+          meta.playerName as string,
+          meta.toDivisionName as string,
+        );
       }
     }
 

@@ -238,6 +238,34 @@
   box-shadow: inset 3px 0 0 rgba(212, 175, 55, 0.7);
 }
 
+/* Suspended: same rail treatment as --fresh but red, and muted text. The row
+   is still selectable — this is a warning, not a lock. When a player is both
+   fresh and suspended the suspension wins the rail. */
+.booking-picker-option--suspended {
+  box-shadow: inset 3px 0 0 rgba(220, 53, 69, 0.75);
+}
+
+.booking-picker-option--suspended .booking-picker-option-text {
+  opacity: 0.65;
+}
+
+.booking-picker-suspended {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #e57373;
+  border: 1px solid rgba(220, 53, 69, 0.5);
+  cursor: help;
+}
+
+.booking-picker-trigger-text .booking-picker-suspended {
+  margin-left: 6px;
+}
+
 /* The text takes all free space so the trailing tick / badge / meta hug
    the right edge in order instead of splitting the row's auto margins. */
 .booking-picker-option-text {

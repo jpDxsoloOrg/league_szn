@@ -299,11 +299,14 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
     // ── Divisions ──────────────────────────────────────────────
     console.log('Creating divisions...');
+    // Ladder ranks: 0 = bottom (jobber tier) ... 3 = top. Matches the
+    // Division.rank contract used by lib/divisionLadder.ts.
     const divisions = [
       {
         divisionId: uuidv4(),
         name: 'Raw',
         description: 'The flagship Monday Night Raw roster',
+        rank: 3,
         createdAt: now,
         updatedAt: now,
       },
@@ -311,6 +314,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         divisionId: uuidv4(),
         name: 'SmackDown',
         description: 'The Friday Night SmackDown roster',
+        rank: 2,
         createdAt: now,
         updatedAt: now,
       },
@@ -318,6 +322,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         divisionId: uuidv4(),
         name: 'NXT',
         description: 'The developmental brand for rising stars',
+        rank: 1,
         createdAt: now,
         updatedAt: now,
       },
@@ -325,6 +330,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         divisionId: uuidv4(),
         name: 'Young Boys',
         description: 'Default starting division for new wrestlers',
+        rank: 0,
         createdAt: now,
         updatedAt: now,
       },

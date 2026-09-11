@@ -8,6 +8,7 @@ import { MAX_MOVE_NAME_LENGTH } from '../types';
 import { WRESTLER_NAME_ENTRY_MODE } from '../config/wrestlerNameEntry';
 import { buildWrestlerOptionGroups } from '../utils/wrestlerOptions';
 import { useAnnouncementOpen } from '../hooks/useAnnouncementOpen';
+import { setProfileSetupOpen } from '../hooks/useProfileSetupOpen';
 import {
   PROFILE_SETUP_SNOOZE_KEY,
   getProfileSetupGaps,
@@ -220,7 +221,14 @@ export default function ProfileCompletionModal() {
     setDismissed(true);
   };
 
-  if (!show || !profile || excluded || announcementOpen) return null;
+  // Let later overlays (the suspension-reinstate modal) wait while this is up.
+  const isOpen = show && profile !== null && !excluded && !announcementOpen;
+  useEffect(() => {
+    setProfileSetupOpen(isOpen);
+    return () => setProfileSetupOpen(false);
+  }, [isOpen]);
+
+  if (!isOpen) return null;
 
   const setupItems = missing.wrestler || missing.signature || missing.finisher;
   const showChecklist = setupItems || !missing.name || !missing.psnId;

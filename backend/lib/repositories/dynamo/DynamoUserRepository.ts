@@ -21,8 +21,12 @@ import type {
   FantasyPick,
   WrestlerCost,
 } from '../types';
-import type { FeatureFlags, RivalryHeatTunables } from '../SiteConfigRepository';
-import { DEFAULT_FEATURES, DEFAULT_HEAT_TUNABLES } from '../SiteConfigRepository';
+import type { FeatureFlags, RivalryHeatTunables, DivisionLadderRules } from '../SiteConfigRepository';
+import {
+  DEFAULT_FEATURES,
+  DEFAULT_HEAT_TUNABLES,
+  DEFAULT_DIVISION_LADDER_RULES,
+} from '../SiteConfigRepository';
 import type { CrudRepository } from '../CrudRepository';
 
 // ─── Notifications sub-object ──────────────────────────────────────
@@ -496,6 +500,33 @@ class SiteConfigDelegate implements SiteConfigMethods {
       Item: {
         configKey: 'rivalryHeatTunables',
         tunables: updated,
+        updatedAt: new Date().toISOString(),
+      },
+    });
+
+    return updated;
+  }
+
+  async getDivisionLadderRules(): Promise<DivisionLadderRules> {
+    const result = await dynamoDb.get({
+      TableName: TableNames.SITE_CONFIG,
+      Key: { configKey: 'divisionLadder' },
+    });
+
+    const stored = result.Item?.rules as Partial<DivisionLadderRules> | undefined;
+    // Merge so missing fields fall back to defaults, same as heat tunables.
+    return { ...DEFAULT_DIVISION_LADDER_RULES, ...(stored ?? {}) };
+  }
+
+  async updateDivisionLadderRules(patch: Partial<DivisionLadderRules>): Promise<DivisionLadderRules> {
+    const current = await this.getDivisionLadderRules();
+    const updated = { ...current, ...patch };
+
+    await dynamoDb.put({
+      TableName: TableNames.SITE_CONFIG,
+      Item: {
+        configKey: 'divisionLadder',
+        rules: updated,
         updatedAt: new Date().toISOString(),
       },
     });

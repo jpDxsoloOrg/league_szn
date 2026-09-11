@@ -49,6 +49,49 @@
   margin-bottom: 1.5rem;
 }
 
+.divisions-list-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.divisions-ladder-link {
+  color: #d4af37;
+  font-size: 0.875rem;
+  text-decoration: none;
+  margin-bottom: 1.5rem;
+}
+
+.divisions-ladder-link:hover {
+  text-decoration: underline;
+}
+
+.division-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.division-card-title h4 {
+  margin: 0;
+}
+
+.division-rank-badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background-color: #2a2a2a;
+  border: 1px solid #d4af37;
+  color: #d4af37;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .divisions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

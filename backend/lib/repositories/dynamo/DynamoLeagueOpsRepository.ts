@@ -13,6 +13,8 @@ import type {
   CompanyPatch,
   DivisionCreateInput,
   DivisionPatch,
+  DivisionMovementCreateInput,
+  DivisionMovementsRepository,
   LocationCreateInput,
   LocationPatch,
   LocationBulkImportResult,
@@ -29,8 +31,24 @@ import type {
   Show,
   Company,
   Division,
+  DivisionMovement,
   Location,
 } from '../types';
+
+/** Fills in `movementId` / `movedAt` when the caller did not supply them. */
+export function buildDivisionMovement(input: DivisionMovementCreateInput): DivisionMovement {
+  return {
+    playerId: input.playerId,
+    movedAt: input.movedAt ?? new Date().toISOString(),
+    movementId: input.movementId ?? uuidv4(),
+    ...(input.fromDivisionId !== undefined ? { fromDivisionId: input.fromDivisionId } : {}),
+    toDivisionId: input.toDivisionId,
+    direction: input.direction,
+    trigger: input.trigger,
+    ...(input.matchId !== undefined ? { matchId: input.matchId } : {}),
+    ...(input.streakCount !== undefined ? { streakCount: input.streakCount } : {}),
+  };
+}
 
 export class DynamoLeagueOpsRepository implements LeagueOpsRepository {
   // ─── Companies (pure CRUD) ────────────────────────────────────────
@@ -68,10 +86,41 @@ export class DynamoLeagueOpsRepository implements LeagueOpsRepository {
       divisionId: id,
       name: input.name,
       ...(input.description !== undefined ? { description: input.description } : {}),
+      ...(input.rank !== undefined ? { rank: input.rank } : {}),
       createdAt: now,
       updatedAt: now,
     }),
   });
+
+  // ─── Division movements (append-only log) ────────────────────────
+
+  divisionMovements: DivisionMovementsRepository = {
+    create: async (input: DivisionMovementCreateInput): Promise<DivisionMovement> => {
+      const item = buildDivisionMovement(input);
+      await dynamoDb.put({ TableName: TableNames.DIVISION_MOVEMENTS, Item: item });
+      return item;
+    },
+
+    listByPlayer: async (playerId: string): Promise<DivisionMovement[]> => {
+      const items = await dynamoDb.queryAll({
+        TableName: TableNames.DIVISION_MOVEMENTS,
+        KeyConditionExpression: 'playerId = :pid',
+        ExpressionAttributeValues: { ':pid': playerId },
+        ScanIndexForward: false,
+      });
+      return items as unknown as DivisionMovement[];
+    },
+
+    listRecent: async (limit: number): Promise<DivisionMovement[]> => {
+      // The table is small (one row per movement), so a scan + sort is fine.
+      const items = await dynamoDb.scanAll({
+        TableName: TableNames.DIVISION_MOVEMENTS,
+      });
+      const movements = items as unknown as DivisionMovement[];
+      movements.sort((a, b) => b.movedAt.localeCompare(a.movedAt));
+      return movements.slice(0, Math.max(0, limit));
+    },
+  };
 
   // ─── Locations (CRUD + bulkImport) ────────────────────────────────
 

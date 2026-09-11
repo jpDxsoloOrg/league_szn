@@ -198,6 +198,31 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('No valid fields to update');
     }
 
+    // A manual division change resets the ladder streak window and is
+    // recorded as a movement so it shows on the ladder screen and activity.
+    const divisionChanged =
+      body.divisionId !== undefined && (patch.divisionId ?? undefined) !== (player.divisionId ?? undefined);
+    const now = new Date().toISOString();
+    if (divisionChanged) {
+      patch.divisionChangedAt = now;
+    }
+
+    const recordManualMovement = async (): Promise<void> => {
+      if (!divisionChanged || !patch.divisionId) return;
+      try {
+        await leagueOps.divisionMovements.create({
+          playerId,
+          fromDivisionId: player.divisionId,
+          toDivisionId: patch.divisionId,
+          direction: 'manual',
+          trigger: 'admin',
+          movedAt: now,
+        });
+      } catch (movementError: unknown) {
+        console.error('Failed to record division movement:', movementError);
+      }
+    };
+
     // If any FK transition happened, stage the player update + wrestler
     // release/assign atomically. Otherwise fall through to the simple update.
     if (toRelease.length > 0 || toAssign.length > 0) {
@@ -211,11 +236,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }
         tx.updatePlayer(playerId, patch as Record<string, unknown>);
       });
+      await recordManualMovement();
       const refreshed = await roster.players.findById(playerId);
       return success(refreshed);
     }
 
     const updated = await roster.players.update(playerId, patch);
+    await recordManualMovement();
     return success(updated);
   } catch (err) {
     if (err instanceof NotFoundError) return notFound(err.message);

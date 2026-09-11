@@ -7,6 +7,9 @@ import type {
   Show,
   Company,
   Division,
+  DivisionMovement,
+  DivisionMovementDirection,
+  DivisionMovementTrigger,
   Location,
 } from './types';
 
@@ -88,11 +91,37 @@ export interface CompanyPatch {
 export interface DivisionCreateInput {
   name: string;
   description?: string;
+  rank?: number;
 }
 
 export interface DivisionPatch {
   name?: string;
   description?: string;
+  rank?: number;
+}
+
+// ─── Division movement types ────────────────────────────────────────
+
+export interface DivisionMovementCreateInput {
+  playerId: string;
+  fromDivisionId?: string;
+  toDivisionId: string;
+  direction: DivisionMovementDirection;
+  trigger: DivisionMovementTrigger;
+  matchId?: string;
+  streakCount?: number;
+  /** Generated (uuid) when omitted. */
+  movementId?: string;
+  /** Defaults to now (ISO) when omitted. */
+  movedAt?: string;
+}
+
+export interface DivisionMovementsRepository {
+  create(input: DivisionMovementCreateInput): Promise<DivisionMovement>;
+  /** All movements for one player, newest first. */
+  listByPlayer(playerId: string): Promise<DivisionMovement[]>;
+  /** Most recent movements across all players, newest first. */
+  listRecent(limit: number): Promise<DivisionMovement[]>;
 }
 
 // ─── Location input types ───────────────────────────────────────────
@@ -203,6 +232,7 @@ export interface LeagueOpsRepository {
   };
   companies: CrudRepository<Company, CompanyCreateInput, CompanyPatch>;
   divisions: CrudRepository<Division, DivisionCreateInput, DivisionPatch>;
+  divisionMovements: DivisionMovementsRepository;
   locations: LocationsMethods;
   matchmaking: MatchmakingMethods;
 }

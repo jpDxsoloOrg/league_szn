@@ -13,6 +13,10 @@ export interface Player {
   imageUrl?: string;
   psnId?: string;
   divisionId?: string;
+  /** ISO timestamp of the last division change (manual, transfer, or automatic). Ladder streaks count only matches after this. */
+  divisionChangedAt?: string;
+  /** Active suspension. Absent when the player is not suspended. */
+  suspension?: PlayerSuspension;
   stableId?: string;
   tagTeamId?: string;
   alignment?: 'face' | 'heel' | 'neutral';
@@ -298,8 +302,84 @@ export interface Division {
   divisionId: string;
   name: string;
   description?: string;
+  /** Position in the ladder. 0 = bottom (jobber tier). Higher = more prestigious. Unranked divisions are excluded from auto movement. */
+  rank?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Active suspension stored on a Player. Exactly one of `until` / `showsRequired` is set. */
+export interface PlayerSuspension {
+  /** ISO timestamp */
+  suspendedAt: string;
+  /** Admin userId/email who issued the suspension */
+  suspendedBy?: string;
+  reason?: string;
+  /** Calendar day (YYYY-MM-DD) the suspension ends */
+  until?: string;
+  /** Number of completed events after `suspendedAt` that must pass */
+  showsRequired?: number;
+}
+
+/** Site-config document `divisionLadder`: streak thresholds for automatic promotion/demotion. */
+export interface DivisionLadderRules {
+  enabled: boolean;
+  /** Consecutive wins that move a player up one division (2..20) */
+  promoteWinStreak: number;
+  /** Consecutive losses that move a player down one division (2..20) */
+  demoteLossStreak: number;
+}
+
+/** One row of the DivisionMovements log. */
+export interface DivisionMovement {
+  movementId: string;
+  playerId: string;
+  /** ISO timestamp */
+  movedAt: string;
+  fromDivisionId?: string;
+  toDivisionId: string;
+  direction: 'promoted' | 'demoted' | 'manual';
+  trigger: 'streak' | 'admin' | 'transfer';
+  /** Match that completed the streak (trigger = streak) */
+  matchId?: string;
+  streakCount?: number;
+}
+
+/** GET/PUT /admin/division-ladder response. `divisions` is sorted by rank (bottom first). */
+export interface DivisionLadderResponse {
+  rules: DivisionLadderRules;
+  divisions: Division[];
+  recentMovements: DivisionMovement[];
+}
+
+/** Body for PUT /admin/division-ladder. `order` is the full list of divisionIds bottom → top. */
+export interface DivisionLadderUpdateInput {
+  rules?: Partial<DivisionLadderRules>;
+  order?: string[];
+}
+
+/** Body for POST /players/{id}/suspend. Exactly one of `until` / `showsRequired` is required. */
+export interface SuspendPlayerInput {
+  /** YYYY-MM-DD */
+  until?: string;
+  showsRequired?: number;
+  reason?: string;
+}
+
+/** One row of GET /players/suspensions: player summary plus computed eligibility. */
+export interface SuspensionRow {
+  playerId: string;
+  name: string;
+  currentWrestler: string;
+  imageUrl?: string;
+  divisionId?: string;
+  suspension: PlayerSuspension;
+  /** Completed events since `suspension.suspendedAt` */
+  showsServed: number;
+  /** Null for date-based suspensions */
+  showsRemaining: number | null;
+  eligibleForReinstatement: boolean;
+  eligibleReason: 'date' | 'shows' | null;
 }
 
 export interface Company {
@@ -376,7 +456,8 @@ export type ActivityItemType =
   | 'season_event'
   | 'tournament_result'
   | 'challenge_event'
-  | 'promo_posted';
+  | 'promo_posted'
+  | 'division_movement';
 
 export interface ActivityItem {
   id: string;
@@ -420,7 +501,7 @@ export interface Video {
   updatedAt: string;
 }
 
-export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'transfer_reviewed' | 'match_invitation' | 'match_invitation_declined' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change';
+export type NotificationType = 'promo_mention' | 'challenge_received' | 'match_scheduled' | 'announcement' | 'stable_invitation' | 'tag_team_invitation' | 'transfer_reviewed' | 'match_invitation' | 'match_invitation_declined' | 'rivalry_reviewed' | 'rivalry_message' | 'rivalry_request' | 'rivalry_status_change' | 'division_promoted' | 'division_demoted' | 'player_suspended' | 'player_reinstated';
 
 export interface AppNotification {
   notificationId: string;
@@ -428,7 +509,7 @@ export interface AppNotification {
   type: NotificationType;
   message: string;
   sourceId: string;
-  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'match_invitation' | 'match_invitation_declined' | 'rivalry';
+  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'match_invitation' | 'match_invitation_declined' | 'rivalry' | 'division' | 'suspension';
   isRead: boolean;
   createdAt: string;
 }

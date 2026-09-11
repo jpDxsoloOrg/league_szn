@@ -88,6 +88,7 @@ import FindMatchPage from './components/matchmaking/FindMatchPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import FeatureRoute from './components/FeatureRoute';
 import ProfileCompletionModal from './components/ProfileCompletionModal';
+import SuspensionReinstateModal from './components/SuspensionReinstateModal';
 import Highlights from './components/Highlights';
 import AnnouncementModal from './components/AnnouncementModal';
 import './App.css';
@@ -131,6 +132,7 @@ function AppLayout() {
         </>
       )}
       <ProfileCompletionModal />
+      <SuspensionReinstateModal />
       <AnnouncementModal />
       <main>
           <Routes>

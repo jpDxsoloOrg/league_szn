@@ -6,6 +6,7 @@ import AdminHub, { AdminHubBackRow } from './AdminHub';
 
 import ManagePlayers from './ManagePlayers';
 import ManageDivisions from './ManageDivisions';
+import ManageDivisionLadder from './ManageDivisionLadder';
 import ManageWrestlers from './ManageWrestlers';
 import ManageMatchConfig from './ManageMatchConfig';
 import ScheduleMatch from './ScheduleMatch';
@@ -38,10 +39,11 @@ import ManageTransfers from './ManageTransfers';
 import ManageStorylineRequests from './ManageStorylineRequests';
 import AdminRivalries from './AdminRivalries';
 import AdminHeatConfig from './AdminHeatConfig';
+import ManageSuspensions from './ManageSuspensions';
 
-type AdminTab = 'players' | 'divisions' | 'wrestlers' | 'match-config' | 'schedule' | 'championships' | 'tournaments' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'contender-config' | 'contender-overrides' | 'companies' | 'locations' | 'shows' | 'factions' | 'tag-teams' | 'announcements' | 'videos' | 'overalls' | 'transfers' | 'storyline-requests' | 'rivalries' | 'heat-config' | 'danger' | 'users' | 'features';
+type AdminTab = 'players' | 'divisions' | 'division-ladder' | 'suspensions' | 'wrestlers' | 'match-config' | 'schedule' | 'championships' | 'tournaments' | 'promos' | 'seasons' | 'season-awards' | 'events' | 'contender-config' | 'contender-overrides' | 'companies' | 'locations' | 'shows' | 'factions' | 'tag-teams' | 'announcements' | 'videos' | 'overalls' | 'transfers' | 'storyline-requests' | 'rivalries' | 'heat-config' | 'danger' | 'users' | 'features';
 
-const VALID_TABS: AdminTab[] = ['players', 'divisions', 'wrestlers', 'match-config', 'schedule', 'championships', 'tournaments', 'promos', 'seasons', 'season-awards', 'events', 'contender-config', 'contender-overrides', 'companies', 'locations', 'shows', 'factions', 'tag-teams', 'announcements', 'videos', 'overalls', 'transfers', 'storyline-requests', 'rivalries', 'heat-config', 'danger', 'users', 'features'];
+const VALID_TABS: AdminTab[] = ['players', 'divisions', 'division-ladder', 'suspensions', 'wrestlers', 'match-config', 'schedule', 'championships', 'tournaments', 'promos', 'seasons', 'season-awards', 'events', 'contender-config', 'contender-overrides', 'companies', 'locations', 'shows', 'factions', 'tag-teams', 'announcements', 'videos', 'overalls', 'transfers', 'storyline-requests', 'rivalries', 'heat-config', 'danger', 'users', 'features'];
 
 
 export default function AdminPanel() {
@@ -93,6 +95,8 @@ export default function AdminPanel() {
     features: <ManageFeatures />,
     players: <ManagePlayers />,
     divisions: <ManageDivisions />,
+    'division-ladder': <ManageDivisionLadder />,
+    suspensions: <ManageSuspensions />,
     wrestlers: <ManageWrestlers />,
     'match-config': <ManageMatchConfig />,
     schedule: <ScheduleMatch />,

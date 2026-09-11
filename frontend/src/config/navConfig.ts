@@ -153,6 +153,8 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     items: [
       { path: '/admin/players', i18nKey: 'admin.panel.tabs.managePlayers' },
       { path: '/admin/divisions', i18nKey: 'admin.panel.tabs.divisions' },
+      { path: '/admin/division-ladder', i18nKey: 'admin.panel.tabs.divisionLadder' },
+      { path: '/admin/suspensions', i18nKey: 'admin.panel.tabs.suspensions' },
       { path: '/admin/wrestlers', i18nKey: 'admin.panel.tabs.wrestlers' },
       { path: '/admin/transfers', i18nKey: 'admin.panel.tabs.transfers' },
       { path: '/admin/seasons', i18nKey: 'admin.panel.tabs.seasons' },
@@ -228,7 +230,7 @@ export function getUserGroupForPath(pathname: string): string | null {
 /** Path → admin group key */
 export function getAdminGroupForPath(pathname: string): string | null {
   const matchDay = ['/admin/schedule', '/admin/events', '/admin/standalone-matches', '/admin/match-config'];
-  const rosterSeasons = ['/admin/players', '/admin/divisions', '/admin/wrestlers', '/admin/transfers', '/admin/seasons', '/admin/season-awards'];
+  const rosterSeasons = ['/admin/players', '/admin/divisions', '/admin/division-ladder', '/admin/suspensions', '/admin/wrestlers', '/admin/transfers', '/admin/seasons', '/admin/season-awards'];
   const titlesTournaments = ['/admin/championships', '/admin/tournaments', '/admin/companies', '/admin/locations', '/admin/shows'];
   const adminRankings = ['/admin/contender-config', '/admin/contender-overrides'];
   const content = ['/admin/announcements', '/admin/videos', '/admin/storyline-requests', '/admin/promos', '/admin/rivalries', '/admin/heat-config'];
@@ -268,6 +270,8 @@ export function getPageInfo(path: string, t: TranslateFn): PageInfo {
       'season-awards': t('admin.panel.tabs.seasonAwards'),
       players: t('admin.panel.tabs.managePlayers'),
       divisions: t('admin.panel.tabs.divisions'),
+      'division-ladder': t('admin.panel.tabs.divisionLadder'),
+      suspensions: t('admin.panel.tabs.suspensions'),
       championships: t('admin.panel.tabs.championships'),
       tournaments: t('admin.panel.tabs.tournaments'),
       challenges: t('admin.panel.tabs.challenges'),
@@ -286,6 +290,8 @@ export function getPageInfo(path: string, t: TranslateFn): PageInfo {
       'match-config': t('admin.panel.groups.matchDay'),
       players: t('admin.panel.groups.rosterSeasons'),
       divisions: t('admin.panel.groups.rosterSeasons'),
+      'division-ladder': t('admin.panel.groups.rosterSeasons'),
+      suspensions: t('admin.panel.groups.rosterSeasons'),
       transfers: t('admin.panel.groups.rosterSeasons'),
       seasons: t('admin.panel.groups.rosterSeasons'),
       'season-awards': t('admin.panel.groups.rosterSeasons'),

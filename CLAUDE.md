@@ -45,7 +45,7 @@ A serverless web application for managing a WWE 2K league with player standings,
 |---------|---------------|
 | **AWS Lambda** | Serverless functions for all API endpoints - organized by feature: `auth/`, `players/`, `matches/`, `championships/`, `tournaments/`, `standings/`, `seasons/`, `divisions/`, `images/`, `admin/` |
 | **API Gateway** | REST API exposing Lambda functions via HTTP; CORS configured for browser access; custom authorizer validates JWT tokens for admin routes |
-| **DynamoDB** | NoSQL database with 8 tables: Players, Matches (with TournamentIndex GSI), Championships, ChampionshipHistory, Tournaments, Seasons, SeasonStandings (with PlayerIndex GSI), Divisions - all use on-demand (PAY_PER_REQUEST) billing |
+| **DynamoDB** | NoSQL database with 9 tables: Players, Matches (with TournamentIndex GSI), Championships, ChampionshipHistory, Tournaments, Seasons, SeasonStandings (with PlayerIndex GSI), Divisions, DivisionMovements - all use on-demand (PAY_PER_REQUEST) billing |
 | **Amazon S3** | Two purposes: (1) hosts frontend static files, (2) stores player/championship images with public read access and presigned URL uploads |
 | **CloudFront** | CDN in front of S3; custom error responses redirect 403/404 to /index.html for SPA routing; HTTPS enforced |
 | **AWS Cognito** | User Pool for admin authentication - username-based login (not email), 24hr access tokens, 30-day refresh tokens |
@@ -126,7 +126,7 @@ wwe-2k-league/
 
 ### Players Table
 - **PK**: `playerId`
-- Attributes: name, currentWrestler, wins, losses, draws, imageUrl, divisionId, createdAt, updatedAt
+- Attributes: name, currentWrestler, wins, losses, draws, imageUrl, divisionId, divisionChangedAt (ISO timestamp of last division change), suspension (PlayerSuspension object with suspendedAt, until/showsRequired), createdAt, updatedAt
 
 ### Matches Table
 - **PK**: `matchId`
@@ -157,6 +157,17 @@ wwe-2k-league/
 - **SK**: `playerId`
 - Attributes: wins, losses, draws, updatedAt
 - **GSI**: PlayerIndex (playerId, seasonId) - For querying all seasons a player participated in
+
+### Divisions Table
+- **PK**: `divisionId`
+- Attributes: name, description, rank (position in the ladder; 0 = bottom/jobber tier), createdAt, updatedAt
+- Divisions without a rank are unranked and excluded from automatic ladder movements
+
+### Division Movements Table
+- **PK**: `playerId`
+- **SK**: `movedAt`
+- Attributes: movementId, fromDivisionId, toDivisionId, direction (promoted/demoted/manual), trigger (streak/admin/transfer), matchId, streakCount, createdAt
+- Tracks all division changes for audit trail and activity feed
 
 ## Key Features
 
@@ -262,8 +273,13 @@ All admin endpoints require a valid JWT token from Cognito in the `Authorization
 - `PUT /seasons/{id}` - Update season (end season, change name/dates)
 - `DELETE /seasons/{id}` - Delete season (cascade delete season standings)
 - `POST /divisions` - Create division
-- `PUT /divisions/{id}` - Update division
+- `PUT /divisions/{id}` - Update division (accepts rank)
 - `DELETE /divisions/{id}` - Delete division (fails if players assigned)
+- `GET /admin/division-ladder` - Get ladder rules, ranked divisions, and recent movements
+- `PUT /admin/division-ladder` - Update ladder rules and reorder divisions
+- `GET /players/suspensions` - List all suspended players with eligibility status
+- `POST /players/{id}/suspend` - Suspend a player until date or for number of shows
+- `POST /players/{id}/reinstate` - Remove suspension from a player
 - `POST /images/upload-url` - Generate presigned URL for image upload
 
 ## Common Tasks
@@ -436,6 +452,10 @@ constants — tune them there without touching handlers. The seed in
 `backend/functions/admin/seedData.ts` reads `HEAT_TIER_CENTRES` so
 seeded rivalries stay aligned with whatever bucket boundaries are
 configured.
+
+### Division ladder tunables
+
+Division ladder rules (enabled toggle, win streak threshold for promotion, loss streak threshold for demotion) are stored in the site config and can be updated via `/admin/division-ladder`. The defaults (`DEFAULT_DIVISION_LADDER_RULES`) live in `backend/lib/repositories/SiteConfigRepository.ts`. Promotion and demotion logic is in `backend/lib/divisionLadder.ts`.
 
 ## Troubleshooting
 

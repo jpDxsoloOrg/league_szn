@@ -39,6 +39,7 @@ export { transfersApi } from './transfers.api';
 export { storylineRequestsApi } from './storylineRequests.api';
 export { matchmakingApi } from './matchmaking.api';
 export { locationsApi } from './locations.api';
+export { divisionLadderApi } from './divisionLadder.api';
 
 // Type/interface re-exports
 export type { SiteFeatures } from './siteConfig.api';

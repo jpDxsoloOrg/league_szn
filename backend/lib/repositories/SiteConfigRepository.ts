@@ -53,9 +53,31 @@ export const DEFAULT_HEAT_TUNABLES: RivalryHeatTunables = {
   promoMaxReactionCount: 5,
 };
 
+/**
+ * Admin-tunable rules for the division ladder (automatic promotion and
+ * demotion on win/loss streaks). Stored as the `divisionLadder` site
+ * config document; missing fields fall back to the defaults on read.
+ */
+export interface DivisionLadderRules {
+  /** Master switch. When false, no automatic movement happens. */
+  enabled: boolean;
+  /** Consecutive wins that move a player up one division (2..20). */
+  promoteWinStreak: number;
+  /** Consecutive losses that move a player down one division (2..20). */
+  demoteLossStreak: number;
+}
+
+export const DEFAULT_DIVISION_LADDER_RULES: DivisionLadderRules = {
+  enabled: true,
+  promoteWinStreak: 5,
+  demoteLossStreak: 5,
+};
+
 export interface SiteConfigRepository {
   getFeatures(): Promise<FeatureFlags>;
   updateFeatures(patch: Partial<FeatureFlags>): Promise<FeatureFlags>;
   getHeatTunables(): Promise<RivalryHeatTunables>;
   updateHeatTunables(patch: Partial<RivalryHeatTunables>): Promise<RivalryHeatTunables>;
+  getDivisionLadderRules(): Promise<DivisionLadderRules>;
+  updateDivisionLadderRules(patch: Partial<DivisionLadderRules>): Promise<DivisionLadderRules>;
 }
