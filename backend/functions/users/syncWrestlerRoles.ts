@@ -13,6 +13,25 @@ const cognitoClient = new CognitoIdentityProviderClient({});
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
 
 /**
+ * Concurrency for the per-user Cognito lookups and the per-player writes.
+ * Sequential await blew the Lambda timeout on a production-sized pool; going
+ * fully unbounded risks Cognito throttling, so fan out in fixed batches.
+ */
+const BATCH_SIZE = 10;
+
+async function inBatches<T, R>(
+  items: T[],
+  worker: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  for (let i = 0; i < items.length; i += BATCH_SIZE) {
+    const batch = items.slice(i, i + BATCH_SIZE);
+    results.push(...(await Promise.all(batch.map(worker))));
+  }
+  return results;
+}
+
+/**
  * Backfill `Player.hasWrestlerRole` from Cognito group membership.
  *
  * The public roster filters read the denormalized flag rather than calling
@@ -47,48 +66,54 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       paginationToken = result.PaginationToken;
     } while (paginationToken);
 
-    // sub -> is in the Wrestler group
+    const usersWithSub = allCognitoUsers
+      .map((user) => ({
+        username: user.Username!,
+        sub: (user.Attributes || []).find((a) => a.Name === 'sub')?.Value,
+      }))
+      .filter((u): u is { username: string; sub: string } => Boolean(u.sub));
+
+    // Every sub Cognito knows about, so a player linked to a user whose group
+    // lookup failed can be told apart from one linked to a deleted account.
+    const knownSubs = new Set(usersWithSub.map((u) => u.sub));
+
+    // sub -> is in the Wrestler group. A sub missing from this map after the
+    // sweep means its lookup failed.
     const wrestlerBySub = new Map<string, boolean>();
-    for (const user of allCognitoUsers) {
-      const sub = (user.Attributes || []).find((a) => a.Name === 'sub')?.Value;
-      if (!sub) continue;
+    await inBatches(usersWithSub, async ({ username, sub }) => {
       try {
         const groupsResult = await cognitoClient.send(
           new AdminListGroupsForUserCommand({
             UserPoolId: USER_POOL_ID,
-            Username: user.Username!,
+            Username: username,
           })
         );
         const groups = (groupsResult.Groups || []).map((g) => g.GroupName);
         wrestlerBySub.set(sub, groups.includes('Wrestler'));
       } catch (err) {
-        // A group lookup failure must not demote a real wrestler, so skip the
-        // user entirely and leave their existing flag alone.
-        console.error(`Failed to read groups for ${user.Username}:`, err);
+        // A group lookup failure must not demote a real wrestler, so leave
+        // the sub unmapped and skip that player below.
+        console.error(`Failed to read groups for ${username}:`, err);
       }
-    }
+    });
 
     const { roster: { players } } = getRepositories();
     const allPlayers = await players.list();
 
-    let granted = 0;
-    let revoked = 0;
-    let unchanged = 0;
     let skipped = 0;
+    let unchanged = 0;
+    const toWrite: Array<{ playerId: string; shouldBeWrestler: boolean }> = [];
 
     for (const player of allPlayers) {
-      // Linked to a user whose groups we could not read — leave as-is rather
-      // than guessing.
-      if (player.userId && !wrestlerBySub.has(player.userId)) {
-        const known = allCognitoUsers.some((u) =>
-          (u.Attributes || []).some(
-            (a) => a.Name === 'sub' && a.Value === player.userId
-          )
-        );
-        if (known) {
-          skipped++;
-          continue;
-        }
+      // Linked to a live account whose groups we could not read — leave the
+      // existing flag alone rather than guessing.
+      if (
+        player.userId &&
+        knownSubs.has(player.userId) &&
+        !wrestlerBySub.has(player.userId)
+      ) {
+        skipped++;
+        continue;
       }
 
       // No linked account, or a linked account without the group -> false.
@@ -101,19 +126,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         continue;
       }
 
-      await players.update(player.playerId, { hasWrestlerRole: shouldBeWrestler });
-      if (shouldBeWrestler) {
-        granted++;
-      } else {
-        revoked++;
-      }
+      toWrite.push({ playerId: player.playerId, shouldBeWrestler });
     }
+
+    await inBatches(toWrite, ({ playerId, shouldBeWrestler }) =>
+      players.update(playerId, { hasWrestlerRole: shouldBeWrestler })
+    );
+
+    const granted = toWrite.filter((w) => w.shouldBeWrestler).length;
 
     return success({
       message: 'Wrestler roles synced to players',
       totalPlayers: allPlayers.length,
       granted,
-      revoked,
+      revoked: toWrite.length - granted,
       unchanged,
       skipped,
     });
