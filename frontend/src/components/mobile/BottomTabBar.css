@@ -27,8 +27,9 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Tabs size to their labels, so a long label takes room from a short one and all five fit at 15px. */
 .bottom-tab-bar__item {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-width: 44px;
   min-height: var(--shell-bottom-bar-height);
   display: flex;
@@ -79,8 +80,7 @@
 }
 
 .bottom-tab-bar__label {
-  /* 15px from a 390px phone up. Narrower phones scale down so all five labels fit. */
-  font-size: clamp(0.8125rem, 3.85vw, 0.9375rem);
+  font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.2;

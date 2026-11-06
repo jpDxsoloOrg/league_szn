@@ -9,7 +9,7 @@
 }
 
 .star-rating--sm {
-  font-size: 0.85em;
+  font-size: max(0.9375rem, 0.85em);
 }
 
 .star-rating--md {
@@ -71,11 +71,11 @@
 
 .star-rating__count {
   color: var(--color-text-muted);
-  font-size: 0.85em;
+  font-size: 0.9375rem;
 }
 
 .star-rating--empty {
   color: var(--color-text-muted);
   font-style: italic;
-  font-size: 0.9em;
+  font-size: max(0.9375rem, 0.9em);
 }

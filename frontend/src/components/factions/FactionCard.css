@@ -1,3 +1,18 @@
+/* Faction art often carries its own lettering, so tile text sits on a panel, not a scrim. */
+.faction-card .ui-tile__text {
+  background-color: var(--color-bg);
+  box-shadow: 0 -0.75rem 0.75rem var(--color-bg);
+}
+
+.faction-card .ui-tile__image {
+  object-position: top;
+}
+
+.faction-card .ui-tile__eyebrow {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .faction-card__meta {
   display: flex;
   flex-direction: column;

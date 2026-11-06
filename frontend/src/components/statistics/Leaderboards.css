@@ -6,8 +6,19 @@
   font-weight: 700;
 }
 
+.lb-list > li {
+  position: relative;
+}
+
 .lb-player-name {
   text-decoration: none;
+}
+
+/* The whole row is the tap target. */
+.lb-player-name::after {
+  content: '';
+  position: absolute;
+  inset: 0;
 }
 
 .lb-player-name:hover {

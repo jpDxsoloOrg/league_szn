@@ -63,7 +63,7 @@
 
 .activity-feed__time {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .activity-feed__error {

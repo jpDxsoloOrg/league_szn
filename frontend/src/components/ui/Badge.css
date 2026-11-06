@@ -62,6 +62,13 @@
   box-shadow: var(--glow-pink);
 }
 
+/* A tint lets a gradient or photo through and fails contrast, so these sit on the page colour. */
+.page-header .ui-badge,
+.poster-hero .ui-badge,
+.ui-tile__badge .ui-badge {
+  background-color: var(--color-bg);
+}
+
 .ui-badge__dot {
   width: 0.5rem;
   height: 0.5rem;

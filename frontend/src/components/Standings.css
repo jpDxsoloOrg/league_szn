@@ -166,6 +166,13 @@
   }
 }
 
+/* Two across cuts the value short on a phone, so each filter gets the row. */
+@media (max-width: 480px) {
+  .standings-select {
+    flex-basis: 100%;
+  }
+}
+
 /*
  * Shared with the tag team and faction standings, which reuse these names.
  * Move them to those pages' stylesheets when those pages adopt FormDots.

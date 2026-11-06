@@ -57,6 +57,14 @@ a.season-award__player:hover {
   color: var(--color-cyan);
 }
 
+@media (max-width: 768px) {
+  a.season-award__player {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--touch-target);
+  }
+}
+
 .season-award__description {
   margin-top: 0.25rem;
   color: var(--color-text-muted);

@@ -125,3 +125,10 @@
     padding: 0.75rem 1rem;
   }
 }
+
+/* Two across hides the wrestler that tells two similar player names apart. */
+@media (max-width: 480px) {
+  .stats-page .page-header__actions .ui-select__trigger {
+    flex-basis: 100%;
+  }
+}

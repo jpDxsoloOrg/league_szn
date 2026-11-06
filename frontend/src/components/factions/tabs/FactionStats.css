@@ -115,9 +115,27 @@
   stroke: var(--color-loss);
 }
 
-.faction-stats__axis-label {
+.faction-stats__axis {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+  list-style: none;
+}
+
+.faction-stats__axis li {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.faction-stats__donut-label {
   fill: var(--color-text-muted);
-  font-size: 9px;
+  font-size: 15px;
 }
 
 .faction-stats__legend {

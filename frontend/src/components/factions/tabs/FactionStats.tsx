@@ -20,6 +20,7 @@ import './FactionStats.css';
 
 const LEADERBOARD_LIMIT = 5;
 const H2H_LIMIT = 5;
+const MAX_AXIS_LABELS = 4;
 /** One season is a single point, so it reads better as a row than as a chart. */
 const MIN_CHART_SEASONS = 2;
 
@@ -108,27 +109,32 @@ function SeasonLineChart({ points, ariaLabel }: SeasonLineChartProps) {
       .map((p, i) => `${i === 0 ? 'M' : 'L'} ${padX + i * stepX} ${yFor(p[key])}`)
       .join(' ');
 
+  const axisPoints = points.length > MAX_AXIS_LABELS ? [points[0]!, points[points.length - 1]!] : points;
+
   return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      width="100%"
-      preserveAspectRatio="xMidYMid meet"
-      role="img"
-      aria-label={ariaLabel}
-      className="faction-stats__lines"
-    >
-      <path d={buildPath('losses')} className="faction-stats__line--loss" />
-      <path d={buildPath('wins')} className="faction-stats__line--win" />
-      {points.map((point, index) => (
-        <g key={point.seasonId}>
-          <circle cx={padX + index * stepX} cy={yFor(point.wins)} r="3.5" className="faction-stats__fill--win" />
-          <circle cx={padX + index * stepX} cy={yFor(point.losses)} r="3" className="faction-stats__fill--loss" />
-          <text x={padX + index * stepX} y={height - 2} textAnchor="middle" className="faction-stats__axis-label">
-            {point.seasonName.length > 8 ? `${point.seasonName.slice(0, 6)}…` : point.seasonName}
-          </text>
-        </g>
-      ))}
-    </svg>
+    <>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        width="100%"
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label={ariaLabel}
+        className="faction-stats__lines"
+      >
+        <path d={buildPath('losses')} className="faction-stats__line--loss" />
+        <path d={buildPath('wins')} className="faction-stats__line--win" />
+        {points.map((point, index) => (
+          <g key={point.seasonId}>
+            <circle cx={padX + index * stepX} cy={yFor(point.wins)} r="3.5" className="faction-stats__fill--win" />
+            <circle cx={padX + index * stepX} cy={yFor(point.losses)} r="3" className="faction-stats__fill--loss" />
+          </g>
+        ))}
+      </svg>
+      {/* Outside the SVG, which scales its text below the size floor on a phone. */}
+      <ol className="faction-stats__axis">
+        {axisPoints.map((point) => <li key={point.seasonId}>{point.seasonName}</li>)}
+      </ol>
+    </>
   );
 }
 
@@ -174,7 +180,7 @@ function OutcomeDonut({ wins, losses, draws, ariaLabel }: OutcomeDonutProps) {
         return arc;
       })}
       <text x="70" y="70" textAnchor="middle" className="faction-stats__donut-total">{total}</text>
-      <text x="70" y="88" textAnchor="middle" className="faction-stats__axis-label">
+      <text x="70" y="90" textAnchor="middle" className="faction-stats__donut-label">
         {t('factions.redesign.matchesLabel', 'Matches')}
       </text>
     </svg>
