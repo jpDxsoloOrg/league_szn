@@ -46,6 +46,8 @@ export interface ChallengeWithPlayers extends Challenge {
   challenged: ChallengePlayerInfo;
   challengerTagTeam?: TagTeamChallengeInfo;
   challengedTagTeam?: TagTeamChallengeInfo;
+  /** Name of the title on the line, when it still exists. */
+  championshipName?: string;
 }
 
 export interface CreateChallengeInput {

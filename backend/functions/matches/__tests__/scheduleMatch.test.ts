@@ -198,6 +198,55 @@ describe('scheduleMatch', () => {
     expect(JSON.parse(r!.body).message).toContain('not in the correct division');
   });
 
+  it('returns 400 when the title is inactive', async () => {
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'singles', isActive: false });
+    const r = await scheduleMatch(ev({ body: validBody({ isChampionship: true, championshipId: 'c1' }) }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(JSON.parse(r!.body).message).toBe('This championship is inactive and cannot be defended');
+    expect(mockMatchesCreate).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when a tag title is put on a singles match', async () => {
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'tag', isActive: true });
+    const r = await scheduleMatch(ev({ body: validBody({ isChampionship: true, championshipId: 'c1' }) }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(JSON.parse(r!.body).message).toBe('A tag team title needs a tag team match type');
+  });
+
+  it('returns 400 when a singles title is put on a tag match', async () => {
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'singles', isActive: true });
+    const r = await scheduleMatch(ev({
+      body: validBody({ matchFormat: 'Tag Team', isChampionship: true, championshipId: 'c1' }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(400);
+    expect(JSON.parse(r!.body).message).toBe('A singles title cannot be decided in a tag team match');
+  });
+
+  it('books a tag title match from a challenge with its teams and title', async () => {
+    mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
+    mockChampionshipsFindById.mockResolvedValue({ championshipId: 'c1', type: 'tag', isActive: true });
+    mockChallengesFindById.mockResolvedValue({ challengeId: 'ch1', status: 'accepted' });
+    const teams = [['p1', 'p2'], ['p3', 'p4']];
+    const r = await scheduleMatch(ev({
+      body: validBody({
+        matchFormat: 'Tag Team',
+        participants: teams.flat(),
+        teams,
+        isChampionship: true,
+        championshipId: 'c1',
+        challengeId: 'ch1',
+      }),
+    }), ctx, cb);
+    expect(r!.statusCode).toBe(201);
+    expect(mockMatchesCreate).toHaveBeenCalledWith(expect.objectContaining({
+      isChampionship: true, championshipId: 'c1', teams, challengeId: 'ch1',
+    }));
+    expect(mockChallengesUpdate).toHaveBeenCalledWith('ch1', expect.objectContaining({ status: 'scheduled' }));
+  });
+
   it('returns 404 when tournamentId does not exist', async () => {
     mockPlayersFindById.mockResolvedValue({ playerId: 'p1' });
     mockTournamentsFindById.mockResolvedValue(null);

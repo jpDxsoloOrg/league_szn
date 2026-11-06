@@ -258,4 +258,96 @@ describe('PromoEditor', () => {
       );
     });
   });
+
+  describe('title challenges', () => {
+    const worldTitle = { championshipId: 'world', name: 'World Title', type: 'singles', currentChampion: 'p-2', isActive: true, createdAt: '' };
+    const tagTitle = { championshipId: 'tag-belts', name: 'Tag Titles', type: 'tag', currentChampion: ['p-3', 'p-4'], isActive: true, createdAt: '' };
+
+    function pickOption(container: HTMLElement, value: string) {
+      const select = container.querySelector(`select option[value="${value}"]`)?.parentElement as HTMLSelectElement;
+      fireEvent.change(select, { target: { value } });
+    }
+
+    async function writePromo(user: ReturnType<typeof userEvent.setup>) {
+      const textarea = await screen.findByPlaceholderText('Drop your promo here...');
+      await user.click(textarea);
+      await user.paste('A'.repeat(60));
+    }
+
+    it('puts the chosen title on a singles call-out', async () => {
+      const user = userEvent.setup();
+      mockCreatePromo.mockResolvedValue({});
+      mockCreateChallenge.mockResolvedValue({});
+      mockGetAllChampionships.mockResolvedValue([worldTitle, tagTitle]);
+
+      const { container } = renderEditor('/promos/new?promoType=call-out&targetPlayerId=p-2');
+      await writePromo(user);
+      await waitFor(() => expect(container.querySelector('select option[value="Singles"]')).not.toBeNull());
+      pickOption(container, 'Singles');
+
+      await waitFor(() => expect(container.querySelector('select option[value="world"]')).not.toBeNull());
+      expect(container.querySelector('select option[value="tag-belts"]')).toBeNull();
+      pickOption(container, 'world');
+
+      await user.click(screen.getByText('Drop the Mic'));
+
+      await waitFor(() => {
+        expect(mockCreateChallenge).toHaveBeenCalledWith(
+          expect.objectContaining({ challengedId: 'p-2', matchType: 'Singles', championshipId: 'world' }),
+        );
+      });
+      expect(mockCreatePromo).toHaveBeenCalledWith(expect.objectContaining({ championshipId: 'world' }));
+    });
+
+    it('drops a title the new match type rules out', async () => {
+      const user = userEvent.setup();
+      mockCreatePromo.mockResolvedValue({});
+      mockCreateChallenge.mockResolvedValue({});
+      mockGetAllChampionships.mockResolvedValue([worldTitle]);
+
+      const { container } = renderEditor('/promos/new?promoType=call-out&targetPlayerId=p-2');
+      await writePromo(user);
+      await waitFor(() => expect(container.querySelector('select option[value="Singles"]')).not.toBeNull());
+      pickOption(container, 'Singles');
+      await waitFor(() => expect(container.querySelector('select option[value="world"]')).not.toBeNull());
+      pickOption(container, 'world');
+
+      pickOption(container, 'Tag Team');
+      await waitFor(() => expect(container.querySelector('select option[value="world"]')).toBeNull());
+
+      await user.click(screen.getByText('Drop the Mic'));
+
+      await waitFor(() => expect(mockCreateChallenge).toHaveBeenCalled());
+      expect(mockCreateChallenge.mock.calls[0]?.[0].championshipId).toBeUndefined();
+    });
+
+    it('puts a tag title on a tag team call-out', async () => {
+      const user = userEvent.setup();
+      mockCreatePromo.mockResolvedValue({});
+      mockCreateChallenge.mockResolvedValue({});
+      mockGetAllChampionships.mockResolvedValue([worldTitle, tagTitle]);
+      mockGetAllTagTeams.mockResolvedValue([
+        { tagTeamId: 'team-1', name: 'Us', player1Id: 'p-1', player2Id: 'p-5', status: 'active' },
+        { tagTeamId: 'team-2', name: 'Them', player1Id: 'p-3', player2Id: 'p-4', status: 'active' },
+      ]);
+
+      const { container } = renderEditor('/promos/new?promoType=call-out');
+      await writePromo(user);
+      await user.click(await screen.findByRole('radio', { name: 'Tag Team' }));
+      pickOption(container, 'team-2');
+      pickOption(container, 'Tag Team');
+
+      await waitFor(() => expect(container.querySelector('select option[value="tag-belts"]')).not.toBeNull());
+      expect(container.querySelector('select option[value="world"]')).toBeNull();
+      pickOption(container, 'tag-belts');
+
+      await user.click(screen.getByText('Drop the Mic'));
+
+      await waitFor(() => {
+        expect(mockCreateChallenge).toHaveBeenCalledWith(expect.objectContaining({
+          challengeMode: 'tag_team', challengedTagTeamId: 'team-2', matchType: 'Tag Team', championshipId: 'tag-belts',
+        }));
+      });
+    });
+  });
 });

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getDaysRemaining, getDisplayStatus, isChallengedSide, isChallengerSide } from '../challengeUtils';
+import { getChallengeTitleOptions, getDaysRemaining, getDisplayStatus, isChallengedSide, isChallengerSide } from '../challengeUtils';
+import type { Championship } from '../../../types';
 import type { ChallengeWithPlayers } from '../../../types/challenge';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -59,5 +60,54 @@ describe('challengeUtils', () => {
       expect(isChallengerSide(challenge, null)).toBe(false);
       expect(isChallengedSide(challenge, null)).toBe(false);
     });
+  });
+});
+
+describe('getChallengeTitleOptions', () => {
+  const title = (championshipId: string, overrides: Partial<Championship> = {}): Championship => ({
+    championshipId, name: championshipId, type: 'singles', createdAt: '', isActive: true, ...overrides,
+  });
+  const singles = { challengeMode: 'singles' as const, matchType: 'Singles', sides: [[{ playerId: 'p1' }], [{ playerId: 'p2' }]] };
+  const tag = {
+    challengeMode: 'tag_team' as const,
+    matchType: 'Tag Team',
+    sides: [[{ playerId: 'a1' }, { playerId: 'a2' }], [{ playerId: 'b1' }, { playerId: 'b2' }]],
+  };
+  const ids = (titles: Championship[]) => titles.map((championship) => championship.championshipId);
+
+  it('offers singles titles held by either side, and vacant ones', () => {
+    const titles = [
+      title('opponent', { currentChampion: 'p2' }),
+      title('mine', { currentChampion: 'p1' }),
+      title('vacant'),
+      title('someone-else', { currentChampion: 'p9' }),
+      title('tag-belts', { type: 'tag' }),
+      title('retired', { isActive: false }),
+    ];
+    expect(ids(getChallengeTitleOptions(titles, singles))).toEqual(['opponent', 'mine', 'vacant']);
+  });
+
+  it('offers tag titles held by one team, whatever order the holders are in', () => {
+    const titles = [
+      title('theirs', { type: 'tag', currentChampion: ['b2', 'b1'] }),
+      title('split', { type: 'tag', currentChampion: ['a1', 'b1'] }),
+      title('world'),
+    ];
+    expect(ids(getChallengeTitleOptions(titles, tag))).toEqual(['theirs']);
+  });
+
+  it('offers nothing when the match type does not suit the challenge', () => {
+    expect(getChallengeTitleOptions([title('world')], { ...singles, matchType: 'Tag Team' })).toEqual([]);
+    expect(getChallengeTitleOptions([title('belts', { type: 'tag' })], { ...tag, matchType: 'Singles' })).toEqual([]);
+  });
+
+  it('offers nothing until both sides and the match type are known', () => {
+    expect(getChallengeTitleOptions([title('world')], { ...singles, matchType: '' })).toEqual([]);
+    expect(getChallengeTitleOptions([title('world')], { ...singles, sides: [[{ playerId: 'p1' }]] })).toEqual([]);
+  });
+
+  it('leaves out a division title when someone is outside the division', () => {
+    const sides = [[{ playerId: 'p1', divisionId: 'd1' }], [{ playerId: 'p2' }]];
+    expect(getChallengeTitleOptions([title('locked', { divisionId: 'd1' })], { ...singles, sides })).toEqual([]);
   });
 });

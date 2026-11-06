@@ -13,7 +13,7 @@ A challenge expires 4 days after it is issued if nobody answers it. A counter-ch
 
 ## Scheduling a match from a challenge
 
-Click **Schedule** on an accepted challenge to open Schedule Match with participants, match type, and optional stipulation pre-filled. Saving marks the challenge as scheduled and links it to the match.
+Click **Schedule** on an accepted challenge to open Schedule Match with participants, match type, and optional stipulation pre-filled. A tag team challenge fills in both teams, and a title challenge ticks **Championship Match** and selects the title. The title shows under the match type in the list. Saving marks the challenge as scheduled and links it to the match.
 
 ## Actions for full Admins
 

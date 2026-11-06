@@ -1,4 +1,5 @@
 import type { BadgeTone } from '../ui/Badge';
+import type { Championship, Player } from '../../types';
 import type {
   Challenge,
   ChallengePlayerInfo,
@@ -84,6 +85,41 @@ export function findCallOutChallenge(
     .filter((challenge) => challenge.challengerId === promo.playerId && challenge.challengedId === targetPlayerId)
     .sort((first, second) => distance(first) - distance(second));
   return candidates[0] ?? null;
+}
+
+export type ChallengeTitleCandidate = Pick<Player, 'playerId' | 'divisionId'>;
+
+export interface ChallengeTitleSubject {
+  challengeMode: 'singles' | 'tag_team';
+  matchType: string;
+  /** The players on each side, once both sides are known. */
+  sides: ChallengeTitleCandidate[][];
+}
+
+/**
+ * The titles this challenge can be for: the right kind for the challenge and
+ * its match type, open to everyone in it, and vacant or held by one side. A
+ * result crowns whoever wins, so a champion outside the challenge can't lose
+ * their title. Mirrors challengeTitleFitError in backend/lib/challengeTitle.ts.
+ */
+export function getChallengeTitleOptions(
+  championships: Championship[],
+  { challengeMode, matchType, sides }: ChallengeTitleSubject,
+): Championship[] {
+  if (!matchType || sides.length < 2) return [];
+
+  const titleType: Championship['type'] = challengeMode === 'tag_team' ? 'tag' : 'singles';
+  const isTagFormat = matchType.toLowerCase().includes('tag');
+  if (isTagFormat !== (titleType === 'tag')) return [];
+
+  return championships.filter((championship) => {
+    if (championship.type !== titleType || championship.isActive === false) return false;
+    const { divisionId } = championship;
+    if (divisionId && sides.flat().some((player) => player.divisionId !== divisionId)) return false;
+    const holders = [championship.currentChampion ?? []].flat();
+    return holders.length === 0
+      || sides.some((side) => holders.every((holder) => side.some((player) => player.playerId === holder)));
+  });
 }
 
 export interface ChallengeSide {

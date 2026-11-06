@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
-import { playersApi, challengesApi, profileApi, stipulationsApi, matchTypesApi, tagTeamsApi } from '../../services/api';
-import type { Player, Stipulation, MatchType } from '../../types';
+import { playersApi, challengesApi, championshipsApi, profileApi, stipulationsApi, matchTypesApi, tagTeamsApi } from '../../services/api';
+import type { Championship, Player, Stipulation, MatchType } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
 import Avatar from '../ui/Avatar';
 import Button from '../ui/Button';
 import PageHeader from '../ui/PageHeader';
+import { getChallengeTitleOptions } from './challengeUtils';
 import './IssueChallenge.css';
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -16,7 +17,7 @@ export default function IssueChallenge() {
   const [opponentId, setOpponentId] = useState('');
   const [matchType, setMatchType] = useState('');
   const [stipulation, setStipulation] = useState('');
-  const [isChampionship, setIsChampionship] = useState(false);
+  const [selectedChampionshipId, setSelectedChampionshipId] = useState('');
   const [message, setMessage] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -24,6 +25,7 @@ export default function IssueChallenge() {
   const [error, setError] = useState<string | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
+  const [championships, setChampionships] = useState<Championship[]>([]);
   const [stipulations, setStipulations] = useState<Stipulation[]>([]);
   const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
   const [challengeMode, setChallengeMode] = useState<'singles' | 'tag_team'>('singles');
@@ -39,11 +41,13 @@ export default function IssueChallenge() {
       stipulationsApi.getAll(controller.signal),
       matchTypesApi.getAll(controller.signal),
       tagTeamsApi.getAll({ status: 'active' }, controller.signal),
-    ]).then(([data, myProfile, stips, mTypes, fetchedTagTeams]) => {
+      championshipsApi.getAll(controller.signal),
+    ]).then(([data, myProfile, stips, mTypes, fetchedTagTeams, fetchedChampionships]) => {
       setPlayers(data);
       setCurrentPlayerId(myProfile.playerId);
       setStipulations(stips);
       setMatchTypes(mTypes);
+      setChampionships(fetchedChampionships);
       const myTeam = fetchedTagTeams.find(
         (tt) => tt.player1Id === myProfile.playerId || tt.player2Id === myProfile.playerId
       );
@@ -64,6 +68,20 @@ export default function IssueChallenge() {
   const availableOpponents = players.filter((p) => p.playerId !== currentPlayerId && p.hasLinkedAccount);
 
   const selectedTagTeam = tagTeams.find((tt) => tt.tagTeamId === selectedTagTeamId);
+
+  const teamSide = (tt: TagTeam) => [tt.player1Id, tt.player2Id].map(
+    (playerId) => players.find((p) => p.playerId === playerId) ?? { playerId },
+  );
+  const challengeSides = challengeMode === 'tag_team'
+    ? [playerTagTeam, selectedTagTeam].flatMap((tt) => (tt ? [teamSide(tt)] : []))
+    : [currentPlayer, opponent].flatMap((player) => (player ? [[player]] : []));
+  const availableTitles = getChallengeTitleOptions(championships, {
+    challengeMode,
+    matchType,
+    sides: challengeSides,
+  });
+  // A change of opponent or match type can rule out a title picked earlier.
+  const stakedTitle = availableTitles.find((c) => c.championshipId === selectedChampionshipId);
 
   const isFormValid = challengeMode === 'tag_team'
     ? selectedTagTeamId && matchType && message.length <= MAX_MESSAGE_LENGTH
@@ -87,6 +105,7 @@ export default function IssueChallenge() {
           challengedTagTeamId: selectedTagTeamId,
           matchType,
           stipulation: stipulation || undefined,
+          championshipId: stakedTitle?.championshipId,
           message: message || undefined,
         });
       } else {
@@ -94,7 +113,7 @@ export default function IssueChallenge() {
           challengedId: opponentId,
           matchType,
           stipulation: stipulation || undefined,
-          championshipId: isChampionship ? 'championship-match' : undefined,
+          championshipId: stakedTitle?.championshipId,
           message: message || undefined,
         });
       }
@@ -110,7 +129,7 @@ export default function IssueChallenge() {
     setOpponentId('');
     setMatchType('');
     setStipulation('');
-    setIsChampionship(false);
+    setSelectedChampionshipId('');
     setMessage('');
     setShowPreview(false);
     setSubmitted(false);
@@ -246,16 +265,23 @@ export default function IssueChallenge() {
           </select>
         </div>
 
-        <div className="issue-form-group">
-          <label className="issue-championship-check">
-            <input
-              type="checkbox"
-              checked={isChampionship}
-              onChange={(e) => setIsChampionship(e.target.checked)}
-            />
-            <span>{t('challenges.issue.championshipMatch')}</span>
-          </label>
-        </div>
+        {availableTitles.length > 0 && (
+          <div className="issue-form-group">
+            <label htmlFor="issue-title">{t('challenges.issue.titleOnTheLine')}</label>
+            <select
+              id="issue-title"
+              value={stakedTitle?.championshipId ?? ''}
+              onChange={(e) => setSelectedChampionshipId(e.target.value)}
+            >
+              <option value="">{t('challenges.issue.noTitle')}</option>
+              {availableTitles.map((c) => (
+                <option key={c.championshipId} value={c.championshipId}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="issue-form-group">
           <label>{t('challenges.issue.message')}</label>
@@ -309,10 +335,8 @@ export default function IssueChallenge() {
                   {stipulation && (
                     <span className="issue-preview-detail-tag">{stipulation}</span>
                   )}
-                  {isChampionship && (
-                    <span className="issue-preview-detail-tag">
-                      {t('challenges.board.titleMatch')}
-                    </span>
+                  {stakedTitle && (
+                    <span className="issue-preview-detail-tag">{stakedTitle.name}</span>
                   )}
                 </div>
                 {message && (
@@ -346,10 +370,8 @@ export default function IssueChallenge() {
                   {stipulation && (
                     <span className="issue-preview-detail-tag">{stipulation}</span>
                   )}
-                  {isChampionship && (
-                    <span className="issue-preview-detail-tag">
-                      {t('challenges.board.titleMatch')}
-                    </span>
+                  {stakedTitle && (
+                    <span className="issue-preview-detail-tag">{stakedTitle.name}</span>
                   )}
                 </div>
                 {message && (

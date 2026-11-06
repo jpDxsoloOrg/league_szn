@@ -14,11 +14,13 @@ Click **Cut a Call-Out Promo** to open the promo editor in call-out mode. You ca
 
 Pick your target and a match type, add a stipulation if you want one, and write your promo. Submitting publishes the promo and issues the challenge. If you're in an active tag team, you can issue a tag team challenge against another team.
 
+To put a title at stake, choose it under **Title on the line**. Only titles that can be decided by this challenge are listed: titles held by you or your opponent, and vacant titles. A singles challenge needs a singles title and a match type without "tag" in its name. A tag team challenge needs a tag team title and a tag match type. If the title is locked to a division, everyone in the challenge must be in it.
+
 Once you've sent a challenge, you can cancel it until it's answered.
 
 ## Responding to a challenge
 
-Open a challenge from the Received tab. You can **Accept**, **Decline**, or **Counter**. A counter sends a new challenge back with your own match type, stipulation and message. You can also accept straight from the call-out promo.
+Open a challenge from the Received tab. You can **Accept**, **Decline**, or **Counter**. A counter sends a new challenge back with your own match type, stipulation and message. A title stays on the line, so the new match type has to suit it. You can also accept straight from the call-out promo.
 
 In a tag team challenge, either member of the challenged team can respond.
 
@@ -28,7 +30,7 @@ You have 4 days to answer. After that the challenge shows as **Expired** and can
 
 ## After you accept
 
-Accepting doesn't book the match. Staff still have to schedule it. When they do, the status changes to **Scheduled** and a link to the match appears on the challenge.
+Accepting doesn't book the match. Staff still have to schedule it. When they do, the status changes to **Scheduled** and a link to the match appears on the challenge. A title challenge is booked as a title match, so the title can change hands.
 
 ## Challenge statuses
 

@@ -34,6 +34,8 @@ const mockTagTeamsRepo = {
   delete: vi.fn(),
 };
 
+const mockChampionshipsRepo = { findById: vi.fn() };
+
 const mockRunInTransaction = vi.fn();
 
 vi.mock('../../../lib/repositories', () => ({
@@ -44,6 +46,9 @@ vi.mock('../../../lib/repositories', () => ({
     roster: {
       players: mockPlayersRepo,
       tagTeams: mockTagTeamsRepo,
+    },
+    competition: {
+      championships: mockChampionshipsRepo,
     },
     runInTransaction: mockRunInTransaction,
   }),
@@ -246,6 +251,62 @@ describe('respondToChallenge', () => {
     expect(body.counter.matchType).toBe('TLC');
     expect(body.counter.stipulation).toBeUndefined();
     expect(body.counter.message).toBeUndefined();
+  });
+
+  describe('countering a title challenge', () => {
+    const titleChallenge = { ...pendingChallenge, championshipId: 'world' };
+    const worldTitle = { championshipId: 'world', name: 'World Title', type: 'singles', currentChampion: 'p2', isActive: true };
+
+    function setupTitleCounter() {
+      setupValidResponder();
+      mockChallengesRepo.findById.mockResolvedValue(titleChallenge);
+      mockPlayersRepo.findById.mockResolvedValue({ playerId: 'p1', currentWrestler: 'W1' });
+      mockChampionshipsRepo.findById.mockResolvedValue(worldTitle);
+    }
+
+    it('keeps the title on the line', async () => {
+      setupTitleCounter();
+      const result = await respondToChallenge(respondEvent({ action: 'counter', counterMatchType: 'Ladder' }), ctx, cb);
+      expect(result!.statusCode).toBe(200);
+      expect(JSON.parse(result!.body).counter.championshipId).toBe('world');
+    });
+
+    it('rejects a counter match type that does not suit the title', async () => {
+      setupTitleCounter();
+      const result = await respondToChallenge(respondEvent({ action: 'counter', counterMatchType: 'Tag Team' }), ctx, cb);
+      expect(result!.statusCode).toBe(400);
+      expect(JSON.parse(result!.body).message).toBe('A singles title cannot be decided in a tag team match');
+      expect(mockRunInTransaction).not.toHaveBeenCalled();
+    });
+
+    it('keeps a tag title on the line when the title belongs to a team in the challenge', async () => {
+      setupTitleCounter();
+      mockChallengesRepo.findById.mockResolvedValue({
+        ...titleChallenge,
+        championshipId: 'tag',
+        challengeMode: 'tag_team',
+        challengerTagTeamId: 'team-1',
+        challengedTagTeamId: 'team-2',
+      });
+      mockChampionshipsRepo.findById.mockResolvedValue({ championshipId: 'tag', type: 'tag', currentChampion: ['p2', 'p4'], isActive: true });
+      mockTagTeamsRepo.findById.mockImplementation((id: string) => Promise.resolve(id === 'team-1'
+        ? { tagTeamId: id, player1Id: 'p1', player2Id: 'p3', status: 'active' }
+        : { tagTeamId: id, player1Id: 'p2', player2Id: 'p4', status: 'active' }));
+      mockPlayersRepo.findById.mockImplementation((id: string) => Promise.resolve({ playerId: id, currentWrestler: id }));
+
+      const result = await respondToChallenge(respondEvent({ action: 'counter', counterMatchType: 'Tornado Tag' }), ctx, cb);
+
+      expect(result!.statusCode).toBe(200);
+      expect(JSON.parse(result!.body).counter.championshipId).toBe('tag');
+    });
+
+    it('returns 400 when the title has gone', async () => {
+      setupTitleCounter();
+      mockChampionshipsRepo.findById.mockResolvedValue(null);
+      const result = await respondToChallenge(respondEvent({ action: 'counter', counterMatchType: 'Ladder' }), ctx, cb);
+      expect(result!.statusCode).toBe(400);
+      expect(JSON.parse(result!.body).message).toBe('Championship not found');
+    });
   });
 
   it('returns 500 when an unexpected error occurs', async () => {

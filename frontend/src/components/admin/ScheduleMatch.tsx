@@ -12,7 +12,7 @@ import {
 } from '../../utils/checkInStatus';
 import type { TagTeam } from '../../types/tagTeam';
 import type { LeagueEvent, MatchDesignation } from '../../types/event';
-import type { ChallengeWithPlayers } from '../../types/challenge';
+import type { ChallengeWithPlayers, TagTeamChallengeInfo } from '../../types/challenge';
 import type { PromoWithContext } from '../../types/promo';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
 import { pickablePlayers, pickableTagTeams } from '../../utils/pickablePlayers';
@@ -46,6 +46,14 @@ const SCHEDULE_SOURCES = {
 };
 
 type ScheduleSource = keyof typeof SCHEDULE_SOURCES;
+
+const isTagFormat = (matchFormat: string) => matchFormat.toLowerCase().includes('tag');
+
+/** A team's members from a challenge, or just its named player if the team has gone. */
+const challengeTeamMembers = (team: TagTeamChallengeInfo | undefined, fallbackPlayerId: string): string[] => {
+  const members = [team?.player1.playerId, team?.player2.playerId].filter((id): id is string => Boolean(id));
+  return members.length > 0 ? members : [fallbackPlayerId];
+};
 
 export default function ScheduleMatch() {
   const { t } = useTranslation();
@@ -169,19 +177,31 @@ export default function ScheduleMatch() {
   const applyLinkedPreFill = (matchTypesData: MatchType[], stipulationsData: Stipulation[]) => {
     if (state?.fromChallenge) {
       const ch = state.fromChallenge;
+      const isTagChallenge = ch.challengeMode === 'tag_team';
+      const fallbackFormat = (isTagChallenge ? matchTypesData.find((mt) => isTagFormat(mt.name)) : undefined)
+        ?? matchTypesData[0];
       const matchFormat = matchTypesData.some((mt) => mt.name === ch.matchType)
         ? ch.matchType
-        : matchTypesData[0]?.name ?? 'Singles';
+        : fallbackFormat?.name ?? 'Singles';
       const stipulationId = ch.stipulation
         ? (stipulationsData.find((s) => s.name === ch.stipulation)?.stipulationId ?? '')
         : '';
+      // A tag format books teams rather than participants.
+      const bookTeams = isTagFormat(matchFormat);
       setFormData((prev) => ({
         ...prev,
-        participants: [ch.challengerId, ch.challengedId],
+        participants: bookTeams ? [] : [ch.challengerId, ch.challengedId],
         matchFormat,
         stipulationId,
-        championshipId: ch.championshipId ?? prev.championshipId,
+        isChampionship: Boolean(ch.championshipId),
+        championshipId: ch.championshipId ?? '',
       }));
+      if (bookTeams) {
+        setTeams([
+          challengeTeamMembers(ch.challengerTagTeam, ch.challengerId),
+          challengeTeamMembers(ch.challengedTagTeam, ch.challengedId),
+        ]);
+      }
       setLinkChallengeId(ch.challengeId);
     } else if (state?.fromPromo && state.fromPromo.targetPlayerId) {
       const promo = state.fromPromo;
@@ -191,6 +211,8 @@ export default function ScheduleMatch() {
         ...prev,
         participants: targetId ? [promo.playerId, targetId] : prev.participants,
         matchFormat: defaultFormat,
+        isChampionship: Boolean(promo.championshipId),
+        championshipId: promo.championshipId ?? '',
       }));
       setLinkPromoId(promo.promoId);
     }
@@ -258,7 +280,7 @@ export default function ScheduleMatch() {
     setRetrying(false);
   };
 
-  const isTagTeamMatch = formData.matchFormat.toLowerCase().includes('tag');
+  const isTagTeamMatch = isTagFormat(formData.matchFormat);
 
   /** The participant half of the request, or null after reporting a validation error. */
   const buildParticipantPayload = () => {
@@ -442,7 +464,7 @@ export default function ScheduleMatch() {
     setTeams([[], []]);
     setTagTeamSelectionMode('tag-teams');
     // Slot mode is incompatible with tag-team formats (out of scope for v1).
-    if (newFormat.toLowerCase().includes('tag')) {
+    if (isTagFormat(newFormat)) {
       setSlotMode(false);
     }
   };

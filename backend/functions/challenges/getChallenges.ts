@@ -29,7 +29,7 @@ const buildPlayerInfo = (player: Player | undefined): PlayerInfo => ({
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { status, playerId } = event.queryStringParameters || {};
-    const { user: { challenges }, roster: { players, tagTeams } } = getRepositories();
+    const { user: { challenges }, roster: { players, tagTeams }, competition: { championships } } = getRepositories();
 
     let challengeList: Challenge[];
 
@@ -55,6 +55,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         if (player) {
           playerMap[pid] = player;
         }
+      }),
+    );
+
+    const championshipIds = new Set(challengeList.flatMap((c) => (c.championshipId ? [c.championshipId] : [])));
+    const championshipNames = new Map<string, string>();
+    await Promise.all(
+      Array.from(championshipIds).map(async (championshipId) => {
+        const championship = await championships.findById(championshipId);
+        if (championship) championshipNames.set(championshipId, championship.name);
       }),
     );
 
@@ -141,6 +150,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           ? { playerName: challenged.name, wrestlerName: challenged.currentWrestler, imageUrl: challenged.imageUrl }
           : { playerName: 'Unknown', wrestlerName: 'Unknown' },
       };
+      const championshipName = c.championshipId ? championshipNames.get(c.championshipId) : undefined;
+      if (championshipName) base.championshipName = championshipName;
 
       // Enrich tag team data
       if (c.challengeMode === 'tag_team') {

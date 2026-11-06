@@ -612,6 +612,7 @@ export interface Championship {
   name: string;
   type: 'singles' | 'tag';
   currentChampion?: string | string[];
+  divisionId?: string;
   imageUrl?: string;
   isActive?: boolean;
   defenses?: number;

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
 const { mockChallengesApi } = vi.hoisted(() => ({
   mockChallengesApi: { getAll: vi.fn(), cancel: vi.fn(), delete: vi.fn(), bulkDelete: vi.fn() },
@@ -36,6 +36,47 @@ describe('AdminChallenges', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockChallengesApi.getAll.mockResolvedValue([openCallOut]);
+  });
+
+  it('hands the title and both teams to Schedule Match', async () => {
+    const user = userEvent.setup();
+    mockUseAuth.mockReturnValue({ isSuperAdmin: true });
+    const team = (tagTeamId: string) => ({
+      tagTeamId,
+      tagTeamName: tagTeamId,
+      player1: { playerId: `${tagTeamId}-a`, playerName: 'A', wrestlerName: 'A' },
+      player2: { playerId: `${tagTeamId}-b`, playerName: 'B', wrestlerName: 'B' },
+    });
+    mockChallengesApi.getAll.mockResolvedValue([{
+      ...openCallOut,
+      status: 'accepted',
+      challengeMode: 'tag_team',
+      championshipId: 'tag-belts',
+      challengerTagTeam: team('one'),
+      challengedTagTeam: team('two'),
+    }]);
+    let fromChallenge: Record<string, unknown> | undefined;
+    function ScheduleProbe() {
+      fromChallenge = (useLocation().state as { fromChallenge?: Record<string, unknown> }).fromChallenge;
+      return null;
+    }
+    render(
+      <MemoryRouter initialEntries={['/admin/promos']}>
+        <Routes>
+          <Route path="/admin/promos" element={<AdminChallenges />} />
+          <Route path="/admin/schedule" element={<ScheduleProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Schedule' }));
+
+    expect(fromChallenge).toMatchObject({
+      championshipId: 'tag-belts',
+      challengeMode: 'tag_team',
+      challengerTagTeam: team('one'),
+      challengedTagTeam: team('two'),
+    });
   });
 
   it('offers Expire on an open call-out to Admins', async () => {

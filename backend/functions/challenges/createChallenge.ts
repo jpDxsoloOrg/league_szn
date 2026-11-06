@@ -4,6 +4,7 @@ import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { challengeExpiresAt } from '../../lib/challengeExpiry';
+import { challengeTitleFitError, titleAvailabilityError } from '../../lib/challengeTitle';
 import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 // Notifications intentionally not dispatched here while the challenge UI is hidden.
 
@@ -34,14 +35,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { roster: { players, tagTeams }, user: { challenges }, competition: { championships } } = getRepositories();
 
+    const championship = championshipId ? await championships.findById(championshipId) : null;
     if (championshipId) {
-      const championship = await championships.findById(championshipId);
-      if (!championship) {
-        return badRequest('Championship not found');
-      }
-      if (championship.isActive === false) {
-        return badRequest('This championship is inactive and cannot be challenged for');
-      }
+      const titleError = titleAvailabilityError(championship);
+      if (titleError) return badRequest(titleError);
     }
 
     // Find the challenger's player record via their user sub
@@ -91,6 +88,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return badRequest('A member of that tag team has not set a wrestler name yet');
       }
 
+      if (championship) {
+        const challengerMembers = await Promise.all(
+          [challengerTagTeam.player1Id, challengerTagTeam.player2Id].map((id) => players.findById(id)),
+        );
+        const titleError = challengeTitleFitError(championship, {
+          challengeMode: 'tag_team',
+          matchType,
+          sides: [challengerMembers, challengedMembers].map((members) => members.filter((member) => member !== null)),
+        });
+        if (titleError) return badRequest(titleError);
+      }
+
       const challenge = await challenges.create({
         challengerId,
         challengedId: challengedTeam.player1Id,
@@ -126,6 +135,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     if (!isPlayerVisible(challengedPlayer)) {
       return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);
+    }
+
+    if (championship) {
+      const titleError = challengeTitleFitError(championship, {
+        challengeMode: 'singles',
+        matchType,
+        sides: [[challengerPlayer], [challengedPlayer]],
+      });
+      if (titleError) return badRequest(titleError);
     }
 
     const challenge = await challenges.create({

@@ -15,6 +15,7 @@ import Button from '../ui/Button';
 import Card from '../ui/Card';
 import PageHeader from '../ui/PageHeader';
 import Select from '../ui/Select';
+import { getChallengeTitleOptions } from '../challenges/challengeUtils';
 import PromoCard from './PromoCard';
 import './PromoEditor.css';
 
@@ -231,6 +232,20 @@ export default function PromoEditor() {
   const needsChallenge = promoType === 'call-out' && features.challenges;
   const hasChallengeDetails =
     !!challengeMatchType && (challengeMode === 'tag_team' ? !!selectedTagTeamId : !!targetPlayerId);
+  const challengeTitles = useMemo(() => {
+    if (!needsChallenge) return [];
+    const toCandidates = (playerIds: string[]) =>
+      playerIds.map((playerId) => players.find((p) => p.playerId === playerId) ?? { playerId });
+    const opposingTeam = tagTeams.find((tt) => tt.tagTeamId === selectedTagTeamId);
+    const sides = challengeMode === 'tag_team'
+      ? [playerTagTeam, opposingTeam].flatMap((tt) => (tt ? [toCandidates([tt.player1Id, tt.player2Id])] : []))
+      : [currentPlayer?.playerId, targetPlayerId].flatMap((id) => (id ? [toCandidates([id])] : []));
+    return getChallengeTitleOptions(championships, { challengeMode, matchType: challengeMatchType, sides });
+  }, [needsChallenge, players, tagTeams, selectedTagTeamId, challengeMode, playerTagTeam, currentPlayer, targetPlayerId, championships, challengeMatchType]);
+  // A change of opponent or match type can rule out a title picked earlier.
+  const stakedChampionshipId = needsChallenge && !challengeTitles.some((c) => c.championshipId === championshipId)
+    ? ''
+    : championshipId;
   const canSubmit =
     !isHiddenPlayer &&
     isContentValid &&
@@ -245,7 +260,7 @@ export default function PromoEditor() {
     const targetPlayer = players.find((p) => p.playerId === targetPlayerId);
     const targetPromo = allPromos.find((p) => p.promoId === targetPromoId);
     const match = matches.find((m) => m.matchId === matchId);
-    const championship = championships.find((c) => c.championshipId === championshipId);
+    const championship = championships.find((c) => c.championshipId === stakedChampionshipId);
 
     return {
       promoId: 'preview',
@@ -256,7 +271,7 @@ export default function PromoEditor() {
       targetPlayerId: targetPlayerId || undefined,
       targetPromoId: targetPromoId || undefined,
       matchId: matchId || undefined,
-      championshipId: championshipId || undefined,
+      championshipId: stakedChampionshipId || undefined,
       reactions: {},
       reactionCounts: { fire: 0, mic: 0, trash: 0, 'mind-blown': 0, clap: 0 },
       isPinned: false,
@@ -286,7 +301,7 @@ export default function PromoEditor() {
       championshipName: championship?.name,
       responseCount: 0,
     };
-  }, [promoType, title, content, targetPlayerId, targetPromoId, matchId, championshipId, t, players, allPromos, matches, championships, currentPlayer]);
+  }, [promoType, title, content, targetPlayerId, targetPromoId, matchId, stakedChampionshipId, t, players, allPromos, matches, championships, currentPlayer]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,7 +319,7 @@ export default function PromoEditor() {
         targetPlayerId: targetPlayerId || undefined,
         targetPromoId: targetPromoId || undefined,
         matchId: matchId || undefined,
-        championshipId: championshipId || undefined,
+        championshipId: stakedChampionshipId || undefined,
         rivalryId: rivalryId || undefined,
         ...(promoType === 'call-out' && challengeMode === 'tag_team' && playerTagTeam && selectedTeam ? {
           challengeMode: 'tag_team',
@@ -323,6 +338,7 @@ export default function PromoEditor() {
               challengedTagTeamId: selectedTagTeamId,
               matchType: challengeMatchType,
               stipulation: challengeStipulation || undefined,
+              championshipId: stakedChampionshipId || undefined,
               message: (title || content.slice(0, 500)) || undefined,
             });
           } else {
@@ -330,6 +346,7 @@ export default function PromoEditor() {
               challengedId: targetPlayerId,
               matchType: challengeMatchType,
               stipulation: challengeStipulation || undefined,
+              championshipId: stakedChampionshipId || undefined,
               message: (title || content.slice(0, 500)) || undefined,
             });
           }
@@ -657,6 +674,27 @@ export default function PromoEditor() {
                 ]}
               />
             </div>
+          </div>
+        )}
+
+        {challengeTitles.length > 0 && (
+          <div className="promo-editor__field">
+            <label className="promo-editor__label" htmlFor="challenge-title">
+              {t('challenges.issue.titleOnTheLine', 'Title on the line')}
+            </label>
+            <Select
+              id="challenge-title"
+              label={t('challenges.issue.titleOnTheLine', 'Title on the line')}
+              value={stakedChampionshipId}
+              onValueChange={setChampionshipId}
+              options={[
+                { value: '', label: t('challenges.issue.noTitle', 'No title') },
+                ...challengeTitles.map((champ) => ({ value: champ.championshipId, label: champ.name })),
+              ]}
+            />
+            <p className="promo-editor__hint">
+              {t('challenges.issue.titleHint', 'Lists titles held by either side, and vacant titles.')}
+            </p>
           </div>
         )}
 

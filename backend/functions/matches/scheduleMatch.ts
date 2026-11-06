@@ -5,6 +5,7 @@ import type { MatchDesignation, MatchCardEntry, MatchSlot, MatchStatus } from '.
 import { created, badRequest, notFound, serverError, error as errorResponse } from '../../lib/response';
 import { createNotifications } from '../../lib/notifications';
 import { parseBody } from '../../lib/parseBody';
+import { titleFormatError } from '../../lib/challengeTitle';
 
 export interface SlotInput {
   position: number;
@@ -188,6 +189,14 @@ export async function scheduleMatchInternal(
 
     if (!championship) {
       throw new ScheduleMatchError(404, `Championship not found: ${input.championshipId}`);
+    }
+
+    if (input.isChampionship) {
+      if (championship.isActive === false) {
+        throw new ScheduleMatchError(400, 'This championship is inactive and cannot be defended');
+      }
+      const formatError = titleFormatError(championship.type, input.matchFormat);
+      if (formatError) throw new ScheduleMatchError(400, formatError);
     }
 
     // Enforce division restriction: all participants must belong to the championship's division
