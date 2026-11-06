@@ -41,7 +41,6 @@ const TAB_COMPONENTS: Record<AdminTab, LazyExoticComponent<ComponentType>> = {
   'season-awards': lazy(() => import('./ManageSeasonAwards')),
   championships: lazy(() => import('./ManageChampionships')),
   tournaments: lazy(() => import('./CreateTournament')),
-  'contender-config': lazy(() => import('./AdminContenderConfig')),
   'contender-overrides': lazy(() => import('./AdminContenderOverrides')),
   'match-config': lazy(() => import('./ManageMatchConfig')),
   promos: lazy(() => import('./AdminPromos')),
@@ -89,6 +88,11 @@ export default function AdminPanel() {
   // The Match Card Builder lived here. Cards are now built on the event's own page.
   if (tab === 'events') {
     return <Navigate to="/events" replace />;
+  }
+
+  // Rankings now update on their own, which leaves overrides as the only control.
+  if (tab === 'contender-config') {
+    return <Navigate to="/admin/contender-overrides" replace />;
   }
 
   if (tab && !isAdminTab(tab)) {

@@ -42,7 +42,7 @@ vi.mock('../AdminChallenges', () => ({ default: () => <div data-testid="admin-ch
 vi.mock('../ClearAllData', () => ({ default: () => <div data-testid="clear-all">ClearAllData</div> }));
 vi.mock('../ManageUsers', () => ({ default: () => <div data-testid="manage-users">ManageUsers</div> }));
 vi.mock('../ManageFeatures', () => ({ default: () => <div data-testid="manage-features">ManageFeatures</div> }));
-vi.mock('../AdminContenderConfig', () => ({ default: () => <div data-testid="contender-config">ContenderConfig</div> }));
+vi.mock('../AdminContenderOverrides', () => ({ default: () => <div data-testid="contender-overrides">ContenderOverrides</div> }));
 
 vi.mock('../AdminPanel.css', () => ({}));
 
@@ -208,6 +208,18 @@ describe('AdminPanel', () => {
 
     renderAdminPanel('/admin/events');
     expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/events');
+  });
+
+  it('sends the old Contender Config URL to Contender Overrides', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: false });
+
+    renderAdminPanel('/admin/contender-config');
+    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/admin/contender-overrides');
+  });
+
+  it('has no nav entry for the removed Contender Config screen', () => {
+    expect(ADMIN_TABS).not.toContain('contender-config');
+    expect(ADMIN_TABS).toContain('contender-overrides');
   });
 
   it('redirects an unknown tab to the admin root', () => {

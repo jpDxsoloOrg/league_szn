@@ -196,7 +196,7 @@ describe('getChallenges', () => {
 
   it('adds the title name to a title challenge', async () => {
     mockScanAll.mockResolvedValue([{ ...mockChallenge1, championshipId: 'world' }, mockChallenge2]);
-    mockGet.mockImplementation(({ Key }: any) => {
+    mockGet.mockImplementation(({ Key }: { Key: Record<string, string> }) => {
       if (Key.championshipId) return Promise.resolve({ Item: { championshipId: 'world', name: 'World Title' } });
       return Promise.resolve({ Item: Key.playerId === 'p1' ? p1 : p2 });
     });
@@ -277,7 +277,7 @@ describe('getChallenge', () => {
   });
 
   it('adds the title name to a title challenge', async () => {
-    mockGet.mockImplementation(({ Key }: any) => {
+    mockGet.mockImplementation(({ Key }: { Key: Record<string, string> }) => {
       if (Key.challengeId) return Promise.resolve({ Item: { ...mockChallenge1, championshipId: 'world' } });
       if (Key.championshipId) return Promise.resolve({ Item: { championshipId: 'world', name: 'World Title' } });
       return Promise.resolve({ Item: Key.playerId === 'p1' ? p1 : p2 });

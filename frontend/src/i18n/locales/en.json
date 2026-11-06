@@ -445,7 +445,7 @@
       "adminTournaments": "Admin: Tournaments",
       "adminChallenges": "Admin: Challenges",
       "adminPromos": "Admin: Promos",
-      "adminContenderConfig": "Admin: Contender Config",
+      "adminContenderConfig": "Admin: Contender Rankings",
       "adminDataManagement": "Admin: Data Management",
       "adminWorkflow": "Admin: Typical Workflow",
       "rivalries": "Rivalries",
@@ -468,7 +468,7 @@
       "adminTournaments": "Tournaments",
       "adminChallenges": "Challenges",
       "adminPromos": "Promos",
-      "adminContenderConfig": "Contender Config",
+      "adminContenderConfig": "Contender Rankings",
       "adminDataManagement": "Data Management",
       "adminWorkflow": "Typical Workflow",
       "adminRivalries": "Rivalries"
@@ -811,7 +811,6 @@
         "challenges": "Challenges",
         "promos": "Promos",
         "seasonAwards": "Season Awards",
-        "contenderConfig": "Contender Config",
         "contenderOverrides": "Contender Overrides",
         "companies": "Companies",
         "locations": "Locations",
@@ -2410,22 +2409,7 @@
       "expires": "Expires: {{date}}"
     },
     "admin": {
-      "title": "Contender Configuration",
-      "subtitle": "Configure contender ranking settings per championship",
       "selectChampionship": "Select Championship",
-      "currentSeasonNote": "Rankings are calculated from completed matches in the current active season.",
-      "minimumMatches": "Minimum Matches",
-      "minimumMatchesHint": "Minimum matches required to appear in rankings",
-      "maxContenders": "Maximum Contenders",
-      "maxContendersHint": "Maximum number of ranked contenders per championship",
-      "includeDraws": "Include Draws in Rankings",
-      "includeDrawsHint": "When enabled, draws will count partially toward ranking score",
-      "divisionRestricted": "Division Restricted",
-      "divisionRestrictedHint": "When enabled, only players in the same division can contend",
-      "save": "Save Configuration",
-      "recalculate": "Recalculate Rankings",
-      "saveSuccess": "Configuration saved for {{championship}}",
-      "recalculateSuccess": "Rankings recalculated for {{championship}}",
       "overrides": {
         "title": "Manual Overrides",
         "subtitle": "Override contender positions for storyline or disciplinary reasons",
@@ -2449,9 +2433,7 @@
         "errorWrongDivision": "This player is not in the correct division for this championship",
         "reasonColumn": "Reason",
         "expiresColumn": "Auto-expire"
-      },
-      "recalculateTitle": "Recalculate rankings?",
-      "recalculateConfirm": "This replaces the current rankings with new ones built from match results and the settings on this page."
+      }
     },
     "emptyTitle": "No rankings yet",
     "selectChampionship": "Championship",
@@ -3202,7 +3184,6 @@
     "contenders": {
       "applyFailed": "Failed to apply override",
       "player": "Player",
-      "recalculateFailed": "Failed to recalculate rankings",
       "removeFailed": "Failed to remove override",
       "setBy": "Set by"
     },
