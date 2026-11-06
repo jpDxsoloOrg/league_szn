@@ -103,7 +103,7 @@ export default function ManageUsers() {
   const handleDivisionChange = async (playerId: string, divisionId: string) => {
     setDivisionLoading(playerId);
     try {
-      await playersApi.update(playerId, { divisionId: divisionId || undefined });
+      await playersApi.update(playerId, { divisionId });
       setUsers(prev =>
         prev.map(u =>
           u.player?.playerId === playerId

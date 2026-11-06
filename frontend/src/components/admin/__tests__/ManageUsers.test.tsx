@@ -287,6 +287,24 @@ describe('ManageUsers', () => {
     await waitFor(() => { expect(divisionSelect).toHaveValue('div-2'); });
   });
 
+  it('sends an empty division so the API clears it', async () => {
+    const user = userEvent.setup();
+    setupMocks();
+    mockPlayersApi.update.mockResolvedValue({ playerId: 'pl-1' });
+
+    renderComponent();
+    await waitFor(() => { expect(screen.getByText('wrestler@league.com')).toBeInTheDocument(); });
+
+    const wrestlerRow = screen.getByText('wrestler@league.com').closest('tr')!;
+    const divisionSelect = within(wrestlerRow).getByLabelText('Division for wrestler@league.com');
+
+    await user.selectOptions(divisionSelect, '');
+
+    await waitFor(() => {
+      expect(mockPlayersApi.update).toHaveBeenCalledWith('pl-1', { divisionId: '' });
+    });
+  });
+
   it('offers a division slot to a Wrestler whose player has no wrestler assigned', async () => {
     const user = userEvent.setup();
     setupMocks();
