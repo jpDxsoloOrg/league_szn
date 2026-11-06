@@ -59,7 +59,9 @@ function matchesFilter(promo: PromoWithContext, filter: FeedFilter, currentPlaye
 export default function PromoFeed() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { playerId, isAdminOrModerator } = useAuth();
+  const { playerId, isAdminOrModerator, hasRole } = useAuth();
+  // Reacting needs the Wrestler role; everyone else sees the counts read-only.
+  const canReact = hasRole('Wrestler');
   const [activeFilter, setActiveFilter] = useState<FeedFilter>('all');
   const [hideRead, setHideRead] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -169,7 +171,7 @@ export default function PromoFeed() {
             <h2 className="promo-feed__group-title">{t('promos.feed.pinnedPromos', 'Pinned')}</h2>
             <div className="promo-feed__grid">
               {pinnedPromos.map((promo) => (
-                <PromoCard key={promo.promoId} promo={promo} onReact={handleReact} />
+                <PromoCard key={promo.promoId} promo={promo} onReact={canReact ? handleReact : undefined} />
               ))}
             </div>
           </section>
@@ -195,7 +197,7 @@ export default function PromoFeed() {
                     promo={promo}
                     isRead={isRead(promo.promoId, promo.createdAt)}
                     onView={() => markAsRead(promo.promoId)}
-                    onReact={handleReact}
+                    onReact={canReact ? handleReact : undefined}
                   />
                 ))}
               </div>
@@ -228,7 +230,7 @@ export default function PromoFeed() {
           label={t('promos.feed.title', 'Wrestler Promos')}
           value={activeFilter}
           onValueChange={(value) => setActiveFilter(value as FeedFilter)}
-          items={FILTER_TABS.map((tab) => ({
+          items={FILTER_TABS.filter((tab) => tab.key !== 'mentions' || playerId).map((tab) => ({
             value: tab.key,
             label: (
               <>

@@ -71,12 +71,14 @@
     "confirmPassword": "Passwort bestätigen",
     "enterConfirmPassword": "Passwort bestätigen",
     "passwordPlaceholder": "Min. 8 Zeichen, Groß-/Kleinbuchstaben, Zahl",
+    "createPasswordPlaceholder": "Passwort erstellen",
+    "passwordHint": "Mindestens 8 Zeichen, mit Groß- und Kleinbuchstaben und einer Zahl.",
     "wrestlerAssignedLater": "Hier wählst du keinen Wrestler aus — neue Mitglieder starten als „Needs Wrestler“ und ein Admin weist dir einen zu.",
     "playerName": "Spielername",
     "playerNamePlaceholder": "Deinen Discord-Namen eingeben",
     "playerNameHint": "Dein Discord-Benutzername, damit andere Spieler dich finden können.",
     "psnId": "PSN ID",
-    "psnIdPlaceholder": "Deine PlayStation Network ID eingeben",
+    "psnIdPlaceholder": "Deine PSN ID",
     "createAccountBtn": "Konto erstellen",
     "creatingAccount": "Konto wird erstellt...",
     "alreadyHaveAccount": "Bereits ein Konto?",
@@ -1852,8 +1854,8 @@
       "all": "Alle"
     },
     "guest": {
-      "title": "Promos sind für Liga-Mitglieder",
-      "description": "Melde dich an, um Promos zu lesen und eigene zu schreiben. Rivalitäten, Faktionen und Tag Teams bleiben für alle offen."
+      "title": "Promos schreiben ist Liga-Mitgliedern vorbehalten",
+      "description": "Melde dich an, um eine eigene Promo zu schreiben. Den Promo-Feed können alle lesen."
     }
   },
   "shows": {
@@ -2605,7 +2607,11 @@
       "wrestlerHintRoster": "Wähle einen Wrestler aus. Du erscheinst auf der Seite, sobald du speicherst.",
       "enterName": "Wrestler-Namen eingeben",
       "placeholderRejected": "„Needs Wrestler“ ist nur ein Platzhalter. Gib den Namen ein, den du verwenden möchtest.",
-      "nowVisible": "Du bist jetzt auf der Seite. Andere Spieler können dich sehen."
+      "nowVisible": "Du bist jetzt auf der Seite. Andere Spieler können dich sehen.",
+      "cannotCallOutTitle": "Du kannst noch niemanden herausfordern",
+      "cannotCallOutBody": "Du bist auf der Seite nicht sichtbar, bis du einen Wrestler-Namen hast. Trage ihn in deinem Profil ein und komm dann zurück, um Call-Outs auszusprechen.",
+      "cannotCutPromoTitle": "Du kannst noch keine Promo schreiben",
+      "cannotCutPromoBody": "Du bist auf der Seite nicht sichtbar, also würde niemand deine Promo sehen. Trage einen Wrestler-Namen in deinem Profil ein und komm dann zurück, um sie zu veröffentlichen."
     },
     "auth": {
       "wrestlerAfterSignup": "Deinen Wrestler-Namen gibst du nach der Anmeldung ein. Bis dahin kannst du dein Konto nutzen, erscheinst aber nicht auf der Seite.",
@@ -2965,7 +2971,7 @@
         "rejected": "Abgelehnt"
       },
       "deletedDivision": "Gelöschte Division",
-      "staffReviewer": "Teammitglied"
+      "staffReviewer": "Liga-Team"
     },
     "tagTeams": {
       "loadError": "Tag Teams konnten nicht geladen werden",
@@ -3425,7 +3431,7 @@
       "typeBackstageAttack": "Backstage-Angriff",
       "typeRivalry": "Rivalität",
       "typeStoryline": "Storyline",
-      "staffReviewer": "Teammitglied"
+      "staffReviewer": "Liga-Team"
     },
     "uploadFailed": "Das Bild konnte nicht hochgeladen werden. Bitte versuche es erneut.",
     "uploadNetworkError": "Netzwerkfehler beim Hochladen. Bitte prüfe deine Internetverbindung und versuche es erneut.",

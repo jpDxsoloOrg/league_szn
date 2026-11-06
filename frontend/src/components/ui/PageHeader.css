@@ -15,8 +15,10 @@
   --color-hairline: var(--color-on-band-hairline);
 }
 
-/* A header inside a hero already sits on colour. */
-.event-hero .page-header {
+/* A header inside a hero already sits on colour, and one right above a hero
+   leaves the colour to it: one band per screen. */
+.event-hero .page-header,
+.page-header.page-header--plain {
   padding: 0;
   background: none;
   border-radius: 0;

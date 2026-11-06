@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { isApiError, promosApi } from '../../services/api';
 import type { PromoWithContext, ReactionType } from '../../types/promo';
 import Button from '../ui/Button';
@@ -14,6 +15,9 @@ import './PromoThread.css';
 export default function PromoThread() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { hasRole } = useAuth();
+  // Reacting needs the Wrestler role; everyone else sees the counts read-only.
+  const canReact = hasRole('Wrestler');
   const { promoId } = useParams<{ promoId: string }>();
   const [originalPromo, setOriginalPromo] = useState<PromoWithContext | null>(null);
   const [responses, setResponses] = useState<PromoWithContext[]>([]);
@@ -98,7 +102,7 @@ export default function PromoThread() {
 
       <PageHeader title={t('promos.thread.title', 'Promo Thread')} />
 
-      <PromoCard promo={originalPromo} onReact={handleReact} />
+      <PromoCard promo={originalPromo} onReact={canReact ? handleReact : undefined} />
 
       {responses.length > 0 && (
         <section className="promo-thread__responses">
@@ -111,7 +115,7 @@ export default function PromoThread() {
           <ol className="promo-thread__list">
             {responses.map((response) => (
               <li key={response.promoId}>
-                <PromoCard promo={response} compact onReact={handleReact} />
+                <PromoCard promo={response} compact onReact={canReact ? handleReact : undefined} />
               </li>
             ))}
           </ol>

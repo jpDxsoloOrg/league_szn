@@ -37,6 +37,8 @@
   --gradient-podium-first: linear-gradient(160deg, #7c3aed, #a21caf);
   --color-violet-bright: #a78bfa;
   --color-pink-bright: #ff6b92;
+  /* Pink text on a tint: the tint lifts the background, so it needs a lighter pink for 4.5:1. */
+  --color-pink-on-tint: #ff8fab;
   --color-magenta-bright: #f472b6;
 
   /* Section identity: one colour per section, picked by data-section below.

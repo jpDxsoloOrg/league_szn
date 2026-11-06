@@ -183,7 +183,7 @@
 .event-match__vs {
   grid-column: 2;
   grid-row: 1;
-  color: var(--color-pink);
+  color: var(--color-pink-on-tint);
   font-size: 0.9375rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -311,6 +311,26 @@
 
   .event-match__faceoff {
     gap: 0.5rem;
+  }
+
+  /* Names start level across the vs, and the winner chip gets its own line
+     so a long name never decides where it lands. */
+  .event-match__faceoff {
+    align-items: start;
+  }
+
+  .event-match__vs {
+    align-self: center;
+  }
+
+  .event-match__wrestler .ui-badge {
+    display: flex;
+    width: fit-content;
+    margin: 0.25rem 0 0;
+  }
+
+  .event-match__faceoff .event-match__side:nth-child(2) .ui-badge {
+    margin-left: auto;
   }
 
   .event-match__wrestler {

@@ -71,7 +71,7 @@ export default function ManageStorylineRequests() {
     if (!request.reviewedBy) return '—';
     return readableName(
       request.reviewedByName ?? request.reviewedBy,
-      t('adminContent.storylines.staffReviewer', 'Staff member'),
+      t('adminContent.storylines.staffReviewer', 'League Staff'),
     );
   };
 

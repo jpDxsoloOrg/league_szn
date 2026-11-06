@@ -4,7 +4,7 @@ import './FormDots.css';
 export type FormResult = 'W' | 'L' | 'D';
 
 export interface FormDotsProps {
-  /** Oldest to newest, as the standings API returns `recentForm`. */
+  /** Oldest to newest. The APIs send `recentForm` newest first, so reverse it before passing it in. */
   results: FormResult[];
   className?: string;
 }

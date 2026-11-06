@@ -29,8 +29,11 @@
 }
 
 .standings-rank {
+  display: inline-block;
+  min-width: 2.25rem;
   color: var(--color-text-muted);
   font-family: var(--font-heading);
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
 

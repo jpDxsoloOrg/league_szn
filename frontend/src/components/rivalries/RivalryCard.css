@@ -59,7 +59,7 @@
   position: absolute;
   top: 1.25rem;
   left: 50%;
-  color: var(--color-pink);
+  color: var(--color-pink-on-tint);
   font-family: var(--font-heading);
   font-weight: 800;
   text-transform: uppercase;

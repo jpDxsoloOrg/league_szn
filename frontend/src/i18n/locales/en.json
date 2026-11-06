@@ -71,12 +71,14 @@
     "confirmPassword": "Confirm Password",
     "enterConfirmPassword": "Confirm your password",
     "passwordPlaceholder": "Min 8 chars, uppercase, lowercase, number",
+    "createPasswordPlaceholder": "Create a password",
+    "passwordHint": "At least 8 characters, with an uppercase letter, a lowercase letter and a number.",
     "wrestlerAssignedLater": "You don't pick a wrestler here — new members start as “Needs Wrestler” and an admin sets you up with one.",
     "playerName": "Player Name",
     "playerNamePlaceholder": "Enter your Discord name",
     "playerNameHint": "Your Discord username so other players can find you.",
     "psnId": "PSN ID",
-    "psnIdPlaceholder": "Enter your PlayStation Network ID",
+    "psnIdPlaceholder": "Your PSN ID",
     "createAccountBtn": "Create Account",
     "creatingAccount": "Creating Account...",
     "alreadyHaveAccount": "Already have an account?",
@@ -1852,8 +1854,8 @@
       "all": "All"
     },
     "guest": {
-      "title": "Promos are for league members",
-      "description": "Sign in to read promos and cut your own. Rivalries, factions and tag teams stay open to everyone."
+      "title": "Cutting promos is for league members",
+      "description": "Sign in to cut your own promo. Anyone can read the promo feed."
     }
   },
   "shows": {
@@ -2605,7 +2607,11 @@
       "wrestlerHintRoster": "Choose a wrestler. You'll appear on the site as soon as you save.",
       "enterName": "Enter wrestler name",
       "placeholderRejected": "\"Needs Wrestler\" is a placeholder. Enter the name you want to use.",
-      "nowVisible": "You're on the site now. Other players can see you."
+      "nowVisible": "You're on the site now. Other players can see you.",
+      "cannotCallOutTitle": "You can't call anyone out yet",
+      "cannotCallOutBody": "You're hidden from the site until you have a wrestler name. Enter one on your profile, then come back to issue call-outs.",
+      "cannotCutPromoTitle": "You can't cut a promo yet",
+      "cannotCutPromoBody": "You're hidden from the site, so nobody would see your promo. Enter a wrestler name on your profile, then come back to post it."
     },
     "auth": {
       "wrestlerAfterSignup": "You'll enter your wrestler name after you sign in. Until then you can use your account, but you won't appear on the site.",
@@ -2961,7 +2967,7 @@
         "rejected": "Rejected"
       },
       "deletedDivision": "Deleted division",
-      "staffReviewer": "Staff member"
+      "staffReviewer": "League Staff"
     },
     "tagTeams": {
       "loadError": "Failed to load tag teams",
@@ -3425,7 +3431,7 @@
       "typeBackstageAttack": "Backstage Attack",
       "typeRivalry": "Rivalry",
       "typeStoryline": "Storyline",
-      "staffReviewer": "Staff member"
+      "staffReviewer": "League Staff"
     },
     "uploadFailed": "Failed to upload image. Please try again.",
     "uploadNetworkError": "Network error during upload. Please check your internet connection and try again.",

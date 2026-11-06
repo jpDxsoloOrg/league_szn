@@ -190,12 +190,24 @@ describe('App', () => {
     expect(document.title).toBe('nav.tabs.matches | League SZN');
   });
 
-  it('shows guests on /promos a sign-in prompt and keeps the section', async () => {
+  it.each([
+    ['/promos', 'PromoFeed'],
+    ['/promos/p1', 'PromoThread'],
+  ])('lets guests read %s, which the API serves publicly', async (path, page) => {
     mockUseAuth.mockReturnValue(unauthenticatedAuth());
-    testEntries = ['/promos'];
+    testEntries = [path];
+    const { container } = render(<App />);
+    expect(await screen.findByText(page)).toBeInTheDocument();
+    expect(screen.queryByTestId('navigate')).not.toBeInTheDocument();
+    expect(container.querySelector('.App')).toHaveAttribute('data-section', 'storylines');
+  });
+
+  it('shows guests on /promos/new a sign-in prompt and keeps the section', async () => {
+    mockUseAuth.mockReturnValue(unauthenticatedAuth());
+    testEntries = ['/promos/new'];
     const { container } = render(<App />);
     expect(await screen.findByRole('heading', { name: 'promos.guest.title' })).toBeInTheDocument();
-    expect(screen.queryByTestId('navigate')).not.toBeInTheDocument();
+    expect(screen.queryByText('PromoEditor')).not.toBeInTheDocument();
     expect(container.querySelector('.App')).toHaveAttribute('data-section', 'storylines');
   });
 

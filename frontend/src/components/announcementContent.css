@@ -29,7 +29,7 @@
   display: inline-block;
   padding: 0.375rem 1rem;
   border-radius: var(--radius-pill);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -54,7 +54,7 @@
 }
 
 .ann-doc__eyebrow {
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -77,7 +77,7 @@
 }
 
 .ann-doc__meta {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: var(--color-text-muted);
 }
 
@@ -102,7 +102,7 @@
 }
 
 .ann-doc .ann-doc__attribution {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   text-align: right;
   color: var(--color-cyan);
@@ -142,7 +142,7 @@
   padding: 0.125rem 0.625rem;
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-pill);
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -176,13 +176,13 @@
 }
 
 .ann-doc__fighter-wrestler {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: var(--color-text-muted);
 }
 
 .ann-doc__vs {
   margin: 0.25rem 0;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: var(--color-loss);
 }
@@ -218,7 +218,7 @@
   padding: 0.125rem 0.75rem;
   border-radius: var(--radius-pill);
   background-color: var(--tint-pink);
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -234,7 +234,7 @@
 }
 
 .ann-doc__info-title {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: var(--color-loss);
 }
@@ -263,6 +263,6 @@
 }
 
 .ann-doc .ann-doc__signoff {
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   color: var(--color-text-muted);
 }

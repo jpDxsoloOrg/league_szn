@@ -5,12 +5,13 @@ import { BrowserRouter } from 'react-router-dom';
 import type { ChallengeWithPlayers } from '../../../types/challenge';
 
 // --- Hoisted mocks ---
-const { mockGetAll, mockRespond, mockCancelChallenge, mockGetMyProfile, mockNavigate } = vi.hoisted(() => ({
+const { mockGetAll, mockRespond, mockCancelChallenge, mockGetMyProfile, mockNavigate, mockIsHiddenPlayer } = vi.hoisted(() => ({
   mockGetAll: vi.fn(),
   mockRespond: vi.fn(),
   mockCancelChallenge: vi.fn(),
   mockGetMyProfile: vi.fn(),
   mockNavigate: vi.fn(),
+  mockIsHiddenPlayer: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -66,6 +67,10 @@ vi.mock('../../../contexts/SiteConfigContext', () => ({
   }),
 }));
 
+vi.mock('../../../hooks/useIsHiddenPlayer', () => ({
+  useIsHiddenPlayer: mockIsHiddenPlayer,
+}));
+
 vi.mock('../MyChallenges.css', () => ({}));
 
 import MyChallenges from '../MyChallenges';
@@ -99,7 +104,19 @@ function renderMyChallenges() {
 describe('MyChallenges', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIsHiddenPlayer.mockReturnValue(false);
     mockGetMyProfile.mockResolvedValue({ playerId: currentPlayerId });
+  });
+
+  it('tells a player with no wrestler name why they cannot call anyone out', async () => {
+    mockIsHiddenPlayer.mockReturnValue(true);
+    mockGetMyProfile.mockResolvedValue({ playerId: currentPlayerId });
+    mockGetAll.mockResolvedValue([]);
+    renderMyChallenges();
+
+    expect(await screen.findByText('me.setup.cannotCallOutTitle')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'me.setup.enterName' })).toHaveAttribute('href', '/profile');
+    expect(screen.queryByRole('link', { name: /call-out/i })).not.toBeInTheDocument();
   });
 
   it('shows received and sent challenge tabs with counts', async () => {

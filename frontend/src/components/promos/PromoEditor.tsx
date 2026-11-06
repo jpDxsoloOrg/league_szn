@@ -9,6 +9,8 @@ import type { Player, Match, Championship, Stipulation, MatchType } from '../../
 import type { TagTeam } from '../../types/tagTeam';
 import type { Rivalry } from '../../types/rivalry';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import { useIsHiddenPlayer } from '../../hooks/useIsHiddenPlayer';
+import HiddenPlayerNotice from '../profile/HiddenPlayerNotice';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import PageHeader from '../ui/PageHeader';
@@ -96,6 +98,7 @@ export default function PromoEditor() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { features } = useSiteConfig();
+  const isHiddenPlayer = useIsHiddenPlayer();
 
   // Read pre-fill values from location state (preferred) or search params (fallback).
   // Using useState initializer callbacks so values are read exactly once on mount.
@@ -229,6 +232,7 @@ export default function PromoEditor() {
   const hasChallengeDetails =
     !!challengeMatchType && (challengeMode === 'tag_team' ? !!selectedTagTeamId : !!targetPlayerId);
   const canSubmit =
+    !isHiddenPlayer &&
     isContentValid &&
     promoType &&
     !submitting &&
@@ -426,6 +430,10 @@ export default function PromoEditor() {
         title={t('promos.editor.title', 'Cut a Promo')}
         subtitle={t('promos.editor.subtitle', 'Grab the mic and let the WWE Universe hear your voice.')}
       />
+
+      {isHiddenPlayer && (
+        <HiddenPlayerNotice title={t('me.setup.cannotCutPromoTitle')} body={t('me.setup.cannotCutPromoBody')} />
+      )}
 
       {error && <div className="promo-editor__error" role="alert">{error}</div>}
 

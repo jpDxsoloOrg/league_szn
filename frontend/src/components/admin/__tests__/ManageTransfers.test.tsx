@@ -50,7 +50,7 @@ describe('ManageTransfers history', () => {
     mockTransfersApi.getAllRequests.mockResolvedValue([reviewed]);
     await openHistory();
 
-    expect(await screen.findByText('Staff member')).toBeInTheDocument();
+    expect(await screen.findByText('League Staff')).toBeInTheDocument();
     expect(document.body.textContent).not.toContain(rawId);
   });
 

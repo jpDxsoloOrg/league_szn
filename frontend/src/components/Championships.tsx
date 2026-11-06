@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Crown } from 'lucide-react';
 import { championshipsApi, divisionsApi, playersApi } from '../services/api';
 import type { PlayerDirectoryEntry } from '../services/api';
 import { formatMatchDate } from '../utils/dateUtils';
@@ -189,6 +189,7 @@ export default function Championships() {
                 imageAlt={championship.name}
                 eyebrow={championship.name}
                 title={holder ? getHolderName(holder) : t('common.vacant')}
+                fallbackIcon={holder ? undefined : <Crown />}
                 accent={inactive ? 'none' : getTitleAccent(championship)}
                 badge={inactive ? <Badge>{t('championships.inactive')}</Badge> : undefined}
                 meta={(

@@ -33,7 +33,7 @@
 
 .challenge-card__stipulation {
   color: var(--color-text-secondary);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 400;
 }
 
@@ -45,7 +45,7 @@
 
 .challenge-card__footer {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .challenge-card__countdown--urgent {

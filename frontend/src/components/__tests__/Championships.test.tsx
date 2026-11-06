@@ -148,6 +148,10 @@ describe('Championships', () => {
     // Vacant championship shows "Vacant"
     expect(screen.getByText('Vacant')).toBeInTheDocument();
 
+    // A vacant title with no photo shows a crown, not the letter V
+    const vacantTile = screen.getByText('Vacant').closest('.ui-tile');
+    expect(vacantTile?.querySelector('.ui-tile__fallback svg')).toBeInTheDocument();
+
     // Image rendered for first championship
     const img = screen.getByAltText('World Heavyweight Championship');
     expect(img).toHaveAttribute('src', 'https://example.com/belt.jpg');
