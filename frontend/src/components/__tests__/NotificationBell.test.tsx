@@ -1,0 +1,89 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, useLocation } from 'react-router-dom';
+import type { AppNotification } from '../../types';
+
+const { mockGetAll, mockGetUnreadCount, mockMarkRead } = vi.hoisted(() => ({
+  mockGetAll: vi.fn(),
+  mockGetUnreadCount: vi.fn(),
+  mockMarkRead: vi.fn(),
+}));
+
+vi.mock('../../services/api/notifications.api', () => ({
+  notificationsApi: {
+    getAll: mockGetAll,
+    getUnreadCount: mockGetUnreadCount,
+    markRead: mockMarkRead,
+    delete: vi.fn(),
+  },
+}));
+vi.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({ isAuthenticated: true, playerId: 'p1' }),
+}));
+vi.mock('../../contexts/SiteConfigContext', () => ({
+  useSiteConfig: () => ({ features: { notifications: true } }),
+}));
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
+
+import NotificationBell from '../NotificationBell';
+
+function notification(overrides: Partial<AppNotification>): AppNotification {
+  return {
+    notificationId: 'n1',
+    userId: 'u1',
+    type: 'announcement',
+    message: 'Something happened',
+    sourceId: 'source-1',
+    sourceType: 'announcement',
+    isRead: true,
+    createdAt: '2026-11-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function CurrentPath() {
+  const { pathname } = useLocation();
+  return <output data-testid="path">{pathname}</output>;
+}
+
+async function openWith(item: AppNotification) {
+  mockGetAll.mockResolvedValue({ notifications: [item] });
+  render(
+    <MemoryRouter>
+      <NotificationBell />
+      <CurrentPath />
+    </MemoryRouter>,
+  );
+  await userEvent.click(screen.getByRole('button', { name: 'notifications.bell' }));
+  await screen.findByText(item.message);
+}
+
+describe('NotificationBell source types', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetUnreadCount.mockResolvedValue({ count: 0 });
+  });
+
+  it.each([
+    ['challenge', 'notifications.typeChallenge', '/challenges/source-1'],
+    ['rivalry', 'notifications.typeRivalry', '/rivalries/source-1'],
+    ['storyline_request', 'notifications.typeStoryline', '/profile'],
+    ['match_invitation', 'notifications.typeMatch', '/'],
+  ] as const)('labels and links a %s notification', async (sourceType, label, path) => {
+    await openWith(notification({ sourceType }));
+
+    expect(screen.getByText(label)).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(path));
+  });
+
+  it('falls back to the list when a rivalry notification has no source', async () => {
+    await openWith(notification({ sourceType: 'rivalry', sourceId: '' }));
+
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent('/rivalries'));
+  });
+});

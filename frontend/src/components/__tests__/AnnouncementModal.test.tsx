@@ -3,17 +3,21 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Announcement } from '../../types';
 
-const { mockGetActive, mockUseAuth, mockUseSiteConfig, mockSetOpen } = vi.hoisted(() => ({
+const { mockGetActive, mockUseAuth, mockUseSiteConfig, mockSetOpen, mockPromptPending } = vi.hoisted(() => ({
   mockGetActive: vi.fn(),
   mockUseAuth: vi.fn(),
   mockUseSiteConfig: vi.fn(),
   mockSetOpen: vi.fn(),
+  mockPromptPending: vi.fn(),
 }));
 
 vi.mock('../../services/api', () => ({ announcementsApi: { getActive: mockGetActive } }));
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: mockUseAuth }));
 vi.mock('../../contexts/SiteConfigContext', () => ({ useSiteConfig: mockUseSiteConfig }));
-vi.mock('../../hooks/useAnnouncementOpen', () => ({ setAnnouncementOpen: mockSetOpen }));
+vi.mock('../../hooks/useAnnouncementOpen', () => ({
+  setAnnouncementOpen: mockSetOpen,
+  useWrestlerPromptPending: mockPromptPending,
+}));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
@@ -28,6 +32,8 @@ describe('AnnouncementModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    sessionStorage.clear();
+    mockPromptPending.mockReturnValue(false);
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
     mockUseSiteConfig.mockReturnValue({ features: { notifications: true }, isLoading: false });
     mockGetActive.mockResolvedValue([announcement('a')]);
@@ -116,5 +122,45 @@ describe('AnnouncementModal', () => {
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(localStorage.getItem('dismissed_announcements')).toBeNull();
+  });
+
+  it('remembers the X for the session, so a reload does not reopen it', async () => {
+    mockGetActive.mockResolvedValue([announcement('a'), announcement('b')]);
+    const first = render(<AnnouncementModal />);
+    await screen.findByRole('dialog', { name: 'Title a' });
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'common.close' })[0] as HTMLElement);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    first.unmount();
+
+    render(<AnnouncementModal />);
+    await waitFor(() => expect(mockGetActive).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(localStorage.getItem('dismissed_announcements')).toBeNull();
+  });
+
+  it('still shows a new announcement after the X', async () => {
+    const first = render(<AnnouncementModal />);
+    await screen.findByRole('dialog', { name: 'Title a' });
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    first.unmount();
+
+    mockGetActive.mockResolvedValue([announcement('a'), announcement('new')]);
+    render(<AnnouncementModal />);
+    expect(await screen.findByRole('dialog', { name: 'Title new' })).toBeInTheDocument();
+  });
+
+  it('holds back while a hidden player has the wrestler prompt, then opens', async () => {
+    mockPromptPending.mockReturnValue(true);
+    const view = render(<AnnouncementModal />);
+    await waitFor(() => expect(mockGetActive).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockSetOpen).not.toHaveBeenCalledWith(true);
+
+    mockPromptPending.mockReturnValue(false);
+    view.rerender(<AnnouncementModal />);
+    expect(await screen.findByRole('dialog', { name: 'Title a' })).toBeInTheDocument();
   });
 });

@@ -65,16 +65,9 @@
   justify-content: space-between;
   gap: 0.5rem 1rem;
   margin-bottom: -1.25rem;
-  padding: 0.875rem 0 1.25rem;
+  padding: 0.75rem 0 1.25rem;
   border-top: 1px solid var(--color-hairline);
   background-color: var(--color-surface);
-}
-
-.profile-setup__links {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 1rem;
 }
 
 .profile-setup__link {
@@ -90,14 +83,8 @@
     grid-template-columns: 1fr;
   }
 
-  /* A pinned bar would take up most of a short phone screen. */
-  .profile-setup__actions {
-    position: static;
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-
-  .profile-setup__links {
-    justify-content: space-between;
+  /* Both buttons share the pinned row, so neither can sit below the fold. */
+  .profile-setup__actions .ui-btn {
+    flex: 1 1 auto;
   }
 }

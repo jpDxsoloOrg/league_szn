@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { PROFILE_SETUP_SNOOZE_KEY } from '../utils/profileSetup';
+import { NO_PLAYER_ROW_KEY, PROFILE_SETUP_SNOOZE_KEY } from '../utils/profileSetup';
+import { ANNOUNCEMENTS_CLOSED_KEY } from '../utils/announcementDismissal';
 import { cognitoAuth, type UserRole } from '../services/cognito';
 import { profileApi } from '../services/api';
 import { AUTH_EXPIRED_EVENT } from '../services/api/apiClient';
+import type { Player } from '../types';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -14,6 +16,8 @@ interface AuthState {
   currentWrestler: string | null;
   /** The signed-in player's alternate wrestler name (if set). */
   alternateWrestler: string | null;
+  /** The player row loaded with the session, so the shell need not fetch it again. */
+  profile: Player | null;
 }
 
 interface AuthContextType extends AuthState {
@@ -42,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     playerId: null,
     currentWrestler: null,
     alternateWrestler: null,
+    profile: null,
   });
 
   // Initialize auth state on mount
@@ -65,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               playerId: player.playerId,
               currentWrestler: null,
               alternateWrestler: null,
+              profile: null,
             });
             return;
           } catch {
@@ -88,10 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           let playerId: string | null = null;
           let currentWrestler: string | null = null;
           let alternateWrestler: string | null = null;
+          let loadedProfile: Player | null = null;
           if (groups.includes('Wrestler')) {
             try {
               const profile = await profileApi.getMyProfile();
               if (!mounted) return;
+              loadedProfile = profile;
               playerId = profile.playerId;
               currentWrestler = profile.currentWrestler ?? null;
               alternateWrestler = profile.alternateWrestler ?? null;
@@ -109,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             playerId,
             currentWrestler,
             alternateWrestler,
+            profile: loadedProfile,
           });
         } else {
           setState({
@@ -119,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             playerId: null,
             currentWrestler: null,
             alternateWrestler: null,
+            profile: null,
           });
         }
       } catch {
@@ -131,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           playerId: null,
           currentWrestler: null,
           alternateWrestler: null,
+          profile: null,
         });
       }
     };
@@ -148,9 +159,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let playerId: string | null = null;
     let currentWrestler: string | null = null;
     let alternateWrestler: string | null = null;
+    let loadedProfile: Player | null = null;
     if (result.groups.includes('Wrestler')) {
       try {
         const profile = await profileApi.getMyProfile();
+        loadedProfile = profile;
         playerId = profile.playerId;
         currentWrestler = profile.currentWrestler ?? null;
         alternateWrestler = profile.alternateWrestler ?? null;
@@ -167,6 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       playerId,
       currentWrestler,
       alternateWrestler,
+      profile: loadedProfile,
     });
   }, []);
 
@@ -187,6 +201,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('devPlayer');
     // The profile-setup nudge is per account; don't carry a snooze over.
     sessionStorage.removeItem(PROFILE_SETUP_SNOOZE_KEY);
+    sessionStorage.removeItem(NO_PLAYER_ROW_KEY);
+    sessionStorage.removeItem(ANNOUNCEMENTS_CLOSED_KEY);
     setState({
       isAuthenticated: false,
       isLoading: false,
@@ -195,6 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       playerId: null,
       currentWrestler: null,
       alternateWrestler: null,
+      profile: null,
     });
   }, []);
 
@@ -216,6 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         playerId: profile.playerId,
         currentWrestler: profile.currentWrestler ?? null,
         alternateWrestler: profile.alternateWrestler ?? null,
+        profile,
       }));
     } catch {
       // Profile may not exist
@@ -242,6 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       playerId: player.playerId,
       currentWrestler: null,
       alternateWrestler: null,
+      profile: null,
     });
   }, []);
 

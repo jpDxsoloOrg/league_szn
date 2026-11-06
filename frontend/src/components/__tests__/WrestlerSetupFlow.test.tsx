@@ -135,7 +135,9 @@ describe('new member with no wrestler', () => {
     await signIn();
     await waitFor(() => expect(screen.getByTestId('auth')).toHaveTextContent('signed-in|Cody Rhodes'));
     expect(await screen.findByText('home')).toBeInTheDocument();
-    await waitFor(() => expect(mockGetMyProfile).toHaveBeenCalledTimes(2));
+    // Sign-in loads the row; the setup check reuses it rather than asking again.
+    await waitFor(() => expect(screen.getByTestId('auth')).toHaveTextContent('signed-in'));
+    expect(mockGetMyProfile).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 

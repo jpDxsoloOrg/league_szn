@@ -30,6 +30,12 @@ export function hasSetupGaps(gaps: ProfileSetupGaps): boolean {
 /** sessionStorage key set by "Remind me later"; clears when the tab closes. */
 export const PROFILE_SETUP_SNOOZE_KEY = 'profileSetup.snoozed';
 
+/**
+ * sessionStorage key set when a staff account turns out to have no player row,
+ * so the check is not repeated (and logged as a failed request) on every load.
+ */
+export const NO_PLAYER_ROW_KEY = 'profileSetup.noPlayerRow';
+
 /** Routes where the modal would cover the very form it points at. */
 export const PROFILE_SETUP_EXCLUDED_PATHS = ['/profile', '/login', '/signup', '/welcome', '/forgot-password'];
 

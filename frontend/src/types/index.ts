@@ -428,7 +428,7 @@ export interface AppNotification {
   type: NotificationType;
   message: string;
   sourceId: string;
-  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'match_invitation' | 'match_invitation_declined' | 'rivalry';
+  sourceType: 'promo' | 'challenge' | 'match' | 'announcement' | 'stable' | 'tag_team' | 'transfer' | 'match_invitation' | 'match_invitation_declined' | 'rivalry' | 'storyline_request';
   isRead: boolean;
   createdAt: string;
 }

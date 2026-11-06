@@ -4,14 +4,16 @@ import { useTranslation } from 'react-i18next';
 import { Check, Circle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { profileApi, wrestlersApi } from '../services/api';
+import { isApiError } from '../services/api/apiClient';
 import type { Player, Wrestler, WrestlerMove } from '../types';
 import { MAX_MOVE_NAME_LENGTH } from '../types';
 import { VALIDATION } from '../constants';
 import { WRESTLER_NAME_ENTRY_MODE } from '../config/wrestlerNameEntry';
 import { buildWrestlerOptionGroups } from '../utils/wrestlerOptions';
 import { isNeedsWrestler } from '../utils/needsWrestler';
-import { useAnnouncementOpen } from '../hooks/useAnnouncementOpen';
+import { setWrestlerPromptPending, useAnnouncementOpen } from '../hooks/useAnnouncementOpen';
 import {
+  NO_PLAYER_ROW_KEY,
   PROFILE_SETUP_SNOOZE_KEY,
   getProfileSetupGaps,
   hasSetupGaps,
@@ -39,19 +41,19 @@ const NONE_MISSING: MissingFields = {
   finisher: false,
 };
 
-function readSnoozed(): boolean {
+function readSessionFlag(key: string): boolean {
   try {
-    return sessionStorage.getItem(PROFILE_SETUP_SNOOZE_KEY) === '1';
+    return sessionStorage.getItem(key) === '1';
   } catch {
     return false;
   }
 }
 
-function writeSnoozed(): void {
+function writeSessionFlag(key: string): void {
   try {
-    sessionStorage.setItem(PROFILE_SETUP_SNOOZE_KEY, '1');
+    sessionStorage.setItem(key, '1');
   } catch {
-    // Storage unavailable — the modal simply shows again on the next load.
+    // Storage unavailable — the check simply runs again on the next load.
   }
 }
 
@@ -67,13 +69,19 @@ const FIRST_FIELD = 'input, select';
  */
 export default function ProfileCompletionModal() {
   const { t } = useTranslation();
-  const { isAuthenticated, isLoading, refreshProfile } = useAuth();
+  const { isAuthenticated, isLoading, isWrestler, profile: sessionProfile, refreshProfile } = useAuth();
   const { showToast } = useToast();
   const location = useLocation();
   const formRef = useRef<HTMLFormElement | null>(null);
-  // Announcements go first; this modal appears once they are dismissed.
+  // Announcements go ahead of the checklist, but not ahead of the wrestler
+  // prompt: a hidden player needs that first (see useAnnouncementOpen).
   const announcementOpen = useAnnouncementOpen();
+  // AuthContext already loaded this on sign-in, so the first check reuses it.
+  // Later checks must fetch: the row can change on /profile.
+  const unusedSessionProfile = useRef<Player | null>(null);
+  const firstCheckDone = useRef(false);
   const [profile, setProfile] = useState<Player | null>(null);
+  const [checking, setChecking] = useState(false);
   const [show, setShow] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [missing, setMissing] = useState<MissingFields>(NONE_MISSING);
@@ -92,15 +100,22 @@ export default function ProfileCompletionModal() {
   const excluded = isProfileSetupExcludedPath(location.pathname);
 
   useEffect(() => {
+    if (!firstCheckDone.current) unusedSessionProfile.current = sessionProfile;
+  }, [sessionProfile]);
+
+  useEffect(() => {
     if (!isAuthenticated || isLoading || dismissed || excluded) return;
-    if (readSnoozed()) return;
+    if (readSessionFlag(PROFILE_SETUP_SNOOZE_KEY) || readSessionFlag(NO_PLAYER_ROW_KEY)) return;
 
     let mounted = true;
     const controller = new AbortController();
 
     const checkProfile = async () => {
+      setChecking(true);
       try {
-        const p = await profileApi.getMyProfile(controller.signal);
+        const known = firstCheckDone.current ? null : unusedSessionProfile.current;
+        firstCheckDone.current = true;
+        const p = known ?? await profileApi.getMyProfile(controller.signal);
         if (!mounted) return;
         setProfile(p);
 
@@ -122,6 +137,7 @@ export default function ProfileCompletionModal() {
         setMissing(next);
         const needed = next.name || next.psnId || next.wrestler || next.signature || next.finisher;
         setShow(needed);
+        setChecking(false);
         if (needed && next.wrestler && !textWrestlerEntry) {
           try {
             const list = await wrestlersApi.getAll();
@@ -130,8 +146,10 @@ export default function ProfileCompletionModal() {
             // The dropdown stays empty; the profile link still works.
           }
         }
-      } catch {
+      } catch (err) {
         // No profile or error — don't show modal
+        if (!isWrestler && isApiError(err, 404)) writeSessionFlag(NO_PLAYER_ROW_KEY);
+        if (mounted) setChecking(false);
       }
     };
 
@@ -140,13 +158,22 @@ export default function ProfileCompletionModal() {
     return () => {
       mounted = false;
       controller.abort();
+      setChecking(false);
     };
-  }, [isAuthenticated, isLoading, dismissed, excluded, textWrestlerEntry]);
+  }, [isAuthenticated, isLoading, isWrestler, dismissed, excluded, textWrestlerEntry]);
+
+  // Holds announcements back until we know whether the wrestler prompt goes first.
+  const wrestlerPromptPending = checking || (show && missing.wrestler && !excluded);
+  useEffect(() => {
+    setWrestlerPromptPending(wrestlerPromptPending);
+    return () => setWrestlerPromptPending(false);
+  }, [wrestlerPromptPending]);
 
   // Sign-out resets everything so the next account in this tab gets its own
   // check (the snooze key is cleared by AuthContext).
   useEffect(() => {
     if (isAuthenticated) return;
+    firstCheckDone.current = false;
     setShow(false);
     setDismissed(false);
     setProfile(null);
@@ -241,7 +268,7 @@ export default function ProfileCompletionModal() {
 
   const handleSnooze = () => {
     if (saving) return;
-    writeSnoozed();
+    writeSessionFlag(PROFILE_SETUP_SNOOZE_KEY);
     setShow(false);
     setDismissed(true);
   };
@@ -252,7 +279,7 @@ export default function ProfileCompletionModal() {
     setDismissed(true);
   };
 
-  if (!show || !profile || excluded || announcementOpen) return null;
+  if (!show || !profile || excluded || (announcementOpen && !missing.wrestler)) return null;
 
   const setupItems = missing.wrestler || missing.signature || missing.finisher;
   const wrestlerLabel = textWrestlerEntry ? t('me.setup.wrestlerLabel') : t('profileModal.pickWrestler');
@@ -419,15 +446,14 @@ export default function ProfileCompletionModal() {
 
         {error && <p className="me-alert me-alert--error" role="alert">{error}</p>}
 
+        <Link to="/profile" className="profile-setup__link" onClick={handleOpenProfile}>
+          {t('profileModal.openFullProfile')}
+        </Link>
+
         <div className="profile-setup__actions">
-          <div className="profile-setup__links">
-            <Link to="/profile" className="profile-setup__link" onClick={handleOpenProfile}>
-              {t('profileModal.openFullProfile')}
-            </Link>
-            <Button variant="ghost" onClick={handleSnooze} disabled={saving}>
-              {t('profileModal.remindLater')}
-            </Button>
-          </div>
+          <Button variant="ghost" onClick={handleSnooze} disabled={saving}>
+            {t('profileModal.remindLater')}
+          </Button>
           <Button type="submit" loading={saving}>
             {saving ? t('common.saving') : t('profileModal.saveAndContinue')}
           </Button>

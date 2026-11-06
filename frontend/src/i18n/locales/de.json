@@ -2392,7 +2392,9 @@
     "deleteAllRead": "Gelesene löschen",
     "typeStable": "Stable",
     "typeTagTeam": "Tag Team",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "Transfer",
+    "typeRivalry": "Rivalität",
+    "typeStoryline": "Storyline"
   },
   "findMatch": {
     "title": "Match finden",

@@ -40,10 +40,57 @@ const buildRequest = (
   return { ...options, headers, signal };
 };
 
+/**
+ * Statuses a burst can cause. The account allows few concurrent Lambdas, so a
+ * page that fans out can get an instant failure that clears within a second.
+ */
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503]);
+const MAX_READ_RETRIES = 2;
+const RETRY_BASE_DELAY_MS = 400;
+
+const isRead = (options: RequestInit): boolean =>
+  (options.method ?? 'GET').toUpperCase() === 'GET';
+
+/** Half to one and a half times the doubling delay, so a failed wave spreads out. */
+const retryDelayMs = (retryNumber: number): number =>
+  RETRY_BASE_DELAY_MS * 2 ** retryNumber * (0.5 + Math.random());
+
+const abortError = (): DOMException => new DOMException('The request was aborted.', 'AbortError');
+
+/** Resolves after `delayMs`, or rejects as soon as `signal` aborts. */
+const waitForRetry = (delayMs: number, signal?: AbortSignal): Promise<void> =>
+  new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(abortError());
+      return;
+    }
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(abortError());
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, delayMs);
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+
+/** One request, repeated on a transient failure if it is safe to repeat. Writes never are. */
+const fetchWithRetry = async (url: string, request: RequestInit, signal?: AbortSignal): Promise<Response> => {
+  let response = await fetch(url, request);
+  if (!isRead(request)) return response;
+
+  for (let retry = 0; retry < MAX_READ_RETRIES && RETRYABLE_STATUSES.has(response.status); retry += 1) {
+    await waitForRetry(retryDelayMs(retry), signal);
+    response = await fetch(url, request);
+  }
+  return response;
+};
+
 // Helper to make authenticated requests with optional abort signal
 export const fetchWithAuth = async (url: string, options: RequestInit = {}, signal?: AbortSignal) => {
   const token = getAuthToken();
-  let response = await fetch(url, buildRequest(options, token, signal));
+  let response = await fetchWithRetry(url, buildRequest(options, token, signal), signal);
 
   // Access tokens live 24h but admin tabs stay open longer: a 401 on a
   // request that carried a token usually means it expired mid-session.
@@ -54,7 +101,7 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}, sign
     const { cognitoAuth } = await import('../cognito');
     const refreshed = await cognitoAuth.refreshSession();
     if (refreshed) {
-      response = await fetch(url, buildRequest(options, refreshed.accessToken, signal));
+      response = await fetchWithRetry(url, buildRequest(options, refreshed.accessToken, signal), signal);
     }
   }
 
