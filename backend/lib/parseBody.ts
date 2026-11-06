@@ -12,7 +12,11 @@ export function parseBody<T = Record<string, any>>(
     if (!event.body) {
       return { error: badRequest('Request body is required') };
     }
-    const data = JSON.parse(event.body) as T;
+    const data = JSON.parse(event.body) as T | null;
+    // The JSON literal null parses cleanly, but every caller reads fields from it.
+    if (data === null) {
+      return { error: badRequest('Request body is required') };
+    }
     return { data };
   } catch {
     return { error: badRequest('Invalid JSON in request body') };

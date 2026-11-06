@@ -341,4 +341,65 @@ describe('createRouter', () => {
       expect(() => createRouter(routes as unknown as ReadonlyArray<RouteConfig>)).toThrow(/empty role list/);
     });
   });
+
+
+  describe('over-long path ids', () => {
+    const routes = (handler: RouteConfig['handler']): ReadonlyArray<RouteConfig> => [
+      { method: 'GET', resource: '/things/{thingId}', handler, access: 'public' },
+    ];
+
+    it('returns 404 without running the handler', async () => {
+      const handler = vi.fn();
+      const router = createRouter(routes(handler as RouteConfig['handler']));
+
+      const result = await router(
+        makeEvent({ resource: '/things/{thingId}', pathParameters: { thingId: 'x'.repeat(3000) } }),
+        ctx,
+        cb,
+      );
+
+      expect(result!.statusCode).toBe(404);
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('applies behind /{proxy+} too', async () => {
+      const handler = vi.fn();
+      const router = createRouter(routes(handler as RouteConfig['handler']));
+
+      const result = await router(
+        makeEvent({ resource: '/{proxy+}', path: `/things/${'x'.repeat(3000)}`, pathParameters: { proxy: 'ignored' } }),
+        ctx,
+        cb,
+      );
+
+      expect(result!.statusCode).toBe(404);
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('counts bytes, so multi-byte ids cannot slip under the limit', async () => {
+      const handler = vi.fn();
+      const router = createRouter(routes(handler as RouteConfig['handler']));
+
+      const result = await router(
+        makeEvent({ resource: '/things/{thingId}', pathParameters: { thingId: '\u{1F600}'.repeat(100) } }),
+        ctx,
+        cb,
+      );
+
+      expect(result!.statusCode).toBe(404);
+    });
+
+    it('passes a normal id through', async () => {
+      const handler = vi.fn().mockResolvedValue({ statusCode: 200, body: '{}' });
+      const router = createRouter(routes(handler as RouteConfig['handler']));
+
+      const result = await router(
+        makeEvent({ resource: '/things/{thingId}', pathParameters: { thingId: '9277aa8e-6517-4362-a95a-749e10615306' } }),
+        ctx,
+        cb,
+      );
+
+      expect(result!.statusCode).toBe(200);
+    });
+  });
 });

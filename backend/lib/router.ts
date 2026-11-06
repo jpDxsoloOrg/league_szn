@@ -40,6 +40,12 @@ type CompiledRoute = RouteConfig & {
 
 const noopCallback = () => {};
 
+/**
+ * Longest path id we look up. Ids are UUIDs, and a key over DynamoDB's size
+ * limit makes the query itself fail, which would otherwise surface as a 500.
+ */
+const MAX_PATH_PARAM_BYTES = 256;
+
 export function createRouter(routes: ReadonlyArray<RouteConfig>): APIGatewayProxyHandler {
     routes.forEach(assertAccessDeclared);
     const compiled: ReadonlyArray<CompiledRoute> = routes.map((route) => {
@@ -131,7 +137,16 @@ async function dispatch(
             if (denied) return denied;
         }
     }
+    if (hasOverlongPathParam(event)) return notFound();
     return (await route.handler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
+}
+
+function hasOverlongPathParam(event: APIGatewayProxyEvent): boolean {
+    return Object.entries(event.pathParameters ?? {}).some(
+        // `proxy` is the whole path; the ids inside it are checked by name.
+        ([name, value]) => name !== 'proxy' && value !== undefined
+            && Buffer.byteLength(value) > MAX_PATH_PARAM_BYTES
+    );
 }
 
 /** Fails at load time so that a route can never ship without a declaration. */

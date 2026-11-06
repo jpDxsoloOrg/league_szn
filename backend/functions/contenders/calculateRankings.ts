@@ -197,7 +197,7 @@ export const handler: Handler = async (event) => {
 
     const body = isAsyncInvocation
       ? (event || {})
-      : (event.body ? JSON.parse(event.body) : {});
+      : ((event.body ? JSON.parse(event.body) : null) ?? {});
     const requestedChampionshipId: string | undefined = body.championshipId;
     const configOverrides: ConfigOverrides = {
       minimumMatches: typeof body.minimumMatches === 'number' ? body.minimumMatches : undefined,
