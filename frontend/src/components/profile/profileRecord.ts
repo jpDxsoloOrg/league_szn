@@ -14,10 +14,11 @@ export function formatRecord({ wins, losses, draws }: WinLossRecord): string {
   return `${wins}-${losses}-${draws}`;
 }
 
+/** A dash with no matches played, the same as Standings and faction pages. */
 export function getWinPercentage({ wins, losses, draws }: WinLossRecord): string {
   const total = wins + losses + draws;
-  if (total === 0) return '0';
-  return ((wins / total) * 100).toFixed(1);
+  if (total === 0) return '-';
+  return `${((wins / total) * 100).toFixed(1)}%`;
 }
 
 /** Colour band for a win rate. Empty when no matches have been played. */

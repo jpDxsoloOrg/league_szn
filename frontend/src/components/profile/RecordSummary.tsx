@@ -29,7 +29,7 @@ export default function RecordSummary({ record, recentForm, streak, titlesHeld }
           </div>
           <div>
             <dt>{t('publicProfile.winPercent')}</dt>
-            <dd className={tone ? `profile-win--${tone}` : undefined}>{getWinPercentage(record)}%</dd>
+            <dd className={tone ? `profile-win--${tone}` : undefined}>{getWinPercentage(record)}</dd>
           </div>
           {titlesHeld !== undefined && (
             <div>

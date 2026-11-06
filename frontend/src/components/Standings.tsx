@@ -43,7 +43,7 @@ function formatRecord(player: Player): string {
 }
 
 function formatWinRate(player: RankedPlayer): string {
-  return `${player.winRate.toFixed(1)}%`;
+  return player.matchesPlayed > 0 ? `${player.winRate.toFixed(1)}%` : '-';
 }
 
 /** The API sends recentForm newest first; FormDots reads oldest to newest. */

@@ -230,6 +230,17 @@ describe('Standings', () => {
     expect(within(table).getAllByText('-').length).toBeGreaterThanOrEqual(2);
   });
 
+  it('shows a dash for the win rate of a player with no matches', async () => {
+    mockGetStandings.mockResolvedValue({
+      players: [{ ...chasePack[0], wins: 0, losses: 0, draws: 0 }],
+      sortedByWins: true,
+    });
+    renderStandings();
+
+    const table = await screen.findByRole('table');
+    expect(within(table).queryByText('0.0%')).not.toBeInTheDocument();
+  });
+
   it('skips the podium while nobody has played', async () => {
     mockGetStandings.mockResolvedValue({
       players: mockPlayers.map((player) => ({ ...player, wins: 0, losses: 0, draws: 0 })),

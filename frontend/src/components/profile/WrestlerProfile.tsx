@@ -216,7 +216,7 @@ export default function WrestlerProfile() {
             <ProfileRequests player={player} divisions={divisions} />
           </div>
 
-          {statisticsTab && tab === 'stats' && <EmbeddedPlayerStats playerId={player.playerId} />}
+          {statisticsTab && tab === 'stats' && <EmbeddedPlayerStats playerId={player.playerId} imageUrl={player.imageUrl} />}
         </>
       )}
     </div>

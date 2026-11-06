@@ -4,14 +4,16 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockGetPlayerStats, mockGetAllSeasons } = vi.hoisted(() => ({
+const { mockGetPlayerStats, mockGetAllSeasons, mockGetRoster } = vi.hoisted(() => ({
   mockGetPlayerStats: vi.fn(),
   mockGetAllSeasons: vi.fn(),
+  mockGetRoster: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
   statisticsApi: { getPlayerStats: mockGetPlayerStats },
   seasonsApi: { getAll: mockGetAllSeasons },
+  playersApi: { getAll: mockGetRoster },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -222,6 +224,34 @@ describe('PlayerStats', () => {
     expect(screen.getByText('Recent Achievements')).toBeInTheDocument();
     expect(screen.getByText('Grand Slam')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View All Achievements' })).toHaveAttribute('href', '/stats/achievements?player=p1');
+  });
+
+  it('shows the real photo in the record card', async () => {
+    mockGetPlayerStats
+      .mockResolvedValueOnce({ players: mockPlayers })
+      .mockResolvedValueOnce(fullPlayerStatsResponse);
+    mockGetRoster.mockResolvedValue([{ playerId: mockPlayers[0].playerId, imageUrl: 'https://img.test/p1.png' }]);
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByRole('img', { name: mockPlayers[0].name })).toHaveAttribute('src', 'https://img.test/p1.png');
+    });
+  });
+
+  it('shows a dash for the win rate of a player with no matches', async () => {
+    const overall = fullPlayerStatsResponse.statistics.find((stat) => stat.statType === 'overall');
+    mockGetPlayerStats
+      .mockResolvedValueOnce({ players: mockPlayers })
+      .mockResolvedValueOnce({
+        ...fullPlayerStatsResponse,
+        statistics: [{ ...overall, wins: 0, losses: 0, draws: 0, matchesPlayed: 0, winPercentage: 0 }],
+      });
+
+    renderComponent();
+
+    await screen.findByText('0 matches played');
+    expect(document.querySelector('.ps-win-pct-value')).toHaveTextContent('-');
   });
 
   it('leaves out match types the player has never competed in', async () => {

@@ -23,7 +23,7 @@ export default function SeasonRecords({ seasons }: { seasons: SeasonRecord[] }) 
                 </span>
                 <span className="profile-row__figure">{formatRecord(season)}</span>
                 <span className={`profile-row__figure ${tone ? `profile-win--${tone}` : ''}`.trim()}>
-                  {getWinPercentage(season)}%
+                  {getWinPercentage(season)}
                 </span>
               </li>
             );

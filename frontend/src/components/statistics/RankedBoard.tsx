@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Avatar from '../ui/Avatar';
 import Podium from '../ui/Podium';
+import { usePlayerImages } from './usePlayerImages';
 import './stats-common.css';
 import './Leaderboards.css';
 
@@ -26,6 +27,7 @@ const PODIUM_SIZE = 3;
 /** Top three on a podium when there are enough entries, the rest as a list. */
 function RankedBoard({ entries, label }: RankedBoardProps) {
   const { t } = useTranslation();
+  const images = usePlayerImages();
   const showPodium = entries.length >= PODIUM_SIZE;
   const listed = showPodium ? entries.slice(PODIUM_SIZE) : entries;
 
@@ -37,6 +39,7 @@ function RankedBoard({ entries, label }: RankedBoardProps) {
           entries={entries.slice(0, PODIUM_SIZE).map((entry) => ({
             id: entry.playerId,
             name: entry.playerName,
+            imageUrl: images.get(entry.playerId),
             subtitle: entry.wrestlerName,
             record: entry.value,
             label: `#${entry.rank}`,
