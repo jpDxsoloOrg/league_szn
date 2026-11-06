@@ -66,6 +66,21 @@ describe('getRivalryActivity', () => {
     expect(body.nextCursor).toBeNull();
   });
 
+  it('gives a signed-in player with no rivalries the shared feed, not an empty one', async () => {
+    mockPlayers.findByUserId.mockResolvedValue({ playerId: 'p9' });
+    mockRivalries.listByStatus.mockResolvedValue({ items: [makeRivalry()], nextCursor: undefined });
+    const event = makeEvent({
+      httpMethod: 'GET',
+      requestContext: { authorizer: { principalId: 'user-9', username: 'member', email: '', groups: 'Wrestler' } },
+    } as unknown as Parameters<typeof makeEvent>[0]);
+
+    const res = await getRivalryActivity(event, ctx, cb);
+
+    expect(res!.statusCode).toBe(200);
+    expect(mockRivalries.listByParticipant).not.toHaveBeenCalled();
+    expect(mockRivalries.listByStatus).toHaveBeenCalled();
+  });
+
   it('merges items from all sources and sorts them descending by occurredAt', async () => {
     mockRivalries.listByStatus.mockResolvedValue({
       items: [makeRivalry()],

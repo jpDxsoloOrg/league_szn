@@ -79,14 +79,13 @@ export const handler: APIGatewayProxyHandler = rejectOverlongQuery(async (event)
       roster: { players },
     } = getRepositories();
 
-    // Default participantId to the caller's own playerId so authed users
-    // see their own feed without having to pass an explicit filter.
-    let participantId = qp.participantId || undefined;
+    // The caller only widens what they may read. Their own feed is an explicit
+    // participantId, so the shared feed stays the same for members and guests.
+    const participantId = qp.participantId || undefined;
     let callerPlayerId: string | undefined;
     if (auth.sub) {
       const callerPlayer = await players.findByUserId(auth.sub).catch(() => null);
       callerPlayerId = callerPlayer?.playerId;
-      if (!participantId) participantId = callerPlayerId;
     }
 
     // Audience-scoped memoization: what a signed-in player sees depends on
