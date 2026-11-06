@@ -22,18 +22,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return notFound('Stable not found');
     }
 
-    // Invitations carry private messages. The stable's own members and staff
-    // read them all; anyone else sees only the ones addressed to them, which
-    // is how an invited player finds an invitation to accept.
+    // Invitations carry private messages. The stable's leader and staff read
+    // them all; anyone else, members included, sees only the ones addressed to
+    // them, which is how an invited player finds an invitation to accept.
     let visibleToPlayerId: string | null = null;
     if (!hasRole(auth, 'Admin', 'Moderator')) {
       const callerPlayer = await playersRepo.findByUserId(auth.sub);
       if (!callerPlayer) {
         return success([]);
       }
-      const isMember = stable.leaderId === callerPlayer.playerId
-        || stable.memberIds.includes(callerPlayer.playerId);
-      if (!isMember) {
+      if (stable.leaderId !== callerPlayer.playerId) {
         visibleToPlayerId = callerPlayer.playerId;
       }
     }

@@ -26,3 +26,16 @@ export function isChallengeExpired(
   ].filter((deadline) => Number.isFinite(deadline));
   return deadlines.length > 0 && now >= Math.min(...deadlines);
 }
+
+/**
+ * True when a challenge lapsed without an answer: the sweep has marked it
+ * expired, or it is pending past its deadline and the hourly sweep has not
+ * reached it yet.
+ */
+export function isChallengeLapsed(
+  challenge: Pick<Challenge, 'status' | 'createdAt' | 'expiresAt'>,
+  now: number = Date.now(),
+): boolean {
+  return challenge.status === 'expired'
+    || (challenge.status === 'pending' && isChallengeExpired(challenge, now));
+}

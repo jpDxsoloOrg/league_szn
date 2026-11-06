@@ -5,7 +5,7 @@ import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
 import { recomputeRivalryHeat } from '../../lib/services/recomputeRivalryHeat';
-import { isPlayerVisible, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
+import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 import type { PromoType } from '../../lib/repositories/types';
 
 const VALID_PROMO_TYPES: PromoType[] = [
@@ -63,6 +63,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const player = await players.findByUserId(auth.sub);
     if (!player) {
       return badRequest('No player profile linked to your account');
+    }
+
+    if (!isPlayerVisible(player)) {
+      return badRequest(SET_WRESTLER_NAME_MESSAGE);
     }
 
     // Validate rivalryId (when present) refers to a real rivalry that the

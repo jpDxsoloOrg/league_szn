@@ -56,7 +56,7 @@ describe('createChallenge', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('creates a challenge with required fields and returns 201', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
     mockGet.mockResolvedValue({ Item: { playerId: 'p2', name: 'The Rock', currentWrestler: 'The Rock' } });
     mockPut.mockResolvedValue({});
 
@@ -75,7 +75,7 @@ describe('createChallenge', () => {
   });
 
   it('includes optional fields (stipulation, championshipId, message) when provided', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
     mockGet.mockResolvedValue({ Item: { playerId: 'p2', currentWrestler: 'The Rock' } });
     mockPut.mockResolvedValue({});
 
@@ -92,7 +92,7 @@ describe('createChallenge', () => {
   });
 
   it('omits optional fields when not provided', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
     mockGet.mockResolvedValue({ Item: { playerId: 'p2', currentWrestler: 'The Rock' } });
     mockPut.mockResolvedValue({});
 
@@ -104,7 +104,7 @@ describe('createChallenge', () => {
   });
 
   it('returns 400 when the championship does not exist', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
     mockGet.mockResolvedValueOnce({ Item: undefined }); // championship lookup
     mockPut.mockResolvedValue({});
 
@@ -119,7 +119,7 @@ describe('createChallenge', () => {
   });
 
   it('returns 400 when the championship is inactive', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
     mockGet.mockResolvedValueOnce({ Item: { championshipId: 'title-1', isActive: false } }); // championship lookup
     mockPut.mockResolvedValue({});
 
@@ -153,7 +153,7 @@ describe('createChallenge', () => {
   });
 
   it('returns 400 when challengedId is missing', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
     const result = await createChallenge(wrestlerEvent({ matchType: 'Singles' }), ctx, cb);
     expect(result!.statusCode).toBe(400);
     expect(JSON.parse(result!.body).message).toBe('challengedId is required');
@@ -173,14 +173,14 @@ describe('createChallenge', () => {
   });
 
   it('returns 400 when trying to challenge yourself', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
     const result = await createChallenge(wrestlerEvent({ challengedId: 'p1', matchType: 'Singles' }), ctx, cb);
     expect(result!.statusCode).toBe(400);
     expect(JSON.parse(result!.body).message).toBe('You cannot challenge yourself');
   });
 
   it('returns 400 when challenged player does not exist', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
     mockGet.mockResolvedValue({ Item: undefined });
     const result = await createChallenge(wrestlerEvent({ challengedId: 'nonexistent', matchType: 'Singles' }), ctx, cb);
     expect(result!.statusCode).toBe(400);
@@ -188,7 +188,7 @@ describe('createChallenge', () => {
   });
 
   it('sets 4-day expiration on created challenge', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
     mockGet.mockResolvedValue({ Item: { playerId: 'p2', currentWrestler: 'The Rock' } });
     mockPut.mockResolvedValue({});
 
@@ -199,7 +199,7 @@ describe('createChallenge', () => {
   });
 
   it('allows Admin to create challenges (hasRole grants Admin access)', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'admin-sub' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'admin-sub', currentWrestler: 'Cena' }] });
     mockGet.mockResolvedValue({ Item: { playerId: 'p2', currentWrestler: 'The Rock' } });
     mockPut.mockResolvedValue({});
 

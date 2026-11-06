@@ -108,7 +108,7 @@ describe('promos router', () => {
   });
 
   it('POST /promos routes to createPromo and returns 201', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
     mockPut.mockResolvedValue({});
     const event = makeEvent({
       httpMethod: 'POST',

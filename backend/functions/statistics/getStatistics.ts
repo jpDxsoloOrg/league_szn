@@ -285,10 +285,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const h2h = computeHeadToHead(completedMatches, player1Id, player2Id);
         const championshipMatches = h2h.matches.filter((m) => m.isChampionship).length;
 
-        // Recent results (last 5)
+        // Recent results (last 5). Mirrors the record above: a match neither
+        // player won has no winner here, so it reads as a draw between the pair.
+        const pairWinner = (winners: string[] | undefined): string => {
+          if (winners?.includes(player1Id)) return player1Id;
+          return winners?.includes(player2Id) ? player2Id : '';
+        };
         const recentResults = h2h.matches.slice(0, 5).map((m) => ({
           matchId: m.matchId,
-          winnerId: m.winners?.[0] || '',
+          winnerId: pairWinner(m.winners),
           date: m.date,
         }));
 

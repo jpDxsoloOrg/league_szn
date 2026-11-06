@@ -115,7 +115,7 @@ describe('challenges router', () => {
   });
 
   it('POST /challenges routes to createChallenge and returns 201', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
     mockGet.mockResolvedValue({ Item: { playerId: 'p2', currentWrestler: 'The Rock' } });
     mockPut.mockResolvedValue({});
     const event = makeEvent({

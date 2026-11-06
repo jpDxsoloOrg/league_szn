@@ -3,14 +3,15 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockQueryAll, mockScan } = vi.hoisted(() => ({
+const { mockGet, mockQueryAll, mockScan } = vi.hoisted(() => ({
+  mockGet: vi.fn(),
   mockQueryAll: vi.fn(),
   mockScan: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
   dynamoDb: {
-    get: vi.fn(),
+    get: mockGet,
     put: vi.fn(),
     query: vi.fn(),
     scan: mockScan,
@@ -20,6 +21,7 @@ vi.mock('../../../lib/dynamodb', () => ({
     scanAll: vi.fn(),
   },
   TableNames: {
+    EVENTS: 'Events',
     EVENT_CHECK_INS: 'EventCheckIns',
     PLAYERS: 'Players',
   },
@@ -76,7 +78,10 @@ const roster = [
 // ─── Tests ───────────────────────────────────────────────────────────
 
 describe('getCheckIns', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGet.mockResolvedValue({ Item: { eventId: 'evt-1' } });
+  });
 
   it('returns grouped roster with all four buckets for an admin call', async () => {
     mockQueryAll.mockResolvedValue([
@@ -110,6 +115,18 @@ describe('getCheckIns', () => {
       'Only admins and moderators can view event check-ins',
     );
     expect(mockQueryAll).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 for an event that does not exist', async () => {
+    mockGet.mockResolvedValue({ Item: undefined });
+
+    const event = withAuth(makeEvent({ pathParameters: { eventId: 'missing' } }), 'Moderator');
+    const result = await getCheckIns(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(404);
+    expect(JSON.parse(result!.body).message).toBe('Event not found');
+    expect(mockQueryAll).not.toHaveBeenCalled();
+    expect(mockScan).not.toHaveBeenCalled();
   });
 
   it('returns all wrestlers in noResponse when the event has no check-ins', async () => {

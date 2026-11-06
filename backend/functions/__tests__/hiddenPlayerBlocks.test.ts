@@ -94,11 +94,52 @@ describe('createChallenge', () => {
   });
 
   it('allows challenging a visible player', async () => {
+    const rival = await repos.roster.players.create({ name: 'R', currentWrestler: 'Kane' });
     const { statusCode } = await call(
+      createChallenge,
+      post('visible-sub', { challengedId: rival.playerId, matchType: 'singles' }),
+    );
+    expect(statusCode).toBe(201);
+  });
+
+  it('blocks a hidden player from issuing a challenge', async () => {
+    const { statusCode, body } = await call<Message>(
       createChallenge,
       post('hidden-sub', { challengedId: roster.visibleId, matchType: 'singles' }),
     );
-    expect(statusCode).toBe(201);
+    expect(statusCode).toBe(400);
+    expect(body.message).toBe('Set your wrestler name first');
+    expect(await repos.user.challenges.list()).toEqual([]);
+  });
+
+  it('blocks a hidden player from issuing a tag team challenge', async () => {
+    const partner = await repos.roster.players.create({ name: 'P', currentWrestler: 'Taker' });
+    const rival = await repos.roster.players.create({ name: 'R', currentWrestler: 'Kane' });
+    await repos.roster.tagTeams.create({
+      name: 'Hidden Team',
+      player1Id: roster.placeholderId,
+      player2Id: partner.playerId,
+      status: 'active',
+    });
+    const target = await repos.roster.tagTeams.create({
+      name: 'Target Team',
+      player1Id: roster.visibleId,
+      player2Id: rival.playerId,
+      status: 'active',
+    });
+
+    const { statusCode, body } = await call<Message>(
+      createChallenge,
+      post('hidden-sub', {
+        challengeMode: 'tag_team',
+        challengedTagTeamId: target.tagTeamId,
+        matchType: 'tag',
+      }),
+    );
+
+    expect(statusCode).toBe(400);
+    expect(body.message).toBe('Set your wrestler name first');
+    expect(await repos.user.challenges.list()).toEqual([]);
   });
 
   it('blocks challenging a tag team with a hidden member', async () => {
@@ -171,11 +212,22 @@ describe('createPromo', () => {
   });
 
   it('allows calling out a visible player', async () => {
+    const rival = await repos.roster.players.create({ name: 'R', currentWrestler: 'Kane' });
     const { statusCode } = await call(
       createPromo,
-      post('hidden-sub', promoBody('call-out', { targetPlayerId: roster.visibleId })),
+      post('visible-sub', promoBody('call-out', { targetPlayerId: rival.playerId })),
     );
     expect(statusCode).toBe(201);
+  });
+
+  it.each(['open-mic', 'call-out'])('blocks a hidden player from cutting a %s promo', async (promoType) => {
+    const { statusCode, body } = await call<Message>(
+      createPromo,
+      post('hidden-sub', promoBody(promoType, { targetPlayerId: roster.visibleId })),
+    );
+    expect(statusCode).toBe(400);
+    expect(body.message).toBe('Set your wrestler name first');
+    expect(await repos.content.promos.list()).toEqual([]);
   });
 
   it('still allows a response in a thread started by a now-hidden player', async () => {

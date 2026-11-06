@@ -43,6 +43,12 @@ async function statusFor(id: string, groups: string, sub: string) {
   return result?.statusCode;
 }
 
+async function messagesFor(id: string, groups: string, sub: string) {
+  const result = await getInvitations(makeEvent(id, groups, sub), ctx, cb);
+  const rows = JSON.parse(result!.body) as Array<{ message?: string }>;
+  return rows.map((row) => row.message);
+}
+
 async function invitedPlayerIdsFor(id: string, groups: string, sub: string) {
   const result = await getInvitations(makeEvent(id, groups, sub), ctx, cb);
   expect(result?.statusCode).toBe(200);
@@ -99,7 +105,7 @@ describe('getInvitations', () => {
     expect(await invitedPlayerIdsFor(stableId, 'Wrestler', 'invited-sub')).toEqual([invited.playerId]);
   });
 
-  it('shows the leader, members and staff every invitation', async () => {
+  it('shows the leader and staff every invitation', async () => {
     const leader = await repos.roster.players.findByUserId('leader-sub');
     const invited = await addPlayer('Invited', 'invited-sub');
     const other = await addPlayer('Other', 'other-sub');
@@ -108,8 +114,18 @@ describe('getInvitations', () => {
     const everyone = [invited.playerId, other.playerId].sort();
 
     expect(await invitedPlayerIdsFor(stableId, 'Wrestler', 'leader-sub')).toEqual(everyone);
-    expect(await invitedPlayerIdsFor(stableId, 'Wrestler', 'member-sub')).toEqual(everyone);
     expect(await invitedPlayerIdsFor(stableId, 'Moderator', 'staff-sub')).toEqual(everyone);
+  });
+
+  it('keeps other invitees\' private messages from a non-leader member', async () => {
+    const leader = await repos.roster.players.findByUserId('leader-sub');
+    const member = await repos.roster.players.findByUserId('member-sub');
+    const other = await addPlayer('Other', 'other-sub');
+    await invite(member!.playerId, leader!.playerId);
+    await invite(other.playerId, leader!.playerId);
+
+    expect(await invitedPlayerIdsFor(stableId, 'Wrestler', 'member-sub')).toEqual([member!.playerId]);
+    expect(await messagesFor(stableId, 'Wrestler', 'member-sub')).toEqual(['Join us']);
   });
 
   it('gives a wrestler with no player record an empty list', async () => {

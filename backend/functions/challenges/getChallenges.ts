@@ -2,6 +2,8 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { Challenge, Player, TagTeam } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import { isChallengeLapsed } from '../../lib/challengeExpiry';
+import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
 
 interface PlayerInfo {
   playerId: string;
@@ -103,7 +105,29 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       };
     };
 
-    const enriched = challengeList.map((c) => {
+    // Lapsed challenges leave the public list. Staff keep them, and so do the
+    // players involved, including tag team partners, for their own history.
+    const caller = await getVerifiedCaller(event);
+    const staff = isStaff(caller);
+    const callerPlayer = caller?.sub && !staff
+      ? await players.findByUserId(caller.sub).catch(() => null)
+      : null;
+    const isParticipant = (c: Challenge): boolean => {
+      if (!callerPlayer) return false;
+      const { playerId: callerId } = callerPlayer;
+      if (c.challengerId === callerId || c.challengedId === callerId) return true;
+      if (c.challengeMode !== 'tag_team') return false;
+      return [c.challengerTagTeamId, c.challengedTagTeamId].some((ttId) => {
+        const team = ttId ? tagTeamMap[ttId] : undefined;
+        return team?.player1Id === callerId || team?.player2Id === callerId;
+      });
+    };
+    const now = Date.now();
+    const listed = challengeList.filter(
+      (c) => staff || !isChallengeLapsed(c, now) || isParticipant(c),
+    );
+
+    const enriched = listed.map((c) => {
       const challenger = playerMap[c.challengerId];
       const challenged = playerMap[c.challengedId];
 
