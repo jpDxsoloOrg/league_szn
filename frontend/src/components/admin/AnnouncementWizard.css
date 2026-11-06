@@ -178,7 +178,6 @@
 .wizard-body .form-group input:focus,
 .wizard-body .form-group select:focus,
 .wizard-body .form-group textarea:focus {
-  outline: none;
   border-color: var(--color-cyan);
 }
 
@@ -295,7 +294,6 @@
 
 .wizard-participant-name:focus,
 .wizard-participant-wrestler:focus {
-  outline: none;
   border-color: var(--color-cyan);
 }
 
@@ -357,7 +355,6 @@
 
 .wizard-promo-fields input:focus,
 .wizard-promo-fields textarea:focus {
-  outline: none;
   border-color: var(--color-cyan);
 }
 
@@ -401,7 +398,6 @@
 }
 
 .wizard-tags-row input:focus {
-  outline: none;
   border-color: var(--color-cyan);
 }
 

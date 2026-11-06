@@ -34,8 +34,8 @@ function Rivalries() {
   const seriesRecordText = (rivalry: Rivalry): string => {
     const firstWins = rivalry.player1Wins;
     const secondWins = rivalry.player2Wins;
-    const first = rivalry.player1?.wrestlerName ?? rivalry.player1Id;
-    const second = rivalry.player2?.wrestlerName ?? rivalry.player2Id;
+    const first = rivalry.player1?.wrestlerName ?? t('common.unknown');
+    const second = rivalry.player2?.wrestlerName ?? t('common.unknown');
     if (firstWins > secondWins) return t('rivalries.leads', { name: first, wins: firstWins, losses: secondWins });
     if (secondWins > firstWins) return t('rivalries.leads', { name: second, wins: secondWins, losses: firstWins });
     return t('rivalries.tied', { count: firstWins });
@@ -52,8 +52,8 @@ function Rivalries() {
     return (
       <div className="feud-grid">
         {rivalries.map((rivalry) => {
-          const first = rivalry.player1?.wrestlerName ?? rivalry.player1Id;
-          const second = rivalry.player2?.wrestlerName ?? rivalry.player2Id;
+          const first = rivalry.player1?.wrestlerName ?? t('common.unknown');
+          const second = rivalry.player2?.wrestlerName ?? t('common.unknown');
           return (
             <Card key={`${rivalry.player1Id}-${rivalry.player2Id}`} className="feud-card">
               <div className="feud-players">

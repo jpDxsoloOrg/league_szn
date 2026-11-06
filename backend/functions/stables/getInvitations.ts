@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { success, badRequest, serverError } from '../../lib/response';
+import { success, badRequest, forbidden, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -17,17 +17,26 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { roster: { stables: stablesRepo, players: playersRepo } } = getRepositories();
 
-    // Verify caller is the stable leader
-    const callerPlayer = await playersRepo.findByUserId(auth.sub);
-    if (!callerPlayer) {
-      return badRequest('Player not found');
+    const stable = await stablesRepo.findById(stableId);
+    if (!stable) {
+      return notFound('Stable not found');
+    }
+
+    // Invitations carry private messages: only the stable's own members and staff may read them.
+    if (!hasRole(auth, 'Admin', 'Moderator')) {
+      const callerPlayer = await playersRepo.findByUserId(auth.sub);
+      if (!callerPlayer) {
+        return badRequest('Player not found');
+      }
+      const isMember = stable.leaderId === callerPlayer.playerId
+        || stable.memberIds.includes(callerPlayer.playerId);
+      if (!isMember) {
+        return forbidden('Only members of this stable can view its invitations');
+      }
     }
 
     // Query invitations for this stable
     const invitations = await stablesRepo.listInvitationsByStable(stableId);
-
-    // Enrich with player names and stable name
-    const stable = await stablesRepo.findById(stableId);
 
     const enriched = await Promise.all(
       invitations.map(async (inv) => {
@@ -58,9 +67,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }
 
         // Add stable name
-        if (stable) {
-          enrichedInv.stableName = stable.name;
-        }
+        enrichedInv.stableName = stable.name;
 
         return enrichedInv;
       })
