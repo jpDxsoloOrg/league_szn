@@ -1,4 +1,4 @@
-import { realWrestlerName, resolveBilledName } from '../../lib/needsWrestler';
+import { FORMER_MEMBER, realWrestlerName, resolveBilledName } from '../../lib/needsWrestler';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 
 export interface HydratedMatchSlot extends MatchSlot {
@@ -26,7 +26,7 @@ export interface HydratedMatchSlot extends MatchSlot {
  * Pure read enrichment: returns slots with playerName/wrestlerName populated
  * for each filled slot, sourced from `playerLookup`. Does not persist.
  *
- * `playerLookup` is keyed by playerId. Missing entries fall back to "Unknown".
+ * `playerLookup` is keyed by playerId. Missing entries fall back to "Former member".
  */
 export function hydrateMatchSlots(
   slots: readonly MatchSlot[],
@@ -37,13 +37,13 @@ export function hydrateMatchSlots(
     const player = playerLookup.get(slot.playerId);
     // Snapshot wins over the live currentWrestler so a player renaming their
     // gimmick doesn't retroactively rewrite what was billed for past matches.
-    const wrestlerName = resolveBilledName(slot.wrestlerNameSnapshot, player, 'Unknown Wrestler');
+    const wrestlerName = resolveBilledName(slot.wrestlerNameSnapshot, player, FORMER_MEMBER);
     // A placeholder stored by an older booking is not a name worth returning.
     const { wrestlerNameSnapshot, ...filledSlot } = slot;
     return {
       ...filledSlot,
       ...(realWrestlerName(wrestlerNameSnapshot) ? { wrestlerNameSnapshot } : {}),
-      playerName: player?.name ?? 'Unknown Player',
+      playerName: player?.name?.trim() || FORMER_MEMBER,
       wrestlerName,
       psnId: player?.psnId,
     };

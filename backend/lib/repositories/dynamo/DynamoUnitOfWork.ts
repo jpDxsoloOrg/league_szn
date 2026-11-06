@@ -102,13 +102,14 @@ export class DynamoUnitOfWork implements UnitOfWork {
     }
     parts.push('updatedAt = :timestamp');
     // Updates are upserts: without this condition a stale playerId creates a
-    // nameless Player row holding only the record fields.
+    // nameless Player row holding only the record fields. A soft-deleted row
+    // counts as stale too.
     this.staged.push({
       Update: {
         TableName: TableNames.PLAYERS,
         Key: { playerId },
         UpdateExpression: `SET ${parts.join(', ')}`,
-        ConditionExpression: 'attribute_exists(playerId)',
+        ConditionExpression: 'attribute_exists(playerId) AND attribute_not_exists(deletedAt)',
         ExpressionAttributeValues: values,
       },
     });

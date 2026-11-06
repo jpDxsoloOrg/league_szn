@@ -3,7 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import type { Player, Championship, ChampionshipHistoryEntry } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { hasWrestlerRole } from '../../lib/wrestlerRole';
-import { isNeedsWrestler, isPlayerVisible } from '../../lib/needsWrestler';
+import { FORMER_MEMBER, isNeedsWrestler, isPlayerVisible } from '../../lib/needsWrestler';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
 
@@ -79,7 +79,7 @@ interface DashboardResponse {
 
 /** A player without a real wrestler name is shown by their own name. */
 function resultDisplayName(player: Player | undefined): string {
-  if (!player) return '';
+  if (!player) return FORMER_MEMBER;
   return isNeedsWrestler(player.currentWrestler) ? player.name : player.currentWrestler;
 }
 
@@ -93,7 +93,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // logged for the next pass to triage.
     const results = await Promise.allSettled([
       championships.list(),
-      players.list(),
+      players.listWithDeleted(),
       seasons.list(),
       matches.list(),
       stipulations.list(),
@@ -112,7 +112,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return fallback;
     };
     const championshipList = unwrap<Championship[]>(0, []);
-    const playerList = unwrap<Player[]>(1, []);
+    const allPlayerRows = unwrap<Player[]>(1, []);
+    const playerList = allPlayerRows.filter((p) => !p.deletedAt);
     const seasonList = unwrap<Awaited<ReturnType<typeof seasons.list>>>(2, []);
     const matchList = unwrap<Awaited<ReturnType<typeof matches.list>>>(3, []);
     const stipulationList = unwrap<Awaited<ReturnType<typeof stipulations.list>>>(4, []);
@@ -125,8 +126,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Roster-facing subset: players with a real wrestler name whose Cognito
     // user still holds the Wrestler role. Used for counts and leaderboards.
-    // `resultPlayerMap` below deliberately keeps every player so historical
-    // recent-results rows still resolve their participants' names.
+    // `resultPlayerMap` below deliberately keeps every player, deleted ones
+    // included, so historical recent-results rows still resolve their names.
     const rosterPlayers = wrestlerPlayers.filter(hasWrestlerRole).filter(isPlayerVisible);
 
     const playerMap = new Map<string, Player>();
@@ -135,7 +136,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const resultPlayerMap = new Map<string, Player>();
-    for (const p of playerList) {
+    for (const p of allPlayerRows) {
       if (p.playerId) resultPlayerMap.set(p.playerId, p);
     }
 

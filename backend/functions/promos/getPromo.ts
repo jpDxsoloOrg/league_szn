@@ -3,7 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import { success, notFound, badRequest, serverError } from '../../lib/response';
 import type { Promo } from '../../lib/repositories/types';
 import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
-import { findHiddenPlayerIds, isPlayerVisible, resolveBilledName } from '../../lib/needsWrestler';
+import { FORMER_MEMBER, findHiddenPlayerIds, isPlayerVisible, resolveBilledName } from '../../lib/needsWrestler';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -49,7 +49,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (r.targetPlayerId) uniquePlayerIds.add(r.targetPlayerId);
     }
     const playerIds = [...uniquePlayerIds];
-    const fetchedPlayers = await Promise.all(playerIds.map((pid) => players.findById(pid)));
+    const fetchedPlayers = await Promise.all(playerIds.map((pid) => players.findByIdWithDeleted(pid)));
 
     const playerMap: Record<string, { name: string; wrestlerName: string; imageUrl?: string }> = {};
     playerIds.forEach((pid, index) => {
@@ -57,7 +57,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (player) {
         playerMap[pid] = {
           name: player.name,
-          wrestlerName: resolveBilledName(undefined, player, 'Unknown'),
+          wrestlerName: resolveBilledName(undefined, player, FORMER_MEMBER),
           imageUrl: player.imageUrl,
         };
       }
@@ -95,8 +95,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const rTarget = r.targetPlayerId ? playerMap[r.targetPlayerId] : undefined;
         return {
           ...r,
-          playerName: rAuthor?.name || 'Unknown',
-          wrestlerName: rAuthor?.wrestlerName || 'Unknown',
+          playerName: rAuthor?.name || FORMER_MEMBER,
+          wrestlerName: rAuthor?.wrestlerName || FORMER_MEMBER,
           playerImageUrl: rAuthor?.imageUrl,
           targetPlayerName: rTarget?.name,
           targetWrestlerName: rTarget?.wrestlerName,
@@ -108,8 +108,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return success({
       promo: {
         ...promo,
-        playerName: author?.name || 'Unknown',
-        wrestlerName: author?.wrestlerName || 'Unknown',
+        playerName: author?.name || FORMER_MEMBER,
+        wrestlerName: author?.wrestlerName || FORMER_MEMBER,
         playerImageUrl: author?.imageUrl,
         targetPlayerName: target?.name,
         targetWrestlerName: target?.wrestlerName,

@@ -1,4 +1,5 @@
 import { dynamoDb, TableNames } from './dynamodb';
+import { matchWinners } from './matchResult';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -33,6 +34,7 @@ interface MatchRecord {
   participants: string[];
   winners: string[];
   losers: string[];
+  isDraw?: boolean;
   status: string;
   seasonId?: string;
 }
@@ -80,19 +82,19 @@ export async function calculateRankingsForChampionship(
   } = params;
 
   // ------------------------------------------------------------------
-  // 1a. If championship is division-locked, fetch eligible player IDs
+  // 1a. Fetch eligible player IDs. Matches keep the ids of deleted players,
+  //     so a candidate must still be a live player, and on a division-locked
+  //     title a member of that division.
   // ------------------------------------------------------------------
-  let divisionPlayerIds: Set<string> | null = null;
-  if (divisionId) {
-    const allPlayers = await dynamoDb.scanAll({
-      TableName: TableNames.PLAYERS,
-      FilterExpression: 'divisionId = :divisionId',
-      ExpressionAttributeValues: { ':divisionId': divisionId },
-    });
-    divisionPlayerIds = new Set(
-      allPlayers.map((p) => p.playerId as string),
-    );
-  }
+  const allPlayers = await dynamoDb.scanAll({
+    TableName: TableNames.PLAYERS,
+    ProjectionExpression: 'playerId, divisionId, deletedAt',
+  });
+  const eligiblePlayerIds = new Set(
+    allPlayers
+      .filter((p) => !p.deletedAt && (!divisionId || p.divisionId === divisionId))
+      .map((p) => p.playerId as string),
+  );
 
   // ------------------------------------------------------------------
   // 1b. Fetch all completed matches in the active season
@@ -138,7 +140,7 @@ export async function calculateRankingsForChampionship(
       const stats = playerStats.get(playerId)!;
       stats.total += 1;
 
-      if (match.winners.includes(playerId)) {
+      if (matchWinners(match).includes(playerId)) {
         stats.wins += 1;
       } else if (match.losers.includes(playerId)) {
         stats.losses += 1;
@@ -170,8 +172,8 @@ export async function calculateRankingsForChampionship(
       continue;
     }
 
-    // Exclude players not in the championship's division
-    if (divisionPlayerIds && !divisionPlayerIds.has(playerId)) {
+    // Exclude deleted players and anyone outside the championship's division
+    if (!eligiblePlayerIds.has(playerId)) {
       continue;
     }
 
@@ -217,7 +219,7 @@ export function calculatePlayerScore(
   playerMatches: MatchRecord[],
   allPlayers: Map<string, PlayerStats>,
 ): RankingResult {
-  const wins = playerMatches.filter((m) => m.winners.includes(playerId));
+  const wins = playerMatches.filter((m) => matchWinners(m).includes(playerId));
   const totalMatches = playerMatches.length;
 
   // ----- Win Percentage (0-100) -----
@@ -274,7 +276,7 @@ export function calculatePlayerScore(
     );
     const weight = Math.exp(-daysSinceMatch / RECENCY_DECAY_DAYS);
 
-    const isWin = match.winners.includes(playerId) ? 1 : 0;
+    const isWin = matchWinners(match).includes(playerId) ? 1 : 0;
     weightedWinSum += isWin * weight;
     weightSum += weight;
   }
@@ -316,7 +318,8 @@ export function calculatePlayerScore(
  *
  * Returns a positive number for a win streak (e.g. 4 means four consecutive
  * wins) and a negative number for a loss streak (e.g. -2 means two
- * consecutive losses).
+ * consecutive losses). A draw ends either kind of streak, the same as the
+ * streaks on the statistics pages, so a draw as the latest match returns 0.
  */
 export function calculateCurrentStreak(
   matches: MatchRecord[],
@@ -332,11 +335,12 @@ export function calculateCurrentStreak(
   }
 
   // Determine direction from the most recent match
-  const firstIsWin = sorted[0].winners.includes(playerId);
+  const firstIsWin = matchWinners(sorted[0]).includes(playerId);
   let streak = 0;
 
   for (const match of sorted) {
-    const isWin = match.winners.includes(playerId);
+    if (match.isDraw) break;
+    const isWin = matchWinners(match).includes(playerId);
     if (isWin === firstIsWin) {
       streak += 1;
     } else {
@@ -345,5 +349,5 @@ export function calculateCurrentStreak(
   }
 
   // Positive for wins, negative for losses
-  return firstIsWin ? streak : -streak;
+  return firstIsWin ? streak : 0 - streak;
 }

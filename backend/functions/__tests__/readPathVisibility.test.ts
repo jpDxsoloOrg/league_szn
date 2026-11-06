@@ -403,7 +403,7 @@ describe('getActivity type filter', () => {
   it('reads only the requested source and the player names', async () => {
     const listCompleted = vi.spyOn(repos.competition.matches, 'listCompleted');
     const listPromos = vi.spyOn(repos.content.promos, 'list');
-    const listPlayers = vi.spyOn(repos.roster.players, 'list');
+    const listPlayers = vi.spyOn(repos.roster.players, 'listWithDeleted');
 
     await call(getActivity, makeEvent({ queryStringParameters: { type: 'promo' } }));
 

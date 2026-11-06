@@ -132,7 +132,7 @@ describe('getPromos', () => {
     expect(data[0].targetWrestlerName).toBe('Bianca');
   });
 
-  it('shows "Unknown" for player name when player has been deleted', async () => {
+  it('shows "Former member" for player name when player has been deleted', async () => {
     mockScanAll.mockResolvedValue([
       { promoId: 'p1', playerId: 'deleted-player', isHidden: false, createdAt: '2024-01-01T00:00:00Z' },
     ]);
@@ -142,8 +142,8 @@ describe('getPromos', () => {
 
     expect(result!.statusCode).toBe(200);
     const data = body(result);
-    expect(data[0].playerName).toBe('Unknown');
-    expect(data[0].wrestlerName).toBe('Unknown');
+    expect(data[0].playerName).toBe('Former member');
+    expect(data[0].wrestlerName).toBe('Former member');
   });
 
   it('counts responses for target promos via responseCount', async () => {

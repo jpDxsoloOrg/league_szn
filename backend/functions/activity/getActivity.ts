@@ -2,14 +2,14 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { Player, Championship } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
-import { isPlayerVisible } from '../../lib/needsWrestler';
+import { FORMER_MEMBER, isHiddenLivePlayer, realWrestlerName } from '../../lib/needsWrestler';
+import { isChallengeLapsed } from '../../lib/challengeExpiry';
 import { isPromoArchived } from '../../lib/promoArchive';
 
 const ACTIVITY_TYPES = ['match', 'championship', 'challenge', 'promo', 'tournament', 'season'] as const;
 type ActivityTypeFilter = (typeof ACTIVITY_TYPES)[number];
 
 // Summaries are shown as written, so an id must never stand in for a name.
-const UNKNOWN_NAME = 'Unknown';
 const UNKNOWN_CHAMPIONSHIP = 'Unknown Championship';
 
 export type ActivityItemType =
@@ -51,7 +51,7 @@ function parseQuery(event: { queryStringParameters?: Record<string, string | und
 function buildPlayerNameMap(allPlayers: Player[]): Record<string, string> {
   const names: Record<string, string> = {};
   for (const player of allPlayers) {
-    names[player.playerId] = player.name || player.currentWrestler || UNKNOWN_NAME;
+    names[player.playerId] = player.name || realWrestlerName(player.currentWrestler) || FORMER_MEMBER;
   }
   return names;
 }
@@ -116,7 +116,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       loadIf(includeTournament, () => tournaments.list()),
       loadIf(includeChallenge, () => challenges.list()),
       loadIf(includePromo, () => promos.list()),
-      players.list(),
+      players.listWithDeleted(),
       loadIf(includeChampionship, () => championships.list()),
     ]);
 
@@ -222,9 +222,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       });
     }
 
+    const now = Date.now();
     for (const c of allChallenges) {
-      // Nobody did anything when a challenge lapses, so it isn't news.
-      if (c.status === 'expired') continue;
+      // Nobody did anything when a challenge lapses, so it isn't news. A pending
+      // one past its deadline counts too, as the hourly sweep may not have run.
+      if (isChallengeLapsed(c, now)) continue;
       const updatedAt = c.updatedAt || c.createdAt;
       if (!updatedAt) continue; // only show challenges with updatedAt or createdAt
       playerIds.add(c.challengerId);
@@ -245,7 +247,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       });
     }
 
-    const now = Date.now();
     for (const p of allPromos) {
       if (p.isHidden || isPromoArchived(p, now)) continue;
       const updatedAt = p.updatedAt || p.createdAt;
@@ -268,7 +269,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const playerNames = buildPlayerNameMap(allPlayers);
     const championshipNames = buildChampionshipNameMap(allChampionships);
-    const nameOf = (playerId: unknown): string => playerNames[playerId as string] || UNKNOWN_NAME;
+    const nameOf = (playerId: unknown): string => playerNames[playerId as string] || FORMER_MEMBER;
 
     for (const item of rawItems) {
       if (item.type === 'match_result') {
@@ -313,15 +314,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    // Items authored by hidden players leave the feed. Matches, title changes
-    // and tournament results are league history, so they stay, and the name
-    // map above still covers everyone.
-    const hiddenPlayerIds = new Set(
-      allPlayers.filter((p) => !isPlayerVisible(p)).map((p) => p.playerId),
-    );
+    // Promos and challenges involving hidden players leave the feed. Matches,
+    // title changes and tournament results are league history, so they stay,
+    // and the name map above still covers everyone. A deleted player's items
+    // stay as they did before the row was kept, now with the real name.
+    const hiddenPlayerIds = new Set(allPlayers.filter(isHiddenLivePlayer).map((p) => p.playerId));
     const visibleItems = rawItems.filter((item) => {
       if (item.type === 'promo_posted') return !hiddenPlayerIds.has(item.metadata.playerId as string);
-      if (item.type === 'challenge_event') return !hiddenPlayerIds.has(item.metadata.challengerId as string);
+      if (item.type === 'challenge_event') {
+        return !hiddenPlayerIds.has(item.metadata.challengerId as string)
+          && !hiddenPlayerIds.has(item.metadata.challengedId as string);
+      }
       return true;
     });
 

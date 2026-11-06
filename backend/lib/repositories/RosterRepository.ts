@@ -187,8 +187,18 @@ export interface WrestlersMethods
 // ─── Aggregate interface ────────────────────────────────────────────
 
 export interface RosterRepository {
+  /**
+   * `findById`, `list`, `findByUserId` and `update` treat a soft-deleted player
+   * (see `Player.deletedAt`) as missing, so a new consumer cannot pick one up by
+   * accident. `delete` removes the row outright and is only for undoing a
+   * player that was never completed.
+   */
   players: CrudRepository<Player, PlayerCreateInput, PlayerPatch> & {
     findByUserId(userId: string): Promise<Player | null>;
+    /** For resolving names on history only: the row even if soft-deleted. */
+    findByIdWithDeleted(playerId: string): Promise<Player | null>;
+    /** For resolving names on history only: every row, soft-deleted included. */
+    listWithDeleted(): Promise<Player[]>;
   };
   tagTeams: CrudRepository<TagTeam, TagTeamCreateInput, TagTeamPatch> & {
     listByStatus(status: TagTeamStatus): Promise<TagTeam[]>;

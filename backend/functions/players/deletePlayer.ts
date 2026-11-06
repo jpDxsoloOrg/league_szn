@@ -1,7 +1,29 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories, type StablePatch } from '../../lib/repositories';
 import { noContent, badRequest, serverError, conflict, notFound } from '../../lib/response';
+import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
 import { filterExistingWrestlerIds } from './wrestlerAssignment';
+
+/**
+ * The player row stays so history keeps the name, but only name lookups can
+ * still read it (see `Player.deletedAt`). A repeat delete finds nothing and gets
+ * the same 404 a hard delete gave. Clearing `userId` is what lets the same
+ * person sign up again: they get a new player, and the old row stays with its
+ * history. Null removes the attribute, which the UserIdIndex needs because a
+ * GSI key cannot be null.
+ */
+const softDeletePatch = (deletedAt: string): Record<string, unknown> => ({
+  deletedAt,
+  userId: null,
+  currentWrestler: NEEDS_WRESTLER,
+  currentWrestlerId: null,
+  alternateWrestler: null,
+  alternateWrestlerId: null,
+  stableId: null,
+  tagTeamId: null,
+  // Match cards return the live gamertag, which must not outlive the player.
+  psnId: null,
+});
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -132,7 +154,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       await seasonStandings.delete(standing.seasonId, playerId);
     }
 
-    await players.delete(playerId);
+    await runInTransaction(async (tx) => {
+      tx.updatePlayer(playerId, softDeletePatch(new Date().toISOString()));
+    });
 
     return noContent();
   } catch (err) {

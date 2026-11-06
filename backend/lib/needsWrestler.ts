@@ -19,6 +19,12 @@ export const SET_WRESTLER_NAME_MESSAGE = 'Set your wrestler name first';
 export const TARGET_NEEDS_WRESTLER_MESSAGE = 'That player has not set a wrestler name yet';
 
 /**
+ * Shown in API-built strings where a record points at a player whose name
+ * cannot be resolved. The frontend carries the same wording in en and de.
+ */
+export const FORMER_MEMBER = 'Former member';
+
+/**
  * True when a player's denormalized wrestler name is the "no wrestler yet"
  * placeholder, or is missing, empty, or whitespace-only.
  */
@@ -54,6 +60,30 @@ export function resolveBilledName(
  */
 export function isPlayerVisible(player: { currentWrestler?: string | null }): boolean {
   return !isNeedsWrestler(player.currentWrestler);
+}
+
+/**
+ * True for a live player who is hidden from the roster. A deleted player also
+ * holds the placeholder, but their past records are history rather than the
+ * work of someone hidden, so reads that see deleted rows keep those records.
+ */
+export function isHiddenLivePlayer(
+  player: { currentWrestler?: string | null; deletedAt?: string },
+): boolean {
+  return !player.deletedAt && !isPlayerVisible(player);
+}
+
+/**
+ * The name for a new player created from an account: the player name given at
+ * sign-up, then a real wrestler name, then a neutral label built from the
+ * account id. `name` is public, so the account's email must never be used here.
+ */
+export function newPlayerName(
+  playerName: string | null | undefined,
+  wrestlerName: string | null | undefined,
+  sub: string,
+): string {
+  return playerName?.trim() || realWrestlerName(wrestlerName)?.trim() || `Player ${sub.slice(0, 8)}`;
 }
 
 /**

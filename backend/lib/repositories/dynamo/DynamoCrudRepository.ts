@@ -9,6 +9,8 @@ export interface DynamoCrudConfig<T, TCreate> {
   idField: keyof T & string;
   entityName: string;
   buildItem: (input: TCreate, id: string, now: string) => T;
+  /** Extra condition for `update`; failing it reads as a missing row. */
+  updateCondition?: string;
 }
 
 export class DynamoCrudRepository<T, TCreate, TPatch extends object>
@@ -47,7 +49,9 @@ export class DynamoCrudRepository<T, TCreate, TPatch extends object>
       UpdateExpression: expr.UpdateExpression,
       ExpressionAttributeNames: expr.ExpressionAttributeNames,
       ExpressionAttributeValues: expr.ExpressionAttributeValues,
-      ConditionExpression: `attribute_exists(${this.config.idField})`,
+      ConditionExpression: [`attribute_exists(${this.config.idField})`, this.config.updateCondition]
+        .filter(Boolean)
+        .join(' AND '),
       ReturnValues: 'ALL_NEW',
     }).catch((err: { name?: string }) => {
       if (err.name === 'ConditionalCheckFailedException') {

@@ -238,14 +238,46 @@ describe('calculatePlayerScore', () => {
 
 // ─── calculateRankingsForChampionship ────────────────────────────────
 
+describe('calculateCurrentStreak with draws', () => {
+  const win = makeMatch({ matchId: 'w', date: daysAgo(3), winners: ['p1'], losers: ['p2'], participants: ['p1', 'p2'] });
+  const loss = makeMatch({ matchId: 'l', date: daysAgo(3), winners: ['p2'], losers: ['p1'], participants: ['p1', 'p2'] });
+  const draw = {
+    ...makeMatch({ matchId: 'd', date: daysAgo(2), winners: ['p1', 'p2'], losers: [], participants: ['p1', 'p2'] }),
+    isDraw: true,
+  };
+  const newerWin = { ...win, matchId: 'w2', date: daysAgo(1) };
+  const newerLoss = { ...loss, matchId: 'l2', date: daysAgo(1) };
+
+  it('returns 0 when the latest match is a draw', () => {
+    expect(calculateCurrentStreak([win, draw], 'p1')).toBe(0);
+  });
+
+  it('stops a win streak at a draw', () => {
+    expect(calculateCurrentStreak([win, draw, newerWin], 'p1')).toBe(1);
+  });
+
+  it('stops a loss streak at a draw', () => {
+    expect(calculateCurrentStreak([loss, draw, newerLoss], 'p1')).toBe(-1);
+  });
+});
+
 describe('calculateRankingsForChampionship', () => {
+  /** Queue the two scans in the order the calculator reads them. */
+  function mockTables(matches: unknown[], players?: Array<Record<string, unknown>>) {
+    const playerIds = new Set(
+      (matches as Array<{ participants: string[] }>).flatMap((match) => match.participants),
+    );
+    mockScanAll.mockResolvedValueOnce(players ?? [...playerIds].map((playerId) => ({ playerId })));
+    mockScanAll.mockResolvedValueOnce(matches);
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('returns ranked contenders sorted by score', async () => {
     // No division filter
-    mockScanAll.mockResolvedValueOnce([
+    mockTables([
       // Matches — 4 completed matches in the last 30 days
       makeMatch({ matchId: 'm1', date: daysAgo(1), winners: ['p1'], losers: ['p2'], participants: ['p1', 'p2'] }),
       makeMatch({ matchId: 'm2', date: daysAgo(2), winners: ['p1'], losers: ['p3'], participants: ['p1', 'p3'] }),
@@ -274,7 +306,7 @@ describe('calculateRankingsForChampionship', () => {
   });
 
   it('excludes the current champion (string)', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockTables([
       makeMatch({ matchId: 'm1', date: daysAgo(1), winners: ['champ'], losers: ['p1'], participants: ['champ', 'p1'] }),
       makeMatch({ matchId: 'm2', date: daysAgo(2), winners: ['champ'], losers: ['p2'], participants: ['champ', 'p2'] }),
       makeMatch({ matchId: 'm3', date: daysAgo(3), winners: ['champ'], losers: ['p1'], participants: ['champ', 'p1'] }),
@@ -297,7 +329,7 @@ describe('calculateRankingsForChampionship', () => {
   });
 
   it('excludes the current champion (array for tag team)', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockTables([
       makeMatch({ matchId: 'm1', date: daysAgo(1), winners: ['t1a', 't1b'], losers: ['p1'], participants: ['t1a', 't1b', 'p1'] }),
       makeMatch({ matchId: 'm2', date: daysAgo(2), winners: ['t1a'], losers: ['p1'], participants: ['t1a', 'p1'] }),
       makeMatch({ matchId: 'm3', date: daysAgo(3), winners: ['t1a'], losers: ['p1'], participants: ['t1a', 'p1'] }),
@@ -318,7 +350,7 @@ describe('calculateRankingsForChampionship', () => {
   });
 
   it('excludes players below minimum match threshold', async () => {
-    mockScanAll.mockResolvedValueOnce([
+    mockTables([
       // p1 has 3 matches (meets min), p2 has 2 matches (below min of 3)
       makeMatch({ matchId: 'm1', date: daysAgo(1), winners: ['p1'], losers: ['p2'], participants: ['p1', 'p2'] }),
       makeMatch({ matchId: 'm2', date: daysAgo(2), winners: ['p1'], losers: ['p2'], participants: ['p1', 'p2'] }),
@@ -341,10 +373,10 @@ describe('calculateRankingsForChampionship', () => {
   });
 
   it('respects division lock when divisionId is set', async () => {
-    // First call: scanAll for players in division
+    // First call: scanAll for players
     mockScanAll.mockResolvedValueOnce([
       { playerId: 'p1', divisionId: 'div-1' },
-      // p2 is NOT in this division
+      { playerId: 'p2', divisionId: 'div-2' },
     ]);
     // Second call: scanAll for matches
     mockScanAll.mockResolvedValueOnce([
@@ -369,6 +401,62 @@ describe('calculateRankingsForChampionship', () => {
     expect(ids).not.toContain('p2'); // not in division
   });
 
+  it('never ranks a deleted player, soft-deleted or with no row at all', async () => {
+    const wins = (playerId: string) => [1, 2, 3].map((day) =>
+      makeMatch({
+        matchId: `${playerId}-${day}`,
+        date: daysAgo(day),
+        winners: [playerId],
+        losers: ['p2'],
+        participants: [playerId, 'p2'],
+      }),
+    );
+    mockTables(
+      [...wins('p1'), ...wins('soft-deleted'), ...wins('no-row')],
+      [{ playerId: 'p1' }, { playerId: 'p2' }, { playerId: 'soft-deleted', deletedAt: '2026-01-01T00:00:00.000Z' }],
+    );
+
+    const results = await calculateRankingsForChampionship({
+      championshipId: 'champ-1',
+      championshipType: 'singles',
+      currentChampion: undefined,
+      seasonId: 'season-1',
+      minimumMatches: 3,
+      maxContenders: 10,
+    });
+
+    expect(results.map((r) => r.playerId).sort()).toEqual(['p1', 'p2']);
+  });
+
+  it('counts a draw as neither a win nor a loss', async () => {
+    const drawn = makeMatch({
+      matchId: 'draw',
+      date: daysAgo(1),
+      winners: ['p1', 'p2'],
+      losers: [],
+      participants: ['p1', 'p2'],
+    });
+    mockTables([
+      { ...drawn, isDraw: true },
+      makeMatch({ matchId: 'm2', date: daysAgo(2), winners: ['p1'], losers: ['p2'], participants: ['p1', 'p2'] }),
+      makeMatch({ matchId: 'm3', date: daysAgo(3), winners: ['p2'], losers: ['p1'], participants: ['p1', 'p2'] }),
+    ]);
+
+    const results = await calculateRankingsForChampionship({
+      championshipId: 'champ-1',
+      championshipType: 'singles',
+      currentChampion: undefined,
+      seasonId: 'season-1',
+      minimumMatches: 3,
+      maxContenders: 10,
+    });
+
+    const p1 = results.find((r) => r.playerId === 'p1');
+    expect(p1?.winsInPeriod).toBe(1);
+    expect(p1?.matchesInPeriod).toBe(3);
+    expect(p1?.currentStreak).toBe(0);
+  });
+
   it('limits results to maxContenders', async () => {
     // Generate enough matches for 5 players with 3+ matches each
     const matches: any[] = [];
@@ -385,7 +473,7 @@ describe('calculateRankingsForChampionship', () => {
         );
       }
     }
-    mockScanAll.mockResolvedValueOnce(matches);
+    mockTables(matches);
 
     const results = await calculateRankingsForChampionship({
       championshipId: 'champ-1',
@@ -400,7 +488,7 @@ describe('calculateRankingsForChampionship', () => {
   });
 
   it('returns empty array when no matches exist', async () => {
-    mockScanAll.mockResolvedValueOnce([]);
+    mockTables([]);
 
     const results = await calculateRankingsForChampionship({
       championshipId: 'champ-1',

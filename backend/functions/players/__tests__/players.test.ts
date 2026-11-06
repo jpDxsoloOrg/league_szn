@@ -587,7 +587,8 @@ describe('deletePlayer', () => {
       );
 
       expect(result!.statusCode).toBe(204);
-      expect(updatedPlayerIds).toEqual([partner.playerId]);
+      // Once for the partner, then the soft delete of the leaving player.
+      expect(updatedPlayerIds).toEqual([partner.playerId, leaving.playerId]);
       const partnerAfter = await repos.roster.players.findById(partner.playerId);
       expect(partnerAfter!.stableId).toBeUndefined();
       expect(partnerAfter!.tagTeamId).toBeUndefined();
@@ -631,7 +632,7 @@ describe('deletePlayer', () => {
       );
 
       expect(result!.statusCode).toBe(204);
-      expect(updatedPlayerIds).toEqual([]);
+      expect(updatedPlayerIds).toEqual([leaving.playerId]);
     });
 
     it('keeps the player and reports the failure when cleanup fails, then succeeds on retry', async () => {

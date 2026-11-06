@@ -2,8 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   NEEDS_WRESTLER,
   findHiddenPlayerIds,
+  isHiddenLivePlayer,
   isNeedsWrestler,
   isPlayerVisible,
+  newPlayerName,
 } from '../needsWrestler';
 
 describe('isNeedsWrestler', () => {
@@ -32,6 +34,26 @@ describe('isPlayerVisible', () => {
     expect(isPlayerVisible({ currentWrestler: '   ' })).toBe(false);
     expect(isPlayerVisible({ currentWrestler: '' })).toBe(false);
     expect(isPlayerVisible({})).toBe(false);
+  });
+});
+
+describe('isHiddenLivePlayer', () => {
+  it('is true only for a live player without a wrestler', () => {
+    expect(isHiddenLivePlayer({ currentWrestler: NEEDS_WRESTLER })).toBe(true);
+    expect(isHiddenLivePlayer({ currentWrestler: 'Kane' })).toBe(false);
+    expect(isHiddenLivePlayer({ currentWrestler: NEEDS_WRESTLER, deletedAt: '2026-01-01' })).toBe(false);
+  });
+});
+
+describe('newPlayerName', () => {
+  it.each([
+    ['Real Name', 'Kane', 'Real Name'],
+    ['   ', 'Kane', 'Kane'],
+    [undefined, NEEDS_WRESTLER, 'Player abcd1234'],
+    ['', '', 'Player abcd1234'],
+    [null, null, 'Player abcd1234'],
+  ])('resolves %j and %j to %j', (playerName, wrestlerName, expected) => {
+    expect(newPlayerName(playerName, wrestlerName, 'abcd1234-5678')).toBe(expected);
   });
 });
 

@@ -167,7 +167,7 @@ describe('getEvent', () => {
     expect(body.enrichedMatches[0].matchId).toBe('m-gone');
   });
 
-  it('uses Unknown Player/Wrestler when player not found', async () => {
+  it('uses Former member when player not found', async () => {
     // Create a match with a non-existent player
     await repos.competition.matches.create({
       matchId: 'm1', date: '2024-01-01', matchFormat: 'singles',
@@ -188,8 +188,8 @@ describe('getEvent', () => {
 
     expect(result!.statusCode).toBe(200);
     const participant = JSON.parse(result!.body).enrichedMatches[0].matchData.participants[0];
-    expect(participant.playerName).toBe('Unknown Player');
-    expect(participant.wrestlerName).toBe('Unknown Wrestler');
+    expect(participant.playerName).toBe('Former member');
+    expect(participant.wrestlerName).toBe('Former member');
   });
 
   it('omits championshipName when match is not a championship match', async () => {
