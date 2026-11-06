@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { toCalendarDate, dateToCalendarDate, formatCalendarDate } from '../../utils/dateUtils';
+import { dayOfWeekToNumber, getPlannedShows } from '../../utils/showSchedule';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
@@ -25,42 +26,16 @@ import './EventsCalendar.css';
 
 const EVENT_TYPES: EventType[] = ['ppv', 'weekly', 'special', 'house'];
 const PAST_PAGE_SIZE = 10;
-/** How far ahead the list names shows that have no event yet. */
-const PLANNED_DAYS_AHEAD = 35;
 const PLANNED_SHOWN = 5;
 
 type FilterTab = 'all' | EventType;
 type EventsView = 'upcoming' | 'past';
-
-/** Map DayOfWeek string to JS getDay() number (0=Sun..6=Sat) */
-const dayOfWeekToNumber: Record<string, number> = {
-  sunday: 0,
-  monday: 1,
-  tuesday: 2,
-  wednesday: 3,
-  thursday: 4,
-  friday: 5,
-  saturday: 6,
-};
 
 interface ShowCalendarEntry {
   show: Show;
   companyName: string;
   date: string; // calendar date YYYY-MM-DD for this specific occurrence
   eventType: 'weekly' | 'ppv';
-}
-
-/** The next dates a show is due, soonest first, so the list agrees with the calendar. */
-function getShowDates(show: Show, today: Date): string[] {
-  if (show.schedule === 'ppv' && show.ppvDate) return [toCalendarDate(show.ppvDate)];
-  const targetDay = show.dayOfWeek ? dayOfWeekToNumber[show.dayOfWeek] : undefined;
-  if (show.schedule !== 'weekly' || targetDay === undefined) return [];
-  const dates: string[] = [];
-  for (let offset = 0; offset <= PLANNED_DAYS_AHEAD; offset++) {
-    const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset);
-    if (date.getDay() === targetDay) dates.push(dateToCalendarDate(date));
-  }
-  return dates;
 }
 
 export default function EventsCalendar() {
@@ -277,19 +252,8 @@ export default function EventsCalendar() {
 
   // The next open date of each scheduled show, matching the planned chips on the calendar.
   const plannedShows = useMemo(() => {
-    const today = new Date();
-    const todayYmd = dateToCalendarDate(today);
-    return shows
-      .filter((show) => activeFilter === 'all' || activeFilter === show.schedule)
-      .flatMap((show) => {
-        const date = getShowDates(show, today).find((ymd) => (
-          ymd >= todayYmd
-          && !calendarEntries.some((entry) => entry.showId === show.showId && toCalendarDate(entry.date) === ymd)
-        ));
-        return date ? [{ show, date }] : [];
-      })
-      .sort((first, second) => first.date.localeCompare(second.date))
-      .slice(0, PLANNED_SHOWN);
+    const filteredShows = shows.filter((show) => activeFilter === 'all' || activeFilter === show.schedule);
+    return getPlannedShows(filteredShows, calendarEntries, new Date()).slice(0, PLANNED_SHOWN);
   }, [shows, activeFilter, calendarEntries]);
 
   // Recent completed events
@@ -523,30 +487,6 @@ export default function EventsCalendar() {
               )}
             </section>
           )}
-
-          {showPast && (
-            <section className="events-section">
-              <h2 className="events-section__title">{t('events.calendar.recentResults', 'Recent Results')}</h2>
-              {recentResults.length === 0 ? (
-                <p className="events-section__empty">{t('events.calendar.noResults', 'No completed events yet.')}</p>
-              ) : (
-                <div className="events-list">
-                  {recentResults.slice(0, pastLimit).map((event) => (
-                    <EventCard key={event.eventId} event={event} showStatus={false} />
-                  ))}
-                </div>
-              )}
-              {recentResults.length > pastLimit && (
-                <Button
-                  className="events-section__more"
-                  variant="secondary"
-                  onClick={() => setPastLimit((limit) => limit + PAST_PAGE_SIZE)}
-                >
-                  {t('events.calendar.showMore', 'Show more')}
-                </Button>
-              )}
-            </section>
-          )}
         </div>
 
         {!isMobile && (
@@ -585,16 +525,21 @@ export default function EventsCalendar() {
                     {day !== null && (
                       <>
                         <span className="calendar-day-number">{day}</span>
-                        {dayEvents?.map((evt) => (
-                          <Link
-                            key={evt.eventId}
-                            to={`/events/${evt.eventId}`}
-                            className={`calendar-item calendar-item--${evt.eventType}`}
-                            title={evt.name}
-                          >
-                            {evt.name}
-                          </Link>
-                        ))}
+                        {dayEvents?.map((evt) => {
+                          const itemLabel = `${evt.name} (${t(`events.status.${evt.status}`)})`;
+                          const cancelled = evt.status === 'cancelled' ? ' calendar-item--cancelled' : '';
+                          return (
+                            <Link
+                              key={evt.eventId}
+                              to={`/events/${evt.eventId}`}
+                              className={`calendar-item calendar-item--${evt.eventType}${cancelled}`}
+                              title={itemLabel}
+                              aria-label={itemLabel}
+                            >
+                              {evt.name}
+                            </Link>
+                          );
+                        })}
                         {dayShows?.map((entry) => {
                           const itemKey = `show-${entry.show.showId}-${entry.date}`;
                           const itemClass = `calendar-item calendar-item--planned calendar-item--${entry.eventType}`;
@@ -632,7 +577,35 @@ export default function EventsCalendar() {
                 <span className="legend-dot legend-dot--planned" aria-hidden="true" />
                 <span>{t('events.calendar.plannedLegend', 'Planned')}</span>
               </div>
+              <div className="legend-item">
+                <span className="legend-dot legend-dot--cancelled" aria-hidden="true" />
+                <span>{t('events.status.cancelled')}</span>
+              </div>
             </div>
+          </section>
+        )}
+
+        {showPast && (
+          <section className="events-section">
+            <h2 className="events-section__title">{t('events.calendar.recentResults', 'Recent Results')}</h2>
+            {recentResults.length === 0 ? (
+              <p className="events-section__empty">{t('events.calendar.noResults', 'No completed events yet.')}</p>
+            ) : (
+              <div className="events-list">
+                {recentResults.slice(0, pastLimit).map((event) => (
+                  <EventCard key={event.eventId} event={event} showStatus={false} />
+                ))}
+              </div>
+            )}
+            {recentResults.length > pastLimit && (
+              <Button
+                className="events-section__more"
+                variant="secondary"
+                onClick={() => setPastLimit((limit) => limit + PAST_PAGE_SIZE)}
+              >
+                {t('events.calendar.showMore', 'Show more')}
+              </Button>
+            )}
           </section>
         )}
       </div>

@@ -11,6 +11,7 @@ import Skeleton from '../ui/Skeleton';
 import { formatCalendarDate } from '../../utils/dateUtils';
 import SeasonSelector from './SeasonSelector';
 import { useHeadToHead } from './useHeadToHead';
+import { usePlayerImages } from './usePlayerImages';
 import './stats-common.css';
 import './HeadToHeadComparison.css';
 
@@ -169,6 +170,7 @@ function HeadToHeadComparison({ view = 'compare' }: HeadToHeadComparisonProps) {
   const { t } = useTranslation();
   const { search } = useLocation();
   const { roster, players, seasons, player1Id, player2Id, seasonId, comparison, select } = useHeadToHead();
+  const images = usePlayerImages();
 
   const title = view === 'tape' ? t('statistics.taleOfTape.title') : t('statistics.headToHead.title');
   const header = (
@@ -246,10 +248,13 @@ function HeadToHeadComparison({ view = 'compare' }: HeadToHeadComparisonProps) {
   const edgeRows = seriesRow ? [...allRows, seriesRow] : allRows;
   const shownRows = view === 'tape' ? allRows : allRows.filter((row) => row.inCompare);
 
-  const playerOptions = players.map((player) => ({
-    value: player.playerId,
-    label: `${player.name} (${player.wrestlerName})`,
-  }));
+  // Alphabetical, so the select's type-to-jump lands somewhere useful.
+  const playerOptions = players
+    .map((player) => ({
+      value: player.playerId,
+      label: player.name.trim() ? `${player.name} (${player.wrestlerName})` : player.wrestlerName,
+    }))
+    .sort((first, second) => first.label.localeCompare(second.label));
 
   return (
     <div className="stats-page">
@@ -257,7 +262,7 @@ function HeadToHeadComparison({ view = 'compare' }: HeadToHeadComparisonProps) {
 
       <section className="h2h-matchup" aria-label={t('statistics.headToHead.headToHeadRecord')}>
         <div className="h2h-corner">
-          <Avatar name={player1?.name ?? ''} size="lg" ring="pink" />
+          <Avatar src={images.get(player1Id)} name={player1?.name ?? ''} size="lg" ring="pink" />
           <Select
             label={t('statistics.headToHead.player1')}
             value={player1Id}
@@ -277,7 +282,7 @@ function HeadToHeadComparison({ view = 'compare' }: HeadToHeadComparisonProps) {
           )}
         </div>
         <div className="h2h-corner">
-          <Avatar name={player2?.name ?? ''} size="lg" ring="cyan" />
+          <Avatar src={images.get(player2Id)} name={player2?.name ?? ''} size="lg" ring="cyan" />
           <Select
             label={t('statistics.headToHead.player2')}
             value={player2Id}

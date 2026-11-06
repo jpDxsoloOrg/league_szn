@@ -15,6 +15,7 @@ import type { LeagueEvent, MatchDesignation } from '../../types/event';
 import type { ChallengeWithPlayers } from '../../types/challenge';
 import type { PromoWithContext } from '../../types/promo';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
+import { nameOrUnnamed } from '../../utils/playerName';
 import SearchableSelect from './SearchableSelect';
 import Button from '../ui/Button';
 import PageHeader from '../ui/PageHeader';
@@ -413,9 +414,11 @@ export default function ScheduleMatch() {
     return teams.findIndex(team => team.includes(playerId));
   };
 
+  const displayName = (player: Player): string => nameOrUnnamed(player.name, t('common.unnamedPlayer', 'Unnamed player'));
+
   const getPlayerName = (playerId: string): string => {
     const player = players.find(p => p.playerId === playerId);
-    return player ? player.name : t('common.unknown');
+    return player ? displayName(player) : t('common.unknown');
   };
 
   const filteredPlayers = divisionFilter === 'all'
@@ -837,7 +840,7 @@ export default function ScheduleMatch() {
                               >
                                 <span className="participant-name">
                                   <span className={`participant-status-dot participant-status-dot--${status}`} aria-hidden="true" />
-                                  {player.name}
+                                  {displayName(player)}
                                   <span className="sr-only"> ({statusLabel(status)})</span>
                                 </span>
                                 {isNeedsWrestler(player.currentWrestler)
@@ -943,8 +946,8 @@ export default function ScheduleMatch() {
                           aria-hidden="true"
                         />
                         <span className="selected-participant-text">
-                          {player && !hidden && `${player.currentWrestler} (${player.name})`}
-                          {player && hidden && player.name}
+                          {player && !hidden && `${player.currentWrestler} (${displayName(player)})`}
+                          {player && hidden && displayName(player)}
                           {!player && playerId}
                         </span>
                         {hidden && <HiddenBadge />}
@@ -953,8 +956,8 @@ export default function ScheduleMatch() {
                           className="selected-participant-remove"
                           onClick={() => handleParticipantToggle(playerId)}
                           aria-label={t('scheduleMatch.removeParticipant', {
-                            name: player?.name ?? playerId,
-                            defaultValue: `Remove ${player?.name ?? playerId}`,
+                            name: player ? displayName(player) : playerId,
+                            defaultValue: `Remove ${player ? displayName(player) : playerId}`,
                           })}
                         >
                           <X aria-hidden="true" size={14} />

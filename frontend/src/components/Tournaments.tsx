@@ -74,7 +74,7 @@ export default function Tournaments() {
     [players],
   );
 
-  const getPlayerName = (playerId: string) => playerNames.get(playerId) ?? t('common.unknown');
+  const getPlayerName = (playerId: string) => playerNames.get(playerId) ?? t('common.formerMember');
 
   const typeLabel = (tournament: Tournament) =>
     tournament.type === 'single-elimination' ? t('tournaments.singleElimination') : t('tournaments.roundRobin');

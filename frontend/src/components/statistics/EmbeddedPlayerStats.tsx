@@ -11,9 +11,10 @@ import './PlayerStats.css';
 
 interface EmbeddedPlayerStatsProps {
   playerId: string;
+  imageUrl?: string;
 }
 
-function EmbeddedPlayerStats({ playerId }: EmbeddedPlayerStatsProps) {
+function EmbeddedPlayerStats({ playerId, imageUrl }: EmbeddedPlayerStatsProps) {
   const { t } = useTranslation();
 
   const {
@@ -51,6 +52,7 @@ function EmbeddedPlayerStats({ playerId }: EmbeddedPlayerStatsProps) {
 
       <PlayerStatsContent
         player={player}
+        imageUrl={imageUrl}
         overallStats={overallStats}
         matchTypeStats={matchTypeStats}
         championshipStats={championshipStats}

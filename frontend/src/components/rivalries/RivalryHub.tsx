@@ -259,7 +259,12 @@ export default function RivalryHub() {
       );
     }
     if (filtered.length === 0) {
-      return <EmptyState icon={<Flame aria-hidden="true" />} title={t('rivalries.hub.empty')} />;
+      return (
+        <EmptyState
+          icon={<Flame aria-hidden="true" />}
+          title={t(rivalries.length === 0 ? 'rivalries.hub.noneYet' : 'rivalries.hub.empty')}
+        />
+      );
     }
     return (
       <div className="rivalry-hub__grid">

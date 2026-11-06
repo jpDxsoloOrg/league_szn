@@ -92,6 +92,25 @@ describe('Avatar', () => {
   });
 });
 
+describe('lazy images', () => {
+  // React 18 sets attributes in prop order. Some browsers start the fetch on src.
+  const expectLazyBeforeSrc = (image: Element) => {
+    const attributes = image.getAttributeNames();
+    expect(attributes.indexOf('loading')).toBeGreaterThanOrEqual(0);
+    expect(attributes.indexOf('loading')).toBeLessThan(attributes.indexOf('src'));
+  };
+
+  it('sets loading before src on an Avatar', () => {
+    render(<Avatar src="https://img.test/a.png" name="Cena" />);
+    expectLazyBeforeSrc(screen.getByRole('img', { name: 'Cena' }));
+  });
+
+  it('sets loading before src on a PhotoTile', () => {
+    render(<PhotoTile imageUrl="https://img.test/a.png" imageAlt="Belt" title="Cena" />);
+    expectLazyBeforeSrc(screen.getByRole('img', { name: 'Belt' }));
+  });
+});
+
 describe('PageHeader', () => {
   it('renders an h1 with eyebrow, subtitle and actions', () => {
     render(<PageHeader title="Standings" eyebrow="Season 1" subtitle="All players" actions={<button>Filter</button>} />);

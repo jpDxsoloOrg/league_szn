@@ -11,6 +11,7 @@ import './PlayerStats.css';
 
 interface PlayerStatsContentProps {
   player: StatsPlayer;
+  imageUrl?: string;
   overallStats: PlayerStatisticsType;
   matchTypeStats: PlayerStatisticsType[];
   championshipStats: (ChampionshipStats & { championshipName?: string })[];
@@ -19,6 +20,7 @@ interface PlayerStatsContentProps {
 
 function PlayerStatsContent({
   player,
+  imageUrl,
   overallStats,
   matchTypeStats,
   championshipStats,
@@ -45,7 +47,7 @@ function PlayerStatsContent({
   return (
     <>
       <section className="ps-record-card">
-        <Avatar name={player.name} size="xl" ring="pink" />
+        <Avatar src={imageUrl} name={player.name} size="xl" ring="pink" />
         <div className="ps-identity">
           <h2 className="ps-name">{player.name}</h2>
           <p className="ps-wrestler">{player.wrestlerName}</p>
@@ -73,7 +75,9 @@ function PlayerStatsContent({
             </div>
           </dl>
           <p className="ps-record-summary">
-            <span className="ps-win-pct-value">{overallStats.winPercentage.toFixed(1)}%</span>
+            <span className="ps-win-pct-value">
+              {overallStats.matchesPlayed > 0 ? `${overallStats.winPercentage.toFixed(1)}%` : '-'}
+            </span>
             {' '}{t('statistics.labels.winPercentage')}
             <span className="ps-matches-played">{overallStats.matchesPlayed} {t('statistics.labels.matchesPlayed')}</span>
           </p>

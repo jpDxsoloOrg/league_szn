@@ -21,6 +21,7 @@ import {
   type WrestlerSlotOptions,
 } from '../../utils/wrestlerOptions';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
+import { nameOrUnnamed } from '../../utils/playerName';
 import Avatar from '../ui/Avatar';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
@@ -52,8 +53,16 @@ const PLAYER_SOURCES = {
 type PlayerSource = keyof typeof PLAYER_SOURCES;
 
 /** What a wrestler select opens on, so an untouched slot can be told from a cleared one. */
-function initialSlotValue(wrestlerId: string | null | undefined, wrestlerName: string | null | undefined): string {
-  if (wrestlerId) return wrestlerId;
+function initialSlotValue(
+  wrestlerId: string | null | undefined,
+  wrestlerName: string | null | undefined,
+  wrestlers: Wrestler[],
+): string {
+  // A player can rename themselves and keep the old link. The stored name is
+  // what the table and public pages show, so the form opens on that too.
+  const rosterName = wrestlers.find((wrestler) => wrestler.wrestlerId === wrestlerId)?.name;
+  const renamed = rosterName !== undefined && rosterName.toLowerCase() !== (wrestlerName ?? '').toLowerCase();
+  if (wrestlerId && !renamed) return wrestlerId;
   return isNeedsWrestler(wrestlerName) ? '' : NAME_ONLY_SLOT;
 }
 
@@ -118,32 +127,32 @@ export default function ManagePlayers() {
     return division?.name || t('common.unknown', 'Unknown');
   };
 
+  // A slot held by name can still be linked, so its roster row stays on offer.
+  const heldCurrentId = formData.currentWrestlerId === NAME_ONLY_SLOT
+    ? editingPlayer?.currentWrestlerId
+    : formData.currentWrestlerId;
+  const heldAlternateId = formData.alternateWrestlerId === NAME_ONLY_SLOT
+    ? editingPlayer?.alternateWrestlerId
+    : formData.alternateWrestlerId;
+
   const currentWrestlerOptions = useMemo(
-    () =>
-      buildWrestlerOptionGroups(
-        wrestlers,
-        formData.currentWrestlerId || undefined,
-        formData.alternateWrestlerId || undefined,
-      ),
-    [wrestlers, formData.currentWrestlerId, formData.alternateWrestlerId],
+    () => buildWrestlerOptionGroups(wrestlers, heldCurrentId || undefined, heldAlternateId || undefined),
+    [wrestlers, heldCurrentId, heldAlternateId],
   );
 
   const alternateWrestlerOptions = useMemo(
-    () =>
-      buildWrestlerOptionGroups(
-        wrestlers,
-        formData.alternateWrestlerId || undefined,
-        formData.currentWrestlerId || undefined,
-      ),
-    [wrestlers, formData.currentWrestlerId, formData.alternateWrestlerId],
+    () => buildWrestlerOptionGroups(wrestlers, heldAlternateId || undefined, heldCurrentId || undefined),
+    [wrestlers, heldCurrentId, heldAlternateId],
   );
 
   const initialCurrentSlot = editingPlayer
-    ? initialSlotValue(editingPlayer.currentWrestlerId, editingPlayer.currentWrestler)
+    ? initialSlotValue(editingPlayer.currentWrestlerId, editingPlayer.currentWrestler, wrestlers)
     : '';
   const initialAlternateSlot = editingPlayer
-    ? initialSlotValue(editingPlayer.alternateWrestlerId, editingPlayer.alternateWrestler)
+    ? initialSlotValue(editingPlayer.alternateWrestlerId, editingPlayer.alternateWrestler, wrestlers)
     : '';
+
+  const unnamedLabel = t('common.unnamedPlayer', 'Unnamed player');
 
   const hiddenCount = useMemo(
     () => players.filter((player) => isNeedsWrestler(player.currentWrestler)).length,
@@ -157,10 +166,10 @@ export default function ManagePlayers() {
       if (divisionFilter === 'none' && player.divisionId) return false;
       if (!['all', 'none', 'hidden'].includes(divisionFilter) && player.divisionId !== divisionFilter) return false;
       if (!term) return true;
-      return [player.name, player.currentWrestler, player.alternateWrestler, player.psnId]
+      return [nameOrUnnamed(player.name, unnamedLabel), player.currentWrestler, player.alternateWrestler, player.psnId]
         .some((value) => value?.toLowerCase().includes(term));
     });
-  }, [players, divisionFilter, search]);
+  }, [players, divisionFilter, search, unnamedLabel]);
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -336,8 +345,8 @@ export default function ManagePlayers() {
     setEditingPlayer(player);
     setFormData({
       name: player.name,
-      currentWrestlerId: initialSlotValue(player.currentWrestlerId, player.currentWrestler),
-      alternateWrestlerId: initialSlotValue(player.alternateWrestlerId, player.alternateWrestler),
+      currentWrestlerId: initialSlotValue(player.currentWrestlerId, player.currentWrestler, wrestlers),
+      alternateWrestlerId: initialSlotValue(player.alternateWrestlerId, player.alternateWrestler, wrestlers),
       imageUrl: player.imageUrl || '',
       divisionId: player.divisionId || '',
       psnId: player.psnId || '',
@@ -389,8 +398,9 @@ export default function ManagePlayers() {
 
   /**
    * Keeps a wrestler the roster can't supply selectable: a name with no roster
-   * link, or a link whose roster row is gone. Without this option the select
-   * would read as if no wrestler were assigned.
+   * link, a name the player changed away from the linked row, or a link whose
+   * roster row is gone. Without this option the select would read as if no
+   * wrestler were assigned.
    */
   const renderKeptWrestlerOption = (
     groups: WrestlerSlotOptions,
@@ -401,7 +411,7 @@ export default function ManagePlayers() {
     if (!initialValue || onRoster || isNeedsWrestler(wrestlerName)) return null;
     return (
       <option value={initialValue}>
-        {t('adminRoster.players.keptWrestler', { defaultValue: '{{name}} (not linked to the roster)', name: wrestlerName })}
+        {t('adminRoster.players.keptWrestler', { defaultValue: '{{name}} (custom name)', name: wrestlerName })}
       </option>
     );
   };
@@ -431,9 +441,9 @@ export default function ManagePlayers() {
       sortValue: (player) => player.name,
       render: (player) => (
         <span className="ar-identity">
-          <Avatar src={player.imageUrl} name={player.name} size="sm" />
+          <Avatar src={player.imageUrl} name={nameOrUnnamed(player.name, unnamedLabel)} size="sm" />
           <span className="ar-stack">
-            <span className="ar-strong">{player.name}</span>
+            <span className="ar-strong">{nameOrUnnamed(player.name, unnamedLabel)}</span>
             {player.psnId && <span className="ar-sub">{player.psnId}</span>}
           </span>
         </span>
@@ -732,7 +742,7 @@ export default function ManagePlayers() {
         title={t('adminRoster.players.deleteTitle', 'Delete player')}
         message={t('adminRoster.players.deleteConfirm', {
           defaultValue: 'Are you sure you want to delete {{name}}? This action cannot be undone.',
-          name: pendingDelete?.name ?? '',
+          name: nameOrUnnamed(pendingDelete?.name, unnamedLabel),
         })}
         confirmLabel={t('common.delete', 'Delete')}
         busy={deleting}

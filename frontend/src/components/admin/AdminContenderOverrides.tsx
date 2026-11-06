@@ -11,12 +11,13 @@ import DataTable from '../ui/DataTable';
 import EmptyState from '../ui/EmptyState';
 import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
 import AdminNotice from './AdminNotice';
 import useAdminConfirm from './useAdminConfirm';
 import './adminContent.css';
 
 function playerLabel(player: Player): string {
-  return player.currentWrestler ? `${player.name} (${player.currentWrestler})` : player.name;
+  return isNeedsWrestler(player.currentWrestler) ? player.name : `${player.name} (${player.currentWrestler})`;
 }
 
 export default function AdminContenderOverrides() {
@@ -300,7 +301,7 @@ export default function AdminContenderOverrides() {
                 return (
                   <span className="ac-cell__text">
                     <span className="ac-cell__title">{player?.name ?? override.playerId}</span>
-                    {player?.currentWrestler && <span className="ac-cell__sub">{player.currentWrestler}</span>}
+                    {player && !isNeedsWrestler(player.currentWrestler) && <span className="ac-cell__sub">{player.currentWrestler}</span>}
                   </span>
                 );
               },

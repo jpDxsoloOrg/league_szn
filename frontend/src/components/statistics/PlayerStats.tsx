@@ -9,6 +9,7 @@ import Select from '../ui/Select';
 import Skeleton from '../ui/Skeleton';
 import PlayerStatsContent from './PlayerStatsContent';
 import SeasonSelector from './SeasonSelector';
+import { usePlayerImages } from './usePlayerImages';
 import { useStatsResource } from './useStatsResource';
 import './stats-common.css';
 
@@ -16,6 +17,7 @@ function PlayerStats() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { playerId: routePlayerId } = useParams<{ playerId: string }>();
+  const images = usePlayerImages();
 
   const loadRoster = useCallback(
     async (signal: AbortSignal) => (await statisticsApi.getPlayerStats(undefined, undefined, signal)).players,
@@ -48,6 +50,7 @@ function PlayerStats() {
     return (
       <PlayerStatsContent
         player={player}
+        imageUrl={images.get(player.playerId)}
         overallStats={overallStats}
         matchTypeStats={matchTypeStats}
         championshipStats={championshipStats}

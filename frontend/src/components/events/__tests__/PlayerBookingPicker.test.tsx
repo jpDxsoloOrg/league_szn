@@ -83,6 +83,19 @@ describe('PlayerBookingPicker', () => {
     expect(option).not.toHaveTextContent('Needs Wrestler');
   });
 
+  it('labels a blank-name player instead of leaving empty brackets', async () => {
+    renderPicker({
+      players: [player('blank', '', 'Sid Vicious'), player('blank-hidden', '  ', 'Needs Wrestler')],
+      checkInStatusByPlayerId: new Map(),
+    });
+
+    await openMenu();
+
+    expect(screen.getByRole('option', { name: /Sid Vicious \(Unnamed player\)/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^Unnamed player/ })).toBeInTheDocument();
+    expect(screen.queryByText(/\(\s*\)/)).not.toBeInTheDocument();
+  });
+
   it('keeps hidden players findable by searching for the badge text', async () => {
     const hiddenPlayer = player('p5', 'Eve', 'Needs Wrestler');
     renderPicker({ players: [...players, hiddenPlayer], checkInStatusByPlayerId: undefined });

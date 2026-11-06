@@ -382,6 +382,27 @@ describe('ScheduleMatch', () => {
     expect(chip).not.toHaveTextContent('Needs Wrestler');
   });
 
+  it('labels a blank-name player instead of leaving empty brackets', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([
+      ...mockPlayers,
+      {
+        playerId: 'p5', name: '', currentWrestler: 'Sid Vicious',
+        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      },
+    ]);
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+    await pickParticipants(user, ['Sid Vicious (Unnamed player)']);
+
+    const chip = screen.getByRole('button', { name: 'Remove Unnamed player' }).closest('li')!;
+    expect(chip).toHaveTextContent('Sid Vicious (Unnamed player)');
+    expect(chip).not.toHaveTextContent('()');
+  });
+
   it('keeps players with no division in the picker by default', async () => {
     const user = userEvent.setup();
     setupDefaultMocks();

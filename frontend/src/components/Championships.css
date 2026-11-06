@@ -23,6 +23,8 @@
 .title-item__open {
   position: absolute;
   inset: 0;
+  /* Above the tile's text, which is z-index 1, so every part of the tile clicks. */
+  z-index: 1;
   width: 100%;
   padding: 0;
   border: 1px solid transparent;
@@ -38,6 +40,11 @@
 .title-item__open:focus-visible {
   outline: var(--focus-ring);
   outline-offset: 2px;
+}
+
+/* Belts are busy, bright art, so the title text needs the heavier scrim. */
+.title-item .title-item__tile::after {
+  background: var(--gradient-tile-scrim-strong);
 }
 
 /* An inactive title drops its rim colour rather than dimming its text. */

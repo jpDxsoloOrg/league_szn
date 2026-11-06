@@ -122,6 +122,19 @@ describe('FactionsList (FAC-10)', () => {
     }
   });
 
+  it('does not name a hidden leader on the tile', async () => {
+    mockFactionsGetAll.mockResolvedValue([
+      baseFaction({ stableId: 'f1', name: 'Blood Brothers', leaderId: 'p1', memberIds: ['p1'] }),
+    ]);
+    mockPlayersGetDirectory.mockResolvedValue([{ playerId: 'p1', name: 'Hidden Leader', currentWrestler: null }]);
+
+    renderHub();
+
+    expect(await screen.findByRole('link', { name: /Blood Brothers/ })).toBeInTheDocument();
+    expect(screen.queryByText(/Hidden Leader/)).not.toBeInTheDocument();
+    expect(screen.getByText('Leader no longer listed')).toBeInTheDocument();
+  });
+
   it('filters the visible cards from the status select', async () => {
     const factions = [
       baseFaction({ stableId: 'f1', name: 'Alpha Active', status: 'active' }),

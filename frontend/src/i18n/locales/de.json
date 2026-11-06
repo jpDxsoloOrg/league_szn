@@ -44,7 +44,11 @@
     "sortBy": "Sortieren nach",
     "sortDefault": "Standardreihenfolge",
     "sortAscending": "{{column}}, aufsteigend",
-    "sortDescending": "{{column}}, absteigend"
+    "sortDescending": "{{column}}, absteigend",
+    "showMore": "Mehr anzeigen",
+    "showingCount": "{{shown}} von {{total}} angezeigt",
+    "formerMember": "Ehemaliges Mitglied",
+    "unnamedPlayer": "Unbenannter Spieler"
   },
   "notFound": {
     "title": "Seite nicht gefunden",
@@ -1229,8 +1233,7 @@
     },
     "bestMatches": {
       "title": "Beste Kämpfe",
-      "noData": "Noch keine bewerteten Kämpfe. Bewerten Sie Kämpfe beim Eintragen der Ergebnisse.",
-      "unknownPlayer": "Unbekannter Spieler"
+      "noData": "Noch keine bewerteten Kämpfe. Bewerten Sie Kämpfe beim Eintragen der Ergebnisse."
     },
     "loadFailed": "Diese Statistiken konnten nicht geladen werden"
   },
@@ -1281,7 +1284,8 @@
       "activityPromoTitled": "{{name}}: „{{title}}“",
       "activityPromo": "{{name}} hielt eine Promo",
       "activityNote": "Notiz: {{text}}",
-      "activityMessage": "{{name}} schickte eine Nachricht"
+      "activityMessage": "{{name}} schickte eine Nachricht",
+      "noneYet": "Hier gibt es noch keine Rivalitäten."
     },
     "card": {
       "matchCount_one": "{{count}} Kampf",
@@ -2874,7 +2878,7 @@
       "deleteTitle": "Spieler löschen",
       "deleteConfirm": "{{name}} wirklich löschen? Dies kann nicht rückgängig gemacht werden.",
       "noDivision": "Keine Division",
-      "keptWrestler": "{{name}} (nicht mit dem Roster verknüpft)",
+      "keptWrestler": "{{name}} (eigener Name)",
       "clearWarning": "Beim Speichern wird dieser Wrestler entfernt und der Spieler auf öffentlichen Seiten ausgeblendet."
     },
     "wrestlers": {

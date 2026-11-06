@@ -3,15 +3,18 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
-const { mockGetDashboard, mockGetEvent, mockGetStandings } = vi.hoisted(() => ({
+const { mockGetDashboard, mockGetEvent, mockGetAllEvents, mockGetAllShows, mockGetStandings } = vi.hoisted(() => ({
   mockGetDashboard: vi.fn(),
   mockGetEvent: vi.fn(),
+  mockGetAllEvents: vi.fn(),
+  mockGetAllShows: vi.fn(),
   mockGetStandings: vi.fn(),
 }));
 
 vi.mock('../../services/api', () => ({
   dashboardApi: { get: mockGetDashboard },
-  eventsApi: { getById: mockGetEvent },
+  eventsApi: { getById: mockGetEvent, getAll: mockGetAllEvents },
+  showsApi: { getAll: mockGetAllShows },
   standingsApi: { get: mockGetStandings },
 }));
 
@@ -95,6 +98,8 @@ describe('Dashboard', () => {
     vi.clearAllMocks();
     mockGetDashboard.mockResolvedValue(emptyDashboard);
     mockGetEvent.mockRejectedValue(new Error('not available'));
+    mockGetAllEvents.mockResolvedValue([]);
+    mockGetAllShows.mockResolvedValue([]);
     mockGetStandings.mockResolvedValue({ players: [], sortedByWins: true });
   });
 
@@ -156,9 +161,43 @@ describe('Dashboard', () => {
     await waitFor(() => {
       expect(screen.getByText('No active champions')).toBeInTheDocument();
     });
-    expect(screen.getByText('No upcoming events')).toBeInTheDocument();
+    expect(await screen.findByText('No upcoming events')).toBeInTheDocument();
     expect(screen.getByText('No recent results')).toBeInTheDocument();
     expect(screen.getByText('No active season')).toBeInTheDocument();
+  });
+
+  describe('with no event open but a show on the schedule', () => {
+    const inDays = (days: number) => {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+    const plannedShow = (name: string, ppvDate: string) => ({
+      showId: name, companyId: 'c1', name, schedule: 'ppv', ppvDate, createdAt: '', updatedAt: '',
+    });
+
+    it('leads with the next planned show instead of saying nothing is coming', async () => {
+      mockGetAllShows.mockResolvedValue([plannedShow('Later Show', inDays(9)), plannedShow('Mayhem Monday', inDays(3))]);
+      renderDashboard();
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Mayhem Monday' })).toBeInTheDocument();
+      expect(screen.queryByText('No upcoming events')).not.toBeInTheDocument();
+    });
+
+    it('skips a show whose date already has an event, even a cancelled one', async () => {
+      mockGetAllShows.mockResolvedValue([plannedShow('Mayhem Monday', inDays(3))]);
+      mockGetAllEvents.mockResolvedValue([{ eventId: 'e1', showId: 'Mayhem Monday', date: inDays(3), status: 'cancelled' }]);
+      renderDashboard();
+
+      expect(await screen.findByText('No upcoming events')).toBeInTheDocument();
+    });
+
+    it('falls back to the empty message when the schedule cannot load', async () => {
+      mockGetAllShows.mockRejectedValue(new Error('down'));
+      renderDashboard();
+
+      expect(await screen.findByText('No upcoming events')).toBeInTheDocument();
+    });
   });
 
   it('handles API error and shows retry button', async () => {

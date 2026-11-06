@@ -21,6 +21,8 @@ export interface DataTableColumn<Row> {
 export interface DataTableProps<Row> {
   columns: DataTableColumn<Row>[];
   rows: Row[];
+  /** Renders only this many rows. Applied after sorting, so a sort still covers every row. */
+  rowLimit?: number;
   rowKey: (row: Row) => string;
   /** Names the table for screen readers. */
   caption: string;
@@ -47,7 +49,7 @@ function compareValues(first: string | number, second: string | number): number 
  * column headers as labels, so keep public tables to about six columns. The
  * header row is not on screen there, so a Select takes over sorting.
  */
-export default function DataTable<Row>({ columns, rows, rowKey, caption, density = 'default', loading = false, empty, className = '' }: DataTableProps<Row>) {
+export default function DataTable<Row>({ columns, rows, rowLimit, rowKey, caption, density = 'default', loading = false, empty, className = '' }: DataTableProps<Row>) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [sort, setSort] = useState<SortState | null>(null);
@@ -61,6 +63,8 @@ export default function DataTable<Row>({ columns, rows, rowKey, caption, density
 
   if (loading) return <Skeleton variant="table" className={className} />;
   if (rows.length === 0 && empty) return <>{empty}</>;
+
+  const shownRows = rowLimit === undefined ? sortedRows : sortedRows.slice(0, rowLimit);
 
   const toggleSort = (key: string) => {
     setSort((previous) => ({
@@ -121,7 +125,7 @@ export default function DataTable<Row>({ columns, rows, rowKey, caption, density
           </tr>
         </thead>
         <tbody>
-          {sortedRows.map((row) => (
+          {shownRows.map((row) => (
             <tr key={rowKey(row)}>
               {columns.map((column) => (
                 <td

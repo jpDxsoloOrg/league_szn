@@ -44,7 +44,11 @@
     "sortBy": "Sort by",
     "sortDefault": "Default order",
     "sortAscending": "{{column}}, ascending",
-    "sortDescending": "{{column}}, descending"
+    "sortDescending": "{{column}}, descending",
+    "showMore": "Show more",
+    "showingCount": "Showing {{shown}} of {{total}}",
+    "formerMember": "Former member",
+    "unnamedPlayer": "Unnamed player"
   },
   "notFound": {
     "title": "Page Not Found",
@@ -1229,8 +1233,7 @@
     },
     "bestMatches": {
       "title": "Best Matches",
-      "noData": "No rated matches yet. Rate matches when recording results.",
-      "unknownPlayer": "Unknown player"
+      "noData": "No rated matches yet. Rate matches when recording results."
     },
     "loadFailed": "Could not load these stats"
   },
@@ -1281,7 +1284,8 @@
       "activityPromoTitled": "{{name}}: \"{{title}}\"",
       "activityPromo": "{{name}} cut a promo",
       "activityNote": "Note: {{text}}",
-      "activityMessage": "{{name}} sent a message"
+      "activityMessage": "{{name}} sent a message",
+      "noneYet": "No rivalries here yet."
     },
     "card": {
       "matchCount_one": "{{count}} match",
@@ -2802,7 +2806,7 @@
       "uploadImage": "Click to upload image",
       "deleteTitle": "Delete player",
       "deleteConfirm": "Are you sure you want to delete {{name}}? This action cannot be undone.",
-      "keptWrestler": "{{name}} (not linked to the roster)",
+      "keptWrestler": "{{name}} (custom name)",
       "clearWarning": "Saving removes this wrestler and hides the player from public pages."
     },
     "matchCard": {

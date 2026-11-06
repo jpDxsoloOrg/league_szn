@@ -5,6 +5,7 @@ import { Search, SlidersHorizontal } from 'lucide-react';
 import { matchesApi, playersApi, seasonsApi, championshipsApi, stipulationsApi, matchTypesApi } from '../services/api';
 import type { PlayerDirectoryEntry } from '../services/api/players.api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useShowMore } from '../hooks/useShowMore';
 import type { Match, MatchFilters, Season, Championship, Stipulation, MatchType } from '../types';
 import Badge from './ui/Badge';
 import type { BadgeTone } from './ui/Badge';
@@ -13,6 +14,7 @@ import EmptyState from './ui/EmptyState';
 import Modal from './ui/Modal';
 import PageHeader from './ui/PageHeader';
 import Select from './ui/Select';
+import ShowMore from './ui/ShowMore';
 import Skeleton from './ui/Skeleton';
 import Tabs from './ui/Tabs';
 import { StarRating } from './matches/StarRating';
@@ -29,6 +31,8 @@ const STATUS_TONES: Partial<Record<Match['status'], BadgeTone>> = {
   completed: 'neutral',
   cancelled: 'loss',
 };
+
+const ROWS_PER_PAGE = 50;
 
 /** Filters behind the Filters button. Status has its own tabs. */
 const PANEL_FILTER_KEYS: (keyof MatchFilters)[] = [
@@ -199,8 +203,15 @@ export default function MatchSearch() {
     return map;
   }, [seasons]);
 
+  // A deleted player's row is gone, so the name pinned on the match goes first.
   const getPlayerName = useCallback(
-    (id: string) => playerMap.get(id)?.name ?? t('common.unknown'),
+    (match: Match, id: string) => {
+      const player = playerMap.get(id);
+      if (player) return player.name;
+      // With no directory at all, nobody can be called a former member.
+      if (playerMap.size === 0) return t('common.unknown');
+      return match.slots?.find((slot) => slot.playerId === id)?.wrestlerNameSnapshot ?? t('common.formerMember');
+    },
     [playerMap, t],
   );
 
@@ -208,7 +219,7 @@ export default function MatchSearch() {
     const query = searchText.trim().toLowerCase();
     if (!query) return matches;
     return matches.filter((match) => {
-      const participantNames = match.participants.map((pid) => getPlayerName(pid)).join(' ');
+      const participantNames = match.participants.map((pid) => getPlayerName(match, pid)).join(' ');
       const stipulationName = match.stipulationId
         ? stipulationMap.get(match.stipulationId)?.name ?? ''
         : '';
@@ -217,6 +228,11 @@ export default function MatchSearch() {
         .includes(query);
     });
   }, [matches, searchText, getPlayerName, stipulationMap, t]);
+
+  const { count: visibleCount, showMore } = useShowMore(ROWS_PER_PAGE, `${searchParams.toString()}|${searchText}`);
+  // A deep-linked match has to be on screen for the page to scroll to it.
+  const focusedIndex = focusedMatchId ? visibleMatches.findIndex((match) => match.matchId === focusedMatchId) : -1;
+  const shownCount = Math.min(visibleMatches.length, Math.max(visibleCount, focusedIndex + 1));
 
   const detailMatch = detailMatchId ? matches.find((match) => match.matchId === detailMatchId) : undefined;
 
@@ -270,7 +286,7 @@ export default function MatchSearch() {
         match.winners?.includes(pid) ? 'match-winner' :
         match.losers?.includes(pid) ? 'match-loser' : ''
       }>
-        {getPlayerName(pid)}
+        {getPlayerName(match, pid)}
       </span>
     );
     return (
@@ -402,7 +418,7 @@ export default function MatchSearch() {
         />
       ) : (
         <ul className="match-search-results">
-          {visibleMatches.map((match) => {
+          {visibleMatches.slice(0, shownCount).map((match) => {
             const isFocused = match.matchId === focusedMatchId;
             const stipulationName = match.stipulationId ? stipulationMap.get(match.stipulationId)?.name : undefined;
             const hasStars = match.ratingsCount != null && match.ratingsCount > 0;
@@ -431,7 +447,7 @@ export default function MatchSearch() {
                     size="sm"
                     aria-label={t('matchSearch.detailsFor', {
                       names: match.participants.length > 0
-                        ? match.participants.map(getPlayerName).join(', ')
+                        ? match.participants.map((pid) => getPlayerName(match, pid)).join(', ')
                         : describeEmptyCard(match),
                     })}
                     onClick={() => setDetailMatchId(match.matchId)}
@@ -443,6 +459,10 @@ export default function MatchSearch() {
             );
           })}
         </ul>
+      )}
+
+      {!loading && !error && (
+        <ShowMore shown={shownCount} total={visibleMatches.length} onShowMore={() => showMore(shownCount)} />
       )}
 
       <Modal

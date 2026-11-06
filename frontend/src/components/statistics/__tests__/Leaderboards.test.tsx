@@ -10,6 +10,9 @@ const { mockGetLeaderboards } = vi.hoisted(() => ({
 
 vi.mock('../../../services/api', () => ({
   statisticsApi: { getLeaderboards: mockGetLeaderboards },
+  playersApi: {
+    getAll: vi.fn().mockResolvedValue([{ playerId: 'p1', name: 'John Cena', imageUrl: 'https://img.test/p1.png' }]),
+  },
   seasonsApi: {
     getAll: vi.fn().mockResolvedValue([]),
   },
@@ -115,6 +118,16 @@ describe('Leaderboards', () => {
     // Values shown
     expect(screen.getByText('25')).toBeInTheDocument();
     expect(screen.getByText('20')).toBeInTheDocument();
+  });
+
+  it('shows the real photo on the podium', async () => {
+    mockGetLeaderboards.mockResolvedValue({ players: [], leaderboards: mockLeaderboards });
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByRole('img', { name: 'John Cena' })).toHaveAttribute('src', 'https://img.test/p1.png');
+    });
   });
 
   it('switches category tabs and displays corresponding entries', async () => {

@@ -17,6 +17,9 @@ vi.mock('../../../services/api', () => ({
   seasonsApi: {
     getAll: vi.fn().mockResolvedValue([]),
   },
+  playersApi: {
+    getAll: vi.fn().mockResolvedValue([{ playerId: 'p2', name: 'The Rock', imageUrl: 'https://img.test/p2.png' }]),
+  },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -160,6 +163,37 @@ describe('HeadToHeadComparison', () => {
     // Stat comparison section
     expect(screen.getByText('Stat Comparison')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Head to Head' })).toBeInTheDocument();
+  });
+
+  it('shows real photos in the corners, with initials for a player who has none', async () => {
+    mockGetH2HPlayers.mockResolvedValue({ players: mockPlayers });
+    mockGetH2H.mockResolvedValue(mockH2HResponse);
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByRole('img', { name: 'The Rock' })).toHaveAttribute('src', 'https://img.test/p2.png');
+    });
+    expect(screen.getByRole('img', { name: 'John Cena' })).toHaveTextContent('JC');
+  });
+
+  it('lists players alphabetically and leaves no empty brackets for a blank name', async () => {
+    const user = userEvent.setup();
+    mockGetH2HPlayers.mockResolvedValue({
+      players: [...mockPlayers, { playerId: 'p4', name: '', wrestlerName: 'Sid Vicious' }],
+    });
+    mockGetH2H.mockResolvedValue(mockH2HResponse);
+
+    renderComponent();
+
+    await user.click(await screen.findByRole('combobox', { name: 'Player 1' }));
+
+    expect((await screen.findAllByRole('option')).map((option) => option.textContent)).toEqual([
+      'John Cena (The Champ)',
+      'Sid Vicious',
+      'The Rock (The Great One)',
+      'Undertaker (The Deadman)',
+    ]);
   });
 
   it('displays recent results with winner names and badges', async () => {

@@ -23,7 +23,8 @@ export default function Avatar({ src, name, size = 'md', ring = 'none', classNam
   if (src?.trim() && !failed) {
     return (
       <span className={classes}>
-        <img className="ui-avatar__image" src={src} alt={name} loading="lazy" onError={() => setFailed(true)} />
+        {/* React sets props in order, and loading has to land before src or some browsers fetch at once. */}
+        <img className="ui-avatar__image" loading="lazy" src={src} alt={name} onError={() => setFailed(true)} />
       </span>
     );
   }
