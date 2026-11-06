@@ -1,6 +1,6 @@
 # League SZN
 
-A serverless web application for managing a WWE 2K league with standings, championships, matches, tournaments, events, fantasy league, challenges, promos, statistics, and more.
+A serverless web application for managing a WWE 2K league with standings, championships, matches, tournaments, events, challenges, promos, statistics, and more.
 
 ---
 
@@ -48,7 +48,6 @@ A serverless web application for managing a WWE 2K league with standings, champi
 | **Challenges** | Issue match challenges to other wrestlers, accept/decline/counter incoming challenges |
 | **Promos** | Create character promos with text content |
 | **Wrestler Profile** | View and edit your own profile, upload wrestler images |
-| **Fantasy Picks** | Make fantasy picks for upcoming events and view your scores |
 
 ### Admin and Moderator Features
 
@@ -61,9 +60,8 @@ A serverless web application for managing a WWE 2K league with standings, champi
 | **Season Management** | Create seasons, track per-season standings, end seasons |
 | **Division Management** | Create divisions (Raw, SmackDown, NXT, etc.) and assign players |
 | **Event Management** | Create PPV events and weekly shows, organize matches into event cards |
-| **Fantasy League Admin** | Configure point systems, set wrestler costs, score completed events, view leaderboards |
-| **User Management** | Manage user roles (Admin, Moderator, Wrestler, Fantasy); create, enable, and disable users |
-| **Site Configuration** | Feature flag toggles for challenges, promos, fantasy, statistics, and contenders |
+| **User Management** | Manage user roles (Admin, Moderator, Wrestler); create, enable, and disable users |
+| **Site Configuration** | Feature flag toggles for challenges, promos, contenders, statistics, stables, notifications, and rivalries |
 | **Contender Ranking Admin** | Recalculate contender rankings on demand |
 | **Danger Zone** | Clear all data (with safety confirmation); seed sample data for testing |
 
@@ -107,7 +105,7 @@ A serverless web application for managing a WWE 2K league with standings, champi
 |---------|---------|
 | **AWS Lambda** | Serverless compute for 55+ API handlers across 17 function domains |
 | **API Gateway** | REST API with CORS support and custom JWT authorizer |
-| **DynamoDB** | NoSQL database with on-demand billing (17 tables) |
+| **DynamoDB** | NoSQL database with on-demand billing (41 tables) |
 | **Amazon S3** | Object storage for frontend static files and player/championship images with presigned URLs |
 | **CloudFront** | CDN for global content delivery with HTTPS enforcement and SPA routing support |
 | **AWS Cognito** | User pool with email-based sign-in, role groups, and JWT tokens |
@@ -119,7 +117,8 @@ A serverless web application for managing a WWE 2K league with standings, champi
 |------------|-------------|
 | **GitHub Actions** | Automated CI/CD pipelines for dev and production deployments |
 | **deploy-dev.yml** | Triggered on pull requests to main -- deploys to devtest stage |
-| **deploy-prod.yml** | Manually triggered -- deploys to production |
+| **deploy-prod.yml** | Manually triggered from `main` -- deploys to production |
+| **ci-checks.yml** | Reusable workflow called by both deploys -- backend checks and secret scan |
 | **Docker** | Used for running DynamoDB Local in development |
 | **Playwright** | End-to-end testing framework with Page Object Model |
 
@@ -137,7 +136,6 @@ league_szn/
 │   │   │   ├── challenges/      # Challenge system
 │   │   │   ├── contenders/      # Contender rankings
 │   │   │   ├── events/          # PPV events and shows
-│   │   │   ├── fantasy/         # Fantasy league
 │   │   │   ├── promos/          # Wrestler promos
 │   │   │   ├── profile/         # Wrestler profiles
 │   │   │   ├── statistics/      # Advanced stats
@@ -160,7 +158,6 @@ league_szn/
 │   │   ├── contenders/          # Ranking calculations
 │   │   ├── divisions/           # Division management
 │   │   ├── events/              # PPV event management
-│   │   ├── fantasy/             # Fantasy league operations
 │   │   ├── images/              # S3 presigned upload URLs
 │   │   ├── matches/             # Match scheduling and results
 │   │   ├── players/             # Player CRUD + wrestler profiles
@@ -188,27 +185,26 @@ league_szn/
 
 ### Overview
 
-League SZN uses AWS Cognito with email-based sign-in and a 4-tier role hierarchy:
+League SZN uses AWS Cognito with email-based sign-in and a 3-tier role hierarchy:
 
 ```
-Fantasy (lowest) --> Wrestler --> Moderator --> Admin (highest)
+Wrestler (lowest) --> Moderator --> Admin (highest)
 ```
 
 ### Role Permissions
 
 | Role | Permissions |
 |------|-------------|
-| **Fantasy** | Make fantasy picks, view leaderboards, access public data |
-| **Wrestler** | All Fantasy permissions + issue/respond to challenges, create promos, manage own profile |
-| **Moderator** | All Wrestler permissions + manage players, matches, championships, tournaments, seasons, divisions, events, fantasy config |
+| **Wrestler** | Access public data, issue/respond to challenges, create promos, manage own profile |
+| **Moderator** | All Wrestler permissions + manage players, matches, championships, tournaments, seasons, divisions, events |
 | **Admin** | All Moderator permissions + manage users/roles, clear all data, manage admin-level roles |
 
 ### Technical Details
 
 - **Identity Provider**: AWS Cognito User Pool with email-based login
 - **Token Lifecycle**: 24-hour access tokens, 24-hour ID tokens, 30-day refresh tokens
-- **Authorization**: Custom Lambda Authorizer validates JWT tokens on all protected endpoints
-- **Role Groups**: Cognito User Pool Groups (Admin, Moderator, Wrestler, Fantasy) with precedence-based hierarchy
+- **Authorization**: 56 routes use the custom Lambda Authorizer in API Gateway; the other protected routes validate the JWT inside the Lambda
+- **Role Groups**: Cognito User Pool Groups (Admin, Moderator, Wrestler) with precedence-based hierarchy
 - **Key Restriction**: Moderators cannot perform Admin-only operations (clear all data, manage Admin/Moderator roles)
 - **Post-Confirmation Trigger**: Lambda function assigns default role group on sign-up
 
@@ -234,7 +230,7 @@ npm run validate-api-docs
 When you add or change HTTP endpoints in `serverless.yml` or handler request/response shapes, update `backend/docs/openapi.yaml` so the docs stay in sync. After editing the spec or `backend/docs/swagger.html`, run `npm run embed-docs` in `backend/` and commit the updated `functions/docs/docsEmbed.generated.ts` so the deployed API serves the new content.
 
 <details>
-<summary><strong>Public Endpoints (17)</strong></summary>
+<summary><strong>Public Endpoints (18)</strong></summary>
 
 #### Players
 | Method | Path | Description |
@@ -301,21 +297,15 @@ When you add or change HTTP endpoints in `serverless.yml` or handler request/res
 | GET | `/challenges` | Get all challenges (filter by `?status=`, `?playerId=`) |
 | GET | `/challenges/{challengeId}` | Get single challenge |
 
-#### Fantasy (Public)
+#### Setup
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/fantasy/config` | Get fantasy league configuration |
-| GET | `/fantasy/wrestlers/costs` | Get wrestler costs for fantasy picks |
+| POST | `/auth/setup` | Create admin user (one-time setup). No JWT; requires the deployment's `ADMIN_SETUP_KEY` |
 
 </details>
 
 <details>
-<summary><strong>Authenticated Endpoints -- Auth and Profile (5)</strong></summary>
-
-#### Auth
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/auth/setup` | Create admin user (one-time setup) |
+<summary><strong>Authenticated Endpoints -- Profile (4)</strong></summary>
 
 #### Player Profile (Wrestler+)
 | Method | Path | Description |
@@ -339,18 +329,6 @@ When you add or change HTTP endpoints in `serverless.yml` or handler request/res
 | POST | `/challenges` | Issue a new challenge |
 | POST | `/challenges/{challengeId}/respond` | Accept, decline, or counter a challenge |
 | POST | `/challenges/{challengeId}/cancel` | Cancel own challenge |
-
-</details>
-
-<details>
-<summary><strong>Authenticated Endpoints -- Fantasy Picks (Fantasy+) (4)</strong></summary>
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/fantasy/picks/{eventId}` | Submit fantasy picks for an event |
-| GET | `/fantasy/picks/{eventId}` | Get own picks for an event |
-| GET | `/fantasy/me/picks` | Get all own picks across events |
-| DELETE | `/fantasy/picks/{eventId}` | Clear own picks for an event |
 
 </details>
 
@@ -431,20 +409,6 @@ When you add or change HTTP endpoints in `serverless.yml` or handler request/res
 </details>
 
 <details>
-<summary><strong>Admin Endpoints -- Fantasy Admin (6)</strong></summary>
-
-| Method | Path | Description |
-|--------|------|-------------|
-| PUT | `/admin/fantasy/config` | Update fantasy point configuration |
-| POST | `/admin/fantasy/wrestlers/costs/initialize` | Initialize wrestler costs |
-| POST | `/admin/fantasy/wrestlers/costs/recalculate` | Recalculate all wrestler costs based on performance |
-| PUT | `/admin/fantasy/wrestlers/{playerId}/cost` | Manually set a wrestler's cost |
-| GET | `/fantasy/leaderboard` | Get fantasy leaderboard (optional `?seasonId=`) |
-| POST | `/fantasy/score` | Score all completed but unscored events |
-
-</details>
-
-<details>
 <summary><strong>Admin Endpoints -- Users, Promos, Images, Site Config, Contenders, Data Management (8)</strong></summary>
 
 #### User Management (Admin only)
@@ -511,19 +475,11 @@ League SZN uses 17 DynamoDB tables with on-demand (PAY_PER_REQUEST) billing.
 | **Challenges** | `challengeId` (HASH) | Match challenges between wrestlers. GSIs on `challengerId`, `challengedId`, and `status`. |
 | **Promos** | `promoId` (HASH) | Wrestler promos with reactions. GSIs on `playerId+createdAt` and `promoType+createdAt`. |
 
-### Fantasy League Tables
-
-| Table | Key | Description |
-|-------|-----|-------------|
-| **FantasyConfig** | `configKey` (HASH) | Fantasy league point system configuration. |
-| **WrestlerCosts** | `playerId` (HASH) | Cost assigned to each wrestler for fantasy draft. |
-| **FantasyPicks** | `eventId` (HASH), `fantasyUserId` (RANGE) | User picks per event. GSI on `fantasyUserId+eventId`. |
-
 ### Configuration Tables
 
 | Table | Key | Description |
 |-------|-----|-------------|
-| **SiteConfig** | `configKey` (HASH) | Feature flag toggles (challenges, promos, fantasy, statistics, contenders). |
+| **SiteConfig** | `configKey` (HASH) | Feature flag toggles (challenges, promos, contenders, statistics, stables, notifications, rivalries). |
 
 ---
 
@@ -602,7 +558,7 @@ Frontend starts at `http://localhost:3000`.
 
 Open **http://localhost:3000** in your browser to see the fully populated league.
 
-**Admin Panel**: Navigate to `/admin` and login with credentials: `admin` / `FireGreen48!`
+**Admin Panel**: Navigate to `/admin` and sign in with your own Admin account. Credentials are not stored in this repo.
 
 > **Note:** Cognito auth is not available locally. For full auth testing, use the dev environment.
 
@@ -616,7 +572,7 @@ Open **http://localhost:3000** in your browser to see the fully populated league
 - 4 championships with history
 - 12 matches (8 completed, 4 scheduled)
 - 2 tournaments, 3 events
-- Contender rankings, fantasy config, site config
+- Contender rankings, site config
 
 ### Environment Variables
 
@@ -753,18 +709,25 @@ Checkout --> Node 24 Setup --> Install Frontend
     +--> Typecheck (tsc --noEmit)
     +--> Unit Tests (Vitest)
     |
-[Tests pass] --> Deploy Backend (Serverless Framework --> devtest stage)
+Backend Checks (ci-checks.yml, runs in parallel)
+    |
+    +--> Lint, Typecheck, Unit Tests, Embedded API Docs Check
+    +--> Secret Scan (gitleaks)
+    |
+[All checks pass] --> Deploy Backend (Serverless Framework --> devtest stage)
     |
     +--> Extract Cognito IDs from CloudFormation
     +--> Install & Build Frontend (Vite, --mode devtest)
-    +--> S3 Sync (deploy to dev.leagueszn.jpdxsolo.com)
+    +--> S3 Upload (deploy to dev.leagueszn.jpdxsolo.com)
     +--> CloudFront Cache Invalidation
     +--> Deployment Summary
 ```
 
 ### Prod Pipeline (`deploy-prod.yml`)
 
-**Trigger**: Manual dispatch (`workflow_dispatch`) after merging to `main`.
+**Trigger**: Manual dispatch (`workflow_dispatch`) after merging to `main`. The deploy job only runs on `main`; a dispatch from any other branch skips it.
+
+Deploys in each environment run one at a time. A new run waits for the current one instead of cancelling it.
 
 ```
 Checkout --> Node 24 Setup --> Install Frontend
@@ -773,11 +736,16 @@ Checkout --> Node 24 Setup --> Install Frontend
     +--> Typecheck (tsc --noEmit)
     +--> Unit Tests (Vitest)
     |
-[Tests pass] --> Deploy Backend (Serverless Framework --> dev stage)
+Backend Checks (ci-checks.yml, runs in parallel)
+    |
+    +--> Lint, Typecheck, Unit Tests, Embedded API Docs Check
+    +--> Secret Scan (gitleaks)
+    |
+[All checks pass] --> Deploy Backend (Serverless Framework --> dev stage)
     |
     +--> Extract Cognito IDs from CloudFormation
     +--> Install & Build Frontend (Vite, production mode)
-    +--> S3 Sync (deploy to leagueszn.jpdxsolo.com)
+    +--> S3 Upload (deploy to leagueszn.jpdxsolo.com)
     +--> CloudFront Cache Invalidation
     +--> Deployment Summary
 ```
@@ -786,12 +754,14 @@ Checkout --> Node 24 Setup --> Install Frontend
 
 | Step | Description |
 |------|-------------|
-| **Lint** | ESLint checks across all frontend TypeScript/React files |
+| **Lint** | ESLint checks across the frontend and backend TypeScript files |
 | **Typecheck** | TypeScript compiler (`tsc --noEmit`) validates types without emitting output |
-| **Unit Tests** | Vitest runs all frontend test suites |
+| **Unit Tests** | Vitest runs all frontend and backend test suites |
+| **Embedded API Docs Check** | Fails if `functions/docs/docsEmbed.generated.ts` is out of date; run `npm run embed-docs` in `backend/` to fix it |
+| **Secret Scan** | gitleaks scans the current files, plus the new commits on pull requests. Rules and allowlist are in `.github/workflows/gitleaks.toml` |
 | **Backend Deploy** | Serverless Framework deploys all Lambda functions, API Gateway config, DynamoDB tables, Cognito, S3 buckets, and CloudFront via CloudFormation |
 | **Frontend Build** | Vite builds the React SPA with environment-specific API URLs and Cognito config injected |
-| **S3 Sync** | Deploys built frontend assets to S3 (with `--delete` to remove stale files, `--exclude "*.map"` to omit source maps) |
+| **S3 Upload** | Hashed `assets/` go first with a one-year immutable `Cache-Control` and are never pruned, so tabs on the previous build can still load their chunks. Other static files follow with a 5-minute cache (with `--delete`), and `index.html` goes last as no-cache. Source maps are excluded |
 | **CloudFront Invalidation** | Invalidates CDN cache (`/*`) to serve fresh content immediately |
 
 ---
