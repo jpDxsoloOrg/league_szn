@@ -2,6 +2,8 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { TagTeamStatus } from '../../lib/repositories/types';
 import { success, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
+import { hasHiddenMember, resolveTagTeamViewer } from './tagTeamVisibility';
 
 interface PlayerRecord {
   playerId: string;
@@ -32,8 +34,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Build player lookup map
     const playerMap = new Map<string, PlayerRecord>();
+    const hiddenIds = new Set<string>();
     for (const player of playerResults) {
       if (player) {
+        if (!isPlayerVisible(player)) hiddenIds.add(player.playerId);
         playerMap.set(player.playerId, {
           playerId: player.playerId,
           name: player.name,
@@ -42,8 +46,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    const viewer = hiddenIds.size > 0
+      ? await resolveTagTeamViewer(event, (userId) => playersRepo.findByUserId(userId))
+      : { canSeeAll: true };
+    const listedTagTeams = viewer.canSeeAll
+      ? tagTeams
+      : tagTeams.filter((team) =>
+          !hasHiddenMember(team, hiddenIds)
+          || team.player1Id === viewer.callerPlayerId
+          || team.player2Id === viewer.callerPlayerId);
+
     // Enrich tag teams with player names and image URLs
-    const enrichedTagTeams = tagTeams.map((team) => {
+    const enrichedTagTeams = listedTagTeams.map((team) => {
       const player1 = playerMap.get(team.player1Id);
       const player2 = playerMap.get(team.player2Id);
       return {

@@ -44,6 +44,22 @@ describe('hydrateMatchSlots', () => {
     expect(out[0].playerName).toBe('Doe');
   });
 
+  it.each(['Needs Wrestler', '  ', ''])('skips the placeholder snapshot %j for the live name', (snapshot) => {
+    const slots: MatchSlot[] = [
+      { slotId: 's1', position: 1, playerId: 'p1', wrestlerNameSnapshot: snapshot },
+    ];
+    const lookup = new Map<string, Player>([['p1', player({ currentWrestler: 'Stone Cold' })]]);
+    expect(hydrateMatchSlots(slots, lookup)[0].wrestlerName).toBe('Stone Cold');
+  });
+
+  it.each(['Needs Wrestler', ' '])('falls back to the player name when the live name is %j', (currentWrestler) => {
+    const slots: MatchSlot[] = [
+      { slotId: 's1', position: 1, playerId: 'p1', wrestlerNameSnapshot: 'Needs Wrestler' },
+    ];
+    const lookup = new Map<string, Player>([['p1', player({ currentWrestler })]]);
+    expect(hydrateMatchSlots(slots, lookup)[0].wrestlerName).toBe('Doe');
+  });
+
   it('returns "Unknown Wrestler" when neither snapshot nor player record is available', () => {
     const slots: MatchSlot[] = [
       { slotId: 's1', position: 1, playerId: 'p-missing' },

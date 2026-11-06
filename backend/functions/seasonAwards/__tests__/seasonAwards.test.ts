@@ -102,8 +102,8 @@ describe('getSeasonAwards', () => {
       { matchId: 'm3', seasonId: 's1', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'], status: 'completed', date: '2024-01-03' },
     ]);
     mockPlayersList.mockResolvedValue([
-      { playerId: 'p1', name: 'Player One' },
-      { playerId: 'p2', name: 'Player Two' },
+      { playerId: 'p1', name: 'Player One', currentWrestler: 'Edge' },
+      { playerId: 'p2', name: 'Player Two', currentWrestler: 'Christian' },
     ]);
     mockChampionshipsListAllHistory.mockResolvedValue([]);
 

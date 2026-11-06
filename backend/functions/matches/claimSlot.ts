@@ -11,6 +11,7 @@ import {
 } from '../../lib/response';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import { isConcurrentWriteError } from '../../lib/repositories/errors';
+import { isPlayerVisible, realWrestlerName, SET_WRESTLER_NAME_MESSAGE } from '../../lib/needsWrestler';
 
 interface ClaimSlotBody {
   wrestlerChoice?: 'main' | 'alternate';
@@ -64,6 +65,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (!callerPlayer) {
       return forbidden('No player profile is linked to this account');
     }
+    if (!isPlayerVisible(callerPlayer)) {
+      return badRequest(SET_WRESTLER_NAME_MESSAGE);
+    }
     const callerPlayerId = callerPlayer.playerId;
 
     // MSL-03: resolve which wrestler the player is bringing.
@@ -83,10 +87,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     } else {
       wrestlerChoice = 'main';
     }
-    const wrestlerNameSnapshot =
+    const wrestlerNameSnapshot = realWrestlerName(
       wrestlerChoice === 'alternate' && callerPlayer.alternateWrestler
         ? callerPlayer.alternateWrestler
-        : callerPlayer.currentWrestler;
+        : callerPlayer.currentWrestler,
+    );
 
     const match = await matches.findByIdWithDate(matchId);
     if (!match) return notFound('Match not found');

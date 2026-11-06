@@ -1,6 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
+import { hasHiddenMember } from './tagTeamVisibility';
 import {
   TagTeamRecord,
   FormResult,
@@ -50,9 +52,11 @@ export const handler: APIGatewayProxyHandler = async () => {
 
     // Build player name map
     const playerMap = new Map<string, string>();
+    const hiddenIds = new Set<string>();
     for (const player of playerResults) {
       if (player) {
         playerMap.set(player.playerId, player.name);
+        if (!isPlayerVisible(player)) hiddenIds.add(player.playerId);
       }
     }
 
@@ -63,7 +67,8 @@ export const handler: APIGatewayProxyHandler = async () => {
     const matchMap = buildTagTeamMatchMap(tagTeamRecords, completedMatches);
 
     // Build standings with recentForm and currentStreak
-    const standings: TagTeamStanding[] = tagTeams.map((team) => {
+    const listedTagTeams = tagTeams.filter((team) => !hasHiddenMember(team, hiddenIds));
+    const standings: TagTeamStanding[] = listedTagTeams.map((team) => {
       const totalMatches = team.wins + team.losses + team.draws;
       const winPercentage =
         totalMatches > 0

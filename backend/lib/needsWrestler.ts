@@ -27,6 +27,26 @@ export function isNeedsWrestler(name: string | null | undefined): boolean {
   return !trimmed || trimmed.toLowerCase() === NEEDS_WRESTLER.toLowerCase();
 }
 
+/** The wrestler name to store on a record, or undefined for the placeholder. */
+export function realWrestlerName(name: string | null | undefined): string | undefined {
+  return isNeedsWrestler(name) ? undefined : (name as string);
+}
+
+/**
+ * The name to bill on a match or card: the snapshot taken at booking time, then
+ * the live wrestler name, then the player's own name. The placeholder and blank
+ * values never count as a name, so a historical row always reads as a person.
+ */
+export function resolveBilledName(
+  snapshot: string | null | undefined,
+  player: { name?: string | null; currentWrestler?: string | null } | null | undefined,
+  fallback: string,
+): string {
+  return realWrestlerName(snapshot)
+    ?? realWrestlerName(player?.currentWrestler)
+    ?? (player?.name?.trim() || fallback);
+}
+
 /**
  * True when a player may appear on public roster-facing screens: they must
  * have a real wrestler name. Computed from the name, never stored. Do not use

@@ -32,6 +32,13 @@ import { handler as getQueue } from '../matchmaking/getQueue';
 import { handler as getStable } from '../stables/getStable';
 import { handler as getFactionStats } from '../stables/getFactionStats';
 import { handler as getActivity } from '../activity/getActivity';
+import { handler as getEvent } from '../events/getEvent';
+import { handler as getCommentary } from '../events/getCommentary';
+import { handler as getTagTeams } from '../tagTeams/getTagTeams';
+import { handler as getTagTeam } from '../tagTeams/getTagTeam';
+import { handler as getTagTeamStandings } from '../tagTeams/getTagTeamStandings';
+import { handler as getSeasonAwards } from '../seasonAwards/getSeasonAwards';
+import { handler as claimSlot } from '../matches/claimSlot';
 import {
   authedEvent,
   bearer,
@@ -291,6 +298,29 @@ describe('getDashboard', () => {
     expect(body.quickStats.mostWinsPlayer).toEqual({ name: 'The Rock', wins: 1 });
   });
 
+  describe('current champions', () => {
+    interface Champions {
+      currentChampions: Array<{ championName: string }>;
+    }
+
+    it.each([
+      ['placeholder', 'placeholderId', 'Placeholder Person'],
+      ['blank', 'blankId', 'Blank Person'],
+    ] as const)('keeps the title and shows a %s champion by their own name', async (_label, idKey, expected) => {
+      await repos.competition.championships.create({
+        name: 'World Title',
+        type: 'singles',
+        currentChampion: roster[idKey],
+      });
+
+      const { body } = await call<Champions>(getDashboard, makeEvent());
+
+      expect(body.currentChampions).toHaveLength(1);
+      expect(JSON.stringify(body.currentChampions)).toContain(expected);
+      expect(JSON.stringify(body.currentChampions)).not.toContain(NEEDS_WRESTLER);
+    });
+  });
+
   it('still resolves a hidden player in recent results', async () => {
     const now = new Date().toISOString();
     await completeMatch('m1', roster.visibleId, roster.placeholderId, now);
@@ -515,5 +545,235 @@ describe('getActivity', () => {
 
     expect(body.items).toHaveLength(1);
     expect(body.items[0].summary).toBe('Visible Person def. Placeholder Person');
+  });
+});
+
+describe('tag teams with a hidden member', () => {
+  const seedTeam = async (member: string): Promise<string> => {
+    const team = await repos.roster.tagTeams.create({
+      name: 'The Team',
+      player1Id: roster.visibleId,
+      player2Id: member,
+      status: 'active',
+    });
+    return team.tagTeamId;
+  };
+
+  const teamIds = (rows: Array<{ tagTeamId: string }>): string[] => rows.map((row) => row.tagTeamId);
+
+  it('getTagTeams drops the team for the public', async () => {
+    const hiddenTeam = await seedTeam(roster.placeholderId);
+    const rival = await repos.roster.players.create({ name: 'R', currentWrestler: 'Kane' });
+    const shownTeam = await seedTeam(rival.playerId);
+
+    const { body } = await call<Array<{ tagTeamId: string }>>(getTagTeams, makeEvent());
+
+    expect(teamIds(body)).toEqual([shownTeam]);
+    expect(teamIds(body)).not.toContain(hiddenTeam);
+  });
+
+  it('getTagTeams keeps the team for staff and for its members', async () => {
+    const team = await seedTeam(roster.placeholderId);
+    await linkUser(roster.placeholderId, 'hidden-sub');
+
+    const staff = await call<Array<{ tagTeamId: string }>>(
+      getTagTeams,
+      makeEvent(bearer('staff', 'Moderator')),
+    );
+    const member = await call<Array<{ tagTeamId: string }>>(
+      getTagTeams,
+      makeEvent(bearer('hidden-sub', 'Wrestler')),
+    );
+
+    expect(teamIds(staff.body)).toEqual([team]);
+    expect(teamIds(member.body)).toEqual([team]);
+  });
+
+  it('getTagTeamStandings drops the team', async () => {
+    await seedTeam(roster.blankId);
+
+    const { body } = await call<Array<{ tagTeamId: string }>>(getTagTeamStandings, makeEvent());
+
+    expect(body).toEqual([]);
+  });
+
+  it('getTagTeam 404s for the public and serves staff and members', async () => {
+    const tagTeamId = await seedTeam(roster.placeholderId);
+    await linkUser(roster.placeholderId, 'hidden-sub');
+    const statusFor = async (auth = {}): Promise<number> =>
+      (await call(getTagTeam, makeEvent({ ...auth, pathParameters: { tagTeamId } }))).statusCode;
+
+    expect(await statusFor()).toBe(404);
+    expect(await statusFor(bearer('staff', 'Admin'))).toBe(200);
+    expect(await statusFor(bearer('hidden-sub', 'Wrestler'))).toBe(200);
+  });
+
+  it('getTagTeam shows a member by name, never the placeholder', async () => {
+    const tagTeamId = await seedTeam(roster.placeholderId);
+
+    const { body } = await call<{ player2: { wrestlerName: string } }>(
+      getTagTeam,
+      makeEvent({ ...bearer('staff', 'Admin'), pathParameters: { tagTeamId } }),
+    );
+
+    expect(body.player2.wrestlerName).toBe('Placeholder Person');
+  });
+
+  it('getTagTeam keeps serving a team whose player record is gone', async () => {
+    const tagTeamId = await seedTeam('deleted-player');
+
+    const { statusCode } = await call(
+      getTagTeam,
+      makeEvent({ pathParameters: { tagTeamId } }),
+    );
+
+    expect(statusCode).toBe(200);
+  });
+});
+
+describe('getSeasonAwards', () => {
+  interface Awards {
+    autoAwards: Array<{ awardType: string; playerId: string }>;
+    customAwards: Array<{ awardId: string }>;
+  }
+
+  const seedSeason = async (): Promise<string> => {
+    const { seasonId } = await repos.season.seasons.create({
+      name: 'Season 1',
+      startDate: '2026-01-01T00:00:00.000Z',
+    });
+    const rival = await repos.roster.players.create({ name: 'R', currentWrestler: 'Kane' });
+    const fixtures: Array<[string, string, string]> = [
+      ['m1', roster.placeholderId, rival.playerId],
+      ['m2', roster.placeholderId, roster.visibleId],
+      ['m3', roster.placeholderId, rival.playerId],
+      ['m4', roster.visibleId, rival.playerId],
+    ];
+    for (const [matchId, winner, loser] of fixtures) {
+      await repos.competition.matches.create({
+        matchId,
+        date: `2026-01-0${matchId.slice(1)}T00:00:00.000Z`,
+        matchFormat: 'singles',
+        participants: [winner, loser],
+        winners: [winner],
+        losers: [loser],
+        status: 'completed',
+        seasonId,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      });
+    }
+    return seasonId;
+  };
+
+  it('passes an award to the next eligible wrestler', async () => {
+    const seasonId = await seedSeason();
+
+    const { body } = await call<Awards>(getSeasonAwards, makeEvent({ pathParameters: { seasonId } }));
+
+    expect(ids(body.autoAwards)).not.toContain(roster.placeholderId);
+    expect(body.autoAwards.find((award) => award.awardType === 'mvp')?.playerId).toBe(roster.visibleId);
+  });
+
+  it('shows a custom award for a hidden player to staff only', async () => {
+    const seasonId = await seedSeason();
+    const award = await repos.season.awards.create({
+      seasonId,
+      name: 'Best Promo',
+      awardType: 'custom',
+      playerId: roster.placeholderId,
+      playerName: 'Placeholder Person',
+    });
+    const customFor = async (auth = {}): Promise<string[]> => {
+      const { body } = await call<Awards>(
+        getSeasonAwards,
+        makeEvent({ ...auth, pathParameters: { seasonId } }),
+      );
+      return body.customAwards.map((row) => row.awardId);
+    };
+
+    expect(await customFor()).toEqual([]);
+    expect(await customFor(bearer('staff', 'Admin'))).toEqual([award.awardId]);
+  });
+});
+
+describe('match billing for hidden players', () => {
+  const SLOT_DATE = '2026-02-01T00:00:00.000Z';
+
+  const seedCard = async (status: 'completed' | 'open-signups', snapshot?: string) => {
+    const matchId = 'card-match';
+    await repos.competition.matches.create({
+      matchId,
+      date: SLOT_DATE,
+      matchFormat: 'singles',
+      participants: status === 'completed' ? [roster.visibleId, roster.placeholderId] : [],
+      status,
+      slots: [
+        { slotId: 's1', position: 1, playerId: roster.placeholderId, wrestlerNameSnapshot: snapshot },
+        { slotId: 's2', position: 2 },
+      ],
+      createdAt: SLOT_DATE,
+      updatedAt: SLOT_DATE,
+    });
+    const { eventId } = await repos.leagueOps.events.create({
+      name: 'Show',
+      eventType: 'ppv',
+      date: SLOT_DATE,
+    });
+    await repos.leagueOps.events.update(eventId, {
+      matchCards: [{ position: 1, matchId, designation: 'main-event' }],
+    });
+    return eventId;
+  };
+
+  const enrichedParticipants = (body: unknown): string => JSON.stringify(body);
+
+  it.each([NEEDS_WRESTLER, '   ', undefined])(
+    'getEvent names a participant whose snapshot is %j',
+    async (snapshot) => {
+      const eventId = await seedCard('completed', snapshot);
+
+      const { statusCode, body } = await call(getEvent, makeEvent({ pathParameters: { eventId } }));
+
+      expect(statusCode).toBe(200);
+      expect(enrichedParticipants(body)).toContain('Placeholder Person');
+      expect(enrichedParticipants(body)).not.toContain(NEEDS_WRESTLER);
+    },
+  );
+
+  it('getEvent recovers the real name once the player sets one', async () => {
+    const eventId = await seedCard('completed', NEEDS_WRESTLER);
+    await repos.roster.players.update(roster.placeholderId, { currentWrestler: 'Sting' });
+
+    const { body } = await call(getEvent, makeEvent({ pathParameters: { eventId } }));
+
+    expect(enrichedParticipants(body)).toContain('Sting');
+    expect(enrichedParticipants(body)).not.toContain(NEEDS_WRESTLER);
+  });
+
+  it('getCommentary never bills the placeholder', async () => {
+    const eventId = await seedCard('completed', NEEDS_WRESTLER);
+
+    const { statusCode, body } = await call(getCommentary, makeEvent({ pathParameters: { eventId } }));
+
+    expect(statusCode).toBe(200);
+    expect(JSON.stringify(body)).toContain('Placeholder Person');
+    expect(JSON.stringify(body)).not.toContain(NEEDS_WRESTLER);
+  });
+
+  it('claimSlot turns away a hidden wrestler', async () => {
+    await seedCard('open-signups');
+    await linkUser(roster.blankId, 'blank-sub');
+
+    const { statusCode, body } = await call<{ message: string }>(
+      claimSlot,
+      authedEvent('blank-sub', 'Wrestler', {
+        httpMethod: 'POST',
+        pathParameters: { matchId: 'card-match', slotId: 's2' },
+      }),
+    );
+
+    expect(statusCode).toBe(400);
+    expect(body.message).toBe('Set your wrestler name first');
   });
 });

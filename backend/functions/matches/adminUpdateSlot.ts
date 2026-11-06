@@ -9,6 +9,7 @@ import {
 } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import { realWrestlerName } from '../../lib/needsWrestler';
 
 interface AdminUpdateSlotBody {
   /** undefined = no change; null = clear the slot; string = assign that player. */
@@ -96,18 +97,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       resolvedPlayerId = newPlayerId;
       resolvedClaimedAt = now;
       resolvedChoice = body.wrestlerChoice === 'alternate' ? 'alternate' : 'main';
-      resolvedSnapshot =
+      resolvedSnapshot = realWrestlerName(
         resolvedChoice === 'alternate' && player.alternateWrestler
           ? player.alternateWrestler
-          : player.currentWrestler;
+          : player.currentWrestler,
+      );
     } else if (body.wrestlerChoice && original.playerId) {
       const player = await players.findById(original.playerId);
       if (!player) return notFound(`Player not found: ${original.playerId}`);
       resolvedChoice = body.wrestlerChoice === 'alternate' ? 'alternate' : 'main';
-      resolvedSnapshot =
+      resolvedSnapshot = realWrestlerName(
         resolvedChoice === 'alternate' && player.alternateWrestler
           ? player.alternateWrestler
-          : player.currentWrestler;
+          : player.currentWrestler,
+      );
     }
 
     const updatedSlot = buildUpdatedSlot(original, body, {

@@ -1,4 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
+import { isPlayerVisible, resolveBilledName } from '../../lib/needsWrestler';
+import { hasHiddenMember, resolveTagTeamViewer } from './tagTeamVisibility';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import {
@@ -151,11 +153,23 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         tagTeamsRepo.listByStatus('active'),
       ]);
 
+    const hiddenIds = new Set(
+      [player1, player2].flatMap((player) => (player && !isPlayerVisible(player) ? [player.playerId] : [])),
+    );
+    if (hasHiddenMember(tagTeam, hiddenIds)) {
+      const viewer = await resolveTagTeamViewer(event, (userId) => playersRepo.findByUserId(userId));
+      const isMember = viewer.callerPlayerId === tagTeam.player1Id
+        || viewer.callerPlayerId === tagTeam.player2Id;
+      if (!viewer.canSeeAll && !isMember) {
+        return notFound('Tag team not found');
+      }
+    }
+
     const player1Summary: PlayerSummary | null = player1
       ? {
           playerId: player1.playerId,
           playerName: player1.name,
-          wrestlerName: tagTeam.player1WrestlerName || player1.currentWrestler,
+          wrestlerName: resolveBilledName(tagTeam.player1WrestlerName, player1, 'Unknown Wrestler'),
           imageUrl: player1.imageUrl,
           psnId: player1.psnId,
         }
@@ -165,7 +179,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       ? {
           playerId: player2.playerId,
           playerName: player2.name,
-          wrestlerName: tagTeam.player2WrestlerName || player2.currentWrestler,
+          wrestlerName: resolveBilledName(tagTeam.player2WrestlerName, player2, 'Unknown Wrestler'),
           imageUrl: player2.imageUrl,
           psnId: player2.psnId,
         }

@@ -1,4 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
+import { resolveBilledName } from '../../lib/needsWrestler';
 import { getRepositories } from '../../lib/repositories';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
@@ -116,7 +117,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             return {
               playerId,
               playerName: player?.name || 'Unknown Player',
-              wrestlerName: snapshot ?? player?.currentWrestler ?? 'Unknown Wrestler',
+              wrestlerName: resolveBilledName(snapshot, player, 'Unknown Wrestler'),
               psnId: player?.psnId,
             };
           });

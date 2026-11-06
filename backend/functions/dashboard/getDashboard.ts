@@ -167,9 +167,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const names: string[] = [];
       let imageUrl: string | undefined;
       for (const pid of playerIds) {
-        const player = playerMap.get(pid);
+        // A hidden champion still holds the title, so it stays on the page
+        // under their own name, as it does on the Championships page.
+        const player = resultPlayerMap.get(pid);
         if (player) {
-          names.push(player.currentWrestler || player.name);
+          names.push(resultDisplayName(player));
           if (player.imageUrl) imageUrl = player.imageUrl;
         }
       }
