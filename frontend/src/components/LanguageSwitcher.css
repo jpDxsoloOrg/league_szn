@@ -15,11 +15,11 @@
   background-color: var(--color-overlay-soft);
 }
 
-.language-switcher-btn .flag-icon,
-.language-option .flag-icon {
-  width: 24px;
-  height: 16px;
-  border-radius: 2px;
+.language-code {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .dropdown-arrow {
