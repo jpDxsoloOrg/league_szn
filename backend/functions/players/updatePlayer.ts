@@ -89,12 +89,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    const clearCurrent = body.clearCurrentWrestler === true;
+    const clearAlternate = body.clearAlternateWrestler === true;
+    const currentChange = parseSlotChange(
+      body.currentWrestlerId,
+      player.currentWrestlerId,
+      clearCurrent,
+    );
+    const alternateChange = parseSlotChange(
+      body.alternateWrestlerId,
+      player.alternateWrestlerId,
+      clearAlternate,
+    );
+
     // Legacy free-text field: still accepted but only when the FK field is
     // not being changed on the same slot. The FK path always wins.
-    if (
-      body.currentWrestler !== undefined &&
-      body.currentWrestlerId === undefined
-    ) {
+    if (body.currentWrestler !== undefined && !currentChange.present) {
       // A blank wrestler name falls back to the placeholder, never '' or spaces.
       const legacyName = body.currentWrestler;
       patch.currentWrestler =
@@ -103,10 +113,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           : NEEDS_WRESTLER;
       hasChanges = true;
     }
-    if (
-      body.alternateWrestler !== undefined &&
-      body.alternateWrestlerId === undefined
-    ) {
+    if (body.alternateWrestler !== undefined && !alternateChange.present) {
       if (body.alternateWrestler === '' || body.alternateWrestler === null) {
         patch.alternateWrestler = undefined;
       } else {
@@ -114,9 +121,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
       hasChanges = true;
     }
-
-    const currentChange = parseSlotChange(body.currentWrestlerId, player.currentWrestlerId);
-    const alternateChange = parseSlotChange(body.alternateWrestlerId, player.alternateWrestlerId);
 
     if (currentChange.present || alternateChange.present) {
       // Guard against picking the same wrestler for both slots, accounting
@@ -191,7 +195,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // If any FK transition happened, stage the player update + wrestler
     // release/assign atomically. Otherwise fall through to the simple update.
-    if (toRelease.length > 0 || toAssign.length > 0) {
+    // A clear also goes this way even with nothing to release: only the staged
+    // write removes an attribute, and the simple update skips undefined values.
+    if (toRelease.length > 0 || toAssign.length > 0 || clearCurrent || clearAlternate) {
       const releasable = await filterExistingWrestlerIds(toRelease);
       await runInTransaction(async (tx) => {
         for (const wrestlerId of releasable) {

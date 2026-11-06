@@ -8,6 +8,13 @@ export interface PlayerDirectoryEntry {
   currentWrestler: string | null;
 }
 
+/** Staff edit of a player. The clear flags empty a slot, including one held by name alone. */
+export type PlayerUpdate = Omit<Partial<Player>, 'alignment'> & {
+  alignment?: 'face' | 'heel' | 'neutral' | '';
+  clearCurrentWrestler?: boolean;
+  clearAlternateWrestler?: boolean;
+};
+
 export const playersApi = {
   /** Players with a wrestler. Hidden players are left out. */
   getAll: async (signal?: AbortSignal): Promise<Player[]> => {
@@ -36,7 +43,7 @@ export const playersApi = {
     });
   },
 
-  update: async (playerId: string, updates: Omit<Partial<Player>, 'alignment'> & { alignment?: 'face' | 'heel' | 'neutral' | '' }): Promise<Player> => {
+  update: async (playerId: string, updates: PlayerUpdate): Promise<Player> => {
     return fetchWithAuth(`${API_BASE_URL}/players/${playerId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),

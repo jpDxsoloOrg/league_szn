@@ -48,6 +48,7 @@ import { handler as updatePlayer } from '../updatePlayer';
 import { handler as deletePlayer } from '../deletePlayer';
 import { handler as updateMyProfile } from '../updateMyProfile';
 import { filterExistingWrestlerIds } from '../wrestlerAssignment';
+import { NEEDS_WRESTLER } from '../../../lib/needsWrestler';
 
 let repos: Repositories;
 const ctx = {} as Context;
@@ -663,6 +664,87 @@ describe('assigning a wrestler with stale release state', () => {
       await adminSave(playerId, { name: 'Renamed', alternateWrestlerId: '' });
 
       expect((await repos.roster.players.findById(playerId))?.alternateWrestler).toBe('Christian');
+    });
+
+    it('updatePlayer clears a name-only primary slot on an explicit clear', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      const result = await adminSave(playerId, { name: 'Renamed', clearCurrentWrestler: true });
+
+      expect(result!.statusCode).toBe(200);
+      const after = await repos.roster.players.findById(playerId);
+      expect(after?.name).toBe('Renamed');
+      expect(after?.currentWrestler).toBe(NEEDS_WRESTLER);
+      expect(after?.alternateWrestler).toBe('Christian');
+    });
+
+    it('updatePlayer clears a name-only alternate slot on an explicit clear', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      const result = await adminSave(playerId, { name: 'Renamed', clearAlternateWrestler: true });
+
+      expect(result!.statusCode).toBe(200);
+      const after = await repos.roster.players.findById(playerId);
+      expect(after?.alternateWrestler).toBeUndefined();
+      expect(after?.currentWrestler).toBe('Edge');
+    });
+
+    it('updatePlayer releases the roster row on an explicit clear of an FK slot', async () => {
+      const rock = await seedWrestler('The Rock');
+      const created = await createPlayer(
+        makeEvent({ body: JSON.stringify({ name: 'X', currentWrestlerId: rock.wrestlerId }) }),
+        ctx,
+        cb,
+      );
+      const { playerId } = JSON.parse(created!.body);
+
+      await adminSave(playerId, { clearCurrentWrestler: true });
+
+      expect((await repos.roster.players.findById(playerId))?.currentWrestler).toBe(NEEDS_WRESTLER);
+      expect((await repos.roster.wrestlers.findById(rock.wrestlerId))?.isInUse).toBe(false);
+    });
+
+    it('updatePlayer lets a wrestlerId win over an explicit clear on the same slot', async () => {
+      const playerId = await seedLegacyPlayer();
+      const rock = await seedWrestler('The Rock');
+
+      await adminSave(playerId, { currentWrestlerId: rock.wrestlerId, clearCurrentWrestler: true });
+
+      expect((await repos.roster.players.findById(playerId))?.currentWrestler).toBe('The Rock');
+    });
+
+    it('updatePlayer ignores a clear flag that is not literally true', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      await adminSave(playerId, { name: 'Renamed', clearCurrentWrestler: 'true' });
+
+      expect((await repos.roster.players.findById(playerId))?.currentWrestler).toBe('Edge');
+    });
+
+    it('updateMyProfile ignores the clear flags, which are for staff edits only', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      await selfSave({ name: 'Renamed', clearCurrentWrestler: true, clearAlternateWrestler: true });
+
+      const after = await repos.roster.players.findById(playerId);
+      expect(after?.currentWrestler).toBe('Edge');
+      expect(after?.alternateWrestler).toBe('Christian');
+    });
+
+    it('updatePlayer takes the text name when an empty FK echo sits beside it', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      await adminSave(playerId, { currentWrestlerId: '', currentWrestler: 'Rhyno' });
+
+      expect((await repos.roster.players.findById(playerId))?.currentWrestler).toBe('Rhyno');
+    });
+
+    it('updateMyProfile takes the text name when an empty FK echo sits beside it', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      await selfSave({ currentWrestlerId: '', currentWrestler: 'Rhyno' });
+
+      expect((await repos.roster.players.findById(playerId))?.currentWrestler).toBe('Rhyno');
     });
 
     it('updateMyProfile keeps both names when the form echoes empty FKs', async () => {

@@ -133,19 +133,21 @@ export type SlotChange = { present: false } | { present: true; newId: string | n
  * Read a slot's FK from a request. `undefined` means no change, a string sets
  * that wrestlerId, and `null` or '' clears the assignment.
  *
- * A clear only counts when the slot holds an FK. Edit forms echo an empty FK
- * for players who have a wrestler name but no FK, and clearing would replace
- * that name with the placeholder and hide the player.
+ * An empty value only clears a slot that holds an FK. Edit forms echo an empty
+ * FK for players who have a wrestler name but no FK, and clearing would replace
+ * that name with the placeholder and hide the player. A caller that means to
+ * clear such a slot says so with `explicitClear`, which a wrestlerId overrides.
  */
 export function parseSlotChange(
   value: unknown,
   storedId: string | null | undefined,
+  explicitClear = false,
 ): SlotChange {
-  if (value === undefined) return { present: false };
+  if (typeof value === 'string' && value !== '') return { present: true, newId: value };
+  if (explicitClear) return { present: true, newId: null };
   if (value === null || value === '') {
     return storedId ? { present: true, newId: null } : { present: false };
   }
-  if (typeof value === 'string') return { present: true, newId: value };
   return { present: false };
 }
 

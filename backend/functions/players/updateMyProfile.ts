@@ -43,6 +43,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const patch: PlayerPatch = {};
     let hasChanges = false;
 
+    // Parse FK changes.
+    const currentChange = parseSlotChange(body.currentWrestlerId, player.currentWrestlerId);
+    const alternateChange = parseSlotChange(body.alternateWrestlerId, player.alternateWrestlerId);
+
     // Validate and apply string fields.
     for (const field of STRING_FIELDS) {
       if (body[field] === undefined) continue;
@@ -53,7 +57,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
       if (field === 'alternateWrestler' && value === '') {
         // Only let the legacy text clear when no FK is being set on the slot.
-        if (body.alternateWrestlerId === undefined) {
+        if (!alternateChange.present) {
           patch.alternateWrestler = undefined;
           hasChanges = true;
         }
@@ -94,11 +98,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return badRequest(`Image URL must be ${MAX_URL_LENGTH} characters or less`);
       }
 
-      // Skip the legacy text when an FK is set on the same slot — FK wins.
-      if (field === 'currentWrestler' && body.currentWrestlerId !== undefined) {
+      // Skip the legacy text when an FK changes the same slot — FK wins.
+      if (field === 'currentWrestler' && currentChange.present) {
         continue;
       }
-      if (field === 'alternateWrestler' && body.alternateWrestlerId !== undefined) {
+      if (field === 'alternateWrestler' && alternateChange.present) {
         continue;
       }
 
@@ -113,10 +117,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (body.bio !== undefined || body.signatures !== undefined || body.finishers !== undefined) {
       hasChanges = true;
     }
-
-    // Parse FK changes.
-    const currentChange = parseSlotChange(body.currentWrestlerId, player.currentWrestlerId);
-    const alternateChange = parseSlotChange(body.alternateWrestlerId, player.alternateWrestlerId);
 
     if (currentChange.present || alternateChange.present) {
       const finalCurrent = currentChange.present

@@ -268,14 +268,18 @@ export default function ManagePlayers() {
       if (editingPlayer) {
         await playersApi.update(editingPlayer.playerId, {
           name: sanitizedName,
-          // An empty string clears the slot server-side, and clearing the
-          // primary slot hides the player. So a slot only goes out when the
-          // admin changed it; otherwise a name-only wrestler would be wiped.
+          // A slot only goes out when the admin changed it, because clearing
+          // the primary slot hides the player. The API ignores an empty id on
+          // a slot held by name alone, so a clear has to be stated outright.
           ...(formData.currentWrestlerId !== initialCurrentSlot
-            ? { currentWrestlerId: formData.currentWrestlerId }
+            ? formData.currentWrestlerId
+              ? { currentWrestlerId: formData.currentWrestlerId }
+              : { clearCurrentWrestler: true }
             : {}),
           ...(formData.alternateWrestlerId !== initialAlternateSlot
-            ? { alternateWrestlerId: formData.alternateWrestlerId }
+            ? formData.alternateWrestlerId
+              ? { alternateWrestlerId: formData.alternateWrestlerId }
+              : { clearAlternateWrestler: true }
             : {}),
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || '',

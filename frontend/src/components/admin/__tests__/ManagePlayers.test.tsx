@@ -252,7 +252,7 @@ describe('ManagePlayers', () => {
 
     await waitFor(() => {
       expect(mockPlayersApi.update).toHaveBeenCalledWith('p1', expect.objectContaining({
-        currentWrestlerId: '',
+        clearCurrentWrestler: true,
       }));
     });
   });
@@ -347,8 +347,23 @@ describe('ManagePlayers', () => {
       await user.click(screen.getByRole('button', { name: 'Update Player' }));
 
       await waitFor(() => {
-        expect(mockPlayersApi.update).toHaveBeenCalledWith('p3', expect.objectContaining({ currentWrestlerId: '' }));
+        expect(mockPlayersApi.update).toHaveBeenCalledWith('p3', expect.objectContaining({ clearCurrentWrestler: true }));
       });
+      expect(mockPlayersApi.update.mock.calls[0][1]).not.toHaveProperty('currentWrestlerId');
+    });
+
+    it('states a clear of a name-only alternate outright too', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      await user.selectOptions(screen.getByLabelText('Alternate Wrestler'), '');
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+      const body = mockPlayersApi.update.mock.calls[0][1];
+      expect(body).toMatchObject({ clearAlternateWrestler: true });
+      expect(body).not.toHaveProperty('alternateWrestlerId');
+      expect(body).not.toHaveProperty('clearCurrentWrestler');
     });
   });
 
