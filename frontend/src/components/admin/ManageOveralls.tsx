@@ -7,6 +7,8 @@ import type { DataTableColumn } from '../ui/DataTable';
 import EmptyState from '../ui/EmptyState';
 import PageHeader from '../ui/PageHeader';
 import Badge from '../ui/Badge';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
+import HiddenBadge from './HiddenBadge';
 import AdminNotice from './AdminNotice';
 import './adminRoster.css';
 
@@ -44,7 +46,7 @@ export default function ManageOveralls() {
     {
       key: 'wrestler',
       header: t('overalls.admin.wrestler'),
-      render: (entry) => entry.wrestlerName,
+      render: (entry) => (isNeedsWrestler(entry.wrestlerName) ? <HiddenBadge /> : entry.wrestlerName),
       sortValue: (entry) => entry.wrestlerName,
     },
     {

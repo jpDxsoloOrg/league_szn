@@ -45,6 +45,17 @@ describe('AdminContenderOverrides', () => {
     expect(await screen.findByRole('option', { name: 'Unassigned' })).toBeInTheDocument();
   });
 
+  it('never shows the Needs Wrestler placeholder as a wrestler name', async () => {
+    mockContendersApi.getOverrides.mockResolvedValue([]);
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
+      { playerId: 'p3', name: 'Waiting', currentWrestler: 'Needs Wrestler' },
+    ]);
+    render(<AdminContenderOverrides />);
+
+    expect(await screen.findByRole('option', { name: 'Waiting' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Needs Wrestler/ })).not.toBeInTheDocument();
+  });
+
   it('ignores a slow response for the previously selected championship', async () => {
     let resolveFirst: (value: ReturnType<typeof override>[]) => void = () => undefined;
     mockContendersApi.getOverrides.mockImplementation((championshipId: string) => (

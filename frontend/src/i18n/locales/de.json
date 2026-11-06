@@ -1284,7 +1284,8 @@
       "activityPromoTitled": "{{name}}: „{{title}}“",
       "activityPromo": "{{name}} hielt eine Promo",
       "activityNote": "Notiz: {{text}}",
-      "activityMessage": "{{name}} schickte eine Nachricht"
+      "activityMessage": "{{name}} schickte eine Nachricht",
+      "noneYet": "Hier gibt es noch keine Rivalitäten."
     },
     "card": {
       "matchCount_one": "{{count}} Kampf",

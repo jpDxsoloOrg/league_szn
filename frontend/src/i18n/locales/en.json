@@ -1284,7 +1284,8 @@
       "activityPromoTitled": "{{name}}: \"{{title}}\"",
       "activityPromo": "{{name}} cut a promo",
       "activityNote": "Note: {{text}}",
-      "activityMessage": "{{name}} sent a message"
+      "activityMessage": "{{name}} sent a message",
+      "noneYet": "No rivalries here yet."
     },
     "card": {
       "matchCount_one": "{{count}} match",

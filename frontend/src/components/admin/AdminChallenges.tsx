@@ -12,6 +12,8 @@ import DataTable from '../ui/DataTable';
 import EmptyState from '../ui/EmptyState';
 import Select from '../ui/Select';
 import { useToast } from '../ui/toastContext';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
+import HiddenBadge from './HiddenBadge';
 import AdminNotice from './AdminNotice';
 import useAdminConfirm from './useAdminConfirm';
 import './adminContent.css';
@@ -194,7 +196,9 @@ export default function AdminChallenges() {
             header: t('challenges.admin.challenger', 'Challenger'),
             render: (challenge) => (
               <span className="ac-cell__text">
-                <span className="ac-cell__title">{challenge.challenger.wrestlerName}</span>
+                {isNeedsWrestler(challenge.challenger.wrestlerName)
+                  ? <HiddenBadge />
+                  : <span className="ac-cell__title">{challenge.challenger.wrestlerName}</span>}
                 <span className="ac-cell__sub">{challenge.challenger.playerName}</span>
               </span>
             ),
@@ -204,7 +208,9 @@ export default function AdminChallenges() {
             header: t('challenges.admin.challenged', 'Challenged'),
             render: (challenge) => (
               <span className="ac-cell__text">
-                <span className="ac-cell__title">{challenge.challenged.wrestlerName}</span>
+                {isNeedsWrestler(challenge.challenged.wrestlerName)
+                  ? <HiddenBadge />
+                  : <span className="ac-cell__title">{challenge.challenged.wrestlerName}</span>}
                 <span className="ac-cell__sub">{challenge.challenged.playerName}</span>
               </span>
             ),

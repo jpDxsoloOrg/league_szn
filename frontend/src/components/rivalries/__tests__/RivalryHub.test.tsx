@@ -137,6 +137,14 @@ describe('RivalryHub', () => {
     expect(mockList).toHaveBeenCalledTimes(callsBefore);
   });
 
+  it('does not blame the filters when there are no rivalries at all', async () => {
+    mockList.mockResolvedValue({ rivalries: [], nextCursor: null });
+    setup();
+
+    expect(await screen.findByText('rivalries.hub.noneYet')).toBeInTheDocument();
+    expect(screen.queryByText('rivalries.hub.empty')).not.toBeInTheDocument();
+  });
+
   it('hides the Request a Rivalry CTA from non-GM viewers', async () => {
     setup();
     await waitFor(() => expect(mockList).toHaveBeenCalled());

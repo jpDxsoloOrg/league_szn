@@ -12,6 +12,8 @@ import PageHeader from '../ui/PageHeader';
 import Select from '../ui/Select';
 import Tabs from '../ui/Tabs';
 import { useToast } from '../ui/toastContext';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
+import HiddenBadge from './HiddenBadge';
 import AdminChallenges from './AdminChallenges';
 import AdminNotice from './AdminNotice';
 import useAdminConfirm from './useAdminConfirm';
@@ -216,7 +218,9 @@ function PromoModeration() {
             header: t('promos.admin.player', 'Player'),
             render: (promo) => (
               <span className="ac-cell__text">
-                <span className="ac-cell__title">{promo.wrestlerName}</span>
+                {isNeedsWrestler(promo.wrestlerName)
+                  ? <HiddenBadge />
+                  : <span className="ac-cell__title">{promo.wrestlerName}</span>}
                 <span className="ac-cell__sub">{promo.playerName}</span>
               </span>
             ),

@@ -88,6 +88,14 @@ describe('AdminPromos', () => {
     expect(screen.getByText('Live promo content')).toBeInTheDocument();
   });
 
+  it('shows a hidden badge instead of the Needs Wrestler placeholder', async () => {
+    mockPromosApi.getAll.mockResolvedValue([{ ...basePromo, wrestlerName: 'Needs Wrestler' }]);
+    renderPage();
+
+    expect(await screen.findByText('Hidden')).toBeInTheDocument();
+    expect(screen.queryByText('Needs Wrestler')).not.toBeInTheDocument();
+  });
+
   it('asks for confirmation before deleting a promo', async () => {
     const user = userEvent.setup();
     mockPromosApi.delete.mockResolvedValue(undefined);
@@ -111,6 +119,16 @@ describe('AdminPromos', () => {
 
     expect(await screen.findByText('Triple H')).toBeInTheDocument();
     expect(mockChallengesApi.getAll).toHaveBeenCalled();
+  });
+
+  it('shows a hidden badge instead of the Needs Wrestler placeholder on call-outs', async () => {
+    mockChallengesApi.getAll.mockResolvedValue([
+      { ...challenge, challenger: { wrestlerName: 'Needs Wrestler', playerName: 'Sam' } },
+    ]);
+    renderPage('/admin/promos?view=call-outs');
+
+    expect(await screen.findByText('Hidden')).toBeInTheDocument();
+    expect(screen.queryByText('Needs Wrestler')).not.toBeInTheDocument();
   });
 
   it('offers call-out Delete and Clear Resolved to full Admins', async () => {
