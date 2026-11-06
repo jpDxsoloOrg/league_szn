@@ -292,6 +292,22 @@ button.calendar-item {
   gap: 0.5rem;
 }
 
+/* Just above the phone layout, every pixel of the cell goes to the show name. */
+@media (max-width: 900px) {
+  .calendar {
+    padding: 0.5rem;
+  }
+
+  .calendar-day-cell {
+    padding: 0.125rem;
+  }
+
+  .calendar-item {
+    padding-inline: 0.1875rem;
+    border-left-width: 2px;
+  }
+}
+
 @media (max-width: 768px) {
   .events-hero {
     padding: 1.25rem;
