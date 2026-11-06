@@ -18,6 +18,8 @@ const { mockPromosApi, mockChallengesApi } = vi.hoisted(() => ({
   },
 }));
 
+const { mockUseAuth } = vi.hoisted(() => ({ mockUseAuth: vi.fn() }));
+vi.mock('../../../contexts/AuthContext', () => ({ useAuth: mockUseAuth }));
 vi.mock('../../../services/api/promos.api', () => ({ promosApi: mockPromosApi }));
 vi.mock('../../../services/api/challenges.api', () => ({ challengesApi: mockChallengesApi }));
 
@@ -69,6 +71,7 @@ function renderPage(route = '/admin/promos') {
 describe('AdminPromos', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isSuperAdmin: true });
     mockPromosApi.getAll.mockResolvedValue([basePromo, archivedPromo]);
     mockChallengesApi.getAll.mockResolvedValue([challenge]);
   });
@@ -108,6 +111,22 @@ describe('AdminPromos', () => {
 
     expect(await screen.findByText('Triple H')).toBeInTheDocument();
     expect(mockChallengesApi.getAll).toHaveBeenCalled();
+  });
+
+  it('offers call-out Delete and Clear Resolved to full Admins', async () => {
+    renderPage('/admin/promos?view=call-outs');
+
+    expect(await screen.findByRole('button', { name: 'Delete' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clear Resolved' })).toBeInTheDocument();
+  });
+
+  it('hides call-out Delete and Clear Resolved from Moderators, which the API refuses', async () => {
+    mockUseAuth.mockReturnValue({ isSuperAdmin: false });
+    renderPage('/admin/promos?view=call-outs');
+
+    await screen.findByText('Triple H');
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Clear Resolved' })).not.toBeInTheDocument();
   });
 
   it('opens straight on call-outs from the view parameter', async () => {

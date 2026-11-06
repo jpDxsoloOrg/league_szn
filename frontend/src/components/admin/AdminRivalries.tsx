@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flame } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { canAccessAdminEntry, findAdminEntry } from '../../config/navConfig';
 import { playersApi, rivalriesApi } from '../../services/api';
 import type { Player } from '../../types';
 import type { Rivalry, RivalryHeat, RivalryStatus } from '../../types/rivalry';
@@ -40,6 +42,7 @@ interface ModalState {
 /** GM moderation for rivalries: status tabs, a paged table and per-row lifecycle actions. */
 export default function AdminRivalries() {
   const { t } = useTranslation();
+  const { isSuperAdmin } = useAuth();
   const [rivalries, setRivalries] = useState<Rivalry[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [filter, setFilter] = useState<StatusFilter>('pending');
@@ -183,6 +186,7 @@ export default function AdminRivalries() {
     return t('rivalries.admin.concludePrompt', { title });
   };
 
+  const heatConfigEntry = findAdminEntry('heat-config');
   const hasNote = modal?.action === 'reject' || modal?.action === 'conclude' || modal?.action === 'approve';
 
   return (
@@ -191,7 +195,9 @@ export default function AdminRivalries() {
         title={t('rivalries.admin.heading')}
         actions={(
           <>
-            <Button variant="ghost" to="/admin/heat-config">{t('admin.panel.tabs.heatConfig', 'Heat Tunables')}</Button>
+            {heatConfigEntry && canAccessAdminEntry(heatConfigEntry, isSuperAdmin) && (
+              <Button variant="ghost" to="/admin/heat-config">{t('admin.panel.tabs.heatConfig', 'Heat Tunables')}</Button>
+            )}
             <Button
               variant="secondary"
               disabled={resolvedCount === 0}

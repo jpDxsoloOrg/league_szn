@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Megaphone } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { challengesApi } from '../../services/api/challenges.api';
 import type { ChallengeStatus, ChallengeWithPlayers } from '../../types/challenge';
 import Badge from '../ui/Badge';
@@ -36,6 +37,7 @@ export default function AdminChallenges() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { isSuperAdmin } = useAuth();
   const { confirm, confirmDialog } = useAdminConfirm();
   const [challenges, setChallenges] = useState<ChallengeWithPlayers[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,9 +161,11 @@ export default function AdminChallenges() {
         />
         <span className="ac-toolbar__count">{filtered.length}</span>
         <span className="ac-toolbar__spacer" />
-        <Button variant="secondary" onClick={handleBulkClearResolved}>
-          {t('challenges.admin.clearResolved', 'Clear Resolved')}
-        </Button>
+        {isSuperAdmin && (
+          <Button variant="secondary" onClick={handleBulkClearResolved}>
+            {t('challenges.admin.clearResolved', 'Clear Resolved')}
+          </Button>
+        )}
       </div>
 
       <DataTable
@@ -240,9 +244,11 @@ export default function AdminChallenges() {
                 <Button variant="ghost" size="sm" to={`/challenges/${challenge.challengeId}`}>
                   {t('challenges.my.viewDetails', 'View Details')}
                 </Button>
-                <Button variant="ghost" size="sm" disabled={submitting === challenge.challengeId} onClick={() => handleDelete(challenge)}>
-                  {t('challenges.admin.delete', 'Delete')}
-                </Button>
+                {isSuperAdmin && (
+                  <Button variant="ghost" size="sm" disabled={submitting === challenge.challengeId} onClick={() => handleDelete(challenge)}>
+                    {t('challenges.admin.delete', 'Delete')}
+                  </Button>
+                )}
               </div>
             ),
           },

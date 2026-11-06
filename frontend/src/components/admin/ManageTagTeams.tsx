@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../contexts/AuthContext';
 import { tagTeamsApi } from '../../services/api/tagTeams.api';
 import { playersApi } from '../../services/api';
 import type { Player } from '../../types';
@@ -38,6 +39,7 @@ const STATUS_DEFAULTS: Record<TagTeamStatus, string> = {
 export default function ManageTagTeams() {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { isSuperAdmin } = useAuth();
   const [tagTeams, setTagTeams] = useState<TagTeam[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,7 +103,7 @@ export default function ManageTagTeams() {
 
   const renderPlayer = (playerId: string) => {
     const player = players.find((candidate) => candidate.playerId === playerId);
-    if (!player) return <span className="ar-sub">{t('common.unknown', 'Unknown')}</span>;
+    if (!player) return <span className="ar-sub">{t('adminRoster.tagTeams.playerMissing', 'Player not found')}</span>;
     const details = [isNeedsWrestler(player.currentWrestler) ? '' : player.currentWrestler, player.psnId]
       .filter(Boolean)
       .join(' / ');
@@ -194,9 +196,11 @@ export default function ManageTagTeams() {
                 {t('adminRoster.tagTeams.dissolve', 'Dissolve')}
               </Button>
             )}
-            <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPendingDelete(tagTeam)}>
-              {t('common.delete', 'Delete')}
-            </Button>
+            {isSuperAdmin && (
+              <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPendingDelete(tagTeam)}>
+                {t('common.delete', 'Delete')}
+              </Button>
+            )}
           </div>
         );
       },

@@ -13,6 +13,8 @@ const { mockFactionsApi } = vi.hoisted(() => ({
   },
 }));
 
+const { mockUseAuth } = vi.hoisted(() => ({ mockUseAuth: vi.fn() }));
+vi.mock('../../../contexts/AuthContext', () => ({ useAuth: mockUseAuth }));
 vi.mock('react-i18next', async () => (await import('./i18nMock')).i18nMock);
 vi.mock('../../../services/api/factions.api', () => ({ factionsApi: mockFactionsApi }));
 
@@ -28,6 +30,7 @@ const factions = [
 describe('ManageFactions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isSuperAdmin: true });
     mockFactionsApi.getAll.mockResolvedValue(factions);
   });
 
@@ -52,6 +55,14 @@ describe('ManageFactions', () => {
     await waitFor(() => { expect(mockFactionsApi.reactivate).toHaveBeenCalledWith('s2'); });
     expect(confirmSpy).not.toHaveBeenCalled();
     confirmSpy.mockRestore();
+  });
+
+  it('hides Delete from Moderators, which the API refuses', async () => {
+    mockUseAuth.mockReturnValue({ isSuperAdmin: false });
+    render(<ManageFactions />);
+
+    await screen.findByText('The Bloodline');
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
   });
 
   it('asks before deleting', async () => {

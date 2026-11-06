@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../contexts/AuthContext';
 import { factionsApi } from '../../services/api/factions.api';
 import type { Stable, StableStatus } from '../../types/stable';
 import Badge from '../ui/Badge';
@@ -36,6 +37,7 @@ type PendingConfirm = { kind: 'delete' | 'reactivate'; faction: Stable };
 export default function ManageFactions() {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { isSuperAdmin } = useAuth();
   const [factions, setFactions] = useState<Stable[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -177,9 +179,11 @@ export default function ManageFactions() {
                 {t('adminRoster.factions.reactivate', 'Reactivate')}
               </Button>
             )}
-            <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPendingConfirm({ kind: 'delete', faction })}>
-              {t('common.delete', 'Delete')}
-            </Button>
+            {isSuperAdmin && (
+              <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPendingConfirm({ kind: 'delete', faction })}>
+                {t('common.delete', 'Delete')}
+              </Button>
+            )}
           </div>
         );
       },

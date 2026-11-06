@@ -118,14 +118,14 @@ describe('admin registry', () => {
     expect(entries.map((entry) => entry.tab).sort()).toEqual([...ADMIN_TABS].sort());
   });
 
-  it('limits users, heat-config and danger to full Admins', () => {
+  it('limits users, heat-config, features and danger to full Admins', () => {
     const adminOnly = entries.filter((entry) => !canAccessAdminEntry(entry, false)).map((entry) => entry.tab);
-    expect(adminOnly.sort()).toEqual(['danger', 'heat-config', 'users']);
+    expect(adminOnly.sort()).toEqual(['danger', 'features', 'heat-config', 'users']);
   });
 
   it('trims the groups for Moderators', () => {
     const tabs = getVisibleAdminGroups(false).flatMap((group) => group.entries.map((entry) => entry.tab));
-    expect(tabs).toHaveLength(ADMIN_TABS.length - 3);
+    expect(tabs).toHaveLength(ADMIN_TABS.length - 4);
     expect(tabs).toContain('overalls');
   });
 });

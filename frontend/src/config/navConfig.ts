@@ -343,7 +343,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { tab: 'companies', labelKey: 'admin.panel.tabs.companies', icon: Building2, minRole: 'Moderator' },
       { tab: 'shows', labelKey: 'admin.panel.tabs.shows', icon: Tv, minRole: 'Moderator' },
       { tab: 'locations', labelKey: 'admin.panel.tabs.locations', icon: MapPin, minRole: 'Moderator' },
-      { tab: 'features', labelKey: 'admin.panel.tabs.features', icon: Flag, minRole: 'Moderator' },
+      { tab: 'features', labelKey: 'admin.panel.tabs.features', icon: Flag, minRole: 'Admin' },
       { tab: 'danger', labelKey: 'admin.panel.tabs.dangerZone', icon: TriangleAlert, minRole: 'Admin', danger: true },
     ],
   },
