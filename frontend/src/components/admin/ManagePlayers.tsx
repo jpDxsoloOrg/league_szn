@@ -21,6 +21,7 @@ import {
   type WrestlerSlotOptions,
 } from '../../utils/wrestlerOptions';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
+import { nameOrUnnamed } from '../../utils/playerName';
 import Avatar from '../ui/Avatar';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
@@ -151,6 +152,8 @@ export default function ManagePlayers() {
     ? initialSlotValue(editingPlayer.alternateWrestlerId, editingPlayer.alternateWrestler, wrestlers)
     : '';
 
+  const unnamedLabel = t('common.unnamedPlayer', 'Unnamed player');
+
   const hiddenCount = useMemo(
     () => players.filter((player) => isNeedsWrestler(player.currentWrestler)).length,
     [players],
@@ -163,10 +166,10 @@ export default function ManagePlayers() {
       if (divisionFilter === 'none' && player.divisionId) return false;
       if (!['all', 'none', 'hidden'].includes(divisionFilter) && player.divisionId !== divisionFilter) return false;
       if (!term) return true;
-      return [player.name, player.currentWrestler, player.alternateWrestler, player.psnId]
+      return [nameOrUnnamed(player.name, unnamedLabel), player.currentWrestler, player.alternateWrestler, player.psnId]
         .some((value) => value?.toLowerCase().includes(term));
     });
-  }, [players, divisionFilter, search]);
+  }, [players, divisionFilter, search, unnamedLabel]);
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -438,9 +441,9 @@ export default function ManagePlayers() {
       sortValue: (player) => player.name,
       render: (player) => (
         <span className="ar-identity">
-          <Avatar src={player.imageUrl} name={player.name} size="sm" />
+          <Avatar src={player.imageUrl} name={nameOrUnnamed(player.name, unnamedLabel)} size="sm" />
           <span className="ar-stack">
-            <span className="ar-strong">{player.name}</span>
+            <span className="ar-strong">{nameOrUnnamed(player.name, unnamedLabel)}</span>
             {player.psnId && <span className="ar-sub">{player.psnId}</span>}
           </span>
         </span>
@@ -739,7 +742,7 @@ export default function ManagePlayers() {
         title={t('adminRoster.players.deleteTitle', 'Delete player')}
         message={t('adminRoster.players.deleteConfirm', {
           defaultValue: 'Are you sure you want to delete {{name}}? This action cannot be undone.',
-          name: pendingDelete?.name ?? '',
+          name: nameOrUnnamed(pendingDelete?.name, unnamedLabel),
         })}
         confirmLabel={t('common.delete', 'Delete')}
         busy={deleting}

@@ -47,7 +47,8 @@
     "sortDescending": "{{column}}, absteigend",
     "showMore": "Mehr anzeigen",
     "showingCount": "{{shown}} von {{total}} angezeigt",
-    "formerMember": "Ehemaliges Mitglied"
+    "formerMember": "Ehemaliges Mitglied",
+    "unnamedPlayer": "Unbenannter Spieler"
   },
   "notFound": {
     "title": "Seite nicht gefunden",

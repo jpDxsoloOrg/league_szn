@@ -596,6 +596,22 @@ describe('ManagePlayers', () => {
     expect(screen.getByText('All Players (3)')).toBeInTheDocument();
   });
 
+  it('labels a blank-name player and finds them by that label', async () => {
+    const user = userEvent.setup();
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
+      ...mockPlayers,
+      { ...mockPlayers[0], playerId: 'p-blank', name: '', currentWrestler: 'Needs Wrestler', currentWrestlerId: undefined },
+    ]);
+    renderComponent();
+
+    expect(await screen.findByText('Unnamed player')).toBeInTheDocument();
+
+    await user.type(screen.getByRole('searchbox'), 'unnamed');
+
+    expect(screen.getByText('Unnamed player')).toBeInTheDocument();
+    expect(screen.queryByText('John')).not.toBeInTheDocument();
+  });
+
   it('filters players by search text', async () => {
     const user = userEvent.setup();
     renderComponent();
