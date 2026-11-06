@@ -5,7 +5,7 @@ import { handler as updateRivalryHandler } from './updateRivalry';
 import { handler as respondRivalryHandler } from './respondRivalry';
 import { handler as deleteRivalryHandler } from './deleteRivalry';
 import { handler as recomputeHeatHandler } from './recomputeHeat';
-import { createRouter, type RouteConfig } from '../../lib/router';
+import { createRouter, type RouteConfig, STAFF } from '../../lib/router';
 
 /**
  * Single Lambda for persistent rivalries. RIV-02.
@@ -17,46 +17,48 @@ import { createRouter, type RouteConfig } from '../../lib/router';
  * The synthetic match-history endpoint at `GET /rivalries` lives in its own
  * Lambda (`getMatchHistoryRivalries`) and is unaffected by this dispatcher.
  */
-const routes: ReadonlyArray<RouteConfig> = [
+export const routes: ReadonlyArray<RouteConfig> = [
   {
     resource: '/rivalry-requests',
     method: 'GET',
     handler: getRivalriesHandler,
+    access: 'public',
   },
   {
     resource: '/rivalry-requests/{rivalryId}',
     method: 'GET',
     handler: getRivalryHandler,
+    access: 'public',
   },
   {
     resource: '/rivalry-requests',
     method: 'POST',
     handler: createRivalryHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/rivalry-requests/{rivalryId}',
     method: 'PUT',
     handler: updateRivalryHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/rivalry-requests/{rivalryId}/respond',
     method: 'POST',
     handler: respondRivalryHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/rivalry-requests/{rivalryId}',
     method: 'DELETE',
     handler: deleteRivalryHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/rivalry-requests/{rivalryId}/recompute-heat',
     method: 'POST',
     handler: recomputeHeatHandler,
-    requireAuth: true,
+    access: STAFF,
   },
 ];
 

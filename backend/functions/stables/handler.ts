@@ -20,137 +20,143 @@ import { handler as getMyDirectMessageThreadsHandler } from './getMyDirectMessag
 import { handler as getFactionStatsHandler } from './getFactionStats';
 import { handler as getFactionScheduleHandler } from './getFactionSchedule';
 import { handler as getFactionPromosHandler } from './getFactionPromos';
-import { createRouter, type RouteConfig } from '../../lib/router';
+import { createRouter, type RouteConfig, ADMIN_ONLY, STAFF } from '../../lib/router';
 
 /**
  * Single Lambda for stables: routes by HTTP method and resource.
  */
-const routes: ReadonlyArray<RouteConfig> = [
+export const routes: ReadonlyArray<RouteConfig> = [
   {
     resource: '/stables',
     method: 'GET',
     handler: getStablesHandler,
+    access: 'public',
   },
   {
     resource: '/stables/standings',
     method: 'GET',
     handler: getStableStandingsHandler,
+    access: 'public',
   },
   {
     resource: '/stables/{stableId}',
     method: 'GET',
     handler: getStableHandler,
+    access: 'public',
   },
   {
     resource: '/stables',
     method: 'POST',
     handler: createStableHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/stables/{stableId}',
     method: 'PUT',
     handler: updateStableHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/stables/{stableId}/approve',
     method: 'POST',
     handler: approveStableHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/stables/{stableId}/reject',
     method: 'POST',
     handler: rejectStableHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/stables/{stableId}/invitations',
     method: 'GET',
     handler: getInvitationsHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/stables/{stableId}/invitations',
     method: 'POST',
     handler: inviteToStableHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/stables/{stableId}/invitations/{invitationId}/respond',
     method: 'POST',
     handler: respondToInvitationHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/stables/{stableId}/disband',
     method: 'POST',
     handler: disbandStableHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/stables/{stableId}/reactivate',
     method: 'POST',
     handler: reactivateStableHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/stables/{stableId}/remove-member',
     method: 'POST',
     handler: removeMemberHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/stables/{stableId}/messages',
     method: 'GET',
     handler: getMessagesHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/stables/{stableId}/messages',
     method: 'POST',
     handler: postMessageHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/stables/{stableId}/direct-messages',
     method: 'GET',
     handler: getMyDirectMessageThreadsHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/stables/{stableId}/direct-messages',
     method: 'POST',
     handler: postDirectMessageHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/stables/{stableId}/direct-messages/{partnerPlayerId}',
     method: 'GET',
     handler: getDirectMessageThreadHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/stables/{stableId}/stats',
     method: 'GET',
     handler: getFactionStatsHandler,
+    access: 'public',
   },
   {
     resource: '/stables/{stableId}/schedule',
     method: 'GET',
     handler: getFactionScheduleHandler,
+    access: 'public',
   },
   {
     resource: '/stables/{stableId}/promos',
     method: 'GET',
     handler: getFactionPromosHandler,
+    access: 'public',
   },
   {
     resource: '/stables/{stableId}',
     method: 'DELETE',
     handler: deleteStableHandler,
-    requireAuth: true,
+    access: ADMIN_ONLY,
   },
 ];
 
