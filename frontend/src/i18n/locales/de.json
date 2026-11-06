@@ -2549,6 +2549,7 @@
   "search": {
     "title": "League SZN durchsuchen",
     "open": "Suche öffnen",
+    "launcher": "Liga durchsuchen",
     "placeholder": "Wrestler, Events, Faktionen, Seiten suchen",
     "results": "Suchergebnisse",
     "noResults": "Keine Treffer gefunden",
