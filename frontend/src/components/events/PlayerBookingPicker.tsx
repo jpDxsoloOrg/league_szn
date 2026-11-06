@@ -202,15 +202,20 @@ export default function PlayerBookingPicker({
       }
     };
     // Multi mode has no confirm button — the menu stays open across picks —
-    // so Escape is the way out without reaching for the mouse.
+    // so Escape is the way out without reaching for the mouse. Inside a Radix
+    // dialog the same key would also close the dialog and lose its edits. Radix
+    // listens on document in the capture phase, so this listens earlier, on
+    // window, and only while the menu is open: a second Escape reaches the dialog.
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close();
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      close();
     };
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown, true);
     };
   }, [open]);
 
