@@ -300,7 +300,7 @@ export default function ManageShows() {
         open={showAddForm}
         onClose={resetForm}
         title={editingShow ? t('shows.edit') : t('shows.create')}
-        submitLabel={editingShow ? t('shows.edit') : t('shows.create')}
+        submitLabel={editingShow ? t('shows.update', 'Update Show') : t('shows.create')}
         onSubmit={handleSubmit}
         busy={saving || uploading}
         error={formError}

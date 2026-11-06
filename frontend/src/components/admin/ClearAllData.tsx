@@ -153,7 +153,7 @@ export default function ClearAllData() {
 
   return (
     <div className="ac-page">
-      <PageHeader title={t('adminContent.danger.title', 'Data Management')} />
+      <PageHeader title={t('adminContent.danger.title', 'Danger Zone')} />
 
       {error && <AdminNotice tone="error">{error}</AdminNotice>}
       {success && <AdminNotice tone="success">{success}</AdminNotice>}

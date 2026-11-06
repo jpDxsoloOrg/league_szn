@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -85,7 +85,7 @@ vi.mock('react-i18next', () => ({
       // Support both `t(key, 'fallback string')` and `t(key, { defaultValue: 'x' })`
       if (typeof options === 'string') return options;
       if (options && typeof options === 'object' && typeof options.defaultValue === 'string') {
-        return options.defaultValue;
+        return options.defaultValue.replace('{{sources}}', String(options.sources));
       }
       return key;
     },
@@ -360,7 +360,7 @@ describe('ScheduleMatch', () => {
     await waitFor(() => expect(mockScheduleMatch).toHaveBeenCalledTimes(1));
   });
 
-  it('lists players with no wrestler in the picker with a hidden label and badge', async () => {
+  it('lists players with no wrestler in the picker by name with a hidden badge', async () => {
     const user = userEvent.setup();
     setupDefaultMocks();
     mockGetAllPlayers.mockResolvedValue([
@@ -374,7 +374,7 @@ describe('ScheduleMatch', () => {
 
     await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
     await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
-    await pickParticipants(user, ['Hidden: no wrestler (Newbie)']);
+    await pickParticipants(user, ['Newbie']);
 
     const chip = screen.getByRole('button', { name: 'Remove Newbie' }).closest('li')!;
     expect(chip).toHaveTextContent('Newbie');
@@ -399,9 +399,47 @@ describe('ScheduleMatch', () => {
 
     await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
     await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
-    await pickParticipants(user, ['Hidden: no wrestler (Newbie)']);
+    await pickParticipants(user, ['Newbie']);
 
     expect(screen.getByRole('button', { name: 'Remove Newbie' })).toBeInTheDocument();
+  });
+
+  describe('when a read fails', () => {
+    it('keeps the rest of the form, names the failed source, and retries only that source', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllStipulations.mockRejectedValueOnce(new Error('boom'));
+      renderScheduleMatch();
+
+      const notice = await screen.findByRole('alert');
+      expect(notice).toHaveTextContent('Stipulations');
+      expect(notice).not.toHaveTextContent('Players');
+      expect(within(screen.getByLabelText('Match Format')).getByRole('option', { name: 'Singles' })).toBeInTheDocument();
+
+      await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+      mockGetAllPlayers.mockClear();
+      await user.click(within(notice).getByRole('button', { name: 'Retry' }));
+
+      await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+      expect(mockGetAllStipulations).toHaveBeenCalledTimes(2);
+      expect(mockGetAllPlayers).not.toHaveBeenCalled();
+      expect(screen.getByLabelText('Match Format')).toHaveValue('Singles');
+    });
+
+    it('holds scheduling until seasons load, so a match cannot silently skip the active season', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetAllSeasons.mockRejectedValueOnce(new Error('boom'));
+      renderScheduleMatch();
+
+      const notice = await screen.findByRole('alert');
+      expect(notice).toHaveTextContent('Seasons');
+      expect(screen.getByRole('button', { name: 'Schedule Match' })).toBeDisabled();
+
+      await user.click(within(notice).getByRole('button', { name: 'Retry' }));
+
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Schedule Match' })).toBeEnabled());
+    });
   });
 
   it('picks tag team members with real, keyboard-operable buttons', async () => {

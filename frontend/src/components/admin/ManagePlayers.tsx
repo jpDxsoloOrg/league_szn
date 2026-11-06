@@ -33,10 +33,29 @@ import Select from '../ui/Select';
 import AdminNotice from './AdminNotice';
 import ConfirmModal from './ConfirmModal';
 import HiddenBadge from './HiddenBadge';
+import SourceLoadNotice from './SourceLoadNotice';
+import { settleSources } from './loadSources';
 import './adminRoster.css';
 import './ManagePlayers.css';
 
 const FORM_ID = 'player-form';
+
+/** Select value for a wrestler held by name only, with no roster link. */
+const NAME_ONLY_SLOT = '__name-only__';
+
+const PLAYER_SOURCES = {
+  players: () => playersApi.getAllIncludingHidden(),
+  divisions: () => divisionsApi.getAll(),
+  wrestlers: () => wrestlersApi.getAll(),
+};
+
+type PlayerSource = keyof typeof PLAYER_SOURCES;
+
+/** What a wrestler select opens on, so an untouched slot can be told from a cleared one. */
+function initialSlotValue(wrestlerId: string | null | undefined, wrestlerName: string | null | undefined): string {
+  if (wrestlerId) return wrestlerId;
+  return isNeedsWrestler(wrestlerName) ? '' : NAME_ONLY_SLOT;
+}
 
 export default function ManagePlayers() {
   const { t } = useTranslation();
@@ -45,6 +64,7 @@ export default function ManagePlayers() {
   const [wrestlers, setWrestlers] = useState<Wrestler[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [failedSources, setFailedSources] = useState<PlayerSource[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -80,25 +100,16 @@ export default function ManagePlayers() {
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, []);
 
   const loadData = async () => {
-    try {
-      setLoading(true);
-      const [playersData, divisionsData, wrestlersData] = await Promise.all([
-        playersApi.getAllIncludingHidden(),
-        divisionsApi.getAll(),
-        wrestlersApi.getAll(),
-      ]);
-      setPlayers(playersData);
-      setDivisions(divisionsData);
-      setWrestlers(wrestlersData);
-    } catch (_err) {
-      setError(t('adminRoster.players.loadError', 'Failed to load data'));
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    const { values, failed } = await settleSources(PLAYER_SOURCES);
+    if (values.players) setPlayers(values.players);
+    if (values.divisions) setDivisions(values.divisions);
+    if (values.wrestlers) setWrestlers(values.wrestlers);
+    setFailedSources(failed);
+    setLoading(false);
   };
 
   const getDivisionName = (divisionId?: string) => {
@@ -126,6 +137,13 @@ export default function ManagePlayers() {
       ),
     [wrestlers, formData.currentWrestlerId, formData.alternateWrestlerId],
   );
+
+  const initialCurrentSlot = editingPlayer
+    ? initialSlotValue(editingPlayer.currentWrestlerId, editingPlayer.currentWrestler)
+    : '';
+  const initialAlternateSlot = editingPlayer
+    ? initialSlotValue(editingPlayer.alternateWrestlerId, editingPlayer.alternateWrestler)
+    : '';
 
   const hiddenCount = useMemo(
     () => players.filter((player) => isNeedsWrestler(player.currentWrestler)).length,
@@ -250,11 +268,15 @@ export default function ManagePlayers() {
       if (editingPlayer) {
         await playersApi.update(editingPlayer.playerId, {
           name: sanitizedName,
-          // Empty string clears the FK server-side (mirrors how divisionId
-          // and alignment are cleared on this same endpoint) — clearing the
-          // primary slot drops the player back to "Needs Wrestler".
-          currentWrestlerId: formData.currentWrestlerId,
-          alternateWrestlerId: formData.alternateWrestlerId || '',
+          // An empty string clears the slot server-side, and clearing the
+          // primary slot hides the player. So a slot only goes out when the
+          // admin changed it; otherwise a name-only wrestler would be wiped.
+          ...(formData.currentWrestlerId !== initialCurrentSlot
+            ? { currentWrestlerId: formData.currentWrestlerId }
+            : {}),
+          ...(formData.alternateWrestlerId !== initialAlternateSlot
+            ? { alternateWrestlerId: formData.alternateWrestlerId }
+            : {}),
           imageUrl: imageUrl || undefined,
           divisionId: formData.divisionId || '',
           psnId: formData.psnId.trim() || undefined,
@@ -304,8 +326,8 @@ export default function ManagePlayers() {
     setEditingPlayer(player);
     setFormData({
       name: player.name,
-      currentWrestlerId: player.currentWrestlerId || '',
-      alternateWrestlerId: player.alternateWrestlerId || '',
+      currentWrestlerId: initialSlotValue(player.currentWrestlerId, player.currentWrestler),
+      alternateWrestlerId: initialSlotValue(player.alternateWrestlerId, player.alternateWrestler),
       imageUrl: player.imageUrl || '',
       divisionId: player.divisionId || '',
       psnId: player.psnId || '',
@@ -355,7 +377,28 @@ export default function ManagePlayers() {
       </optgroup>
     ));
 
+  /**
+   * Keeps a wrestler the roster can't supply selectable: a name with no roster
+   * link, or a link whose roster row is gone. Without this option the select
+   * would read as if no wrestler were assigned.
+   */
+  const renderKeptWrestlerOption = (
+    groups: WrestlerSlotOptions,
+    initialValue: string,
+    wrestlerName: string | null | undefined,
+  ) => {
+    const onRoster = groups.some((group) => group.wrestlers.some((w) => w.wrestlerId === initialValue));
+    if (!initialValue || onRoster || isNeedsWrestler(wrestlerName)) return null;
+    return (
+      <option value={initialValue}>
+        {t('adminRoster.players.keptWrestler', { defaultValue: '{{name}} (not linked to the roster)', name: wrestlerName })}
+      </option>
+    );
+  };
+
   const rosterEmpty = wrestlers.length === 0;
+  const rosterLoadFailed = failedSources.includes('wrestlers');
+  const clearingPrimarySlot = initialCurrentSlot !== '' && formData.currentWrestlerId === '';
 
   const alignmentLabels: Record<'face' | 'heel' | 'neutral', string> = {
     face: t('adminRoster.players.alignmentFace', 'Face'),
@@ -460,6 +503,7 @@ export default function ManagePlayers() {
         )}
       />
 
+      <SourceLoadNotice failed={failedSources} onRetry={loadData} retrying={loading} />
       {error && !showAddForm && <AdminNotice tone="error">{error}</AdminNotice>}
       {success && <AdminNotice tone="success">{success}</AdminNotice>}
 
@@ -505,7 +549,7 @@ export default function ManagePlayers() {
         rows={filteredPlayers}
         rowKey={(player) => player.playerId}
         loading={loading}
-        empty={(
+        empty={failedSources.includes('players') ? undefined : (
           <EmptyState
             title={players.length === 0
               ? t('adminRoster.players.emptyTitle', 'No players yet')
@@ -534,7 +578,7 @@ export default function ManagePlayers() {
       >
         <form id={FORM_ID} onSubmit={handleSubmit} className="ar-form">
           {error && <AdminNotice tone="error">{error}</AdminNotice>}
-          {rosterEmpty && (
+          {rosterEmpty && !rosterLoadFailed && (
             <AdminNotice tone="info">
               {t('adminRoster.players.rosterEmpty', 'No wrestlers in the roster yet. Add them in')}{' '}
               <Link to="/admin/wrestlers">{t('adminRoster.wrestlers.title', 'Manage Wrestlers')}</Link>.
@@ -577,8 +621,14 @@ export default function ManagePlayers() {
                 disabled={rosterEmpty}
               >
                 <option value="">{t('adminRoster.players.needsWrestler', 'Needs Wrestler — assign later')}</option>
+                {renderKeptWrestlerOption(currentWrestlerOptions, initialCurrentSlot, editingPlayer?.currentWrestler)}
                 {renderWrestlerOptions(currentWrestlerOptions)}
               </select>
+              {clearingPrimarySlot && (
+                <p className="ar-hint">
+                  {t('adminRoster.players.clearWarning', 'Saving removes this wrestler and hides the player from public pages.')}
+                </p>
+              )}
             </div>
 
             <div className="ar-field">
@@ -593,6 +643,7 @@ export default function ManagePlayers() {
                 disabled={rosterEmpty}
               >
                 <option value="">{t('common.none', 'None')}</option>
+                {renderKeptWrestlerOption(alternateWrestlerOptions, initialAlternateSlot, editingPlayer?.alternateWrestler)}
                 {renderWrestlerOptions(alternateWrestlerOptions)}
               </select>
             </div>

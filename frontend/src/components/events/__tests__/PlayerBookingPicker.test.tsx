@@ -5,7 +5,8 @@ import type { Player, PlayerBookingInfo } from '../../../types';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string; count?: number }) => {
+    t: (key: string, options?: string | { defaultValue?: string; count?: number }) => {
+      if (typeof options === 'string') return options;
       const value = options?.defaultValue ?? key;
       return typeof options?.count === 'number'
         ? value.replace('{{count}}', String(options.count))
@@ -64,6 +65,35 @@ async function openMenu() {
 }
 
 describe('PlayerBookingPicker', () => {
+  it('uses a plain heading rather than check-in groups when there are no check-ins', async () => {
+    renderPicker({ checkInStatusByPlayerId: undefined });
+    await openMenu();
+
+    expect(screen.getByText('All players (4)')).toBeInTheDocument();
+    expect(screen.queryByText(/No Response/)).not.toBeInTheDocument();
+  });
+
+  it('shows a hidden player by name with a badge', async () => {
+    const hiddenPlayer = player('p5', 'Eve', 'Needs Wrestler');
+    renderPicker({ players: [hiddenPlayer], checkInStatusByPlayerId: undefined });
+    await openMenu();
+
+    const option = screen.getByRole('option', { name: /Eve/ });
+    expect(option).toHaveTextContent('Hidden');
+    expect(option).not.toHaveTextContent('Needs Wrestler');
+  });
+
+  it('keeps hidden players findable by searching for the badge text', async () => {
+    const hiddenPlayer = player('p5', 'Eve', 'Needs Wrestler');
+    renderPicker({ players: [...players, hiddenPlayer], checkInStatusByPlayerId: undefined });
+    await openMenu();
+
+    await userEvent.type(screen.getByRole('searchbox'), 'hidden');
+
+    expect(screen.getByRole('option', { name: /Eve/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Alice/ })).not.toBeInTheDocument();
+  });
+
   it('lists only available and tentative players by default', async () => {
     renderPicker();
     await openMenu();

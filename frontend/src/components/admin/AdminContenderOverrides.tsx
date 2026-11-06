@@ -316,11 +316,15 @@ export default function AdminContenderOverrides() {
                 </Badge>
               ),
             },
-            { key: 'reason', header: t('contenders.admin.overrides.reason'), render: (override) => override.reason },
+            { key: 'reason', header: t('contenders.admin.overrides.reasonColumn', 'Reason'), render: (override) => override.reason },
             {
               key: 'expires',
-              header: t('contenders.admin.overrides.expiresAt'),
-              render: (override) => (override.expiresAt ? new Date(override.expiresAt).toLocaleDateString() : '—'),
+              header: t('contenders.admin.overrides.expiresColumn', 'Auto-expire'),
+              render: (override) => (
+                <span className="ac-nowrap">
+                  {override.expiresAt ? new Date(override.expiresAt).toLocaleDateString() : '—'}
+                </span>
+              ),
             },
             {
               key: 'createdBy',
@@ -328,7 +332,7 @@ export default function AdminContenderOverrides() {
               render: (override) => (
                 <span className="ac-cell__text">
                   <span>{override.createdBy}</span>
-                  <span className="ac-cell__sub">{new Date(override.createdAt).toLocaleDateString()}</span>
+                  <span className="ac-cell__sub ac-nowrap">{new Date(override.createdAt).toLocaleDateString()}</span>
                 </span>
               ),
             },

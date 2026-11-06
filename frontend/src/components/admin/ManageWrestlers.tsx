@@ -45,6 +45,7 @@ const PAGE_SIZE = 25;
 
 /** Must match RESET_ASSIGNMENTS_CONFIRM_TOKEN in the resetAssignments handler. */
 const RESET_CONFIRM_TOKEN = 'RESET-ALL-ASSIGNMENTS';
+const RESET_FORM_ID = 'reset-assignments-form';
 
 const FORM_ID = 'wrestler-form';
 
@@ -279,6 +280,8 @@ export default function ManageWrestlers() {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
   const [resettingAssignments, setResettingAssignments] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetToken, setResetToken] = useState('');
   const [page, setPage] = useState(1);
 
   const [formData, setFormData] = useState<{
@@ -427,24 +430,17 @@ export default function ManageWrestlers() {
     resetForm();
   };
 
-  const handleResetAssignments = async () => {
-    const typedToken = window.prompt(
-      `${t('admin.manageWrestlers.resetConfirm')}\n\n${t('admin.manageWrestlers.resetTypeToken', {
-        token: RESET_CONFIRM_TOKEN,
-      })}`,
-    );
-    if (typedToken === null) {
-      return;
-    }
+  const closeResetModal = () => {
+    setShowResetModal(false);
+    setResetToken('');
+  };
+
+  const handleResetAssignments = async (e: FormEvent) => {
+    e.preventDefault();
+    if (resettingAssignments || resetToken.trim() !== RESET_CONFIRM_TOKEN) return;
 
     setError(null);
     setSuccess(null);
-
-    if (typedToken.trim() !== RESET_CONFIRM_TOKEN) {
-      setError(t('admin.manageWrestlers.resetTokenMismatch'));
-      return;
-    }
-
     setResettingAssignments(true);
 
     try {
@@ -465,6 +461,7 @@ export default function ManageWrestlers() {
       );
     } finally {
       setResettingAssignments(false);
+      closeResetModal();
     }
   };
 
@@ -632,7 +629,7 @@ export default function ManageWrestlers() {
             </Button>
             <Button
               variant="ghost"
-              onClick={handleResetAssignments}
+              onClick={() => setShowResetModal(true)}
               disabled={resettingAssignments}
               title={t('admin.manageWrestlers.resetTitle')}
             >
@@ -860,6 +857,47 @@ export default function ManageWrestlers() {
         onConfirm={handleConfirmAction}
         onCancel={() => setPendingAction(null)}
       />
+
+      <Modal
+        open={showResetModal}
+        onClose={() => { if (!resettingAssignments) closeResetModal(); }}
+        title={t('admin.manageWrestlers.resetAll')}
+        size="sm"
+        footer={(
+          <>
+            <Button variant="ghost" onClick={closeResetModal} disabled={resettingAssignments}>
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button
+              type="submit"
+              form={RESET_FORM_ID}
+              variant="danger"
+              loading={resettingAssignments}
+              disabled={resetToken.trim() !== RESET_CONFIRM_TOKEN}
+            >
+              {t('admin.manageWrestlers.resetAll')}
+            </Button>
+          </>
+        )}
+      >
+        <form id={RESET_FORM_ID} className="ar-form" onSubmit={handleResetAssignments}>
+          <p>{t('admin.manageWrestlers.resetConfirm')}</p>
+          <div className="ar-field">
+            <label className="ar-field__label" htmlFor="reset-token">
+              {t('admin.manageWrestlers.resetTypeToken', { token: RESET_CONFIRM_TOKEN })}
+            </label>
+            <input
+              id="reset-token"
+              className="ar-input"
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              value={resetToken}
+              onChange={(e) => setResetToken(e.target.value)}
+            />
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

@@ -13,6 +13,8 @@ const { mockTagTeamsApi, mockPlayersApi } = vi.hoisted(() => ({
   mockPlayersApi: { getAllIncludingHidden: vi.fn() },
 }));
 
+const { mockUseAuth } = vi.hoisted(() => ({ mockUseAuth: vi.fn() }));
+vi.mock('../../../contexts/AuthContext', () => ({ useAuth: mockUseAuth }));
 vi.mock('react-i18next', async () => (await import('./i18nMock')).i18nMock);
 vi.mock('../../../services/api/tagTeams.api', () => ({ tagTeamsApi: mockTagTeamsApi }));
 vi.mock('../../../services/api', () => ({ playersApi: mockPlayersApi }));
@@ -40,8 +42,26 @@ const players = [
 describe('ManageTagTeams', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isSuperAdmin: true });
     mockTagTeamsApi.getAll.mockResolvedValue(tagTeams);
     mockPlayersApi.getAllIncludingHidden.mockResolvedValue(players);
+  });
+
+  it('hides Delete from Moderators, which the API refuses, and keeps staff actions', async () => {
+    mockUseAuth.mockReturnValue({ isSuperAdmin: false });
+    render(<ManageTagTeams />);
+
+    const row = (await screen.findByText('New Day')).closest('tr')!;
+    expect(within(row).getByRole('button', { name: 'Dissolve' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+  });
+
+  it('says when a team member no longer has a player record', async () => {
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([]);
+    render(<ManageTagTeams />);
+
+    const row = (await screen.findByText('New Day')).closest('tr')!;
+    expect(within(row).getAllByText('Player not found')).toHaveLength(2);
   });
 
   it('resolves members from the staff roster and badges hidden players', async () => {

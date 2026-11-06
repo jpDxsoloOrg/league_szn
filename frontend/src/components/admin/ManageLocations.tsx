@@ -409,7 +409,7 @@ export default function ManageLocations() {
         onClose={resetForm}
         title={editingLocation ? t('admin.locations.edit') : t('admin.locations.add')}
         size="lg"
-        submitLabel={editingLocation ? t('admin.locations.edit') : t('admin.locations.add')}
+        submitLabel={editingLocation ? t('admin.locations.update', 'Update Location') : t('admin.locations.add')}
         onSubmit={handleSubmit}
         busy={submitting}
         error={formError}

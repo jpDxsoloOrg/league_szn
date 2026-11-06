@@ -25,6 +25,8 @@ import type {
 } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
 import type { LeagueEvent, MatchDesignation } from '../../types/event';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
+import HiddenBadge from '../admin/HiddenBadge';
 import SearchableSelect from '../admin/SearchableSelect';
 import Button from '../ui/Button';
 import Skeleton from '../ui/Skeleton';
@@ -658,9 +660,9 @@ export default function MatchEditForm({
                               onClick={() => handleTeamMemberToggle(teamIndex, player.playerId)}
                             >
                               <span className="match-edit-form__player-name">{player.name}</span>
-                              {player.currentWrestler && (
-                                <span className="match-edit-form__player-meta">{player.currentWrestler}</span>
-                              )}
+                              {isNeedsWrestler(player.currentWrestler)
+                                ? <HiddenBadge />
+                                : <span className="match-edit-form__player-meta">{player.currentWrestler}</span>}
                               {isInOtherTeam && (
                                 <span className="match-edit-form__player-meta">
                                   {t('scheduleMatch.tagTeam.team', 'Team')} {playerTeamIndex + 1}
@@ -707,9 +709,9 @@ export default function MatchEditForm({
                   onClick={() => handleParticipantToggle(player.playerId)}
                 >
                   <span className="match-edit-form__player-name">{player.name}</span>
-                  {player.currentWrestler && (
-                    <span className="match-edit-form__player-meta">{player.currentWrestler}</span>
-                  )}
+                  {isNeedsWrestler(player.currentWrestler)
+                    ? <HiddenBadge />
+                    : <span className="match-edit-form__player-meta">{player.currentWrestler}</span>}
                 </button>
               ))}
             </div>

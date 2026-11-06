@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import Skeleton from './Skeleton';
 import './DataTable.css';
 
@@ -44,6 +46,10 @@ function compareValues(first: string | number, second: string | number): number 
  * column headers as labels, so keep public tables to about six columns.
  */
 export default function DataTable<Row>({ columns, rows, rowKey, caption, density = 'default', loading = false, empty, className = '' }: DataTableProps<Row>) {
+  const { t } = useTranslation();
+  const sortSelectId = useId();
+  // The header row is gone in the card layout, so phones sort from a control.
+  const isCardLayout = useMediaQuery('(max-width: 768px)');
   const [sort, setSort] = useState<SortState | null>(null);
 
   const sortedRows = useMemo(() => {
@@ -63,8 +69,38 @@ export default function DataTable<Row>({ columns, rows, rowKey, caption, density
     }));
   };
 
+  const sortableColumns = columns.filter((column) => column.sortValue && !column.hideOnMobile);
+  const descending = sort?.direction === 'descending';
+
   return (
     <div className={`ui-table-wrap ui-table-wrap--${density} ${className}`.trim()}>
+      {isCardLayout && sortableColumns.length > 0 && (
+        <div className="ui-table__card-sort">
+          <label htmlFor={sortSelectId}>{t('common.sortBy', 'Sort by')}</label>
+          <select
+            id={sortSelectId}
+            value={sort?.key ?? ''}
+            onChange={(event) => {
+              const key = event.target.value;
+              setSort(key ? { key, direction: sort?.direction ?? 'ascending' } : null);
+            }}
+          >
+            <option value="">{t('common.sortDefault', 'Default order')}</option>
+            {sortableColumns.map((column) => (
+              <option key={column.key} value={column.key}>{column.header}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="ui-table__card-sort-direction"
+            disabled={!sort}
+            aria-label={descending ? t('common.sortDescending', 'Descending') : t('common.sortAscending', 'Ascending')}
+            onClick={() => sort && toggleSort(sort.key)}
+          >
+            {descending ? <ChevronDown aria-hidden="true" size={20} /> : <ChevronUp aria-hidden="true" size={20} />}
+          </button>
+        </div>
+      )}
       <table className="ui-table">
         <caption className="sr-only">{caption}</caption>
         <thead>

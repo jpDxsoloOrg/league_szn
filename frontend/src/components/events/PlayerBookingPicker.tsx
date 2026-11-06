@@ -14,6 +14,8 @@ import {
   CHECK_IN_STATUS_ORDER,
   isBookable,
 } from '../../utils/checkInStatus';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
+import HiddenBadge from '../admin/HiddenBadge';
 import './PlayerBookingPicker.css';
 
 /** @deprecated Use CheckInStatus from utils/checkInStatus. Kept for callers. */
@@ -53,9 +55,9 @@ interface PickerGroup {
   players: Player[];
 }
 
-/** Hidden players can have no wrestler, so the name stands alone for them. */
+/** Hidden players have no wrestler, so the name stands alone for them. */
 function playerLabel(player: Player): string {
-  return player.currentWrestler ? `${player.currentWrestler} (${player.name})` : player.name;
+  return isNeedsWrestler(player.currentWrestler) ? player.name : `${player.currentWrestler} (${player.name})`;
 }
 
 export default function PlayerBookingPicker({
@@ -102,6 +104,8 @@ export default function PlayerBookingPicker({
   // empty the list, so fall back to showing everyone.
   const hasCheckInData = (checkInStatusByPlayerId?.size ?? 0) > 0;
 
+  const hiddenLabel = t('adminRoster.hidden.badge', 'Hidden');
+
   const groups = useMemo<PickerGroup[]>(() => {
     const term = search.trim().toLowerCase();
     const buckets = new Map<CheckInStatus, Player[]>();
@@ -120,7 +124,7 @@ export default function PlayerBookingPicker({
         continue;
       }
       if (term) {
-        const haystack = `${player.name} ${player.currentWrestler ?? ''}`.toLowerCase();
+        const haystack = `${playerLabel(player)} ${isNeedsWrestler(player.currentWrestler) ? hiddenLabel : ''}`.toLowerCase();
         if (!haystack.includes(term)) continue;
       }
       const list = buckets.get(status);
@@ -137,7 +141,7 @@ export default function PlayerBookingPicker({
       }
     }
     return ordered;
-  }, [players, search, showAll, statusOf, isSelected, hasCheckInData, bookingInfoByPlayerId]);
+  }, [players, search, showAll, statusOf, isSelected, hasCheckInData, bookingInfoByPlayerId, hiddenLabel]);
 
   const renderBookingMeta = (playerId: string) => {
     const info = bookingInfoByPlayerId?.get(playerId);
@@ -264,6 +268,7 @@ export default function PlayerBookingPicker({
               aria-hidden="true"
             />
             {playerLabel(selectedPlayer)}
+            {isNeedsWrestler(selectedPlayer.currentWrestler) && <HiddenBadge />}
           </span>
         ) : (
           <span className="booking-picker-trigger-text booking-picker-trigger-text--empty">
@@ -312,9 +317,12 @@ export default function PlayerBookingPicker({
           {groups.map((group) => (
             <div key={group.status} className="booking-picker-group">
               <div
-                className={`booking-picker-group-title booking-picker-group-title--${group.status}`}
+                className={`booking-picker-group-title booking-picker-group-title--${hasCheckInData ? group.status : 'noResponse'}`}
               >
-                {statusLabel(group.status)} ({group.players.length})
+                {hasCheckInData
+                  ? statusLabel(group.status)
+                  : t('matches.slots.picker.allPlayers', { defaultValue: 'All players' })}{' '}
+                ({group.players.length})
               </div>
               {group.players.map((player) => {
                 const isBooked = bookedPlayerIds?.has(player.playerId) ?? false;
@@ -338,6 +346,7 @@ export default function PlayerBookingPicker({
                     <span className="booking-picker-option-text">
                       {playerLabel(player)}
                     </span>
+                    {isNeedsWrestler(player.currentWrestler) && <HiddenBadge />}
                     {multi && isSelected(player.playerId) && (
                       <Check className="booking-picker-check" aria-hidden="true" size={16} />
                     )}

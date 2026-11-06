@@ -17,6 +17,8 @@ import Skeleton from '../ui/Skeleton';
 import Tabs from '../ui/Tabs';
 import AdminNotice from './AdminNotice';
 import ConfirmModal from './ConfirmModal';
+import SourceLoadNotice from './SourceLoadNotice';
+import { settleSources } from './loadSources';
 import HiddenBadge from './HiddenBadge';
 import './adminRoster.css';
 import './ManageUsers.css';
@@ -57,6 +59,14 @@ const ROLE_TONES: Record<string, BadgeTone> = {
   Wrestler: 'primary',
 };
 
+const USER_SOURCES = {
+  users: () => usersApi.list(),
+  divisions: () => divisionsApi.getAll(),
+  wrestlers: () => wrestlersApi.getAll(),
+};
+
+type UserSource = keyof typeof USER_SOURCES;
+
 export default function ManageUsers() {
   const { t } = useTranslation();
   const { isSuperAdmin } = useAuth();
@@ -73,25 +83,18 @@ export default function ManageUsers() {
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [managedUsername, setManagedUsername] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [failedSources, setFailedSources] = useState<UserSource[]>([]);
 
   const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const [usersResult, divisionsData, wrestlersData] = await Promise.all([
-        usersApi.list(),
-        divisionsApi.getAll(),
-        wrestlersApi.getAll(),
-      ]);
-      setUsers(usersResult.users);
-      setDivisions(divisionsData);
-      setWrestlers(wrestlersData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('adminRoster.users.loadError', 'Failed to load data'));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
+    setLoading(true);
+    setError(null);
+    const { values, failed } = await settleSources(USER_SOURCES);
+    if (values.users) setUsers(values.users.users);
+    if (values.divisions) setDivisions(values.divisions);
+    if (values.wrestlers) setWrestlers(values.wrestlers);
+    setFailedSources(failed);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -416,6 +419,7 @@ export default function ManageUsers() {
         </AdminNotice>
       )}
 
+      <SourceLoadNotice failed={failedSources} onRetry={fetchData} retrying={loading} />
       {error && (
         <AdminNotice tone="error" dismissLabel={t('adminRoster.dismiss', 'Dismiss')} onDismiss={() => setError(null)}>
           {error}
@@ -444,7 +448,9 @@ export default function ManageUsers() {
             columns={columns}
             rows={filteredUsers}
             rowKey={(user) => user.username}
-            empty={<EmptyState title={t('adminRoster.users.empty', 'No users found for this filter.')} />}
+            empty={failedSources.includes('users')
+              ? undefined
+              : <EmptyState title={t('adminRoster.users.empty', 'No users found for this filter.')} />}
           />
         </>
       )}

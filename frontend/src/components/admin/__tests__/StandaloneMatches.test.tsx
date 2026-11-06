@@ -62,6 +62,35 @@ describe('StandaloneMatches', () => {
     expect(mocks.getPlayers).toHaveBeenCalled();
   });
 
+  it('shows the date so rows can be told apart', async () => {
+    mocks.getMatches.mockResolvedValue([{ ...match, date: '2026-03-14T20:00:00.000Z' }]);
+    renderPage();
+
+    expect(await screen.findByText(/Mar 14, 2026/)).toBeInTheDocument();
+  });
+
+  it('does not claim there are no matches when the match list failed, and retries', async () => {
+    const user = userEvent.setup();
+    mocks.getMatches.mockRejectedValueOnce(new Error('boom'));
+    renderPage();
+
+    const notice = await screen.findByRole('alert');
+    expect(notice).toHaveTextContent('Matches');
+    expect(screen.queryByRole('button', { name: 'Schedule a new match' })).not.toBeInTheDocument();
+
+    await user.click(within(notice).getByRole('button', { name: 'Retry' }));
+
+    expect(await screen.findByText('Jey vs Newbie')).toBeInTheDocument();
+  });
+
+  it('keeps the list when only an optional read failed', async () => {
+    mocks.getStipulations.mockRejectedValueOnce(new Error('boom'));
+    renderPage();
+
+    expect(await screen.findByText('Jey vs Newbie')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Stipulations');
+  });
+
   it('leaves out matches already on an event card', async () => {
     mocks.getEvents.mockResolvedValue([{ eventId: 'e1', matchCards: [{ matchId: 'm1' }] }]);
     renderPage();

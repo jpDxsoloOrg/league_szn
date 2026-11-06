@@ -40,7 +40,11 @@
     "accept": "Annehmen",
     "decline": "Ablehnen",
     "processing": "Wird verarbeitet...",
-    "sending": "Wird gesendet…"
+    "sending": "Wird gesendet…",
+    "sortBy": "Sortieren nach",
+    "sortDefault": "Standardreihenfolge",
+    "sortAscending": "Aufsteigend",
+    "sortDescending": "Absteigend"
   },
   "notFound": {
     "title": "Seite nicht gefunden",
@@ -592,7 +596,8 @@
         "done": "Fertig",
         "alreadyBooked": "Auf der Card",
         "showAll": "{{count}} anzeigen, die sich nicht als verfügbar gemeldet haben",
-        "showBookableOnly": "Nur verfügbar & vielleicht anzeigen"
+        "showBookableOnly": "Nur verfügbar & vielleicht anzeigen",
+        "allPlayers": "Alle Spieler"
       },
       "openCountBadge": "{{open}} von {{total}} Plätzen frei",
       "adminEdit": "Bearbeiten",
@@ -712,8 +717,7 @@
       "pagePrev": "Zurück",
       "pageNext": "Weiter",
       "pageStatus": "Seite {{page}} von {{total}}",
-      "resetTypeToken": "Gib zur Bestätigung {{token}} ein.",
-      "resetTokenMismatch": "Zurücksetzen abgebrochen: Der Bestätigungstext stimmte nicht überein."
+      "resetTypeToken": "Gib zur Bestätigung {{token}} ein."
     },
     "heatConfig": {
       "title": "Rivalitäts-Heat-Einstellungen",
@@ -843,7 +847,8 @@
         "hideSkipped": "Übersprungene Namen ausblenden",
         "noRows": "Keine Zeilen zum Importieren",
         "importFailed": "Massenimport fehlgeschlagen"
-      }
+      },
+      "update": "Ort aktualisieren"
     }
   },
   "announcements": {
@@ -885,7 +890,8 @@
       "expired": "Abgelaufen"
     },
     "dontShowAgain": "Nicht mehr anzeigen",
-    "counter": "{{current}} von {{total}}"
+    "counter": "{{current}} von {{total}}",
+    "update": "Ankündigung aktualisieren"
   },
   "videos": {
     "title": "Videos verwalten",
@@ -923,7 +929,8 @@
       "highlight": "Highlight",
       "promo": "Promo",
       "other": "Sonstiges"
-    }
+    },
+    "update": "Video aktualisieren"
   },
   "highlights": {
     "title": "Highlights & Videos",
@@ -1847,7 +1854,8 @@
     "thursday": "Donnerstag",
     "friday": "Freitag",
     "saturday": "Samstag",
-    "sunday": "Sonntag"
+    "sunday": "Sonntag",
+    "update": "Show aktualisieren"
   },
   "companies": {
     "title": "Unternehmen",
@@ -1861,7 +1869,8 @@
     "createFirst": "Erstelle dein erstes Unternehmen, um loszulegen",
     "confirmDelete": "Bist du sicher, dass du dieses Unternehmen löschen möchtest?",
     "rosterCount": "Kader",
-    "deleteBlocked": "Unternehmen mit zugewiesenen Spielern oder Shows kann nicht gelöscht werden"
+    "deleteBlocked": "Unternehmen mit zugewiesenen Spielern oder Shows kann nicht gelöscht werden",
+    "update": "Unternehmen aktualisieren"
   },
   "factions": {
     "title": "Faktionen",
@@ -2362,7 +2371,9 @@
         "removeSuccess": "Anpassung für {{player}} entfernt",
         "errorNotEligible": "Dieser Spieler ist nicht in den aktuellen Rankings. Mindestanzahl an Kämpfen muss erfüllt sein.",
         "errorIsChampion": "Das Ranking des aktuellen Champions kann nicht angepasst werden",
-        "errorWrongDivision": "Dieser Spieler ist nicht in der richtigen Division für diese Meisterschaft"
+        "errorWrongDivision": "Dieser Spieler ist nicht in der richtigen Division für diese Meisterschaft",
+        "reasonColumn": "Grund",
+        "expiresColumn": "Automatischer Ablauf"
       }
     },
     "emptyTitle": "Noch keine Rangliste",
@@ -2649,8 +2660,7 @@
     "of": "von",
     "hidden": {
       "badge": "Ausgeblendet",
-      "hint": "Kein Wrestler zugewiesen, daher ist dieser Spieler auf öffentlichen Seiten ausgeblendet",
-      "pickerLabel": "Ausgeblendet: kein Wrestler"
+      "hint": "Kein Wrestler zugewiesen, daher ist dieser Spieler auf öffentlichen Seiten ausgeblendet"
     },
     "searchableSelect": {
       "clear": "Auswahl löschen",
@@ -2677,11 +2687,13 @@
         "tentative": "Unter Vorbehalt",
         "noResponse": "Keine Antwort",
         "unavailable": "Nicht verfügbar"
-      }
+      },
+      "seasonsRequired": "Das Ansetzen ist pausiert, bis die Saisons geladen sind, damit das Match nicht aus der aktiven Saison fällt."
     },
     "matchCard": {
       "saveError": "Match Card konnte nicht gespeichert werden",
-      "designationFor": "Kartenposition für"
+      "designationFor": "Kartenposition für",
+      "unresolvedMatch": "Match {{position}}"
     },
     "standalone": {
       "loadError": "Kämpfe konnten nicht geladen werden",
@@ -2691,7 +2703,8 @@
       "deleteError": "Kampf konnte nicht gelöscht werden",
       "championship": "Titelkampf",
       "tournament": "Turnier",
-      "deleteTitle": "Kampf löschen"
+      "deleteTitle": "Kampf löschen",
+      "openMatch": "Offen für Anmeldungen"
     },
     "users": {
       "loadError": "Daten konnten nicht geladen werden",
@@ -2792,7 +2805,9 @@
       "uploadImage": "Klicken, um ein Bild hochzuladen",
       "deleteTitle": "Spieler löschen",
       "deleteConfirm": "{{name}} wirklich löschen? Dies kann nicht rückgängig gemacht werden.",
-      "noDivision": "Keine Division"
+      "noDivision": "Keine Division",
+      "keptWrestler": "{{name}} (nicht mit dem Roster verknüpft)",
+      "clearWarning": "Beim Speichern wird dieser Wrestler entfernt und der Spieler auf öffentlichen Seiten ausgeblendet."
     },
     "wrestlers": {
       "loadError": "Wrestler konnten nicht geladen werden",
@@ -2900,7 +2915,9 @@
         "pending": "Offen",
         "approved": "Genehmigt",
         "rejected": "Abgelehnt"
-      }
+      },
+      "deletedDivision": "Gelöschte Division",
+      "staffReviewer": "Teammitglied"
     },
     "tagTeams": {
       "loadError": "Tag Teams konnten nicht geladen werden",
@@ -2933,7 +2950,8 @@
         "dissolved": "Aufgelöst"
       },
       "count_one": "{{count}} Tag Team",
-      "count_other": "{{count}} Tag Teams"
+      "count_other": "{{count}} Tag Teams",
+      "playerMissing": "Spieler nicht gefunden"
     },
     "factions": {
       "loadError": "Fraktionen konnten nicht geladen werden",
@@ -2995,6 +3013,22 @@
       "moveUp": "{{name}} nach oben",
       "moveDown": "{{name}} nach unten",
       "creating": "Wird erstellt..."
+    },
+    "sources": {
+      "failed": "Konnte nicht geladen werden: {{sources}}.",
+      "championships": "Titel",
+      "companies": "Unternehmen",
+      "divisions": "Divisionen",
+      "events": "Events",
+      "matches": "Matches",
+      "matchTypes": "Match-Formate",
+      "players": "Spieler",
+      "seasons": "Saisons",
+      "stipulations": "Stipulations",
+      "tagTeams": "Tag Teams",
+      "tournaments": "Turniere",
+      "users": "Benutzer",
+      "wrestlers": "Wrestler"
     }
   },
   "adminContent": {
@@ -3174,7 +3208,7 @@
       "seeded": "Beispieldaten wurden erfolgreich erzeugt!",
       "selectAll": "Alle auswählen",
       "selectNone": "Keine auswählen",
-      "title": "Datenverwaltung",
+      "title": "Gefahrenzone",
       "typeToConfirm": "Gib {{phrase}} ein, um die Schaltfläche zum Löschen freizugeben:"
     },
     "deletePrompt": "{{name}} löschen?",
@@ -3342,7 +3376,8 @@
       "title": "Storyline-Anfragen",
       "typeBackstageAttack": "Backstage-Angriff",
       "typeRivalry": "Rivalität",
-      "typeStoryline": "Storyline"
+      "typeStoryline": "Storyline",
+      "staffReviewer": "Teammitglied"
     },
     "uploadFailed": "Das Bild konnte nicht hochgeladen werden. Bitte versuche es erneut.",
     "uploadNetworkError": "Netzwerkfehler beim Hochladen. Bitte prüfe deine Internetverbindung und versuche es erneut.",

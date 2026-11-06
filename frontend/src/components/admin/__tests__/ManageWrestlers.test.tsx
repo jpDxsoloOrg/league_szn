@@ -70,7 +70,6 @@ describe('ManageWrestlers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    vi.spyOn(window, 'prompt').mockReturnValue('RESET-ALL-ASSIGNMENTS');
     mockPlayersApi.getDirectory.mockResolvedValue([]);
   });
 
@@ -212,6 +211,12 @@ describe('ManageWrestlers', () => {
   });
 
   describe('reset all assignments', () => {
+    const confirmReset = async (user: ReturnType<typeof userEvent.setup>, token: string) => {
+      const dialog = await screen.findByRole('dialog');
+      await user.type(within(dialog).getByRole('textbox'), token);
+      await user.click(within(dialog).getByRole('button', { name: 'Reset All Assignments' }));
+    };
+
     it('asks for the typed token, sends it, refetches, and shows the result counts', async () => {
       const assigned = makeWrestler(1, {
         isInUse: true,
@@ -234,9 +239,10 @@ describe('ManageWrestlers', () => {
 
       await user.click(screen.getByRole('button', { name: 'Reset All Assignments' }));
 
-      expect(window.prompt).toHaveBeenCalledWith(
-        expect.stringContaining('Reset ALL wrestler assignments?'),
-      );
+      const dialog = await screen.findByRole('dialog');
+      expect(dialog).toHaveTextContent('Reset ALL wrestler assignments?');
+      await confirmReset(user, 'RESET-ALL-ASSIGNMENTS');
+
       await waitFor(() => {
         expect(
           screen.getByText(
@@ -252,8 +258,7 @@ describe('ManageWrestlers', () => {
       expect(mockWrestlersApi.getAll).toHaveBeenCalledTimes(2);
     });
 
-    it('does nothing when the prompt is dismissed', async () => {
-      vi.spyOn(window, 'prompt').mockReturnValue(null);
+    it('does nothing when the dialog is cancelled', async () => {
       mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1)]);
       const user = userEvent.setup();
 
@@ -263,12 +268,13 @@ describe('ManageWrestlers', () => {
       });
 
       await user.click(screen.getByRole('button', { name: 'Reset All Assignments' }));
+      await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel' }));
 
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
       expect(mockFetchWithAuth).not.toHaveBeenCalled();
     });
 
-    it('does not call the API when the typed text does not match', async () => {
-      vi.spyOn(window, 'prompt').mockReturnValue('reset');
+    it('keeps the reset disabled until the token is typed exactly', async () => {
       mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1)]);
       const user = userEvent.setup();
 
@@ -278,9 +284,11 @@ describe('ManageWrestlers', () => {
       });
 
       await user.click(screen.getByRole('button', { name: 'Reset All Assignments' }));
+      const dialog = await screen.findByRole('dialog');
+      await user.type(within(dialog).getByRole('textbox'), 'reset{Enter}');
 
+      expect(within(dialog).getByRole('button', { name: 'Reset All Assignments' })).toBeDisabled();
       expect(mockFetchWithAuth).not.toHaveBeenCalled();
-      expect(screen.getByText('admin.manageWrestlers.resetTokenMismatch')).toBeInTheDocument();
     });
 
     it('surfaces an error message when the reset fails', async () => {
@@ -296,6 +304,7 @@ describe('ManageWrestlers', () => {
       });
 
       await user.click(screen.getByRole('button', { name: 'Reset All Assignments' }));
+      await confirmReset(user, 'RESET-ALL-ASSIGNMENTS');
 
       await waitFor(() => {
         expect(
