@@ -6,11 +6,16 @@ const mockRivalries = {
   listByStatus: vi.fn(),
 };
 const mockMatches = { list: vi.fn() };
+const mockPlayers = {
+  findById: vi.fn(async (playerId: string) => ({ playerId, currentWrestler: 'Edge' })),
+  findByUserId: vi.fn(),
+};
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
     rivalries: mockRivalries,
     competition: { matches: mockMatches },
+    roster: { players: mockPlayers },
   }),
 }));
 

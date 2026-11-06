@@ -21,6 +21,11 @@ import { handler as getPromo } from '../promos/getPromo';
 import { handler as getVideo } from '../videos/getVideo';
 import { handler as getActivity } from '../activity/getActivity';
 import { handler as getRivalry } from '../rivalries/getRivalry';
+import { handler as getRivalries } from '../rivalries/getRivalries';
+import {
+  handler as getRivalryActivity,
+  _resetMemoForTesting as resetActivityMemo,
+} from '../rivalries/getRivalryActivity';
 import { handler as getDashboard } from '../dashboard/getDashboard';
 import { handler as getMatches } from '../matches/getMatches';
 import { handler as getEvent } from '../events/getEvent';
@@ -101,6 +106,45 @@ describe('getPromo moderated promos', () => {
     const { statusCode } = await call(getPromo, eventFor(promo.promoId, bearer('staff', group)));
 
     expect(statusCode).toBe(200);
+  });
+
+  it('404s a hidden author\'s promo except for them and staff', async () => {
+    await linkUser(roster.placeholderId, 'hidden-sub');
+    const promo = await createPromo({ playerId: roster.placeholderId });
+    const statusFor = async (auth = {}) =>
+      (await call(getPromo, eventFor(promo.promoId, auth))).statusCode;
+
+    expect(await statusFor()).toBe(404);
+    expect(await statusFor(bearer('hidden-sub', 'Wrestler'))).toBe(200);
+    expect(await statusFor(bearer('staff', 'Moderator'))).toBe(200);
+  });
+
+  it('leaves a hidden author\'s response out of the thread and the count', async () => {
+    await linkUser(roster.placeholderId, 'hidden-sub');
+    const root = await createPromo();
+    const shown = await createPromo({ targetPromoId: root.promoId });
+    const hiddenReply = await createPromo({
+      targetPromoId: root.promoId,
+      playerId: roster.placeholderId,
+    });
+    const thread = async (auth = {}) =>
+      (await call<{ promo: PromoRow; responses: PromoRow[] }>(getPromo, eventFor(root.promoId, auth))).body;
+
+    const publicThread = await thread();
+    expect(publicThread.responses.map((row) => row.promoId)).toEqual([shown.promoId]);
+    expect(publicThread.promo.responseCount).toBe(1);
+
+    const ownThread = await thread(bearer('hidden-sub', 'Wrestler'));
+    expect(ownThread.responses.map((row) => row.promoId)).toContain(hiddenReply.promoId);
+  });
+
+  it('leaves a hidden author\'s target out of a public response', async () => {
+    const target = await createPromo({ playerId: roster.placeholderId, title: 'Hidden' });
+    const reply = await createPromo({ targetPromoId: target.promoId });
+
+    const { body } = await call<{ promo: PromoRow }>(getPromo, eventFor(reply.promoId));
+
+    expect(body.promo.targetPromo).toBeUndefined();
   });
 
   it('leaves a moderated target out of a public response', async () => {
@@ -216,6 +260,142 @@ describe('moderated promos in other feeds', () => {
     );
 
     expect(body.recentPromos.map((row) => row.promoId)).toEqual([shown.promoId]);
+  });
+});
+
+describe('getRivalryActivity', () => {
+  interface ActivityRow {
+    kind: string;
+    promoId?: string;
+    body?: string;
+  }
+
+  const activate = async (playerIds: string[]): Promise<string> => {
+    const { rivalryId } = await repos.rivalries.create({
+      title: 'Feud',
+      requestedBy: playerIds[0],
+      participants: playerIds.map((playerId) => ({ playerId })),
+    });
+    await repos.rivalries.update(rivalryId, { status: 'active' });
+    return rivalryId;
+  };
+
+  const feed = async (auth = {}, participantId?: string): Promise<ActivityRow[]> => {
+    const { body } = await call<{ items: ActivityRow[] }>(
+      getRivalryActivity,
+      makeEvent({
+        ...auth,
+        queryStringParameters: participantId ? { participantId } : null,
+      }),
+    );
+    return body.items;
+  };
+
+  beforeEach(() => resetActivityMemo());
+
+  it('leaves moderated promos out', async () => {
+    const rival = await repos.roster.players.create({ name: 'R', currentWrestler: 'Kane' });
+    await activate([roster.visibleId, rival.playerId]);
+    await createPromo({}, true);
+    const shown = await createPromo();
+
+    const promos = (await feed()).filter((item) => item.kind === 'promo');
+
+    expect(promos.map((item) => item.promoId)).toEqual([shown.promoId]);
+  });
+
+  it('keeps participant-only items from another player on a warm cache', async () => {
+    const rival = await repos.roster.players.create({ name: 'R', currentWrestler: 'Kane' });
+    const outsider = await repos.roster.players.create({ name: 'O', currentWrestler: 'Sting' });
+    await linkUser(roster.visibleId, 'insider-sub');
+    await linkUser(outsider.playerId, 'outsider-sub');
+    const rivalryId = await activate([roster.visibleId, rival.playerId]);
+    await repos.rivalryMessages.post({
+      rivalryId,
+      authorPlayerId: roster.visibleId,
+      body: 'participants only',
+      audience: 'participants',
+    });
+
+    const insider = await feed(bearer('insider-sub', 'Wrestler'), roster.visibleId);
+    const other = await feed(bearer('outsider-sub', 'Wrestler'), roster.visibleId);
+
+    expect(insider.map((item) => item.body)).toContain('participants only');
+    expect(other.map((item) => item.body)).not.toContain('participants only');
+  });
+
+  it('gives each caller their own page whichever order they ask in', async () => {
+    const rival = await repos.roster.players.create({ name: 'R', currentWrestler: 'Kane' });
+    const outsider = await repos.roster.players.create({ name: 'O', currentWrestler: 'Sting' });
+    await linkUser(roster.visibleId, 'insider-sub');
+    await linkUser(outsider.playerId, 'outsider-sub');
+    const rivalryId = await activate([roster.visibleId, rival.playerId]);
+    await repos.rivalryMessages.post({
+      rivalryId,
+      authorPlayerId: roster.visibleId,
+      body: 'participants only',
+      audience: 'participants',
+    });
+
+    await feed(bearer('outsider-sub', 'Wrestler'), roster.visibleId);
+    const insider = await feed(bearer('insider-sub', 'Wrestler'), roster.visibleId);
+
+    expect(insider.map((item) => item.body)).toContain('participants only');
+  });
+
+  it('leaves an active rivalry with a hidden participant out of the public feed', async () => {
+    const rivalryId = await activate([roster.visibleId, roster.placeholderId]);
+    await repos.rivalryMessages.post({
+      rivalryId,
+      authorPlayerId: roster.visibleId,
+      body: 'open message',
+    });
+
+    expect(await feed()).toEqual([]);
+  });
+});
+
+describe('getRivalries with a hidden participant', () => {
+  interface RivalryList {
+    rivalries: Array<{ rivalryId: string }>;
+  }
+
+  const seedRivalry = async (status: 'active' | 'completed'): Promise<string> => {
+    const { rivalryId } = await repos.rivalries.create({
+      title: 'Feud',
+      requestedBy: roster.visibleId,
+      participants: [{ playerId: roster.visibleId }, { playerId: roster.placeholderId }],
+    });
+    await repos.rivalries.update(rivalryId, { status });
+    return rivalryId;
+  };
+
+  const listIds = async (status: string, auth = {}): Promise<string[]> => {
+    const { body } = await call<RivalryList>(
+      getRivalries,
+      makeEvent({ ...auth, queryStringParameters: { status } }),
+    );
+    return body.rivalries.map((rivalry) => rivalry.rivalryId);
+  };
+
+  it('drops an active rivalry from the public list', async () => {
+    await seedRivalry('active');
+
+    expect(await listIds('active')).toEqual([]);
+  });
+
+  it('keeps it for staff and for its participants', async () => {
+    const rivalryId = await seedRivalry('active');
+    await linkUser(roster.placeholderId, 'hidden-sub');
+
+    expect(await listIds('active', bearer('staff', 'Moderator'))).toEqual([rivalryId]);
+    expect(await listIds('active', bearer('hidden-sub', 'Wrestler'))).toEqual([rivalryId]);
+  });
+
+  it('keeps a completed rivalry as history', async () => {
+    const rivalryId = await seedRivalry('completed');
+
+    expect(await listIds('completed')).toEqual([rivalryId]);
   });
 });
 

@@ -5,6 +5,7 @@ import { authenticate } from '../../lib/authenticate';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { findHiddenPlayerIds } from '../../lib/needsWrestler';
 import { isPromoArchived } from '../../lib/promoArchive';
+import { filterListedRivalries } from './rivalryVisibility';
 import type {
   Rivalry,
   RivalryActivityItem,
@@ -87,10 +88,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (!participantId) participantId = callerPlayerId;
     }
 
-    // Role-scoped memoization: different audiences see different items,
-    // so the cache key must factor in the caller's visibility tier.
-    const roleKey = isAdmin ? 'admin' : callerPlayerId ? 'participant' : 'public';
-    const key = [roleKey, participantId ?? '', eventId ?? '', cursor ?? '', String(limit)].join('|');
+    // Audience-scoped memoization: what a signed-in player sees depends on
+    // which rivalries they are in, so each player gets their own entry.
+    const audienceKey = isAdmin ? 'admin' : callerPlayerId ? `player:${callerPlayerId}` : 'public';
+    const key = [audienceKey, participantId ?? '', eventId ?? '', cursor ?? '', String(limit)].join('|');
     const now = Date.now();
     const cached = memo.get(key);
     if (cached && cached.expiresAt > now) {
@@ -101,7 +102,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const visibleResult = participantId
       ? await rivalries.listByParticipant(participantId, { limit: limit * 2 })
       : await rivalries.listByStatus('active', { limit: limit * 2 });
-    let visible: Rivalry[] = visibleResult.items;
+    let visible: Rivalry[] = await filterListedRivalries(
+      visibleResult.items,
+      (playerId) => players.findById(playerId),
+      { canSeeAll: isAdmin, callerPlayerId },
+    );
 
     // Event filter: join via matches to find rivalry participant pairs
     // that have a match on the requested event.
@@ -157,7 +162,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           ]);
           const listed = perPlayer
             .flat()
-            .filter((p) => !isPromoArchived(p, now) && !hiddenAuthorIds.has(p.playerId));
+            .filter((p) => !p.isHidden && !isPromoArchived(p, now) && !hiddenAuthorIds.has(p.playerId));
           return { rivalry: r, items: listed.slice(0, perSourceCap) };
         }),
       ),

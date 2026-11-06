@@ -3,6 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import { success, notFound, badRequest, serverError } from '../../lib/response';
 import type { Promo } from '../../lib/repositories/types';
 import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
+import { findHiddenPlayerIds, isPlayerVisible, resolveBilledName } from '../../lib/needsWrestler';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -18,20 +19,26 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return notFound('Promo not found');
     }
 
-    // A moderated promo stays readable by staff and by its author only.
+    // A moderated promo, or one by a hidden player, stays readable by staff
+    // and by its author only.
     const caller = await getVerifiedCaller(event);
     const staff = isStaff(caller);
     const callerPlayer = !staff && caller?.sub ? await players.findByUserId(caller.sub) : null;
-    const canRead = (p: Promo): boolean =>
-      !p.isHidden || staff || p.playerId === callerPlayer?.playerId;
+    const isOwnOrStaff = (p: Promo): boolean => staff || p.playerId === callerPlayer?.playerId;
 
-    if (!canRead(promo)) {
+    const rootAuthor = await players.findById(promo.playerId);
+    if ((promo.isHidden || (rootAuthor && !isPlayerVisible(rootAuthor))) && !isOwnOrStaff(promo)) {
       return notFound('Promo not found');
     }
 
     // Get responses to this promo
-    const responses = (await promos.listResponsesTo(promoId))
+    const visibleResponses = (await promos.listResponsesTo(promoId))
       .filter((p) => !p.isHidden);
+    const hiddenAuthorIds = await findHiddenPlayerIds(
+      visibleResponses.map((p) => p.playerId),
+      (playerId) => players.findById(playerId),
+    );
+    const responses = visibleResponses.filter((p) => !hiddenAuthorIds.has(p.playerId) || isOwnOrStaff(p));
 
     // Collect player IDs
     const uniquePlayerIds = new Set<string>();
@@ -44,13 +51,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const playerIds = [...uniquePlayerIds];
     const fetchedPlayers = await Promise.all(playerIds.map((pid) => players.findById(pid)));
 
-    const playerMap: Record<string, { name: string; currentWrestler: string; imageUrl?: string }> = {};
+    const playerMap: Record<string, { name: string; wrestlerName: string; imageUrl?: string }> = {};
     playerIds.forEach((pid, index) => {
       const player = fetchedPlayers[index];
       if (player) {
         playerMap[pid] = {
           name: player.name,
-          currentWrestler: player.currentWrestler,
+          wrestlerName: resolveBilledName(undefined, player, 'Unknown'),
           imageUrl: player.imageUrl,
         };
       }
@@ -63,7 +70,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     let targetPromo: Record<string, unknown> | undefined;
     if (promo.targetPromoId) {
       const tp = await promos.findById(promo.targetPromoId);
-      if (tp && canRead(tp)) {
+      const targetAuthor = tp ? await players.findById(tp.playerId) : null;
+      const targetHidden = tp?.isHidden || (targetAuthor && !isPlayerVisible(targetAuthor));
+      if (tp && (!targetHidden || isOwnOrStaff(tp))) {
         targetPromo = {
           promoId: tp.promoId,
           playerId: tp.playerId,
@@ -87,10 +96,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return {
           ...r,
           playerName: rAuthor?.name || 'Unknown',
-          wrestlerName: rAuthor?.currentWrestler || 'Unknown',
+          wrestlerName: rAuthor?.wrestlerName || 'Unknown',
           playerImageUrl: rAuthor?.imageUrl,
           targetPlayerName: rTarget?.name,
-          targetWrestlerName: rTarget?.currentWrestler,
+          targetWrestlerName: rTarget?.wrestlerName,
           responseCount: 0,
         };
       })
@@ -100,10 +109,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       promo: {
         ...promo,
         playerName: author?.name || 'Unknown',
-        wrestlerName: author?.currentWrestler || 'Unknown',
+        wrestlerName: author?.wrestlerName || 'Unknown',
         playerImageUrl: author?.imageUrl,
         targetPlayerName: target?.name,
-        targetWrestlerName: target?.currentWrestler,
+        targetWrestlerName: target?.wrestlerName,
         targetPromo,
         responseCount: responses.length,
       },
