@@ -278,7 +278,7 @@ export default function FindMatchPage() {
           title={t('me.matchmaking.needsNameTitle')}
           description={t('me.matchmaking.needsNameBody')}
           actionLabel={t('me.matchmaking.needsNameAction')}
-          onAction={() => navigate('/profile')}
+          onAction={() => navigate('/profile', { state: { editProfile: true } })}
         />
       </div>
     );

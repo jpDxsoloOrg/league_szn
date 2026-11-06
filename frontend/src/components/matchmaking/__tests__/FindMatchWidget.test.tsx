@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import type {
   InvitationListResponse,
   MatchInvitation,
@@ -343,6 +343,21 @@ describe('FindMatchWidget', () => {
     });
     await user.click(cta);
     expect(mockLeaveQueue).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks the profile page to open the form in one tap', async () => {
+    authState.currentWrestler = 'Needs Wrestler';
+    const LocationState = () => <output aria-label="router state">{JSON.stringify(useLocation().state)}</output>;
+    render(
+      <MemoryRouter>
+        <FindMatchWidget />
+        <LocationState />
+      </MemoryRouter>,
+    );
+
+    await userEvent.setup().click(screen.getByRole('link', { name: 'me.matchmaking.needsNameAction' }));
+
+    expect(screen.getByLabelText('router state')).toHaveTextContent('{"editProfile":true}');
   });
 
   it('prompts a player with no wrestler name and does not poll', () => {

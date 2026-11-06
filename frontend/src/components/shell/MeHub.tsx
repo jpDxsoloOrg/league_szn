@@ -60,7 +60,7 @@ export default function MeHub() {
           <div className="me-hub__notice-text">
             <h2 className="me-hub__notice-title">{t('me.setup.hiddenTitle')}</h2>
             <p>{t('me.setup.hiddenNotice')}</p>
-            <Button to="/profile">{t('me.setup.enterName')}</Button>
+            <Button to="/profile" linkState={{ editProfile: true }}>{t('me.setup.enterName')}</Button>
           </div>
         </section>
       )}

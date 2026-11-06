@@ -221,7 +221,7 @@ const FindMatchWidget: React.FC = () => {
       <Card className="fm-widget" role="region" aria-label={t('findMatch.widget.title')}>
         <h3 className="fm-widget__title">{t('findMatch.widget.title')}</h3>
         <p className="fm-widget__hint">{t('me.matchmaking.needsNameBody')}</p>
-        <Button fullWidth to="/profile">{t('me.matchmaking.needsNameAction')}</Button>
+        <Button fullWidth to="/profile" linkState={{ editProfile: true }}>{t('me.matchmaking.needsNameAction')}</Button>
       </Card>
     );
   }

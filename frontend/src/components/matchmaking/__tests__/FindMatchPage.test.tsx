@@ -384,7 +384,7 @@ describe('FindMatchPage', () => {
     expect(screen.queryByRole('button', { name: 'findMatch.queue.join' })).not.toBeInTheDocument();
 
     await userEvent.setup().click(screen.getByRole('button', { name: 'me.matchmaking.needsNameAction' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/profile');
+    expect(mockNavigate).toHaveBeenCalledWith('/profile', { state: { editProfile: true } });
     expect(mockGetQueue).not.toHaveBeenCalled();
   });
 });

@@ -129,6 +129,16 @@ describe('MeHub', () => {
     expect(screen.getByRole('link', { name: 'me.setup.enterName' })).toHaveAttribute('href', '/profile');
   });
 
+  it('opens the wrestler form in one tap from the hidden notice', async () => {
+    mockUseAuth.mockReturnValue({ ...WRESTLER, playerId: 'p1', currentWrestler: 'Needs Wrestler', signOut: vi.fn() });
+    const RouterState = () => <span data-testid="router-state">{JSON.stringify(useLocation().state)}</span>;
+    render(<MemoryRouter initialEntries={['/me']}><MeHub /><RouterState /></MemoryRouter>);
+
+    await userEvent.click(screen.getByRole('link', { name: 'me.setup.enterName' }));
+
+    expect(screen.getByTestId('router-state')).toHaveTextContent('{"editProfile":true}');
+  });
+
   it('shows no hidden notice to a player with a wrestler, or to staff with no player', () => {
     mockUseAuth.mockReturnValue({ ...WRESTLER, playerId: 'p1', currentWrestler: 'Edge', signOut: vi.fn() });
     const view = renderAt('/me', <MeHub />);
