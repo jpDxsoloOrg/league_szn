@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import type { Player } from '../../../types';
 
 const {
@@ -255,6 +255,53 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
 
       await waitFor(() => expect(screen.getByLabelText('me.profile.currentWrestler')).toHaveFocus());
       expect(screen.queryByRole('button', { name: 'me.setup.enterName' })).not.toBeInTheDocument();
+    });
+
+    describe('after opening from another page', () => {
+      function LocationProbe() {
+        const { state } = useLocation();
+        return (
+          <>
+            <output aria-label="router state">{JSON.stringify(state)}</output>
+            <Link to="/profile">My Profile tab</Link>
+          </>
+        );
+      }
+
+      const openFromNotice = async () => {
+        mockGetMyProfile.mockResolvedValue(hidden);
+        render(
+          <MemoryRouter initialEntries={['/challenges']}>
+            <LocationProbe />
+            <Routes>
+              <Route path="/challenges" element={<HiddenPlayerNotice title="Hidden" body="Set a name" />} />
+              <Route path="/profile" element={<WrestlerProfile />} />
+            </Routes>
+          </MemoryRouter>,
+        );
+        await userEvent.click(screen.getByRole('link', { name: 'me.setup.enterName' }));
+        await waitFor(() => expect(screen.getByLabelText('me.profile.currentWrestler')).toHaveFocus());
+      };
+
+      it('clears the request from history, so a reload does not reopen the form', async () => {
+        await openFromNotice();
+
+        expect(screen.getByLabelText('router state')).toHaveTextContent('null');
+      });
+
+      it('keeps typed text and does not reload when the My Profile tab is clicked', async () => {
+        await openFromNotice();
+        const field = screen.getByLabelText('me.profile.currentWrestler');
+        await userEvent.type(field, 'Typed Name');
+        mockGetMyProfile.mockClear();
+        mockGetMyOverall.mockClear();
+
+        await userEvent.click(screen.getByRole('link', { name: 'My Profile tab' }));
+
+        expect(screen.getByLabelText('me.profile.currentWrestler')).toHaveValue('Typed Name');
+        expect(mockGetMyProfile).not.toHaveBeenCalled();
+        expect(mockGetMyOverall).not.toHaveBeenCalled();
+      });
     });
 
     it('stays on the notice when /profile is opened directly', async () => {

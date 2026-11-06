@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Pencil, UserRound } from 'lucide-react';
 import { divisionsApi, isApiError, overallsApi, profileApi } from '../../services/api';
@@ -35,8 +35,10 @@ export default function WrestlerProfile() {
   const { refreshProfile } = useAuth();
   const { features } = useSiteConfig();
   const location = useLocation();
+  const navigate = useNavigate();
   // Set by the links that promise the form, so one tap gets there.
-  const openEditorOnLoad = (location.state as { editProfile?: boolean } | null)?.editProfile === true;
+  const editorRequested = (location.state as { editProfile?: boolean } | null)?.editProfile === true;
+  const openEditorOnLoad = useRef(editorRequested);
   const [player, setPlayer] = useState<PlayerProfile | null>(null);
   const [overall, setOverall] = useState<WrestlerOverall | null>(null);
   const [divisions, setDivisions] = useState<Division[]>([]);
@@ -46,6 +48,12 @@ export default function WrestlerProfile() {
   const [success, setSuccess] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [tab, setTab] = useState<ProfileTab>('overview');
+
+  // The request is used up once read. Left in history it would reopen the form
+  // on reload, and any later navigation here would change it and reset the page.
+  useEffect(() => {
+    if (editorRequested) navigate(location.pathname + location.search, { replace: true, state: null });
+  }, [editorRequested, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     const loadOverall = async () => {
@@ -73,7 +81,7 @@ export default function WrestlerProfile() {
       // After the profile: an account with no player has no overall to fetch,
       // and the form reads the overall when it opens.
       await loadOverall();
-      if (openEditorOnLoad) setEditing(true);
+      if (openEditorOnLoad.current) setEditing(true);
     };
     const loadDivisions = async () => {
       try {
@@ -84,7 +92,7 @@ export default function WrestlerProfile() {
     };
     void loadProfile();
     void loadDivisions();
-  }, [openEditorOnLoad]);
+  }, []);
 
   const startEditing = () => {
     setEditing(true);
