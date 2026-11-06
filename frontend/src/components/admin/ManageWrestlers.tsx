@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { wrestlersApi } from '../../services/api';
+import { API_BASE_URL, fetchWithAuth, wrestlersApi } from '../../services/api';
+import type { WrestlerResetAssignmentsResult } from '../../services/api/wrestlers.api';
 import {
   OVERALL_CAP_MAX,
   OVERALL_CAP_MIN,
@@ -30,6 +31,9 @@ const DEFAULT_FORM_DATA = {
 };
 
 const PAGE_SIZE = 25;
+
+/** Must match RESET_ASSIGNMENTS_CONFIRM_TOKEN in the resetAssignments handler. */
+const RESET_CONFIRM_TOKEN = 'RESET-ALL-ASSIGNMENTS';
 
 function isWrestlerPromotion(value: string): value is WrestlerPromotion {
   return (WRESTLER_PROMOTIONS as readonly string[]).includes(value);
@@ -404,16 +408,30 @@ export default function ManageWrestlers() {
   };
 
   const handleResetAssignments = async () => {
-    if (!confirm(t('admin.manageWrestlers.resetConfirm'))) {
+    const typedToken = window.prompt(
+      `${t('admin.manageWrestlers.resetConfirm')}\n\n${t('admin.manageWrestlers.resetTypeToken', {
+        token: RESET_CONFIRM_TOKEN,
+      })}`,
+    );
+    if (typedToken === null) {
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+
+    if (typedToken.trim() !== RESET_CONFIRM_TOKEN) {
+      setError(t('admin.manageWrestlers.resetTokenMismatch'));
       return;
     }
 
     setResettingAssignments(true);
-    setError(null);
-    setSuccess(null);
 
     try {
-      const result = await wrestlersApi.resetAssignments();
+      const result: WrestlerResetAssignmentsResult = await fetchWithAuth(
+        `${API_BASE_URL}/wrestlers/reset-assignments`,
+        { method: 'POST', body: JSON.stringify({ confirm: RESET_CONFIRM_TOKEN }) },
+      );
       setSuccess(
         t('admin.manageWrestlers.resetSuccess', {
           wrestlers: result.clearedWrestlers,

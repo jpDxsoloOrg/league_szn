@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
@@ -61,6 +61,113 @@ function withAuth(event: APIGatewayProxyEvent, groups: string, sub = 'user-sub-1
     } as any,
   };
 }
+
+beforeEach(() => {
+  process.env.STAGE = 'devtest';
+  delete process.env.IS_OFFLINE;
+});
+
+afterEach(() => {
+  delete process.env.STAGE;
+});
+
+// ─── stage guard ────────────────────────────────────────────────────
+
+describe('bulk data stage guard', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const adminEvent = (overrides: Partial<APIGatewayProxyEvent> = {}) =>
+    withAuth(makeEvent(overrides), 'Admin');
+  const importBody = JSON.stringify({
+    mode: 'import',
+    payload: { version: 1, exportedAt: 'now', stage: 'devtest', data: { players: [] } },
+  });
+
+  // The serverless stage named dev is production.
+  it.each([['dev'], ['prod'], ['unexpected'], [undefined]])(
+    'refuses clear-all, seed and import on stage %s',
+    async (stage) => {
+      if (stage === undefined) delete process.env.STAGE;
+      else process.env.STAGE = stage;
+
+      const clearResult = await clearAll(adminEvent(), ctx, cb);
+      const seedResult = await seedData(adminEvent(), ctx, cb);
+      const importResult = await seedData(adminEvent({ body: importBody }), ctx, cb);
+
+      expect(clearResult!.statusCode).toBe(403);
+      expect(seedResult!.statusCode).toBe(403);
+      expect(importResult!.statusCode).toBe(403);
+      expect(mockClearAllData).not.toHaveBeenCalled();
+      expect(mockImportAllData).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([['devtest'], ['offline']])('allows stage %s', async (stage) => {
+    process.env.STAGE = stage;
+    mockClearAllData.mockResolvedValue({});
+    mockImportAllData.mockResolvedValue({});
+
+    expect((await clearAll(adminEvent(), ctx, cb))!.statusCode).toBe(200);
+    expect((await seedData(adminEvent(), ctx, cb))!.statusCode).toBe(200);
+  });
+
+  it('allows a local run that has no stage set, as the seed script does', async () => {
+    delete process.env.STAGE;
+    process.env.IS_OFFLINE = 'true';
+    mockImportAllData.mockResolvedValue({});
+
+    expect((await seedData(adminEvent(), ctx, cb))!.statusCode).toBe(200);
+  });
+});
+
+// ─── import payload ─────────────────────────────────────────────────
+
+describe('seedData import mode', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const importEvent = (data: unknown) =>
+    withAuth(
+      makeEvent({
+        body: JSON.stringify({
+          mode: 'import',
+          payload: { version: 1, exportedAt: 'now', stage: 'devtest', data },
+        }),
+      }),
+      'Admin',
+    );
+
+  it('passes on only the datasets the payload contains', async () => {
+    mockImportAllData.mockResolvedValue({ players: 1 });
+
+    const result = await seedData(importEvent({ players: [{ playerId: 'p1' }] }), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(mockImportAllData).toHaveBeenCalledWith({ players: [{ playerId: 'p1' }] });
+  });
+
+  it('rejects a dataset that is not an array', async () => {
+    const result = await seedData(importEvent({ players: 'nope' }), ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(mockImportAllData).not.toHaveBeenCalled();
+  });
+
+  it('rejects a payload with no known dataset', async () => {
+    const result = await seedData(importEvent({ playerz: [] }), ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(mockImportAllData).not.toHaveBeenCalled();
+  });
+
+  it('does not return the underlying error text', async () => {
+    mockImportAllData.mockRejectedValue(new Error('internal table detail'));
+
+    const result = await seedData(importEvent({ players: [] }), ctx, cb);
+
+    expect(result!.statusCode).toBe(500);
+    expect(JSON.parse(result!.body).message).toBe('Failed to import data payload');
+  });
+});
 
 // ─── seedData ───────────────────────────────────────────────────────
 
@@ -156,8 +263,7 @@ describe('seedData', () => {
     const result = await seedData(makeEvent(), ctx, cb);
 
     expect(result!.statusCode).toBe(500);
-    // Handler now appends the underlying error detail for diagnostics.
-    expect(JSON.parse(result!.body).message).toMatch(/^Failed to seed data/);
+    expect(JSON.parse(result!.body).message).toBe('Failed to seed data');
   });
 
   it('accepts optional body with modules array and still runs full seed', async () => {
@@ -319,7 +425,6 @@ describe('clearAll', () => {
     const result = await clearAll(event, ctx, cb);
 
     expect(result!.statusCode).toBe(500);
-    // Handler now appends the underlying error detail for diagnostics.
-    expect(JSON.parse(result!.body).message).toMatch(/^Failed to clear all data/);
+    expect(JSON.parse(result!.body).message).toBe('Failed to clear all data');
   });
 });

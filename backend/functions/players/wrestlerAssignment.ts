@@ -1,7 +1,8 @@
 import { APIGatewayProxyResult } from 'aws-lambda';
 import { badRequest, conflict, notFound } from '../../lib/response';
 import { getRepositories } from '../../lib/repositories';
-import type { Wrestler } from '../../lib/repositories/types';
+import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
+import type { Player, Wrestler } from '../../lib/repositories/types';
 
 export interface ResolvedWrestler {
   wrestler: Wrestler;
@@ -18,7 +19,8 @@ export async function resolveWrestlerForAssignment(
   playerId: string | null,
   slot: 'primary' | 'alternate',
 ): Promise<{ wrestler: Wrestler } | { error: APIGatewayProxyResult }> {
-  const wrestler = await getRepositories().roster.wrestlers.findById(wrestlerId);
+  const { roster } = getRepositories();
+  const wrestler = await roster.wrestlers.findById(wrestlerId);
   if (!wrestler) {
     return { error: notFound(`Wrestler ${wrestlerId} not found`) };
   }
@@ -35,8 +37,72 @@ export async function resolveWrestlerForAssignment(
         ),
       };
     }
+  } else if (wrestler.assignedPlayerId && wrestler.assignedPlayerId !== playerId) {
+    // Older releases flipped `isInUse` without touching the player, so the flag
+    // alone can say "free" while a player still holds the wrestler.
+    const holder = await roster.players.findById(wrestler.assignedPlayerId);
+    if (
+      holder?.currentWrestlerId === wrestlerId ||
+      holder?.alternateWrestlerId === wrestlerId
+    ) {
+      return {
+        error: conflict(
+          `Wrestler ${wrestler.name} is already assigned to another player`,
+        ),
+      };
+    }
   }
   return { wrestler };
+}
+
+/**
+ * Every player holding the wrestler in either slot. Reads the players rather
+ * than trusting `assignedPlayerId`, which can disagree with them, and more than
+ * one player can hold the same wrestler after such a desync.
+ */
+export async function findWrestlerHolders(wrestlerId: string): Promise<Player[]> {
+  const players = await getRepositories().roster.players.list();
+  return players.filter(
+    (player) =>
+      player.currentWrestlerId === wrestlerId ||
+      player.alternateWrestlerId === wrestlerId,
+  );
+}
+
+/** Player patch that empties whichever slots hold the wrestler. */
+export function buildWrestlerReleasePatch(
+  player: Player,
+  wrestlerId: string,
+): Record<string, unknown> {
+  const patch: Record<string, unknown> = {};
+  if (player.currentWrestlerId === wrestlerId) {
+    patch.currentWrestlerId = null;
+    patch.currentWrestler = NEEDS_WRESTLER;
+  }
+  if (player.alternateWrestlerId === wrestlerId) {
+    patch.alternateWrestlerId = null;
+    patch.alternateWrestler = null;
+  }
+  return patch;
+}
+
+/**
+ * Player patch that refreshes the denormalized name in whichever slots hold the
+ * wrestler. Empty when the player already shows `wrestlerName`.
+ */
+export function buildWrestlerRenamePatch(
+  player: Player,
+  wrestlerId: string,
+  wrestlerName: string,
+): Record<string, unknown> {
+  const patch: Record<string, unknown> = {};
+  if (player.currentWrestlerId === wrestlerId && player.currentWrestler !== wrestlerName) {
+    patch.currentWrestler = wrestlerName;
+  }
+  if (player.alternateWrestlerId === wrestlerId && player.alternateWrestler !== wrestlerName) {
+    patch.alternateWrestler = wrestlerName;
+  }
+  return patch;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { getRepositories } from '../../lib/repositories';
+import { getRepositories, type StablePatch } from '../../lib/repositories';
 import { noContent, badRequest, serverError, conflict, notFound } from '../../lib/response';
 import { filterExistingWrestlerIds } from './wrestlerAssignment';
 
@@ -11,85 +11,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Player ID is required');
     }
 
-    const { roster: { players, stables, tagTeams }, competition: { championships }, season: { standings: seasonStandings } } = getRepositories();
+    const {
+      roster: { players, stables, tagTeams },
+      competition: { championships },
+      season: { standings: seasonStandings },
+      runInTransaction,
+    } = getRepositories();
 
     const player = await players.findById(playerId);
     if (!player) {
       return notFound('Player not found');
     }
 
-    // --- Stable cleanup ---
-    if (player.stableId) {
-      try {
-        const stableId = player.stableId as string;
-        const stable = await stables.findById(stableId);
-
-        if (stable && (stable.status === 'active' || stable.status === 'approved')) {
-          const memberIds = stable.memberIds || [];
-          const remainingMembers = memberIds.filter(id => id !== playerId);
-
-          if (remainingMembers.length === 0) {
-            // No members remain — disband
-            await stables.update(stableId, {
-              memberIds: [],
-              status: 'disbanded',
-              disbandedAt: new Date().toISOString(),
-            });
-          } else if (remainingMembers.length === 1) {
-            // Only one member left (leader alone) — auto-disband
-            await stables.update(stableId, {
-              memberIds: remainingMembers,
-              status: 'disbanded',
-              disbandedAt: new Date().toISOString(),
-            });
-            // Clear stableId from the remaining member
-            await players.update(remainingMembers[0], { stableId: null });
-          } else {
-            // Multiple members remain — remove player, promote leader if needed
-            const isLeader = stable.leaderId === playerId;
-            if (isLeader) {
-              await stables.update(stableId, {
-                memberIds: remainingMembers,
-                leaderId: remainingMembers[0],
-              });
-            } else {
-              await stables.update(stableId, { memberIds: remainingMembers });
-            }
-          }
-        }
-      } catch (stableErr) {
-        console.warn('Warning: Failed to clean up stable membership for player', playerId, stableErr);
-      }
-    }
-
-    // --- Tag team cleanup ---
-    if (player.tagTeamId) {
-      try {
-        const tagTeamId = player.tagTeamId as string;
-        const tagTeam = await tagTeams.findById(tagTeamId);
-
-        if (tagTeam) {
-          // Dissolve the tag team
-          await tagTeams.update(tagTeamId, {
-            status: 'dissolved',
-            dissolvedAt: new Date().toISOString(),
-          });
-
-          // Clear tagTeamId from the partner if tag team was active
-          if (tagTeam.status === 'active') {
-            const partnerId = tagTeam.player1Id === playerId
-              ? tagTeam.player2Id
-              : tagTeam.player1Id;
-
-            await players.update(partnerId, { tagTeamId: null });
-          }
-        }
-      } catch (tagTeamErr) {
-        console.warn('Warning: Failed to clean up tag team membership for player', playerId, tagTeamErr);
-      }
-    }
-
-    // Check if player is a current champion
+    // Refuse before anything is written, so a blocked delete changes nothing.
     const allChampionships = await championships.list();
     const heldChampionships = allChampionships.filter(c => {
       const champion = c.currentChampion;
@@ -106,30 +40,99 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       );
     }
 
-    // Release any assigned wrestlers so the roster entries become available
-    // again. Done before the player delete so the wrestler rows are freed
-    // even if the delete call surfaces an error later.
-    const toRelease: string[] = [];
-    if (player.currentWrestlerId) toRelease.push(player.currentWrestlerId);
-    if (player.alternateWrestlerId) toRelease.push(player.alternateWrestlerId);
-    const releasable = await filterExistingWrestlerIds(toRelease);
-    if (releasable.length > 0) {
-      const { runInTransaction } = getRepositories();
-      await runInTransaction(async (tx) => {
-        for (const wrestlerId of releasable) {
-          tx.releaseWrestlerFromPlayer({ wrestlerId });
+    // Keyed by player because one transaction cannot touch the same row twice,
+    // and a stable-mate can also be the tag team partner.
+    const otherPlayerPatches = new Map<string, Record<string, unknown>>();
+    const addPlayerPatch = (otherPlayerId: string, patch: Record<string, unknown>) => {
+      otherPlayerPatches.set(otherPlayerId, { ...otherPlayerPatches.get(otherPlayerId), ...patch });
+    };
+
+    // --- Stable cleanup plan ---
+    let stablePatch: StablePatch | null = null;
+    const stableId = player.stableId;
+    if (stableId) {
+      const stable = await stables.findById(stableId);
+
+      if (stable && (stable.status === 'active' || stable.status === 'approved')) {
+        const remainingMembers = (stable.memberIds || []).filter(id => id !== playerId);
+
+        if (remainingMembers.length <= 1) {
+          // Nobody left, or a leader alone: the stable disbands.
+          stablePatch = {
+            memberIds: remainingMembers,
+            status: 'disbanded',
+            disbandedAt: new Date().toISOString(),
+          };
+          if (remainingMembers.length === 1) {
+            addPlayerPatch(remainingMembers[0], { stableId: null });
+          }
+        } else if (stable.leaderId === playerId) {
+          stablePatch = { memberIds: remainingMembers, leaderId: remainingMembers[0] };
+        } else {
+          stablePatch = { memberIds: remainingMembers };
         }
-      });
+      }
     }
 
-    // Delete the player
-    await players.delete(playerId);
+    // --- Tag team cleanup plan ---
+    let tagTeamToDissolve: string | null = null;
+    if (player.tagTeamId) {
+      const tagTeam = await tagTeams.findById(player.tagTeamId);
 
-    // Also delete from season standings
+      if (tagTeam && tagTeam.status !== 'dissolved') {
+        tagTeamToDissolve = tagTeam.tagTeamId;
+
+        // Clear tagTeamId from the partner if tag team was active
+        if (tagTeam.status === 'active') {
+          const partnerId = tagTeam.player1Id === playerId
+            ? tagTeam.player2Id
+            : tagTeam.player1Id;
+          addPlayerPatch(partnerId, { tagTeamId: null });
+        }
+      }
+    }
+
+    // An unconditional transactional update creates the row when it is missing,
+    // so a stale member or partner id must not reach the transaction.
+    const otherPlayerIds = Array.from(otherPlayerPatches.keys());
+    const otherPlayers = await Promise.all(otherPlayerIds.map(id => players.findById(id)));
+    const existingOtherPlayerIds = otherPlayerIds.filter((_id, index) => otherPlayers[index] !== null);
+
+    // Release any assigned wrestlers so the roster entries become available
+    // again. A Set because one wrestler can sit in both slots of a desynced row.
+    const toRelease = new Set<string>();
+    if (player.currentWrestlerId) toRelease.add(player.currentWrestlerId);
+    if (player.alternateWrestlerId) toRelease.add(player.alternateWrestlerId);
+    const releasable = await filterExistingWrestlerIds(Array.from(toRelease));
+
+    await runInTransaction(async (tx) => {
+      if (tagTeamToDissolve) {
+        tx.updateTagTeam(tagTeamToDissolve, {
+          status: 'dissolved',
+          dissolvedAt: new Date().toISOString(),
+        });
+      }
+      for (const otherPlayerId of existingOtherPlayerIds) {
+        tx.updatePlayer(otherPlayerId, otherPlayerPatches.get(otherPlayerId) ?? {});
+      }
+      for (const wrestlerId of releasable) {
+        tx.releaseWrestlerFromPlayer({ wrestlerId });
+      }
+    });
+
+    // The writes below have no unit of work method. They run in this order, with
+    // the player last, so that a failure can be retried: the player and the
+    // stable keep the state the plan above is built from until they change.
+    if (stableId && stablePatch) {
+      await stables.update(stableId, stablePatch);
+    }
+
     const standings = await seasonStandings.listByPlayer(playerId);
     for (const standing of standings) {
       await seasonStandings.delete(standing.seasonId, playerId);
     }
+
+    await players.delete(playerId);
 
     return noContent();
   } catch (err) {

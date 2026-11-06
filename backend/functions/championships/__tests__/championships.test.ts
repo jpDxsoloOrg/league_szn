@@ -290,6 +290,17 @@ describe('deleteChampionship', () => {
     expect(historyStore.filter(h => h.championshipId === champ.championshipId)).toHaveLength(0);
   });
 
+  it('keeps the championship when deleting history fails, so the delete can be retried', async () => {
+    await repos.competition.championships.create({ name: 'Belt', type: 'singles' });
+    const champ = (await repos.competition.championships.list())[0];
+    repos.competition.championships.listHistory = vi.fn().mockRejectedValue(new Error('boom'));
+
+    const r = await deleteChampionship(ev({ pathParameters: { championshipId: champ.championshipId } }), ctx, cb);
+
+    expect(r!.statusCode).toBe(500);
+    expect(await repos.competition.championships.findById(champ.championshipId)).not.toBeNull();
+  });
+
   it('deletes championship with no history', async () => {
     await repos.competition.championships.create({ name: 'Belt', type: 'singles' });
     const champ = (await repos.competition.championships.list())[0];
