@@ -46,6 +46,8 @@ export interface EnrichedMatchData {
     playerName: string;
     wrestlerName: string;
   }[];
+  /** Sides of a team match, as lists of playerIds. */
+  teams?: string[][];
   winners?: string[];
   losers?: string[];
   isChampionship: boolean;

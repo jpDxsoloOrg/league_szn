@@ -40,7 +40,7 @@
 .promo-editor__label {
   color: var(--color-text-secondary);
   font-family: var(--font-body);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 
@@ -56,7 +56,7 @@
 
 .promo-editor__hint {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .promo-editor__types {
@@ -142,7 +142,7 @@
   display: flex;
   gap: 0.75rem;
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .promo-editor__counter-warning,

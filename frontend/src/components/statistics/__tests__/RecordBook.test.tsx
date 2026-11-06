@@ -131,6 +131,23 @@ describe('RecordBook', () => {
     expect(screen.queryByText(/Set on/)).not.toBeInTheDocument();
   });
 
+  it('shows a record nobody qualifies for as an empty state, not "0 / N/A"', async () => {
+    mockGetRecords.mockResolvedValue({
+      records: {
+        overall: [{ recordName: 'Fewest Losses', holderName: 'N/A', wrestlerName: 'N/A', value: 0, description: 'Min 10 matches' }],
+        championships: [],
+        streaks: [],
+        matchTypes: [],
+      },
+      activeThreats: [],
+    });
+    renderComponent();
+
+    expect(await screen.findByText('Fewest Losses')).toBeInTheDocument();
+    expect(screen.queryByText(/N\/A/)).not.toBeInTheDocument();
+    expect(screen.getByText('statistics.recordBook.unclaimed')).toBeInTheDocument();
+  });
+
   it('displays active threats section showing challenger info', async () => {
     mockGetRecords.mockResolvedValue(mockRecordsData);
 

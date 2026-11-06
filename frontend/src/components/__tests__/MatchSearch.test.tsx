@@ -192,6 +192,19 @@ describe('MatchSearch', () => {
     });
   });
 
+  it('puts one vs between tag teams and shows a friendly match type', async () => {
+    mockGetAllMatches.mockResolvedValue([{
+      ...mockMatches[0],
+      matchFormat: 'tag-team',
+      participants: ['p1', 'p2', 'p3', 'p4'],
+      teams: [['p1', 'p2'], ['p3', 'p4']],
+    }]);
+    renderWithRouter();
+
+    expect(await screen.findByText(/Tag Team|matchFormats.tagTeam/)).toBeInTheDocument();
+    expect(document.querySelectorAll('.match-vs')).toHaveLength(1);
+  });
+
   it('keeps the advanced filters behind the Filters button', async () => {
     renderWithRouter();
     await screen.findAllByText('John Cena');

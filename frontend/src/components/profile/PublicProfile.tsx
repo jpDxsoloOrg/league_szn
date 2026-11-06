@@ -1,19 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { UserRoundX } from 'lucide-react';
-import { playersApi, standingsApi, divisionsApi, factionsApi, tagTeamsApi, isApiError } from '../../services/api';
+import {
+  championshipsApi,
+  divisionsApi,
+  factionsApi,
+  isApiError,
+  matchesApi,
+  playersApi,
+  rivalriesApi,
+  standingsApi,
+  tagTeamsApi,
+} from '../../services/api';
+import type { PlayerDirectoryEntry } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
-import type { FormResult } from '../ui/FormDots';
 import Skeleton from '../ui/Skeleton';
-import type { Player, Division } from '../../types';
+import type { Championship, Match, Player, Division } from '../../types';
+import type { Rivalry } from '../../types/rivalry';
 import type { Stable } from '../../types/stable';
 import type { TagTeam } from '../../types/tagTeam';
+import { computePlayerForm } from '../../utils/matchDisplay';
+import { getTitleAccent } from '../titleAccent';
 import MovesetSection from './MovesetSection';
 import ProfileHero from './ProfileHero';
+import ProfileRivalries from './ProfileRivalries';
+import RecentMatches from './RecentMatches';
 import RecordSummary from './RecordSummary';
 import SeasonRecords from './SeasonRecords';
 import type { SeasonRecord } from './profileRecord';
@@ -24,11 +39,6 @@ interface PlayerProfile extends Player {
   seasonRecords?: SeasonRecord[];
 }
 
-interface StandingsEntry {
-  recentForm?: FormResult[];
-  currentStreak?: { type: FormResult; count: number };
-}
-
 export default function PublicProfile() {
   const { playerId } = useParams<{ playerId: string }>();
   const { t } = useTranslation();
@@ -36,7 +46,11 @@ export default function PublicProfile() {
   const { features } = useSiteConfig();
 
   const [player, setPlayer] = useState<PlayerProfile | null>(null);
-  const [standingsEntry, setStandingsEntry] = useState<StandingsEntry | null>(null);
+  const [overall, setOverall] = useState<number | undefined>();
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [championships, setChampionships] = useState<Championship[]>([]);
+  const [rivalries, setRivalries] = useState<Rivalry[]>([]);
+  const [directory, setDirectory] = useState<PlayerDirectoryEntry[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [stables, setStables] = useState<Stable[]>([]);
   const [tagTeams, setTagTeams] = useState<TagTeam[]>([]);
@@ -54,12 +68,29 @@ export default function PublicProfile() {
         setLoading(true);
         setError(null);
 
-        const [playerData, standingsData, divisionsData, stablesData, tagTeamsData] = await Promise.all([
+        // Only the player is essential; each of the rest adds one part of the card.
+        const [
+          playerData,
+          standingsData,
+          divisionsData,
+          stablesData,
+          tagTeamsData,
+          matchesData,
+          championshipsData,
+          rivalriesData,
+          directoryData,
+        ] = await Promise.all([
           playersApi.getById(playerId, signal),
-          standingsApi.get(undefined, signal),
-          divisionsApi.getAll(signal),
+          standingsApi.get(undefined, signal).catch(() => null),
+          divisionsApi.getAll(signal).catch(() => [] as Division[]),
           factionsApi.getAll(undefined, signal).catch(() => [] as Stable[]),
           tagTeamsApi.getAll(undefined, signal).catch(() => [] as TagTeam[]),
+          matchesApi.getAll({ playerId }, signal).catch(() => [] as Match[]),
+          championshipsApi.getAll(signal).catch(() => [] as Championship[]),
+          rivalriesApi.list({ participantId: playerId, status: 'active' }, signal)
+            .then((response) => response.rivalries)
+            .catch(() => [] as Rivalry[]),
+          playersApi.getDirectory(signal).catch(() => [] as PlayerDirectoryEntry[]),
         ]);
 
         if (signal.aborted) return;
@@ -68,10 +99,12 @@ export default function PublicProfile() {
         setDivisions(divisionsData);
         setStables(stablesData);
         setTagTeams(tagTeamsData);
-
-        // This player's form and streak come from the standings response.
-        const entry = standingsData.players.find((p) => p.playerId === playerId);
-        setStandingsEntry(entry ? { recentForm: entry.recentForm, currentStreak: entry.currentStreak } : null);
+        setMatches(matchesData);
+        setChampionships(championshipsData);
+        setRivalries(rivalriesData);
+        setDirectory(directoryData);
+        // Standings leave some players out, so they only supply the overall.
+        setOverall(standingsData?.players.find((entry) => entry.playerId === playerId)?.mainOverall);
       } catch (err) {
         if (signal.aborted) return;
         if (isApiError(err, 404)) {
@@ -92,6 +125,11 @@ export default function PublicProfile() {
       controller.abort();
     };
   }, [playerId, t]);
+
+  const names = useMemo(
+    () => new Map(directory.map((entry) => [entry.playerId, entry.currentWrestler || entry.name])),
+    [directory],
+  );
 
   if (loading) {
     return (
@@ -129,6 +167,18 @@ export default function PublicProfile() {
     },
   ].flatMap(({ label, value }) => (value ? [{ label, value }] : []));
 
+  const form = computePlayerForm(player.playerId, matches);
+  const titles = championships
+    .filter((championship) => {
+      const holder = championship.currentChampion;
+      return championship.isActive !== false && (Array.isArray(holder) ? holder.includes(player.playerId) : holder === player.playerId);
+    })
+    .map((championship) => ({
+      id: championship.championshipId,
+      name: championship.name,
+      accent: getTitleAccent(championship),
+    }));
+
   const hasMoveset =
     Boolean(player.bio) || (player.signatures?.length ?? 0) > 0 || (player.finishers?.length ?? 0) > 0;
   const canChallenge =
@@ -140,6 +190,13 @@ export default function PublicProfile() {
       <ProfileHero
         player={player}
         details={details}
+        card={{
+          overall: player.mainOverall ?? overall,
+          titles,
+          // The form is newest first; FormDots reads oldest to newest.
+          form: [...form.recentForm].reverse(),
+          streak: form.currentStreak,
+        }}
         actions={
           <>
             {canChallenge && (
@@ -155,13 +212,17 @@ export default function PublicProfile() {
         }
       />
 
-      <RecordSummary
-        record={player}
-        recentForm={standingsEntry?.recentForm}
-        streak={standingsEntry?.currentStreak}
-      />
+      <RecordSummary record={player} titlesHeld={titles.length} />
+
+      <div className="profile-columns">
+        <RecentMatches playerId={player.playerId} matches={matches} names={names} />
+        <div className="profile-columns__side">
+          <ProfileRivalries playerId={player.playerId} rivalries={rivalries} names={names} />
+          <SeasonRecords seasons={player.seasonRecords ?? []} />
+        </div>
+      </div>
+
       {hasMoveset && <MovesetSection player={player} />}
-      <SeasonRecords seasons={player.seasonRecords ?? []} />
     </div>
   );
 }

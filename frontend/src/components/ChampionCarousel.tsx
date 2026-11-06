@@ -9,6 +9,8 @@ import HomeSection from './home/HomeSection';
 import './ChampionCarousel.css';
 
 const MS_PER_DAY = 86_400_000;
+/** Up to this many titles fill the desktop row instead of leaving a gap. */
+const FULL_ROW = 3;
 
 /** Titles the league names after a known belt keep that belt's rim colour. */
 const TITLE_RIMS: { pattern: RegExp; accent: TileAccent }[] = [
@@ -63,7 +65,10 @@ export default function ChampionCarousel({ champions }: { champions: DashboardCh
 
   return (
     <HomeSection title={t('dashboard.champions')} linkTo="/championships" linkLabel={t('home.allTitles')}>
-      <SwipeRow label={t('dashboard.champions')} className="champion-row">
+      <SwipeRow
+        label={t('dashboard.champions')}
+        className={`champion-row${champions.length <= FULL_ROW ? ' champion-row--few' : ''}`}
+      >
         {orderChampions(champions).map((champion, index) => (
           <PhotoTile
             key={champion.championshipId}

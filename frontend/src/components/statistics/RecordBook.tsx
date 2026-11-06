@@ -12,6 +12,11 @@ import './RecordBook.css';
 
 type RecordCategory = 'overall' | 'championships' | 'streaks' | 'matchTypes';
 
+/** The API sends "N/A" as the holder when nobody qualifies for a record yet. */
+function isUnclaimed(record: { holderName?: string }): boolean {
+  return !record.holderName || record.holderName === 'N/A';
+}
+
 function RecordBook() {
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<RecordCategory>('overall');
@@ -68,10 +73,16 @@ function RecordBook() {
           {currentRecords.map((record) => (
             <Card key={record.recordName} className="rb-record-card">
               <h2 className="rb-record-name">{record.recordName}</h2>
-              <p className="rb-record-value">{record.value}</p>
-              <p className="rb-record-holder">
-                {record.holderName} <span className="rb-holder-wrestler">({record.wrestlerName})</span>
-              </p>
+              {isUnclaimed(record) ? (
+                <p className="rb-record-empty">{t('statistics.recordBook.unclaimed')}</p>
+              ) : (
+                <>
+                  <p className="rb-record-value">{record.value}</p>
+                  <p className="rb-record-holder">
+                    {record.holderName} <span className="rb-holder-wrestler">({record.wrestlerName})</span>
+                  </p>
+                </>
+              )}
               <p className="rb-record-desc">{record.description}</p>
             </Card>
           ))}

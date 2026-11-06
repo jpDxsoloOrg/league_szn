@@ -114,6 +114,13 @@
     min-width: 0;
   }
 
+  .stats-page .page-header__actions .ui-select__trigger > span:first-child {
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .stats-rows > li {
     padding: 0.75rem 1rem;
   }

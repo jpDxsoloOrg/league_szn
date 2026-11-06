@@ -12,6 +12,7 @@ import HomeHero from './home/HomeHero';
 import LatestResults from './home/LatestResults';
 import SeasonSummary from './home/SeasonSummary';
 import TopOfTable from './home/TopOfTable';
+import './posterHero.css';
 import './Dashboard.css';
 
 export default function Dashboard() {

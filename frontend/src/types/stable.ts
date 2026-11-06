@@ -65,7 +65,8 @@ export interface StableStanding {
   draws: number;
   winPercentage: number;
   recentForm?: ('W' | 'L' | 'D')[];
-  currentStreak?: { type: 'W' | 'L' | 'D'; count: number };
+  /** Older deployments send this as a string such as "L1"; read it through normalizeStreak. */
+  currentStreak?: { type: 'W' | 'L' | 'D'; count: number } | string;
 }
 
 export interface StableHeadToHead {
@@ -87,7 +88,8 @@ export interface StableDetailResponse extends StableWithMembers {
   standings: {
     winPercentage: number;
     recentForm: ('W' | 'L' | 'D')[];
-    currentStreak: { type: 'W' | 'L' | 'D'; count: number };
+    /** Older deployments send this as a string such as "L1"; read it through normalizeStreak. */
+    currentStreak?: { type: 'W' | 'L' | 'D'; count: number } | string;
   };
   headToHead: StableHeadToHead[];
   matchTypeRecords: StableMatchTypeRecord[];

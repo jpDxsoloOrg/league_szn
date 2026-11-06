@@ -122,7 +122,7 @@ describe('FactionsList (FAC-10)', () => {
     }
   });
 
-  it('filters the visible cards when an Active chip is clicked', async () => {
+  it('filters the visible cards from the status select', async () => {
     const factions = [
       baseFaction({ stableId: 'f1', name: 'Alpha Active', status: 'active' }),
       baseFaction({ stableId: 'f2', name: 'Beta Pending', status: 'pending' }),
@@ -135,15 +135,26 @@ describe('FactionsList (FAC-10)', () => {
     expect(screen.getByText('Beta Pending')).toBeInTheDocument();
     expect(screen.getByText('Gamma Disbanded')).toBeInTheDocument();
 
-    const activeChip = screen.getByRole('tab', { name: 'Active' });
-    await userEvent.click(activeChip);
+    await userEvent.click(screen.getByRole('combobox', { name: 'Filter by status' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Active' }));
 
     await waitFor(() => {
       expect(screen.queryByText('Beta Pending')).not.toBeInTheDocument();
     });
     expect(screen.getByText('Alpha Active')).toBeInTheDocument();
     expect(screen.queryByText('Gamma Disbanded')).not.toBeInTheDocument();
-    expect(activeChip).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('shows the standings record on a tile so it matches the faction page', async () => {
+    mockFactionsGetAll.mockResolvedValue([baseFaction({ stableId: 'f1', name: 'Alpha', wins: 1, losses: 4, draws: 0 })]);
+    mockFactionsGetStandings.mockResolvedValue([
+      { stableId: 'f1', name: 'Alpha', memberCount: 2, wins: 10, losses: 17, draws: 1, winPercentage: 35.7 },
+    ]);
+
+    renderHub();
+
+    expect(await screen.findByText(/10-17-1/)).toBeInTheDocument();
+    expect(screen.queryByText(/1-4-0/)).not.toBeInTheDocument();
   });
 
   it('narrows by name via the search input (case-insensitive substring)', async () => {

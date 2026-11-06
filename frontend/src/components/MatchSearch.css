@@ -71,7 +71,7 @@
 
 .match-search-filter__label {
   color: var(--color-text-secondary);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 
@@ -89,7 +89,7 @@
 .match-search-filters__help {
   grid-column: 1 / -1;
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .match-search-summary {
@@ -159,7 +159,7 @@
 .match-vs {
   color: var(--color-text-muted);
   font-family: var(--font-body);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 500;
 }
 
@@ -177,7 +177,7 @@
   flex-wrap: wrap;
   gap: 0 0.75rem;
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .match-row__side {
@@ -205,7 +205,7 @@
 
 .match-detail__facts dt {
   color: var(--color-text-muted);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
 }
 
 .match-detail__facts dd {

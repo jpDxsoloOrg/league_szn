@@ -138,8 +138,8 @@ describe('Championships', () => {
     expect(screen.getByText('World Heavyweight Championship')).toBeInTheDocument();
     expect(screen.getByText('Tag Team Championship')).toBeInTheDocument();
 
-    // Types rendered
-    expect(screen.getByText('Singles')).toBeInTheDocument();
+    // Only the type that needs saying is rendered
+    expect(screen.queryByText('Singles')).not.toBeInTheDocument();
     expect(screen.getByText('Tag Team')).toBeInTheDocument();
 
     // Current champion resolved to player name

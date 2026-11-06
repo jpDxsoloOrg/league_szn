@@ -1,39 +1,15 @@
 .faction-detail__hero {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  min-height: 15rem;
-  overflow: hidden;
-  background: var(--gradient-hero);
-  border-radius: var(--radius-card);
-}
-
-.faction-detail__hero::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--gradient-tile-scrim);
-  pointer-events: none;
-}
-
-.faction-detail__hero-image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  padding: 1.5rem;
 }
 
 .faction-detail__hero-content {
-  position: relative;
-  z-index: 1;
   display: flex;
   flex: 1;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
   min-width: 0;
-  padding: 1.5rem;
 }
 
 .faction-detail__identity {
@@ -68,14 +44,14 @@
 }
 
 .faction-detail__record-label {
-  color: var(--color-text-secondary);
-  font-size: 0.75rem;
+  color: var(--color-text);
+  font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: 0.1em;
 }
 
 .faction-detail__record-value {
-  color: var(--color-cyan);
+  color: var(--color-text);
   font-family: var(--font-heading);
   font-size: 1.75rem;
   font-weight: 800;
@@ -88,15 +64,20 @@
 
 @media (max-width: 768px) {
   .faction-detail__hero {
-    min-height: 12rem;
-  }
-
-  .faction-detail__hero-content {
-    flex-wrap: wrap;
     padding: 1rem;
   }
 
   .faction-detail__record {
     align-items: flex-start;
   }
+}
+
+/* Pink flames vanish into the gradient, so the hero lights them in the text colour. */
+.faction-detail__record .faction-heat {
+  color: var(--color-bg);
+}
+
+.faction-detail__record .faction-heat__flame--lit {
+  color: var(--color-text);
+  fill: var(--color-text);
 }

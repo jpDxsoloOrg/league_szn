@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { factionsApi } from '../../../services/api';
+import { factionsApi, playersApi } from '../../../services/api';
+import type { PlayerDirectoryEntry } from '../../../services/api';
+import { formatMatchDate } from '../../../utils/dateUtils';
 import { logger } from '../../../utils/logger';
+import { formatMatchType } from '../../../utils/matchDisplay';
 import type { FactionPromosResponse, FactionScheduleResponse } from '../../../types/faction';
 import Avatar from '../../ui/Avatar';
 import Badge from '../../ui/Badge';
@@ -10,7 +13,7 @@ import FormDots from '../../ui/FormDots';
 import type { FormResult } from '../../ui/FormDots';
 import Skeleton from '../../ui/Skeleton';
 import { deriveFactionActivity } from '../factionActivity';
-import { formatCountdown } from '../factionFormat';
+import { formatCountdown, normalizeStreak } from '../factionFormat';
 import type { FactionDetailContext } from '../FactionDetail';
 import '../groupUi.css';
 import './FactionOverview.css';
@@ -41,9 +44,20 @@ export default function FactionOverview() {
   const [schedule, setSchedule] = useState<FactionScheduleResponse | null>(null);
   const [promosError, setPromosError] = useState(false);
   const [scheduleError, setScheduleError] = useState(false);
+  const [directory, setDirectory] = useState<PlayerDirectoryEntry[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
+
+    // Names the opponents in recent results; a failure only leaves them out.
+    const loadDirectory = async () => {
+      try {
+        const entries = await playersApi.getDirectory(controller.signal);
+        if (!controller.signal.aborted) setDirectory(entries);
+      } catch {
+        // Results still show their format and outcome.
+      }
+    };
 
     const loadPromos = async () => {
       try {
@@ -77,6 +91,7 @@ export default function FactionOverview() {
       }
     };
 
+    void loadDirectory();
     loadPromos();
     loadSchedule();
     return () => controller.abort();
@@ -86,25 +101,30 @@ export default function FactionOverview() {
 
   const recentResults = useMemo(() => {
     const matches = (faction.recentMatches || []) as Array<Record<string, unknown>>;
+    const nameById = new Map(directory.map((entry) => [entry.playerId, entry.currentWrestler || entry.name]));
     return matches
       .filter((match) => typeof match['matchId'] === 'string' && (match['status'] === 'completed' || match['status'] === undefined))
       .slice(0, RESULTS_LIMIT)
       .map((match) => ({
         key: match['matchId'] as string,
         date: typeof match['date'] === 'string' ? match['date'] : '',
-        format: typeof match['matchFormat'] === 'string'
-          ? match['matchFormat']
-          : typeof match['matchType'] === 'string'
-            ? match['matchType']
-            : '—',
+        format: formatMatchType(
+          typeof match['matchFormat'] === 'string' ? match['matchFormat'] : String(match['matchType'] ?? ''),
+          t,
+        ),
+        opponents: (Array.isArray(match['participants']) ? (match['participants'] as string[]) : [])
+          .filter((playerId) => !memberIdSet.has(playerId))
+          .map((playerId) => nameById.get(playerId) ?? t('common.unknown', 'Unknown')),
         outcome: classifyResult(match, memberIdSet),
       }));
-  }, [faction.recentMatches, memberIdSet]);
+  }, [faction.recentMatches, memberIdSet, directory, t]);
 
   const activity = useMemo(() => deriveFactionActivity([faction], ACTIVITY_LIMIT), [faction]);
 
-  const streak = faction.standings.currentStreak;
-  const recentForm = (faction.standings.recentForm || []).slice(0, FORM_LIMIT);
+  const streak = normalizeStreak(faction.standings.currentStreak);
+  // The API sends newest first; FormDots reads oldest to newest.
+  const recentForm = (faction.standings.recentForm || []).slice(0, FORM_LIMIT).reverse();
+  const missingMembers = Math.max(0, faction.memberIds.length - faction.members.length);
   const now = Date.now();
 
   return (
@@ -112,9 +132,17 @@ export default function FactionOverview() {
       <div className="faction-overview__main">
         <section className="group-section">
           <h2 className="group-heading">{t('factions.overview.rosterHeading', 'Member Roster at a Glance')}</h2>
-          {faction.members.length === 0 ? (
+          {faction.members.length === 0 && missingMembers === 0 && (
             <p className="group-empty">{t('factions.overview.rosterEmpty', 'No members yet.')}</p>
-          ) : (
+          )}
+          {missingMembers > 0 && (
+            <p className="group-empty">
+              {t('factions.overview.rosterMissing', '{{count}} members are no longer listed on the roster.', {
+                count: missingMembers,
+              })}
+            </p>
+          )}
+          {faction.members.length > 0 && (
             <div className="faction-overview__roster">
               {faction.members.slice(0, MEMBER_LIMIT).map((member) => (
                 <Link key={member.playerId} to={`/player/${member.playerId}`} className="faction-overview__member">
@@ -145,11 +173,16 @@ export default function FactionOverview() {
             <ul className="group-list">
               {recentResults.map((result) => (
                 <li key={result.key} className="faction-overview__row">
-                  <span>{result.format}</span>
+                  <span className="group-person__text">
+                    <span>{result.format || t('factions.overview.resultFallback', 'Match')}</span>
+                    {result.opponents.length > 0 && (
+                      <span className="group-muted">
+                        {t('factions.overview.versus', 'vs {{names}}', { names: result.opponents.join(', ') })}
+                      </span>
+                    )}
+                  </span>
                   <span className="faction-overview__row-end">
-                    <span className="group-muted">
-                      {result.date ? new Date(result.date).toLocaleDateString() : '—'}
-                    </span>
+                    {result.date && <span className="group-muted">{formatMatchDate(result.date)}</span>}
                     {result.outcome && <Badge tone={RESULT_TONES[result.outcome]}>{result.outcome}</Badge>}
                   </span>
                 </li>
@@ -186,17 +219,22 @@ export default function FactionOverview() {
       </div>
 
       <aside className="faction-overview__rail">
-        <section className="group-section">
-          <h3 className="group-heading">{t('factions.overview.streakTitle', 'Streak')}</h3>
-          <span className="faction-overview__streak">
-            {streak.count > 0 ? `${streak.count}${streak.type}` : '—'}
-          </span>
-          {recentForm.length > 0 && (
-            <div role="group" aria-label={t('factions.overview.sparklineLabel', 'Last 10 results')}>
-              <FormDots results={recentForm} />
-            </div>
-          )}
-        </section>
+        {(streak || recentForm.length > 0) && (
+          <section className="group-section">
+            <h3 className="group-heading">{t('factions.overview.streakTitle', 'Streak')}</h3>
+            {streak && <span className="faction-overview__streak">{streak.count}{streak.type}</span>}
+            {recentForm.length > 0 && (
+              <div className="faction-overview__form">
+                <FormDots results={recentForm} />
+                <span className="group-muted">
+                  {t('factions.overview.formCaption', 'Last {{count}} results, newest on the right', {
+                    count: recentForm.length,
+                  })}
+                </span>
+              </div>
+            )}
+          </section>
+        )}
 
         <section className="group-section">
           <h3 className="group-heading">
@@ -217,7 +255,7 @@ export default function FactionOverview() {
                 return (
                   <li key={match.matchId} className="group-person__text">
                     <span className="faction-overview__countdown">{formatCountdown(match.scheduledFor, now, t)}</span>
-                    <span>{match.matchFormat}</span>
+                    <span>{formatMatchType(match.matchFormat, t)}</span>
                     {memberCompeting && <span className="group-muted">{memberCompeting.playerName}</span>}
                   </li>
                 );

@@ -18,6 +18,7 @@ import Podium from './ui/Podium';
 import type { PodiumEntry } from './ui/Podium';
 import Select from './ui/Select';
 import Skeleton from './ui/Skeleton';
+import './rankPodium.css';
 import './Standings.css';
 
 interface RankedPlayer extends Player {
@@ -137,22 +138,27 @@ export default function Standings() {
     };
     const matchesAlignment = (player: Player) => selectedAlignment === 'all' || player.alignment === selectedAlignment;
 
-    return (standings?.players ?? [])
-      .filter((player) => matchesDivision(player) && matchesAlignment(player))
-      .map((player, index) => {
-        const matchesPlayed = player.wins + player.losses + player.draws;
-        return {
-          ...player,
-          rank: index + 1,
-          matchesPlayed,
-          winRate: matchesPlayed > 0 ? (player.wins / matchesPlayed) * 100 : 0,
-        };
-      });
+    const hasPlayed = (player: Player) => player.wins + player.losses + player.draws > 0;
+    const shown = (standings?.players ?? []).filter((player) => matchesDivision(player) && matchesAlignment(player));
+
+    // The API sorts on wins, which puts 0-0-0 above 0-2-0. Players who have
+    // wrestled rank first, so the podium is always the top of the table.
+    return [...shown.filter(hasPlayed), ...shown.filter((player) => !hasPlayed(player))].map((player, index) => {
+      const matchesPlayed = player.wins + player.losses + player.draws;
+      return {
+        ...player,
+        rank: index + 1,
+        matchesPlayed,
+        winRate: matchesPlayed > 0 ? (player.wins / matchesPlayed) * 100 : 0,
+        // No record in this scope means nothing to show form for, whatever happened elsewhere.
+        recentForm: matchesPlayed > 0 ? player.recentForm : undefined,
+        currentStreak: matchesPlayed > 0 ? player.currentStreak : undefined,
+      };
+    });
   }, [standings, selectedDivision, selectedAlignment]);
 
-  // A fresh season lists everyone at 0-0-0, and a podium would rank them arbitrarily.
-  const showPodium = rankedPlayers.some((player) => player.matchesPlayed > 0);
-  const podiumPlayers = showPodium ? rankedPlayers.slice(0, PODIUM_SIZE) : [];
+  // Only players who have wrestled earn a medal position.
+  const podiumPlayers = rankedPlayers.filter((player) => player.matchesPlayed > 0).slice(0, PODIUM_SIZE);
   const listedPlayers = rankedPlayers.slice(podiumPlayers.length);
 
   const podiumEntries: PodiumEntry[] = podiumPlayers.map((player) => ({
@@ -262,7 +268,7 @@ export default function Standings() {
 
     return (
       <>
-        {podiumEntries.length > 0 && <Podium entries={podiumEntries} label={t('standings.topThree')} />}
+        {podiumEntries.length > 0 && <Podium className="rank-podium" entries={podiumEntries} label={t('standings.topThree')} />}
 
         {firstListed && lastListed && (
           <section aria-label={t('standings.restOfTable')}>

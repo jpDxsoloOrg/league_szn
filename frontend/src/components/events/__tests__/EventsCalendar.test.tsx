@@ -167,6 +167,19 @@ describe('EventsCalendar', () => {
     vi.useRealTimers();
   });
 
+  it('lists the next planned show so the list agrees with the calendar', async () => {
+    mockGetAllEvents.mockResolvedValue([]);
+    mockGetAllShows.mockResolvedValue([
+      { showId: 'sh1', companyId: 'c1', name: 'Toxic Tuesday', schedule: 'weekly', dayOfWeek: 'tuesday' },
+    ]);
+    renderEventsCalendar();
+
+    const row = await screen.findByText('Toxic Tuesday', { selector: '.event-card__name' });
+    expect(row.closest('.event-card')).toHaveClass('event-card--planned');
+    expect(row.closest('.event-card')).toHaveTextContent('Jun');
+    expect(row.closest('.event-card')).toHaveTextContent('17');
+  });
+
   it('renders calendar grid with day headers and event dots for the current month', async () => {
     mockGetAllEvents.mockResolvedValue(mockEvents);
 
@@ -203,7 +216,7 @@ describe('EventsCalendar', () => {
 
     // Legend
     const legendItems = document.querySelectorAll('.legend-item');
-    expect(legendItems.length).toBe(4);
+    expect(legendItems.length).toBe(5); // four event types plus planned shows
   });
 
   it('navigates between months using previous and next buttons', async () => {

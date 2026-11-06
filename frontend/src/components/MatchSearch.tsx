@@ -19,6 +19,8 @@ import { StarRating } from './matches/StarRating';
 import { RateMatchWidget } from './matches/RateMatchWidget';
 import { MotnToggleButton } from './matches/MotnToggleButton';
 import { useAuth } from '../contexts/AuthContext';
+import { formatMatchDate } from '../utils/dateUtils';
+import { formatMatchType, groupMatchSides } from '../utils/matchDisplay';
 import './MatchSearch.css';
 
 const STATUS_TONES: Partial<Record<Match['status'], BadgeTone>> = {
@@ -210,11 +212,11 @@ export default function MatchSearch() {
       const stipulationName = match.stipulationId
         ? stipulationMap.get(match.stipulationId)?.name ?? ''
         : '';
-      return `${participantNames} ${match.matchFormat} ${stipulationName}`
+      return `${participantNames} ${match.matchFormat} ${formatMatchType(match.matchFormat, t)} ${stipulationName}`
         .toLowerCase()
         .includes(query);
     });
-  }, [matches, searchText, getPlayerName, stipulationMap]);
+  }, [matches, searchText, getPlayerName, stipulationMap, t]);
 
   const detailMatch = detailMatchId ? matches.find((match) => match.matchId === detailMatchId) : undefined;
 
@@ -250,17 +252,30 @@ export default function MatchSearch() {
 
   const renderNames = (match: Match) => {
     const isDraw = match.status === 'completed' && !!match.isDraw;
+    const sides = groupMatchSides(match.participants, (pid) => pid, match.teams, match.matchFormat);
+    const renderName = (pid: string) => (
+      <span className={
+        isDraw ? '' :
+        match.winners?.includes(pid) ? 'match-winner' :
+        match.losers?.includes(pid) ? 'match-loser' : ''
+      }>
+        {getPlayerName(pid)}
+      </span>
+    );
     return (
       <span className="match-row__names">
-        {match.participants.map((pid, index) => (
-          <span key={pid} className="match-row__name-entry">
-            {index > 0 && <span className="match-vs">{t('common.vs')}</span>}
-            <span className={
-              isDraw ? '' :
-              match.winners?.includes(pid) ? 'match-winner' :
-              match.losers?.includes(pid) ? 'match-loser' : ''
-            }>
-              {getPlayerName(pid)}
+        {sides.map((side, sideIndex) => (
+          <span key={side[0]} className="match-row__name-entry">
+            {/* One vs between two sides; a bigger field reads as a plain list. */}
+            {sideIndex > 0 && sides.length === 2 && <span className="match-vs">{t('common.vs')}</span>}
+            <span>
+              {side.map((pid, memberIndex) => (
+                <span key={pid}>
+                  {memberIndex > 0 && ' & '}
+                  {renderName(pid)}
+                </span>
+              ))}
+              {sides.length > 2 && sideIndex < sides.length - 1 && ','}
             </span>
           </span>
         ))}
@@ -391,8 +406,8 @@ export default function MatchSearch() {
                 <div className="match-row__main">
                   {renderNames(match)}
                   <span className="match-row__meta">
-                    <span>{new Date(match.date).toLocaleDateString()}</span>
-                    <span>{match.matchFormat}{stipulationName ? ` · ${stipulationName}` : ''}</span>
+                    <span>{formatMatchDate(match.date)}</span>
+                    <span>{formatMatchType(match.matchFormat, t)}{stipulationName ? ` · ${stipulationName}` : ''}</span>
                   </span>
                 </div>
                 <div className="match-row__side">
@@ -429,11 +444,11 @@ export default function MatchSearch() {
             <dl className="match-detail__facts">
               <div>
                 <dt>{t('matchSearch.detailDate', 'Date')}</dt>
-                <dd>{new Date(detailMatch.date).toLocaleDateString()}</dd>
+                <dd>{formatMatchDate(detailMatch.date)}</dd>
               </div>
               <div>
                 <dt>{t('matchSearch.filters.matchType')}</dt>
-                <dd>{detailMatch.matchFormat}</dd>
+                <dd>{formatMatchType(detailMatch.matchFormat, t)}</dd>
               </div>
               <div>
                 <dt>{t('matchSearch.filters.status')}</dt>

@@ -7,10 +7,12 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { logger } from '../../../utils/logger';
 import type { Player } from '../../../types';
 import type { StableInvitationWithDetails } from '../../../types/stable';
+import { canManageFaction } from '../factionAccess';
 import type { FactionDetailContext } from '../FactionDetail';
 import Avatar from '../../ui/Avatar';
 import Badge from '../../ui/Badge';
 import Button from '../../ui/Button';
+import Skeleton from '../../ui/Skeleton';
 import Modal from '../../ui/Modal';
 import Select from '../../ui/Select';
 import { useToast } from '../../ui/toastContext';
@@ -53,9 +55,8 @@ export default function FactionManage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  const isLeader = auth.playerId !== null && auth.playerId === faction.leaderId;
   const isAdmin = Boolean(auth.isAdminOrModerator);
-  const canAccess = isLeader || isAdmin;
+  const canAccess = canManageFaction(auth.playerId, isAdmin, faction);
 
   // ─── State ────────────────────────────────────────────────────────
   const [name, setName] = useState(faction.name);
@@ -142,6 +143,8 @@ export default function FactionManage() {
   );
 
   // ─── Gating (after hooks per Rules of Hooks) ─────────────────────
+  if (auth.isLoading) return <Skeleton variant="block" count={3} />;
+
   if (!canAccess) {
     return (
       <Navigate

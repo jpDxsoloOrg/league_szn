@@ -40,3 +40,20 @@ export function formatCountdown(scheduledFor: string, now: number, t: Translate)
     ? t('factions.schedule.inDays', 'In {{count}} days', { count: days })
     : t('factions.schedule.daysAgo', '{{count}} days ago', { count: -days });
 }
+
+export type StreakResult = 'W' | 'L' | 'D';
+
+export interface Streak {
+  type: StreakResult;
+  count: number;
+}
+
+/** Faction endpoints send a streak either as an object or as a string such as "L1". */
+export function normalizeStreak(streak: Streak | string | null | undefined): Streak | undefined {
+  if (!streak) return undefined;
+  if (typeof streak !== 'string') return streak.count > 0 ? streak : undefined;
+  const match = /^([WLD])(\d+)$/.exec(streak);
+  const [, type, count] = match ?? [];
+  if (type !== 'W' && type !== 'L' && type !== 'D') return undefined;
+  return { type, count: Number(count) };
+}

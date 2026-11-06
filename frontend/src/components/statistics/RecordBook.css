@@ -48,7 +48,7 @@
 
 .rb-threat-sides dt {
   color: var(--color-text-muted);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
 }
 
 .rb-threat-sides dd {
@@ -67,4 +67,9 @@
     flex-wrap: wrap;
     gap: 0.5rem 1.5rem;
   }
+}
+
+.rb-record-empty {
+  margin: 0.25rem 0;
+  color: var(--color-text-muted);
 }

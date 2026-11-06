@@ -46,12 +46,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         seasonStandingsList.map((s) => [s.playerId, s])
       );
 
+      // Form and streak cover the same season as the record beside them.
+      const seasonMatches = completedMatches.filter((m) => m.seasonId === seasonId);
+
       // Show ALL players - those with standings get season W-L-D, others get 0-0-0
       const standings = filteredPlayers.map((player) => {
         const standing = standingsMap.get(player.playerId);
         const { recentForm, currentStreak } = computeRecentFormAndStreak(
           player.playerId,
-          completedMatches
+          seasonMatches
         );
         const mainOverall = overallsByPlayerId.get(player.playerId);
         return {

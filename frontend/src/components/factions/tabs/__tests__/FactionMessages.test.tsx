@@ -357,4 +357,25 @@ describe('FactionMessages tab (FAC-15)', () => {
     expect(await screen.findByText('Former member')).toBeInTheDocument();
     expect(screen.queryByText('p-gone')).not.toBeInTheDocument();
   });
+
+  it.each([
+    ['signed-out visitors', { playerId: null }],
+    ['players outside the faction', { playerId: 'outsider', isWrestler: true }],
+    ['staff outside the faction', { playerId: 'staff', isAdminOrModerator: true }],
+  ])('sends %s back to the overview without any request', async (_label, auth) => {
+    mockUseAuth.mockReturnValue(auth);
+    renderTab();
+
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(mockListMessages).not.toHaveBeenCalled();
+    expect(mockListMyThreads).not.toHaveBeenCalled();
+  });
+
+  it('waits for the session before deciding, so a member is not bounced on reload', () => {
+    mockUseAuth.mockReturnValue({ playerId: null, isLoading: true });
+    renderTab();
+
+    expect(mockListMessages).not.toHaveBeenCalled();
+    expect(screen.queryByText('Only members of this faction can read its messages.')).not.toBeInTheDocument();
+  });
 });

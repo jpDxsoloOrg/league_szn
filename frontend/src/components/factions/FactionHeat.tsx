@@ -10,10 +10,11 @@ interface FactionHeatProps {
   className?: string;
 }
 
-/** Five-flame gauge with one label for screen readers. */
+/** Five-flame gauge with one label for screen readers. Nothing shows until there is a streak. */
 export default function FactionHeat({ count, className = '' }: FactionHeatProps) {
   const { t } = useTranslation();
   const lit = !count || count < 0 ? 0 : Math.min(FLAME_COUNT, Math.floor(count));
+  if (lit === 0) return null;
 
   return (
     <span

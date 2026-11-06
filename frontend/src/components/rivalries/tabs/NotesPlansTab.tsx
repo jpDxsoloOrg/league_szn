@@ -157,7 +157,7 @@ export default function NotesPlansTab({ hydrated, players }: TabProps) {
                 <NoteRow
                   key={n.noteId}
                   note={n}
-                  authorName={resolvePlayerFullLabel(lookup.get(n.authorPlayerId), n.authorPlayerId)}
+                  authorName={resolvePlayerFullLabel(lookup.get(n.authorPlayerId), t('common.unknown'))}
                   isEditing={editingId === n.noteId}
                   editDraft={editDraft}
                   setEditDraft={setEditDraft}
@@ -204,7 +204,7 @@ export default function NotesPlansTab({ hydrated, players }: TabProps) {
                   )}
                   <NoteRow
                     note={n}
-                    authorName={resolvePlayerFullLabel(lookup.get(n.authorPlayerId), n.authorPlayerId)}
+                    authorName={resolvePlayerFullLabel(lookup.get(n.authorPlayerId), t('common.unknown'))}
                     isEditing={editingId === n.noteId}
                     editDraft={editDraft}
                     setEditDraft={setEditDraft}

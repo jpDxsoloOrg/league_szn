@@ -117,8 +117,8 @@ describe('FactionSchedule tab (FAC-14)', () => {
     const matchRows = rows.filter((r) => r.querySelector('.faction-schedule__row'));
     expect(matchRows).toHaveLength(2);
     // The backend already sorts ascending — assert the order surfaces as-is.
-    expect(within(matchRows[0]).getByText(/SINGLES/)).toBeInTheDocument();
-    expect(within(matchRows[1]).getByText(/TAG/)).toBeInTheDocument();
+    expect(within(matchRows[0]).getByText(/Singles/)).toBeInTheDocument();
+    expect(within(matchRows[1]).getByText(/Tag Team/)).toBeInTheDocument();
   });
 
   it('filters the visible matches when a member chip is toggled off', async () => {

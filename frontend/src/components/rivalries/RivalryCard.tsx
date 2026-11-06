@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import type { Player } from '../../types';
 import type { Rivalry } from '../../types/rivalry';
+import { formatMatchDate } from '../../utils/dateUtils';
 import Avatar from '../ui/Avatar';
 import Badge from '../ui/Badge';
 import Card from '../ui/Card';
@@ -28,7 +29,7 @@ export default function RivalryCard({ rivalry, participants, lastActivityAt }: R
   });
 
   return (
-    <Card to={`/rivalries/${rivalry.rivalryId}`} className="rivalry-card">
+    <Card to={`/rivalries/${rivalry.rivalryId}`} className={`rivalry-card rivalry-card--${rivalry.heat}`}>
       <h3 className="rivalry-card__title">{rivalry.title}</h3>
 
       <div className="rivalry-card__faceoff">
@@ -43,10 +44,10 @@ export default function RivalryCard({ rivalry, participants, lastActivityAt }: R
       </div>
 
       <div className="rivalry-card__footer">
-        <HeatBadge heat={rivalry.heat} heatScore={rivalry.heatScore} size="sm" />
+        <HeatBadge heat={rivalry.heat} heatScore={rivalry.heatScore} size="md" />
         {rivalry.status !== 'active' && <Badge>{t(RIVALRY_STATUS_KEY[rivalry.status])}</Badge>}
         <span className="rivalry-card__date">
-          {lastActivityAt ? new Date(lastActivityAt).toLocaleDateString() : t('rivalries.card.noActivity')}
+          {lastActivityAt ? formatMatchDate(lastActivityAt) : t('rivalries.card.noActivity')}
         </span>
       </div>
     </Card>

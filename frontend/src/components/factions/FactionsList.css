@@ -5,6 +5,11 @@
   align-items: start;
 }
 
+.factions-hub__status {
+  flex: none;
+  min-width: 11rem;
+}
+
 .factions-hub__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
@@ -18,6 +23,20 @@
 }
 
 @media (max-width: 768px) {
+  /* Status and search share one row, so the tiles start higher. */
+  .factions-hub__toolbar {
+    flex-wrap: nowrap;
+  }
+
+  .factions-hub__toolbar .group-search {
+    flex: 1 1 0;
+  }
+
+  .factions-hub__status {
+    flex: 0 1 45%;
+    min-width: 0;
+  }
+
   .factions-hub__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;

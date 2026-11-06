@@ -269,6 +269,50 @@ describe('Dashboard', () => {
     expect(screen.queryByText('Sting')).not.toBeInTheDocument();
   });
 
+  it('falls back to all time when no listed wrestler has a result this season', async () => {
+    mockGetDashboard.mockResolvedValue({
+      ...emptyDashboard,
+      seasonInfo: { seasonId: 's1', name: 'Season 1', status: 'active' },
+    });
+    mockGetStandings.mockImplementation(async (seasonId?: string) => ({
+      sortedByWins: true,
+      players: seasonId
+        ? [{ playerId: 'p1', name: 'Ann', currentWrestler: 'Edge', wins: 0, losses: 0, draws: 0 }]
+        : [{ playerId: 'p1', name: 'Ann', currentWrestler: 'Edge', wins: 2, losses: 1, draws: 0 }],
+    }));
+
+    renderDashboard();
+
+    expect(await screen.findByText('2-1-0')).toBeInTheDocument();
+    expect(mockGetStandings).toHaveBeenCalledWith(undefined, expect.any(AbortSignal));
+  });
+
+  it('counts season matches apart from all-time matches', async () => {
+    mockGetDashboard.mockResolvedValue({
+      ...emptyDashboard,
+      seasonInfo: { seasonId: 's1', name: 'Season 1', status: 'active', matchesPlayed: 9 },
+      quickStats: { totalPlayers: 2, totalMatches: 48, activeChampionships: 3 },
+    });
+
+    renderDashboard();
+
+    expect(await screen.findByText('9')).toBeInTheDocument();
+    expect(screen.getByText('48')).toBeInTheDocument();
+  });
+
+  it('shows the poster whole in its own frame rather than behind the title', async () => {
+    mockGetDashboard.mockResolvedValue({
+      ...emptyDashboard,
+      upcomingEvents: [{ eventId: 'e1', name: 'Toxic Tuesday', date: '2026-09-01', eventType: 'weekly' }],
+    });
+    mockGetEvent.mockResolvedValue({ eventId: 'e1', imageUrl: 'https://example.com/poster.png', enrichedMatches: [] });
+
+    const { container } = renderDashboard();
+
+    await screen.findByRole('heading', { name: 'Toxic Tuesday' });
+    await waitFor(() => expect(container.querySelector('.poster-hero__frame img')).toHaveAttribute('src', 'https://example.com/poster.png'));
+  });
+
   it('keeps the page up and offers a retry when the table fails to load', async () => {
     mockGetStandings.mockRejectedValueOnce(new Error('boom'));
 

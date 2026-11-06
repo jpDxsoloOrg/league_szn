@@ -215,7 +215,7 @@ describe('PlayerStats', () => {
     expect(screen.getByText('Championship History')).toBeInTheDocument();
     expect(screen.getByText(/World Heavyweight Championship/)).toBeInTheDocument();
     expect(screen.getByText('Current Champion')).toBeInTheDocument();
-    expect(screen.getByText(/3 reigns/)).toBeInTheDocument();
+    expect(screen.getByText('statistics.labels.reignCount')).toBeInTheDocument();
     expect(screen.getByText(/450 days held/)).toBeInTheDocument();
 
     // Achievements

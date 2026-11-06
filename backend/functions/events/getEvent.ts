@@ -156,6 +156,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             stipulationId: match.stipulationId,
             stipulationName,
             participants: participantData,
+            ...(match.teams && { teams: match.teams }),
             winners: match.winners,
             losers: match.losers,
             isChampionship: match.isChampionship || false,

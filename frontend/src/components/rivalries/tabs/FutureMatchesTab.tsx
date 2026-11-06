@@ -5,6 +5,8 @@ import { ChevronRight } from 'lucide-react';
 import { matchesApi } from '../../../services/api';
 import type { Match, Player } from '../../../types';
 import type { HydratedRivalry } from '../../../types/rivalry';
+import { formatMatchDate } from '../../../utils/dateUtils';
+import { describeSides, groupMatchSides } from '../../../utils/matchDisplay';
 import Badge from '../../ui/Badge';
 import EmptyState from '../../ui/EmptyState';
 import Skeleton from '../../ui/Skeleton';
@@ -32,6 +34,7 @@ export default function FutureMatchesTab({ hydrated, players }: TabProps) {
     [hydrated.rivalry.participants],
   );
   const lookup = useMemo(() => new Map(players.map((p) => [p.playerId, p] as const)), [players]);
+  const labelOf = (id: string) => resolvePlayerFullLabel(lookup.get(id), t('common.unknown'));
 
   const withinWindow = (date: string): boolean => {
     if (startedAt && date < startedAt) return false;
@@ -91,12 +94,15 @@ export default function FutureMatchesTab({ hydrated, players }: TabProps) {
     <ul className="rivalry-detail-matches">
       {matches.map((m) => (
         <li key={m.matchId}>
-          <Link to={`/matches/${m.matchId}`} className="rivalry-detail-matches__row">
+          <Link to={`/matches?matchId=${m.matchId}`} className="rivalry-detail-matches__row">
             <span className="rivalry-detail-matches__text">
               <span className="rivalry-detail-matches__teams">
-                {m.participants.map((id) => resolvePlayerFullLabel(lookup.get(id), id)).join(' vs ')}
+                {describeSides(
+                  groupMatchSides(m.participants, (id) => id, m.teams, m.matchFormat).map((side) => side.map(labelOf)),
+                  t('common.vs'),
+                )}
               </span>
-              <span className="rivalry-detail-matches__date">{new Date(m.date).toLocaleString()}</span>
+              <span className="rivalry-detail-matches__date">{formatMatchDate(m.date)}</span>
             </span>
             {m.isChampionship && <Badge tone="warning">{t('challenges.board.titleMatch')}</Badge>}
             <ChevronRight aria-hidden="true" size={20} />

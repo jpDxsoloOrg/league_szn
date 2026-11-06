@@ -3,9 +3,22 @@
   --swipe-row-slide: calc((100% - 3 * var(--swipe-row-gap)) / 4);
 }
 
+/* A short row fills the width, with landscape tiles so it stays a sensible height. */
+.ui-swipe.champion-row--few {
+  --swipe-row-slide: calc((100% - 2 * var(--swipe-row-gap)) / 3);
+}
+
+.champion-row--few .ui-tile {
+  aspect-ratio: 4 / 3;
+}
+
 @media (max-width: 1024px) {
   .ui-swipe.champion-row {
     --swipe-row-slide: min(42vw, 280px);
+  }
+
+  .champion-row--few .ui-tile {
+    aspect-ratio: 3 / 4;
   }
 }
 

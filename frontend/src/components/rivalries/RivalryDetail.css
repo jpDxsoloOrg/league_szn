@@ -78,7 +78,7 @@
 
 .rivalry-detail__caption {
   color: var(--color-text-secondary);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   overflow-wrap: anywhere;
 }
 
@@ -118,7 +118,7 @@
 
 .rivalry-detail__stat-label {
   color: var(--color-text-muted);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -239,7 +239,7 @@
 .rivalry-detail-matches__date,
 .rivalry-detail-matches__winner {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   overflow-wrap: anywhere;
 }
 
@@ -264,7 +264,7 @@
 
 .rivalry-detail-plans__when {
   color: var(--color-cyan);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 
@@ -280,7 +280,7 @@
   align-items: center;
   gap: 0.25rem 0.5rem;
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .rivalry-detail-notes__meta strong {
@@ -352,7 +352,7 @@
 
 .rivalry-detail-promo__date {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .rivalry-detail-promo__title {

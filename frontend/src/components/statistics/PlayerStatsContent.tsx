@@ -36,7 +36,7 @@ function PlayerStatsContent({
   const playedMatchTypes = matchTypeStats.filter((stat) => stat.matchesPlayed > 0);
 
   const streaks = [
-    { key: 'current', label: t('statistics.labels.currentStreak'), value: overallStats.currentWinStreak },
+    { key: 'current', label: t('statistics.labels.currentWinStreak'), value: overallStats.currentWinStreak },
     { key: 'best', label: t('statistics.labels.longestWinStreak'), value: overallStats.longestWinStreak },
     { key: 'worst', label: t('statistics.labels.longestLossStreak'), value: overallStats.longestLossStreak },
     { key: 'titles', label: t('statistics.labels.titleWins'), value: overallStats.championshipWins },
@@ -145,7 +145,7 @@ function PlayerStatsContent({
                 <div className="stats-row__main">
                   <span className="stats-row__title">{championship.championshipName ?? championship.championshipId}</span>
                   <span className="stats-row__detail ps-champ-details">
-                    <span>{championship.totalReigns} {t('statistics.labels.reigns')}</span>
+                    <span>{t('statistics.labels.reignCount', { count: championship.totalReigns })}</span>
                     <span>{championship.totalDaysHeld} {t('statistics.labels.daysHeld')}</span>
                     <span>{championship.totalDefenses} {t('statistics.labels.defenses')}</span>
                     <span>{t('statistics.labels.longestReign')}: {championship.longestReign} {t('common.days')}</span>

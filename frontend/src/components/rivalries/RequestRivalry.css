@@ -32,7 +32,7 @@
   gap: 0.375rem;
   min-width: 0;
   color: var(--color-text-secondary);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 
@@ -62,7 +62,7 @@
 
 .request-rivalry__count {
   color: var(--color-text-muted);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 400;
   text-align: right;
 }
@@ -132,7 +132,7 @@
   margin-bottom: 0.375rem;
   padding: 0;
   color: var(--color-text-secondary);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 

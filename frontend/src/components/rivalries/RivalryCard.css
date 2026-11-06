@@ -4,6 +4,24 @@
   gap: 1rem;
 }
 
+/* Heat is the colour of the card. */
+.rivalry-card--scorching,
+.rivalry-card--hot {
+  border-left: 4px solid var(--color-pink);
+  background-image: linear-gradient(100deg, var(--tint-pink), transparent 70%);
+}
+
+.rivalry-card--warm {
+  border-left: 4px solid var(--color-violet);
+  background-image: linear-gradient(100deg, var(--tint-violet), transparent 70%);
+}
+
+.rivalry-card--cold,
+.rivalry-card--frozen {
+  border-left: 4px solid var(--color-cyan);
+  background-image: linear-gradient(100deg, var(--tint-cyan), transparent 70%);
+}
+
 .rivalry-card__title {
   font-size: 1.0625rem;
   overflow-wrap: anywhere;
@@ -33,7 +51,7 @@
 
 .rivalry-card__caption {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   overflow-wrap: anywhere;
 }
 
@@ -59,5 +77,5 @@
 .rivalry-card__date {
   margin-left: auto;
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
