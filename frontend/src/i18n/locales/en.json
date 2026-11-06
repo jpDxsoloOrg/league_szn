@@ -716,7 +716,8 @@
     "success": "Match result recorded successfully!",
     "error": "Failed to record result",
     "selectMatch": "Select a match to record its result",
-    "noScheduledMatches": "No scheduled matches to record results for."
+    "noScheduledMatches": "No scheduled matches to record results for.",
+    "championNotInMatch": "The current champion is no longer in this title match. Edit the match, or make it a non-title match, then record the result."
   },
   "tournaments": {
     "title": "Tournaments",

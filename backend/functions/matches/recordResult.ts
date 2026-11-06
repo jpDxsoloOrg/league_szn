@@ -5,6 +5,7 @@ import { isConcurrentWriteError } from '../../lib/repositories/errors';
 import { success, badRequest, conflict, notFound, serverError } from '../../lib/response';
 import { invokeAsync } from '../../lib/asyncLambda';
 import { parseBody } from '../../lib/parseBody';
+import { RESULT_NEEDS_CHAMPION_MESSAGE, championIsOnASide } from '../../lib/challengeTitle';
 import { updateGroupStats } from './updateGroupStats';
 
 interface RecordResultBody {
@@ -41,7 +42,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const {
-      competition: { matches, tournaments },
+      competition: { matches, tournaments, championships },
       roster: { players },
       season: { seasons },
       runInTransaction,
@@ -85,6 +86,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
       if (season.status !== 'active') {
         return conflict(`Season "${season.name}" has ended, so its standings are final. Update the match season first.`);
+      }
+    }
+
+    // The title can change hands after a challenge is booked, and the result
+    // crowns whoever wins. As at booking, staff-booked title matches are not
+    // held to this, and a draw leaves the title where it is.
+    if (!isDraw && match.isChampionship && match.championshipId && match.challengeId) {
+      const championship = await championships.findById(match.championshipId);
+      const sides = match.teams?.length ? match.teams : [matchParticipants];
+      if (championship && !championIsOnASide(championship, sides)) {
+        return conflict(RESULT_NEEDS_CHAMPION_MESSAGE);
       }
     }
 

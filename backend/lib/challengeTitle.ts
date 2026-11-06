@@ -4,6 +4,8 @@ export const CHAMPIONSHIP_NOT_FOUND_MESSAGE = 'Championship not found';
 export const INACTIVE_CHAMPIONSHIP_MESSAGE = 'This championship is inactive and cannot be challenged for';
 /** The frontend matches this wording to show its translation, in ScheduleMatch.tsx. */
 export const CHALLENGE_NEEDS_CHAMPION_MESSAGE = 'A title match from a challenge must include the current champion. Add them, or book it as a non-title match.';
+/** The frontend matches this wording to show its translation, in MatchResultForm.tsx. */
+export const RESULT_NEEDS_CHAMPION_MESSAGE = 'The current champion is no longer in this title match. Edit the match, or make it a non-title match, then record the result.';
 
 type TitleType = Championship['type'];
 

@@ -584,6 +584,8 @@ export interface Match {
   seasonId?: string;
   eventId?: string;
   /** Optional pointer to the rivalry this match advances (RIV-06). */
+  /** The challenge this match was booked from. */
+  challengeId?: string;
   rivalryId?: string;
   status: MatchStatus;
   slots?: MatchSlot[];

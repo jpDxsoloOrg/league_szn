@@ -105,6 +105,7 @@ vi.mock('../../fantasy/calculateFantasyPoints', () => ({
 }));
 
 import { handler as recordResult } from '../recordResult';
+import { RESULT_NEEDS_CHAMPION_MESSAGE } from '../../../lib/challengeTitle';
 
 // ---- Helpers ---------------------------------------------------------------
 
@@ -289,5 +290,114 @@ describe('recordResult — championship title defense', () => {
     // Close old + new reign
     expect(champTx.closeReign).toHaveBeenCalled();
     expect(champTx.startReign).toHaveBeenCalled();
+  });
+});
+
+describe('recordResult — challenge title match whose champion is no longer in it', () => {
+  const challengeMatch = { ...champMatch, challengeId: 'ch1' };
+
+  beforeEach(() => vi.clearAllMocks());
+
+  function stubChallengeMatch(match: Record<string, unknown>, champData: Record<string, unknown>) {
+    stubChamp(champData);
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(match);
+  }
+
+  it('refuses the result and changes nothing when the title moved to someone outside the match', async () => {
+    stubChallengeMatch(challengeMatch, { championshipId: 'c1', currentChampion: 'p3' });
+
+    const result = await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
+
+    expect(result!.statusCode).toBe(409);
+    expect(JSON.parse(result!.body).message).toBe(RESULT_NEEDS_CHAMPION_MESSAGE);
+    expect(mockRunInTransaction).not.toHaveBeenCalled();
+  });
+
+  it('refuses the second of two open challenges once the first has moved the title', async () => {
+    const title = { championshipId: 'c1', currentChampion: 'p1' as string };
+    stubChallengeMatch({ ...challengeMatch, participants: ['p1', 'p2'] }, title);
+    mockChampionshipsRepo.findById.mockImplementation(async () => ({ ...title }));
+    mockRunInTransaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
+      await fn({
+        updateMatch: vi.fn(),
+        incrementPlayerRecord: vi.fn(),
+        incrementStanding: vi.fn(),
+        updateChampionship: (_id: string, patch: { currentChampion: string }) => {
+          title.currentChampion = patch.currentChampion;
+        },
+        closeReign: vi.fn(),
+        startReign: vi.fn(),
+      });
+    });
+
+    const first = await recordResult(ev({ winners: ['p2'], losers: ['p1'] }), ctx, cb);
+    expect(first!.statusCode).toBe(200);
+    expect(title.currentChampion).toBe('p2');
+
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue({ ...challengeMatch, matchId: 'm2', participants: ['p1', 'p3'] });
+    const second = await recordResult(ev({ winners: ['p3'], losers: ['p1'] }), ctx, cb);
+
+    expect(second!.statusCode).toBe(409);
+    expect(title.currentChampion).toBe('p2');
+  });
+
+  it('still records when the champion is in the match', async () => {
+    stubChallengeMatch(challengeMatch, { championshipId: 'c1', currentChampion: 'p2' });
+
+    const result = await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(capturedTxCalls[capturedTxCalls.length - 1].updateChampionship)
+      .toHaveBeenCalledWith('c1', { currentChampion: 'p1' });
+  });
+
+  it('still records for a vacant title', async () => {
+    stubChallengeMatch(challengeMatch, { championshipId: 'c1' });
+
+    const result = await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+  });
+
+  it('still records a draw, which leaves the title alone', async () => {
+    stubChallengeMatch(challengeMatch, { championshipId: 'c1', currentChampion: 'p3' });
+
+    const result = await recordResult(ev({ winners: ['p1', 'p2'], losers: [], isDraw: true }), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(mockChampionshipsRepo.findById).not.toHaveBeenCalled();
+  });
+
+  it('still records once staff have made it a non-title match', async () => {
+    stubChallengeMatch({ ...challengeMatch, isChampionship: false, championshipId: undefined }, {
+      championshipId: 'c1',
+      currentChampion: 'p3',
+    });
+
+    const result = await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+  });
+
+  it('needs both tag champions on one side', async () => {
+    const teams = [['p1', 'p2'], ['p3', 'p4']];
+    const tagMatch = { ...challengeMatch, participants: teams.flat(), teams };
+    const body = { winners: ['p3', 'p4'], losers: ['p1', 'p2'] };
+
+    stubChallengeMatch(tagMatch, { championshipId: 'c1', currentChampion: ['p1', 'p3'] });
+    expect((await recordResult(ev(body), ctx, cb))!.statusCode).toBe(409);
+
+    stubChallengeMatch(tagMatch, { championshipId: 'c1', currentChampion: ['p1', 'p2'] });
+    expect((await recordResult(ev(body), ctx, cb))!.statusCode).toBe(200);
+  });
+
+  it('leaves a staff-booked title match without the champion as it was', async () => {
+    stubChamp({ championshipId: 'c1', currentChampion: 'p3' });
+
+    const result = await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(capturedTxCalls[capturedTxCalls.length - 1].updateChampionship)
+      .toHaveBeenCalledWith('c1', { currentChampion: 'p1' });
   });
 });

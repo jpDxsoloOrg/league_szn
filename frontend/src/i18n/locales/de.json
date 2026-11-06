@@ -716,7 +716,8 @@
     "success": "Kampfergebnis erfolgreich eingetragen!",
     "error": "Ergebnis konnte nicht eingetragen werden",
     "selectMatch": "Wählen Sie einen Kampf aus, um das Ergebnis einzutragen",
-    "noScheduledMatches": "Keine geplanten Kämpfe zum Eintragen vorhanden."
+    "noScheduledMatches": "Keine geplanten Kämpfe zum Eintragen vorhanden.",
+    "championNotInMatch": "Der aktuelle Champion ist nicht mehr Teil dieses Titelkampfs. Bearbeite den Kampf oder mache daraus einen Kampf ohne Titel und trage dann das Ergebnis ein."
   },
   "tournaments": {
     "title": "Turniere",
