@@ -115,7 +115,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const now = Date.now();
     const recentPromos = perPlayerPromos
       .flat()
-      .filter((p) => !isPromoArchived(p, now) && !hiddenAuthorIds.has(p.playerId))
+      .filter((p) => !p.isHidden && !isPromoArchived(p, now) && !hiddenAuthorIds.has(p.playerId))
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
       .slice(0, MAX_PROMOS)
       .map((p) => ({

@@ -298,7 +298,7 @@ describe('getDashboard', () => {
     const { body } = await call<Dashboard>(getDashboard, makeEvent());
 
     expect(body.recentResults).toHaveLength(1);
-    expect(body.recentResults[0].loserName).toBe(NEEDS_WRESTLER);
+    expect(body.recentResults[0].loserName).toBe('Placeholder Person');
   });
 });
 

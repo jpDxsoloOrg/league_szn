@@ -1,6 +1,13 @@
 import type { Match } from './repositories';
+import {
+  computeRecentFormAndStreak as computeFromResults,
+  type FormAndStreak,
+  type FormResult,
+} from './stats/recentFormAndStreak';
 
-export type FormResult = 'W' | 'L' | 'D';
+export type { FormResult };
+
+const RECENT_FORM_LIMIT = 5;
 
 export function getResultForPlayer(
   playerId: string,
@@ -21,26 +28,17 @@ export type CompletedMatchForForm = Pick<Match, 'participants' | 'winners' | 'lo
 export function computeRecentFormAndStreak(
   playerId: string,
   completedMatches: CompletedMatchForForm[]
-): { recentForm: FormResult[]; currentStreak: { type: FormResult; count: number } } {
+): FormAndStreak {
   // Rows with no updatedAt can't be ordered, so they're left out — the same
   // rule getStandings applies; keeping it here means every caller agrees.
-  const playerMatches = completedMatches
+  const resultsNewestFirst = completedMatches
     .filter((m) => m.updatedAt && (m.participants || []).includes(playerId))
     .sort((a, b) => {
       const aTime = new Date(a.updatedAt ?? 0).getTime();
       const bTime = new Date(b.updatedAt ?? 0).getTime();
       return bTime - aTime;
     })
-    .slice(0, 5);
-  const recentForm: FormResult[] = playerMatches.map((m) => getResultForPlayer(playerId, m));
-  if (recentForm.length === 0) {
-    return { recentForm: [], currentStreak: { type: 'W', count: 0 } };
-  }
-  const first = recentForm[0];
-  let count = 0;
-  for (const r of recentForm) {
-    if (r !== first) break;
-    count++;
-  }
-  return { recentForm, currentStreak: { type: first, count } };
+    .map((m) => getResultForPlayer(playerId, m));
+  // The form window is capped; the streak runs over every result.
+  return computeFromResults(resultsNewestFirst, RECENT_FORM_LIMIT);
 }

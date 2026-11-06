@@ -1,17 +1,20 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories, NotFoundError } from '../../lib/repositories';
+import type { ShowPatch } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
-interface UpdateShowBody {
-  name?: string;
-  companyId?: string;
-  description?: string;
-  schedule?: string;
-  dayOfWeek?: string;
-  ppvDate?: string;
-  imageUrl?: string;
-}
+// updateHandlerFactory has no validation hook for the company check below, so
+// the patch is built here. Only these fields ever reach the repository.
+const PATCH_FIELDS: ReadonlyArray<keyof ShowPatch> = [
+  'name',
+  'companyId',
+  'description',
+  'schedule',
+  'dayOfWeek',
+  'ppvDate',
+  'imageUrl',
+];
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -20,8 +23,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Show ID is required');
     }
 
-    const { data: body, error: parseError } = parseBody<UpdateShowBody>(event);
+    const { data: body, error: parseError } = parseBody<ShowPatch>(event);
     if (parseError) return parseError;
+
+    const patch: ShowPatch = {};
+    for (const field of PATCH_FIELDS) {
+      if (body[field] !== undefined) patch[field] = body[field];
+    }
 
     const { leagueOps: { shows, companies } } = getRepositories();
     const existing = await shows.findById(showId);
@@ -30,19 +38,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // If companyId is being changed, validate the new company exists
-    if (body.companyId !== undefined) {
-      const company = await companies.findById(body.companyId);
+    if (patch.companyId !== undefined) {
+      const company = await companies.findById(patch.companyId);
       if (!company) {
-        return notFound(`Company ${body.companyId} not found`);
+        return notFound(`Company ${patch.companyId} not found`);
       }
     }
 
-    const hasChanges = Object.values(body).some((v) => v !== undefined);
-    if (!hasChanges) {
+    if (Object.keys(patch).length === 0) {
       return badRequest('No valid fields to update');
     }
 
-    const updated = await shows.update(showId, body);
+    const updated = await shows.update(showId, patch);
     return success(updated);
   } catch (err) {
     if (err instanceof NotFoundError) return notFound('Show not found');

@@ -1,15 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import type {
-  Match,
-  ChampionshipHistoryEntry,
-  Season,
-  Tournament,
-  Challenge,
-  Promo,
-  Player,
-  Championship,
-} from '../../lib/repositories';
+import type { Player, Championship } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { isPlayerVisible } from '../../lib/needsWrestler';
 import { isPromoArchived } from '../../lib/promoArchive';
@@ -84,6 +75,10 @@ function buildChampionshipNameMap(allChampionships: Championship[]): Record<stri
   return names;
 }
 
+function loadIf<TItem>(enabled: boolean, load: () => Promise<TItem[]>): Promise<TItem[]> {
+  return enabled ? load() : Promise.resolve([]);
+}
+
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { limit, cursor, typeFilter } = parseQuery(event);
@@ -98,71 +93,98 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const rawItems: { type: ActivityItemType; timestamp: string; id: string; summary: string; metadata: Record<string, unknown> }[] = [];
     const playerIds = new Set<string>();
-    const championshipIds = new Set<string>();
 
-    if (includeMatch) {
-      const completedMatches: Match[] = await matches.listCompleted();
-      for (const m of completedMatches) {
-        if (!m.updatedAt) continue; // only show matches that have been recorded/updated with updatedAt
-        const participants = m.participants || [];
-        const winners = m.winners || [];
-        const losers = m.losers || [];
-        participants.forEach((p) => playerIds.add(p));
-        rawItems.push({
-          type: 'match_result',
-          timestamp: m.updatedAt,
-          id: `match-${m.matchId}`,
-          summary: '', // filled after we have names
-          metadata: {
-            matchId: m.matchId,
-            date: m.date,
-            matchFormat: m.matchFormat,
-            stipulationId: m.stipulationId,
-            participants,
-            winners,
-            losers,
-            isChampionship: m.isChampionship,
-            championshipId: m.championshipId,
-            tournamentId: m.tournamentId,
-            eventId: m.eventId,
-          },
-        });
-      }
+    // Every source is independent, so they load together. Players and
+    // championships back the name maps used further down.
+    const [
+      completedMatches,
+      history,
+      allSeasons,
+      allTournaments,
+      allChallenges,
+      allPromos,
+      allPlayers,
+      allChampionships,
+    ] = await Promise.all([
+      loadIf(includeMatch, () => matches.listCompleted()),
+      loadIf(includeChampionship, () => championships.listAllHistory()),
+      loadIf(includeSeason, () => seasons.list()),
+      loadIf(includeTournament, () => tournaments.list()),
+      loadIf(includeChallenge, () => challenges.list()),
+      loadIf(includePromo, () => promos.list()),
+      players.list(),
+      loadIf(includeChampionship, () => championships.list()),
+    ]);
+
+    for (const m of completedMatches) {
+      if (!m.updatedAt) continue; // only show matches that have been recorded/updated with updatedAt
+      const participants = m.participants || [];
+      const winners = m.winners || [];
+      const losers = m.losers || [];
+      participants.forEach((p) => playerIds.add(p));
+      rawItems.push({
+        type: 'match_result',
+        timestamp: m.updatedAt,
+        id: `match-${m.matchId}`,
+        summary: '', // filled after we have names
+        metadata: {
+          matchId: m.matchId,
+          date: m.date,
+          matchFormat: m.matchFormat,
+          stipulationId: m.stipulationId,
+          participants,
+          winners,
+          losers,
+          isChampionship: m.isChampionship,
+          championshipId: m.championshipId,
+          tournamentId: m.tournamentId,
+          eventId: m.eventId,
+        },
+      });
     }
 
-    if (includeChampionship) {
-      const history: ChampionshipHistoryEntry[] = await championships.listAllHistory();
-      for (const h of history) {
-        if (!h.updatedAt) continue; // only show championship history with updatedAt
-        championshipIds.add(h.championshipId);
-        const champion = h.champion;
-        if (typeof champion === 'string') playerIds.add(champion);
-        else if (Array.isArray(champion)) champion.forEach((c) => playerIds.add(c));
-        rawItems.push({
-          type: 'championship_change',
-          timestamp: h.updatedAt,
-          id: `championship-${h.championshipId}-${h.wonDate}`,
-          summary: '',
-          metadata: {
-            championshipId: h.championshipId,
-            wonDate: h.wonDate,
-            champion,
-            matchId: h.matchId,
-            lostDate: h.lostDate,
-            daysHeld: h.daysHeld,
-          },
-        });
-      }
+    for (const h of history) {
+      if (!h.updatedAt) continue; // only show championship history with updatedAt
+      const champion = h.champion;
+      if (typeof champion === 'string') playerIds.add(champion);
+      else if (Array.isArray(champion)) champion.forEach((c) => playerIds.add(c));
+      rawItems.push({
+        type: 'championship_change',
+        timestamp: h.updatedAt,
+        id: `championship-${h.championshipId}-${h.wonDate}`,
+        summary: '',
+        metadata: {
+          championshipId: h.championshipId,
+          wonDate: h.wonDate,
+          champion,
+          matchId: h.matchId,
+          lostDate: h.lostDate,
+          daysHeld: h.daysHeld,
+        },
+      });
     }
 
-    if (includeSeason) {
-      const allSeasons: Season[] = await seasons.list();
-      for (const s of allSeasons) {
-        if (!s.updatedAt) continue; // only show seasons with updatedAt
+    for (const s of allSeasons) {
+      if (!s.updatedAt) continue; // only show seasons with updatedAt
+      rawItems.push({
+        type: 'season_event',
+        timestamp: s.updatedAt,
+        id: `season-start-${s.seasonId}`,
+        summary: '',
+        metadata: {
+          seasonId: s.seasonId,
+          name: s.name,
+          startDate: s.startDate,
+          endDate: s.endDate,
+          status: s.status,
+          event: 'started',
+        },
+      });
+      if (s.status === 'completed' && s.endDate) {
         rawItems.push({
           type: 'season_event',
           timestamp: s.updatedAt,
-          id: `season-start-${s.seasonId}`,
+          id: `season-end-${s.seasonId}`,
           summary: '',
           metadata: {
             seasonId: s.seasonId,
@@ -170,106 +192,75 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             startDate: s.startDate,
             endDate: s.endDate,
             status: s.status,
-            event: 'started',
-          },
-        });
-        if (s.status === 'completed' && s.endDate) {
-          rawItems.push({
-            type: 'season_event',
-            timestamp: s.updatedAt,
-            id: `season-end-${s.seasonId}`,
-            summary: '',
-            metadata: {
-              seasonId: s.seasonId,
-              name: s.name,
-              startDate: s.startDate,
-              endDate: s.endDate,
-              status: s.status,
-              event: 'ended',
-            },
-          });
-        }
-      }
-    }
-
-    if (includeTournament) {
-      const allTournaments: Tournament[] = await tournaments.list();
-      for (const t of allTournaments) {
-        const updatedAt = t.updatedAt || t.createdAt;
-        if (!updatedAt) continue; // only show tournaments with updatedAt or createdAt
-        if (t.winner) playerIds.add(t.winner);
-        rawItems.push({
-          type: 'tournament_result',
-          timestamp: updatedAt,
-          id: `tournament-${t.tournamentId}`,
-          summary: '',
-          metadata: {
-            tournamentId: t.tournamentId,
-            name: t.name,
-            type: t.type,
-            status: t.status,
-            winner: t.winner,
-            createdAt: t.createdAt,
+            event: 'ended',
           },
         });
       }
     }
 
-    if (includeChallenge) {
-      const allChallenges: Challenge[] = await challenges.list();
-      for (const c of allChallenges) {
-        // Nobody did anything when a challenge lapses, so it isn't news.
-        if (c.status === 'expired') continue;
-        const updatedAt = c.updatedAt || c.createdAt;
-        if (!updatedAt) continue; // only show challenges with updatedAt or createdAt
-        playerIds.add(c.challengerId);
-        playerIds.add(c.challengedId);
-        rawItems.push({
-          type: 'challenge_event',
-          timestamp: updatedAt,
-          id: `challenge-${c.challengeId}`,
-          summary: '',
-          metadata: {
-            challengeId: c.challengeId,
-            challengerId: c.challengerId,
-            challengedId: c.challengedId,
-            status: c.status,
-            createdAt: c.createdAt,
-            updatedAt: c.updatedAt,
-          },
-        });
-      }
+    for (const t of allTournaments) {
+      const updatedAt = t.updatedAt || t.createdAt;
+      if (!updatedAt) continue; // only show tournaments with updatedAt or createdAt
+      if (t.winner) playerIds.add(t.winner);
+      rawItems.push({
+        type: 'tournament_result',
+        timestamp: updatedAt,
+        id: `tournament-${t.tournamentId}`,
+        summary: '',
+        metadata: {
+          tournamentId: t.tournamentId,
+          name: t.name,
+          type: t.type,
+          status: t.status,
+          winner: t.winner,
+          createdAt: t.createdAt,
+        },
+      });
     }
 
-    if (includePromo) {
-      const allPromos: Promo[] = await promos.list();
-      const now = Date.now();
-      for (const p of allPromos) {
-        if (isPromoArchived(p, now)) continue;
-        const updatedAt = p.updatedAt || p.createdAt;
-        if (!updatedAt) continue; // only show promos with updatedAt or createdAt
-        playerIds.add(p.playerId);
-        rawItems.push({
-          type: 'promo_posted',
-          timestamp: updatedAt,
-          id: `promo-${p.promoId}`,
-          summary: '',
-          metadata: {
-            promoId: p.promoId,
-            playerId: p.playerId,
-            promoType: p.promoType,
-            title: p.title,
-            createdAt: p.createdAt,
-          },
-        });
-      }
+    for (const c of allChallenges) {
+      // Nobody did anything when a challenge lapses, so it isn't news.
+      if (c.status === 'expired') continue;
+      const updatedAt = c.updatedAt || c.createdAt;
+      if (!updatedAt) continue; // only show challenges with updatedAt or createdAt
+      playerIds.add(c.challengerId);
+      playerIds.add(c.challengedId);
+      rawItems.push({
+        type: 'challenge_event',
+        timestamp: updatedAt,
+        id: `challenge-${c.challengeId}`,
+        summary: '',
+        metadata: {
+          challengeId: c.challengeId,
+          challengerId: c.challengerId,
+          challengedId: c.challengedId,
+          status: c.status,
+          createdAt: c.createdAt,
+          updatedAt: c.updatedAt,
+        },
+      });
     }
 
-    // Batch-fetch all players and championships to build name maps (eliminates N+1 lookups)
-    const [allPlayers, allChampionships] = await Promise.all([
-      players.list(),
-      championshipIds.size > 0 ? championships.list() : Promise.resolve([]),
-    ]);
+    const now = Date.now();
+    for (const p of allPromos) {
+      if (p.isHidden || isPromoArchived(p, now)) continue;
+      const updatedAt = p.updatedAt || p.createdAt;
+      if (!updatedAt) continue; // only show promos with updatedAt or createdAt
+      playerIds.add(p.playerId);
+      rawItems.push({
+        type: 'promo_posted',
+        timestamp: updatedAt,
+        id: `promo-${p.promoId}`,
+        summary: '',
+        metadata: {
+          promoId: p.promoId,
+          playerId: p.playerId,
+          promoType: p.promoType,
+          title: p.title,
+          createdAt: p.createdAt,
+        },
+      });
+    }
 
     const playerNames = buildPlayerNameMap(allPlayers);
     const championshipNames = buildChampionshipNameMap(allChampionships);

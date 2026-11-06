@@ -22,6 +22,7 @@ const DEFAULT_FEATURES = {
   statistics: true,
   stables: true,
   rivalries: true,
+  notifications: true,
 };
 
 function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent {
@@ -95,6 +96,7 @@ describe('getSiteConfig', () => {
       statistics: true,
       stables: true,
       rivalries: true,
+      notifications: true,
     });
   });
 });
@@ -183,6 +185,18 @@ describe('updateSiteConfig', () => {
     expect(JSON.parse(result!.body).message).toBe('Feature value for challenges must be a boolean');
   });
 
+  it.each(['rivalries', 'notifications'])('saves the %s toggle', async (feature) => {
+    const event = withAuth(
+      makeEvent({ httpMethod: 'PUT', body: JSON.stringify({ features: { [feature]: false } }) }),
+      'Admin',
+    );
+
+    const result = await updateSiteConfig(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body).features[feature]).toBe(false);
+  });
+
   it('merges new features with existing config and returns updated features', async () => {
     await siteConfigRepo.updateFeatures({
       challenges: true,
@@ -208,6 +222,7 @@ describe('updateSiteConfig', () => {
       statistics: true,
       stables: true,
       rivalries: true,
+      notifications: true,
     });
   });
 
@@ -228,6 +243,7 @@ describe('updateSiteConfig', () => {
       statistics: false,
       stables: true,
       rivalries: true,
+      notifications: true,
     });
   });
 });

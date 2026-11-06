@@ -1,6 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, notFound, badRequest, serverError } from '../../lib/response';
+import type { Promo } from '../../lib/repositories/types';
+import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -16,22 +18,35 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return notFound('Promo not found');
     }
 
+    // A moderated promo stays readable by staff and by its author only.
+    const caller = await getVerifiedCaller(event);
+    const staff = isStaff(caller);
+    const callerPlayer = !staff && caller?.sub ? await players.findByUserId(caller.sub) : null;
+    const canRead = (p: Promo): boolean =>
+      !p.isHidden || staff || p.playerId === callerPlayer?.playerId;
+
+    if (!canRead(promo)) {
+      return notFound('Promo not found');
+    }
+
     // Get responses to this promo
     const responses = (await promos.listResponsesTo(promoId))
       .filter((p) => !p.isHidden);
 
     // Collect player IDs
-    const playerIds = new Set<string>();
-    playerIds.add(promo.playerId);
-    if (promo.targetPlayerId) playerIds.add(promo.targetPlayerId);
+    const uniquePlayerIds = new Set<string>();
+    uniquePlayerIds.add(promo.playerId);
+    if (promo.targetPlayerId) uniquePlayerIds.add(promo.targetPlayerId);
     for (const r of responses) {
-      playerIds.add(r.playerId);
-      if (r.targetPlayerId) playerIds.add(r.targetPlayerId);
+      uniquePlayerIds.add(r.playerId);
+      if (r.targetPlayerId) uniquePlayerIds.add(r.targetPlayerId);
     }
+    const playerIds = [...uniquePlayerIds];
+    const fetchedPlayers = await Promise.all(playerIds.map((pid) => players.findById(pid)));
 
     const playerMap: Record<string, { name: string; currentWrestler: string; imageUrl?: string }> = {};
-    for (const pid of playerIds) {
-      const player = await players.findById(pid);
+    playerIds.forEach((pid, index) => {
+      const player = fetchedPlayers[index];
       if (player) {
         playerMap[pid] = {
           name: player.name,
@@ -39,7 +54,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           imageUrl: player.imageUrl,
         };
       }
-    }
+    });
 
     const author = playerMap[promo.playerId];
     const target = promo.targetPlayerId ? playerMap[promo.targetPlayerId] : undefined;
@@ -48,7 +63,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     let targetPromo: Record<string, unknown> | undefined;
     if (promo.targetPromoId) {
       const tp = await promos.findById(promo.targetPromoId);
-      if (tp) {
+      if (tp && canRead(tp)) {
         targetPromo = {
           promoId: tp.promoId,
           playerId: tp.playerId,
