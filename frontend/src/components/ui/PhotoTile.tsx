@@ -38,7 +38,8 @@ export default function PhotoTile({ imageUrl, imageAlt = '', title, eyebrow, met
   const body = (
     <>
       {hasImage ? (
-        <img className="ui-tile__image" src={imageUrl ?? undefined} alt={imageAlt} loading="lazy" onError={() => setFailed(true)} />
+        // React sets props in order, and loading has to land before src or some browsers fetch at once.
+        <img className="ui-tile__image" loading="lazy" src={imageUrl ?? undefined} alt={imageAlt} onError={() => setFailed(true)} />
       ) : (
         <span className="ui-tile__fallback" aria-hidden="true">{fallbackIcon ?? getInitials(title)}</span>
       )}
