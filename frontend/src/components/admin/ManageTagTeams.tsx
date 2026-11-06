@@ -4,35 +4,63 @@ import { tagTeamsApi } from '../../services/api/tagTeams.api';
 import { playersApi } from '../../services/api';
 import type { Player } from '../../types';
 import type { TagTeam, TagTeamStatus } from '../../types/tagTeam';
-import './ManageTagTeams.css';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
+import Badge from '../ui/Badge';
+import type { BadgeTone } from '../ui/Badge';
+import Button from '../ui/Button';
+import DataTable from '../ui/DataTable';
+import type { DataTableColumn } from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Select from '../ui/Select';
+import { useToast } from '../ui/toastContext';
+import AdminNotice from './AdminNotice';
+import ConfirmModal from './ConfirmModal';
+import HiddenBadge from './HiddenBadge';
+import './adminRoster.css';
 
 const ALL_STATUSES: TagTeamStatus[] = ['pending_partner', 'pending_admin', 'active', 'dissolved'];
 
+const STATUS_TONES: Record<TagTeamStatus, BadgeTone> = {
+  pending_partner: 'neutral',
+  pending_admin: 'warning',
+  active: 'win',
+  dissolved: 'draw',
+};
+
+const STATUS_DEFAULTS: Record<TagTeamStatus, string> = {
+  pending_partner: 'Pending Partner',
+  pending_admin: 'Pending Admin',
+  active: 'Active',
+  dissolved: 'Dissolved',
+};
+
 export default function ManageTagTeams() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [tagTeams, setTagTeams] = useState<TagTeam[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<TagTeamStatus | 'all'>('all');
-  const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<TagTeam | null>(null);
 
   const loadTagTeams = useCallback(async () => {
     try {
       setError(null);
       const [data, playersData] = await Promise.all([
         tagTeamsApi.getAll(),
-        playersApi.getAll(),
+        playersApi.getAllIncludingHidden(),
       ]);
       setTagTeams(data);
       setPlayers(playersData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load tag teams');
+      setError(err instanceof Error ? err.message : t('adminRoster.tagTeams.loadError', 'Failed to load tag teams'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadTagTeams();
@@ -40,245 +68,194 @@ export default function ManageTagTeams() {
 
   const filtered = useMemo(() => {
     if (statusFilter === 'all') return tagTeams;
-    return tagTeams.filter((tt) => tt.status === statusFilter);
+    return tagTeams.filter((tagTeam) => tagTeam.status === statusFilter);
   }, [tagTeams, statusFilter]);
 
-  const showFeedback = (message: string, type: 'success' | 'error') => {
-    setFeedback({ message, type });
-    setTimeout(() => setFeedback(null), 3000);
-  };
+  const statusLabel = (status: TagTeamStatus) => t(`adminRoster.tagTeams.status.${status}`, STATUS_DEFAULTS[status]);
 
-  const handleApprove = async (tagTeam: TagTeam) => {
+  /** Runs one row action, then reports the outcome and reloads the list. */
+  const runAction = async (tagTeam: TagTeam, action: () => Promise<unknown>, doneLabel: string, failure: string) => {
     setSubmitting(tagTeam.tagTeamId);
     try {
-      await tagTeamsApi.approve(tagTeam.tagTeamId);
-      showFeedback(
-        t('tagTeams.admin.approved', 'Approved') + `: ${tagTeam.name}`,
-        'success'
-      );
+      await action();
+      showToast(`${doneLabel}: ${tagTeam.name}`, 'success');
       await loadTagTeams();
     } catch (err) {
-      showFeedback(
-        err instanceof Error ? err.message : 'Failed to approve tag team',
-        'error'
-      );
+      showToast(err instanceof Error ? err.message : failure, 'error');
     } finally {
       setSubmitting(null);
     }
   };
 
-  const handleReject = async (tagTeam: TagTeam) => {
-    setSubmitting(tagTeam.tagTeamId);
-    try {
-      await tagTeamsApi.reject(tagTeam.tagTeamId);
-      showFeedback(
-        t('tagTeams.admin.rejected', 'Rejected') + `: ${tagTeam.name}`,
-        'success'
-      );
-      await loadTagTeams();
-    } catch (err) {
-      showFeedback(
-        err instanceof Error ? err.message : 'Failed to reject tag team',
-        'error'
-      );
-    } finally {
-      setSubmitting(null);
-    }
-  };
-
-  const handleDissolve = async (tagTeam: TagTeam) => {
-    setSubmitting(tagTeam.tagTeamId);
-    try {
-      await tagTeamsApi.dissolve(tagTeam.tagTeamId);
-      showFeedback(
-        t('tagTeams.admin.dissolved', 'Dissolved') + `: ${tagTeam.name}`,
-        'success'
-      );
-      await loadTagTeams();
-    } catch (err) {
-      showFeedback(
-        err instanceof Error ? err.message : 'Failed to dissolve tag team',
-        'error'
-      );
-    } finally {
-      setSubmitting(null);
-    }
-  };
-
-  const handleDelete = async (tagTeam: TagTeam) => {
-    setSubmitting(tagTeam.tagTeamId);
-    try {
-      await tagTeamsApi.delete(tagTeam.tagTeamId);
-      showFeedback(
-        t('tagTeams.admin.deleted', 'Deleted') + `: ${tagTeam.name}`,
-        'success'
-      );
-      await loadTagTeams();
-    } catch (err) {
-      showFeedback(
-        err instanceof Error ? err.message : 'Failed to delete tag team',
-        'error'
-      );
-    } finally {
-      setSubmitting(null);
-    }
-  };
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString();
-  };
-
-  const formatPlayer = (playerId: string) => {
-    const player = players.find((p) => p.playerId === playerId);
-    if (!player) return playerId;
-    const parts = [player.name];
-    if (player.currentWrestler) parts.push(player.currentWrestler);
-    if (player.psnId) parts.push(player.psnId);
-    return parts.join(' / ');
-  };
-
-  if (loading) {
-    return (
-      <div className="admin-tagteams">
-        <h3>{t('tagTeams.admin.title', 'Manage Tag Teams')}</h3>
-        <div className="admin-tagteams-empty"><p>Loading...</p></div>
-      </div>
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
+    const tagTeam = pendingDelete;
+    await runAction(
+      tagTeam,
+      () => tagTeamsApi.delete(tagTeam.tagTeamId),
+      t('adminRoster.tagTeams.deleted', 'Deleted'),
+      t('adminRoster.tagTeams.deleteError', 'Failed to delete tag team'),
     );
-  }
+    setPendingDelete(null);
+  };
 
-  if (error) {
+  const renderPlayer = (playerId: string) => {
+    const player = players.find((candidate) => candidate.playerId === playerId);
+    if (!player) return <span className="ar-sub">{t('common.unknown', 'Unknown')}</span>;
+    const details = [isNeedsWrestler(player.currentWrestler) ? '' : player.currentWrestler, player.psnId]
+      .filter(Boolean)
+      .join(' / ');
     return (
-      <div className="admin-tagteams">
-        <h3>{t('tagTeams.admin.title', 'Manage Tag Teams')}</h3>
-        <div className="admin-tagteams-feedback error">{error}</div>
-        <button onClick={loadTagTeams}>Retry</button>
-      </div>
+      <span className="ar-stack">
+        <span>{player.name}</span>
+        {details && <span className="ar-sub">{details}</span>}
+        {isNeedsWrestler(player.currentWrestler) && <HiddenBadge />}
+      </span>
     );
-  }
+  };
+
+  const columns: DataTableColumn<TagTeam>[] = [
+    {
+      key: 'name',
+      header: t('adminRoster.tagTeams.name', 'Name'),
+      render: (tagTeam) => <span className="ar-strong">{tagTeam.name}</span>,
+      sortValue: (tagTeam) => tagTeam.name,
+    },
+    { key: 'player1', header: t('adminRoster.tagTeams.player1', 'Player 1'), render: (tagTeam) => renderPlayer(tagTeam.player1Id) },
+    { key: 'player2', header: t('adminRoster.tagTeams.player2', 'Player 2'), render: (tagTeam) => renderPlayer(tagTeam.player2Id) },
+    {
+      key: 'status',
+      header: t('adminRoster.tagTeams.statusColumn', 'Status'),
+      render: (tagTeam) => <Badge tone={STATUS_TONES[tagTeam.status]}>{statusLabel(tagTeam.status)}</Badge>,
+      sortValue: (tagTeam) => tagTeam.status,
+    },
+    {
+      key: 'record',
+      header: t('adminRoster.tagTeams.record', 'W/L/D'),
+      render: (tagTeam) => <span className="ar-numeric">{tagTeam.wins}-{tagTeam.losses}-{tagTeam.draws}</span>,
+      sortValue: (tagTeam) => tagTeam.wins,
+    },
+    {
+      key: 'created',
+      header: t('adminRoster.tagTeams.created', 'Created'),
+      hideOnMobile: true,
+      render: (tagTeam) => new Date(tagTeam.createdAt).toLocaleDateString(),
+      sortValue: (tagTeam) => tagTeam.createdAt,
+    },
+    {
+      key: 'actions',
+      header: t('common.actions', 'Actions'),
+      align: 'end',
+      render: (tagTeam) => {
+        const busy = submitting === tagTeam.tagTeamId;
+        return (
+          <div className="ar-row-actions">
+            {tagTeam.status === 'pending_admin' && (
+              <>
+                <Button
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => runAction(
+                    tagTeam,
+                    () => tagTeamsApi.approve(tagTeam.tagTeamId),
+                    t('adminRoster.tagTeams.approved', 'Approved'),
+                    t('adminRoster.tagTeams.approveError', 'Failed to approve tag team'),
+                  )}
+                >
+                  {t('adminRoster.tagTeams.approve', 'Approve')}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => runAction(
+                    tagTeam,
+                    () => tagTeamsApi.reject(tagTeam.tagTeamId),
+                    t('adminRoster.tagTeams.rejected', 'Rejected'),
+                    t('adminRoster.tagTeams.rejectError', 'Failed to reject tag team'),
+                  )}
+                >
+                  {t('adminRoster.tagTeams.reject', 'Reject')}
+                </Button>
+              </>
+            )}
+            {tagTeam.status === 'active' && (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={busy}
+                onClick={() => runAction(
+                  tagTeam,
+                  () => tagTeamsApi.dissolve(tagTeam.tagTeamId),
+                  t('adminRoster.tagTeams.dissolved', 'Dissolved'),
+                  t('adminRoster.tagTeams.dissolveError', 'Failed to dissolve tag team'),
+                )}
+              >
+                {t('adminRoster.tagTeams.dissolve', 'Dissolve')}
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPendingDelete(tagTeam)}>
+              {t('common.delete', 'Delete')}
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
-    <div className="admin-tagteams">
-      <h3>{t('tagTeams.admin.title', 'Manage Tag Teams')}</h3>
+    <div className="ar-page admin-tagteams">
+      <PageHeader title={t('adminRoster.tagTeams.title', 'Manage Tag Teams')} />
 
-      <div className="admin-tagteams-controls">
-        <div className="admin-tagteams-filter">
-          <label>{t('tagTeams.admin.filterByStatus', 'Filter by status')}:</label>
-          <select
-            value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value as TagTeamStatus | 'all')
-            }
-          >
-            <option value="all">{t('tagTeams.admin.all', 'All')}</option>
-            {ALL_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {t(`tagTeams.status.${s}`, s.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase()))}
-              </option>
-            ))}
-          </select>
-        </div>
-        <span className="admin-tagteams-count">
-          {filtered.length} {filtered.length === 1 ? 'tag team' : 'tag teams'}
-        </span>
-      </div>
-
-      {feedback && (
-        <div className={`admin-tagteams-feedback ${feedback.type}`}>
-          {feedback.message}
-        </div>
-      )}
-
-      {filtered.length === 0 ? (
-        <div className="admin-tagteams-empty">
-          <p>{t('tagTeams.admin.noTagTeams', 'No tag teams found')}</p>
-        </div>
+      {error ? (
+        <>
+          <AdminNotice tone="error">{error}</AdminNotice>
+          <div><Button variant="secondary" onClick={loadTagTeams}>{t('common.retry', 'Retry')}</Button></div>
+        </>
       ) : (
-        <table className="admin-tagteams-table">
-          <thead>
-            <tr>
-              <th>{t('tagTeams.admin.name', 'Name')}</th>
-              <th>{t('tagTeams.admin.player1', 'Player 1')}</th>
-              <th>{t('tagTeams.admin.player2', 'Player 2')}</th>
-              <th>{t('tagTeams.admin.status', 'Status')}</th>
-              <th>{t('tagTeams.admin.record', 'W/L/D')}</th>
-              <th>{t('tagTeams.admin.created', 'Created')}</th>
-              <th>{t('tagTeams.admin.actions', 'Actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((tagTeam) => (
-              <tr key={tagTeam.tagTeamId}>
-                <td>
-                  <span className="admin-tagteams-name">{tagTeam.name}</span>
-                </td>
-                <td>
-                  <span className="admin-tagteams-player">{formatPlayer(tagTeam.player1Id)}</span>
-                </td>
-                <td>
-                  <span className="admin-tagteams-player">{formatPlayer(tagTeam.player2Id)}</span>
-                </td>
-                <td>
-                  <span className={`tagteams-status-badge ${tagTeam.status.replace('_', '-')}`}>
-                    {t(`tagTeams.status.${tagTeam.status}`, tagTeam.status.replace('_', ' '))}
-                  </span>
-                </td>
-                <td>
-                  <span className="admin-tagteams-record">
-                    {tagTeam.wins}-{tagTeam.losses}-{tagTeam.draws}
-                  </span>
-                </td>
-                <td>{formatDate(tagTeam.createdAt)}</td>
-                <td>
-                  <div className="admin-tagteams-actions">
-                    {tagTeam.status === 'pending_admin' && (
-                      <>
-                        <button
-                          className="admin-btn-approve"
-                          onClick={() => handleApprove(tagTeam)}
-                          disabled={submitting === tagTeam.tagTeamId}
-                        >
-                          {submitting === tagTeam.tagTeamId
-                            ? '...'
-                            : t('tagTeams.admin.approve', 'Approve')}
-                        </button>
-                        <button
-                          className="admin-btn-reject"
-                          onClick={() => handleReject(tagTeam)}
-                          disabled={submitting === tagTeam.tagTeamId}
-                        >
-                          {submitting === tagTeam.tagTeamId
-                            ? '...'
-                            : t('tagTeams.admin.reject', 'Reject')}
-                        </button>
-                      </>
-                    )}
-                    {tagTeam.status === 'active' && (
-                      <button
-                        className="admin-btn-dissolve"
-                        onClick={() => handleDissolve(tagTeam)}
-                        disabled={submitting === tagTeam.tagTeamId}
-                      >
-                        {submitting === tagTeam.tagTeamId
-                          ? '...'
-                          : t('tagTeams.admin.dissolve', 'Dissolve')}
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="admin-btn-delete"
-                      onClick={() => handleDelete(tagTeam)}
-                      disabled={submitting === tagTeam.tagTeamId}
-                      title={t('tagTeams.admin.delete', 'Delete')}
-                    >
-                      {submitting === tagTeam.tagTeamId ? '...' : t('tagTeams.admin.delete', 'Delete')}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <>
+          <div className="ar-toolbar">
+            <div className="ar-toolbar__filters">
+              <Select
+                label={t('adminRoster.tagTeams.filterByStatus', 'Filter by status')}
+                value={statusFilter}
+                onValueChange={(value) => setStatusFilter(value as TagTeamStatus | 'all')}
+                options={[
+                  { value: 'all', label: t('common.all', 'All') },
+                  ...ALL_STATUSES.map((status) => ({ value: status, label: statusLabel(status) })),
+                ]}
+              />
+            </div>
+            <span className="ar-count">
+              {t('adminRoster.tagTeams.count', { defaultValue: '{{count}} tag teams', count: filtered.length })}
+            </span>
+          </div>
+
+          <DataTable
+            className="ar-table"
+            caption={t('adminRoster.tagTeams.title', 'Manage Tag Teams')}
+            density="dense"
+            columns={columns}
+            rows={filtered}
+            rowKey={(tagTeam) => tagTeam.tagTeamId}
+            loading={loading}
+            empty={<EmptyState title={t('adminRoster.tagTeams.empty', 'No tag teams found')} />}
+          />
+        </>
       )}
+
+      <ConfirmModal
+        open={pendingDelete !== null}
+        title={t('adminRoster.tagTeams.deleteTitle', 'Delete tag team')}
+        message={t('adminRoster.tagTeams.deleteConfirm', {
+          defaultValue: 'Delete "{{name}}"? This cannot be undone.',
+          name: pendingDelete?.name ?? '',
+        })}
+        confirmLabel={t('common.delete', 'Delete')}
+        busy={submitting !== null}
+        onConfirm={handleDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

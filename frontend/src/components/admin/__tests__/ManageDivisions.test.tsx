@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // --- Hoisted mocks ---
@@ -16,7 +16,7 @@ vi.mock('../../../services/api', () => ({
   divisionsApi: mockDivisionsApi,
 }));
 
-vi.mock('../ManageDivisions.css', () => ({}));
+vi.mock('react-i18next', async () => (await import('./i18nMock')).i18nMock);
 
 import ManageDivisions from '../ManageDivisions';
 import type { Division } from '../../../types';
@@ -116,7 +116,6 @@ describe('ManageDivisions', () => {
 
   it('deletes a division with confirmation dialog', async () => {
     mockDivisionsApi.delete.mockResolvedValue(undefined);
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
 
     render(<ManageDivisions />);
@@ -125,21 +124,21 @@ describe('ManageDivisions', () => {
     const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
     await user.click(deleteButtons[0]);
 
-    expect(confirmSpy).toHaveBeenCalledWith('Are you sure you want to delete this division?');
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('Are you sure you want to delete this division?');
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
     await waitFor(() => {
       expect(mockDivisionsApi.delete).toHaveBeenCalledWith('div-1');
     });
     await waitFor(() => {
       expect(screen.getByText('Division deleted successfully!')).toBeInTheDocument();
     });
-    confirmSpy.mockRestore();
   });
 
   it('shows error when delete fails (e.g., players assigned)', async () => {
     mockDivisionsApi.delete.mockRejectedValue(
       new Error('Cannot delete division with assigned players')
     );
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const user = userEvent.setup();
 
     render(<ManageDivisions />);
@@ -147,10 +146,10 @@ describe('ManageDivisions', () => {
 
     const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
     await user.click(deleteButtons[0]);
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }));
 
     await waitFor(() => {
       expect(screen.getByText('Cannot delete division with assigned players')).toBeInTheDocument();
     });
-    confirmSpy.mockRestore();
   });
 });

@@ -11,70 +11,82 @@
 
 .searchable-select-input {
   width: 100%;
-  padding: 0.5rem 2rem 0.5rem 0.75rem;
-  background-color: #0f0f0f;
-  border: 1px solid #333;
-  border-radius: 4px;
-  color: #e0e0e0;
-  font-size: 0.9rem;
-}
-
-.searchable-select-input:focus {
-  outline: none;
-  border-color: #d4af37;
+  min-height: var(--touch-target);
+  padding: 0.5rem 2.75rem 0.5rem 0.75rem;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  font-size: var(--text-dense);
 }
 
 .searchable-select-clear {
   position: absolute;
-  right: 0.5rem;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  padding: 0;
   background: none;
   border: none;
-  color: #888;
-  font-size: 1.1rem;
+  color: var(--color-text-muted);
   cursor: pointer;
-  padding: 0 0.25rem;
-  line-height: 1;
 }
 
 .searchable-select-clear:hover {
-  color: #d4af37;
+  background: none;
+  color: var(--color-text);
 }
 
 .searchable-select-dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 0.25rem);
   left: 0;
   right: 0;
-  max-height: 200px;
+  z-index: var(--z-dropdown);
+  max-height: 240px;
+  margin: 0;
+  padding: 0.25rem;
   overflow-y: auto;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  border-top: none;
-  border-radius: 0 0 4px 4px;
-  z-index: 100;
+  list-style: none;
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-overlay);
 }
 
 .searchable-select-option {
-  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  font-size: var(--text-dense);
   cursor: pointer;
-  color: #e0e0e0;
-  font-size: 0.9rem;
 }
 
-.searchable-select-option:hover {
-  background-color: #2a2416;
-  color: #d4af37;
+.searchable-select-option:hover,
+.searchable-select-option.active {
+  background-color: var(--color-overlay-soft);
 }
 
 .searchable-select-option.selected {
-  background-color: #2a2416;
-  color: #d4af37;
-  font-weight: bold;
+  background-color: var(--tint-cyan);
+  font-weight: 600;
 }
 
 .searchable-select-no-results {
-  padding: 0.5rem 0.75rem;
-  color: #666;
-  font-style: italic;
-  font-size: 0.9rem;
+  padding: 0.5rem 0.625rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-dense);
+}
+
+@media (max-width: 768px) {
+  .searchable-select-input,
+  .searchable-select-option {
+    font-size: var(--text-body);
+  }
 }

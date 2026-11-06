@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // --- Hoisted mocks ---
-const { mockFetchWithAuth, mockWrestlersApi } = vi.hoisted(() => ({
+const { mockFetchWithAuth, mockWrestlersApi, mockPlayersApi } = vi.hoisted(() => ({
   mockFetchWithAuth: vi.fn(),
+  mockPlayersApi: { getDirectory: vi.fn() },
   mockWrestlersApi: {
     getAll: vi.fn(),
     create: vi.fn(),
@@ -18,13 +19,12 @@ vi.mock('../../../services/api', () => ({
   API_BASE_URL: 'http://api.test',
   fetchWithAuth: mockFetchWithAuth,
   wrestlersApi: mockWrestlersApi,
+  playersApi: mockPlayersApi,
 }));
-
-vi.mock('../ManageWrestlers.css', () => ({}));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, opts?: Record<string, unknown>) => {
+    t: (key: string, opts?: string | Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'admin.manageWrestlers.resetAll': 'Reset All Assignments',
         'admin.manageWrestlers.resetting': 'Resetting...',
@@ -39,8 +39,8 @@ vi.mock('react-i18next', () => ({
         'admin.manageWrestlers.pageNext': 'Next',
         'admin.manageWrestlers.pageStatus': 'Page {{page}} of {{total}}',
       };
-      let text = translations[key] ?? key;
-      if (opts) {
+      let text = translations[key] ?? (typeof opts === 'string' ? opts : key);
+      if (opts && typeof opts === 'object') {
         for (const [name, value] of Object.entries(opts)) {
           text = text.replace(`{{${name}}}`, String(value));
         }
@@ -71,6 +71,68 @@ describe('ManageWrestlers', () => {
     vi.clearAllMocks();
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     vi.spyOn(window, 'prompt').mockReturnValue('RESET-ALL-ASSIGNMENTS');
+    mockPlayersApi.getDirectory.mockResolvedValue([]);
+  });
+
+  describe('row actions', () => {
+    it('shows the assigned player by name, not by id', async () => {
+      mockPlayersApi.getDirectory.mockResolvedValue([
+        { playerId: 'p1', name: 'Jane Player', currentWrestler: 'Wrestler 1' },
+      ]);
+      mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1, { isInUse: true, assignedPlayerId: 'p1' })]);
+
+      render(<ManageWrestlers />);
+
+      expect(await screen.findByText('Jane Player')).toBeInTheDocument();
+      expect(screen.queryByText('p1')).not.toBeInTheDocument();
+    });
+
+    it('still renders when the player lookup fails', async () => {
+      mockPlayersApi.getDirectory.mockRejectedValue(new Error('offline'));
+      mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1)]);
+
+      render(<ManageWrestlers />);
+
+      expect(await screen.findByText('Wrestler 1')).toBeInTheDocument();
+    });
+
+    it('releases a wrestler after confirming in the dialog', async () => {
+      const user = userEvent.setup();
+      mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1, { isInUse: true })]);
+      mockWrestlersApi.update.mockResolvedValue({});
+
+      render(<ManageWrestlers />);
+      await user.click(await screen.findByRole('button', { name: 'Release' }));
+      const dialog = await screen.findByRole('dialog');
+      await user.click(within(dialog).getByRole('button', { name: 'Release' }));
+
+      await waitFor(() => {
+        expect(mockWrestlersApi.update).toHaveBeenCalledWith('w-1', { isInUse: false });
+      });
+      expect(window.confirm).not.toHaveBeenCalled();
+    });
+
+    it('deletes a wrestler after confirming in the dialog', async () => {
+      const user = userEvent.setup();
+      mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1)]);
+      mockWrestlersApi.delete.mockResolvedValue(undefined);
+
+      render(<ManageWrestlers />);
+      await user.click(await screen.findByRole('button', { name: 'Delete' }));
+      await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }));
+
+      await waitFor(() => { expect(mockWrestlersApi.delete).toHaveBeenCalledWith('w-1'); });
+    });
+
+    it('opens the import dialog in the shared modal', async () => {
+      const user = userEvent.setup();
+      mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1)]);
+
+      render(<ManageWrestlers />);
+      await user.click(await screen.findByRole('button', { name: 'Import from file' }));
+
+      expect(await screen.findByRole('dialog', { name: 'Import Wrestlers' })).toBeInTheDocument();
+    });
   });
 
   describe('pagination', () => {
@@ -129,7 +191,8 @@ describe('ManageWrestlers', () => {
       await user.click(screen.getByRole('button', { name: 'Next' }));
       expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
 
-      await user.selectOptions(screen.getByLabelText('Filter by Promotion'), 'AEW');
+      await user.click(screen.getByRole('combobox', { name: 'Filter by Promotion' }));
+      await user.click(await screen.findByRole('option', { name: 'AEW' }));
 
       // Single page of AEW results, so the pager disappears and page 1 renders.
       expect(screen.queryByText(/Page \d+ of \d+/)).not.toBeInTheDocument();

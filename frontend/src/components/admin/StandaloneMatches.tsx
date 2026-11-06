@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi, eventsApi, tagTeamsApi, stipulationsApi } from '../../services/api';
 import type { Match, Player, Stipulation } from '../../types';
@@ -7,13 +7,21 @@ import type { LeagueEvent } from '../../types/event';
 import type { TagTeam } from '../../types/tagTeam';
 import MatchResultForm from '../events/MatchResultForm';
 import MatchEditForm from '../events/MatchEditForm';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
+import AdminNotice from './AdminNotice';
+import ConfirmModal from './ConfirmModal';
+import './adminRoster.css';
 import './StandaloneMatches.css';
 
 type HydratedTagTeam = TagTeam & { player1Name?: string; player2Name?: string };
 
 export default function StandaloneMatches() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [scheduledMatches, setScheduledMatches] = useState<Match[]>([]);
   const [events, setEvents] = useState<LeagueEvent[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -23,6 +31,7 @@ export default function StandaloneMatches() {
   const [error, setError] = useState<string | null>(null);
   const [recordingMatchId, setRecordingMatchId] = useState<string | null>(null);
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Match | null>(null);
   const [deletingMatchId, setDeletingMatchId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -32,7 +41,7 @@ export default function StandaloneMatches() {
       const [matchesData, eventsData, playersData, tagTeamsData, stipulationsData] = await Promise.all([
         matchesApi.getAll({ status: 'scheduled' }),
         eventsApi.getAll(),
-        playersApi.getAll(),
+        playersApi.getAllIncludingHidden(),
         tagTeamsApi.getAll({ status: 'active' }).catch(() => [] as TagTeam[]),
         stipulationsApi.getAll().catch(() => [] as Stipulation[]),
       ]);
@@ -43,11 +52,11 @@ export default function StandaloneMatches() {
       setStipulations(stipulationsData);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load matches');
+      setError(err instanceof Error ? err.message : t('adminRoster.standalone.loadError', 'Failed to load matches'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadData();
@@ -96,123 +105,116 @@ export default function StandaloneMatches() {
     await loadData();
   };
 
-  const handleDelete = async (match: Match) => {
-    const isChampionship = match.isChampionship && match.championshipId;
-    const isTournament = !!match.tournamentId;
-    let confirmMsg: string;
-    if (isChampionship) {
-      confirmMsg = `Delete this ${match.matchFormat} CHAMPIONSHIP match? This cannot be undone.`;
-    } else if (isTournament) {
-      confirmMsg = `Delete this ${match.matchFormat} TOURNAMENT match? This cannot be undone.`;
-    } else {
-      confirmMsg = `Delete this ${match.matchFormat} match? This cannot be undone.`;
+  const deleteMessage = (match: Match): string => {
+    const format = { format: match.matchFormat };
+    if (match.isChampionship && match.championshipId) {
+      return t('adminRoster.standalone.deleteChampionship', {
+        defaultValue: 'Delete this {{format}} CHAMPIONSHIP match? This cannot be undone.',
+        ...format,
+      });
     }
-    if (!window.confirm(confirmMsg)) return;
+    if (match.tournamentId) {
+      return t('adminRoster.standalone.deleteTournament', {
+        defaultValue: 'Delete this {{format}} TOURNAMENT match? This cannot be undone.',
+        ...format,
+      });
+    }
+    return t('adminRoster.standalone.deleteMatch', {
+      defaultValue: 'Delete this {{format}} match? This cannot be undone.',
+      ...format,
+    });
+  };
 
-    setDeletingMatchId(match.matchId);
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
+    const matchId = pendingDelete.matchId;
+    setDeletingMatchId(matchId);
     setActionError(null);
     try {
-      await matchesApi.delete(match.matchId);
+      await matchesApi.delete(matchId);
       await loadData();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to delete match');
+      setActionError(err instanceof Error ? err.message : t('adminRoster.standalone.deleteError', 'Failed to delete match'));
     } finally {
       setDeletingMatchId(null);
+      setPendingDelete(null);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="standalone-matches">
-        <Skeleton variant="block" count={4} />
-      </div>
-    );
-  }
-
   return (
-    <div className="standalone-matches">
-      <h2>{t('admin.standaloneMatches.title', 'Standalone Matches')}</h2>
-      <p className="standalone-matches-description">
-        {t(
+    <div className="ar-page standalone-matches">
+      <PageHeader
+        title={t('admin.standaloneMatches.title', 'Standalone Matches')}
+        subtitle={t(
           'admin.standaloneMatches.description',
           'Scheduled matches not assigned to any event. You can record their results, edit them, or delete them here.',
         )}
-      </p>
+      />
 
-      {error && <div className="error-message">{error}</div>}
-      {actionError && <div className="error-message">{actionError}</div>}
+      {error && <AdminNotice tone="error">{error}</AdminNotice>}
+      {actionError && <AdminNotice tone="error">{actionError}</AdminNotice>}
 
-      {standaloneMatches.length === 0 ? (
-        <div className="standalone-matches-empty">
-          <p>
-            {t(
-              'admin.standaloneMatches.empty',
-              'No standalone matches. All scheduled matches are assigned to events.',
-            )}
-          </p>
-          <Link to="/admin/schedule" className="standalone-matches-empty-link">
-            {t('admin.standaloneMatches.scheduleLink', 'Schedule a new match')}
-          </Link>
-        </div>
-      ) : (
-        <div className="standalone-matches-list">
-          {standaloneMatches.map(match => {
-            const isRecording = recordingMatchId === match.matchId;
-            const isEditing = editingMatchId === match.matchId;
-            const stipName = match.stipulationId ? stipulationMap.get(match.stipulationId) : null;
+      {loading && <Skeleton variant="block" count={4} />}
+
+      {!loading && standaloneMatches.length === 0 && (
+        <EmptyState
+          title={t(
+            'admin.standaloneMatches.empty',
+            'No standalone matches. All scheduled matches are assigned to events.',
+          )}
+          actionLabel={t('admin.standaloneMatches.scheduleLink', 'Schedule a new match')}
+          onAction={() => navigate('/admin/schedule')}
+        />
+      )}
+
+      {!loading && standaloneMatches.length > 0 && (
+        <ul className="ar-list">
+          {standaloneMatches.map((match) => {
+            const stipulationName = match.stipulationId ? stipulationMap.get(match.stipulationId) : null;
+            const busy = deletingMatchId === match.matchId;
             return (
-              <div key={match.matchId} className="standalone-match-item">
-                <div className="standalone-match-header">
-                  <span className="standalone-match-format">{match.matchFormat}</span>
-                  {match.isChampionship && (
-                    <span className="standalone-match-championship">Championship</span>
-                  )}
-                  {match.tournamentId && (
-                    <span className="standalone-match-tournament">Tournament</span>
-                  )}
+              <li key={match.matchId} className="ar-list__row standalone-match">
+                <div className="standalone-match__row">
+                  <div className="ar-stack">
+                    <span className="ar-strong">{formatMatchPreview(match)}</span>
+                    <span className="ar-badges">
+                      <Badge>{match.matchFormat}</Badge>
+                      {stipulationName && <Badge>{stipulationName}</Badge>}
+                      {match.isChampionship && <Badge tone="warning">{t('adminRoster.standalone.championship', 'Championship')}</Badge>}
+                      {match.tournamentId && <Badge tone="violet">{t('adminRoster.standalone.tournament', 'Tournament')}</Badge>}
+                    </span>
+                  </div>
+                  <div className="ar-row-actions">
+                    <Button
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => {
+                        setRecordingMatchId(match.matchId);
+                        setEditingMatchId(null);
+                        setActionError(null);
+                      }}
+                    >
+                      {t('events.detail.recordResult', 'Record Result')}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => {
+                        setEditingMatchId(match.matchId);
+                        setRecordingMatchId(null);
+                        setActionError(null);
+                      }}
+                    >
+                      {t('events.detail.editMatch', 'Edit')}
+                    </Button>
+                    <Button variant="ghost" size="sm" disabled={busy} onClick={() => setPendingDelete(match)}>
+                      {t('events.detail.deleteMatch', 'Delete')}
+                    </Button>
+                  </div>
                 </div>
-                <div className="standalone-match-participants">
-                  {formatMatchPreview(match)}
-                </div>
-                {stipName && <div className="standalone-match-stipulation">{stipName}</div>}
-                <div className="standalone-match-actions">
-                  <button
-                    type="button"
-                    className="standalone-match-btn standalone-match-btn-primary"
-                    onClick={() => {
-                      setRecordingMatchId(match.matchId);
-                      setEditingMatchId(null);
-                      setActionError(null);
-                    }}
-                    disabled={deletingMatchId === match.matchId}
-                  >
-                    {t('events.detail.recordResult', 'Record Result')}
-                  </button>
-                  <button
-                    type="button"
-                    className="standalone-match-btn standalone-match-btn-secondary"
-                    onClick={() => {
-                      setEditingMatchId(match.matchId);
-                      setRecordingMatchId(null);
-                      setActionError(null);
-                    }}
-                    disabled={deletingMatchId === match.matchId}
-                  >
-                    {t('events.detail.editMatch', 'Edit')}
-                  </button>
-                  <button
-                    type="button"
-                    className="standalone-match-btn standalone-match-btn-destructive"
-                    onClick={() => handleDelete(match)}
-                    disabled={deletingMatchId === match.matchId}
-                  >
-                    {deletingMatchId === match.matchId
-                      ? t('common.saving')
-                      : t('events.detail.deleteMatch', 'Delete')}
-                  </button>
-                </div>
-                {isRecording && (
-                  <div className="standalone-match-inline-form">
+                {recordingMatchId === match.matchId && (
+                  <div className="standalone-match__form">
                     <MatchResultForm
                       match={match}
                       players={players}
@@ -222,8 +224,8 @@ export default function StandaloneMatches() {
                     />
                   </div>
                 )}
-                {isEditing && (
-                  <div className="standalone-match-inline-form">
+                {editingMatchId === match.matchId && (
+                  <div className="standalone-match__form">
                     <MatchEditForm
                       matchId={match.matchId}
                       onSuccess={handleRefresh}
@@ -231,11 +233,21 @@ export default function StandaloneMatches() {
                     />
                   </div>
                 )}
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
+
+      <ConfirmModal
+        open={pendingDelete !== null}
+        title={t('adminRoster.standalone.deleteTitle', 'Delete match')}
+        message={pendingDelete ? deleteMessage(pendingDelete) : ''}
+        confirmLabel={t('events.detail.deleteMatch', 'Delete')}
+        busy={deletingMatchId !== null}
+        onConfirm={handleDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

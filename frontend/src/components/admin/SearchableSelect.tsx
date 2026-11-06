@@ -1,4 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
+import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import './SearchableSelect.css';
 
 interface Option {
@@ -15,6 +18,7 @@ interface SearchableSelectProps {
   className?: string;
 }
 
+/** Filterable select following the ARIA combobox pattern with a listbox popup. */
 export default function SearchableSelect({
   id,
   options,
@@ -23,40 +27,53 @@ export default function SearchableSelect({
   placeholder = 'Search...',
   className = '',
 }: SearchableSelectProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const baseId = useId();
+  const listId = `${baseId}-list`;
 
-  const selectedOption = options.find((o) => o.value === value);
+  const selectedOption = options.find((option) => option.value === value);
 
   const filtered = search
-    ? options.filter((o) => o.label.toLowerCase().includes(search.toLowerCase()))
+    ? options.filter((option) => option.label.toLowerCase().includes(search.toLowerCase()))
     : options;
 
+  const close = () => {
+    setIsOpen(false);
+    setSearch('');
+    setActiveIndex(-1);
+  };
+
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setSearch('');
+        setActiveIndex(-1);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (activeIndex < 0) return;
+    listRef.current?.children[activeIndex]?.scrollIntoView({ block: 'nearest' });
+  }, [activeIndex]);
+
   const handleSelect = (optionValue: string) => {
     onChange(optionValue);
-    setIsOpen(false);
-    setSearch('');
+    close();
   };
 
-  const handleInputFocus = () => {
-    setIsOpen(true);
-  };
-
-  const handleInputChange = (val: string) => {
-    setSearch(val);
+  const handleInputChange = (nextSearch: string) => {
+    setSearch(nextSearch);
+    setActiveIndex(-1);
     if (!isOpen) setIsOpen(true);
   };
 
@@ -66,42 +83,105 @@ export default function SearchableSelect({
     inputRef.current?.focus();
   };
 
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    switch (event.key) {
+      case 'ArrowDown':
+      case 'ArrowUp': {
+        event.preventDefault();
+        if (!isOpen) {
+          setIsOpen(true);
+          return;
+        }
+        if (filtered.length === 0) return;
+        const step = event.key === 'ArrowDown' ? 1 : -1;
+        setActiveIndex((previous) => {
+          if (previous < 0) return step === 1 ? 0 : filtered.length - 1;
+          return (previous + step + filtered.length) % filtered.length;
+        });
+        return;
+      }
+      case 'Enter': {
+        if (!isOpen) return;
+        // Enter picks from the list here. It must not submit the enclosing form.
+        event.preventDefault();
+        const activeOption = filtered[activeIndex];
+        if (activeOption) handleSelect(activeOption.value);
+        return;
+      }
+      case 'Escape':
+        if (isOpen) {
+          event.stopPropagation();
+          close();
+        }
+        return;
+      case 'Tab':
+        close();
+        return;
+      default:
+    }
+  };
+
+  const activeOption = isOpen ? filtered[activeIndex] : undefined;
+
   return (
-    <div className={`searchable-select ${className}`} ref={containerRef}>
+    <div className={`searchable-select ${className}`.trim()} ref={containerRef}>
       <div className="searchable-select-input-wrapper">
         <input
           ref={inputRef}
           id={id}
           type="text"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={activeOption ? `${baseId}-${activeIndex}` : undefined}
           className="searchable-select-input"
           value={isOpen ? search : selectedOption?.label || ''}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onFocus={handleInputFocus}
+          onChange={(event) => handleInputChange(event.target.value)}
+          onFocus={() => setIsOpen(true)}
+          onClick={() => setIsOpen(true)}
+          onKeyDown={handleKeyDown}
           placeholder={selectedOption ? selectedOption.label : placeholder}
           autoComplete="off"
         />
         {value && !isOpen && (
-          <button type="button" className="searchable-select-clear" onClick={handleClear}>
-            &times;
+          <button
+            type="button"
+            className="searchable-select-clear"
+            onClick={handleClear}
+            aria-label={t('adminRoster.searchableSelect.clear', 'Clear selection')}
+          >
+            <X aria-hidden="true" size={16} />
           </button>
         )}
       </div>
       {isOpen && (
-        <div className="searchable-select-dropdown">
+        <ul className="searchable-select-dropdown" id={listId} role="listbox" ref={listRef}>
           {filtered.length === 0 ? (
-            <div className="searchable-select-no-results">No matches</div>
+            <li className="searchable-select-no-results" role="option" aria-selected="false" aria-disabled="true">
+              {t('adminRoster.searchableSelect.noMatches', 'No matches')}
+            </li>
           ) : (
-            filtered.map((option) => (
-              <div
+            filtered.map((option, index) => (
+              // The combobox input owns the keyboard, so options only need the click.
+              // eslint-disable-next-line jsx-a11y/click-events-have-key-events
+              <li
                 key={option.value}
-                className={`searchable-select-option ${option.value === value ? 'selected' : ''}`}
+                id={`${baseId}-${index}`}
+                role="option"
+                aria-selected={option.value === value}
+                className={[
+                  'searchable-select-option',
+                  option.value === value ? 'selected' : '',
+                  index === activeIndex ? 'active' : '',
+                ].filter(Boolean).join(' ')}
                 onClick={() => handleSelect(option.value)}
               >
                 {option.label}
-              </div>
+              </li>
             ))
           )}
-        </div>
+        </ul>
       )}
     </div>
   );

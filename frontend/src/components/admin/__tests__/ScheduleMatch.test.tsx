@@ -32,7 +32,7 @@ const {
 
 vi.mock('../../../services/api', () => ({
   matchesApi: { schedule: mockScheduleMatch },
-  playersApi: { getAll: mockGetAllPlayers, getBookingSummary: vi.fn().mockResolvedValue({}) },
+  playersApi: { getAllIncludingHidden: mockGetAllPlayers, getBookingSummary: vi.fn().mockResolvedValue({}) },
   championshipsApi: { getAll: mockGetAllChampionships },
   tournamentsApi: { getAll: mockGetAllTournaments },
   seasonsApi: { getAll: mockGetAllSeasons },
@@ -339,6 +339,88 @@ describe('ScheduleMatch', () => {
 
     // API should not have been called
     expect(mockScheduleMatch).not.toHaveBeenCalled();
+  });
+
+  it('lets the form submit again after a validation error', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockScheduleMatch.mockResolvedValue({ matchId: 'new-match' });
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+    await pickParticipants(user, ['The Champ (John Cena)']);
+
+    await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+    expect(await screen.findByText('Please select at least 2 participants')).toBeInTheDocument();
+
+    await pickParticipants(user, ['The Rock (Dwayne Johnson)']);
+    await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+    await waitFor(() => expect(mockScheduleMatch).toHaveBeenCalledTimes(1));
+  });
+
+  it('lists players with no wrestler in the picker with a hidden label and badge', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([
+      ...mockPlayers,
+      {
+        playerId: 'p5', name: 'Newbie', currentWrestler: 'Needs Wrestler',
+        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      },
+    ]);
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+    await pickParticipants(user, ['Hidden: no wrestler (Newbie)']);
+
+    const chip = screen.getByRole('button', { name: 'Remove Newbie' }).closest('li')!;
+    expect(chip).toHaveTextContent('Newbie');
+    expect(chip).toHaveTextContent('Hidden');
+    expect(chip).not.toHaveTextContent('Needs Wrestler');
+  });
+
+  it('keeps players with no division in the picker by default', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockGetAllDivisions.mockResolvedValue([
+      { divisionId: 'd1', name: 'Heavyweight', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+    ]);
+    mockGetAllPlayers.mockResolvedValue([
+      { ...mockPlayers[0]!, divisionId: 'd1' },
+      {
+        playerId: 'p5', name: 'Newbie', currentWrestler: 'Needs Wrestler',
+        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      },
+    ]);
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
+    await pickParticipants(user, ['Hidden: no wrestler (Newbie)']);
+
+    expect(screen.getByRole('button', { name: 'Remove Newbie' })).toBeInTheDocument();
+  });
+
+  it('picks tag team members with real, keyboard-operable buttons', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Tag Team');
+    await user.click(screen.getByRole('button', { name: 'Pick Individuals' }));
+    expect(screen.getByRole('button', { name: 'Pick Individuals' })).toHaveAttribute('aria-pressed', 'true');
+
+    const [firstCard] = screen.getAllByRole('button', { name: /John Cena/ });
+    firstCard!.focus();
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByRole('button', { name: 'Remove John Cena' })).toBeInTheDocument();
+    // Now on team 1, so the card in team 2 is unavailable.
+    expect(screen.getByRole('button', { name: /John Cena/ , pressed: false })).toBeDisabled();
   });
 
   // ── Slot-mode (MSL-02) ─────────────────────────────────────────────────────
