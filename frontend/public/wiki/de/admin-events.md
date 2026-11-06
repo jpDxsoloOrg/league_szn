@@ -17,13 +17,13 @@ Die Seite **Events** ermöglicht das Anlegen und Verwalten von Events und PPVs, 
 
 ## Match-Card erstellen
 
-Nach dem Anlegen eines Events nutze den **Match-Card-Builder**, um die Karte zusammenzustellen:
+Stelle die Karte auf der Seite des Events zusammen:
 
-1. Wähle das zu bearbeitende Event
-2. Im Abschnitt Match-Card-Builder nutze das Dropdown, um verfügbare Matches auszuwählen
-3. Klicke auf **Match hinzufügen**, um es zur Karte hinzuzufügen
-4. Nutze **Nach oben** / **Nach unten**, um die Reihenfolge der Matches zu ändern
-5. Nutze **Match entfernen**, um ein Match von der Karte zu nehmen
+1. Öffne das Event unter **Events**
+2. Klicke auf **Match hinzufügen**, um ein Match direkt für die Karte zu planen
+3. Klicke bei einem Match auf **Bearbeiten**, um es zu ändern, auch seine Kartenposition (Pre-Show, Opener, Midcard, Co-Main, Main Event)
+4. Klicke bei einem Match auf **Löschen**, um es zu entfernen
+5. Um ein bestehendes einzelnes Match auf eine Karte zu setzen, bearbeite es unter **Einzelne Matches** und wähle das Event
 
 Titelmatches werden auf der Karte mit einem besonderen Badge hervorgehoben.
 

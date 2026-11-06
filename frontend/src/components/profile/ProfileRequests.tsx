@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { playersApi, storylineRequestsApi, transfersApi } from '../../services/api';
 import Badge from '../ui/Badge';
 import type { BadgeTone } from '../ui/Badge';
@@ -35,9 +36,11 @@ interface ProfileRequestsProps {
   divisions: Division[];
 }
 
-/** Division transfers and storyline pitches, with the history of each. */
+/** Storyline pitches and, while that feature is on, division transfers, with the history of each. */
 export default function ProfileRequests({ player, divisions }: ProfileRequestsProps) {
   const { t } = useTranslation();
+  const { features } = useSiteConfig();
+  const transfersEnabled = features.transfers;
 
   const [transfers, setTransfers] = useState<TransferRequestWithDetails[]>([]);
   const [transferForm, setTransferForm] = useState({ toDivisionId: '', reason: '' });
@@ -81,10 +84,13 @@ export default function ProfileRequests({ player, divisions }: ProfileRequestsPr
         // The target list stays empty and says so.
       }
     };
-    void loadTransfers();
     void loadStorylines();
     void loadPlayers();
-  }, [loadTransfers, loadStorylines, player.playerId]);
+  }, [loadStorylines, player.playerId]);
+
+  useEffect(() => {
+    if (transfersEnabled) void loadTransfers();
+  }, [loadTransfers, transfersEnabled, player.playerId]);
 
   const handleTransferSubmit = async () => {
     if (!transferForm.toDivisionId || !transferForm.reason.trim()) return;
@@ -142,7 +148,7 @@ export default function ProfileRequests({ player, divisions }: ProfileRequestsPr
 
   return (
     <>
-      {player.divisionId && (
+      {transfersEnabled && player.divisionId && (
         <section className="profile-section" aria-labelledby="profile-transfer-title">
           <h2 className="profile-section__title" id="profile-transfer-title">{t('me.requests.transferTitle')}</h2>
           <Card>
@@ -195,7 +201,7 @@ export default function ProfileRequests({ player, divisions }: ProfileRequestsPr
         </section>
       )}
 
-      {transfers.length > 0 && (
+      {transfersEnabled && transfers.length > 0 && (
         <section className="profile-section" aria-labelledby="profile-transfer-history-title">
           <h2 className="profile-section__title" id="profile-transfer-history-title">{t('me.requests.transferHistory')}</h2>
           <Card padding="none">

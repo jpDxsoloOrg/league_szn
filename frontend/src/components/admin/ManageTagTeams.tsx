@@ -17,7 +17,6 @@ import Select from '../ui/Select';
 import { useToast } from '../ui/toastContext';
 import AdminNotice from './AdminNotice';
 import ConfirmModal from './ConfirmModal';
-import HiddenBadge from './HiddenBadge';
 import './adminRoster.css';
 
 const ALL_STATUSES: TagTeamStatus[] = ['pending_partner', 'pending_admin', 'active', 'dissolved'];
@@ -129,7 +128,6 @@ export default function ManageTagTeams() {
       <span className="ar-stack">
         <span>{player.name}</span>
         {details && <span className="ar-sub">{details}</span>}
-        {isNeedsWrestler(player.currentWrestler) && <HiddenBadge />}
       </span>
     );
   };

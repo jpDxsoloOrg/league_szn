@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import type { AppNotification } from '../../types';
 
-const { mockGetAll, mockGetUnreadCount, mockMarkRead } = vi.hoisted(() => ({
+const { mockFeatures, mockGetAll, mockGetUnreadCount, mockMarkRead } = vi.hoisted(() => ({
+  mockFeatures: { notifications: true, transfers: false },
   mockGetAll: vi.fn(),
   mockGetUnreadCount: vi.fn(),
   mockMarkRead: vi.fn(),
@@ -22,7 +23,7 @@ vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => ({ isAuthenticated: true, playerId: 'p1' }),
 }));
 vi.mock('../../contexts/SiteConfigContext', () => ({
-  useSiteConfig: () => ({ features: { notifications: true } }),
+  useSiteConfig: () => ({ features: mockFeatures }),
 }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -49,10 +50,10 @@ function CurrentPath() {
   return <output data-testid="path">{pathname}</output>;
 }
 
-async function openWith(item: AppNotification) {
+async function openWith(item: AppNotification, startPath = '/') {
   mockGetAll.mockResolvedValue({ notifications: [item] });
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[startPath]}>
       <NotificationBell />
       <CurrentPath />
     </MemoryRouter>,
@@ -64,6 +65,7 @@ async function openWith(item: AppNotification) {
 describe('NotificationBell source types', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFeatures.transfers = false;
     mockGetUnreadCount.mockResolvedValue({ count: 0 });
   });
 
@@ -79,6 +81,21 @@ describe('NotificationBell source types', () => {
     expect(screen.getByText(label)).toBeInTheDocument();
     await userEvent.click(screen.getByText('Something happened'));
     await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(path));
+  });
+
+  it('sends a transfer notification home while transfers are off', async () => {
+    await openWith(notification({ sourceType: 'transfer' }), '/events');
+
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(/^\/$/));
+  });
+
+  it('sends a transfer notification to the profile while transfers are on', async () => {
+    mockFeatures.transfers = true;
+    await openWith(notification({ sourceType: 'transfer' }));
+
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent('/profile'));
   });
 
   it('falls back to the feed when a promo notification has no source', async () => {

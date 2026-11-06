@@ -18,7 +18,7 @@ New admin? Follow these steps to set up your league from scratch.
 
 7. **Schedule Matches** — Go to **Schedule Match** and create matches. Pick the match type, select participants, optionally add a stipulation, associate with a championship or tournament, and assign to a season and event.
 
-8. **Build the Match Card** — Go back to **Events**, select your event, and use the **Match Card Builder** to add matches to the card. Reorder them to set openers, midcard, co-main, and main event slots.
+8. **Build the Match Card** — Go back to **Events** and open your event. Click **Add Match** to put matches on the card, and **Edit** a match to set its opener, midcard, co-main, or main event slot.
 
 9. **Record Results** — After matches are played, go to **Record Results**. Select a match, mark each participant as Winner, Loser, or Draw, and save. Standings, championships, and tournament brackets all update automatically.
 

@@ -26,7 +26,7 @@ import type {
 import type { TagTeam } from '../../types/tagTeam';
 import type { LeagueEvent, MatchDesignation } from '../../types/event';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
-import HiddenBadge from '../admin/HiddenBadge';
+import { pickablePlayers, pickableTagTeams } from '../../utils/pickablePlayers';
 import SearchableSelect from '../admin/SearchableSelect';
 import Button from '../ui/Button';
 import Skeleton from '../ui/Skeleton';
@@ -105,7 +105,7 @@ export default function MatchEditForm({
         divisionsData,
       ] = await Promise.all([
         matchesApi.getAll(),
-        // Staff can book hidden players, so this needs the full roster.
+        // The full roster, so names on this match resolve for hidden players.
         playersApi.getAllIncludingHidden(),
         championshipsApi.getAll(),
         tournamentsApi.getAll(),
@@ -300,12 +300,21 @@ export default function MatchEditForm({
     return player ? player.name : t('common.unknown');
   };
 
+  // A hidden player already booked here stays, even after being deselected,
+  // so the admin can put them back before saving.
+  const bookedPlayerIds = [
+    ...(originalMatch?.participants ?? []),
+    ...(originalMatch?.teams ?? []).flat(),
+  ];
+  const bookablePlayers = pickablePlayers(players, bookedPlayerIds);
+  const bookableTagTeams = pickableTagTeams(activeTagTeams, players, bookedPlayerIds);
+
   const filteredPlayers =
     !divisionFilter || divisionFilter === 'all'
-      ? players
+      ? bookablePlayers
       : divisionFilter === 'none'
-        ? players.filter((p) => !p.divisionId)
-        : players.filter((p) => p.divisionId === divisionFilter);
+        ? bookablePlayers.filter((p) => !p.divisionId)
+        : bookablePlayers.filter((p) => p.divisionId === divisionFilter);
 
   const handleMatchFormatChange = (newFormat: string) => {
     setFormData((prev) => ({ ...prev, matchFormat: newFormat, participants: [] }));
@@ -599,7 +608,7 @@ export default function MatchEditForm({
                       <option value="">
                         {t('scheduleMatch.tagTeam.selectTagTeam', 'Select a Tag Team...')}
                       </option>
-                      {activeTagTeams
+                      {bookableTagTeams
                         .filter((tt) => {
                           const assignedToOther = teams.some((otherTeam, i) => {
                             if (i === teamIndex) return false;
@@ -660,9 +669,9 @@ export default function MatchEditForm({
                               onClick={() => handleTeamMemberToggle(teamIndex, player.playerId)}
                             >
                               <span className="match-edit-form__player-name">{player.name}</span>
-                              {isNeedsWrestler(player.currentWrestler)
-                                ? <HiddenBadge />
-                                : <span className="match-edit-form__player-meta">{player.currentWrestler}</span>}
+                              {!isNeedsWrestler(player.currentWrestler) && (
+                                <span className="match-edit-form__player-meta">{player.currentWrestler}</span>
+                              )}
                               {isInOtherTeam && (
                                 <span className="match-edit-form__player-meta">
                                   {t('scheduleMatch.tagTeam.team', 'Team')} {playerTeamIndex + 1}
@@ -709,9 +718,9 @@ export default function MatchEditForm({
                   onClick={() => handleParticipantToggle(player.playerId)}
                 >
                   <span className="match-edit-form__player-name">{player.name}</span>
-                  {isNeedsWrestler(player.currentWrestler)
-                    ? <HiddenBadge />
-                    : <span className="match-edit-form__player-meta">{player.currentWrestler}</span>}
+                  {!isNeedsWrestler(player.currentWrestler) && (
+                    <span className="match-edit-form__player-meta">{player.currentWrestler}</span>
+                  )}
                 </button>
               ))}
             </div>

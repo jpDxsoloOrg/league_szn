@@ -38,22 +38,20 @@ describe('AdminContenderOverrides', () => {
     ]);
   });
 
-  it('offers hidden players in the picker', async () => {
+  it('keeps hidden players out of the picker', async () => {
     mockContendersApi.getOverrides.mockResolvedValue([]);
     render(<AdminContenderOverrides />);
 
-    expect(await screen.findByRole('option', { name: 'Unassigned' })).toBeInTheDocument();
+    expect(await screen.findByRole('option', { name: 'Alex (The Rock)' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Unassigned/ })).not.toBeInTheDocument();
   });
 
-  it('never shows the Needs Wrestler placeholder as a wrestler name', async () => {
-    mockContendersApi.getOverrides.mockResolvedValue([]);
-    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
-      { playerId: 'p3', name: 'Waiting', currentWrestler: 'Needs Wrestler' },
-    ]);
+  it('still names a hidden player on an existing override', async () => {
+    mockContendersApi.getOverrides.mockResolvedValue([{ ...override('c1', 'Old booking'), playerId: 'p2' }]);
     render(<AdminContenderOverrides />);
 
-    expect(await screen.findByRole('option', { name: 'Waiting' })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: /Needs Wrestler/ })).not.toBeInTheDocument();
+    expect(await screen.findByText('Unassigned')).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Unassigned/ })).not.toBeInTheDocument();
   });
 
   it('ignores a slow response for the previously selected championship', async () => {

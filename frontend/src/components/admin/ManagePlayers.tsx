@@ -100,11 +100,11 @@ export default function ManagePlayers() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // Division filter for the players table. Defaults to everyone, because hidden
-  // players usually have no division yet and must not start out of view.
-  // Special values: 'all' = no filter, 'none' = players with no division
-  // assigned, 'hidden' = players with no wrestler.
+  // Division filter for the players table. Special values: 'all' = no filter,
+  // 'none' = players with no division assigned.
   const [divisionFilter, setDivisionFilter] = useState('all');
+  // Players with no wrestler stay out of the table until asked for.
+  const [showHidden, setShowHidden] = useState(false);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -162,14 +162,14 @@ export default function ManagePlayers() {
   const filteredPlayers = useMemo(() => {
     const term = search.trim().toLowerCase();
     return players.filter((player) => {
-      if (divisionFilter === 'hidden' && !isNeedsWrestler(player.currentWrestler)) return false;
+      if (!showHidden && isNeedsWrestler(player.currentWrestler)) return false;
       if (divisionFilter === 'none' && player.divisionId) return false;
-      if (!['all', 'none', 'hidden'].includes(divisionFilter) && player.divisionId !== divisionFilter) return false;
+      if (!['all', 'none'].includes(divisionFilter) && player.divisionId !== divisionFilter) return false;
       if (!term) return true;
       return [nameOrUnnamed(player.name, unnamedLabel), player.currentWrestler, player.alternateWrestler, player.psnId]
         .some((value) => value?.toLowerCase().includes(term));
     });
-  }, [players, divisionFilter, search, unnamedLabel]);
+  }, [players, divisionFilter, showHidden, search, unnamedLabel]);
 
   const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -532,11 +532,6 @@ export default function ManagePlayers() {
           {t('adminRoster.players.all', 'All Players')} ({filteredPlayers.length}
           {filteredPlayers.length !== players.length ? ` ${t('adminRoster.of', 'of')} ${players.length}` : ''})
         </h2>
-        {hiddenCount > 0 && (
-          <span className="ar-count">
-            {t('adminRoster.players.hiddenCount', { defaultValue: '{{count}} hidden', count: hiddenCount })}
-          </span>
-        )}
       </div>
 
       <div className="ar-toolbar__filters">
@@ -556,9 +551,14 @@ export default function ManagePlayers() {
             { value: 'all', label: t('common.all', 'All') },
             ...divisions.map((division) => ({ value: division.divisionId, label: division.name })),
             { value: 'none', label: t('adminRoster.players.noDivision', 'No Division') },
-            { value: 'hidden', label: t('adminRoster.players.hiddenFilter', 'Hidden (no wrestler)') },
           ]}
         />
+        {hiddenCount > 0 && (
+          <label className="ar-check">
+            <input type="checkbox" checked={showHidden} onChange={(event) => setShowHidden(event.target.checked)} />
+            {t('adminRoster.players.showHidden', { defaultValue: 'Show hidden ({{count}})', count: hiddenCount })}
+          </label>
+        )}
       </div>
 
       <DataTable

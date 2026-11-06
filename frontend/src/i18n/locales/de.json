@@ -827,8 +827,7 @@
         "storylineRequests": "Storyline-Anfragen",
         "rivalries": "Rivalitäten",
         "heatConfig": "Heat-Einstellungen",
-        "dangerZone": "Gefahrenzone",
-        "matchCards": "Match Cards"
+        "dangerZone": "Gefahrenzone"
       },
       "groups": {
         "matchOps": "Match-Operationen",
@@ -1664,15 +1663,7 @@
       "season": "Saison",
       "noSeason": "Keine Saison",
       "saveEvent": "Veranstaltung speichern",
-      "saveSuccess": "Veranstaltung erfolgreich gespeichert!",
-      "matchCardBuilder": "Kampfkarten-Ersteller",
-      "noMatchesOnCard": "Noch keine Kämpfe auf dieser Karte. Fügen Sie unten Kämpfe hinzu.",
-      "championshipMatch": "Titelkampf",
-      "moveUp": "Nach oben",
-      "moveDown": "Nach unten",
-      "removeMatch": "Kampf entfernen",
-      "selectMatch": "Kampf zum Hinzufügen auswählen...",
-      "addMatch": "Kampf hinzufügen"
+      "saveSuccess": "Veranstaltung erfolgreich gespeichert!"
     },
     "booking": {
       "neverBooked": "Noch nie gebucht",
@@ -2783,11 +2774,6 @@
       },
       "seasonsRequired": "Das Ansetzen ist pausiert, bis die Saisons geladen sind, damit das Match nicht aus der aktiven Saison fällt."
     },
-    "matchCard": {
-      "saveError": "Match Card konnte nicht gespeichert werden",
-      "designationFor": "Kartenposition für",
-      "unresolvedMatch": "Match {{position}}"
-    },
     "standalone": {
       "loadError": "Kämpfe konnten nicht geladen werden",
       "deleteChampionship": "Diesen {{format}}-TITELKAMPF löschen? Dies kann nicht rückgängig gemacht werden.",
@@ -2875,10 +2861,9 @@
       "title": "Spieler verwalten",
       "subtitle": "Spieler bearbeiten, Divisionen zuweisen und Wrestler aktuell halten.",
       "all": "Alle Spieler",
-      "hiddenCount": "{{count}} ausgeblendet",
+      "showHidden": "Ausgeblendete anzeigen ({{count}})",
       "search": "Spieler suchen",
       "filterLabel": "Spieler filtern",
-      "hiddenFilter": "Ausgeblendet (kein Wrestler)",
       "emptyTitle": "Noch keine Spieler",
       "noMatches": "Keine Spieler für diese Filter gefunden",
       "editTitle": "Spieler bearbeiten",
@@ -3350,6 +3335,10 @@
       },
       "subtitle": "Schalte Website-Features ein oder aus. Deaktivierte Features werden aus der Navigation entfernt und sind für Nutzer nicht erreichbar. Daten werden weiterhin erfasst, solange ein Feature deaktiviert ist.",
       "title": "Feature-Verwaltung",
+      "transfers": {
+        "description": "Anfragen für Divisionstransfers in Spielerprofilen und die Admin-Seite für Transfers",
+        "name": "Divisionstransfers"
+      },
       "updateFailed": "Feature konnte nicht aktualisiert werden"
     },
     "heat": {
@@ -3395,6 +3384,8 @@
       "accessRequired": "Admin-Zugriff erforderlich",
       "accessRequiredText": "Du brauchst Admin-Rechte, um auf diesen Bereich zuzugreifen.",
       "fullAccessRequired": "Voller Admin-Zugriff erforderlich",
+      "featureOff": "Diese Funktion ist ausgeschaltet",
+      "featureOffText": "Ein Admin kann sie in der Feature-Verwaltung wieder einschalten.",
       "fullAccessRequiredText": "Für diese Aktion sind volle Admin-Rechte erforderlich.",
       "helpPrefix": "Neu in der Administration?",
       "quickstart": "Admin-Schnellstart",

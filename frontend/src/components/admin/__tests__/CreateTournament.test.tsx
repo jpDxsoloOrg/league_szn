@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -85,7 +85,7 @@ describe('CreateTournament', () => {
     expect(screen.getByRole('button', { name: 'Create Tournament' })).toBeInTheDocument();
   });
 
-  it('uses real toggle buttons and badges players with no wrestler', async () => {
+  it('uses real toggle buttons and leaves out players with no wrestler', async () => {
     const user = userEvent.setup();
     mockGetAllPlayers.mockResolvedValue([
       ...mockPlayers,
@@ -96,8 +96,8 @@ describe('CreateTournament', () => {
     ]);
     render(<CreateTournament />);
 
-    const button = await screen.findByRole('button', { name: /Newbie/ });
-    expect(within(button).getByText('Hidden')).toBeInTheDocument();
+    const button = await screen.findByRole('button', { name: new RegExp(mockPlayers[0]!.name) });
+    expect(screen.queryByRole('button', { name: /Newbie/ })).not.toBeInTheDocument();
     expect(button).toHaveAttribute('aria-pressed', 'false');
 
     button.focus();

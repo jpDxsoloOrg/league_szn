@@ -4,12 +4,11 @@ import { ArrowDown, ArrowUp } from 'lucide-react';
 import { tournamentsApi, playersApi } from '../../services/api';
 import { sanitizeName } from '../../utils/sanitize';
 import type { Player } from '../../types';
-import { isNeedsWrestler } from '../../utils/needsWrestler';
+import { pickablePlayers } from '../../utils/pickablePlayers';
 import Button from '../ui/Button';
 import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import AdminNotice from './AdminNotice';
-import HiddenBadge from './HiddenBadge';
 import './adminRoster.css';
 import './CreateTournament.css';
 
@@ -44,8 +43,7 @@ export default function CreateTournament() {
   const loadPlayers = async () => {
     try {
       setLoading(true);
-      const data = await playersApi.getAllIncludingHidden();
-      setPlayers(data);
+      setPlayers(pickablePlayers(await playersApi.getAllIncludingHidden()));
     } catch (_err) {
       setError(t('adminRoster.tournament.loadError', 'Failed to load players'));
     } finally {
@@ -210,9 +208,7 @@ export default function CreateTournament() {
                   onClick={() => handleParticipantToggle(player.playerId)}
                 >
                   <span className="ar-strong">{player.name}</span>
-                  {isNeedsWrestler(player.currentWrestler)
-                    ? <HiddenBadge />
-                    : <span className="ar-sub">{player.currentWrestler}</span>}
+                  <span className="ar-sub">{player.currentWrestler}</span>
                   <span className="ar-sub participant-record">
                     {player.wins}W-{player.losses}L-{player.draws}D
                   </span>

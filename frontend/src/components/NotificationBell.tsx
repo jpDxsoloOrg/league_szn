@@ -47,7 +47,7 @@ function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
   }
 }
 
-function getNavigationPath(notification: AppNotification, playerId: string | null): string {
+function getNavigationPath(notification: AppNotification, playerId: string | null, transfersEnabled: boolean): string {
   switch (notification.sourceType) {
     case 'promo':
       return notification.sourceId ? `/promos/${notification.sourceId}` : '/promos';
@@ -65,9 +65,8 @@ function getNavigationPath(notification: AppNotification, playerId: string | nul
     case 'match_invitation': return '/';
     case 'match_invitation_declined': return '/';
     case 'announcement': return '/';
-    case 'transfer':
-    case 'storyline_request':
-      return '/profile';
+    case 'transfer': return transfersEnabled ? '/profile' : '/';
+    case 'storyline_request': return '/profile';
     default: return '/';
   }
 }
@@ -189,8 +188,8 @@ export default function NotificationBell() {
     }
 
     setIsOpen(false);
-    navigate(getNavigationPath(notification, playerId));
-  }, [navigate, playerId]);
+    navigate(getNavigationPath(notification, playerId, features.transfers));
+  }, [navigate, playerId, features.transfers]);
 
   const handleDeleteNotification = useCallback(async (e: React.MouseEvent, notification: AppNotification) => {
     e.stopPropagation();

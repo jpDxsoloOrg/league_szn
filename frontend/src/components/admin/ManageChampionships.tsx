@@ -12,6 +12,7 @@ import {
   resolveImageSrc,
 } from '../../constants/imageFallbacks';
 import type { Championship, Division, Player } from '../../types';
+import { pickablePlayers } from '../../utils/pickablePlayers';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import DataTable from '../ui/DataTable';
@@ -381,6 +382,7 @@ export default function ManageChampionships() {
   }
 
   const isTagAssignment = assigningChampionship?.type === 'tag';
+  const assignablePlayers = pickablePlayers(players, [assigningChampionship?.currentChampion ?? []].flat());
 
   return (
     <div className="ac-page">
@@ -591,7 +593,7 @@ export default function ManageChampionships() {
           </label>
           <select id="assign-champion-1" value={assignChampion1} onChange={(event) => setAssignChampion1(event.target.value)} required>
             <option value="">{t('adminContent.selectPlayer', 'Select a player')}</option>
-            {players.map((player) => (
+            {assignablePlayers.map((player) => (
               <option key={player.playerId} value={player.playerId}>{player.name}</option>
             ))}
           </select>
@@ -601,7 +603,7 @@ export default function ManageChampionships() {
             <label className="ac-field__label" htmlFor="assign-champion-2">{t('adminContent.championships.champion2', 'Champion 2')}</label>
             <select id="assign-champion-2" value={assignChampion2} onChange={(event) => setAssignChampion2(event.target.value)} required>
               <option value="">{t('adminContent.selectPlayer', 'Select a player')}</option>
-              {players
+              {assignablePlayers
                 .filter((player) => player.playerId !== assignChampion1)
                 .map((player) => (
                   <option key={player.playerId} value={player.playerId}>{player.name}</option>

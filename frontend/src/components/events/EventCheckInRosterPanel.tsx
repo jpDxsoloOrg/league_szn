@@ -14,7 +14,6 @@ import './EventCheckInRosterPanel.css';
 
 interface EventCheckInRosterPanelProps {
   eventId: string;
-  compact?: boolean;
   bookedPlayerIds?: ReadonlySet<string>;
 }
 
@@ -70,7 +69,6 @@ function PlayerChip({
 
 export default function EventCheckInRosterPanel({
   eventId,
-  compact = false,
   bookedPlayerIds,
 }: EventCheckInRosterPanelProps) {
   const { t } = useTranslation();
@@ -214,55 +212,6 @@ export default function EventCheckInRosterPanel({
     roster.tentative.length === 0 &&
     roster.unavailable.length === 0 &&
     roster.noResponse.length === 0;
-
-  if (compact) {
-    return (
-      <div className="checkin-roster-panel checkin-roster-panel--compact">
-        <h4 className="checkin-roster-compact-title">
-          {t('events.checkIn.roster.available', { defaultValue: 'Available' })}{' '}
-          ({roster.available.length})
-        </h4>
-        {roster.available.length === 0 ? (
-          <p className="checkin-roster-empty">
-            {t('events.checkIn.roster.empty', {
-              defaultValue: 'No check-ins yet.',
-            })}
-          </p>
-        ) : availableGroups ? (
-          <div className="checkin-roster-division-groups">
-            {availableGroups.map((group) => (
-              <div key={group.id} className="checkin-roster-division-group">
-                <h5 className="checkin-roster-division-title">
-                  {group.name} ({group.players.length})
-                </h5>
-                <ul className="checkin-roster-list">
-                  {group.players.map((player) => (
-                    <PlayerChip
-                      key={player.playerId}
-                      player={player}
-                      isBooked={bookedPlayerIds?.has(player.playerId)}
-                      bookedLabel={bookedLabel}
-                    />
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <ul className="checkin-roster-list">
-            {roster.available.map((player) => (
-              <PlayerChip
-                key={player.playerId}
-                player={player}
-                isBooked={bookedPlayerIds?.has(player.playerId)}
-                bookedLabel={bookedLabel}
-              />
-            ))}
-          </ul>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="checkin-roster-panel">

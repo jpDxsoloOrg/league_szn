@@ -13,6 +13,7 @@ import {
   getPageInfo,
   getSectionTheme,
   getSectionLandingPath,
+  isAdminTab,
   getVisibleAdminGroups,
   getVisibleSections,
   getVisibleTabs,
@@ -20,7 +21,7 @@ import {
   type NavSection,
 } from './navConfig';
 
-const ALL_ON = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true };
+const ALL_ON = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true, transfers: true };
 
 function context(overrides: Partial<NavContext> = {}): NavContext {
   return { features: ALL_ON, isAuthenticated: true, isWrestler: true, isAdminOrModerator: false, isSuperAdmin: false, ...overrides };
@@ -126,9 +127,20 @@ describe('admin registry', () => {
   });
 
   it('trims the groups for Moderators', () => {
-    const tabs = getVisibleAdminGroups(false).flatMap((group) => group.entries.map((entry) => entry.tab));
+    const tabs = getVisibleAdminGroups(false, ALL_ON).flatMap((group) => group.entries.map((entry) => entry.tab));
     expect(tabs).toHaveLength(ADMIN_TABS.length - 4);
     expect(tabs).toContain('overalls');
+  });
+
+  it('drops the Transfers page while its feature is off', () => {
+    const features = { ...ALL_ON, transfers: false };
+    const tabs = getVisibleAdminGroups(true, features).flatMap((group) => group.entries.map((entry) => entry.tab));
+    expect(tabs).toHaveLength(ADMIN_TABS.length - 1);
+    expect(tabs).not.toContain('transfers');
+  });
+
+  it('no longer registers the Match Card Builder', () => {
+    expect(isAdminTab('events')).toBe(false);
   });
 });
 

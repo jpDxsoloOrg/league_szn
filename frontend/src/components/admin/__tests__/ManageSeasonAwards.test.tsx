@@ -116,6 +116,22 @@ describe('ManageSeasonAwards', () => {
     expect(screen.getByText('Best Promo')).toBeInTheDocument();
   });
 
+  it('leaves hidden players out of the award picker', async () => {
+    mockGetAllSeasons.mockResolvedValue(mockSeasons);
+    mockGetAllPlayers.mockResolvedValue([
+      ...mockPlayers,
+      { playerId: 'p3', name: 'Newbie', currentWrestler: 'Needs Wrestler', wins: 0, losses: 0, draws: 0, createdAt: '2025-01-01', updatedAt: '2025-01-01' },
+    ]);
+    mockGetAwards.mockResolvedValue({ seasonId: 's1', autoAwards: [], customAwards: [] });
+
+    renderComponent();
+
+    fireEvent.click(await screen.findByText('Create Award'));
+
+    expect(await screen.findByRole('option', { name: 'Player One' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Newbie' })).not.toBeInTheDocument();
+  });
+
   it('creates a custom award via the form', async () => {
     mockGetAllSeasons.mockResolvedValue(mockSeasons);
     mockGetAllPlayers.mockResolvedValue(mockPlayers);

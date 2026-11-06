@@ -17,13 +17,13 @@ The **Events** page allows you to create and manage events and PPVs that organiz
 
 ## Building a Match Card
 
-After creating an event, use the **Match Card Builder** to assemble the card:
+Build the card on the event's own page:
 
-1. Select the event you want to edit
-2. In the Match Card Builder section, use the dropdown to select available matches
-3. Click **Add Match** to add it to the card
-4. Use **Move Up** / **Move Down** to reorder matches on the card
-5. Use **Remove Match** to take a match off the card
+1. Open the event from **Events**
+2. Click **Add Match** to schedule a match straight onto the card
+3. Click **Edit** on a match to change it, including its card position (pre-show, opener, midcard, co-main, main event)
+4. Click **Delete** on a match to remove it
+5. To put an existing standalone match on a card, edit it under **Standalone Matches** and choose the event
 
 Championship matches are highlighted with a special badge on the card.
 

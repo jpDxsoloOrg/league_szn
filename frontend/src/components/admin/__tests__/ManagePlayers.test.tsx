@@ -547,7 +547,7 @@ describe('ManagePlayers', () => {
     expect(mockPlayersApi.delete).not.toHaveBeenCalled();
   });
 
-  it('shows a hidden badge on players with no wrestler and can filter to them', async () => {
+  it('keeps players with no wrestler out of the table until Show hidden is on', async () => {
     const user = userEvent.setup();
     mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
       ...mockPlayers,
@@ -562,45 +562,33 @@ describe('ManagePlayers', () => {
     ]);
     renderComponent();
 
-    await waitFor(() => { expect(screen.getByText('All Players (4)')).toBeInTheDocument(); });
+    await waitFor(() => { expect(screen.getByText('All Players (2 of 4)')).toBeInTheDocument(); });
 
     expect(mockPlayersApi.getAllIncludingHidden).toHaveBeenCalled();
+    expect(screen.queryByText('Newbie')).not.toBeInTheDocument();
+    expect(screen.queryByText('Blank')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Show hidden (2)' }));
+
+    expect(screen.getByText('All Players (4)')).toBeInTheDocument();
     const newbieRow = screen.getByText('Newbie').closest('tr')!;
     expect(within(newbieRow).getByText('Hidden')).toBeInTheDocument();
     expect(screen.queryByText('Needs Wrestler')).not.toBeInTheDocument();
     expect(within(screen.getByText('John').closest('tr')!).queryByText('Hidden')).not.toBeInTheDocument();
-    expect(screen.getByText('2 hidden')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('combobox', { name: 'Filter players' }));
-    await user.click(await screen.findByRole('option', { name: 'Hidden (no wrestler)' }));
-
-    expect(screen.getByText('All Players (2 of 4)')).toBeInTheDocument();
-    expect(screen.queryByText('John')).not.toBeInTheDocument();
-    expect(screen.getByText('Newbie')).toBeInTheDocument();
   });
 
-  it('starts on every division so hidden players are not filtered out of view', async () => {
-    mockDivisionsApi.getAll.mockResolvedValue([
-      { divisionId: 'div-h', name: 'Heavyweight', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
-    ]);
-    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
-      ...mockPlayers,
-      {
-        playerId: 'p3', name: 'Newbie', currentWrestler: 'Needs Wrestler',
-        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
-      },
-    ]);
+  it('offers no Show hidden filter when nobody is hidden', async () => {
     renderComponent();
 
-    expect(await screen.findByText('Newbie')).toBeInTheDocument();
-    expect(screen.getByText('All Players (3)')).toBeInTheDocument();
+    await screen.findByText('John');
+    expect(screen.queryByRole('checkbox', { name: /Show hidden/ })).not.toBeInTheDocument();
   });
 
   it('labels a blank-name player and finds them by that label', async () => {
     const user = userEvent.setup();
     mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
       ...mockPlayers,
-      { ...mockPlayers[0], playerId: 'p-blank', name: '', currentWrestler: 'Needs Wrestler', currentWrestlerId: undefined },
+      { ...mockPlayers[0], playerId: 'p-blank', name: '' },
     ]);
     renderComponent();
 

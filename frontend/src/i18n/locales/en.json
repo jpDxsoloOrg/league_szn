@@ -827,8 +827,7 @@
         "storylineRequests": "Storyline Requests",
         "rivalries": "Rivalries",
         "heatConfig": "Heat Tunables",
-        "dangerZone": "Danger Zone",
-        "matchCards": "Match Cards"
+        "dangerZone": "Danger Zone"
       },
       "groups": {
         "matchOps": "Match Operations",
@@ -1664,15 +1663,7 @@
       "season": "Season",
       "noSeason": "No Season",
       "saveEvent": "Save Event",
-      "saveSuccess": "Event saved successfully!",
-      "matchCardBuilder": "Match Card Builder",
-      "noMatchesOnCard": "No matches on this card yet. Add matches below.",
-      "championshipMatch": "Title Match",
-      "moveUp": "Move Up",
-      "moveDown": "Move Down",
-      "removeMatch": "Remove Match",
-      "selectMatch": "Select a match to add...",
-      "addMatch": "Add Match"
+      "saveSuccess": "Event saved successfully!"
     },
     "booking": {
       "neverBooked": "Never booked",
@@ -2804,10 +2795,9 @@
       "title": "Manage Players",
       "subtitle": "Edit players, assign divisions, and keep wrestlers current.",
       "all": "All Players",
-      "hiddenCount": "{{count}} hidden",
+      "showHidden": "Show hidden ({{count}})",
       "search": "Search players",
       "filterLabel": "Filter players",
-      "hiddenFilter": "Hidden (no wrestler)",
       "emptyTitle": "No players yet",
       "noMatches": "No players match these filters",
       "editTitle": "Edit Player",
@@ -2829,11 +2819,6 @@
       "deleteConfirm": "Are you sure you want to delete {{name}}? This action cannot be undone.",
       "keptWrestler": "{{name}} (custom name)",
       "clearWarning": "Saving removes this wrestler and hides the player from public pages."
-    },
-    "matchCard": {
-      "saveError": "Failed to save match card",
-      "designationFor": "Card position for",
-      "unresolvedMatch": "Match {{position}}"
     },
     "standalone": {
       "loadError": "Failed to load matches",
@@ -3350,6 +3335,10 @@
       },
       "subtitle": "Toggle site features on or off. Disabled features will be hidden from navigation and inaccessible to users. Data continues to be collected while features are disabled.",
       "title": "Feature Management",
+      "transfers": {
+        "description": "Division transfer requests on player profiles and the admin Transfers page",
+        "name": "Division Transfers"
+      },
       "updateFailed": "Failed to update feature"
     },
     "heat": {
@@ -3395,6 +3384,8 @@
       "accessRequired": "Admin Access Required",
       "accessRequiredText": "You need admin privileges to access this panel.",
       "fullAccessRequired": "Full Admin Access Required",
+      "featureOff": "This feature is turned off",
+      "featureOffText": "An Admin can turn it back on in Feature Management.",
       "fullAccessRequiredText": "This action requires full Admin privileges.",
       "helpPrefix": "New to admin workflows?",
       "quickstart": "Admin Quickstart",

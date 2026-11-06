@@ -15,7 +15,7 @@ Use the links below to open each section of the admin guide.
 ## Titles & events
 
 - [Championships](admin-championships) — Create and manage titles, belt images, history
-- [Events](admin-events) — Create events, match card builder, event types
+- [Events](admin-events) — Create events, build match cards, event types
 - [Schedule Match](admin-schedule-match) — Create matches, types, stipulations, championship/tournament
 - [Record Results](admin-record-results) — Enter winners, losers, draws; auto-updates
 - [Tournaments](admin-tournaments) — Single elimination and round robin

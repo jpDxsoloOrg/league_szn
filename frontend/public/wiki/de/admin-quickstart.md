@@ -18,7 +18,7 @@ Neuer Admin? Folge diesen Schritten, um deine Liga von Grund auf einzurichten.
 
 7. **Matches planen** — Gehe zu **Match planen** und lege Matches an. Wähle Match-Typ, Teilnehmer, optional eine Stipulation, ordne optional einer Meisterschaft oder einem Turnier zu und weise Saison und Event zu.
 
-8. **Match-Card erstellen** — Gehe zurück zu **Events**, wähle dein Event und nutze den **Match-Card-Builder**, um Matches zur Karte hinzuzufügen. Ordne sie in der gewünschten Reihenfolge (Opener, Midcard, Co-Main, Main Event).
+8. **Match-Card erstellen** — Gehe zurück zu **Events** und öffne dein Event. Klicke auf **Match hinzufügen**, um Matches auf die Karte zu setzen, und **bearbeite** ein Match, um seine Position festzulegen (Opener, Midcard, Co-Main, Main Event).
 
 9. **Ergebnisse eintragen** — Nach den Matches gehe zu **Ergebnisse eintragen**. Wähle ein Match, ordne jedem Teilnehmer Sieger, Verlierer oder Unentschieden zu und speichere. Tabellen, Meisterschaften und Turnier-Brackets werden automatisch aktualisiert.
 
