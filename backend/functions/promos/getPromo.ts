@@ -4,7 +4,7 @@ import { success, notFound, badRequest, serverError } from '../../lib/response';
 import type { Promo } from '../../lib/repositories/types';
 import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
 import { FORMER_MEMBER, findHiddenPlayerIds, isPlayerVisible, resolveBilledName } from '../../lib/needsWrestler';
-import { withoutReactions } from '../../lib/publicPromo';
+import { loadChampionshipNames, withoutReactions } from '../../lib/publicPromo';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -13,7 +13,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('promoId is required');
     }
 
-    const { content: { promos }, roster: { players } } = getRepositories();
+    const { content: { promos }, roster: { players }, competition: { championships } } = getRepositories();
 
     const promo = await promos.findById(promoId);
     if (!promo) {
@@ -90,6 +90,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    const championshipNames = await loadChampionshipNames([promo, ...responses], (id) => championships.findById(id));
+    const championshipNameOf = (p: Promo) => (p.championshipId ? championshipNames.get(p.championshipId) : undefined);
+
     const enrichedResponses = responses
       .map((r) => {
         const rAuthor = playerMap[r.playerId];
@@ -101,6 +104,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           playerImageUrl: rAuthor?.imageUrl,
           targetPlayerName: rTarget?.name,
           targetWrestlerName: rTarget?.wrestlerName,
+          championshipName: championshipNameOf(r),
           responseCount: 0,
         };
       })
@@ -114,6 +118,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         playerImageUrl: author?.imageUrl,
         targetPlayerName: target?.name,
         targetWrestlerName: target?.wrestlerName,
+        championshipName: championshipNameOf(promo),
         targetPromo,
         responseCount: responses.length,
       },

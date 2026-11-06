@@ -64,6 +64,26 @@ describe('getPromos', () => {
     expect(body(result)[0].reactionCounts.fire).toBe(1);
   });
 
+  it('names the title on the line, and leaves it out for a deleted title', async () => {
+    mockScanAll.mockResolvedValueOnce([
+      { promoId: 'p1', playerId: 'pl1', promoType: 'call-out', championshipId: 'c1', isHidden: false, createdAt: '2024-01-02T00:00:00Z' },
+      { promoId: 'p2', playerId: 'pl1', promoType: 'call-out', championshipId: 'gone', isHidden: false, createdAt: '2024-01-01T00:00:00Z' },
+      { promoId: 'p3', playerId: 'pl1', promoType: 'open-mic', isHidden: false, createdAt: '2024-01-01T00:00:00Z' },
+    ]);
+    mockGet.mockImplementation(async (params: any) => {
+      if (params.Key.championshipId === 'c1') return { Item: { championshipId: 'c1', name: 'World Title' } };
+      if (params.Key.playerId) return { Item: { playerId: 'pl1', name: 'A', currentWrestler: 'Edge' } };
+      return { Item: undefined };
+    });
+
+    const rows = body(await getPromos(makeEvent(), ctx, cb));
+    const nameOf = (promoId: string) => rows.find((row: any) => row.promoId === promoId).championshipName;
+
+    expect(nameOf('p1')).toBe('World Title');
+    expect(nameOf('p2')).toBeUndefined();
+    expect(nameOf('p3')).toBeUndefined();
+  });
+
   it('returns all non-hidden promos via scan when no filters are provided', async () => {
     mockScanAll.mockResolvedValue([
       { promoId: 'p1', playerId: 'pl1', promoType: 'open-mic', isHidden: false, createdAt: '2024-01-02T00:00:00Z' },

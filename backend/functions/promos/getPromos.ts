@@ -5,7 +5,7 @@ import type { Promo, PromoType } from '../../lib/repositories/types';
 import { FORMER_MEMBER, isHiddenLivePlayer, resolveBilledName } from '../../lib/needsWrestler';
 import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
 import { isPromoArchived } from '../../lib/promoArchive';
-import { withoutReactions } from '../../lib/publicPromo';
+import { loadChampionshipNames, withoutReactions } from '../../lib/publicPromo';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -18,7 +18,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const showHidden = staff && includeHidden === 'true';
     const showArchived = staff && includeArchived === 'true';
 
-    const { content: { promos }, roster: { players } } = getRepositories();
+    const { content: { promos }, roster: { players }, competition: { championships } } = getRepositories();
 
     let promoList: Promo[];
 
@@ -72,6 +72,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    const championshipNames = await loadChampionshipNames(promoList, (id) => championships.findById(id));
+
     // Enrich with player context
     const now = Date.now();
     const enriched = promoList
@@ -110,6 +112,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           playerImageUrl: author?.imageUrl,
           targetPlayerName: target?.name,
           targetWrestlerName: target?.currentWrestler,
+          championshipName: p.championshipId ? championshipNames.get(p.championshipId) : undefined,
           targetPromo,
           responseCount: responseCounts[p.promoId] || 0,
           ...(staff ? { isArchived: isPromoArchived(p, now) } : {}),

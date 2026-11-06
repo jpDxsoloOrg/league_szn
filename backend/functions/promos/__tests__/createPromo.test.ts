@@ -111,6 +111,31 @@ describe('createPromo', () => {
     expect(data.championshipId).toBe('champ-3');
   });
 
+  it('refuses a title that does not exist, such as the old championship-match id', async () => {
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }] });
+    mockGet.mockResolvedValue({ Item: undefined });
+
+    const result = await createPromo(withAuth(makeEvent({
+      body: JSON.stringify({ promoType: 'championship', content: VALID_CONTENT, championshipId: 'championship-match' }),
+    }), 'Wrestler'), ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(body(result).message).toBe('Championship not found');
+    expect(mockPut).not.toHaveBeenCalled();
+  });
+
+  it('accepts a title that exists', async () => {
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }] });
+    mockGet.mockResolvedValue({ Item: { championshipId: 'c1', name: 'World Title' } });
+    mockPut.mockResolvedValue({});
+
+    const result = await createPromo(withAuth(makeEvent({
+      body: JSON.stringify({ promoType: 'championship', content: VALID_CONTENT, championshipId: 'c1' }),
+    }), 'Wrestler'), ctx, cb);
+
+    expect(result!.statusCode).toBe(201);
+  });
+
   it('returns 400 when caller is not a Wrestler', async () => {
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ promoType: 'open-mic', content: VALID_CONTENT }) }),

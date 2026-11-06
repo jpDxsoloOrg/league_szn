@@ -6,6 +6,7 @@ import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
 import { recomputeRivalryHeat } from '../../lib/services/recomputeRivalryHeat';
 import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
+import { CHAMPIONSHIP_NOT_FOUND_MESSAGE } from '../../lib/challengeTitle';
 import type { PromoType } from '../../lib/repositories/types';
 
 const VALID_PROMO_TYPES: PromoType[] = [
@@ -57,7 +58,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const repos = getRepositories();
-    const { content: { promos }, roster: { players }, rivalries } = repos;
+    const { content: { promos }, roster: { players }, competition: { championships }, rivalries } = repos;
 
     // Find the player via user sub
     const player = await players.findByUserId(auth.sub);
@@ -80,6 +81,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (!isParticipant) {
         return forbidden('You can only tag a promo to a rivalry you are part of');
       }
+    }
+
+    if (championshipId && !(await championships.findById(championshipId))) {
+      return badRequest(CHAMPIONSHIP_NOT_FOUND_MESSAGE);
     }
 
     // Calling out a hidden player is blocked. The one exemption is replying to
