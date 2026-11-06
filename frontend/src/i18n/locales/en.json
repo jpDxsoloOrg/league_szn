@@ -1564,6 +1564,8 @@
       "matchNotFound": "Match data is not available. Try refreshing the page.",
       "moveMatchDown": "Move {{match}} down",
       "cardChanged": "The card changed. Reloaded the latest order; try again.",
+      "removeCardError": "Could not remove the match from the card.",
+      "removeFromCard": "Remove from card",
       "moveMatchError": "Could not save the new match order.",
       "moveMatchUp": "Move {{match}} up",
       "openCommentary": "Commentary View",

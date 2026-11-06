@@ -199,6 +199,85 @@ describe('EventDetail', () => {
     expect(await screen.findByText('Match TBA')).toBeInTheDocument();
   });
 
+  describe('a card whose match is gone', () => {
+    const withDeadCard = (status = 'upcoming') => {
+      const event = eventWithCard([['m1', 'opener'], ['gone', 'midcard'], ['m3', 'main-event']], status);
+      return {
+        ...event,
+        enrichedMatches: event.enrichedMatches.map((entry) =>
+          entry.matchId === 'gone' ? { ...entry, matchData: null } : entry),
+      };
+    };
+    const removeButton = () => screen.findByRole('button', { name: 'Remove from card' });
+
+    it('lets staff take it off the card and renumbers the rest', async () => {
+      const event = withDeadCard();
+      api.getEvent.mockResolvedValue(event);
+      api.updateEvent.mockResolvedValue({});
+      const user = userEvent.setup();
+      renderDetail();
+
+      await user.click(await removeButton());
+
+      expect(api.updateEvent).toHaveBeenCalledWith('e1', {
+        matchCards: [
+          { position: 1, matchId: 'm1', designation: 'opener' },
+          { position: 2, matchId: 'm3', designation: 'main-event' },
+        ],
+        expectedMatchCards: event.matchCards,
+      });
+      expect(screen.queryByText('Match TBA')).not.toBeInTheDocument();
+    });
+
+    it('is offered on a completed event, where the order controls are not', async () => {
+      api.getEvent.mockResolvedValue(withDeadCard('completed'));
+      renderDetail();
+
+      expect(await removeButton()).toBeInTheDocument();
+    });
+
+    it('puts the card back and shows an error when the save fails', async () => {
+      api.getEvent.mockResolvedValue(withDeadCard());
+      api.updateEvent.mockRejectedValue(new Error('Server error'));
+      const user = userEvent.setup();
+      renderDetail();
+
+      await user.click(await removeButton());
+
+      await waitFor(() => expect(showToast).toHaveBeenCalledWith('Could not remove the match from the card.', 'error'));
+      expect(screen.getByText('Match TBA')).toBeInTheDocument();
+    });
+
+    it('is not offered to the public', async () => {
+      authState.isAdminOrModerator = false;
+      api.getEvent.mockResolvedValue(withDeadCard());
+      renderDetail();
+
+      expect(await screen.findByText('Match TBA')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Remove from card' })).not.toBeInTheDocument();
+    });
+  });
+
+  it('keeps a card move made while a sign-up lock change was in flight', async () => {
+    const card: CardRow[] = [['m1', 'opener'], ['m2', 'midcard']];
+    api.getEvent.mockResolvedValue(eventWithCard(card));
+    let finishLock = (_updated: { checkInsLocked: boolean }) => {};
+    api.updateEvent.mockImplementation((_id: string, updates: Record<string, unknown>) => (
+      'checkInsLocked' in updates
+        ? new Promise((resolve) => { finishLock = resolve; })
+        : Promise.resolve({})
+    ));
+    const user = userEvent.setup();
+    const { container } = renderDetail();
+
+    await user.click(await screen.findByRole('button', { name: /lock sign-ups/i }));
+    await user.click(moveDown('m1'));
+    finishLock({ checkInsLocked: true });
+
+    await screen.findByRole('button', { name: /unlock sign-ups/i });
+    expect(shownOrder(container)).toEqual(['m2', 'm1']);
+  });
+
   const withMatch = (matchFormat: string, participants: string[], teams?: string[][]) => ({
     ...eventWithMatch,
     enrichedMatches: [{

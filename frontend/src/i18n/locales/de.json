@@ -1564,6 +1564,8 @@
       "matchNotFound": "Match-Daten sind nicht verfügbar. Bitte Seite neu laden.",
       "moveMatchDown": "{{match}} nach unten verschieben",
       "cardChanged": "Die Matchcard wurde geändert. Die aktuelle Reihenfolge wurde neu geladen, bitte erneut versuchen.",
+      "removeCardError": "Das Match konnte nicht von der Matchcard entfernt werden.",
+      "removeFromCard": "Von der Matchcard entfernen",
       "moveMatchError": "Die neue Match-Reihenfolge konnte nicht gespeichert werden.",
       "moveMatchUp": "{{match}} nach oben verschieben",
       "openCommentary": "Kommentator-Ansicht",
