@@ -452,6 +452,26 @@
       "rateMatches": "Kämpfe bewerten",
       "rivalryHeatExplained": "Wie Rivalitäts-Hitze funktioniert"
     },
+    "navLabels": {
+      "adminQuickstart": "Schnellstart",
+      "adminMatchConfig": "Match-Konfiguration",
+      "adminSeasonAwards": "Saison-Auszeichnungen",
+      "adminUserManagement": "Benutzerverwaltung",
+      "adminDivisions": "Divisionen",
+      "adminManagePlayers": "Spieler verwalten",
+      "adminSeasons": "Saisons",
+      "adminChampionships": "Meisterschaften",
+      "adminEvents": "Events",
+      "adminScheduleMatch": "Match planen",
+      "adminRecordResults": "Ergebnisse eintragen",
+      "adminTournaments": "Turniere",
+      "adminChallenges": "Herausforderungen",
+      "adminPromos": "Promos",
+      "adminContenderConfig": "Herausforderer-Konfig",
+      "adminDataManagement": "Datenverwaltung",
+      "adminWorkflow": "Typischer Wochenablauf",
+      "adminRivalries": "Rivalitäten"
+    },
     "articleNotFound": "Artikel nicht gefunden",
     "articleNotFoundHint": "Dieser Hilfeartikel wurde vielleicht verschoben. Sieh dir stattdessen die ganze Liste an.",
     "browseArticles": "Alle Artikel ansehen"

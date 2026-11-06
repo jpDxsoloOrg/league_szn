@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 const { mockUseTranslation } = vi.hoisted(() => ({
@@ -28,6 +28,9 @@ vi.mock('../../contexts/AuthContext', () => ({
 import { WikiLayout } from '../Wiki';
 import WikiIndex from '../WikiIndex';
 import WikiArticle from '../WikiArticle';
+import wikiIndex from '../../../public/wiki/index.json';
+import en from '../../i18n/locales/en.json';
+import de from '../../i18n/locales/de.json';
 
 function renderWikiRoutes(initialRoute = '/guide/wiki') {
   return render(
@@ -191,5 +194,106 @@ describe('Wiki', () => {
     await screen.findByText('Article body');
     const articleNav = screen.getByRole('navigation', { name: 'wiki.articleNavLabel' });
     expect(articleNav.querySelector('a')).toHaveAttribute('href', '/guide/wiki/second');
+  });
+
+  describe('admin articles nested under Admin', () => {
+    const staffIndex = [
+      { slug: 'faqs', titleKey: 'wiki.articles.faqs', file: 'faqs.md' },
+      { slug: 'admin', titleKey: 'wiki.articles.adminGuide', file: 'admin.md', adminOnly: true },
+      {
+        slug: 'admin-seasons', titleKey: 'wiki.articles.adminSeasons', file: 'admin-seasons.md',
+        adminOnly: true, parent: 'admin', navTitleKey: 'wiki.navLabels.adminSeasons',
+      },
+      { slug: 'rivalries', titleKey: 'wiki.articles.rivalries', file: 'rivalries.md' },
+      {
+        slug: 'admin-rivalries', titleKey: 'wiki.articles.adminRivalries', file: 'admin-rivalries.md',
+        adminOnly: true, parent: 'admin', navTitleKey: 'wiki.navLabels.adminRivalries',
+      },
+    ];
+
+    beforeEach(() => {
+      mockUseAuth.mockReturnValue({
+        isAdminOrModerator: true,
+        isAuthenticated: true,
+        isLoading: false,
+        hasRole: () => true,
+      });
+      (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string) => (
+        url === '/wiki/index.json'
+          ? { ok: true, json: async () => staffIndex }
+          : { ok: true, status: 200, text: async () => '# Article body' }
+      ));
+    });
+
+    async function openSidebar(slug: string) {
+      renderWikiRoutes(`/guide/wiki/${slug}`);
+      await screen.findByText('Article body');
+      const sidebar = screen.getByRole('complementary', { name: 'wiki.articlesLabel' });
+      await within(sidebar).findByRole('link', { name: 'wiki.articles.adminGuide' });
+      return within(sidebar);
+    }
+
+    it('gives only the open child the selected style, and marks Admin lightly', async () => {
+      const sidebar = await openSidebar('admin-seasons');
+
+      const child = sidebar.getByRole('link', { name: 'wiki.navLabels.adminSeasons' });
+      const parent = sidebar.getByRole('link', { name: 'wiki.articles.adminGuide' });
+      expect(child).toHaveClass('wiki-sidebar-current');
+      expect(child).toHaveAttribute('aria-current', 'page');
+      expect(child).toHaveAttribute('href', '/guide/wiki/admin-seasons');
+      expect(parent).toHaveClass('wiki-sidebar-parent-current');
+      expect(parent).not.toHaveClass('wiki-sidebar-current');
+      expect(parent).not.toHaveAttribute('aria-current');
+    });
+
+    it('selects Admin itself when Admin is the open article', async () => {
+      const sidebar = await openSidebar('admin');
+
+      const parent = sidebar.getByRole('link', { name: 'wiki.articles.adminGuide' });
+      expect(parent).toHaveClass('wiki-sidebar-current');
+      expect(parent).not.toHaveClass('wiki-sidebar-parent-current');
+    });
+
+    it('does not mark Admin while an unrelated article is open', async () => {
+      const sidebar = await openSidebar('faqs');
+
+      expect(sidebar.getByRole('link', { name: 'wiki.articles.adminGuide' })).not.toHaveClass('wiki-sidebar-parent-current');
+    });
+
+    it('gathers children under Admin even when the index lists one elsewhere', async () => {
+      const sidebar = await openSidebar('faqs');
+
+      const parentItem = sidebar.getByRole('link', { name: 'wiki.articles.adminGuide' }).closest('li') as HTMLElement;
+      const childLinks = within(parentItem).getAllByRole('link').slice(1);
+      expect(childLinks.map((link) => link.textContent)).toEqual([
+        'wiki.navLabels.adminSeasons',
+        'wiki.navLabels.adminRivalries',
+      ]);
+    });
+
+    it('keeps full titles when an index search flattens the list', async () => {
+      renderWikiRoutes();
+      expect(await screen.findByRole('link', { name: /wiki\.navLabels\.adminSeasons/ })).toBeInTheDocument();
+
+      fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'adminSeasons' } });
+
+      expect(await screen.findByRole('link', { name: /wiki\.articles\.adminSeasons/ })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /wiki\.navLabels\.adminSeasons/ })).not.toBeInTheDocument();
+    });
+  });
+
+  it('gives every admin article a parent and a short label in both languages', () => {
+    const children = wikiIndex.filter((entry) => entry.slug.startsWith('admin-'));
+    expect(children.length).toBeGreaterThan(0);
+
+    for (const entry of children) {
+      expect(entry.parent).toBe('admin');
+      const key = entry.navTitleKey?.replace('wiki.navLabels.', '') ?? '';
+      for (const labels of [en.wiki.navLabels, de.wiki.navLabels]) {
+        const label = (labels as Record<string, string>)[key];
+        expect(label, `${entry.slug} label`).toBeTruthy();
+        expect(label).not.toMatch(/^Admin:/);
+      }
+    }
   });
 });
