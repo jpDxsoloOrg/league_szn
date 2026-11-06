@@ -7,10 +7,12 @@ const {
   mockGetMyProfile,
   mockUpdateMyProfile,
   mockGetWrestlers,
+  mockRefreshProfile,
 } = vi.hoisted(() => ({
   mockGetMyProfile: vi.fn(),
   mockUpdateMyProfile: vi.fn(),
   mockGetWrestlers: vi.fn(),
+  mockRefreshProfile: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -28,7 +30,7 @@ vi.mock('../../../services/api', () => ({
 }));
 
 vi.mock('../../../contexts/AuthContext', () => ({
-  useAuth: () => ({ isAuthenticated: true, isWrestler: true, playerId: 'p1' }),
+  useAuth: () => ({ isAuthenticated: true, isWrestler: true, playerId: 'p1', refreshProfile: mockRefreshProfile }),
 }));
 
 vi.mock('../../../contexts/SiteConfigContext', () => ({
@@ -45,10 +47,6 @@ vi.mock('react-i18next', () => ({
 vi.mock('../../statistics/EmbeddedPlayerStats', () => ({
   default: () => null,
 }));
-
-vi.mock('../WrestlerProfile.css', () => ({}));
-vi.mock('../MovesetEditor.css', () => ({}));
-vi.mock('../MoveList.css', () => ({}));
 
 import WrestlerProfile from '../WrestlerProfile';
 
@@ -68,7 +66,7 @@ const basePlayer = {
 async function openEditForm() {
   render(<WrestlerProfile />);
   await waitFor(() => expect(mockGetMyProfile).toHaveBeenCalled());
-  await userEvent.click(await screen.findByRole('button', { name: /edit profile/i }));
+  await userEvent.click(await screen.findByRole('button', { name: 'me.profile.edit' }));
 }
 
 describe('WrestlerProfile — free-text wrestler entry', () => {
@@ -85,11 +83,11 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
   it('renders text inputs for the wrestler names, not the roster dropdowns', async () => {
     await openEditForm();
 
-    const current = screen.getByLabelText('Current Wrestler');
+    const current = screen.getByLabelText('me.profile.currentWrestler');
     expect(current).toBeInstanceOf(HTMLInputElement);
     expect(current).toHaveValue('Alpha');
 
-    const alternate = screen.getByLabelText('Alternate Wrestler');
+    const alternate = screen.getByLabelText('profile.alternateWrestler');
     expect(alternate).toBeInstanceOf(HTMLInputElement);
     expect(alternate).toHaveValue('Bravo');
   });
@@ -97,10 +95,10 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
   it('saves the typed names and leaves the roster assignment untouched', async () => {
     await openEditForm();
 
-    const current = screen.getByLabelText('Current Wrestler');
+    const current = screen.getByLabelText('me.profile.currentWrestler');
     await userEvent.clear(current);
     await userEvent.type(current, 'The Rock');
-    await userEvent.click(screen.getByRole('button', { name: /save profile/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'me.profile.save' }));
 
     await waitFor(() => expect(mockUpdateMyProfile).toHaveBeenCalled());
     const payload = mockUpdateMyProfile.mock.calls[0][0];
@@ -114,8 +112,8 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
   it('falls back to the Needs Wrestler placeholder when the name is cleared', async () => {
     await openEditForm();
 
-    await userEvent.clear(screen.getByLabelText('Current Wrestler'));
-    await userEvent.click(screen.getByRole('button', { name: /save profile/i }));
+    await userEvent.clear(screen.getByLabelText('me.profile.currentWrestler'));
+    await userEvent.click(screen.getByRole('button', { name: 'me.profile.save' }));
 
     await waitFor(() => expect(mockUpdateMyProfile).toHaveBeenCalled());
     expect(mockUpdateMyProfile.mock.calls[0][0].currentWrestler).toBe('Needs Wrestler');
@@ -124,8 +122,8 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
   it('clears the alternate with an empty string', async () => {
     await openEditForm();
 
-    await userEvent.clear(screen.getByLabelText('Alternate Wrestler'));
-    await userEvent.click(screen.getByRole('button', { name: /save profile/i }));
+    await userEvent.clear(screen.getByLabelText('profile.alternateWrestler'));
+    await userEvent.click(screen.getByRole('button', { name: 'me.profile.save' }));
 
     await waitFor(() => expect(mockUpdateMyProfile).toHaveBeenCalled());
     expect(mockUpdateMyProfile.mock.calls[0][0].alternateWrestler).toBe('');
@@ -140,7 +138,7 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
 
     await openEditForm();
 
-    expect(screen.getByLabelText('Current Wrestler')).toHaveValue('');
+    expect(screen.getByLabelText('me.profile.currentWrestler')).toHaveValue('');
   });
 
   it('sends bio and compacted movesets only when they changed', async () => {
@@ -156,7 +154,7 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
       screen.getByLabelText('profile.moves.signatures 1 — profile.moves.customName'),
       'The Cutter',
     );
-    await userEvent.click(screen.getByRole('button', { name: /save profile/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'me.profile.save' }));
 
     await waitFor(() => expect(mockUpdateMyProfile).toHaveBeenCalled());
     const payload = mockUpdateMyProfile.mock.calls[0][0];
@@ -169,7 +167,7 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
   it('leaves moveset fields out of the payload when untouched', async () => {
     await openEditForm();
 
-    await userEvent.click(screen.getByRole('button', { name: /save profile/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'me.profile.save' }));
 
     await waitFor(() => expect(mockUpdateMyProfile).toHaveBeenCalled());
     const payload = mockUpdateMyProfile.mock.calls[0][0];
@@ -188,7 +186,7 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
     const game = screen.getByLabelText('profile.moves.signatures 1 — profile.moves.gameName');
     expect(game).toHaveValue('Cody Cutter');
     await userEvent.clear(game);
-    await userEvent.click(screen.getByRole('button', { name: /save profile/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'me.profile.save' }));
 
     await waitFor(() => expect(mockUpdateMyProfile).toHaveBeenCalled());
     expect(mockUpdateMyProfile.mock.calls[0][0].signatures).toEqual([]);
@@ -204,13 +202,71 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
 
     await userEvent.type(screen.getByLabelText('profile.bio.label'), ' edited');
     await userEvent.clear(screen.getByLabelText('profile.moves.finishers 1 — profile.moves.gameName'));
-    await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
 
     // Reopen: the form must reflect the stored values again.
-    await userEvent.click(await screen.findByRole('button', { name: /edit profile/i }));
+    await userEvent.click(await screen.findByRole('button', { name: 'me.profile.edit' }));
     expect(screen.getByLabelText('profile.bio.label')).toHaveValue('Stored bio');
     expect(
       screen.getByLabelText('profile.moves.finishers 1 — profile.moves.gameName'),
     ).toHaveValue('Cross Rhodes');
+  });
+
+  describe('a player with no wrestler', () => {
+    const hidden = {
+      ...basePlayer,
+      currentWrestler: 'Needs Wrestler',
+      alternateWrestler: undefined,
+      currentWrestlerId: undefined,
+      alternateWrestlerId: undefined,
+    } as unknown as Player;
+
+    it('explains they are hidden and takes them straight to the name field', async () => {
+      mockGetMyProfile.mockResolvedValue(hidden);
+      render(<WrestlerProfile />);
+
+      expect(await screen.findByText('me.setup.hiddenTitle')).toBeInTheDocument();
+      expect(screen.getByText('me.setup.hiddenNotice')).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: 'me.setup.enterName' }));
+
+      expect(screen.getByLabelText('me.profile.currentWrestler')).toHaveFocus();
+      expect(screen.getByText('me.setup.wrestlerHint')).toBeInTheDocument();
+    });
+
+    it('clears the notice, confirms visibility and refreshes auth once saved', async () => {
+      mockGetMyProfile.mockResolvedValue(hidden);
+      mockUpdateMyProfile.mockResolvedValue({ ...hidden, currentWrestler: 'The Rock' });
+      render(<WrestlerProfile />);
+
+      await userEvent.click(await screen.findByRole('button', { name: 'me.setup.enterName' }));
+      await userEvent.type(screen.getByLabelText('me.profile.currentWrestler'), 'The Rock');
+      await userEvent.click(screen.getByRole('button', { name: 'me.profile.save' }));
+
+      expect(await screen.findByText('me.setup.nowVisible')).toBeInTheDocument();
+      expect(mockUpdateMyProfile.mock.calls[0][0].currentWrestler).toBe('The Rock');
+      expect(mockRefreshProfile).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText('me.setup.hiddenTitle')).not.toBeInTheDocument();
+    });
+
+    it('does not show the notice to a player with a wrestler', async () => {
+      render(<WrestlerProfile />);
+
+      await screen.findByRole('button', { name: 'me.profile.edit' });
+      expect(screen.queryByText('me.setup.hiddenTitle')).not.toBeInTheDocument();
+    });
+  });
+
+  it('keeps season records on screen after a save', async () => {
+    mockGetMyProfile.mockResolvedValue({
+      ...basePlayer,
+      seasonRecords: [{ seasonId: 's1', seasonName: 'Season 1', seasonStatus: 'active', wins: 3, losses: 1, draws: 0 }],
+    });
+    await openEditForm();
+
+    await userEvent.click(screen.getByRole('button', { name: 'me.profile.save' }));
+
+    expect(await screen.findByText('me.profile.updated')).toBeInTheDocument();
+    expect(screen.getByText('Season 1')).toBeInTheDocument();
   });
 });
