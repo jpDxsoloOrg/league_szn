@@ -25,7 +25,6 @@ const UNDEFINED_SOURCE_KEYS = [
   'events.admin.saveMatchCard',
   'events.admin.selectEvent',
   'events.admin.selectEventFirst',
-  'factions.admin.confirmReactivate',
   'rivalries.messages.audienceAria',
   'rivalries.messages.audiencePill',
   'rivalries.messages.feedError',

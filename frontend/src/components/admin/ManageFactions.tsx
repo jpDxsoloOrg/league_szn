@@ -218,7 +218,7 @@ export default function ManageFactions() {
     },
     reactivate: {
       title: t('adminRoster.factions.reactivateTitle', 'Reactivate faction'),
-      message: t('factions.admin.confirmReactivate', {
+      message: t('adminRoster.factions.reactivateConfirm', {
         defaultValue: 'Reactivate "{{name}}"? Members who have since joined another faction will be skipped.',
         name: confirmName,
       }),

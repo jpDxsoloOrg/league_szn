@@ -3059,7 +3059,8 @@
       "count_one": "{{count}} Fraktion",
       "count_other": "{{count}} Fraktionen",
       "disbandTitle": "Fraktion auflösen",
-      "disbandConfirm": "„{{name}}“ auflösen? Bei einer späteren Reaktivierung werden Mitglieder übersprungen, die einer anderen Fraktion beigetreten sind."
+      "disbandConfirm": "„{{name}}“ auflösen? Bei einer späteren Reaktivierung werden Mitglieder übersprungen, die einer anderen Fraktion beigetreten sind.",
+      "reactivateConfirm": "„{{name}}“ reaktivieren? Mitglieder, die inzwischen einer anderen Fraktion beigetreten sind, werden übersprungen."
     },
     "tournament": {
       "loadError": "Spieler konnten nicht geladen werden",

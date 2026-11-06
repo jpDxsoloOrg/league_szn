@@ -3055,7 +3055,8 @@
       "count_one": "{{count}} faction",
       "count_other": "{{count}} factions",
       "disbandTitle": "Disband faction",
-      "disbandConfirm": "Disband \"{{name}}\"? Reactivating it later skips members who have joined another faction."
+      "disbandConfirm": "Disband \"{{name}}\"? Reactivating it later skips members who have joined another faction.",
+      "reactivateConfirm": "Reactivate \"{{name}}\"? Members who have since joined another faction will be skipped."
     },
     "searchableSelect": {
       "clear": "Clear selection",

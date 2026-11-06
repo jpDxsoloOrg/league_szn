@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import de from '../../../i18n/locales/de.json';
+import en from '../../../i18n/locales/en.json';
 
 const { mockFactionsApi } = vi.hoisted(() => ({
   mockFactionsApi: {
@@ -55,6 +57,12 @@ describe('ManageFactions', () => {
     await waitFor(() => { expect(mockFactionsApi.reactivate).toHaveBeenCalledWith('s2'); });
     expect(confirmSpy).not.toHaveBeenCalled();
     confirmSpy.mockRestore();
+  });
+
+  it('has the reactivate confirmation in both languages', () => {
+    expect(en.adminRoster.factions.reactivateConfirm).toContain('{{name}}');
+    expect(de.adminRoster.factions.reactivateConfirm).toContain('{{name}}');
+    expect(de.adminRoster.factions.reactivateConfirm).not.toBe(en.adminRoster.factions.reactivateConfirm);
   });
 
   it('hides Delete and Disband from Moderators, which the API refuses, and keeps Reactivate', async () => {
