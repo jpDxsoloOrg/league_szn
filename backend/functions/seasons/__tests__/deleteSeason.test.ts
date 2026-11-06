@@ -86,6 +86,28 @@ describe('deleteSeason', () => {
     expect(mockAwardsDeleteAllForSeason).toHaveBeenCalledWith('s1');
   });
 
+  it('refuses an active season without deleting anything', async () => {
+    mockSeasonsFindById.mockResolvedValue({ seasonId: 's1', status: 'active' });
+
+    const result = await deleteSeason(makeEvent({ pathParameters: { seasonId: 's1' } }), ctx, cb);
+
+    expect(result!.statusCode).toBe(409);
+    expect(mockStandingsDeleteAllForSeason).not.toHaveBeenCalled();
+    expect(mockAwardsDeleteAllForSeason).not.toHaveBeenCalled();
+    expect(mockSeasonsDelete).not.toHaveBeenCalled();
+  });
+
+  it('keeps the season when deleting a child fails, so the delete can be retried', async () => {
+    mockSeasonsFindById.mockResolvedValue({ seasonId: 's1', status: 'completed' });
+    mockStandingsDeleteAllForSeason.mockResolvedValue(undefined);
+    mockAwardsDeleteAllForSeason.mockRejectedValue(new Error('boom'));
+
+    const result = await deleteSeason(makeEvent({ pathParameters: { seasonId: 's1' } }), ctx, cb);
+
+    expect(result!.statusCode).toBe(500);
+    expect(mockSeasonsDelete).not.toHaveBeenCalled();
+  });
+
   it('returns 400 when seasonId is missing from path', async () => {
     const event = makeEvent({ pathParameters: null });
 
