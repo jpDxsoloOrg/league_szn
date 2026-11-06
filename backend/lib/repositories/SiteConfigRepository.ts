@@ -5,6 +5,7 @@ export interface FeatureFlags {
   statistics: boolean;
   stables: boolean;
   rivalries: boolean;
+  notifications: boolean;
 }
 
 export const DEFAULT_FEATURES: FeatureFlags = {
@@ -14,6 +15,7 @@ export const DEFAULT_FEATURES: FeatureFlags = {
   statistics: true,
   stables: true,
   rivalries: true,
+  notifications: true,
 };
 
 /**

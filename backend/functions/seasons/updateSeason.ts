@@ -3,6 +3,8 @@ import { getRepositories, NotFoundError } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError, conflict } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 
+const SEASON_STATUSES: ReadonlyArray<string> = ['active', 'completed'];
+
 interface UpdateSeasonBody {
   name?: string;
   endDate?: string;
@@ -18,6 +20,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { data: body, error: parseError } = parseBody<UpdateSeasonBody>(event);
     if (parseError) return parseError;
+
+    if (body.status !== undefined && !SEASON_STATUSES.includes(body.status)) {
+      return badRequest(`status must be one of: ${SEASON_STATUSES.join(', ')}`);
+    }
 
     const { season: { seasons } } = getRepositories();
     const existing = await seasons.findById(seasonId);

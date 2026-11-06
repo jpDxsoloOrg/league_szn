@@ -12,7 +12,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Both flags are staff-only and are ignored for anyone else. includeHidden
     // covers moderated promos and promos by players hidden from the roster.
-    const staff = isStaff(await getVerifiedCaller(event));
+    const caller = await getVerifiedCaller(event);
+    const staff = isStaff(caller);
     const showHidden = staff && includeHidden === 'true';
     const showArchived = staff && includeArchived === 'true';
 
@@ -29,16 +30,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Collect unique player IDs for enrichment
-    const playerIds = new Set<string>();
+    const uniquePlayerIds = new Set<string>();
     for (const p of promoList) {
-      playerIds.add(p.playerId);
-      if (p.targetPlayerId) playerIds.add(p.targetPlayerId);
+      uniquePlayerIds.add(p.playerId);
+      if (p.targetPlayerId) uniquePlayerIds.add(p.targetPlayerId);
     }
+    const playerIds = [...uniquePlayerIds];
+    const fetchedPlayers = await Promise.all(playerIds.map((pid) => players.findById(pid)));
 
     const playerMap: Record<string, { name: string; currentWrestler: string; imageUrl?: string }> = {};
     const hiddenPlayerIds = new Set<string>();
-    for (const pid of playerIds) {
-      const player = await players.findById(pid);
+    playerIds.forEach((pid, index) => {
+      const player = fetchedPlayers[index];
       if (player) {
         if (!isPlayerVisible(player)) hiddenPlayerIds.add(pid);
         playerMap[pid] = {
@@ -47,13 +50,23 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           imageUrl: player.imageUrl,
         };
       }
+    });
+
+    // A player hidden from the roster still sees their own promos. A failed
+    // lookup falls back to the public view rather than failing the feed.
+    if (hiddenPlayerIds.size > 0 && caller?.sub) {
+      const callerPlayer = await players.findByUserId(caller.sub).catch(() => null);
+      if (callerPlayer) hiddenPlayerIds.delete(callerPlayer.playerId);
     }
+
+    const isListed = (p: Promo): boolean =>
+      showHidden || (!p.isHidden && !hiddenPlayerIds.has(p.playerId));
 
     // Count responses for each promo
     const promoIds = new Set(promoList.map((p) => p.promoId));
     const responseCounts: Record<string, number> = {};
     for (const p of promoList) {
-      if (p.targetPromoId && promoIds.has(p.targetPromoId)) {
+      if (p.targetPromoId && promoIds.has(p.targetPromoId) && isListed(p)) {
         responseCounts[p.targetPromoId] = (responseCounts[p.targetPromoId] || 0) + 1;
       }
     }
@@ -61,7 +74,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Enrich with player context
     const now = Date.now();
     const enriched = promoList
-      .filter((p) => showHidden || (!p.isHidden && !hiddenPlayerIds.has(p.playerId)))
+      .filter(isListed)
       .filter((p) => showArchived || !isPromoArchived(p, now))
       .filter((p) => !(excludeResponses === 'true' && (p.targetPromoId || p.promoType === 'response')))
       .map((p) => {
@@ -72,7 +85,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         let targetPromo: Record<string, unknown> | undefined;
         if (p.targetPromoId) {
           const tp = promoList.find((pp) => pp.promoId === p.targetPromoId);
-          if (tp) {
+          if (tp && isListed(tp)) {
             targetPromo = {
               promoId: tp.promoId,
               playerId: tp.playerId,

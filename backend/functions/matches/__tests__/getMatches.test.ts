@@ -451,10 +451,8 @@ describe('getMatches', () => {
     const result = await getMatches(makeEvent(), ctx, cb);
 
     expect(result!.statusCode).toBe(500);
-    // Handler now appends the underlying error detail so callers can see
-    // what actually broke instead of a generic 500.
-    expect(JSON.parse(result!.body).message).toMatch(/^Failed to fetch matches/);
-    expect(JSON.parse(result!.body).message).toContain('DB failure');
+    // The underlying error goes to the server log, not the response.
+    expect(JSON.parse(result!.body).message).toBe('Failed to fetch matches');
   });
 
   it('filters by rivalryId via direct field comparison (RIV-06)', async () => {
