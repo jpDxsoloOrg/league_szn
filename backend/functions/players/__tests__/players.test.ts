@@ -334,6 +334,52 @@ describe('updatePlayer', () => {
     expect(result!.statusCode).toBe(200);
   });
 
+  it.each([
+    ['psnId', ''],
+    ['psnId', null],
+    ['imageUrl', ''],
+    ['imageUrl', null],
+  ] as const)('removes %s when set to %j', async (field, cleared) => {
+    const created = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    const player = await repos.roster.players.update(created.playerId, {
+      psnId: 'old_psn',
+      imageUrl: 'https://img.example/old.png',
+    });
+
+    const event = makeEvent({
+      pathParameters: { playerId: player.playerId },
+      body: JSON.stringify({ [field]: cleared }),
+    });
+
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const stored = await repos.roster.players.findById(player.playerId);
+    expect(stored).not.toHaveProperty(field);
+    const kept = field === 'psnId' ? 'imageUrl' : 'psnId';
+    expect(stored?.[kept]).toBe(player[kept]);
+  });
+
+  it('leaves psnId and imageUrl alone when the keys are absent', async () => {
+    const created = await repos.roster.players.create({ name: 'John', currentWrestler: 'Rock' });
+    await repos.roster.players.update(created.playerId, {
+      psnId: 'old_psn',
+      imageUrl: 'https://img.example/old.png',
+    });
+
+    const event = makeEvent({
+      pathParameters: { playerId: created.playerId },
+      body: JSON.stringify({ name: 'Johnny' }),
+    });
+
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const stored = await repos.roster.players.findById(created.playerId);
+    expect(stored?.psnId).toBe('old_psn');
+    expect(stored?.imageUrl).toBe('https://img.example/old.png');
+  });
+
   it('updates currentWrestler field', async () => {
     const player = await repos.roster.players.create({ name: 'John', currentWrestler: 'Old Wrestler' });
 

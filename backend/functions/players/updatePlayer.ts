@@ -39,11 +39,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       hasChanges = true;
     }
     if (body.imageUrl !== undefined) {
-      patch.imageUrl = body.imageUrl as string;
+      patch.imageUrl = body.imageUrl === '' || body.imageUrl === null
+        ? undefined
+        : (body.imageUrl as string);
       hasChanges = true;
     }
     if (body.psnId !== undefined) {
-      patch.psnId = body.psnId as string;
+      patch.psnId = body.psnId === '' || body.psnId === null
+        ? undefined
+        : (body.psnId as string);
       hasChanges = true;
     }
 
