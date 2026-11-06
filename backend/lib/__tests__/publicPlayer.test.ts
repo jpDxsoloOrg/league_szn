@@ -28,6 +28,43 @@ describe('toPublicPlayer', () => {
     expect(toPublicPlayer(player, caller('staff-sub', role)).userId).toBe('owner-sub');
   });
 
+  describe('account flags', () => {
+    const flagged = { ...player, canUploadVideos: true, hasWrestlerRole: false };
+
+    it.each([
+      ['an anonymous caller', null],
+      ['another wrestler', caller('other-sub', 'Wrestler')],
+    ])('hides them from %s', (_label, viewer) => {
+      const shaped = toPublicPlayer(flagged, viewer);
+
+      expect(shaped).not.toHaveProperty('canUploadVideos');
+      expect(shaped).not.toHaveProperty('hasWrestlerRole');
+    });
+
+    it.each([
+      ['the player', caller('owner-sub', 'Wrestler')],
+      ['an Admin', caller('staff-sub', 'Admin')],
+      ['a Moderator', caller('staff-sub', 'Moderator')],
+    ])('shows them to %s', (_label, viewer) => {
+      expect(toPublicPlayer(flagged, viewer)).toMatchObject({
+        canUploadVideos: true,
+        hasWrestlerRole: false,
+      });
+    });
+
+    it('shows staff the flags of a player with no account', () => {
+      const unlinked = { playerId: 'p2', canUploadVideos: true };
+
+      expect(toPublicPlayer(unlinked, caller('staff-sub', 'Admin')).canUploadVideos).toBe(true);
+    });
+
+    it('does not treat a caller with no id as the owner of an unlinked player', () => {
+      const unlinked = { playerId: 'p2', canUploadVideos: true };
+
+      expect(toPublicPlayer(unlinked, caller('', 'Wrestler'))).not.toHaveProperty('canUploadVideos');
+    });
+  });
+
   it('reports an unlinked player as such', () => {
     const unlinked: { playerId: string; userId?: string } = { playerId: 'p2' };
     const shaped = toPublicPlayer(unlinked, caller('staff-sub', 'Admin'));
