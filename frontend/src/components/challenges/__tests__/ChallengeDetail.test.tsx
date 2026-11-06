@@ -5,13 +5,14 @@ import { BrowserRouter } from 'react-router-dom';
 import type { ChallengeWithPlayers } from '../../../types/challenge';
 
 // --- Hoisted mocks ---
-const { mockGetById, mockRespond, mockCancel, mockGetMyProfile, mockGetAllStipulations, mockGetAllMatchTypes } = vi.hoisted(() => ({
+const { mockGetById, mockRespond, mockCancel, mockGetMyProfile, mockGetAllStipulations, mockGetAllMatchTypes, mockIsHiddenPlayer } = vi.hoisted(() => ({
   mockGetById: vi.fn(),
   mockRespond: vi.fn(),
   mockCancel: vi.fn(),
   mockGetMyProfile: vi.fn(),
   mockGetAllStipulations: vi.fn(),
   mockGetAllMatchTypes: vi.fn(),
+  mockIsHiddenPlayer: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -83,6 +84,10 @@ vi.mock('../../../contexts/SiteConfigContext', () => ({
   }),
 }));
 
+vi.mock('../../../hooks/useIsHiddenPlayer', () => ({
+  useIsHiddenPlayer: mockIsHiddenPlayer,
+}));
+
 vi.mock('../ChallengeDetail.css', () => ({}));
 
 import ChallengeDetail from '../ChallengeDetail';
@@ -113,6 +118,7 @@ function renderDetail() {
 describe('ChallengeDetail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIsHiddenPlayer.mockReturnValue(false);
     mockGetAllStipulations.mockResolvedValue([
       { stipulationId: 'stip-1', name: 'Steel Cage', createdAt: '', updatedAt: '' },
       { stipulationId: 'stip-2', name: 'Ladder', createdAt: '', updatedAt: '' },
@@ -154,6 +160,21 @@ describe('ChallengeDetail', () => {
     expect(screen.getByText('Counter')).toBeInTheDocument();
     // Should NOT show cancel (only issuer sees that)
     expect(screen.queryByText('Cancel Challenge')).not.toBeInTheDocument();
+  });
+
+  it('leaves accept and decline but no counter for a hidden player', async () => {
+    mockIsHiddenPlayer.mockReturnValue(true);
+    mockGetById.mockResolvedValue(pendingChallenge);
+    mockGetMyProfile.mockResolvedValue({ playerId: 'p-2' });
+
+    renderDetail();
+
+    await waitFor(() => {
+      expect(screen.getByText('Accept')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Decline')).toBeInTheDocument();
+    expect(screen.queryByText('Counter')).not.toBeInTheDocument();
   });
 
   it('shows cancel button for the issuer on pending challenges', async () => {

@@ -5,7 +5,7 @@ import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { challengeExpiresAt, isChallengeExpired } from '../../lib/challengeExpiry';
-import { isPlayerVisible, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
+import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 
 type ChallengeAction = 'accept' | 'decline' | 'counter';
 
@@ -91,7 +91,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('counterMatchType is required when countering');
     }
 
-    // A counter is a new challenge aimed at the original challenger.
+    // A counter is a new challenge aimed at the original challenger, so both
+    // ends follow the same rule as createChallenge. Accepting or declining
+    // stays open, because neither one issues anything.
+    if (!isPlayerVisible(responderPlayer)) {
+      return badRequest(SET_WRESTLER_NAME_MESSAGE);
+    }
+
     const counterTarget = await players.findById(challenge.challengerId);
     if (counterTarget && !isPlayerVisible(counterTarget)) {
       return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);

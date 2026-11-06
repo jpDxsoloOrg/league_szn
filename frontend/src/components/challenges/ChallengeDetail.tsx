@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { challengesApi, profileApi, stipulationsApi, matchTypesApi } from '../../services/api';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import { useIsHiddenPlayer } from '../../hooks/useIsHiddenPlayer';
 import type { Stipulation, MatchType } from '../../types';
 import type { ChallengeWithPlayers } from '../../types/challenge';
 import Badge from '../ui/Badge';
@@ -40,6 +41,7 @@ export default function ChallengeDetail() {
   const navigate = useNavigate();
   const { features } = useSiteConfig();
   const { showToast } = useToast();
+  const isHiddenPlayer = useIsHiddenPlayer();
   const [challenge, setChallenge] = useState<ChallengeWithPlayers | null>(null);
   const [counterChallenge, setCounterChallenge] = useState<ChallengeWithPlayers | null>(null);
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
@@ -179,9 +181,11 @@ export default function ChallengeDetail() {
               <Button variant="secondary" disabled={submitting} onClick={() => handleAction('decline')}>
                 {t('challenges.detail.decline')}
               </Button>
-              <Button variant="secondary" disabled={submitting} onClick={() => setShowCounterForm(true)}>
-                {t('challenges.detail.counter')}
-              </Button>
+              {!isHiddenPlayer && (
+                <Button variant="secondary" disabled={submitting} onClick={() => setShowCounterForm(true)}>
+                  {t('challenges.detail.counter')}
+                </Button>
+              )}
             </>
           )}
           {canCancel && (

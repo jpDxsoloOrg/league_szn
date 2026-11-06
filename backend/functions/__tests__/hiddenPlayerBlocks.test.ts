@@ -192,6 +192,68 @@ describe('respondToChallenge counter', () => {
     expect(statusCode).toBe(400);
     expect(body.message).toBe(TARGET_MESSAGE);
   });
+
+  const respondAsHidden = async (action: string, extra: Record<string, unknown> = {}) => {
+    const challenge = await repos.user.challenges.create({
+      challengerId: roster.visibleId,
+      challengedId: roster.placeholderId,
+      matchType: 'singles',
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    });
+    const result = await call<Message>(
+      respondToChallenge,
+      authedEvent('hidden-sub', 'Wrestler', {
+        pathParameters: { challengeId: challenge.challengeId },
+        body: JSON.stringify({ action, ...extra }),
+      }),
+    );
+    return { ...result, challengeId: challenge.challengeId };
+  };
+
+  it('blocks a hidden responder from countering and leaves the challenge pending', async () => {
+    const { statusCode, body, challengeId } = await respondAsHidden('counter', { counterMatchType: 'ladder' });
+
+    expect(statusCode).toBe(400);
+    expect(body.message).toBe('Set your wrestler name first');
+    const stored = await repos.user.challenges.findById(challengeId);
+    expect(stored?.status).toBe('pending');
+    expect(stored?.counteredChallengeId).toBeUndefined();
+  });
+
+  it('blocks a hidden tag team partner from countering', async () => {
+    const partnerTeam = await repos.roster.tagTeams.create({
+      name: 'Hidden Partners',
+      player1Id: roster.placeholderId,
+      player2Id: roster.visibleId,
+    });
+    await repos.roster.tagTeams.update(partnerTeam.tagTeamId, { status: 'active' });
+    const challenge = await repos.user.challenges.create({
+      challengerId: roster.visibleId,
+      challengedId: roster.placeholderId,
+      challengeMode: 'tag_team',
+      challengedTagTeamId: partnerTeam.tagTeamId,
+      matchType: 'tag',
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    });
+
+    const { statusCode, body } = await call<Message>(
+      respondToChallenge,
+      authedEvent('hidden-sub', 'Wrestler', {
+        pathParameters: { challengeId: challenge.challengeId },
+        body: JSON.stringify({ action: 'counter', counterMatchType: 'tag' }),
+      }),
+    );
+
+    expect(statusCode).toBe(400);
+    expect(body.message).toBe('Set your wrestler name first');
+  });
+
+  it('still lets a hidden player decline a challenge they already have', async () => {
+    const { statusCode, challengeId } = await respondAsHidden('decline');
+
+    expect(statusCode).toBe(200);
+    expect((await repos.user.challenges.findById(challengeId))?.status).toBe('declined');
+  });
 });
 
 describe('createPromo', () => {
