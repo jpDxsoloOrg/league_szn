@@ -169,6 +169,14 @@ export default function ProfileCompletionModal() {
     return () => setWrestlerPromptPending(false);
   }, [wrestlerPromptPending]);
 
+  // An announcement takes this dialog's place as soon as the wrestler is saved,
+  // so the confirmation moves to a toast or it would go unseen.
+  useEffect(() => {
+    if (!nowVisible || !announcementOpen) return;
+    showToast(t('me.setup.nowVisible'), 'success');
+    setNowVisible(false);
+  }, [nowVisible, announcementOpen, showToast, t]);
+
   // Sign-out resets everything so the next account in this tab gets its own
   // check (the snooze key is cleared by AuthContext).
   useEffect(() => {
@@ -232,7 +240,8 @@ export default function ProfileCompletionModal() {
       }
 
       if (Object.keys(updates).length === 0) {
-        setError(t('profileModal.fillRequired'));
+        if (!missing.wrestler) setError(t('profileModal.fillRequired'));
+        else setError(textWrestlerEntry ? t('me.setup.wrestlerRequired') : t('me.setup.wrestlerRequiredRoster'));
         setSaving(false);
         return;
       }

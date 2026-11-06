@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import type { Player } from '../../types';
@@ -403,6 +403,43 @@ describe('ProfileCompletionModal — setup gate', () => {
       );
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
       expect(mockShowToast).toHaveBeenCalledWith('me.setup.nowVisible', 'success');
+    });
+
+    it('asks for the wrestler name when saved blank, rather than any field', async () => {
+      mockGetMyProfile.mockResolvedValue(hidden);
+      renderAt();
+      await screen.findByRole('dialog');
+
+      await userEvent.type(screen.getByLabelText('me.setup.wrestlerLabel'), '   ');
+      await userEvent.click(screen.getByRole('button', { name: 'profileModal.saveAndContinue' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('me.setup.wrestlerRequired');
+      expect(mockUpdateMyProfile).not.toHaveBeenCalled();
+    });
+
+    it('moves the confirmation to a toast when an announcement takes over the dialog', async () => {
+      mockGetMyProfile.mockResolvedValue({ ...hidden, finishers: [] });
+      mockUpdateMyProfile.mockImplementation(async (updates: Partial<Player>) => ({
+        ...complete,
+        finishers: [],
+        ...updates,
+      }));
+      renderAt();
+      await screen.findByRole('dialog');
+
+      await userEvent.type(screen.getByLabelText('me.setup.wrestlerLabel'), 'Seth Rollins');
+      await userEvent.click(screen.getByRole('button', { name: 'profileModal.saveAndContinue' }));
+      await screen.findByText('me.setup.nowVisible');
+      expect(mockShowToast).not.toHaveBeenCalled();
+
+      act(() => setAnnouncementOpen(true));
+
+      await waitFor(() => expect(mockShowToast).toHaveBeenCalledWith('me.setup.nowVisible', 'success'));
+      expect(mockShowToast).toHaveBeenCalledTimes(1);
+
+      act(() => setAnnouncementOpen(false));
+      await screen.findByRole('dialog');
+      expect(screen.queryByText('me.setup.nowVisible')).not.toBeInTheDocument();
     });
 
     it('offers the wrestler field before anything else', async () => {

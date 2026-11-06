@@ -68,6 +68,7 @@ describe('NotificationBell source types', () => {
   });
 
   it.each([
+    ['promo', 'notifications.typePromo', '/promos/source-1'],
     ['challenge', 'notifications.typeChallenge', '/challenges/source-1'],
     ['rivalry', 'notifications.typeRivalry', '/rivalries/source-1'],
     ['storyline_request', 'notifications.typeStoryline', '/profile'],
@@ -78,6 +79,13 @@ describe('NotificationBell source types', () => {
     expect(screen.getByText(label)).toBeInTheDocument();
     await userEvent.click(screen.getByText('Something happened'));
     await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(path));
+  });
+
+  it('falls back to the feed when a promo notification has no source', async () => {
+    await openWith(notification({ sourceType: 'promo', sourceId: '' }));
+
+    await userEvent.click(screen.getByText('Something happened'));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent('/promos'));
   });
 
   it('falls back to the list when a rivalry notification has no source', async () => {

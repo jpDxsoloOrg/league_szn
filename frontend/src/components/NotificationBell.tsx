@@ -49,7 +49,8 @@ function sourceTypeLabel(sourceType: AppNotification['sourceType']): string {
 
 function getNavigationPath(notification: AppNotification, playerId: string | null): string {
   switch (notification.sourceType) {
-    case 'promo': return '/promos';
+    case 'promo':
+      return notification.sourceId ? `/promos/${notification.sourceId}` : '/promos';
     case 'challenge':
       return notification.sourceId ? `/challenges/${notification.sourceId}` : '/challenges';
     case 'rivalry':

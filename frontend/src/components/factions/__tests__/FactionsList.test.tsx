@@ -91,7 +91,7 @@ function renderHub() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUseAuth.mockReturnValue({ isAuthenticated: false, isWrestler: false });
+  mockUseAuth.mockReturnValue({ isAuthenticated: false, isWrestler: false, hasRole: () => false });
   mockFactionsGetAll.mockResolvedValue([]);
   mockFactionsGetStandings.mockResolvedValue([]);
   mockPlayersGetDirectory.mockResolvedValue([]);
@@ -178,7 +178,7 @@ describe('FactionsList (FAC-10)', () => {
   });
 
   it('renders the "Request a Faction" CTA only for wrestlers without an active faction', async () => {
-    mockUseAuth.mockReturnValue({ isAuthenticated: true, isWrestler: true });
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isWrestler: true, hasRole: () => true });
     mockGetMyProfile.mockResolvedValue(basePlayer({ stableId: undefined }));
     mockFactionsGetAll.mockResolvedValue([baseFaction()]);
 
@@ -188,7 +188,7 @@ describe('FactionsList (FAC-10)', () => {
   });
 
   it('hides the "Request a Faction" CTA when the wrestler is already in a faction', async () => {
-    mockUseAuth.mockReturnValue({ isAuthenticated: true, isWrestler: true });
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isWrestler: true, hasRole: () => true });
     mockGetMyProfile.mockResolvedValue(basePlayer({ stableId: 'some-faction' }));
     mockFactionsGetAll.mockResolvedValue([baseFaction()]);
 
@@ -199,7 +199,7 @@ describe('FactionsList (FAC-10)', () => {
   });
 
   it('hides the CTA for unauthenticated users', async () => {
-    mockUseAuth.mockReturnValue({ isAuthenticated: false, isWrestler: false });
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, isWrestler: false, hasRole: () => false });
     mockFactionsGetAll.mockResolvedValue([baseFaction()]);
 
     renderHub();

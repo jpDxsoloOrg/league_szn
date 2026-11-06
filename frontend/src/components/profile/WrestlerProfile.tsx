@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Pencil, UserRound } from 'lucide-react';
 import { divisionsApi, isApiError, overallsApi, profileApi } from '../../services/api';
@@ -33,6 +34,9 @@ export default function WrestlerProfile() {
   const { t } = useTranslation();
   const { refreshProfile } = useAuth();
   const { features } = useSiteConfig();
+  const location = useLocation();
+  // Set by the links that promise the form, so one tap gets there.
+  const openEditorOnLoad = (location.state as { editProfile?: boolean } | null)?.editProfile === true;
   const [player, setPlayer] = useState<PlayerProfile | null>(null);
   const [overall, setOverall] = useState<WrestlerOverall | null>(null);
   const [divisions, setDivisions] = useState<Division[]>([]);
@@ -44,6 +48,13 @@ export default function WrestlerProfile() {
   const [tab, setTab] = useState<ProfileTab>('overview');
 
   useEffect(() => {
+    const loadOverall = async () => {
+      try {
+        setOverall(await overallsApi.getMyOverall());
+      } catch {
+        // A 404 means no overall has been submitted yet.
+      }
+    };
     const loadProfile = async () => {
       try {
         setLoading(true);
@@ -55,16 +66,14 @@ export default function WrestlerProfile() {
         } else {
           setError(err instanceof Error ? err.message : null);
         }
+        return;
       } finally {
         setLoading(false);
       }
-    };
-    const loadOverall = async () => {
-      try {
-        setOverall(await overallsApi.getMyOverall());
-      } catch {
-        // A 404 means no overall has been submitted yet.
-      }
+      // After the profile: an account with no player has no overall to fetch,
+      // and the form reads the overall when it opens.
+      await loadOverall();
+      if (openEditorOnLoad) setEditing(true);
     };
     const loadDivisions = async () => {
       try {
@@ -74,9 +83,8 @@ export default function WrestlerProfile() {
       }
     };
     void loadProfile();
-    void loadOverall();
     void loadDivisions();
-  }, []);
+  }, [openEditorOnLoad]);
 
   const startEditing = () => {
     setEditing(true);

@@ -8,6 +8,10 @@ vi.mock('../../../services/api', () => ({
   factionsApi: { getStandings: mockGetStandings },
 }));
 
+vi.mock('../../../contexts/AuthContext', () => ({
+  useAuth: () => ({ hasRole: () => false }),
+}));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string, fallback?: string) => (typeof fallback === 'string' ? fallback : key) }),
 }));

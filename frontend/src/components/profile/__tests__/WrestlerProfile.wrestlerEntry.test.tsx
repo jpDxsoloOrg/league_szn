@@ -1,15 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { Player } from '../../../types';
 
 const {
   mockGetMyProfile,
+  mockGetMyOverall,
   mockUpdateMyProfile,
   mockGetWrestlers,
   mockRefreshProfile,
 } = vi.hoisted(() => ({
   mockGetMyProfile: vi.fn(),
+  mockGetMyOverall: vi.fn(),
   mockUpdateMyProfile: vi.fn(),
   mockGetWrestlers: vi.fn(),
   mockRefreshProfile: vi.fn(),
@@ -21,7 +24,8 @@ vi.mock('../../../services/api', () => ({
     updateMyProfile: mockUpdateMyProfile,
   },
   imagesApi: { getUploadUrl: vi.fn() },
-  overallsApi: { getMyOverall: vi.fn().mockResolvedValue(null), submitOverall: vi.fn() },
+  isApiError: (err: unknown, status: number) => (err as { status?: number }).status === status,
+  overallsApi: { getMyOverall: mockGetMyOverall, submitOverall: vi.fn() },
   transfersApi: { getMyRequests: vi.fn().mockResolvedValue([]), create: vi.fn() },
   divisionsApi: { getAll: vi.fn().mockResolvedValue([]) },
   storylineRequestsApi: { getMine: vi.fn().mockResolvedValue([]), create: vi.fn() },
@@ -48,6 +52,7 @@ vi.mock('../../statistics/EmbeddedPlayerStats', () => ({
   default: () => null,
 }));
 
+import HiddenPlayerNotice from '../HiddenPlayerNotice';
 import WrestlerProfile from '../WrestlerProfile';
 
 const basePlayer = {
@@ -64,7 +69,7 @@ const basePlayer = {
 } as unknown as Player;
 
 async function openEditForm() {
-  render(<WrestlerProfile />);
+  render(<MemoryRouter><WrestlerProfile /></MemoryRouter>);
   await waitFor(() => expect(mockGetMyProfile).toHaveBeenCalled());
   await userEvent.click(await screen.findByRole('button', { name: 'me.profile.edit' }));
 }
@@ -73,6 +78,7 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetMyProfile.mockResolvedValue(basePlayer);
+    mockGetMyOverall.mockResolvedValue(null);
     mockUpdateMyProfile.mockResolvedValue(basePlayer);
     mockGetWrestlers.mockResolvedValue([
       { wrestlerId: 'w1', name: 'Alpha', promotion: 'WWE' },
@@ -223,7 +229,7 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
 
     it('explains they are hidden and takes them straight to the name field', async () => {
       mockGetMyProfile.mockResolvedValue(hidden);
-      render(<WrestlerProfile />);
+      render(<MemoryRouter><WrestlerProfile /></MemoryRouter>);
 
       expect(await screen.findByText('me.setup.hiddenTitle')).toBeInTheDocument();
       expect(screen.getByText('me.setup.hiddenNotice')).toBeInTheDocument();
@@ -234,10 +240,36 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
       expect(screen.getByText('me.setup.wrestlerHint')).toBeInTheDocument();
     });
 
+    it('opens the form in one tap from the notice on another page', async () => {
+      mockGetMyProfile.mockResolvedValue(hidden);
+      render(
+        <MemoryRouter initialEntries={['/challenges']}>
+          <Routes>
+            <Route path="/challenges" element={<HiddenPlayerNotice title="Hidden" body="Set a name" />} />
+            <Route path="/profile" element={<WrestlerProfile />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      await userEvent.click(screen.getByRole('link', { name: 'me.setup.enterName' }));
+
+      await waitFor(() => expect(screen.getByLabelText('me.profile.currentWrestler')).toHaveFocus());
+      expect(screen.queryByRole('button', { name: 'me.setup.enterName' })).not.toBeInTheDocument();
+    });
+
+    it('stays on the notice when /profile is opened directly', async () => {
+      mockGetMyProfile.mockResolvedValue(hidden);
+      render(<MemoryRouter><WrestlerProfile /></MemoryRouter>);
+
+      expect(await screen.findByRole('button', { name: 'me.setup.enterName' })).toBeInTheDocument();
+      await waitFor(() => expect(mockGetMyOverall).toHaveBeenCalled());
+      expect(screen.queryByLabelText('me.profile.currentWrestler')).not.toBeInTheDocument();
+    });
+
     it('clears the notice, confirms visibility and refreshes auth once saved', async () => {
       mockGetMyProfile.mockResolvedValue(hidden);
       mockUpdateMyProfile.mockResolvedValue({ ...hidden, currentWrestler: 'The Rock' });
-      render(<WrestlerProfile />);
+      render(<MemoryRouter><WrestlerProfile /></MemoryRouter>);
 
       await userEvent.click(await screen.findByRole('button', { name: 'me.setup.enterName' }));
       await userEvent.type(screen.getByLabelText('me.profile.currentWrestler'), 'The Rock');
@@ -250,11 +282,19 @@ describe('WrestlerProfile — free-text wrestler entry', () => {
     });
 
     it('does not show the notice to a player with a wrestler', async () => {
-      render(<WrestlerProfile />);
+      render(<MemoryRouter><WrestlerProfile /></MemoryRouter>);
 
       await screen.findByRole('button', { name: 'me.profile.edit' });
       expect(screen.queryByText('me.setup.hiddenTitle')).not.toBeInTheDocument();
     });
+  });
+
+  it('asks for no overall on an account with no player', async () => {
+    mockGetMyProfile.mockRejectedValue(Object.assign(new Error('No player profile found for this user'), { status: 404 }));
+    render(<MemoryRouter><WrestlerProfile /></MemoryRouter>);
+
+    expect(await screen.findByText('me.profile.noProfileTitle')).toBeInTheDocument();
+    expect(mockGetMyOverall).not.toHaveBeenCalled();
   });
 
   it('keeps season records on screen after a save', async () => {

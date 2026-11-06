@@ -18,7 +18,7 @@ export default function HiddenPlayerNotice({ title, body }: HiddenPlayerNoticePr
         <strong>{title}</strong>
         <p>{body}</p>
       </div>
-      <Button to="/profile">{t('me.setup.enterName')}</Button>
+      <Button to="/profile" linkState={{ editProfile: true }}>{t('me.setup.enterName')}</Button>
     </div>
   );
 }
