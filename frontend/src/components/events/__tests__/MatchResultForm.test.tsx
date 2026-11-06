@@ -24,6 +24,7 @@ vi.mock('react-i18next', () => ({
         'recordResult.selectWinner': 'Please select at least one winner',
         'recordResult.selectWinningTeam': 'Please select the winning team',
         'recordResult.error': 'Failed to record result',
+        'recordResult.championNotInMatch': 'Translated: champion not in match',
         'recordResult.recordResult': 'Record Result',
         'recordResult.matchType': 'Match Type',
         'recordResult.date': 'Date',
@@ -261,6 +262,48 @@ describe('MatchResultForm', () => {
     );
 
     expect(screen.getByRole('button', { name: 'John Cena' })).toBeInTheDocument();
+  });
+
+  it('shows the translated refusal when the champion is no longer in a title match', async () => {
+    const user = userEvent.setup();
+    const onSuccess = vi.fn();
+    mockRecordResult.mockRejectedValue(new Error(
+      'The current champion is no longer in this title match. Edit the match, or make it a non-title match, then record the result.'
+    ));
+    render(
+      <MatchResultForm
+        match={singlesMatch}
+        players={mockPlayers}
+        tagTeams={[]}
+        onSuccess={onSuccess}
+        onCancel={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /John Cena/ }));
+    await user.click(screen.getByRole('button', { name: 'Record Result' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Translated: champion not in match');
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it('shows any other refusal as the API worded it', async () => {
+    const user = userEvent.setup();
+    mockRecordResult.mockRejectedValue(new Error('Match has already been completed'));
+    render(
+      <MatchResultForm
+        match={singlesMatch}
+        players={mockPlayers}
+        tagTeams={[]}
+        onSuccess={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /John Cena/ }));
+    await user.click(screen.getByRole('button', { name: 'Record Result' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Match has already been completed');
   });
 
   it('cancel button calls onCancel', async () => {

@@ -212,6 +212,39 @@ describe('MatchEditForm', () => {
     expect(screen.getByText(/scheduleMatch.selected: 2/)).toBeInTheDocument();
   });
 
+  it('selects the match type a differently spelled stored format belongs to, and saves without re-picking anyone', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockGetAllMatchTypes.mockResolvedValue([
+      { matchTypeId: 'mt1', name: 'Single', createdAt: '', updatedAt: '' },
+      { matchTypeId: 'mt2', name: 'Tag Team', createdAt: '', updatedAt: '' },
+    ]);
+    mockUpdateMatch.mockResolvedValue({ ...scheduledMatch });
+    const onSuccess = vi.fn();
+
+    render(<MatchEditForm matchId="m1" onSuccess={onSuccess} onCancel={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toHaveValue('Single'));
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+    const [, payload] = mockUpdateMatch.mock.calls[0];
+    expect(payload.matchFormat).toBe('Single');
+    expect(payload.participants).toEqual(['p1', 'p2']);
+  });
+
+  it('prefers the exact match type when two are spelled alike', async () => {
+    setupDefaultMocks();
+    mockGetAllMatchTypes.mockResolvedValue([
+      { matchTypeId: 'mt1', name: 'Single', createdAt: '', updatedAt: '' },
+      { matchTypeId: 'mt2', name: 'singles', createdAt: '', updatedAt: '' },
+    ]);
+
+    render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toHaveValue('singles'));
+  });
+
   it('submits with changed format calls matchesApi.update', async () => {
     const user = userEvent.setup();
     setupDefaultMocks();

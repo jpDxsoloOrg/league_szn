@@ -22,7 +22,7 @@ Verborgene Promos fehlen im öffentlichen Feed, bis du auf **Anzeigen** klickst.
 
 ## Kampf planen (Ansagen)
 
-Klicke bei Ansagen, die ein Ziel nennen, auf **Kampf planen**, um die Planung mit beiden Spielern vorausgefüllt zu öffnen, dazu Match-Typ, Stipulation und Titel aus der Herausforderung der Promo. Wurde die Herausforderung gekontert, gelten die Bedingungen des Konters. Das Match speichert einen Link zur Promo und markiert ihre Herausforderung als geplant, sodass dieselbe Ansage nicht zweimal gebucht werden kann.
+Klicke bei Ansagen, die ein Ziel nennen, und bei Tag-Team-Ansagen mit Herausforderung auf **Kampf planen**, um die Planung mit beiden Spielern oder Teams vorausgefüllt zu öffnen, dazu Match-Typ, Stipulation und Titel aus der Herausforderung der Promo. Wurde die Herausforderung gekontert, gelten die Bedingungen des Konters. Das Match speichert einen Link zur Promo und markiert ihre Herausforderung als geplant, sodass dieselbe Ansage nicht zweimal gebucht werden kann. Wurde ihr Match gelöscht, buchst du sie über diese Schaltfläche neu.
 
 ## Promos löschen
 

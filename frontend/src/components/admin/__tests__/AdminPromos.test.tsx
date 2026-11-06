@@ -96,6 +96,32 @@ describe('AdminPromos', () => {
     expect(screen.queryByText('Needs Wrestler')).not.toBeInTheDocument();
   });
 
+  describe('Schedule Match', () => {
+    const callOut = { ...basePromo, promoId: 'promo-3', promoType: 'call-out' as const, content: 'Tag call-out' };
+    const rowFor = async (content: string) => (await screen.findByText(content)).closest('tr') as HTMLElement;
+
+    it('is offered on a linked tag call-out, which names no target player', async () => {
+      mockPromosApi.getAll.mockResolvedValue([{ ...callOut, challengeMode: 'tag_team', challengeId: 'ch1' }]);
+      renderPage();
+
+      expect(within(await rowFor('Tag call-out')).getByRole('button', { name: 'Schedule Match' })).toBeInTheDocument();
+    });
+
+    it('is still offered on a singles call-out', async () => {
+      mockPromosApi.getAll.mockResolvedValue([{ ...callOut, targetPlayerId: 'p2' }]);
+      renderPage();
+
+      expect(within(await rowFor('Tag call-out')).getByRole('button', { name: 'Schedule Match' })).toBeInTheDocument();
+    });
+
+    it('is not offered on a tag call-out with no challenge, which has nothing to book', async () => {
+      mockPromosApi.getAll.mockResolvedValue([{ ...callOut, challengeMode: 'tag_team' }]);
+      renderPage();
+
+      expect(within(await rowFor('Tag call-out')).queryByRole('button', { name: 'Schedule Match' })).not.toBeInTheDocument();
+    });
+  });
+
   it('asks for confirmation before deleting a promo', async () => {
     const user = userEvent.setup();
     mockPromosApi.delete.mockResolvedValue(undefined);

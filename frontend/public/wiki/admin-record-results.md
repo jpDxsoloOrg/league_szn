@@ -35,6 +35,7 @@ There is no separate results page any more. You record a result on the match its
 - **The match's season has ended.** Ended seasons are final. Edit the match and choose a different season first.
 - **A participant has been removed.** Edit the match participants first.
 - **The match still has open signup spots.** Fill every spot first.
+- **The champion is no longer in a title match booked from a call-out or challenge.** The title moved after the booking. Edit the match, or make it a non-title match, then record the result. A draw is still accepted. A title match you booked yourself isn't refused, so check who holds the title before you record it.
 
 ## Fixing a Mistake
 

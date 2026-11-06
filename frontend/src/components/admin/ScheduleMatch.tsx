@@ -70,6 +70,7 @@ export default function ScheduleMatch() {
   const preFillApplied = useRef(false);
   const [linkChallengeId, setLinkChallengeId] = useState<string | null>(null);
   const [linkPromoId, setLinkPromoId] = useState<string | null>(null);
+  const [linkedTitleGone, setLinkedTitleGone] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [bookingInfo, setBookingInfo] = useState<Map<string, PlayerBookingInfo> | undefined>(undefined);
   const [championships, setChampionships] = useState<Championship[]>([]);
@@ -180,8 +181,28 @@ export default function ScheduleMatch() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount to load options and apply pre-fill from location state
   }, []);
 
-  /** A challenge's terms. Names resolve against these two lists. */
-  const applyChallengePreFill = (ch: ChallengeWithPlayers, matchTypesData: MatchType[], stipulationsData: Stipulation[]) => {
+  /**
+   * The title fields for a linked title. One that no longer exists books as a
+   * non-title match and says so, rather than opening on a blank required field.
+   * With no list to check against, the title is kept.
+   */
+  const linkedTitleFields = (championshipId: string | undefined, championshipsData: Championship[] | undefined) => {
+    const titleGone = Boolean(championshipId)
+      && championshipsData !== undefined
+      && !championshipsData.some((championship) => championship.championshipId === championshipId);
+    setLinkedTitleGone(titleGone);
+    return titleGone
+      ? { isChampionship: false, championshipId: '' }
+      : { isChampionship: Boolean(championshipId), championshipId: championshipId ?? '' };
+  };
+
+  /** A challenge's terms. Names resolve against these lists. */
+  const applyChallengePreFill = (
+    ch: ChallengeWithPlayers,
+    matchTypesData: MatchType[],
+    stipulationsData: Stipulation[],
+    championshipsData: Championship[] | undefined,
+  ) => {
     const isTagChallenge = ch.challengeMode === 'tag_team';
     const fallbackFormat = (isTagChallenge ? matchTypesData.find((mt) => isTagFormat(mt.name)) : undefined)
       ?? matchTypesData[0];
@@ -193,13 +214,13 @@ export default function ScheduleMatch() {
       : '';
     // A tag format books teams rather than participants.
     const bookTeams = isTagFormat(matchFormat);
+    const titleFields = linkedTitleFields(ch.championshipId, championshipsData);
     setFormData((prev) => ({
       ...prev,
       participants: bookTeams ? [] : [ch.challengerId, ch.challengedId],
       matchFormat,
       stipulationId,
-      isChampionship: Boolean(ch.championshipId),
-      championshipId: ch.championshipId ?? '',
+      ...titleFields,
     }));
     if (bookTeams) {
       setTeams([
@@ -222,25 +243,31 @@ export default function ScheduleMatch() {
     }
   };
 
-  const applyLinkedPreFill = async (matchTypesData: MatchType[], stipulationsData: Stipulation[]) => {
+  const applyLinkedPreFill = async (
+    matchTypesData: MatchType[],
+    stipulationsData: Stipulation[],
+    championshipsData: Championship[] | undefined,
+  ) => {
     if (state?.fromChallenge) {
-      applyChallengePreFill(state.fromChallenge, matchTypesData, stipulationsData);
-    } else if (state?.fromPromo && state.fromPromo.targetPlayerId) {
+      applyChallengePreFill(state.fromChallenge, matchTypesData, stipulationsData, championshipsData);
+    } else if (state?.fromPromo && (state.fromPromo.targetPlayerId || state.fromPromo.challengeId)) {
       const promo = state.fromPromo;
       setLinkPromoId(promo.promoId);
       const challenge = await loadPromoChallenge(promo);
       if (challenge) {
-        applyChallengePreFill(challenge, matchTypesData, stipulationsData);
+        applyChallengePreFill(challenge, matchTypesData, stipulationsData, championshipsData);
         return;
       }
+      // A tag call-out's teams are only on its challenge, so staff pick them.
       const targetId = promo.targetPlayerId;
+      if (!targetId) return;
       const defaultFormat = matchTypesData.find((mt) => mt.name === 'Singles')?.name ?? matchTypesData[0]?.name ?? 'Singles';
+      const titleFields = linkedTitleFields(promo.championshipId, championshipsData);
       setFormData((prev) => ({
         ...prev,
-        participants: targetId ? [promo.playerId, targetId] : prev.participants,
+        participants: [promo.playerId, targetId],
         matchFormat: defaultFormat,
-        isChampionship: Boolean(promo.championshipId),
-        championshipId: promo.championshipId ?? '',
+        ...titleFields,
       }));
     }
   };
@@ -280,7 +307,7 @@ export default function ScheduleMatch() {
       }
       if (!failed.includes('matchTypes') && !failed.includes('stipulations')) {
         preFillApplied.current = true;
-        await applyLinkedPreFill(values.matchTypes ?? matchTypes, values.stipulations ?? stipulations);
+        await applyLinkedPreFill(values.matchTypes ?? matchTypes, values.stipulations ?? stipulations, values.championships);
       }
     }
   };
@@ -383,6 +410,7 @@ export default function ScheduleMatch() {
       setSuccess(t('scheduleMatch.success'));
       setLinkChallengeId(null);
       setLinkPromoId(null);
+      setLinkedTitleGone(false);
       preFillApplied.current = false;
       if (state?.fromEvent) {
         navigate(`/events/${state.fromEvent.eventId}`, { replace: true });
@@ -583,6 +611,7 @@ export default function ScheduleMatch() {
       />
       {error && <AdminNotice tone="error">{error}</AdminNotice>}
       {success && <AdminNotice tone="success">{success}</AdminNotice>}
+      {linkedTitleGone && <AdminNotice tone="warning">{t('scheduleMatch.linkedTitleGone')}</AdminNotice>}
 
       <form onSubmit={handleSubmit} className="match-form am-form">
         <fieldset className="match-form__section">

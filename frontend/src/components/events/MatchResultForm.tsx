@@ -9,6 +9,11 @@ import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import './MatchResultForm.css';
 
+/** The API's wording for a result it refuses, so it can show translated. */
+const RESULT_ERROR_KEYS: Record<string, string> = {
+  'The current champion is no longer in this title match. Edit the match, or make it a non-title match, then record the result.': 'recordResult.championNotInMatch',
+};
+
 interface MatchResultFormProps {
   match: Match;
   players: Player[];
@@ -104,7 +109,9 @@ export default function MatchResultForm({
       await matchesApi.recordResult(match.matchId, result);
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('recordResult.error'));
+      const message = err instanceof Error ? err.message : t('recordResult.error');
+      const translationKey = RESULT_ERROR_KEYS[message];
+      setError(translationKey ? t(translationKey) : message);
     } finally {
       setSubmitting(false);
     }

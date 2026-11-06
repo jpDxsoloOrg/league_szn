@@ -6,7 +6,9 @@ vi.mock('uuid', async () => {
   return { v4: () => randomUUID() };
 });
 
-const { mockScanAll } = vi.hoisted(() => ({ mockScanAll: vi.fn() }));
+const { mockScanAll, mockInvokeAsync } = vi.hoisted(() => ({ mockScanAll: vi.fn(), mockInvokeAsync: vi.fn() }));
+
+vi.mock('../../../lib/asyncLambda', () => ({ invokeAsync: mockInvokeAsync }));
 
 vi.mock('../../../lib/dynamodb', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/dynamodb')>();
@@ -22,6 +24,8 @@ import {
 import { handler as runJob } from '../recalculateContendersJob';
 import { handler as contendersLambda } from '../handler';
 import { handler as setOverride } from '../setOverride';
+import { handler as removeOverride } from '../removeOverride';
+import { handler as calculateRankings } from '../calculateRankings';
 import { handler as getOverrides } from '../getOverrides';
 import { handler as getContenders } from '../getContenders';
 
@@ -300,6 +304,153 @@ describe('contender overrides through every recalculation', () => {
       expect(result.statusCode).toBe(400);
       expect(await repos.competition.contenders.findOverride(championshipId, newcomer)).toBeNull();
     });
+  });
+
+  describe('rank movement', () => {
+    /** Wins one more for a mid-table player, so a later run has real movement to show. */
+    async function setUpArrows(field: string[]): Promise<void> {
+      await runJob();
+      for (let game = 0; game < 6; game += 1) {
+        matches.push({
+          matchId: `climb-${game}`,
+          date: '2026-10-02T00:00:00.000Z',
+          participants: [field[6], field[0]],
+          winners: [field[6]],
+          losers: [field[0]],
+          status: 'completed',
+          seasonId,
+        });
+      }
+      await runJob();
+    }
+
+    const arrows = async () => new Map((await storedList()).map((row) => [
+      row.playerId,
+      typeof row.previousRank === 'number' ? row.previousRank - row.rank : null,
+    ]));
+
+    const progress = async () => new Map((await storedList()).map((row) => [
+      row.playerId,
+      { peakRank: row.peakRank, weeksAtTop: row.weeksAtTop },
+    ]));
+
+    /** Removes the override, then runs what removeOverride asked Lambda to run. */
+    async function removeOverrideRequest(playerId: string) {
+      mockInvokeAsync.mockClear();
+      const result = await removeOverride(
+        apiEvent({ httpMethod: 'DELETE', pathParameters: { championshipId, playerId } }),
+        ctx,
+        cb,
+      );
+      expect((result as { statusCode: number }).statusCode).toBe(200);
+      const [, payload] = mockInvokeAsync.mock.calls[0] as [string, Record<string, unknown>];
+      await contendersLambda(payload as unknown as APIGatewayProxyEvent, ctx, cb);
+    }
+
+    it('has real movement to protect in these tests', async () => {
+      await setUpArrows(await addFullField());
+
+      expect([...(await arrows()).values()].some((movement) => movement !== 0 && movement !== null)).toBe(true);
+    });
+
+    it('leaves every arrow alone when an override is set', async () => {
+      const field = await addFullField();
+      await setUpArrows(field);
+      const before = await arrows();
+      const bumped = (await storedList())[4].playerId;
+
+      await setOverrideRequest(bumped, 'bump_to_top');
+
+      expect((await storedList())[0].playerId).toBe(bumped);
+      const after = await arrows();
+      for (const [playerId, movement] of before) {
+        if (after.has(playerId)) expect(after.get(playerId)).toBe(movement);
+      }
+    });
+
+    it('puts the list and every arrow back when the override is removed', async () => {
+      const field = await addFullField();
+      await setUpArrows(field);
+      const order = (await storedList()).map((row) => row.playerId);
+      const before = await arrows();
+      const bumped = order[4];
+
+      await setOverrideRequest(bumped, 'bump_to_top');
+      await removeOverrideRequest(bumped);
+
+      expect((await storedList()).map((row) => row.playerId)).toEqual(order);
+      expect(await arrows()).toEqual(before);
+    });
+
+    it('keeps new entries new through an override', async () => {
+      const field = await addFullField();
+      await runJob();
+      const bumped = (await storedList())[4].playerId;
+
+      await setOverrideRequest(field.find((id) => id !== bumped) as string, 'send_to_bottom');
+
+      expect([...(await arrows()).values()].every((movement) => movement === null)).toBe(true);
+    });
+
+    it('gives no credit for a bump to #1: peak rank, weeks at the top and history stay', async () => {
+      const field = await addFullField();
+      await setUpArrows(field);
+      const before = await progress();
+      const bumped = (await storedList())[4].playerId;
+      const writeHistory = vi.spyOn(repos.competition.contenders, 'writeHistory');
+
+      await setOverrideRequest(bumped, 'bump_to_top');
+
+      expect((await progress()).get(bumped)).toEqual(before.get(bumped));
+      expect(writeHistory).not.toHaveBeenCalled();
+    });
+
+    it('still counts the next real run as movement once the rank changes', async () => {
+      const field = await addFullField();
+      await setUpArrows(field);
+      const bumped = (await storedList())[4].playerId;
+      await setOverrideRequest(bumped, 'bump_to_top');
+
+      await repos.competition.contenders.deactivateOverride(championshipId, bumped, 'removed by admin');
+      await runJob();
+
+      const row = (await storedList()).find((entry) => entry.playerId === bumped);
+      expect(row?.previousRank).toBe(1);
+    });
+
+    it('ignores the flag on a recalculation requested through the API', async () => {
+      const field = await addFullField();
+      await setUpArrows(field);
+      const bumped = (await storedList())[4].playerId;
+      await createOverride(bumped, 'bump_to_top');
+
+      await calculateRankings(apiEvent({ body: JSON.stringify({ championshipId, overrideChange: true }) }), ctx, cb);
+
+      expect((await storedList()).find((row) => row.playerId === bumped)?.previousRank).toBe(5);
+    });
+  });
+
+  it('getOverrides shows the linked player for an account id, League Staff without one, and keeps a readable name', async () => {
+    await addFullField();
+    const accountId = 'b4281418-1081-7085-201f-a2a5c546b74e';
+    const unlinkedAccountId = 'c5392529-2192-8196-302a-b3b6d657c85f';
+    const staffPlayer = await repos.roster.players.create({ name: 'Staff Sam', currentWrestler: 'Sting' });
+    await repos.roster.players.update(staffPlayer.playerId, { userId: accountId });
+    const linked = await addPlayer('Linked');
+    const unlinked = await addPlayer('Unlinked');
+    const readable = await addPlayer('Readable');
+    const { contenders } = repos.competition;
+    await contenders.createOverride({ championshipId, playerId: linked, overrideType: 'bump_to_top', reason: 'Story', createdBy: accountId });
+    await contenders.createOverride({ championshipId, playerId: unlinked, overrideType: 'bump_to_top', reason: 'Story', createdBy: unlinkedAccountId });
+    await contenders.createOverride({ championshipId, playerId: readable, overrideType: 'bump_to_top', reason: 'Story', createdBy: 'admin' });
+
+    const result = await getOverrides(apiEvent({ httpMethod: 'GET', queryStringParameters: { championshipId } }), ctx, cb);
+    const rows: Array<{ playerId: string; createdBy: string }> = JSON.parse((result as { body: string }).body);
+    const setBy = (playerId: string) => rows.find((row) => row.playerId === playerId)?.createdBy;
+
+    expect(setBy(linked)).toBe('Staff Sam');
+    expect(setBy(unlinked)).toBe('League Staff');
+    expect(setBy(readable)).toBe('admin');
   });
 
   it('getOverrides reports the current position of each override', async () => {

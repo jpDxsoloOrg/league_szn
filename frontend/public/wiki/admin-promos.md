@@ -22,7 +22,7 @@ Hidden promos are removed from the public feed until you click **Unhide**. Sched
 
 ## Schedule Match (call-out promos)
 
-For call-out promos that name a target, click **Schedule Match** to open Schedule Match with both players pre-filled, along with the match type, stipulation and title from the promo's challenge. If the challenge was countered, the counter's terms are used. The match stores a link to the promo and marks its challenge as scheduled, so the same call-out can't be booked twice.
+For call-out promos that name a target, and tag call-outs with a challenge, click **Schedule Match** to open Schedule Match with both players or teams pre-filled, along with the match type, stipulation and title from the promo's challenge. If the challenge was countered, the counter's terms are used. The match stores a link to the promo and marks its challenge as scheduled, so the same call-out can't be booked twice. If its match was deleted, use this button to book it again.
 
 ## Deleting promos
 

@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
-const { mockGetById, mockGetStandings, mockGetMatches, mockGetChampionships, mockListRivalries, authState, features } = vi.hoisted(() => ({
+const { mockGetDirectory, mockGetById, mockGetStandings, mockGetMatches, mockGetChampionships, mockListRivalries, authState, features } = vi.hoisted(() => ({
+  mockGetDirectory: vi.fn(),
   mockGetById: vi.fn(),
   mockGetStandings: vi.fn(),
   mockGetMatches: vi.fn(),
@@ -15,7 +16,7 @@ const { mockGetById, mockGetStandings, mockGetMatches, mockGetChampionships, moc
 vi.mock('../../../services/api', () => ({
   playersApi: {
     getById: mockGetById,
-    getDirectory: vi.fn().mockResolvedValue([{ playerId: 'p2', name: 'Bob', currentWrestler: 'Edge' }]),
+    getDirectory: mockGetDirectory,
   },
   matchesApi: { getAll: mockGetMatches },
   championshipsApi: { getAll: mockGetChampionships },
@@ -61,6 +62,7 @@ describe('PublicProfile', () => {
     vi.clearAllMocks();
     Object.assign(authState, { isAuthenticated: false, isWrestler: false, playerId: null });
     mockGetById.mockResolvedValue(player);
+    mockGetDirectory.mockResolvedValue([{ playerId: 'p2', name: 'Bob', currentWrestler: 'Edge' }]);
     mockGetStandings.mockResolvedValue({ players: [{ playerId: 'p1', mainOverall: 88 }] });
     mockGetMatches.mockResolvedValue([]);
     mockGetChampionships.mockResolvedValue([]);
@@ -94,6 +96,23 @@ describe('PublicProfile', () => {
     expect(mockGetMatches).toHaveBeenCalledWith({ playerId: 'p1' }, expect.any(AbortSignal));
     expect(screen.getByText('publicProfile.streakValue 2 L')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /vs Edge|common.vs Edge/ })).toHaveLength(3);
+  });
+
+  it('calls an opponent whose row is gone a former member', async () => {
+    mockGetMatches.mockResolvedValue([
+      { ...completed('m1', '2026-03-01', 'p1', 'gone'), participants: ['p1', 'gone'] },
+    ]);
+    renderProfile();
+
+    expect(await screen.findByRole('link', { name: /common.vs common.formerMember/ })).toBeInTheDocument();
+  });
+
+  it('does not call opponents former members when the names failed to load', async () => {
+    mockGetDirectory.mockRejectedValue(new Error('burst'));
+    mockGetMatches.mockResolvedValue([completed('m1', '2026-03-01', 'p1', 'p2')]);
+    renderProfile();
+
+    expect(await screen.findByRole('link', { name: /common.vs common.unknown/ })).toBeInTheDocument();
   });
 
   it('shows the titles a player holds and any active rivalry', async () => {

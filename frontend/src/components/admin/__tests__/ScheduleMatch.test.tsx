@@ -51,6 +51,7 @@ vi.mock('react-i18next', () => ({
     t: (key: string, options?: string | Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'scheduleMatch.matchFormat': 'Match Format',
+        'scheduleMatch.linkedTitleGone': 'Title is gone',
         'scheduleMatch.selectMatchFormat': 'Select Match Format',
         'scheduleMatch.stipulation': 'Stipulation (Optional)',
         'scheduleMatch.noStipulation': 'Standard Match (No Stipulation)',
@@ -110,6 +111,7 @@ const mockPlayers = [
 
 const mockChampionships = [
   { championshipId: 'c1', name: 'World Title', type: 'singles' as const, isActive: true, createdAt: '2024-01-01' },
+  { championshipId: 'c2', name: 'Tag Titles', type: 'tag' as const, isActive: true, createdAt: '2024-01-01' },
 ];
 
 const mockTournaments = [
@@ -497,6 +499,124 @@ describe('ScheduleMatch', () => {
 
     expect(await screen.findByLabelText('Championship Match')).toBeChecked();
     expect(screen.getByLabelText('Championship')).toHaveValue('c1');
+  });
+
+  describe('a linked title that no longer exists', () => {
+    it('opens a challenge as a non-title match, says so, and can be submitted', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockScheduleMatch.mockResolvedValue({});
+      renderFromChallenge({
+        challengeId: 'ch9', challengerId: 'p1', challengedId: 'p2',
+        matchType: mockMatchTypes[0].name, championshipId: 'deleted-title',
+      });
+
+      expect(await screen.findByText('Title is gone')).toBeInTheDocument();
+      expect(screen.getByLabelText('Championship Match')).not.toBeChecked();
+      expect(screen.queryByLabelText('Championship')).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+      await waitFor(() => {
+        expect(mockScheduleMatch).toHaveBeenCalledWith(expect.objectContaining({
+          isChampionship: false,
+          challengeId: 'ch9',
+        }));
+      });
+    });
+
+    it('opens a call-out with no challenge the same way', async () => {
+      setupDefaultMocks();
+      render(
+        <MemoryRouter
+          initialEntries={[{
+            pathname: '/admin/schedule',
+            state: { fromPromo: { promoId: 'pr1', playerId: 'p1', targetPlayerId: 'p2', championshipId: 'deleted-title' } },
+          }]}
+        >
+          <ScheduleMatch />
+        </MemoryRouter>,
+      );
+
+      expect(await screen.findByText('Title is gone')).toBeInTheDocument();
+      expect(screen.getByLabelText('Championship Match')).not.toBeChecked();
+    });
+
+    it('keeps the title when the list of titles failed to load', async () => {
+      setupDefaultMocks();
+      mockGetAllChampionships.mockRejectedValue(new Error('burst'));
+      renderFromChallenge({
+        challengeId: 'ch9', challengerId: 'p1', challengedId: 'p2',
+        matchType: mockMatchTypes[0].name, championshipId: 'c1',
+      });
+
+      expect(await screen.findByLabelText('Championship Match')).toBeChecked();
+      expect(screen.queryByText('Title is gone')).not.toBeInTheDocument();
+    });
+
+    it('says nothing when the title exists', async () => {
+      setupDefaultMocks();
+      renderFromChallenge({
+        challengeId: 'ch9', challengerId: 'p1', challengedId: 'p2',
+        matchType: mockMatchTypes[0].name, championshipId: 'c1',
+      });
+
+      expect(await screen.findByLabelText('Championship Match')).toBeChecked();
+      expect(screen.queryByText('Title is gone')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('booking a tag call-out from the promo row', () => {
+    const tagPromo = {
+      promoId: 'pr-tag', playerId: 'p1', challengeId: 'ch-tag', challengeMode: 'tag_team',
+      createdAt: '2026-01-01T10:00:00.000Z',
+    };
+    const member = (playerId: string) => ({ playerId, playerName: playerId, wrestlerName: playerId });
+    const tagChallenge = {
+      challengeId: 'ch-tag', challengerId: 'p1', challengedId: 'p3', matchType: 'Tag Team',
+      challengeMode: 'tag_team', createdAt: '2026-01-01T10:00:02.000Z',
+      challengerTagTeam: { tagTeamId: 'tt1', tagTeamName: 'A', player1: member('p1'), player2: member('p2') },
+      challengedTagTeam: { tagTeamId: 'tt2', tagTeamName: 'B', player1: member('p3'), player2: member('p4') },
+    };
+
+    function renderFromTagPromo() {
+      render(
+        <MemoryRouter initialEntries={[{ pathname: '/admin/schedule', state: { fromPromo: tagPromo } }]}>
+          <ScheduleMatch />
+        </MemoryRouter>,
+      );
+    }
+
+    it.each([
+      ['accepted', 'an accepted challenge'],
+      ['scheduled', 'a challenge whose match was deleted'],
+    ])('fills in the teams and links both for status %s (%s)', async (status) => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetChallenges.mockResolvedValue([{ ...tagChallenge, status }]);
+      mockScheduleMatch.mockResolvedValue({});
+      renderFromTagPromo();
+
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toHaveValue('Tag Team'));
+      await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+      await waitFor(() => {
+        expect(mockScheduleMatch).toHaveBeenCalledWith(expect.objectContaining({
+          teams: [['p1', 'p2'], ['p3', 'p4']],
+          challengeId: 'ch-tag',
+          promoId: 'pr-tag',
+        }));
+      });
+    });
+
+    it('leaves the teams to staff when the challenge cannot be read', async () => {
+      setupDefaultMocks();
+      mockGetChallenges.mockRejectedValue(new Error('offline'));
+      renderFromTagPromo();
+
+      await waitFor(() => expect(mockGetChallenges).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toHaveValue(''));
+    });
   });
 
   describe('booking a call-out with a challenge', () => {

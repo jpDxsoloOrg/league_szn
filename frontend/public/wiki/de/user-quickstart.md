@@ -42,4 +42,3 @@ Sobald du einen Wrestler-Namen hast, findest du das alles unter **Ich** oder **S
 - Lies die [Liga-Regeln](league-rules)
 - Stöbere in den [Häufigen Fragen](faqs)
 - Nutze die [Tipps](tips)
-- Wenn du zum Liga-Team gehörst, öffne den [Admin-Schnellstart](admin-quickstart)

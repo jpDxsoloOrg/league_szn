@@ -31,7 +31,18 @@ import SearchableSelect from '../admin/SearchableSelect';
 import Button from '../ui/Button';
 import Skeleton from '../ui/Skeleton';
 import { formatCalendarDate } from '../../utils/dateUtils';
+import { matchFormatKey } from '../../utils/matchDisplay';
 import './MatchEditForm.css';
+
+/**
+ * The match type name for a stored format, which older matches spell another
+ * way ("singles" for "Single"). A format with no match type stays as stored.
+ */
+function matchingFormatName(storedFormat: string, matchTypes: MatchType[]): string {
+  const names = matchTypes.map((matchType) => matchType.name);
+  if (names.includes(storedFormat)) return storedFormat;
+  return names.find((name) => matchFormatKey(name) === matchFormatKey(storedFormat)) ?? storedFormat;
+}
 
 interface MatchEditFormProps {
   matchId: string;
@@ -159,7 +170,7 @@ export default function MatchEditForm({
 
       // Pre-fill form with match data
       setFormData({
-        matchFormat: match.matchFormat || '',
+        matchFormat: matchingFormatName(match.matchFormat || '', matchTypesData),
         stipulationId: match.stipulationId || '',
         participants: match.participants || [],
         isChampionship: match.isChampionship || false,
@@ -694,7 +705,7 @@ export default function MatchEditForm({
           <fieldset className="match-edit-form__group">
             <legend className="match-edit-form__label">
               {t('scheduleMatch.participants')} (
-              {formData.matchFormat.toLowerCase() === 'singles' ? '2' : '2+'})
+              {matchFormatKey(formData.matchFormat) === 'singles' ? '2' : '2+'})
             </legend>
             {divisions.length > 0 && (
               <div className="match-edit-form__field match-edit-form__division">

@@ -20,6 +20,7 @@ import Skeleton from '../ui/Skeleton';
 import Select from '../ui/Select';
 import Tabs from '../ui/Tabs';
 import { useToast } from '../ui/toastContext';
+import { missingPlayerLabel } from '../../utils/playerName';
 import RivalryCard from './RivalryCard';
 import { withDirectoryPlayers } from './rivalryUtils';
 import './RivalryHub.css';
@@ -168,7 +169,7 @@ export default function RivalryHub() {
 
   const nameOf = useMemo(() => {
     const names = new Map(players.map((player) => [player.playerId, player.currentWrestler || player.name]));
-    return (playerId: string) => names.get(playerId) || t('common.unknown');
+    return (playerId: string) => names.get(playerId) || missingPlayerLabel(names, t);
   }, [players, t]);
 
   // A card's date is its latest story beat, which the feed already knows.

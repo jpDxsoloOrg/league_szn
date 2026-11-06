@@ -28,7 +28,7 @@ export type OverridePlacement =
  */
 async function placeOverride(championshipId: string, playerId: string): Promise<OverridePlacement> {
   try {
-    const summary = await recalculateContenderRankings(championshipId);
+    const summary = await recalculateContenderRankings(championshipId, { overrideChange: true });
     if (summary.championshipsFailed > 0) return { status: 'recalculationFailed', rank: null };
     if (summary.championshipsProcessed === 0) return { status: 'noActiveSeason', rank: null };
 

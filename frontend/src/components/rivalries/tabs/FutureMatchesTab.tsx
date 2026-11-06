@@ -11,6 +11,7 @@ import Badge from '../../ui/Badge';
 import EmptyState from '../../ui/EmptyState';
 import Skeleton from '../../ui/Skeleton';
 import { resolvePlayerFullLabel } from '../rivalryUtils';
+import { missingPlayerLabel } from '../../../utils/playerName';
 
 interface TabProps {
   hydrated: HydratedRivalry;
@@ -34,7 +35,7 @@ export default function FutureMatchesTab({ hydrated, players }: TabProps) {
     [hydrated.rivalry.participants],
   );
   const lookup = useMemo(() => new Map(players.map((p) => [p.playerId, p] as const)), [players]);
-  const labelOf = (id: string) => resolvePlayerFullLabel(lookup.get(id), t('common.unknown'));
+  const labelOf = (id: string) => resolvePlayerFullLabel(lookup.get(id), missingPlayerLabel(lookup, t));
 
   const withinWindow = (date: string): boolean => {
     if (startedAt && date < startedAt) return false;

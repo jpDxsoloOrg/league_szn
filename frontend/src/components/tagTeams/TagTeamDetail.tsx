@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
-import { tagTeamsApi } from '../../services/api';
+import { playersApi, tagTeamsApi } from '../../services/api';
+import type { PlayerDirectoryEntry } from '../../services/api/players.api';
 import { logger } from '../../utils/logger';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import type { TagTeamDetailResponse, TagTeamPlayerInfo, TagTeamStatus } from '../../types/tagTeam';
@@ -16,6 +17,7 @@ import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import { formatMatchDate } from '../../utils/dateUtils';
 import { formatMatchType } from '../../utils/matchDisplay';
+import { missingPlayerLabel } from '../../utils/playerName';
 import '../factions/groupUi.css';
 import './TagTeamDetail.css';
 
@@ -68,6 +70,7 @@ export default function TagTeamDetail() {
   const { t } = useTranslation();
   const { tagTeamId } = useParams<{ tagTeamId: string }>();
   const [tagTeam, setTagTeam] = useState<TagTeamDetailResponse | null>(null);
+  const [directory, setDirectory] = useState<PlayerDirectoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -83,9 +86,13 @@ export default function TagTeamDetail() {
       try {
         setLoading(true);
         setError(null);
-        const data = await tagTeamsApi.getById(tagTeamId, abortController.signal);
+        const [data, directoryData] = await Promise.all([
+          tagTeamsApi.getById(tagTeamId, abortController.signal),
+          playersApi.getDirectory(abortController.signal).catch(() => [] as PlayerDirectoryEntry[]),
+        ]);
         if (!abortController.signal.aborted) {
           setTagTeam(data);
+          setDirectory(directoryData);
         }
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
@@ -102,6 +109,16 @@ export default function TagTeamDetail() {
     fetchDetail();
     return () => abortController.abort();
   }, [tagTeamId, t, reloadKey]);
+
+  const names = useMemo(
+    () => new Map(directory.map((entry) => [entry.playerId, entry.currentWrestler || entry.name])),
+    [directory],
+  );
+
+  const opponentLabel = (playerIds: string[]): string => {
+    if (playerIds.length === 0) return t('tagTeams.detailPage.unknownOpponent', 'Unknown');
+    return playerIds.map((playerId) => names.get(playerId) ?? missingPlayerLabel(names, t)).join(' & ');
+  };
 
   const backLink = (
     <Link to="/tag-teams" className="tag-team-detail__back-link">
@@ -169,12 +186,12 @@ export default function TagTeamDetail() {
       <div className="tag-team-detail__players">
         <PlayerSummary
           player={tagTeam.player1}
-          fallbackName={tagTeam.player1WrestlerName || t('common.unknown')}
+          fallbackName={tagTeam.player1WrestlerName || t('common.formerMember')}
         />
         <span className="tag-team-detail__ampersand" aria-hidden="true">&amp;</span>
         <PlayerSummary
           player={tagTeam.player2}
-          fallbackName={tagTeam.player2WrestlerName || t('common.unknown')}
+          fallbackName={tagTeam.player2WrestlerName || t('common.formerMember')}
         />
       </div>
 
@@ -212,22 +229,17 @@ export default function TagTeamDetail() {
         <section className="group-section">
           <h2 className="group-heading">{t('tagTeams.recentMatches', 'Recent Matches')}</h2>
           <ul className="group-list">
-            {tagTeam.recentMatches.map((match, index) => {
-              const matchData = match as Record<string, unknown>;
-              const matchId = (matchData['matchId'] as string) || String(index);
-              const matchDate = matchData['date'] ? formatMatchDate(matchData['date'] as string) : '';
-              const matchType = formatMatchType(matchData['matchType'] as string | undefined, t);
-              const result = (matchData['result'] as string) || '';
-              const opponent = (matchData['opponentName'] as string)
-                || t('tagTeams.detailPage.unknownOpponent', 'Unknown');
+            {tagTeam.recentMatches.map((match) => {
+              const matchDate = match.date ? formatMatchDate(match.date) : '';
+              const matchType = formatMatchType(match.matchFormat, t);
 
               return (
-                <li key={matchId} className="tag-team-detail__match">
+                <li key={match.matchId} className="tag-team-detail__match">
                   <span className="group-person__text">
-                    <span>{t('tagTeams.detailPage.vs', 'vs')} {opponent}</span>
+                    <span>{t('tagTeams.detailPage.vs', 'vs')} {opponentLabel(match.opponentPlayerIds)}</span>
                     <span className="group-muted">{[matchDate, matchType].filter(Boolean).join(' · ')}</span>
                   </span>
-                  {result && <Badge tone={resultTone(result)}>{result}</Badge>}
+                  <Badge tone={resultTone(match.result)}>{match.result}</Badge>
                 </li>
               );
             })}

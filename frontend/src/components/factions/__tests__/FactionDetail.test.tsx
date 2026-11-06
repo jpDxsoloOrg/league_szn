@@ -321,6 +321,27 @@ describe('FactionOverview tab (FAC-11)', () => {
     expect(screen.getByText('Singles')).toBeInTheDocument();
   });
 
+  it('calls an opponent whose row is gone a former member, once the names have loaded', async () => {
+    mockGetDirectory.mockResolvedValue([{ playerId: 'rival', name: 'Rival Player', currentWrestler: 'Sting' }]);
+    mockFactionsGetById.mockResolvedValueOnce(baseFaction({
+      recentMatches: [{ matchId: 'm1', date: '2026-05-26', matchFormat: 'Single', participants: ['p-leader', 'gone'], winners: ['p-leader'], losers: ['gone'] }],
+    }));
+    renderShell();
+
+    expect(await screen.findByText('vs common.formerMember')).toBeInTheDocument();
+  });
+
+  it('does not call opponents former members when the names failed to load', async () => {
+    mockGetDirectory.mockRejectedValue(new Error('burst'));
+    mockFactionsGetById.mockResolvedValueOnce(baseFaction({
+      recentMatches: [{ matchId: 'm1', date: '2026-05-26', matchFormat: 'Single', participants: ['p-leader', 'rival'], winners: ['p-leader'], losers: ['rival'] }],
+    }));
+    renderShell();
+
+    expect(await screen.findByText('vs common.unknown')).toBeInTheDocument();
+    expect(screen.queryByText('vs common.formerMember')).not.toBeInTheDocument();
+  });
+
   it('renders the roster row, recent results, streak, upcoming, and activity sections', async () => {
     mockFactionsGetSchedule.mockResolvedValueOnce({
       items: [

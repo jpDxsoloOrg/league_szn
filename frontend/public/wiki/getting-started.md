@@ -38,5 +38,4 @@ The prompt to enter a name opens after you sign in. **Remind me later** puts it 
 - **League Rules** is under Me. Read the [League Rules](league-rules) before your first match.
 - [User Quickstart](user-quickstart) is a short tour of the site.
 - [FAQs](faqs) answers the most common questions.
-- If you are league staff, see [Admin Quickstart](admin-quickstart).
 - To change language, use the English / Deutsch control. It's in the header on a computer and on the Me page on a phone.

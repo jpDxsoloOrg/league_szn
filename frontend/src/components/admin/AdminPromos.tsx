@@ -47,6 +47,12 @@ function truncateContent(content: string, maxLength: number = 80): string {
   return content.length <= maxLength ? content : `${content.slice(0, maxLength)}...`;
 }
 
+/** A tag call-out names no player: its teams live on its challenge. */
+function canSchedule(promo: AdminPromo): boolean {
+  if (promo.promoType !== 'call-out') return false;
+  return Boolean(promo.targetPlayerId) || (promo.challengeMode === 'tag_team' && Boolean(promo.challengeId));
+}
+
 function matchesStatus(promo: AdminPromo, status: PromoStatusFilter): boolean {
   if (status === 'pinned') return promo.isPinned;
   if (status === 'hidden') return promo.isHidden;
@@ -266,7 +272,7 @@ function PromoModeration() {
             align: 'end',
             render: (promo) => (
               <div className="ac-actions ac-actions--end">
-                {promo.promoType === 'call-out' && promo.targetPlayerId && (
+                {canSchedule(promo) && (
                   <Button
                     variant="ghost"
                     size="sm"
