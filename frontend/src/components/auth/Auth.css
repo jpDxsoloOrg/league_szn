@@ -9,9 +9,20 @@
 }
 
 .auth-card {
+  position: relative;
   box-sizing: border-box;
   width: 100%;
   max-width: 440px;
+  overflow: hidden;
+}
+
+/* The hero gradient as a single top edge: the form stays the focus. */
+.auth-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: var(--gradient-hero);
 }
 
 .auth-card--wide {
