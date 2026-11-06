@@ -123,13 +123,19 @@ describe('ManagePlayers', () => {
     expect(screen.getByText('Manual')).toBeInTheDocument();
   });
 
-  it('shows error state on API failure', async () => {
-    mockPlayersApi.getAllIncludingHidden.mockRejectedValue(new Error('Network error'));
+  it('names the failed read, keeps the rest of the page, and retries', async () => {
+    const user = userEvent.setup();
+    mockWrestlersApi.getAll.mockRejectedValueOnce(new Error('Network error'));
     renderComponent();
 
-    await waitFor(() => {
-      expect(screen.getByText('Failed to load data')).toBeInTheDocument();
-    });
+    const notice = await screen.findByRole('alert');
+    expect(notice).toHaveTextContent("Couldn't load: Wrestlers.");
+    expect(screen.getByText('John')).toBeInTheDocument();
+
+    await user.click(within(notice).getByRole('button', { name: 'Retry' }));
+
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    expect(mockWrestlersApi.getAll).toHaveBeenCalledTimes(2);
   });
 
   it('does not show player form initially', async () => {
@@ -249,6 +255,120 @@ describe('ManagePlayers', () => {
         currentWrestlerId: '',
       }));
     });
+  });
+
+  describe('players whose wrestler is a name with no roster link', () => {
+    const namedPlayer: Player = {
+      playerId: 'p3', name: 'Adam', currentWrestler: 'Edge', alternateWrestler: 'Christian',
+      wins: 1, losses: 0, draws: 0,
+      createdAt: '2024-01-01', updatedAt: '2024-01-01',
+    };
+
+    const openEdit = async (user: ReturnType<typeof userEvent.setup>) => {
+      mockPlayersApi.getAllIncludingHidden.mockResolvedValue([namedPlayer]);
+      mockPlayersApi.update.mockResolvedValue(namedPlayer);
+      renderComponent();
+      await waitFor(() => { expect(screen.getByText('Adam')).toBeInTheDocument(); });
+      await user.click(screen.getByRole('button', { name: 'Edit' }));
+    };
+
+    const selectedText = (label: string) => {
+      const select = screen.getByLabelText(label) as HTMLSelectElement;
+      return select.selectedOptions[0]?.textContent;
+    };
+
+    it('shows the stored names rather than the empty options', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      expect(selectedText('Wrestler')).toBe('Edge (not linked to the roster)');
+      expect(selectedText('Alternate Wrestler')).toBe('Christian (not linked to the roster)');
+    });
+
+    it('sends neither wrestler field on a no-change save', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+      const body = mockPlayersApi.update.mock.calls[0][1];
+      expect(body).not.toHaveProperty('currentWrestlerId');
+      expect(body).not.toHaveProperty('alternateWrestlerId');
+    });
+
+    it('sends neither wrestler field on a division-only save', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      await user.selectOptions(screen.getByLabelText('Division'), 'div-2');
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+      const body = mockPlayersApi.update.mock.calls[0][1];
+      expect(body).toMatchObject({ divisionId: 'div-2' });
+      expect(body).not.toHaveProperty('currentWrestlerId');
+      expect(body).not.toHaveProperty('alternateWrestlerId');
+    });
+
+    it('sends only the slot the admin changed', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      await user.selectOptions(screen.getByLabelText('Alternate Wrestler'), 'w-omega');
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+      const body = mockPlayersApi.update.mock.calls[0][1];
+      expect(body).toMatchObject({ alternateWrestlerId: 'w-omega' });
+      expect(body).not.toHaveProperty('currentWrestlerId');
+    });
+
+    it('sends nothing for a slot changed and then put back', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      const wrestlerSelect = screen.getByLabelText('Wrestler') as HTMLSelectElement;
+      const originalValue = wrestlerSelect.value;
+      await user.selectOptions(wrestlerSelect, 'w-omega');
+      await user.selectOptions(wrestlerSelect, originalValue);
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+      expect(mockPlayersApi.update.mock.calls[0][1]).not.toHaveProperty('currentWrestlerId');
+    });
+
+    it('still clears the wrestler when the admin picks that, and warns first', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      await user.selectOptions(screen.getByLabelText('Wrestler'), '');
+      expect(screen.getByText('Saving removes this wrestler and hides the player from public pages.')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => {
+        expect(mockPlayersApi.update).toHaveBeenCalledWith('p3', expect.objectContaining({ currentWrestlerId: '' }));
+      });
+    });
+  });
+
+  it('keeps a linked wrestler whose roster row is gone on a no-change save', async () => {
+    const user = userEvent.setup();
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
+      { ...mockPlayers[0]!, currentWrestlerId: 'w-gone' },
+    ]);
+    mockPlayersApi.update.mockResolvedValue(mockPlayers[0]);
+    renderComponent();
+    await waitFor(() => { expect(screen.getByText('John')).toBeInTheDocument(); });
+
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    const wrestlerSelect = screen.getByLabelText('Wrestler') as HTMLSelectElement;
+    expect(wrestlerSelect.selectedOptions[0]?.textContent).toBe('The Rock (not linked to the roster)');
+
+    await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+    await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+    expect(mockPlayersApi.update.mock.calls[0][1]).not.toHaveProperty('currentWrestlerId');
   });
 
   it('deletes player after confirming in the dialog', async () => {

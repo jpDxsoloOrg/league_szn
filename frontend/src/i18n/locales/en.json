@@ -40,7 +40,11 @@
     "accept": "Accept",
     "decline": "Decline",
     "processing": "Processing...",
-    "sending": "Sending…"
+    "sending": "Sending…",
+    "sortBy": "Sort by",
+    "sortDefault": "Default order",
+    "sortAscending": "Ascending",
+    "sortDescending": "Descending"
   },
   "notFound": {
     "title": "Page Not Found",
@@ -592,7 +596,8 @@
         "done": "Done",
         "alreadyBooked": "On card",
         "showAll": "Show {{count}} who didn't check in available",
-        "showBookableOnly": "Show available & tentative only"
+        "showBookableOnly": "Show available & tentative only",
+        "allPlayers": "All players"
       },
       "openCountBadge": "{{open}} of {{total}} spots open",
       "adminEdit": "Edit",
@@ -712,8 +717,7 @@
       "pagePrev": "Previous",
       "pageNext": "Next",
       "pageStatus": "Page {{page}} of {{total}}",
-      "resetTypeToken": "Type {{token}} to confirm.",
-      "resetTokenMismatch": "Reset cancelled: the confirmation text did not match."
+      "resetTypeToken": "Type {{token}} to confirm."
     },
     "heatConfig": {
       "title": "Rivalry Heat Tunables",
@@ -843,7 +847,8 @@
         "hideSkipped": "Hide skipped names",
         "noRows": "No rows to import",
         "importFailed": "Bulk import failed"
-      }
+      },
+      "update": "Update Location"
     }
   },
   "announcements": {
@@ -885,7 +890,8 @@
       "expired": "Expired"
     },
     "dontShowAgain": "Don't show again",
-    "counter": "{{current}} of {{total}}"
+    "counter": "{{current}} of {{total}}",
+    "update": "Update Announcement"
   },
   "videos": {
     "title": "Manage Videos",
@@ -923,7 +929,8 @@
       "highlight": "Highlight",
       "promo": "Promo",
       "other": "Other"
-    }
+    },
+    "update": "Update Video"
   },
   "highlights": {
     "title": "Highlights & Videos",
@@ -1849,7 +1856,8 @@
     "thursday": "Thursday",
     "friday": "Friday",
     "saturday": "Saturday",
-    "sunday": "Sunday"
+    "sunday": "Sunday",
+    "update": "Update Show"
   },
   "companies": {
     "title": "Companies",
@@ -1863,7 +1871,8 @@
     "createFirst": "Create your first company to get started",
     "confirmDelete": "Are you sure you want to delete this company?",
     "rosterCount": "Roster",
-    "deleteBlocked": "Cannot delete company with assigned players or shows"
+    "deleteBlocked": "Cannot delete company with assigned players or shows",
+    "update": "Update Company"
   },
   "factions": {
     "title": "Factions",
@@ -2364,7 +2373,9 @@
         "removeSuccess": "Override removed for {{player}}",
         "errorNotEligible": "This player is not in the current rankings. They must meet minimum match requirements first.",
         "errorIsChampion": "Cannot override the current champion's ranking",
-        "errorWrongDivision": "This player is not in the correct division for this championship"
+        "errorWrongDivision": "This player is not in the correct division for this championship",
+        "reasonColumn": "Reason",
+        "expiresColumn": "Auto-expire"
       }
     },
     "emptyTitle": "No rankings yet",
@@ -2667,10 +2678,10 @@
         "tentative": "Tentative",
         "noResponse": "No response",
         "unavailable": "Unavailable"
-      }
+      },
+      "seasonsRequired": "Scheduling is paused until seasons load, so the match is not left out of the active season."
     },
     "hidden": {
-      "pickerLabel": "Hidden: no wrestler",
       "hint": "No wrestler assigned, so this player is hidden from public pages",
       "badge": "Hidden"
     },
@@ -2724,11 +2735,14 @@
       "removeImage": "Remove Image",
       "uploadImage": "Click to upload image",
       "deleteTitle": "Delete player",
-      "deleteConfirm": "Are you sure you want to delete {{name}}? This action cannot be undone."
+      "deleteConfirm": "Are you sure you want to delete {{name}}? This action cannot be undone.",
+      "keptWrestler": "{{name}} (not linked to the roster)",
+      "clearWarning": "Saving removes this wrestler and hides the player from public pages."
     },
     "matchCard": {
       "saveError": "Failed to save match card",
-      "designationFor": "Card position for"
+      "designationFor": "Card position for",
+      "unresolvedMatch": "Match {{position}}"
     },
     "standalone": {
       "loadError": "Failed to load matches",
@@ -2738,7 +2752,8 @@
       "deleteError": "Failed to delete match",
       "championship": "Championship",
       "tournament": "Tournament",
-      "deleteTitle": "Delete match"
+      "deleteTitle": "Delete match",
+      "openMatch": "Open for signups"
     },
     "users": {
       "loadError": "Failed to load data",
@@ -2898,7 +2913,9 @@
         "pending": "Pending",
         "approved": "Approved",
         "rejected": "Rejected"
-      }
+      },
+      "deletedDivision": "Deleted division",
+      "staffReviewer": "Staff member"
     },
     "tagTeams": {
       "loadError": "Failed to load tag teams",
@@ -2931,7 +2948,8 @@
         "dissolved": "Dissolved"
       },
       "count_one": "{{count}} tag team",
-      "count_other": "{{count}} tag teams"
+      "count_other": "{{count}} tag teams",
+      "playerMissing": "Player not found"
     },
     "factions": {
       "loadError": "Failed to load factions",
@@ -2997,6 +3015,22 @@
       "moveUp": "Move {{name}} up",
       "moveDown": "Move {{name}} down",
       "creating": "Creating..."
+    },
+    "sources": {
+      "failed": "Couldn't load: {{sources}}.",
+      "championships": "Championships",
+      "companies": "Companies",
+      "divisions": "Divisions",
+      "events": "Events",
+      "matches": "Matches",
+      "matchTypes": "Match formats",
+      "players": "Players",
+      "seasons": "Seasons",
+      "stipulations": "Stipulations",
+      "tagTeams": "Tag teams",
+      "tournaments": "Tournaments",
+      "users": "Users",
+      "wrestlers": "Wrestlers"
     }
   },
   "adminContent": {
@@ -3176,7 +3210,7 @@
       "seeded": "Sample data has been generated successfully!",
       "selectAll": "Select all",
       "selectNone": "Select none",
-      "title": "Data Management",
+      "title": "Danger Zone",
       "typeToConfirm": "Type {{phrase}} to enable the delete button:"
     },
     "deletePrompt": "Delete {{name}}?",
@@ -3344,7 +3378,8 @@
       "title": "Storyline Requests",
       "typeBackstageAttack": "Backstage Attack",
       "typeRivalry": "Rivalry",
-      "typeStoryline": "Storyline"
+      "typeStoryline": "Storyline",
+      "staffReviewer": "Staff member"
     },
     "uploadFailed": "Failed to upload image. Please try again.",
     "uploadNetworkError": "Network error during upload. Please check your internet connection and try again.",

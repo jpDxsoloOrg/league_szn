@@ -21,6 +21,8 @@ import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import AdminNotice from './AdminNotice';
 import HiddenBadge from './HiddenBadge';
+import SourceLoadNotice from './SourceLoadNotice';
+import { settleSources } from './loadSources';
 import './adminRoster.css';
 import './ScheduleMatch.css';
 
@@ -29,6 +31,20 @@ type ScheduleLocationState = {
   fromPromo?: PromoWithContext;
   fromEvent?: { eventId: string; name: string; date: string };
 };
+
+const SCHEDULE_SOURCES = {
+  players: () => playersApi.getAllIncludingHidden(),
+  championships: () => championshipsApi.getAll(),
+  tournaments: () => tournamentsApi.getAll(),
+  seasons: () => seasonsApi.getAll(),
+  events: () => eventsApi.getAll(),
+  stipulations: () => stipulationsApi.getAll(),
+  matchTypes: () => matchTypesApi.getAll(),
+  tagTeams: () => tagTeamsApi.getAll({ status: 'active' }),
+  divisions: () => divisionsApi.getAll(),
+};
+
+type ScheduleSource = keyof typeof SCHEDULE_SOURCES;
 
 export default function ScheduleMatch() {
   const { t } = useTranslation();
@@ -57,6 +73,8 @@ export default function ScheduleMatch() {
   const [tagTeamSelectionMode, setTagTeamSelectionMode] = useState<'tag-teams' | 'individuals'>('tag-teams');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [failedSources, setFailedSources] = useState<ScheduleSource[]>([]);
+  const [retrying, setRetrying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -143,87 +161,101 @@ export default function ScheduleMatch() {
   );
 
   useEffect(() => {
-    loadData();
+    void loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount to load options and apply pre-fill from location state
   }, []);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [playersData, championshipsData, tournamentsData, seasonsData, eventsData, stipulationsData, matchTypesData, tagTeamsData, divisionsData] = await Promise.all([
-        playersApi.getAllIncludingHidden(),
-        championshipsApi.getAll(),
-        tournamentsApi.getAll(),
-        seasonsApi.getAll(),
-        eventsApi.getAll(),
-        stipulationsApi.getAll(),
-        matchTypesApi.getAll(),
-        tagTeamsApi.getAll({ status: 'active' }).catch(() => [] as TagTeam[]),
-        divisionsApi.getAll(),
-      ]);
-      setPlayers(playersData);
-      setChampionships(championshipsData);
-      // Optional: last-booked / streak for the pickers. Kept off the main
-      // Promise.all so a failure can't block the form from loading.
-      Promise.resolve()
-        .then(() => playersApi.getBookingSummary())
-        .then((summary) => setBookingInfo(new Map(Object.entries(summary))))
-        .catch(() => setBookingInfo(undefined));
-      setTournaments(tournamentsData.filter(t => t.status !== 'completed'));
-      setSeasons(seasonsData);
-      setEvents(eventsData.filter(e => e.status === 'upcoming' || e.status === 'in-progress'));
-      setStipulations(stipulationsData);
-      setMatchTypes(matchTypesData);
-      setActiveTagTeams(tagTeamsData as (TagTeam & { player1Name?: string; player2Name?: string })[]);
-      setDivisions(divisionsData);
-      // Set active season as default if one exists
-      const activeSeason = seasonsData.find(s => s.status === 'active');
-      if (activeSeason) {
-        setFormData(prev => ({ ...prev, seasonId: activeSeason.seasonId }));
-      }
-
-      // Pre-fill from event, challenge, or promo (once per navigation)
-      if (state && !preFillApplied.current) {
-        preFillApplied.current = true;
-        if (state.fromEvent) {
-          setFormData((prev) => ({
-            ...prev,
-            eventId: state.fromEvent!.eventId,
-          }));
-        }
-        if (state.fromChallenge) {
-          const ch = state.fromChallenge;
-          const matchFormat = matchTypesData.some((mt) => mt.name === ch.matchType)
-            ? ch.matchType
-            : matchTypesData[0]?.name ?? 'Singles';
-          const stipulationId = ch.stipulation
-            ? (stipulationsData.find((s) => s.name === ch.stipulation)?.stipulationId ?? '')
-            : '';
-          setFormData((prev) => ({
-            ...prev,
-            participants: [ch.challengerId, ch.challengedId],
-            matchFormat,
-            stipulationId,
-            championshipId: ch.championshipId ?? prev.championshipId,
-          }));
-          setLinkChallengeId(ch.challengeId);
-        } else if (state.fromPromo && state.fromPromo.targetPlayerId) {
-          const promo = state.fromPromo;
-          const targetId = promo.targetPlayerId;
-          const defaultFormat = matchTypesData.find((mt) => mt.name === 'Singles')?.name ?? matchTypesData[0]?.name ?? 'Singles';
-          setFormData((prev) => ({
-            ...prev,
-            participants: targetId ? [promo.playerId, targetId] : prev.participants,
-            matchFormat: defaultFormat,
-          }));
-          setLinkPromoId(promo.promoId);
-        }
-      }
-    } catch (_err) {
-      setError(t('adminRoster.schedule.loadError', 'Failed to load data'));
-    } finally {
-      setLoading(false);
+  /** Challenge and promo pre-fill resolve names against these two lists. */
+  const applyLinkedPreFill = (matchTypesData: MatchType[], stipulationsData: Stipulation[]) => {
+    if (state?.fromChallenge) {
+      const ch = state.fromChallenge;
+      const matchFormat = matchTypesData.some((mt) => mt.name === ch.matchType)
+        ? ch.matchType
+        : matchTypesData[0]?.name ?? 'Singles';
+      const stipulationId = ch.stipulation
+        ? (stipulationsData.find((s) => s.name === ch.stipulation)?.stipulationId ?? '')
+        : '';
+      setFormData((prev) => ({
+        ...prev,
+        participants: [ch.challengerId, ch.challengedId],
+        matchFormat,
+        stipulationId,
+        championshipId: ch.championshipId ?? prev.championshipId,
+      }));
+      setLinkChallengeId(ch.challengeId);
+    } else if (state?.fromPromo && state.fromPromo.targetPlayerId) {
+      const promo = state.fromPromo;
+      const targetId = promo.targetPlayerId;
+      const defaultFormat = matchTypesData.find((mt) => mt.name === 'Singles')?.name ?? matchTypesData[0]?.name ?? 'Singles';
+      setFormData((prev) => ({
+        ...prev,
+        participants: targetId ? [promo.playerId, targetId] : prev.participants,
+        matchFormat: defaultFormat,
+      }));
+      setLinkPromoId(promo.promoId);
     }
+  };
+
+  /**
+   * Each list loads on its own, so one failed read leaves the rest of the form
+   * working. `only` limits a retry to the lists that failed, which keeps what
+   * the admin has already entered.
+   */
+  const loadData = async (only?: readonly ScheduleSource[]) => {
+    const { values, failed } = await settleSources(SCHEDULE_SOURCES, only);
+
+    if (values.players) setPlayers(values.players);
+    if (values.championships) setChampionships(values.championships);
+    if (values.tournaments) setTournaments(values.tournaments.filter(tournament => tournament.status !== 'completed'));
+    if (values.events) setEvents(values.events.filter(e => e.status === 'upcoming' || e.status === 'in-progress'));
+    if (values.stipulations) setStipulations(values.stipulations);
+    if (values.matchTypes) setMatchTypes(values.matchTypes);
+    if (values.tagTeams) setActiveTagTeams(values.tagTeams as (TagTeam & { player1Name?: string; player2Name?: string })[]);
+    if (values.divisions) setDivisions(values.divisions);
+    if (values.seasons) {
+      setSeasons(values.seasons);
+      // Set active season as default if one exists
+      const activeSeason = values.seasons.find(s => s.status === 'active');
+      if (activeSeason) {
+        setFormData(prev => (prev.seasonId ? prev : { ...prev, seasonId: activeSeason.seasonId }));
+      }
+    }
+    setFailedSources(failed);
+
+    // Pre-fill from event, challenge, or promo (once per navigation). Linked
+    // pre-fill waits for its lookups, so a retry can finish it.
+    if (state && !preFillApplied.current) {
+      if (state.fromEvent) {
+        const eventId = state.fromEvent.eventId;
+        setFormData((prev) => ({ ...prev, eventId }));
+      }
+      if (!failed.includes('matchTypes') && !failed.includes('stipulations')) {
+        preFillApplied.current = true;
+        applyLinkedPreFill(values.matchTypes ?? matchTypes, values.stipulations ?? stipulations);
+      }
+    }
+  };
+
+  /** Optional last-booked and streak detail, so a failure only drops that detail. */
+  const loadBookingInfo = async () => {
+    try {
+      const summary = await playersApi.getBookingSummary();
+      setBookingInfo(new Map(Object.entries(summary)));
+    } catch {
+      setBookingInfo(undefined);
+    }
+  };
+
+  const loadInitialData = async () => {
+    void loadBookingInfo();
+    await loadData();
+    setLoading(false);
+  };
+
+  const retryFailedSources = async () => {
+    setRetrying(true);
+    await loadData(failedSources);
+    setRetrying(false);
   };
 
   const isTagTeamMatch = formData.matchFormat.toLowerCase().includes('tag');
@@ -280,7 +312,7 @@ export default function ScheduleMatch() {
 
     // Resolve date: use event date if an event is selected, otherwise today
     const selectedEvent = formData.eventId ? events.find(ev => ev.eventId === formData.eventId) : undefined;
-    const matchDate = selectedEvent?.date || new Date().toISOString();
+    const matchDate = selectedEvent?.date || state?.fromEvent?.date || new Date().toISOString();
 
     try {
       await matchesApi.schedule({
@@ -392,16 +424,6 @@ export default function ScheduleMatch() {
       ? players.filter(p => !p.divisionId)
       : players.filter(p => p.divisionId === divisionFilter);
 
-  /**
-   * The booking picker prints `currentWrestler (name)`, so players with no
-   * wrestler carry a Hidden label there instead of the stored placeholder.
-   */
-  const toPickerPlayers = (roster: Player[]): Player[] => roster.map((player) => (
-    isNeedsWrestler(player.currentWrestler)
-      ? { ...player, currentWrestler: t('adminRoster.hidden.pickerLabel', 'Hidden: no wrestler') }
-      : player
-  ));
-
   /** Selection set for the participants picker. */
   const selectedParticipantIds = useMemo(
     () => new Set(formData.participants),
@@ -452,6 +474,8 @@ export default function ScheduleMatch() {
     return <Skeleton variant="block" count={4} />;
   }
 
+  const seasonsUnavailable = failedSources.includes('seasons');
+
   const statusLabel = (status: CheckInStatus) => t(`adminRoster.schedule.checkIn.${status}`, status);
 
   const divisionFilterControl = (controlId: string) => (
@@ -491,6 +515,14 @@ export default function ScheduleMatch() {
         )}
       />
 
+      <SourceLoadNotice
+        failed={failedSources}
+        onRetry={retryFailedSources}
+        retrying={retrying}
+        detail={seasonsUnavailable
+          ? t('adminRoster.schedule.seasonsRequired', 'Scheduling is paused until seasons load, so the match is not left out of the active season.')
+          : undefined}
+      />
       {error && <AdminNotice tone="error">{error}</AdminNotice>}
       {success && <AdminNotice tone="success">{success}</AdminNotice>}
 
@@ -848,7 +880,7 @@ export default function ScheduleMatch() {
                     <span className="slot-mode-row-position">{index + 1}</span>
                     <div className="slot-mode-row-player">
                       <PlayerBookingPicker
-                        players={toPickerPlayers(players)}
+                        players={players}
                         value={row.playerId}
                         onChange={(playerId) => updateSlotRow(index, { playerId })}
                         checkInStatusByPlayerId={checkInStatusByPlayerId}
@@ -886,7 +918,7 @@ export default function ScheduleMatch() {
               {divisions.length > 0 && divisionFilterControl('divisionFilter')}
               <PlayerBookingPicker
                 mode="multi"
-                players={toPickerPlayers(filteredPlayers)}
+                players={filteredPlayers}
                 selectedPlayerIds={selectedParticipantIds}
                 onToggle={handleParticipantToggle}
                 checkInStatusByPlayerId={checkInStatusByPlayerId}
@@ -940,7 +972,7 @@ export default function ScheduleMatch() {
         </fieldset>
 
         <div className="am-actionbar">
-          <Button type="submit" fullWidth loading={submitting}>
+          <Button type="submit" fullWidth loading={submitting} disabled={seasonsUnavailable}>
             {submitting ? t('adminRoster.schedule.scheduling', 'Scheduling...') : t('scheduleMatch.submit')}
           </Button>
         </div>

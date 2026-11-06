@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { matchesApi, playersApi, eventsApi, tagTeamsApi, stipulationsApi } from '../../services/api';
+import { formatCalendarDate } from '../../utils/dateUtils';
 import type { Match, Player, Stipulation } from '../../types';
 import type { LeagueEvent } from '../../types/event';
 import type { TagTeam } from '../../types/tagTeam';
@@ -14,10 +15,22 @@ import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import AdminNotice from './AdminNotice';
 import ConfirmModal from './ConfirmModal';
+import SourceLoadNotice from './SourceLoadNotice';
+import { settleSources } from './loadSources';
 import './adminRoster.css';
 import './StandaloneMatches.css';
 
 type HydratedTagTeam = TagTeam & { player1Name?: string; player2Name?: string };
+
+const STANDALONE_SOURCES = {
+  matches: () => matchesApi.getAll({ status: 'scheduled' }),
+  events: () => eventsApi.getAll(),
+  players: () => playersApi.getAllIncludingHidden(),
+  tagTeams: () => tagTeamsApi.getAll({ status: 'active' }),
+  stipulations: () => stipulationsApi.getAll(),
+};
+
+type StandaloneSource = keyof typeof STANDALONE_SOURCES;
 
 export default function StandaloneMatches() {
   const { t } = useTranslation();
@@ -28,7 +41,7 @@ export default function StandaloneMatches() {
   const [tagTeams, setTagTeams] = useState<HydratedTagTeam[]>([]);
   const [stipulations, setStipulations] = useState<Stipulation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [failedSources, setFailedSources] = useState<StandaloneSource[]>([]);
   const [recordingMatchId, setRecordingMatchId] = useState<string | null>(null);
   const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Match | null>(null);
@@ -36,27 +49,16 @@ export default function StandaloneMatches() {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [matchesData, eventsData, playersData, tagTeamsData, stipulationsData] = await Promise.all([
-        matchesApi.getAll({ status: 'scheduled' }),
-        eventsApi.getAll(),
-        playersApi.getAllIncludingHidden(),
-        tagTeamsApi.getAll({ status: 'active' }).catch(() => [] as TagTeam[]),
-        stipulationsApi.getAll().catch(() => [] as Stipulation[]),
-      ]);
-      setScheduledMatches(matchesData);
-      setEvents(eventsData);
-      setPlayers(playersData);
-      setTagTeams(tagTeamsData as HydratedTagTeam[]);
-      setStipulations(stipulationsData);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('adminRoster.standalone.loadError', 'Failed to load matches'));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
+    setLoading(true);
+    const { values, failed } = await settleSources(STANDALONE_SOURCES);
+    if (values.matches) setScheduledMatches(values.matches);
+    if (values.events) setEvents(values.events);
+    if (values.players) setPlayers(values.players);
+    if (values.tagTeams) setTagTeams(values.tagTeams as HydratedTagTeam[]);
+    if (values.stipulations) setStipulations(values.stipulations);
+    setFailedSources(failed);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -95,8 +97,12 @@ export default function StandaloneMatches() {
     if (match.teams && match.teams.length >= 2) {
       return match.teams.map(team => team.map(getPlayerName).join(' & ')).join(' vs ');
     }
+    if (match.participants.length === 0) return t('adminRoster.standalone.openMatch', 'Open for signups');
     return match.participants.map(getPlayerName).join(' vs ');
   };
+
+  // Without both lists the page can't say which matches are standalone.
+  const listUnavailable = failedSources.includes('matches') || failedSources.includes('events');
 
   const handleRefresh = async () => {
     setRecordingMatchId(null);
@@ -151,12 +157,12 @@ export default function StandaloneMatches() {
         )}
       />
 
-      {error && <AdminNotice tone="error">{error}</AdminNotice>}
+      <SourceLoadNotice failed={failedSources} onRetry={loadData} retrying={loading} />
       {actionError && <AdminNotice tone="error">{actionError}</AdminNotice>}
 
       {loading && <Skeleton variant="block" count={4} />}
 
-      {!loading && standaloneMatches.length === 0 && (
+      {!loading && !listUnavailable && standaloneMatches.length === 0 && (
         <EmptyState
           title={t(
             'admin.standaloneMatches.empty',
@@ -167,7 +173,7 @@ export default function StandaloneMatches() {
         />
       )}
 
-      {!loading && standaloneMatches.length > 0 && (
+      {!loading && !listUnavailable && standaloneMatches.length > 0 && (
         <ul className="ar-list">
           {standaloneMatches.map((match) => {
             const stipulationName = match.stipulationId ? stipulationMap.get(match.stipulationId) : null;
@@ -177,6 +183,7 @@ export default function StandaloneMatches() {
                 <div className="standalone-match__row">
                   <div className="ar-stack">
                     <span className="ar-strong">{formatMatchPreview(match)}</span>
+                    <span className="ar-sub">{formatCalendarDate(match.date)}</span>
                     <span className="ar-badges">
                       <Badge>{match.matchFormat}</Badge>
                       {stipulationName && <Badge>{stipulationName}</Badge>}

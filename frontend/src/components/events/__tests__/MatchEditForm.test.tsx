@@ -147,6 +147,23 @@ describe('MatchEditForm', () => {
     vi.clearAllMocks();
   });
 
+  it('badges a player with no wrestler instead of printing the placeholder', async () => {
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([
+      ...mockPlayers,
+      {
+        playerId: 'p9', name: 'Newbie', currentWrestler: 'Needs Wrestler',
+        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      },
+    ]);
+
+    render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    const row = (await screen.findByText('Newbie')).closest('button')!;
+    expect(row).toHaveTextContent('Hidden');
+    expect(row).not.toHaveTextContent('Needs Wrestler');
+  });
+
   it('loads existing match data into form fields', async () => {
     setupDefaultMocks();
 
