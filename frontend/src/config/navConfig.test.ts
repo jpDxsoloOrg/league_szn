@@ -1,8 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import en from '../i18n/locales/en.json';
 import de from '../i18n/locales/de.json';
-import fragmentEn from '../i18n/fragments/foundation.en.json';
-import fragmentDe from '../i18n/fragments/foundation.de.json';
 import {
   ADMIN_GROUPS,
   ADMIN_TABS,
@@ -164,10 +162,10 @@ describe('translations', () => {
   ];
 
   it.each([
-    ['en', en, fragmentEn],
-    ['de', de, fragmentDe],
-  ])('has every nav label in %s', (_language, locale, fragment) => {
-    const missing = keys.filter((key) => !hasKey(locale, key) && !hasKey(fragment, key));
+    ['en', en],
+    ['de', de],
+  ])('has every nav label in %s', (_language, locale) => {
+    const missing = keys.filter((key) => !hasKey(locale, key));
     expect(missing).toEqual([]);
   });
 });

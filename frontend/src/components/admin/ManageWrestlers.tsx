@@ -575,7 +575,7 @@ export default function ManageWrestlers() {
             <Button
               variant="ghost"
               size="sm"
-              title={t('adminRoster.wrestlers.releaseHint', 'Mark as available. This does not un-assign them from a player.')}
+              title={t('adminRoster.wrestlers.releaseHint', 'Mark as available and remove them from any player. A player left without a wrestler is hidden until they get a new one.')}
               onClick={() => setPendingAction({ kind: 'release', wrestler })}
             >
               {t('adminRoster.wrestlers.release', 'Release')}
@@ -849,7 +849,7 @@ export default function ManageWrestlers() {
           : t('adminRoster.wrestlers.deleteTitle', 'Delete wrestler')}
         message={pendingAction?.kind === 'release'
           ? t('adminRoster.wrestlers.releaseConfirm', {
-            defaultValue: 'Release "{{name}}"? They will be marked as available. This does not un-assign them from a player.',
+            defaultValue: 'Release "{{name}}"? They will be marked as available and removed from any player. A player left without a wrestler is hidden until they get a new one.',
             name: pendingAction.wrestler.name,
           })
           : t('adminRoster.wrestlers.deleteConfirm', 'Are you sure you want to delete this wrestler?')}

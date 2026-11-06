@@ -1,8 +1,0 @@
-{
-  "admin": {
-    "manageWrestlers": {
-      "resetTypeToken": "Gib zur Bestätigung {{token}} ein.",
-      "resetTokenMismatch": "Zurücksetzen abgebrochen: Der Bestätigungstext stimmte nicht überein."
-    }
-  }
-}
