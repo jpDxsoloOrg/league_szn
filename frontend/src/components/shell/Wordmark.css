@@ -3,14 +3,25 @@
   display: inline-flex;
   align-items: center;
   min-height: var(--touch-target);
-  background: var(--gradient-wordmark);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-family: var(--font-heading);
-  font-size: 1.375rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
   text-decoration: none;
-  text-transform: uppercase;
+}
+
+.wordmark__image {
+  display: block;
+  width: auto;
+  height: 38px;
+}
+
+/* The desktop nav and search need the room until the header is wide enough for both. */
+@media (min-width: 769px) and (max-width: 1279px) {
+  .wordmark__image {
+    height: 30px;
+  }
+}
+
+/* At 320 the phone header keeps 184px beside search and the bell. */
+@media (max-width: 359px) {
+  .wordmark__image {
+    height: 32px;
+  }
 }

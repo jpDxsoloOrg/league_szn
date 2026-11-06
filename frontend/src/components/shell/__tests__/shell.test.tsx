@@ -43,6 +43,17 @@ beforeEach(() => {
 });
 
 describe('ShellHeader', () => {
+  it('shows the wordmark as a sized image that links home', () => {
+    mockUseAuth.mockReturnValue(SIGNED_OUT);
+    mockUseSiteConfig.mockReturnValue({ features: FEATURES });
+    renderAt('/standings', <ShellHeader />);
+
+    const logo = screen.getByRole('img', { name: 'League SZN' });
+    expect(logo).toHaveAttribute('width', '662');
+    expect(logo).toHaveAttribute('height', '120');
+    expect(screen.getByRole('link', { name: 'League SZN' })).toHaveAttribute('href', '/');
+  });
+
   it('shows the five sections, bell, search, and no Admin for a wrestler', () => {
     renderAt('/standings', <ShellHeader />);
     const nav = screen.getByRole('navigation', { name: 'mobileNav.ariaLabel' });
