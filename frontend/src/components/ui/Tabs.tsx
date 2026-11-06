@@ -1,5 +1,7 @@
+import { useRef } from 'react';
 import type { ReactNode } from 'react';
 import * as RadixTabs from '@radix-ui/react-tabs';
+import { useScrollFade } from '../../hooks/useScrollFade';
 import './Tabs.css';
 
 export interface TabItem {
@@ -24,6 +26,9 @@ export interface TabsProps {
  * navigate between routes use SectionTabs.
  */
 export default function Tabs({ items, value, defaultValue, onValueChange, label, className = '' }: TabsProps) {
+  const listRef = useRef<HTMLDivElement>(null);
+  useScrollFade(listRef);
+
   return (
     <RadixTabs.Root
       className={`ui-tabs ${className}`.trim()}
@@ -31,7 +36,7 @@ export default function Tabs({ items, value, defaultValue, onValueChange, label,
       defaultValue={defaultValue ?? (value === undefined ? items[0]?.value : undefined)}
       onValueChange={onValueChange}
     >
-      <RadixTabs.List className="ui-tabs__list" aria-label={label}>
+      <RadixTabs.List ref={listRef} className="ui-tabs__list" aria-label={label}>
         {items.map((item) => (
           <RadixTabs.Trigger key={item.value} value={item.value} disabled={item.disabled} className="ui-tabs__trigger">
             {item.label}

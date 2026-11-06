@@ -26,9 +26,9 @@
 
 .division-pills__pill--selected,
 .division-pills__pill--selected:hover {
-  border-color: var(--color-pink);
-  background-color: var(--color-pink);
-  color: var(--color-on-accent);
+  border-color: var(--color-selected);
+  background-color: var(--color-selected);
+  color: var(--color-on-selected);
 }
 
 @media (max-width: 768px) {
@@ -40,5 +40,17 @@
 
   .division-pills::-webkit-scrollbar {
     display: none;
+  }
+
+  .division-pills[data-fade='end'] {
+    mask-image: var(--fade-mask-end);
+  }
+
+  .division-pills[data-fade='start'] {
+    mask-image: var(--fade-mask-start);
+  }
+
+  .division-pills[data-fade='both'] {
+    mask-image: var(--fade-mask-both);
   }
 }

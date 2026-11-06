@@ -1,4 +1,6 @@
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useScrollFade } from '../hooks/useScrollFade';
 import type { Division } from '../types';
 import './DivisionFilter.css';
 
@@ -21,6 +23,8 @@ export default function DivisionFilter({
   showNoDivision = true,
 }: DivisionFilterProps) {
   const { t } = useTranslation();
+  const rowRef = useRef<HTMLDivElement>(null);
+  useScrollFade(rowRef);
 
   const options = [
     { value: 'all', label: t('common.all') },
@@ -29,7 +33,7 @@ export default function DivisionFilter({
   ];
 
   return (
-    <div className="division-pills" role="group" aria-label={t(labelKey)}>
+    <div ref={rowRef} className="division-pills" role="group" aria-label={t(labelKey)}>
       {options.map((option) => {
         const selected = selectedDivision === option.value;
         return (

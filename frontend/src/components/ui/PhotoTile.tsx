@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { getInitials } from '../../utils/initials';
 import './PhotoTile.css';
 
 export type TileAccent = 'none' | 'world' | 'us' | 'ic' | 'tag';
@@ -18,23 +19,28 @@ export interface PhotoTileProps {
   accent?: TileAccent;
   /** Top-left slot, usually a Badge. */
   badge?: ReactNode;
+  /** Shown instead of the title's initials when there is no photo. */
+  fallbackIcon?: ReactNode;
   to?: string;
   className?: string;
 }
 
-/** Portrait photo card with text over a scrim. Falls back to a plain panel. */
-export default function PhotoTile({ imageUrl, imageAlt = '', title, eyebrow, meta, accent = 'none', badge, to, className = '' }: PhotoTileProps) {
+/** Portrait photo card with text over a scrim. A missing or broken photo becomes a colour wash with large initials. */
+export default function PhotoTile({ imageUrl, imageAlt = '', title, eyebrow, meta, accent = 'none', badge, fallbackIcon, to, className = '' }: PhotoTileProps) {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     setFailed(false);
   }, [imageUrl]);
 
-  const classes = `ui-tile ui-tile--${accent} ${className}`.trim();
+  const hasImage = Boolean(imageUrl?.trim()) && !failed;
+  const classes = `ui-tile ui-tile--${accent} ${hasImage ? '' : 'ui-tile--fallback'} ${className}`.replace(/\s+/g, ' ').trim();
   const body = (
     <>
-      {imageUrl?.trim() && !failed && (
-        <img className="ui-tile__image" src={imageUrl} alt={imageAlt} loading="lazy" onError={() => setFailed(true)} />
+      {hasImage ? (
+        <img className="ui-tile__image" src={imageUrl ?? undefined} alt={imageAlt} loading="lazy" onError={() => setFailed(true)} />
+      ) : (
+        <span className="ui-tile__fallback" aria-hidden="true">{fallbackIcon ?? getInitials(title)}</span>
       )}
       {badge && <span className="ui-tile__badge">{badge}</span>}
       <span className="ui-tile__text">

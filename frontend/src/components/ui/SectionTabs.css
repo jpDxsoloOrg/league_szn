@@ -37,7 +37,7 @@
 }
 
 .section-tabs__link--active {
-  border-bottom-color: var(--color-pink);
+  border-bottom-color: var(--section-accent);
   color: var(--color-text);
 }
 
@@ -45,13 +45,34 @@
   outline-offset: -2px;
 }
 
+.section-tabs__list[data-fade='end'] {
+  mask-image: var(--fade-mask-end);
+}
+
+.section-tabs__list[data-fade='start'] {
+  mask-image: var(--fade-mask-start);
+}
+
+.section-tabs__list[data-fade='both'] {
+  mask-image: var(--fade-mask-both);
+}
+
+/* Third-level row: the same pill as the in-page Tabs. */
+.section-tabs--compact .section-tabs__list {
+  padding-block: 0.25rem;
+}
+
 .section-tabs--compact .section-tabs__link {
   border-bottom: none;
   border-radius: var(--radius-pill);
-  font-size: 0.875rem;
-  font-weight: 500;
 }
 
-.section-tabs--compact .section-tabs__link--active {
-  background-color: var(--tint-violet);
+.section-tabs--compact .section-tabs__link:hover:not(.section-tabs__link--active) {
+  background-color: var(--color-overlay-soft);
+}
+
+.section-tabs--compact .section-tabs__link--active,
+.section-tabs--compact .section-tabs__link--active:hover {
+  background-color: var(--color-selected);
+  color: var(--color-on-selected);
 }

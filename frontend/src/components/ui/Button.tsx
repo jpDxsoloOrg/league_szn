@@ -17,10 +17,12 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
   /** Renders a router link styled as a button. */
   to?: string;
+  /** Router state for the link, such as where to return after sign-in. */
+  linkState?: unknown;
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = 'primary', size = 'md', icon, loading = false, fullWidth = false, to, className = '', children, disabled, type = 'button', ...rest },
+  { variant = 'primary', size = 'md', icon, loading = false, fullWidth = false, to, linkState, className = '', children, disabled, type = 'button', ...rest },
   ref,
 ) {
   const classes = [
@@ -39,7 +41,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   );
 
   if (to && !disabled && !loading) {
-    return <Link to={to} className={classes}>{content}</Link>;
+    return <Link to={to} state={linkState} className={classes}>{content}</Link>;
   }
 
   return (

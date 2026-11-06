@@ -29,14 +29,30 @@
   cursor: pointer;
 }
 
-.ui-tabs__trigger:hover:not(:disabled) {
+.ui-tabs__trigger:hover:not(:disabled):not([data-state='active']) {
   background-color: var(--color-overlay-soft);
   color: var(--color-text);
 }
 
 .ui-tabs__trigger[data-state='active'] {
-  background-color: var(--color-pink);
-  color: var(--color-on-accent);
+  background-color: var(--color-selected);
+  color: var(--color-on-selected);
+}
+
+.ui-tabs__trigger:focus-visible {
+  outline-offset: -2px;
+}
+
+.ui-tabs__list[data-fade='end'] {
+  mask-image: var(--fade-mask-end);
+}
+
+.ui-tabs__list[data-fade='start'] {
+  mask-image: var(--fade-mask-start);
+}
+
+.ui-tabs__list[data-fade='both'] {
+  mask-image: var(--fade-mask-both);
 }
 
 .ui-tabs__panel {

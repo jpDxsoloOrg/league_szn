@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import Select from './Select';
 import Skeleton from './Skeleton';
 import './DataTable.css';
 
@@ -41,9 +44,12 @@ function compareValues(first: string | number, second: string | number): number 
 
 /**
  * Responsive table. At phone widths each row becomes a stacked card with
- * column headers as labels, so keep public tables to about six columns.
+ * column headers as labels, so keep public tables to about six columns. The
+ * header row is not on screen there, so a Select takes over sorting.
  */
 export default function DataTable<Row>({ columns, rows, rowKey, caption, density = 'default', loading = false, empty, className = '' }: DataTableProps<Row>) {
+  const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [sort, setSort] = useState<SortState | null>(null);
 
   const sortedRows = useMemo(() => {
@@ -63,8 +69,29 @@ export default function DataTable<Row>({ columns, rows, rowKey, caption, density
     }));
   };
 
+  const sortOptions = columns.filter((column) => column.sortValue).flatMap((column) => [
+    { value: `${column.key}:ascending`, label: t('common.sortAscending', { column: column.header }) },
+    { value: `${column.key}:descending`, label: t('common.sortDescending', { column: column.header }) },
+  ]);
+
+  const applySort = (value: string) => {
+    const separator = value.lastIndexOf(':');
+    const key = value.slice(0, separator);
+    const direction = value.slice(separator + 1) === 'descending' ? 'descending' : 'ascending';
+    setSort(key ? { key, direction } : null);
+  };
+
   return (
     <div className={`ui-table-wrap ui-table-wrap--${density} ${className}`.trim()}>
+      {isMobile && sortOptions.length > 0 && (
+        <Select
+          className="ui-table__mobile-sort"
+          label={t('common.sortBy')}
+          value={sort ? `${sort.key}:${sort.direction}` : ''}
+          onValueChange={applySort}
+          options={[{ value: '', label: t('common.sortBy') }, ...sortOptions]}
+        />
+      )}
       <table className="ui-table">
         <caption className="sr-only">{caption}</caption>
         <thead>

@@ -46,7 +46,7 @@
 }
 
 .shell-header__link--active {
-  border-bottom-color: var(--color-pink);
+  border-bottom-color: var(--section-accent);
   color: var(--color-text);
 }
 
@@ -70,4 +70,8 @@
 .shell-header__icon-link:hover {
   background-color: var(--color-overlay-soft);
   color: var(--color-text);
+}
+
+.shell-header__icon-link--active {
+  color: var(--section-accent);
 }

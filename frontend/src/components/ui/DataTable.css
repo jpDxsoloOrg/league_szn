@@ -1,6 +1,7 @@
 .ui-table-wrap {
   overflow-x: auto;
   background-color: var(--color-surface);
+  background-image: linear-gradient(165deg, var(--section-tint), transparent 40%);
   border: 1px solid var(--color-hairline);
   border-radius: var(--radius-card);
 }
@@ -48,7 +49,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  min-height: 0;
+  min-height: var(--touch-target);
+  margin-block: -0.625rem;
   padding: 0;
   border: none;
   background-color: transparent;
@@ -67,7 +69,7 @@
 @media (max-width: 768px) {
   .ui-table-wrap {
     overflow: visible;
-    background-color: transparent;
+    background: none;
     border: none;
   }
 
@@ -79,12 +81,15 @@
     width: 100%;
   }
 
+  /* Each cell carries its own label here, and a hidden row of sort buttons
+     would only trap keyboard focus. */
   .ui-table thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
+    display: none;
+  }
+
+  .ui-table__mobile-sort {
+    width: 100%;
+    margin-bottom: 0.75rem;
   }
 
   .ui-table tbody tr {
@@ -110,7 +115,7 @@
   .ui-table td::before {
     content: attr(data-label);
     color: var(--color-text-muted);
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     text-align: left;
   }
 

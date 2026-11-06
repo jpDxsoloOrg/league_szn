@@ -10,6 +10,12 @@ Shared building blocks for the Main Event Arena redesign. Design rules live in
 - Colours come from tokens. No hex values in component CSS.
 - Icons come from `lucide-react`. Give decorative icons `aria-hidden="true"`.
 - Page titles use `PageHeader`, which renders the page's only `h1`.
+- `.App` carries `data-section` from `getSectionTheme`. `variables.css` turns that into `--section-band`
+  (the `PageHeader` gradient), `--section-accent` (underlines and active nav) and a slight surface tint. Admin
+  pages are `data-section="admin"` and have no band. Text on a band stays AA at every stop: check any new one.
+- One selected language: section rows use an underline in `--section-accent`, and every in-page tab, third-level
+  row and filter pill uses `--color-selected` with `--color-on-selected`. Sideways-scrolling rows use
+  `useScrollFade` for the edge fade.
 
 ## Components
 
@@ -23,12 +29,12 @@ Shared building blocks for the Main Event Arena redesign. Design rules live in
 | `Badge` | Status pills. `live` is the only toned badge with a glow | `tone`, `icon` |
 | `Avatar` | Player images, with initials as a fallback | `src`, `name`, `size`, `ring` |
 | `PageHeader` | Title block with an actions slot | `title`, `eyebrow`, `subtitle`, `actions` |
-| `DataTable` | Tables. Become stacked cards on phones | `columns`, `rows`, `rowKey`, `caption`, `density`, `loading`, `empty` |
+| `DataTable` | Tables. Become stacked cards on phones, with a sort Select in place of the headers | `columns`, `rows`, `rowKey`, `caption`, `density`, `loading`, `empty` |
 | `EmptyState` | No-data panels | `title`, `description`, `icon`, `actionLabel`, `onAction` |
 | `Skeleton` | Loading placeholders | `variant` (`table`, `cards`, `calendar`, `block`), `count` |
 | `Select` | Dropdowns. `''` is a valid option value, for "All" filters | `value`, `onValueChange`, `options`, `label`, `placeholder` |
 | `Podium` | Top three, shown 2-1-3 | `entries`, `label` |
-| `PhotoTile` | Portrait photo cards with a title rim light | `imageUrl`, `title`, `eyebrow`, `meta`, `accent`, `badge`, `to` |
+| `PhotoTile` | Portrait photo cards with a title rim light. No photo gives a colour wash with initials | `imageUrl`, `title`, `eyebrow`, `meta`, `accent`, `badge`, `fallbackIcon`, `to` |
 | `FormDots` | Recent results | `results` (oldest to newest) |
 | `SwipeRow` | Swipeable tile rows. Set `--swipe-row-slide` to size slides | `label`, `children` |
 | `ToastProvider`, `useToast` | Short confirmations. The provider is already mounted in `App` | `showToast(message, tone)` |
@@ -66,5 +72,7 @@ Shared building blocks for the Main Event Arena redesign. Design rules live in
   `style` attributes and `<video>`, which announcements rely on.
 - `config/navConfig` is the navigation registry. Add pages there, not in a component.
 - `isApiError(err, 404)` from `services/api` checks a failed request's HTTP status.
+- `fetchWithAuth` retries GETs twice on 429, 500, 502 and 503 with jittered backoff. Writes are never retried.
+- `useDocumentTitle` overrides the route title that `App` sets from `getPageInfo`.
 - `playersApi.getDirectory()` resolves names for all players, including those with no wrestler.
   `playersApi.getAllIncludingHidden()` is the staff roster.

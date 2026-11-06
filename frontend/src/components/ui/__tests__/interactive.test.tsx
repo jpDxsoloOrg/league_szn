@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -185,6 +185,40 @@ describe('DataTable', () => {
     await user.click(screen.getByRole('button', { name: 'Wins' }));
     expect(firstCells()).toEqual(['Bandido', 'Edge']);
     expect(screen.getByRole('columnheader', { name: 'Wins' })).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  describe('on a phone', () => {
+    const realMatchMedia = window.matchMedia;
+
+    beforeEach(() => {
+      window.matchMedia = ((query: string) => ({
+        ...realMatchMedia(query),
+        matches: true,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      })) as typeof window.matchMedia;
+    });
+
+    afterEach(() => {
+      window.matchMedia = realMatchMedia;
+    });
+
+    it('sorts from a Select, because the header row is hidden there', async () => {
+      const user = userEvent.setup();
+      render(<DataTable {...props} rows={rows} />);
+
+      await user.click(screen.getByRole('combobox', { name: 'common.sortBy' }));
+      // Options run Name then Wins; the test translator drops the column name.
+      const descending = await screen.findAllByRole('option', { name: 'common.sortDescending' });
+      await user.click(descending[1] as HTMLElement);
+
+      await waitFor(() => expect(firstCells()).toEqual(['Bandido', 'Edge']));
+    });
+
+    it('offers no Select when nothing can be sorted', () => {
+      render(<DataTable {...props} columns={[{ key: 'name', header: 'Name', render: (row) => row.name }]} rows={rows} />);
+      expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    });
   });
 
   it('labels cells for the phone layout', () => {

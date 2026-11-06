@@ -84,7 +84,7 @@
 
 .notification-header-btn {
   min-height: var(--touch-target);
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   color: var(--color-text-muted);
   background: none;
   border: none;
@@ -100,7 +100,7 @@
 }
 
 .notification-header-btn.notification-delete-read-btn {
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   color: var(--color-text-muted);
   padding: 0;
   border-radius: 0;
@@ -197,7 +197,7 @@
 
 .notification-item-badge-label {
   display: inline-block;
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -214,7 +214,7 @@
 }
 
 .notification-item-time {
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   color: var(--color-text-muted);
 }
 

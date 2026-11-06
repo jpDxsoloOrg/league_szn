@@ -40,12 +40,27 @@
 
 .ui-podium__slot--first .ui-podium__card {
   padding-top: 2.5rem;
-  border: 2px solid var(--color-pink);
-  box-shadow: var(--glow-pink);
+  background: var(--gradient-podium-first);
+  border-color: transparent;
+
+  --color-text-muted: var(--color-on-band-secondary);
+  --color-hairline: var(--color-on-band-hairline);
+}
+
+.ui-podium__slot--second .ui-podium__card {
+  background-image: linear-gradient(180deg, var(--tint-cyan), transparent 70%);
+}
+
+.ui-podium__slot--third .ui-podium__card {
+  background-image: linear-gradient(180deg, var(--tint-violet), transparent 70%);
 }
 
 a.ui-podium__card:hover {
   background-color: var(--color-surface-raised);
+}
+
+.ui-podium__slot--first a.ui-podium__card:hover {
+  filter: brightness(1.08);
 }
 
 .ui-podium__rank {
@@ -58,15 +73,15 @@ a.ui-podium__card:hover {
   border-radius: var(--radius-pill);
   background-color: var(--color-bg);
   color: var(--color-text-secondary);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
 .ui-podium__slot--first .ui-podium__rank {
-  border-color: var(--color-pink);
-  background-color: var(--color-pink);
+  border-color: var(--color-text);
+  background-color: var(--color-text);
   color: var(--color-on-accent);
 }
 
@@ -76,8 +91,8 @@ a.ui-podium__card:hover {
 }
 
 .ui-podium__slot--third .ui-podium__rank {
-  border-color: var(--rim-tag);
-  color: var(--rim-tag);
+  border-color: var(--color-violet-bright);
+  color: var(--color-violet-bright);
 }
 
 .ui-podium__name {
@@ -117,9 +132,8 @@ a.ui-podium__card:hover {
 
 .ui-podium__stat dt {
   color: var(--color-text-muted);
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.9375rem;
+  letter-spacing: 0.02em;
 }
 
 .ui-podium__stat dd {
@@ -136,9 +150,17 @@ a.ui-podium__card:hover {
     padding: 1.5rem 0.5rem 0.75rem;
   }
 
+  /* Two lines, because a phone column is too narrow for most names. */
   .ui-podium__name,
   .ui-podium__slot--first .ui-podium__name {
+    display: -webkit-box;
     font-size: 1rem;
+    line-height: 1.2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .ui-podium__record {
