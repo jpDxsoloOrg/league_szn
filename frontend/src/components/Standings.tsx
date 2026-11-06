@@ -5,6 +5,7 @@ import { standingsApi, seasonsApi, divisionsApi } from '../services/api';
 import { logger } from '../utils/logger';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useShowMore } from '../hooks/useShowMore';
 import type { Standings as StandingsType, Season, Division, Player } from '../types';
 import PlayerHoverCard from './PlayerHoverCard';
 import DivisionFilter from './DivisionFilter';
@@ -17,6 +18,7 @@ import PageHeader from './ui/PageHeader';
 import Podium from './ui/Podium';
 import type { PodiumEntry } from './ui/Podium';
 import Select from './ui/Select';
+import ShowMore from './ui/ShowMore';
 import Skeleton from './ui/Skeleton';
 import './rankPodium.css';
 import './Standings.css';
@@ -28,6 +30,7 @@ interface RankedPlayer extends Player {
 }
 
 const PODIUM_SIZE = 3;
+const ROWS_PER_PAGE = 50;
 
 const STREAK_TITLE_KEYS = {
   W: 'standings.winStreak',
@@ -77,6 +80,10 @@ export default function Standings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadCount, setReloadCount] = useState(0);
+  const { count: visibleCount, showMore } = useShowMore(
+    ROWS_PER_PAGE,
+    `${selectedDivision}|${selectedAlignment}|${selectedSeasonId}`,
+  );
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -285,7 +292,7 @@ export default function Standings() {
 
             {isMobile ? (
               <ol className="standings-list">
-                {listedPlayers.map((player) => (
+                {listedPlayers.slice(0, visibleCount).map((player) => (
                   <li key={player.playerId}>
                     <Link to={`/player/${player.playerId}`} className="standings-row">
                       <span className="standings-rank">#{player.rank}</span>
@@ -315,9 +322,16 @@ export default function Standings() {
                 caption={t('standings.title')}
                 columns={columns}
                 rows={listedPlayers}
+                rowLimit={visibleCount}
                 rowKey={(player) => player.playerId}
               />
             )}
+
+            <ShowMore
+              shown={Math.min(visibleCount, listedPlayers.length)}
+              total={listedPlayers.length}
+              onShowMore={() => showMore()}
+            />
           </section>
         )}
       </>

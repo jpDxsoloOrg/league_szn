@@ -5,6 +5,7 @@ import { Search, SlidersHorizontal } from 'lucide-react';
 import { matchesApi, playersApi, seasonsApi, championshipsApi, stipulationsApi, matchTypesApi } from '../services/api';
 import type { PlayerDirectoryEntry } from '../services/api/players.api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useShowMore } from '../hooks/useShowMore';
 import type { Match, MatchFilters, Season, Championship, Stipulation, MatchType } from '../types';
 import Badge from './ui/Badge';
 import type { BadgeTone } from './ui/Badge';
@@ -13,6 +14,7 @@ import EmptyState from './ui/EmptyState';
 import Modal from './ui/Modal';
 import PageHeader from './ui/PageHeader';
 import Select from './ui/Select';
+import ShowMore from './ui/ShowMore';
 import Skeleton from './ui/Skeleton';
 import Tabs from './ui/Tabs';
 import { StarRating } from './matches/StarRating';
@@ -29,6 +31,8 @@ const STATUS_TONES: Partial<Record<Match['status'], BadgeTone>> = {
   completed: 'neutral',
   cancelled: 'loss',
 };
+
+const ROWS_PER_PAGE = 50;
 
 /** Filters behind the Filters button. Status has its own tabs. */
 const PANEL_FILTER_KEYS: (keyof MatchFilters)[] = [
@@ -218,6 +222,11 @@ export default function MatchSearch() {
     });
   }, [matches, searchText, getPlayerName, stipulationMap, t]);
 
+  const { count: visibleCount, showMore } = useShowMore(ROWS_PER_PAGE, `${searchParams.toString()}|${searchText}`);
+  // A deep-linked match has to be on screen for the page to scroll to it.
+  const focusedIndex = focusedMatchId ? visibleMatches.findIndex((match) => match.matchId === focusedMatchId) : -1;
+  const shownCount = Math.min(visibleMatches.length, Math.max(visibleCount, focusedIndex + 1));
+
   const detailMatch = detailMatchId ? matches.find((match) => match.matchId === detailMatchId) : undefined;
 
   const updateMatch = useCallback((matchId: string, changes: Partial<Match>) => {
@@ -402,7 +411,7 @@ export default function MatchSearch() {
         />
       ) : (
         <ul className="match-search-results">
-          {visibleMatches.map((match) => {
+          {visibleMatches.slice(0, shownCount).map((match) => {
             const isFocused = match.matchId === focusedMatchId;
             const stipulationName = match.stipulationId ? stipulationMap.get(match.stipulationId)?.name : undefined;
             const hasStars = match.ratingsCount != null && match.ratingsCount > 0;
@@ -443,6 +452,10 @@ export default function MatchSearch() {
             );
           })}
         </ul>
+      )}
+
+      {!loading && !error && (
+        <ShowMore shown={shownCount} total={visibleMatches.length} onShowMore={() => showMore(shownCount)} />
       )}
 
       <Modal

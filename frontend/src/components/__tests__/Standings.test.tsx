@@ -343,6 +343,82 @@ describe('Standings', () => {
     expect(screen.queryByText('John Cena')).not.toBeInTheDocument();
   });
 
+  describe('with more players than one page', () => {
+    // 120 played players, best record first, plus one unbeaten player far down the list.
+    const longTable = Array.from({ length: 120 }, (_, index) => ({
+      ...chasePack[0],
+      playerId: `long-${index}`,
+      name: `Player ${index + 1}`,
+      wins: 200 - index,
+      losses: index === 110 ? 0 : 50,
+      draws: 0,
+      divisionId: index % 2 === 0 ? 'div1' : 'div2',
+    }));
+
+    beforeEach(() => {
+      mockGetAllSeasons.mockResolvedValue([]);
+      mockGetAllDivisions.mockResolvedValue(mockDivisions);
+      mockGetStandings.mockResolvedValue({ players: longTable, sortedByWins: true });
+    });
+
+    const showMoreButton = () => screen.findByRole('button', { name: 'common.showMore' });
+    const tableRows = () => within(screen.getByRole('table')).getAllByRole('row').slice(1);
+
+    it('caps the table and keeps true ranks as more rows are shown', async () => {
+      const user = userEvent.setup();
+      renderStandings();
+
+      await user.click(await showMoreButton());
+
+      expect(tableRows()).toHaveLength(100);
+      expect(within(tableRows()[0]).getByText('#4')).toBeInTheDocument();
+      expect(within(tableRows()[99]).getByText('#103')).toBeInTheDocument();
+
+      await user.click(await showMoreButton());
+
+      expect(tableRows()).toHaveLength(117);
+      expect(within(tableRows()[116]).getByText('#120')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'common.showMore' })).not.toBeInTheDocument();
+    });
+
+    it('caps the phone list too', async () => {
+      mockMobile.value = true;
+      const user = userEvent.setup();
+      renderStandings();
+
+      await user.click(await showMoreButton());
+
+      const rows = within(document.querySelector('.standings-list') as HTMLElement).getAllByRole('listitem');
+      expect(rows).toHaveLength(100);
+      expect(within(rows[99]).getByText('#103')).toBeInTheDocument();
+    });
+
+    it('goes back to one page when a filter changes', async () => {
+      const user = userEvent.setup();
+      renderStandings();
+      await user.click(await showMoreButton());
+      expect(tableRows()).toHaveLength(100);
+
+      await user.click(screen.getByRole('button', { name: 'SmackDown' }));
+
+      expect(tableRows()).toHaveLength(50);
+      expect(within(tableRows()[0]).getByText('#4')).toBeInTheDocument();
+    });
+
+    it('sorts every row, not just the rows on screen', async () => {
+      const user = userEvent.setup();
+      renderStandings();
+      await showMoreButton();
+
+      await user.click(screen.getByRole('button', { name: 'Win %' }));
+      await user.click(screen.getByRole('button', { name: 'Win %' }));
+
+      expect(tableRows()).toHaveLength(50);
+      expect(within(tableRows()[0]).getByText('Player 111')).toBeInTheDocument();
+      expect(within(tableRows()[0]).getByText('#111')).toBeInTheDocument();
+    });
+  });
+
   it('keeps the filters on screen when nothing matches them', async () => {
     const user = userEvent.setup();
     mockGetStandings.mockResolvedValue({ players: mockPlayers, sortedByWins: true });

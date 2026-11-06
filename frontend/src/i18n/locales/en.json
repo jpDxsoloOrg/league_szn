@@ -44,7 +44,9 @@
     "sortBy": "Sort by",
     "sortDefault": "Default order",
     "sortAscending": "{{column}}, ascending",
-    "sortDescending": "{{column}}, descending"
+    "sortDescending": "{{column}}, descending",
+    "showMore": "Show more",
+    "showingCount": "Showing {{shown}} of {{total}}"
   },
   "notFound": {
     "title": "Page Not Found",

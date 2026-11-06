@@ -308,6 +308,73 @@ describe('MatchSearch', () => {
     expect(mockGetAllMatches.mock.calls[0][0]).toBeUndefined();
   });
 
+  describe('with more matches than one page', () => {
+    const manyMatches = Array.from({ length: 120 }, (_, index) => ({
+      ...mockMatches[0],
+      matchId: `many-${index}`,
+      matchFormat: index === 110 ? 'Tag Team' : 'Singles',
+    }));
+    const rows = () => document.querySelectorAll('.match-row');
+    const showMoreButton = () => screen.findByRole('button', { name: 'common.showMore' });
+
+    beforeEach(() => {
+      mockGetAllMatches.mockResolvedValue(manyMatches);
+    });
+
+    it('caps the list and adds a page at a time', async () => {
+      renderWithRouter();
+
+      fireEvent.click(await showMoreButton());
+
+      expect(rows()).toHaveLength(100);
+      fireEvent.click(await showMoreButton());
+      expect(rows()).toHaveLength(120);
+      expect(screen.queryByRole('button', { name: 'common.showMore' })).not.toBeInTheDocument();
+    });
+
+    it('still searches rows beyond the cap', async () => {
+      renderWithRouter();
+      await showMoreButton();
+      expect(rows()).toHaveLength(50);
+
+      fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'tag' } });
+
+      expect(rows()).toHaveLength(1);
+      expect(screen.queryByRole('button', { name: 'common.showMore' })).not.toBeInTheDocument();
+    });
+
+    it('goes back to one page when the search or a filter changes', async () => {
+      renderWithRouter();
+      fireEvent.click(await showMoreButton());
+      expect(rows()).toHaveLength(100);
+
+      fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'singles' } });
+      expect(rows()).toHaveLength(50);
+
+      fireEvent.click(await showMoreButton());
+      expect(rows()).toHaveLength(100);
+      fireEvent.mouseDown(screen.getByRole('tab', { name: 'Completed' }));
+
+      await waitFor(() => expect(rows()).toHaveLength(50));
+    });
+
+    it('renders a deep-linked match past the cap and scrolls to it', async () => {
+      const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView');
+      renderWithRouter(['/matches?matchId=many-99']);
+
+      await showMoreButton();
+
+      expect(document.querySelector('[aria-current="true"]')).not.toBeNull();
+      expect(rows()).toHaveLength(100);
+      expect(scrollIntoView).toHaveBeenCalled();
+      scrollIntoView.mockRestore();
+
+      // Show more has to add rows beyond the linked one, not refill up to it.
+      fireEvent.click(await showMoreButton());
+      expect(rows()).toHaveLength(120);
+    });
+  });
+
   it('says what is on offer when an open sign-up has nobody on it yet', async () => {
     mockGetAllMatches.mockResolvedValue([
       { ...mockMatches[1], matchId: 'm3', participants: [], slotsRequired: 4, status: 'open-signups' as const },
