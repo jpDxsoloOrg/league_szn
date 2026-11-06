@@ -20,7 +20,8 @@ vi.mock('react-i18next', () => ({
         'auth.password': 'Password',
         'auth.confirmPassword': 'Confirm Password',
         'auth.enterEmail': 'Enter your email',
-        'auth.passwordPlaceholder': 'Min 8 chars, uppercase, lowercase, number',
+        'auth.createPasswordPlaceholder': 'Create a password',
+        'auth.passwordHint': 'At least 8 characters, with an uppercase letter, a lowercase letter and a number.',
         'auth.enterConfirmPassword': 'Confirm your password',
         'auth.wrestlerAssignedLater':
           'You don\'t pick a wrestler here — an admin sets you up with one.',
@@ -28,7 +29,7 @@ vi.mock('react-i18next', () => ({
         'auth.playerNamePlaceholder': 'Enter your Discord name',
         'auth.playerNameHint': 'Your Discord username so other players can find you.',
         'auth.psnId': 'PSN ID',
-        'auth.psnIdPlaceholder': 'Enter your PlayStation Network ID',
+        'auth.psnIdPlaceholder': 'Your PSN ID',
         'auth.createAccountBtn': 'Create Account',
         'auth.creatingAccount': 'Creating Account...',
         'auth.alreadyHaveAccount': 'Already have an account?',
@@ -102,6 +103,16 @@ async function fillAndSubmitSignupForm(
 describe('Signup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('keeps the password rule readable under the field, not in the placeholder', () => {
+    renderSignup();
+
+    const password = screen.getByLabelText('Password');
+    expect(password).toHaveAttribute('placeholder', 'Create a password');
+    expect(password).toHaveAccessibleDescription(
+      'At least 8 characters, with an uppercase letter, a lowercase letter and a number.',
+    );
   });
 
   it('renders signup form with all required fields', () => {

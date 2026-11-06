@@ -160,12 +160,14 @@ export default function Signup() {
             id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={t('auth.passwordPlaceholder')}
+            placeholder={t('auth.createPasswordPlaceholder')}
             required
             autoComplete="new-password"
             minLength={8}
+            aria-describedby="password-hint"
             aria-invalid={error ? 'true' : undefined}
           />
+          <p className="me-hint" id="password-hint">{t('auth.passwordHint')}</p>
         </div>
 
         <div className="me-field">
