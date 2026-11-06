@@ -14,6 +14,7 @@ import type { FormResult } from '../../ui/FormDots';
 import Skeleton from '../../ui/Skeleton';
 import { deriveFactionActivity } from '../factionActivity';
 import { formatCountdown, normalizeStreak } from '../factionFormat';
+import { missingPlayerLabel } from '../../../utils/playerName';
 import type { FactionDetailContext } from '../FactionDetail';
 import '../groupUi.css';
 import './FactionOverview.css';
@@ -114,7 +115,7 @@ export default function FactionOverview() {
         ),
         opponents: (Array.isArray(match['participants']) ? (match['participants'] as string[]) : [])
           .filter((playerId) => !memberIdSet.has(playerId))
-          .map((playerId) => nameById.get(playerId) ?? t('common.unknown', 'Unknown')),
+          .map((playerId) => nameById.get(playerId) ?? missingPlayerLabel(nameById, t)),
         outcome: classifyResult(match, memberIdSet),
       }));
   }, [faction.recentMatches, memberIdSet, directory, t]);

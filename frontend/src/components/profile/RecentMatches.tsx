@@ -4,6 +4,7 @@ import type { Match } from '../../types';
 import { formatMatchDate } from '../../utils/dateUtils';
 import { describeSides, formatMatchType, getMatchResult, groupMatchSides } from '../../utils/matchDisplay';
 import type { FormResult } from '../../utils/matchDisplay';
+import { missingPlayerLabel } from '../../utils/playerName';
 import Badge from '../ui/Badge';
 import Card from '../ui/Card';
 
@@ -26,7 +27,7 @@ interface MatchRow {
 /** A player's latest completed matches. Hidden until they have one. */
 export default function RecentMatches({ playerId, matches, names }: RecentMatchesProps) {
   const { t } = useTranslation();
-  const nameOf = (id: string) => names.get(id) ?? t('common.unknown');
+  const nameOf = (id: string) => names.get(id) ?? missingPlayerLabel(names, t);
 
   const rows = matches
     .filter((match) => match.status === 'completed')

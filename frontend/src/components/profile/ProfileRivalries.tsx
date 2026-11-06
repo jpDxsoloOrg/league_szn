@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import type { Rivalry } from '../../types/rivalry';
+import { missingPlayerLabel } from '../../utils/playerName';
 import Card from '../ui/Card';
 import HeatBadge from '../rivalries/HeatBadge';
 
@@ -26,7 +27,7 @@ export default function ProfileRivalries({ playerId, rivalries, names }: Profile
           {rivalries.slice(0, RIVALRIES_SHOWN).map((rivalry) => {
             const opponents = rivalry.participants
               .filter((participant) => participant.playerId !== playerId)
-              .map((participant) => names.get(participant.playerId) ?? t('common.unknown'));
+              .map((participant) => names.get(participant.playerId) ?? missingPlayerLabel(names, t));
             return (
               <li key={rivalry.rivalryId}>
                 <Link to={`/rivalries/${rivalry.rivalryId}`} className="profile-row profile-row--link">

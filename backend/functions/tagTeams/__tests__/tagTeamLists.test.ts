@@ -75,12 +75,12 @@ describe('tag team lists', () => {
     expect(team.player2Name).toBe('Kane');
   });
 
-  it('keeps Unknown only when there is no name anywhere', async () => {
+  it('says Former member when there is no name anywhere', async () => {
     await addTeam('gone-1', 'gone-2', {});
 
     const [team] = await rows(getTagTeams);
 
-    expect(team.player1Name).toBe('Unknown');
+    expect(team.player1Name).toBe('Former member');
   });
 
   it('prefers the live player name', async () => {

@@ -4,7 +4,7 @@ import {
   type FormResult as SharedFormResult,
 } from '../../lib/stats/recentFormAndStreak';
 import { tallyResults, type WinLossDrawRecord } from '../../lib/stats/record';
-import { resolveBilledName } from '../../lib/needsWrestler';
+import { FORMER_MEMBER, resolveBilledName } from '../../lib/needsWrestler';
 import { isWithinLifetime } from '../../lib/stats/lifetime';
 import { compareMatchesNewestFirst } from '../../lib/recentForm';
 
@@ -149,7 +149,7 @@ export function resolveMemberName(
   player: { name?: string | null } | undefined,
   storedWrestlerName: string | undefined,
 ): string {
-  return player?.name?.trim() || resolveBilledName(storedWrestlerName, null, 'Unknown');
+  return player?.name?.trim() || resolveBilledName(storedWrestlerName, null, FORMER_MEMBER);
 }
 
 /**
