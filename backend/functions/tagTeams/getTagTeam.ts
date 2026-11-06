@@ -191,11 +191,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const activeTagTeamRecords = activeTagTeams as unknown as TagTeamRecord[];
 
     // Find all matches where both members competed on the same team
-    const teamMatches = findTagTeamMatches(
-      completedMatches,
-      tagTeam.player1Id,
-      tagTeam.player2Id
-    );
+    const teamMatches = findTagTeamMatches(completedMatches, tagTeam);
 
     // Compute standings info
     const record = computeTagTeamRecord(teamMatches);

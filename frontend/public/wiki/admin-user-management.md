@@ -7,7 +7,7 @@ The **User Management** page allows you to manage user accounts and assign roles
 | Role | Description |
 |------|-------------|
 | **Admin** | Full access to all management features, including the Danger Zone, public pages, and authenticated features |
-| **Moderator** | Access to all management features except the Danger Zone (no Generate Sample Data or Clear All Data). Can manage players, matches, championships, challenges, promos, and other day-to-day admin tasks. Assignable only by a Super Admin. |
+| **Moderator** | Access to the day-to-day management tabs, such as players, matches, championships, challenges, promos and rivalries. User Management, Heat Tunables, Feature Management and the Danger Zone are for full Admins only. So are deleting tag teams, factions and call-outs, dissolving a tag team, disbanding a faction, and expiring a call-out. Assignable only by a Super Admin. |
 | **Wrestler** | Access to personal profile page with stats, contender status, challenges, and promos |
 
 ## Assigning Roles

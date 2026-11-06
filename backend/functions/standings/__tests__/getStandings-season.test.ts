@@ -57,6 +57,13 @@ function makeSeasonEvent(seasonId: string): APIGatewayProxyEvent {
 describe('getStandings — season-specific (with seasonId)', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('rejects an over-long seasonId before it reaches the database', async () => {
+    const result = await getStandings(makeSeasonEvent('x'.repeat(3000)), ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    expect(mockSeasonStandingsListBySeason).not.toHaveBeenCalled();
+  });
+
   it('excludes players whose Cognito user lost the Wrestler role', async () => {
     mockSeasonStandingsListBySeason.mockResolvedValue([
       { seasonId: 's1', playerId: 'p1', wins: 5, losses: 2, draws: 1 },

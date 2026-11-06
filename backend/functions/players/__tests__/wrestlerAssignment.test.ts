@@ -343,6 +343,68 @@ describe('updatePlayer FK transitions', () => {
   });
 });
 
+// ─── updatePlayer clears with no wrestler change ────────────────────
+
+describe('updatePlayer clearing plain fields', () => {
+  async function seedPlayer() {
+    const division = await repos.leagueOps.divisions.create({ name: 'Raw' });
+    const player = await repos.roster.players.create({ name: 'Plain', currentWrestler: 'Edge' });
+    await repos.roster.players.update(player.playerId, {
+      divisionId: division.divisionId,
+      alignment: 'heel',
+      alternateWrestler: 'Christian',
+    });
+    return player.playerId;
+  }
+
+  const save = (playerId: string, body: Record<string, unknown>) =>
+    updatePlayer(
+      makeEvent({ httpMethod: 'PUT', pathParameters: { playerId }, body: JSON.stringify(body) }),
+      ctx,
+      cb,
+    );
+
+  it.each([
+    ['divisionId', ''],
+    ['divisionId', null],
+    ['alignment', ''],
+    ['alignment', null],
+    ['alternateWrestler', ''],
+    ['alternateWrestler', null],
+  ])('removes %s when sent %j', async (field, value) => {
+    const playerId = await seedPlayer();
+
+    const result = await save(playerId, { [field]: value });
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body)).not.toHaveProperty(field);
+    expect(await repos.roster.players.findById(playerId)).not.toHaveProperty(field);
+  });
+
+  it('saves other fields alongside a clear and leaves the rest alone', async () => {
+    const playerId = await seedPlayer();
+
+    await save(playerId, { name: 'Renamed', divisionId: '' });
+
+    const stored = await repos.roster.players.findById(playerId);
+    expect(stored).toMatchObject({
+      name: 'Renamed',
+      alignment: 'heel',
+      alternateWrestler: 'Christian',
+      currentWrestler: 'Edge',
+    });
+    expect(stored).not.toHaveProperty('divisionId');
+  });
+
+  it('keeps a field that is not in the request', async () => {
+    const playerId = await seedPlayer();
+
+    await save(playerId, { name: 'Renamed' });
+
+    expect(await repos.roster.players.findById(playerId)).toMatchObject({ alignment: 'heel' });
+  });
+});
+
 // ─── deletePlayer releases wrestlers ────────────────────────────────
 
 describe('deletePlayer releases assigned wrestlers', () => {

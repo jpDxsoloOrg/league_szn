@@ -8,10 +8,7 @@ type LocaleTree = { [key: string]: string | LocaleTree };
  * Keys known to be incomplete today. These lists may only shrink: an entry
  * that stops being true fails the test, so remove it when the key is added.
  */
-const MISSING_FROM_GERMAN = [
-  'rivalries.request.myWrestler',
-  'rivalries.request.opponentWrestler',
-];
+const MISSING_FROM_GERMAN: string[] = [];
 
 const MISSING_FROM_ENGLISH: string[] = [];
 

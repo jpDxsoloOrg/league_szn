@@ -6,8 +6,9 @@ import { isPlayerVisible } from '../../lib/needsWrestler';
 import { computeRecentFormAndStreak } from '../../lib/recentForm';
 import { getVerifiedCaller } from '../../lib/optionalCaller';
 import { toPublicPlayer } from '../../lib/publicPlayer';
+import { rejectOverlongQuery } from '../../lib/router';
 
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = rejectOverlongQuery(async (event) => {
   try {
     const { competition: { matches }, roster: { players, overalls }, season: { standings: seasonStandings } } = getRepositories();
     const seasonId = event.queryStringParameters?.seasonId;
@@ -122,4 +123,4 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     console.error('Error fetching standings:', err);
     return serverError('Failed to fetch standings');
   }
-};
+});

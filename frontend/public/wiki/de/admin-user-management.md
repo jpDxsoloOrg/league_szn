@@ -7,7 +7,7 @@ Die Seite **Benutzerverwaltung** ermöglicht die Verwaltung von Benutzerkonten u
 | Rolle | Beschreibung |
 |--------|---------------|
 | **Admin** | Vollzugriff auf alle Verwaltungsfunktionen, inkl. Gefahrenzone, öffentliche Seiten und geschützte Funktionen |
-| **Moderator** | Zugriff auf alle Verwaltungsfunktionen außer der Gefahrenzone (kein Beispieldaten erzeugen oder Alle Daten löschen). Kann Spieler, Matches, Meisterschaften, Herausforderungen, Promos und andere alltägliche Admin-Aufgaben verwalten. Kann nur von einem Super-Admin zugewiesen werden. |
+| **Moderator** | Zugriff auf die Tabs für die tägliche Verwaltung, etwa Spieler, Matches, Meisterschaften, Herausforderungen, Promos und Rivalitäten. Benutzerverwaltung, Heat-Einstellungen, Funktionsverwaltung und die Gefahrenzone bleiben vollen Admins vorbehalten. Das gilt auch für das Löschen von Tag Teams, Faktionen und Call-outs, das Auflösen von Tag Teams und Faktionen sowie das Ablaufenlassen von Call-outs. Kann nur von einem Super-Admin zugewiesen werden. |
 | **Wrestler** | Zugriff auf die persönliche Profilseite mit Statistiken, Herausforderer-Status, Herausforderungen und Promos |
 
 ## Rollen zuweisen

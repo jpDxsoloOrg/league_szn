@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context, Callback } from 'aws-lambda';
-import { createRouter, ADMIN_ONLY, STAFF, type RouteConfig } from '../router';
+import { createRouter, rejectOverlongQuery, ADMIN_ONLY, STAFF, type RouteConfig } from '../router';
 
 const ctx = {} as Context;
 const cb = (() => {}) as Callback<APIGatewayProxyResult>;
@@ -342,6 +342,62 @@ describe('createRouter', () => {
     });
   });
 
+
+  describe('over-long query values', () => {
+    const okResponse = { statusCode: 200, body: '{}' };
+    const routes = (handler: RouteConfig['handler']): ReadonlyArray<RouteConfig> => [
+      { method: 'GET', resource: '/things', handler, access: 'public' },
+      { method: 'GET', resource: '/staff-things', handler, access: STAFF },
+    ];
+    const withQuery = (value: string, resource = '/things') =>
+      makeEvent({ resource, queryStringParameters: { seasonId: value } });
+
+    it('returns 400 without running the handler', async () => {
+      const handler = vi.fn();
+      const router = createRouter(routes(handler as RouteConfig['handler']));
+
+      const result = await router(withQuery('x'.repeat(3000)), ctx, cb);
+
+      expect(result!.statusCode).toBe(400);
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('counts bytes, so multi-byte values cannot slip under the limit', async () => {
+      const handler = vi.fn();
+      const router = createRouter(routes(handler as RouteConfig['handler']));
+
+      const result = await router(withQuery('\u{1F600}'.repeat(300)), ctx, cb);
+
+      expect(result!.statusCode).toBe(400);
+    });
+
+    it('passes a value at the limit through', async () => {
+      const handler = vi.fn().mockResolvedValue(okResponse);
+      const router = createRouter(routes(handler as RouteConfig['handler']));
+
+      const result = await router(withQuery('x'.repeat(1024)), ctx, cb);
+
+      expect(result!.statusCode).toBe(200);
+    });
+
+    it('still answers an unverified caller with 401 on a protected route', async () => {
+      const handler = vi.fn();
+      const router = createRouter(routes(handler as RouteConfig['handler']));
+
+      const result = await router(withQuery('x'.repeat(3000), '/staff-things'), ctx, cb);
+
+      expect(result!.statusCode).toBe(401);
+    });
+
+    it('applies the same limit to a handler deployed without a router', async () => {
+      const handler = vi.fn().mockResolvedValue(okResponse);
+      const guarded = rejectOverlongQuery(handler as RouteConfig['handler']);
+
+      expect((await guarded(withQuery('x'.repeat(3000)), ctx, cb))!.statusCode).toBe(400);
+      expect(handler).not.toHaveBeenCalled();
+      expect((await guarded(withQuery('s1'), ctx, cb))!.statusCode).toBe(200);
+    });
+  });
 
   describe('over-long path ids', () => {
     const routes = (handler: RouteConfig['handler']): ReadonlyArray<RouteConfig> => [

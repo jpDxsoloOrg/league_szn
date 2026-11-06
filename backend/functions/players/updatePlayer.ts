@@ -197,7 +197,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // release/assign atomically. Otherwise fall through to the simple update.
     // A clear also goes this way even with nothing to release: only the staged
     // write removes an attribute, and the simple update skips undefined values.
-    if (toRelease.length > 0 || toAssign.length > 0 || clearCurrent || clearAlternate) {
+    const removesAttribute = Object.values(patch).some(
+      (value) => value === undefined || value === null,
+    );
+    if (toRelease.length > 0 || toAssign.length > 0 || removesAttribute) {
       const releasable = await filterExistingWrestlerIds(toRelease);
       await runInTransaction(async (tx) => {
         for (const wrestlerId of releasable) {

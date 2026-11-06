@@ -5,6 +5,7 @@ import { authenticate } from '../../lib/authenticate';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { findHiddenPlayerIds } from '../../lib/needsWrestler';
 import { isPromoArchived } from '../../lib/promoArchive';
+import { rejectOverlongQuery } from '../../lib/router';
 import { filterListedRivalries } from './rivalryVisibility';
 import type {
   Rivalry,
@@ -54,7 +55,7 @@ function parseLimit(raw: string | undefined): number {
  * persists `rivalryId` directly on those records this can switch to a
  * cheaper direct lookup without changing the response shape.
  */
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = rejectOverlongQuery(async (event) => {
   try {
     const qp = event.queryStringParameters || {};
     const eventId = qp.eventId || undefined;
@@ -269,7 +270,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     console.error('Error building rivalry activity feed:', err);
     return serverError('Failed to load rivalry activity');
   }
-};
+});
 
 function isCallerParticipant(
   rivalry: Rivalry,
