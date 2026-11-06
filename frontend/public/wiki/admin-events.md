@@ -22,8 +22,11 @@ Build the card on the event's own page:
 1. Open the event from **Events**
 2. Click **Add Match** to schedule a match straight onto the card
 3. Click **Edit** on a match to change it, including its card position (pre-show, opener, midcard, co-main, main event)
-4. Click **Delete** on a match to remove it
-5. To put an existing standalone match on a card, edit it under **Standalone Matches** and choose the event
+4. Use the up and down arrows on a match to change the running order
+5. Click **Delete** on a match to remove it
+6. To put an existing standalone match on a card, edit it under **Standalone Matches** and choose the event
+
+The arrows appear for Admins and Moderators while the event is upcoming or in progress. Each move saves straight away, and if a save fails the match goes back to where it was. Pre-show matches and main card matches each move within their own section. Moving a match leaves its card position label as it is, so use **Edit** to change that or to bring a match into or out of the pre-show.
 
 Championship matches are highlighted with a special badge on the card.
 

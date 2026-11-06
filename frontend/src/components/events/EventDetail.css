@@ -166,6 +166,26 @@
   font-size: 0.9375rem;
 }
 
+.event-match__order {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.event-match__move {
+  min-width: var(--touch-target);
+  padding: 0;
+}
+
+/* Disabled while a save runs, but kept focusable so the keyboard stays put. */
+.event-match__move[aria-disabled='true'],
+.event-match__move[aria-disabled='true']:hover {
+  border-color: var(--color-hairline);
+  background-color: transparent;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .event-match__faceoff {
   position: relative;
   display: grid;

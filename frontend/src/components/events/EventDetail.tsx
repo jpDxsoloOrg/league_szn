@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, CalendarClock, Lock, LockOpen, Mic, Pencil, Plus, Trash2, Trophy } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, CalendarClock, Lock, LockOpen, Mic, Pencil, Plus, Trash2, Trophy } from 'lucide-react';
 import { eventsApi, matchesApi, playersApi, tagTeamsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../ui/toastContext';
 import type {
   MatchDesignation,
   EventStatus,
@@ -38,8 +39,10 @@ import { StarRating } from '../matches/StarRating';
 import { RateMatchWidget } from '../matches/RateMatchWidget';
 import { MotnToggleButton } from '../matches/MotnToggleButton';
 import { formatCalendarDate, toCalendarDate } from '../../utils/dateUtils';
-import { formatMatchType } from '../../utils/matchDisplay';
+import { describeSides, formatMatchType, groupMatchSides } from '../../utils/matchDisplay';
 import { DESIGNATION_LABEL_KEYS, EVENT_STATUS_TONES, EVENT_TYPE_TONES } from './eventDisplay';
+import { findMoveTarget, isPreShowCard, swapCards } from './cardOrder';
+import type { CardMoveDirection } from './cardOrder';
 import '../posterHero.css';
 import './EventDetail.css';
 
@@ -56,6 +59,7 @@ export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const {
     isAdminOrModerator,
     isAuthenticated,
@@ -87,6 +91,14 @@ export default function EventDetail() {
   const [matchActionError, setMatchActionError] = useState<string | null>(null);
   const [deletingMatchId, setDeletingMatchId] = useState<string | null>(null);
 
+  // Card order saves. The refs are read outside render: one blocks a second
+  // save and holds back event reads, the other two put focus back after a move.
+  const [savingCardOrder, setSavingCardOrder] = useState(false);
+  const cardSaveRef = useRef<Promise<void> | null>(null);
+  const cardSaveCountRef = useRef(0);
+  const moveControlsRef = useRef(new Map<string, HTMLButtonElement>());
+  const moveFocusRef = useRef<{ matchId: string; direction: CardMoveDirection } | null>(null);
+
   // Check-in state
   const [myCheckIn, setMyCheckIn] = useState<EventCheckInRow | null>(null);
   const [checkInSummary, setCheckInSummary] = useState<EventCheckInSummary | null>(null);
@@ -96,7 +108,15 @@ export default function EventDetail() {
     if (!eventId) return;
     try {
       setLoading(true);
-      const data = await eventsApi.getById(eventId, signal);
+      // A read that overlaps a card save can return the old order and undo the
+      // move on screen, so wait the save out and read again if one started.
+      let data: EventWithMatches;
+      let savesSeen: number;
+      do {
+        while (cardSaveRef.current) await cardSaveRef.current;
+        savesSeen = cardSaveCountRef.current;
+        data = await eventsApi.getById(eventId, signal);
+      } while (savesSeen !== cardSaveCountRef.current || cardSaveRef.current);
       setEventData(data);
       setError(null);
     } catch (err) {
@@ -284,6 +304,48 @@ export default function EventDetail() {
     }
   };
 
+  const handleMoveMatch = async (index: number, direction: CardMoveDirection) => {
+    if (!eventData || !eventId || cardSaveRef.current) return;
+    const { matchCards: previousCards, enrichedMatches: previousMatches } = eventData;
+    const movedMatch = previousMatches[index];
+    const targetIndex = findMoveTarget(previousMatches, index, direction);
+    if (!movedMatch || targetIndex === null) return;
+
+    // enrichedMatches is built 1:1 from matchCards, so indexes line up. The save
+    // starts from the stored cards: matchCards replaces the whole list, and the
+    // enriched rows carry match data that must not be written back.
+    const matchCards = swapCards(previousCards, index, targetIndex);
+    const moveFocus = { matchId: movedMatch.matchId, direction };
+
+    const saveOrder = async () => {
+      try {
+        await eventsApi.update(eventId, { matchCards });
+      } catch {
+        moveFocusRef.current = moveFocus;
+        setEventData((current) => current && {
+          ...current,
+          matchCards: previousCards,
+          enrichedMatches: previousMatches,
+        });
+        showToast(t('events.detail.moveMatchError', 'Could not save the new match order.'), 'error');
+      }
+    };
+
+    moveFocusRef.current = moveFocus;
+    setSavingCardOrder(true);
+    setEventData((current) => current && {
+      ...current,
+      matchCards,
+      enrichedMatches: swapCards(previousMatches, index, targetIndex),
+    });
+    cardSaveCountRef.current += 1;
+    const pendingSave = saveOrder();
+    cardSaveRef.current = pendingSave;
+    await pendingSave;
+    cardSaveRef.current = null;
+    setSavingCardOrder(false);
+  };
+
   const handleRequestDeleteEvent = () => {
     if (!eventData) return;
     setManageError(null);
@@ -436,6 +498,18 @@ export default function EventDetail() {
     [eventId, myCheckIn, checkInSummary]
   );
 
+  // A swap can re-insert the focused row, and a match that reaches the end of
+  // its section disables the control just used, so focus is set explicitly.
+  useLayoutEffect(() => {
+    const pendingFocus = moveFocusRef.current;
+    if (!pendingFocus) return;
+    moveFocusRef.current = null;
+    const { matchId, direction } = pendingFocus;
+    const usedControl = moveControlsRef.current.get(`${matchId}:${direction}`);
+    const otherControl = moveControlsRef.current.get(`${matchId}:${direction === 'up' ? 'down' : 'up'}`);
+    (usedControl && !usedControl.disabled ? usedControl : otherControl)?.focus();
+  }, [eventData]);
+
   const scheduledMatchesById = useMemo(() => {
     const map = new Map<string, Match>();
     for (const m of scheduledMatches) {
@@ -492,12 +566,8 @@ export default function EventDetail() {
 
   // Separate pre-show and main card matches
   const enrichedMatches = eventData.enrichedMatches || [];
-  const preShowMatches = enrichedMatches.filter(
-    (m) => m.designation === 'pre-show'
-  );
-  const mainCardMatches = enrichedMatches.filter(
-    (m) => m.designation !== 'pre-show'
-  );
+  const preShowMatches = enrichedMatches.filter(isPreShowCard);
+  const mainCardMatches = enrichedMatches.filter((m) => !isPreShowCard(m));
 
   // MSL-04: a wrestler can only hold one slot across the whole event card.
   // If the viewing user already occupies a slot in any match on this event,
@@ -529,6 +599,54 @@ export default function EventDetail() {
     setMatchActionError(null);
   };
 
+  const canAddMatch = isAdminOrModerator && (eventData.status === 'upcoming' || eventData.status === 'in-progress');
+
+  const describeMatch = (match: typeof enrichedMatches[number]) => {
+    if (!match.matchData) return t('events.detail.matchTBA', 'Match TBA');
+    const { matchFormat, participants, teams } = match.matchData;
+    if (participants.length === 0) return formatMatchType(matchFormat, t);
+    const sides = groupMatchSides(participants, (participant) => participant.playerId, teams, matchFormat);
+    return describeSides(
+      sides.map((side) => side.map((participant) => participant.wrestlerName)),
+      t('common.vs'),
+    );
+  };
+
+  const renderMoveControls = (match: typeof enrichedMatches[number]) => {
+    const index = enrichedMatches.indexOf(match);
+    // Saves replace the whole list, so one must not overlap a match delete.
+    const locked = savingCardOrder || !!deletingMatchId;
+    const matchName = describeMatch(match);
+    const renderControl = (direction: CardMoveDirection) => {
+      const controlKey = `${match.matchId}:${direction}`;
+      return (
+        <Button
+          ref={(control) => {
+            if (control) moveControlsRef.current.set(controlKey, control);
+            else moveControlsRef.current.delete(controlKey);
+          }}
+          className="event-match__move"
+          variant="secondary"
+          size="sm"
+          icon={direction === 'up' ? <ArrowUp aria-hidden="true" size={18} /> : <ArrowDown aria-hidden="true" size={18} />}
+          aria-label={direction === 'up'
+            ? t('events.detail.moveMatchUp', { match: matchName, defaultValue: 'Move {{match}} up' })
+            : t('events.detail.moveMatchDown', { match: matchName, defaultValue: 'Move {{match}} down' })}
+          disabled={findMoveTarget(enrichedMatches, index, direction) === null}
+          // Not the native attribute: that would drop keyboard focus mid-save.
+          aria-disabled={locked || undefined}
+          onClick={locked ? undefined : () => void handleMoveMatch(index, direction)}
+        />
+      );
+    };
+    return (
+      <div className="event-match__order">
+        {renderControl('up')}
+        {renderControl('down')}
+      </div>
+    );
+  };
+
   const renderMatchEntry = (
     match: typeof enrichedMatches[number],
   ) => {
@@ -542,6 +660,8 @@ export default function EventDetail() {
         isCompleted={match.matchData?.status === 'completed'}
         isAdmin={isAdminOrModerator}
         isDeleting={deletingMatchId === match.matchId}
+        isSavingOrder={savingCardOrder}
+        orderControls={canAddMatch ? renderMoveControls(match) : undefined}
         onRecordResult={isAdminOrModerator && isScheduled ? () => handleRecordResult(match.matchId) : undefined}
         onEdit={isAdminOrModerator && isScheduled ? () => handleEditMatch(match.matchId) : undefined}
         onDelete={isAdminOrModerator ? () => handleRequestDeleteMatch(match.matchId) : undefined}
@@ -584,7 +704,6 @@ export default function EventDetail() {
     );
   };
 
-  const canAddMatch = isAdminOrModerator && (eventData.status === 'upcoming' || eventData.status === 'in-progress');
   const goToSchedule = () => navigate('/admin/schedule', {
     state: { fromEvent: { eventId: eventData.eventId, name: eventData.name, date: eventData.date } },
   });
@@ -873,6 +992,10 @@ interface MatchEntryProps {
   isCompleted: boolean;
   isAdmin?: boolean;
   isDeleting?: boolean;
+  /** True while the card order saves. A delete or edit must not overlap that write. */
+  isSavingOrder?: boolean;
+  /** Staff controls for moving this match up and down the card. */
+  orderControls?: ReactNode;
   onRecordResult?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -888,6 +1011,8 @@ function MatchEntry({
   isCompleted,
   isAdmin = false,
   isDeleting = false,
+  isSavingOrder = false,
+  orderControls,
   onRecordResult,
   onEdit,
   onDelete,
@@ -908,6 +1033,7 @@ function MatchEntry({
         <div className="event-match__header">
           {designationBadge}
           <span className="event-match__type">{t('events.detail.matchTBA', 'Match TBA')}</span>
+          {orderControls}
         </div>
       </article>
     );
@@ -932,6 +1058,7 @@ function MatchEntry({
         {isCompleted && matchData.starRating != null && (
           <StarRating starRating={matchData.starRating} ratingsCount={matchData.ratingsCount} size="sm" />
         )}
+        {orderControls}
       </div>
 
       <MatchSides
@@ -968,17 +1095,17 @@ function MatchEntry({
       {isAdmin && (onRecordResult || onEdit || onDelete) && (
         <div className="event-match__actions">
           {onRecordResult && (
-            <Button size="sm" onClick={onRecordResult} disabled={isDeleting}>
+            <Button size="sm" onClick={onRecordResult} disabled={isDeleting || isSavingOrder}>
               {t('events.detail.recordResult', 'Record Result')}
             </Button>
           )}
           {onEdit && (
-            <Button variant="secondary" size="sm" icon={<Pencil aria-hidden="true" size={16} />} onClick={onEdit} disabled={isDeleting}>
+            <Button variant="secondary" size="sm" icon={<Pencil aria-hidden="true" size={16} />} onClick={onEdit} disabled={isDeleting || isSavingOrder}>
               {t('events.detail.editMatch', 'Edit')}
             </Button>
           )}
           {onDelete && (
-            <Button variant="ghost" size="sm" icon={<Trash2 aria-hidden="true" size={16} />} onClick={onDelete} loading={isDeleting}>
+            <Button variant="ghost" size="sm" icon={<Trash2 aria-hidden="true" size={16} />} onClick={onDelete} loading={isDeleting} disabled={isSavingOrder}>
               {t('events.detail.deleteMatch', 'Delete')}
             </Button>
           )}
