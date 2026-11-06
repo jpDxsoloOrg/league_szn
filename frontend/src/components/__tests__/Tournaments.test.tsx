@@ -48,6 +48,7 @@ vi.mock('react-i18next', () => ({
         'tournaments.table.d': 'D',
         'tournaments.table.points': 'Pts',
         'common.unknown': 'Unknown',
+        'common.formerMember': 'Former member',
         'common.tbd': 'TBD',
         'common.vs': 'vs',
         'common.error': 'Error',
@@ -258,5 +259,15 @@ describe('Tournaments', () => {
     renderTournaments();
 
     expect(await screen.findByText('Hidden Player')).toBeInTheDocument();
+  });
+
+  it('calls a winner with no player record a former member', async () => {
+    mockGetAllTournaments.mockResolvedValue([{ ...completedTournament, winner: 'deleted' }]);
+    mockGetAllPlayers.mockResolvedValue(mockPlayers);
+
+    renderTournaments();
+
+    expect(await screen.findByText('Former member')).toBeInTheDocument();
+    expect(screen.queryByText('Unknown')).not.toBeInTheDocument();
   });
 });

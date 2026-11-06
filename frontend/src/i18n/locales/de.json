@@ -46,7 +46,8 @@
     "sortAscending": "{{column}}, aufsteigend",
     "sortDescending": "{{column}}, absteigend",
     "showMore": "Mehr anzeigen",
-    "showingCount": "{{shown}} von {{total}} angezeigt"
+    "showingCount": "{{shown}} von {{total}} angezeigt",
+    "formerMember": "Ehemaliges Mitglied"
   },
   "notFound": {
     "title": "Seite nicht gefunden",
@@ -1231,8 +1232,7 @@
     },
     "bestMatches": {
       "title": "Beste Kämpfe",
-      "noData": "Noch keine bewerteten Kämpfe. Bewerten Sie Kämpfe beim Eintragen der Ergebnisse.",
-      "unknownPlayer": "Unbekannter Spieler"
+      "noData": "Noch keine bewerteten Kämpfe. Bewerten Sie Kämpfe beim Eintragen der Ergebnisse."
     },
     "loadFailed": "Diese Statistiken konnten nicht geladen werden"
   },

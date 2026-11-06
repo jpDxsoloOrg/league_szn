@@ -28,7 +28,7 @@ export default function BestMatches() {
 
   const participantName = (playerId: string): string => {
     const player = data?.directory.find((entry) => entry.playerId === playerId);
-    return player?.currentWrestler ?? player?.name ?? t('statistics.bestMatches.unknownPlayer');
+    return player?.currentWrestler ?? player?.name ?? t('common.formerMember');
   };
 
   const renderBody = () => {

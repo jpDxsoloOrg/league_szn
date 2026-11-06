@@ -46,6 +46,7 @@ vi.mock('react-i18next', () => ({
         'championships.table.daysHeld': 'Days Held',
         'championships.table.defenses': 'Defenses',
         'common.unknown': 'Unknown',
+        'common.formerMember': 'Former member',
         'common.vacant': 'Vacant',
         'common.current': 'Current',
         'common.days': 'days',
@@ -189,6 +190,24 @@ describe('Championships', () => {
     expect(await within(dialog).findByText('Retired Legend')).toBeInTheDocument();
     expect(within(dialog).getByText('60 days')).toBeInTheDocument();
     expect(mockGetHistory).toHaveBeenCalledWith('c1', expect.any(AbortSignal));
+  });
+
+  it('calls a reign with no player record a former member', async () => {
+    const user = userEvent.setup();
+    mockGetAllChampionships.mockResolvedValue(mockChampionships);
+    mockGetAllPlayers.mockResolvedValue(mockPlayers);
+    mockGetAllDivisions.mockResolvedValue([]);
+    mockGetHistory.mockResolvedValue([
+      { championshipId: 'c1', champion: 'deleted', wonDate: '2024-01-01', lostDate: '2024-03-01', matchId: 'm1', daysHeld: 60 },
+    ]);
+
+    renderChampionships();
+
+    await user.click(await screen.findByRole('button', { name: 'View History: World Heavyweight Championship' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'World Heavyweight Championship History' });
+    expect(await within(dialog).findByText('Former member')).toBeInTheDocument();
+    expect(within(dialog).queryByText('Unknown')).not.toBeInTheDocument();
   });
 
   it('reports a failed history load inside the dialog', async () => {

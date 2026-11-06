@@ -123,7 +123,7 @@ export default function Championships() {
   const playerImages = useMemo(() => new Map(players.map((player) => [player.playerId, player.imageUrl])), [players]);
 
   const getHolderName = (holder: string | string[]) =>
-    toIds(holder).map((playerId) => playerNames.get(playerId) ?? t('common.unknown')).join(' & ');
+    toIds(holder).map((playerId) => playerNames.get(playerId) ?? t('common.formerMember')).join(' & ');
 
   const historyColumns: DataTableColumn<ChampionshipReign>[] = [
     {
@@ -195,7 +195,7 @@ export default function Championships() {
                 meta={(
                   <span className="title-item__meta">
                     {holderIds.map((playerId) => (
-                      <Avatar key={playerId} size="sm" src={playerImages.get(playerId)} name={playerNames.get(playerId) ?? t('common.unknown')} />
+                      <Avatar key={playerId} size="sm" src={playerImages.get(playerId)} name={playerNames.get(playerId) ?? t('common.formerMember')} />
                     ))}
                     {championship.type !== 'singles' && t('championships.tagTeam')}
                     <span className="title-item__history">

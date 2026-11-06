@@ -203,8 +203,15 @@ export default function MatchSearch() {
     return map;
   }, [seasons]);
 
+  // A deleted player's row is gone, so the name pinned on the match goes first.
   const getPlayerName = useCallback(
-    (id: string) => playerMap.get(id)?.name ?? t('common.unknown'),
+    (match: Match, id: string) => {
+      const player = playerMap.get(id);
+      if (player) return player.name;
+      // With no directory at all, nobody can be called a former member.
+      if (playerMap.size === 0) return t('common.unknown');
+      return match.slots?.find((slot) => slot.playerId === id)?.wrestlerNameSnapshot ?? t('common.formerMember');
+    },
     [playerMap, t],
   );
 
@@ -212,7 +219,7 @@ export default function MatchSearch() {
     const query = searchText.trim().toLowerCase();
     if (!query) return matches;
     return matches.filter((match) => {
-      const participantNames = match.participants.map((pid) => getPlayerName(pid)).join(' ');
+      const participantNames = match.participants.map((pid) => getPlayerName(match, pid)).join(' ');
       const stipulationName = match.stipulationId
         ? stipulationMap.get(match.stipulationId)?.name ?? ''
         : '';
@@ -279,7 +286,7 @@ export default function MatchSearch() {
         match.winners?.includes(pid) ? 'match-winner' :
         match.losers?.includes(pid) ? 'match-loser' : ''
       }>
-        {getPlayerName(pid)}
+        {getPlayerName(match, pid)}
       </span>
     );
     return (
@@ -440,7 +447,7 @@ export default function MatchSearch() {
                     size="sm"
                     aria-label={t('matchSearch.detailsFor', {
                       names: match.participants.length > 0
-                        ? match.participants.map(getPlayerName).join(', ')
+                        ? match.participants.map((pid) => getPlayerName(match, pid)).join(', ')
                         : describeEmptyCard(match),
                     })}
                     onClick={() => setDetailMatchId(match.matchId)}

@@ -17,7 +17,7 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => ({
       'common.vs': 'vs',
       'statistics.bestMatches.noData': 'No rated matches yet.',
-      'statistics.bestMatches.unknownPlayer': 'Unknown player',
+      'common.formerMember': 'Former member',
       'match.matchOfTheNightBadge': 'Match of the Night',
     }[key] ?? key),
   }),
@@ -51,7 +51,7 @@ describe('BestMatches', () => {
 
     renderComponent();
 
-    expect(await screen.findByText('The Champ vs Dwayne vs Unknown player')).toBeInTheDocument();
+    expect(await screen.findByText('The Champ vs Dwayne vs Former member')).toBeInTheDocument();
     expect(screen.getByText('Jun 1, 2024')).toBeInTheDocument();
     expect(screen.getByText('Match of the Night')).toBeInTheDocument();
   });

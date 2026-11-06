@@ -63,6 +63,8 @@ vi.mock('react-i18next', () => ({
         'matchSearch.noResults': 'No Matches Found',
         'matchSearch.noResultsFiltered': 'No matches match your current filters.',
         'matchSearch.noMatches': 'No matches have been recorded yet.',
+        'common.formerMember': 'Former member',
+        'common.unknown': 'Unknown',
         'common.all': 'All',
         'common.scheduled': 'Scheduled',
         'common.completed': 'Completed',
@@ -306,6 +308,47 @@ describe('MatchSearch', () => {
     await screen.findAllByText('John Cena');
     expect(document.querySelector('[aria-current="true"]')).toHaveTextContent('Completed');
     expect(mockGetAllMatches.mock.calls[0][0]).toBeUndefined();
+  });
+
+  describe('with a participant whose player record is gone', () => {
+    const deletedMatch = {
+      ...mockMatches[0],
+      participants: ['p1', 'gone-snapshot', 'gone-blank'],
+      slots: [
+        { slotId: 's1', position: 0, playerId: 'p1' },
+        { slotId: 's2', position: 1, playerId: 'gone-snapshot', wrestlerNameSnapshot: 'Hollywood Hogan' },
+        { slotId: 's3', position: 2, playerId: 'gone-blank' },
+      ],
+    };
+
+    beforeEach(() => {
+      mockGetAllMatches.mockResolvedValue([deletedMatch]);
+    });
+
+    it('uses the name pinned on the match, then the former member label', async () => {
+      renderWithRouter();
+
+      expect(await screen.findByText('Hollywood Hogan')).toBeInTheDocument();
+      expect(screen.getByText('Former member')).toBeInTheDocument();
+      expect(screen.queryByText('Unknown')).not.toBeInTheDocument();
+    });
+
+    it('finds the match by the pinned name', async () => {
+      renderWithRouter();
+      await screen.findByText('Hollywood Hogan');
+
+      fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'hogan' } });
+
+      expect(document.querySelectorAll('.match-row')).toHaveLength(1);
+    });
+
+    it('does not call anyone a former member when the directory failed to load', async () => {
+      mockGetAllPlayers.mockRejectedValue(new Error('down'));
+      renderWithRouter();
+
+      expect((await screen.findAllByText('Unknown')).length).toBeGreaterThan(0);
+      expect(screen.queryByText('Former member')).not.toBeInTheDocument();
+    });
   });
 
   describe('with more matches than one page', () => {
