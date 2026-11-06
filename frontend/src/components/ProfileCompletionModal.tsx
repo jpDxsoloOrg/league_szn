@@ -1,12 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Check, Circle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { profileApi, wrestlersApi } from '../services/api';
 import type { Player, Wrestler, WrestlerMove } from '../types';
 import { MAX_MOVE_NAME_LENGTH } from '../types';
+import { VALIDATION } from '../constants';
 import { WRESTLER_NAME_ENTRY_MODE } from '../config/wrestlerNameEntry';
 import { buildWrestlerOptionGroups } from '../utils/wrestlerOptions';
+import { isNeedsWrestler } from '../utils/needsWrestler';
 import { useAnnouncementOpen } from '../hooks/useAnnouncementOpen';
 import {
   PROFILE_SETUP_SNOOZE_KEY,
@@ -14,6 +17,10 @@ import {
   hasSetupGaps,
   isProfileSetupExcludedPath,
 } from '../utils/profileSetup';
+import Button from './ui/Button';
+import Modal from './ui/Modal';
+import { useToast } from './ui/toastContext';
+import './MeForms.css';
 import './ProfileCompletionModal.css';
 
 interface MissingFields {
@@ -48,18 +55,22 @@ function writeSnoozed(): void {
   }
 }
 
+const FIRST_FIELD = 'input, select';
+
 /**
- * Nudges a signed-in wrestler to finish the parts of their profile that
- * other people depend on: a display name and PSN ID so they can be found,
- * and a wrestler plus at least one signature and one finisher so commentary
- * can call their matches. Only the missing items expand into inputs; the
- * rest show as done. "Remind me later" snoozes for the browser session.
+ * Prompts a signed-in player to finish the parts of their profile other
+ * people depend on. The wrestler name comes first: a player without one can
+ * sign in but stays hidden from public screens until they save a name. A
+ * display name and PSN ID let others find them, and a signature and finisher
+ * let commentary call their matches. Only the missing items expand into
+ * inputs. "Remind me later" snoozes for the browser session.
  */
 export default function ProfileCompletionModal() {
   const { t } = useTranslation();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, refreshProfile } = useAuth();
+  const { showToast } = useToast();
   const location = useLocation();
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
   // Announcements go first; this modal appears once they are dismissed.
   const announcementOpen = useAnnouncementOpen();
   const [profile, setProfile] = useState<Player | null>(null);
@@ -75,6 +86,7 @@ export default function ProfileCompletionModal() {
   const [finisher, setFinisher] = useState<WrestlerMove>({ gameName: '', customName: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nowVisible, setNowVisible] = useState(false);
 
   const textWrestlerEntry = WRESTLER_NAME_ENTRY_MODE === 'text';
   const excluded = isProfileSetupExcludedPath(location.pathname);
@@ -111,10 +123,12 @@ export default function ProfileCompletionModal() {
         const needed = next.name || next.psnId || next.wrestler || next.signature || next.finisher;
         setShow(needed);
         if (needed && next.wrestler && !textWrestlerEntry) {
-          wrestlersApi
-            .getAll()
-            .then((list) => { if (mounted) setWrestlers(list); })
-            .catch(() => { /* dropdown stays empty; the profile link still works */ });
+          try {
+            const list = await wrestlersApi.getAll();
+            if (mounted) setWrestlers(list);
+          } catch {
+            // The dropdown stays empty; the profile link still works.
+          }
         }
       } catch {
         // No profile or error — don't show modal
@@ -137,20 +151,32 @@ export default function ProfileCompletionModal() {
     setDismissed(false);
     setProfile(null);
     setMissing(NONE_MISSING);
+    setNowVisible(false);
   }, [isAuthenticated]);
 
-  // Move focus into the dialog: the first input if there is one, else the
-  // heading, so keyboard and screen-reader users land inside aria-modal.
+  // The dialog mounts in a portal, so focus lands from the form's ref. The
+  // shared Modal leaves focus alone once something inside it already has it.
+  const attachForm = useCallback((form: HTMLFormElement | null) => {
+    formRef.current = form;
+    form?.querySelector<HTMLElement>(FIRST_FIELD)?.focus();
+  }, []);
+
+  // A partial save removes the inputs it filled, so move on to the next one.
   useEffect(() => {
-    if (!show || excluded || announcementOpen) return;
-    const root = dialogRef.current;
-    if (!root) return;
-    const first = root.querySelector<HTMLElement>('input, select');
-    (first ?? root.querySelector<HTMLElement>('h2'))?.focus();
-  }, [show, excluded, missing, announcementOpen]);
+    formRef.current?.querySelector<HTMLElement>(FIRST_FIELD)?.focus();
+  }, [missing]);
 
   const handleSubmit = useCallback(async () => {
     setError(null);
+
+    // The backend stores this as "no wrestler", so saving it would look like
+    // success while leaving the player hidden.
+    const typedWrestler = wrestlerName.trim();
+    if (missing.wrestler && textWrestlerEntry && typedWrestler && isNeedsWrestler(typedWrestler)) {
+      setError(t('me.setup.placeholderRejected'));
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -158,7 +184,7 @@ export default function ProfileCompletionModal() {
       if (missing.name && name.trim()) updates.name = name.trim();
       if (missing.psnId && psnId.trim()) updates.psnId = psnId.trim();
       if (missing.wrestler) {
-        if (textWrestlerEntry && wrestlerName.trim()) updates.currentWrestler = wrestlerName.trim();
+        if (textWrestlerEntry && typedWrestler) updates.currentWrestler = typedWrestler;
         if (!textWrestlerEntry && wrestlerId) updates.currentWrestlerId = wrestlerId;
       }
       // New moves are appended to whatever is already stored (minus any
@@ -185,6 +211,8 @@ export default function ProfileCompletionModal() {
       }
 
       const updated = await profileApi.updateMyProfile(updates);
+      // Pages reading the wrestler from AuthContext must see the new name.
+      await refreshProfile();
 
       // Anything still missing keeps the modal open with the done items ticked.
       const gaps = getProfileSetupGaps(updated);
@@ -195,20 +223,24 @@ export default function ProfileCompletionModal() {
         signature: gaps.needsSignature,
         finisher: gaps.needsFinisher,
       };
+      const becameVisible = missing.wrestler && !still.wrestler;
       setProfile(updated);
       setMissing(still);
+      if (becameVisible) setNowVisible(true);
       if (!still.name && !still.psnId && !hasSetupGaps(gaps)) {
         setShow(false);
         setDismissed(true);
+        if (becameVisible) showToast(t('me.setup.nowVisible'), 'success');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('profileModal.saveFailed'));
     } finally {
       setSaving(false);
     }
-  }, [missing, name, psnId, wrestlerName, wrestlerId, signature, finisher, profile, textWrestlerEntry, t]);
+  }, [missing, name, psnId, wrestlerName, wrestlerId, signature, finisher, profile, textWrestlerEntry, t, refreshProfile, showToast]);
 
   const handleSnooze = () => {
+    if (saving) return;
     writeSnoozed();
     setShow(false);
     setDismissed(true);
@@ -223,15 +255,25 @@ export default function ProfileCompletionModal() {
   if (!show || !profile || excluded || announcementOpen) return null;
 
   const setupItems = missing.wrestler || missing.signature || missing.finisher;
-  const showChecklist = setupItems || !missing.name || !missing.psnId;
+  const wrestlerLabel = textWrestlerEntry ? t('me.setup.wrestlerLabel') : t('profileModal.pickWrestler');
+
+  let title = t('profileModal.title');
+  let description = t('profileModal.subtitle');
+  if (missing.wrestler) {
+    title = t('me.setup.title');
+    description = t('me.setup.hiddenNotice');
+  } else if (setupItems) {
+    title = t('profileModal.setupTitle');
+    description = t('profileModal.setupSubtitle');
+  }
 
   const renderStatus = (done: boolean) => (
     <span
-      className={`profile-modal-status ${done ? 'profile-modal-status--done' : 'profile-modal-status--todo'}`}
+      className={`profile-setup__status profile-setup__status--${done ? 'done' : 'todo'}`}
       role="img"
       aria-label={done ? t('profileModal.done') : t('profileModal.todo')}
     >
-      {done ? '✓' : '✗'}
+      {done ? <Check aria-hidden="true" size={16} /> : <Circle aria-hidden="true" size={12} />}
     </span>
   );
 
@@ -241,7 +283,7 @@ export default function ProfileCompletionModal() {
     value: WrestlerMove,
     onChange: (next: WrestlerMove) => void,
   ) => (
-    <div className="profile-modal-move-row">
+    <div className="profile-setup__moves me-field">
       <input
         type="text"
         id={`${id}-game`}
@@ -263,145 +305,134 @@ export default function ProfileCompletionModal() {
     </div>
   );
 
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape' && !saving) handleSnooze();
-  };
-
   return (
-    <div
-      className="profile-modal-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="profile-modal-title"
-      ref={dialogRef}
-      onKeyDown={onKeyDown}
-    >
-      <div className="profile-modal">
-        <h2 id="profile-modal-title" tabIndex={-1}>
-          {setupItems ? t('profileModal.setupTitle') : t('profileModal.title')}
-        </h2>
-        <p className="profile-modal-subtitle">
-          {setupItems ? t('profileModal.setupSubtitle') : t('profileModal.subtitle')}
-        </p>
+    <Modal open onClose={handleSnooze} title={title} description={description}>
+      <form
+        ref={attachForm}
+        className="profile-setup__form"
+        onSubmit={(e) => { e.preventDefault(); void handleSubmit(); }}
+      >
+        {nowVisible && (
+          <p className="me-alert me-alert--success" role="status">{t('me.setup.nowVisible')}</p>
+        )}
 
-        <form
-          className={`profile-modal-form${showChecklist ? ' profile-modal-form--checklist' : ''}`}
-          onSubmit={(e) => { e.preventDefault(); void handleSubmit(); }}
-        >
-          {missing.name && (
-            <div className="form-group">
+        <fieldset className="profile-setup__item">
+          <legend className="profile-setup__item-head">
+            {renderStatus(!missing.wrestler)}
+            <span>{wrestlerLabel}</span>
+          </legend>
+          {missing.wrestler && (
+            <div className="profile-setup__item-body">
+              <div className="me-field">
+                {textWrestlerEntry ? (
+                  <input
+                    type="text"
+                    id="modal-wrestler"
+                    aria-label={wrestlerLabel}
+                    aria-describedby="modal-wrestler-hint"
+                    value={wrestlerName}
+                    maxLength={VALIDATION.MAX_NAME_LENGTH}
+                    onChange={(e) => setWrestlerName(e.target.value)}
+                    placeholder={t('profileModal.wrestlerPlaceholder')}
+                  />
+                ) : (
+                  <select
+                    id="modal-wrestler-id"
+                    aria-label={wrestlerLabel}
+                    aria-describedby="modal-wrestler-hint"
+                    value={wrestlerId}
+                    onChange={(e) => setWrestlerId(e.target.value)}
+                  >
+                    <option value="">{t('profileModal.wrestlerPlaceholder')}</option>
+                    {buildWrestlerOptionGroups(wrestlers, undefined, undefined).map((group) => (
+                      <optgroup key={group.promotion} label={group.promotion}>
+                        {group.wrestlers.map((w) => (
+                          <option key={w.wrestlerId} value={w.wrestlerId}>{w.name}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <p className="me-hint" id="modal-wrestler-hint">
+                {textWrestlerEntry ? t('me.setup.wrestlerHint') : t('me.setup.wrestlerHintRoster')}
+              </p>
+            </div>
+          )}
+        </fieldset>
+
+        {missing.name && (
+          <div className="profile-setup__item">
+            <div className="me-field">
               <label htmlFor="modal-name">{t('profileModal.playerName')}</label>
               <input
                 type="text"
                 id="modal-name"
                 value={name}
+                maxLength={VALIDATION.MAX_NAME_LENGTH}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t('profileModal.playerNamePlaceholder')}
               />
             </div>
-          )}
+          </div>
+        )}
 
-          {missing.psnId && (
-            <div className="form-group">
+        {missing.psnId && (
+          <div className="profile-setup__item">
+            <div className="me-field">
               <label htmlFor="modal-psnId">{t('profileModal.psnId')}</label>
               <input
                 type="text"
                 id="modal-psnId"
                 value={psnId}
+                maxLength={VALIDATION.MAX_NAME_LENGTH}
                 onChange={(e) => setPsnId(e.target.value)}
                 placeholder={t('profileModal.psnIdPlaceholder')}
               />
             </div>
-          )}
-
-          <div className="profile-modal-checklist">
-            <fieldset className="profile-modal-item">
-              <legend className="profile-modal-item-head">
-                {renderStatus(!missing.wrestler)}
-                <span>{t('profileModal.pickWrestler')}</span>
-              </legend>
-              {missing.wrestler && (
-                <div className="profile-modal-item-body">
-                  <p className="profile-modal-hint">{t('profileModal.listedAsNeedsWrestler')}</p>
-                  {textWrestlerEntry ? (
-                    <input
-                      type="text"
-                      id="modal-wrestler"
-                      aria-label={t('profileModal.pickWrestler')}
-                      value={wrestlerName}
-                      onChange={(e) => setWrestlerName(e.target.value)}
-                      placeholder={t('profileModal.wrestlerPlaceholder')}
-                    />
-                  ) : (
-                    <select
-                      id="modal-wrestler-id"
-                      aria-label={t('profileModal.pickWrestler')}
-                      value={wrestlerId}
-                      onChange={(e) => setWrestlerId(e.target.value)}
-                    >
-                      <option value="">{t('profileModal.wrestlerPlaceholder')}</option>
-                      {buildWrestlerOptionGroups(wrestlers, undefined, undefined).map((group) => (
-                        <optgroup key={group.promotion} label={group.promotion}>
-                          {group.wrestlers.map((w) => (
-                            <option key={w.wrestlerId} value={w.wrestlerId}>{w.name}</option>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              )}
-            </fieldset>
-
-            <fieldset className="profile-modal-item">
-              <legend className="profile-modal-item-head">
-                {renderStatus(!missing.signature)}
-                <span>{t('profileModal.addSignature')}</span>
-              </legend>
-              {missing.signature && (
-                <div className="profile-modal-item-body">
-                  {moveRow('modal-signature', t('profileModal.addSignature'), signature, setSignature)}
-                </div>
-              )}
-            </fieldset>
-
-            <fieldset className="profile-modal-item">
-              <legend className="profile-modal-item-head">
-                {renderStatus(!missing.finisher)}
-                <span>{t('profileModal.addFinisher')}</span>
-              </legend>
-              {missing.finisher && (
-                <div className="profile-modal-item-body">
-                  {moveRow('modal-finisher', t('profileModal.addFinisher'), finisher, setFinisher)}
-                </div>
-              )}
-            </fieldset>
           </div>
+        )}
 
-          {error && (
-            <div className="error-message" role="alert">{error}</div>
+        <fieldset className="profile-setup__item">
+          <legend className="profile-setup__item-head">
+            {renderStatus(!missing.signature)}
+            <span>{t('profileModal.addSignature')}</span>
+          </legend>
+          {missing.signature && (
+            <div className="profile-setup__item-body">
+              {moveRow('modal-signature', t('profileModal.addSignature'), signature, setSignature)}
+            </div>
           )}
+        </fieldset>
 
-          <div className="profile-modal-actions">
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={saving}
-              aria-busy={saving}
-            >
-              {saving ? t('common.saving') : t('profileModal.saveAndContinue')}
-            </button>
-          </div>
-          <div className="profile-modal-links">
-            <Link to="/profile" className="profile-modal-link" onClick={handleOpenProfile}>
+        <fieldset className="profile-setup__item">
+          <legend className="profile-setup__item-head">
+            {renderStatus(!missing.finisher)}
+            <span>{t('profileModal.addFinisher')}</span>
+          </legend>
+          {missing.finisher && (
+            <div className="profile-setup__item-body">
+              {moveRow('modal-finisher', t('profileModal.addFinisher'), finisher, setFinisher)}
+            </div>
+          )}
+        </fieldset>
+
+        {error && <p className="me-alert me-alert--error" role="alert">{error}</p>}
+
+        <div className="profile-setup__actions">
+          <div className="profile-setup__links">
+            <Link to="/profile" className="profile-setup__link" onClick={handleOpenProfile}>
               {t('profileModal.openFullProfile')}
             </Link>
-            <button type="button" className="profile-modal-link profile-modal-link--muted" onClick={handleSnooze} disabled={saving}>
+            <Button variant="ghost" onClick={handleSnooze} disabled={saving}>
               {t('profileModal.remindLater')}
-            </button>
+            </Button>
           </div>
-        </form>
-      </div>
-    </div>
+          <Button type="submit" loading={saving}>
+            {saving ? t('common.saving') : t('profileModal.saveAndContinue')}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import type {
   InvitationListResponse,
   MatchInvitation,
@@ -29,6 +30,7 @@ const {
   authState: {
     isWrestler: true as boolean,
     playerId: 'me' as string | null,
+    currentWrestler: 'My-Wrestler' as string | null,
   },
   presenceState: {
     presenceEnabled: false as boolean,
@@ -132,6 +134,7 @@ describe('FindMatchWidget', () => {
     vi.clearAllMocks();
     authState.isWrestler = true;
     authState.playerId = 'me';
+    authState.currentWrestler = 'My-Wrestler';
     presenceState.presenceEnabled = false;
     mockGetInvitations.mockResolvedValue(emptyInvitations);
     mockGetQueue.mockResolvedValue([]);
@@ -340,5 +343,29 @@ describe('FindMatchWidget', () => {
     });
     await user.click(cta);
     expect(mockLeaveQueue).toHaveBeenCalledTimes(1);
+  });
+
+  it('prompts a player with no wrestler name and does not poll', () => {
+    authState.currentWrestler = 'Needs Wrestler';
+    render(
+      <MemoryRouter>
+        <FindMatchWidget />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('me.matchmaking.needsNameBody')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'me.matchmaking.needsNameAction' })).toHaveAttribute('href', '/profile');
+    expect(mockGetQueue).not.toHaveBeenCalled();
+  });
+
+  it('tells the player when a challenge fails', async () => {
+    mockCreateInvitation.mockRejectedValueOnce(new Error('nope'));
+    mockGetQueue.mockResolvedValue([makeQueueEntry('them', 'Them', 'THE UNDERTAKER')]);
+    render(<FindMatchWidget />);
+
+    const challengeBtn = await screen.findByRole('button', { name: 'findMatch.widget.challenge' });
+    await userEvent.setup().click(challengeBtn);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('me.matchmaking.actionFailed');
   });
 });

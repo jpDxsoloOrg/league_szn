@@ -5,6 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
+import { ShieldAlert } from 'lucide-react';
+import EmptyState from './ui/EmptyState';
 import Skeleton from './ui/Skeleton';
 import './Wiki.css';
 
@@ -207,19 +209,23 @@ export default function WikiArticle() {
   }
   if (accessDenied || (entry?.adminOnly && !isAdminOrModerator)) {
     return (
-      <div className="access-denied">
-        <h2>{t('common.accessDenied', 'Access Denied')}</h2>
-        <p>{t('wiki.adminOnlyArticle', 'You don\'t have permission to view this article.')}</p>
-      </div>
+      <EmptyState
+        icon={<ShieldAlert aria-hidden="true" size={32} />}
+        title={t('common.accessDenied')}
+        description={t('wiki.adminOnlyArticle')}
+      />
     );
   }
   if (error || !content) {
     return <p className="wiki-error">{t('common.error')}: {error ?? 'No content'}</p>;
   }
 
-  const currentIndex = articles.findIndex((a) => a.slug === slug);
-  const prevEntry = currentIndex > 0 ? articles[currentIndex - 1] : null;
-  const nextEntry = currentIndex >= 0 && currentIndex < articles.length - 1 ? articles[currentIndex + 1] : null;
+  // Previous and next skip staff-only articles for readers who cannot open them.
+  const readableArticles = articles.filter((a) => !a.adminOnly || isAdminOrModerator);
+  const currentIndex = readableArticles.findIndex((a) => a.slug === slug);
+  const prevEntry = currentIndex > 0 ? readableArticles[currentIndex - 1] : null;
+  const nextEntry =
+    currentIndex >= 0 && currentIndex < readableArticles.length - 1 ? readableArticles[currentIndex + 1] : null;
 
   const repo = import.meta.env['VITE_GITHUB_REPO'] as string | undefined;
   const branch = (import.meta.env['VITE_GITHUB_BRANCH'] as string | undefined) ?? 'main';

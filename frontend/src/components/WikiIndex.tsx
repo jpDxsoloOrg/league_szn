@@ -2,7 +2,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Fuse from 'fuse.js';
+import { ChevronRight, SearchX } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import Card from './ui/Card';
+import EmptyState from './ui/EmptyState';
+import PageHeader from './ui/PageHeader';
 import Skeleton from './ui/Skeleton';
 import './Wiki.css';
 
@@ -26,20 +30,21 @@ export default function WikiIndex() {
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    fetch('/wiki/index.json')
-      .then((res) => {
+    const loadIndex = async () => {
+      try {
+        const res = await fetch('/wiki/index.json');
         if (!res.ok) throw new Error('Failed to load wiki index');
-        return res.json();
-      })
-      .then((data: WikiArticleEntry[]) => {
+        const data: WikiArticleEntry[] = await res.json();
         setArticles(Array.isArray(data) ? data : []);
         setError(null);
-      })
-      .catch((err: Error) => {
-        setError(err.message);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load wiki index');
         setArticles([]);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+    void loadIndex();
   }, []);
 
   const visibleArticles = useMemo(
@@ -86,9 +91,9 @@ export default function WikiIndex() {
 
   return (
     <>
-      <h2 className="wiki-index-title">{t('wiki.indexTitle')}</h2>
+      <PageHeader title={t('wiki.indexTitle')} />
       <label htmlFor="wiki-search" className="wiki-search-label">
-        <span className="visually-hidden">{t('wiki.searchPlaceholder')}</span>
+        <span className="sr-only">{t('wiki.searchPlaceholder')}</span>
         <input
           id="wiki-search"
           type="search"
@@ -96,22 +101,24 @@ export default function WikiIndex() {
           placeholder={t('wiki.searchPlaceholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          aria-label={t('wiki.searchPlaceholder')}
           autoComplete="off"
         />
       </label>
       {filteredArticles.length > 0 ? (
-        <ul className="wiki-index-list">
-          {filteredArticles.map((entry) => (
-            <li key={entry.slug}>
-              <Link to={`/guide/wiki/${entry.slug}`}>{t(entry.titleKey)}</Link>
-            </li>
-          ))}
-        </ul>
+        <Card padding="none">
+          <ul className="wiki-index-list">
+            {filteredArticles.map((entry) => (
+              <li key={entry.slug}>
+                <Link to={`/guide/wiki/${entry.slug}`}>
+                  {t(entry.titleKey)}
+                  <ChevronRight aria-hidden="true" size={18} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
       ) : (
-        <p className="wiki-search-no-results" role="status">
-          {t('wiki.noResults')}
-        </p>
+        <EmptyState icon={<SearchX aria-hidden="true" size={32} />} title={t('wiki.noResults')} />
       )}
     </>
   );

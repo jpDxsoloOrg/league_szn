@@ -123,9 +123,7 @@ describe('Signup', () => {
 
     expect(screen.queryByLabelText('Wrestler Name')).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/an admin sets you up with one/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText('me.auth.wrestlerAfterSignup')).toBeInTheDocument();
   });
 
   it('shows validation error when passwords do not match', async () => {

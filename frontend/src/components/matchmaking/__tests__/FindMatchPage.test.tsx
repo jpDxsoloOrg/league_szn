@@ -36,6 +36,7 @@ const {
   authState: {
     isWrestler: true as boolean,
     playerId: 'me' as string | null,
+    currentWrestler: 'My-Wrestler' as string | null,
   },
   presenceState: {
     presenceEnabled: false as boolean,
@@ -147,6 +148,7 @@ describe('FindMatchPage', () => {
     vi.clearAllMocks();
     authState.isWrestler = true;
     authState.playerId = 'me';
+    authState.currentWrestler = 'My-Wrestler';
     presenceState.presenceEnabled = false;
     mockGetQueue.mockResolvedValue(emptyQueue);
     mockGetOnline.mockResolvedValue(emptyOnline);
@@ -220,7 +222,7 @@ describe('FindMatchPage', () => {
     mockEnablePresence.mockResolvedValue(undefined);
     render(<FindMatchPage />);
     // When off, the toggle button label is `findMatch.appearOnline.on`.
-    const buttons = screen.getAllByRole('button', { name: 'findMatch.appearOnline.on' });
+    const buttons = screen.getAllByRole('button', { name: 'me.matchmaking.goOnline' });
     // The presence toggle button has class btn-presence; just pick the first one (only one button with this label exists in idle state).
     await user.click(buttons[0]);
     expect(mockEnablePresence).toHaveBeenCalledTimes(1);
@@ -232,7 +234,7 @@ describe('FindMatchPage', () => {
     mockDisablePresence.mockResolvedValue(undefined);
     render(<FindMatchPage />);
     // When on, toggle button label is `findMatch.appearOnline.off`.
-    const toggle = screen.getByRole('button', { name: 'findMatch.appearOnline.off' });
+    const toggle = screen.getByRole('button', { name: 'me.matchmaking.goOffline' });
     await user.click(toggle);
     expect(mockDisablePresence).toHaveBeenCalledTimes(1);
   });
@@ -372,5 +374,17 @@ describe('FindMatchPage', () => {
         screen.queryByRole('button', { name: 'findMatch.invitations.accept' })
       ).not.toBeInTheDocument();
     });
+  });
+
+  it('asks a player with no wrestler name for one instead of showing the queue', async () => {
+    authState.currentWrestler = 'Needs Wrestler';
+    render(<FindMatchPage />);
+
+    expect(screen.getByText('me.matchmaking.needsNameTitle')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'findMatch.queue.join' })).not.toBeInTheDocument();
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'me.matchmaking.needsNameAction' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/profile');
+    expect(mockGetQueue).not.toHaveBeenCalled();
   });
 });

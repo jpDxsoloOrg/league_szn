@@ -1,0 +1,30 @@
+/* FeatureRoute and AdminPanel reuse these guard states, so they load with the app shell. */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 1rem;
+  color: var(--color-text-secondary);
+}
+
+.access-denied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 1rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.access-denied h2 {
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+}
+
+.protected-route__denied {
+  min-height: 60vh;
+  justify-content: center;
+}

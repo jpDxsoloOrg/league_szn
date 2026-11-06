@@ -4,9 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import type { Player } from '../../types';
 
-const { mockGetMyProfile, mockUpdateMyProfile } = vi.hoisted(() => ({
+const { mockGetMyProfile, mockUpdateMyProfile, mockRefreshProfile, mockShowToast } = vi.hoisted(() => ({
   mockGetMyProfile: vi.fn(),
   mockUpdateMyProfile: vi.fn(),
+  mockRefreshProfile: vi.fn(),
+  mockShowToast: vi.fn(),
 }));
 
 vi.mock('../../services/api', () => ({
@@ -16,14 +18,16 @@ vi.mock('../../services/api', () => ({
 
 const authState = vi.hoisted(() => ({ isAuthenticated: true, isLoading: false, isAdminOrModerator: false }));
 vi.mock('../../contexts/AuthContext', () => ({
-  useAuth: () => authState,
+  useAuth: () => ({ ...authState, refreshProfile: mockRefreshProfile }),
+}));
+
+vi.mock('../ui/toastContext', () => ({
+  useToast: () => ({ showToast: mockShowToast }),
 }));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
-
-vi.mock('../ProfileCompletionModal.css', () => ({}));
 
 import ProfileCompletionModal from '../ProfileCompletionModal';
 import { setAnnouncementOpen } from '../../hooks/useAnnouncementOpen';
@@ -71,9 +75,10 @@ describe('ProfileCompletionModal — setup gate', () => {
     renderAt();
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('profileModal.setupTitle')).toBeInTheDocument();
-    expect(screen.getByLabelText('profileModal.pickWrestler')).toBeInTheDocument();
-    expect(screen.getByText('profileModal.listedAsNeedsWrestler')).toBeInTheDocument();
+    expect(screen.getByText('me.setup.title')).toBeInTheDocument();
+    expect(screen.getByText('me.setup.hiddenNotice')).toBeInTheDocument();
+    expect(screen.getByLabelText('me.setup.wrestlerLabel')).toBeInTheDocument();
+    expect(screen.getByText('me.setup.wrestlerHint')).toBeInTheDocument();
     // Signature/finisher are done → no inputs for them, ticked status.
     expect(screen.queryByLabelText(/profile\.moves\.gameName/)).not.toBeInTheDocument();
     expect(screen.getAllByLabelText('profileModal.done')).toHaveLength(2);
@@ -86,8 +91,8 @@ describe('ProfileCompletionModal — setup gate', () => {
 
     await screen.findByRole('dialog');
     // Wrestler is done: the item is listed (ticked) but has no input.
-    expect(screen.getByText('profileModal.pickWrestler')).toBeInTheDocument();
-    expect(screen.queryByLabelText('profileModal.pickWrestler')).not.toBeInTheDocument();
+    expect(screen.getByText('me.setup.wrestlerLabel')).toBeInTheDocument();
+    expect(screen.queryByLabelText('me.setup.wrestlerLabel')).not.toBeInTheDocument();
     const inputs = screen.getAllByLabelText(/profile\.moves\.gameName/);
     expect(inputs).toHaveLength(1); // finisher row only
     expect(inputs[0]).toHaveAccessibleName('profileModal.addFinisher — profile.moves.gameName');
@@ -121,7 +126,7 @@ describe('ProfileCompletionModal — setup gate', () => {
     renderAt();
 
     await screen.findByRole('dialog');
-    await userEvent.type(screen.getByLabelText('profileModal.pickWrestler'), 'Seth Rollins');
+    await userEvent.type(screen.getByLabelText('me.setup.wrestlerLabel'), 'Seth Rollins');
     const [sigGame] = screen.getAllByLabelText(/profile\.moves\.gameName/);
     await userEvent.type(sigGame, 'Sling Blade');
     await userEvent.click(screen.getByRole('button', { name: 'profileModal.saveAndContinue' }));
@@ -307,5 +312,89 @@ describe('ProfileCompletionModal — setup gate', () => {
 
     setAnnouncementOpen(false);
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+
+  describe('a player with no wrestler', () => {
+    const hidden = { ...complete, currentWrestler: 'Needs Wrestler' };
+
+    it('saves any typed name, refreshes auth, and confirms they are visible', async () => {
+      mockGetMyProfile.mockResolvedValue(hidden);
+      renderAt();
+      await screen.findByRole('dialog');
+
+      await userEvent.type(screen.getByLabelText('me.setup.wrestlerLabel'), '  The Masked Wonder 3000  ');
+      await userEvent.click(screen.getByRole('button', { name: 'profileModal.saveAndContinue' }));
+
+      await waitFor(() => expect(mockUpdateMyProfile).toHaveBeenCalledTimes(1));
+      expect(mockUpdateMyProfile.mock.calls[0][0]).toEqual({ currentWrestler: 'The Masked Wonder 3000' });
+      await waitFor(() => expect(mockRefreshProfile).toHaveBeenCalledTimes(1));
+      expect(mockRefreshProfile.mock.invocationCallOrder[0]).toBeGreaterThan(
+        mockUpdateMyProfile.mock.invocationCallOrder[0],
+      );
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(mockShowToast).toHaveBeenCalledWith('me.setup.nowVisible', 'success');
+    });
+
+    it('offers the wrestler field before anything else', async () => {
+      mockGetMyProfile.mockResolvedValue({ ...hidden, psnId: '', signatures: [], finishers: [] });
+      renderAt();
+      await screen.findByRole('dialog');
+
+      await waitFor(() => expect(screen.getByLabelText('me.setup.wrestlerLabel')).toHaveFocus());
+    });
+
+    it('confirms visibility while other items are still open', async () => {
+      mockGetMyProfile.mockResolvedValue({ ...hidden, finishers: [] });
+      mockUpdateMyProfile.mockImplementation(async (updates: Partial<Player>) => ({
+        ...complete,
+        finishers: [],
+        ...updates,
+      }));
+      renderAt();
+      await screen.findByRole('dialog');
+
+      await userEvent.type(screen.getByLabelText('me.setup.wrestlerLabel'), 'Seth Rollins');
+      await userEvent.click(screen.getByRole('button', { name: 'profileModal.saveAndContinue' }));
+
+      expect(await screen.findByText('me.setup.nowVisible')).toBeInTheDocument();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(mockRefreshProfile).toHaveBeenCalledTimes(1);
+      // The prompt moves on from the hidden message to the remaining setup.
+      expect(screen.getByText('profileModal.setupTitle')).toBeInTheDocument();
+      expect(screen.queryByText('me.setup.hiddenNotice')).not.toBeInTheDocument();
+    });
+
+    it('rejects the placeholder text instead of leaving them hidden with no message', async () => {
+      mockGetMyProfile.mockResolvedValue(hidden);
+      renderAt();
+      await screen.findByRole('dialog');
+
+      await userEvent.type(screen.getByLabelText('me.setup.wrestlerLabel'), 'needs wrestler');
+      await userEvent.click(screen.getByRole('button', { name: 'profileModal.saveAndContinue' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('me.setup.placeholderRejected');
+      expect(mockUpdateMyProfile).not.toHaveBeenCalled();
+    });
+
+    it('does not refresh auth when the save fails', async () => {
+      mockGetMyProfile.mockResolvedValue(hidden);
+      mockUpdateMyProfile.mockRejectedValueOnce(new Error('boom'));
+      renderAt();
+      await screen.findByRole('dialog');
+
+      await userEvent.type(screen.getByLabelText('me.setup.wrestlerLabel'), 'Seth Rollins');
+      await userEvent.click(screen.getByRole('button', { name: 'profileModal.saveAndContinue' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('boom');
+      expect(mockRefreshProfile).not.toHaveBeenCalled();
+    });
+
+    it('caps the name at the length the API accepts', async () => {
+      mockGetMyProfile.mockResolvedValue(hidden);
+      renderAt();
+      await screen.findByRole('dialog');
+
+      expect(screen.getByLabelText('me.setup.wrestlerLabel')).toHaveAttribute('maxlength', '100');
+    });
   });
 });

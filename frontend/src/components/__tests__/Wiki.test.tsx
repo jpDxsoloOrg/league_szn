@@ -161,4 +161,31 @@ describe('Wiki', () => {
     });
     expect(screen.queryByText('SPA')).not.toBeInTheDocument();
   });
+
+  it('leaves staff-only articles out of previous and next for other readers', async () => {
+    mockUseAuth.mockReturnValue({
+      isAdminOrModerator: false,
+      isAuthenticated: false,
+      isLoading: false,
+      hasRole: () => false,
+    });
+    (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string) => {
+      if (url === '/wiki/index.json') {
+        return {
+          ok: true,
+          json: async () => [
+            { slug: 'first', titleKey: 'wiki.articles.first', file: 'first.md' },
+            { slug: 'staff', titleKey: 'wiki.articles.staff', file: 'staff.md', adminOnly: true },
+            { slug: 'second', titleKey: 'wiki.articles.second', file: 'second.md' },
+          ],
+        };
+      }
+      return { ok: true, status: 200, text: async () => '# Article body' };
+    });
+    renderWikiRoutes('/guide/wiki/first');
+
+    await screen.findByText('Article body');
+    const articleNav = screen.getByRole('navigation', { name: 'wiki.articleNavLabel' });
+    expect(articleNav.querySelector('a')).toHaveAttribute('href', '/guide/wiki/second');
+  });
 });

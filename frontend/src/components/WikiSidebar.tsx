@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import './Wiki.css';
 
@@ -19,10 +20,16 @@ export default function WikiSidebar() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    fetch('/wiki/index.json')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: WikiArticleEntry[]) => setArticles(Array.isArray(data) ? data : []))
-      .catch(() => setArticles([]));
+    const loadIndex = async () => {
+      try {
+        const res = await fetch('/wiki/index.json');
+        const data: WikiArticleEntry[] = res.ok ? await res.json() : [];
+        setArticles(Array.isArray(data) ? data : []);
+      } catch {
+        setArticles([]);
+      }
+    };
+    void loadIndex();
   }, []);
 
   const visibleArticles = useMemo(
@@ -45,9 +52,9 @@ export default function WikiSidebar() {
         className="wiki-sidebar-toggle"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
-        aria-label={t('wiki.articlesLabel')}
       >
         {t('wiki.articlesLabel')}
+        <ChevronDown aria-hidden="true" size={18} />
       </button>
       <aside
         className={`wiki-sidebar ${open ? 'wiki-sidebar-open' : ''}`}
@@ -80,16 +87,6 @@ export default function WikiSidebar() {
           </ul>
         </nav>
       </aside>
-      {open ? (
-        <div
-          className="wiki-sidebar-overlay"
-          role="button"
-          tabIndex={0}
-          aria-label={t('common.close')}
-          onClick={() => setOpen(false)}
-          onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
-        />
-      ) : null}
     </>
   );
 }

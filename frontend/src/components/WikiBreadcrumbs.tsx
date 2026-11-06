@@ -22,15 +22,17 @@ export default function WikiBreadcrumbs() {
       setArticleTitle(null);
       return;
     }
-    fetch('/wiki/index.json')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: WikiArticleEntry[]) => {
-        const entry = Array.isArray(data)
-          ? data.find((e) => e.slug === slug)
-          : undefined;
+    const loadTitle = async () => {
+      try {
+        const res = await fetch('/wiki/index.json');
+        const data: WikiArticleEntry[] = res.ok ? await res.json() : [];
+        const entry = Array.isArray(data) ? data.find((e) => e.slug === slug) : undefined;
         setArticleTitle(entry ? t(entry.titleKey) : slug);
-      })
-      .catch(() => setArticleTitle(slug));
+      } catch {
+        setArticleTitle(slug);
+      }
+    };
+    void loadTitle();
   }, [slug, t]);
 
   return (

@@ -85,8 +85,8 @@ describe('ProtectedRoute', () => {
 
     renderProtectedRoute({ requiredRole: 'Admin' });
 
-    expect(screen.getByText('Access Denied')).toBeInTheDocument();
-    expect(screen.getByText("You don't have permission to view this page.")).toBeInTheDocument();
+    expect(screen.getByText('common.accessDenied')).toBeInTheDocument();
+    expect(screen.getByText('me.access.noPermission')).toBeInTheDocument();
     expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
   });
 
@@ -99,7 +99,7 @@ describe('ProtectedRoute', () => {
 
     renderProtectedRoute();
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
     expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
     expect(screen.queryByTestId('navigate')).not.toBeInTheDocument();
   });

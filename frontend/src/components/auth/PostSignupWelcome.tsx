@@ -1,67 +1,54 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import './Auth.css';
+import { useAuth } from '../../contexts/AuthContext';
+import Button from '../ui/Button';
+import AuthLayout from './AuthLayout';
+
+const RULE_GROUPS = [
+  { title: 'auth.rulesSectionMatchConduct', rules: ['auth.ruleFinToWin', 'auth.ruleRefBump', 'auth.ruleNoCheesing'] },
+  { title: 'auth.rulesSectionWrestler', rules: ['auth.ruleOverallMatch', 'auth.ruleSeasonLock', 'auth.ruleAlternate'] },
+  { title: 'auth.rulesSectionBooking', rules: ['auth.ruleClickAvailable', 'auth.rulePreShow', 'auth.ruleNoShow'] },
+  { title: 'auth.rulesSectionBasics', rules: ['auth.ruleReportResults', 'auth.ruleRespect', 'auth.ruleAskAdmin'] },
+];
 
 /**
- * Landing page shown after a user confirms their email. Lays out the
- * house rules and makes it clear the account is pending a manager's
- * approval before they can participate.
+ * Landing page shown after a user confirms their email. Tells them the one
+ * step left, entering a wrestler name, and lays out the house rules. Someone
+ * who confirmed from the sign-in screen is already signed in, so they go
+ * straight to the app, where the setup prompt opens.
  */
 export default function PostSignupWelcome() {
   const { t } = useTranslation();
+  const { isAuthenticated } = useAuth();
 
   return (
-    <div className="auth-container">
-      <div className="auth-card post-signup-welcome">
-        <h2>{t('auth.welcomeTitle')}</h2>
-        <p className="auth-subtitle">{t('auth.welcomeSubtitle')}</p>
-
-        <div className="welcome-pending" role="status">
-          <strong>{t('auth.welcomePendingTitle')}</strong>
-          <p>{t('auth.welcomePendingBody')}</p>
-        </div>
-
-        <h3>{t('auth.welcomeRulesTitle')}</h3>
-
-        <h4>{t('auth.rulesSectionMatchConduct')}</h4>
-        <ul className="welcome-rules">
-          <li>{t('auth.ruleFinToWin')}</li>
-          <li>{t('auth.ruleRefBump')}</li>
-          <li>{t('auth.ruleNoCheesing')}</li>
-        </ul>
-
-        <h4>{t('auth.rulesSectionWrestler')}</h4>
-        <ul className="welcome-rules">
-          <li>{t('auth.ruleOverallMatch')}</li>
-          <li>{t('auth.ruleSeasonLock')}</li>
-          <li>{t('auth.ruleAlternate')}</li>
-        </ul>
-
-        <h4>{t('auth.rulesSectionBooking')}</h4>
-        <ul className="welcome-rules">
-          <li>{t('auth.ruleClickAvailable')}</li>
-          <li>{t('auth.rulePreShow')}</li>
-          <li>{t('auth.ruleNoShow')}</li>
-        </ul>
-
-        <h4>{t('auth.rulesSectionBasics')}</h4>
-        <ul className="welcome-rules">
-          <li>{t('auth.ruleReportResults')}</li>
-          <li>{t('auth.ruleRespect')}</li>
-          <li>{t('auth.ruleAskAdmin')}</li>
-        </ul>
-
-        <p className="welcome-rules-link">
-          {t('auth.welcomeRulesLink')}{' '}
-          <Link to="/guide/wiki/getting-started">{t('auth.welcomeRulesLinkText')}</Link>
-        </p>
-
-        <div className="auth-footer welcome-footer">
-          <Link to="/login" className="btn-submit welcome-cta">
-            {t('auth.welcomeSignInCta')}
-          </Link>
-        </div>
+    <AuthLayout wide title={t('auth.welcomeTitle')} subtitle={t('auth.welcomeSubtitle')}>
+      <div className="me-alert me-alert--warn welcome-next" role="status">
+        <strong>{t('me.auth.welcomeNextTitle')}</strong>
+        {t('me.auth.welcomeNextBody')}
       </div>
-    </div>
+
+      <h2 className="welcome-section-title">{t('auth.welcomeRulesTitle')}</h2>
+
+      {RULE_GROUPS.map((group) => (
+        <section key={group.title}>
+          <h3 className="welcome-rules-group">{t(group.title)}</h3>
+          <ul className="welcome-rules">
+            {group.rules.map((rule) => (
+              <li key={rule}>{t(rule)}</li>
+            ))}
+          </ul>
+        </section>
+      ))}
+
+      <p className="welcome-rules-link">
+        {t('auth.welcomeRulesLink')}{' '}
+        <Link to="/guide/wiki/getting-started">{t('auth.welcomeRulesLinkText')}</Link>
+      </p>
+
+      <Button fullWidth to={isAuthenticated ? '/' : '/login'}>
+        {isAuthenticated ? t('me.auth.welcomeContinue') : t('auth.welcomeSignInCta')}
+      </Button>
+    </AuthLayout>
   );
 }

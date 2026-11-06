@@ -1,418 +1,111 @@
-/* ===========================
-   FindMatchWidget — Main Event Arena
-   =========================== */
-
 .fm-widget {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-card);
-  padding: 1.25rem 1.25rem 1.1rem;
+  box-sizing: border-box;
   width: 100%;
-}
-
-/* — Header — */
-.fm-widget-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.fm-widget-title {
-  margin: 0;
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--color-text-secondary);
-}
-
-.fm-widget-online-count {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-secondary);
-}
-
-/* — Status dots — */
-.fm-widget-status-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.fm-widget-status-dot--online {
-  background-color: var(--color-win);
-  box-shadow: 0 0 0 3px var(--tint-win);
-}
-
-.fm-widget-status-dot--offline {
-  background-color: var(--color-draw);
-}
-
-/* — Incoming challenges — */
-.fm-widget-invite-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.fm-widget-invite-card {
-  display: grid;
-  grid-template-columns: 40px 1fr auto;
-  gap: 0.75rem;
-  align-items: center;
-  background: transparent;
-  border-bottom: 1px solid var(--color-hairline);
-  padding: 0.7rem 0.8rem;
-  box-shadow: inset 2px 0 0 0 var(--color-cyan);
-}
-
-.fm-widget-invite-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.fm-widget-accept {
-  appearance: none;
-  border: none;
-  background: var(--color-cyan);
-  color: var(--color-on-accent);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 0.4rem 0.75rem;
-  border-radius: var(--radius-control);
-  cursor: pointer;
-  transition: filter 0.15s ease;
-}
-
-.fm-widget-accept:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
-
-.fm-widget-accept:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.fm-widget-decline {
-  appearance: none;
-  background: transparent;
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-hairline);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.32rem 0.6rem;
-  border-radius: var(--radius-control);
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.fm-widget-decline:hover:not(:disabled) {
-  background-color: var(--color-overlay-soft);
-  color: var(--color-text-secondary);
-}
-
-.fm-widget-decline:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.fm-widget-section-count--hot {
-  background: var(--tint-cyan);
-  color: var(--color-cyan);
-}
-
-/* — Section label — */
-.fm-widget-section-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--color-text-muted);
-}
-
-.fm-widget-section-count {
-  background: var(--color-surface-raised);
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-pill);
-  padding: 0.15rem 0.55rem;
-  font-size: 0.75rem;
-}
-
-/* — Error — */
-.fm-widget-error {
-  color: var(--color-loss);
-  font-size: 0.82rem;
-  padding: 0.5rem 0.7rem;
-  background: var(--tint-loss);
-  border-radius: var(--radius-control);
-}
-
-/* — Skeleton — */
-.fm-widget-skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.fm-widget-skeleton-row {
-  height: 64px;
-  border-radius: var(--radius-control);
-  background: linear-gradient(
-    90deg,
-    var(--color-surface-raised) 0%,
-    var(--color-hairline) 50%,
-    var(--color-surface-raised) 100%
-  );
-  background-size: 200% 100%;
-  animation: fm-widget-shimmer 1.6s ease-in-out infinite;
-}
-
-@keyframes fm-widget-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* — Empty state — */
-.fm-widget-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 1.5rem 0.5rem 1.25rem;
-  background: var(--color-surface-raised);
-  border-radius: var(--radius-control);
-}
-
-.fm-widget-empty-text {
-  margin: 0 0 0.35rem 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.fm-widget-empty-hint {
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-}
-
-/* — Queue list — */
-.fm-widget-queue-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  max-height: 360px;
-  overflow-y: auto;
-}
-
-.fm-widget-queue-card {
-  display: grid;
-  grid-template-columns: 40px 1fr auto;
-  gap: 0.75rem;
-  align-items: center;
-  background: transparent;
-  border-bottom: 1px solid var(--color-hairline);
-  padding: 0.7rem 0.8rem;
-  transition: background-color 0.15s ease;
-}
-
-.fm-widget-queue-card:hover {
-  background: var(--color-overlay-soft);
-}
-
-.fm-widget-queue-card--self {
-  background: var(--tint-cyan);
-  box-shadow: inset 2px 0 0 0 var(--color-cyan);
-}
-
-.fm-widget-queue-card--self:hover {
-  background: var(--color-overlay-soft);
-}
-
-.fm-widget-self-badge {
-  display: inline-block;
-  margin-left: 0.4rem;
-  background: var(--tint-cyan);
-  color: var(--color-cyan);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0.12rem 0.4rem;
-  border-radius: var(--radius-pill);
-  vertical-align: middle;
-}
-
-/* Avatar */
-.fm-widget-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--color-surface-raised);
-  color: var(--color-cyan);
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.fm-widget-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* Card meta */
-.fm-widget-queue-meta {
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
 }
 
-.fm-widget-wrestler-name {
-  font-family: var(--font-heading);
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--color-text);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.fm-widget-player-name {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.fm-widget-prefs {
+.fm-widget__header {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.fm-widget__title {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.fm-widget__label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 0.25rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fm-widget__list {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.fm-widget__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.fm-widget__row:first-child {
+  border-top: 0;
+}
+
+.fm-widget__meta {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.fm-widget__wrestler,
+.fm-widget__player {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.fm-widget__wrestler {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.fm-widget__player {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.fm-widget__prefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
   margin-top: 0.25rem;
 }
 
-.fm-widget-pref-chip {
-  background: var(--color-surface-raised);
-  color: var(--color-text-secondary);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.18rem 0.45rem;
-  border-radius: var(--radius-pill);
-}
-
-/* Card action */
-.fm-widget-queue-action {
+.fm-widget__actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
   gap: 0.25rem;
 }
 
-.fm-widget-challenge {
-  min-height: var(--touch-target);
-  appearance: none;
-  border: none;
-  background: var(--color-cyan);
-  color: var(--color-on-accent);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 0.4rem 0.75rem;
-  border-radius: var(--radius-control);
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.fm-widget-challenge:hover:not(:disabled) {
-  background: var(--color-cyan-bright);
-}
-
-.fm-widget-challenge:disabled {
-  background: var(--color-surface-raised);
-  color: var(--color-text-muted);
-  cursor: not-allowed;
-}
-
-.fm-widget-joined-ago {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-}
-
-/* — CTA — */
-.fm-widget-cta {
-  min-height: var(--touch-target);
-  appearance: none;
-  border: none;
-  background: var(--color-cyan);
-  color: var(--color-on-accent);
-  font-family: var(--font-heading);
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-control);
-  cursor: pointer;
-  transition: filter 0.15s ease, transform 0.1s ease;
-  margin-top: 0.4rem;
-}
-
-.fm-widget-cta:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
-
-.fm-widget-cta:active {
-  transform: translateY(1px);
-}
-
-.fm-widget-cta:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.fm-widget-cta-subtitle {
-  margin: 0;
+.fm-widget__empty {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0;
   text-align: center;
-  font-size: 0.75rem;
+}
+
+.fm-widget__empty-text {
+  margin: 0 0 0.25rem;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.fm-widget__hint {
+  margin: 0 0 0.75rem;
   color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.fm-widget__cta-note {
+  margin: 0.5rem 0 0;
+  text-align: center;
 }
