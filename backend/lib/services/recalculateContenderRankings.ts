@@ -96,10 +96,14 @@ async function recalculateChampionship(
     const oldPeakRank = oldData?.peakRank ?? Infinity;
     const peakRank = Math.min(oldPeakRank, ranking.rank);
 
-    // Counts weeks, not runs: a player already on top this week isn't counted again.
-    const alreadyCountedThisWeek = oldData?.rank === 1
+    // Counts weeks, not runs: a player already counted this week isn't counted
+    // again, even if they lost #1 and took it back. Rows from before
+    // lastTopWeek existed fall back to their last run.
+    const alreadyCountedThisWeek = oldData?.lastTopWeek === currentWeek || (
+      oldData?.rank === 1
       && Boolean(oldData.calculatedAt)
-      && weekPeriod(new Date(oldData.calculatedAt)) === currentWeek;
+      && weekPeriod(new Date(oldData.calculatedAt)) === currentWeek
+    );
     const weeksAtTop = ranking.rank === 1 && !alreadyCountedThisWeek
       ? (oldData?.weeksAtTop ?? 0) + 1
       : (oldData?.weeksAtTop ?? 0);
@@ -118,6 +122,7 @@ async function recalculateChampionship(
       previousRank: previousRank ?? null,
       peakRank,
       weeksAtTop,
+      lastTopWeek: ranking.rank === 1 ? currentWeek : oldData?.lastTopWeek,
       isOverridden: ranking.isOverridden || false,
       overrideType: ranking.overrideType || null,
       organicRank: ranking.organicRank || null,

@@ -51,6 +51,8 @@ export interface ContenderRankingInput {
   previousRank?: number | null;
   peakRank?: number;
   weeksAtTop?: number;
+  /** The week last counted in weeksAtTop, in the format `YYYY-WW`. */
+  lastTopWeek?: string;
   isOverridden?: boolean;
   overrideType?: string | null;
   organicRank?: number | null;
