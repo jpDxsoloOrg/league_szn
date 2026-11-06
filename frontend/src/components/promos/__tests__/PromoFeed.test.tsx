@@ -94,10 +94,11 @@ function renderFeed() {
 describe('PromoFeed', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseAuth.mockReturnValue({ isAuthenticated: false, playerId: null, isAdminOrModerator: false });
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, playerId: null, isAdminOrModerator: false, hasRole: () => false });
   });
 
   it('renders promo list with filter tabs after loading', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, playerId: 'p-1', isAdminOrModerator: false, hasRole: () => true });
     const promos = [
       makePromo({ wrestlerName: 'Undertaker', playerName: 'Mark' }),
       makePromo({
@@ -243,7 +244,7 @@ describe('PromoFeed', () => {
     unmount();
 
     const user = userEvent.setup();
-    mockUseAuth.mockReturnValue({ isAuthenticated: true, playerId: 'staff', isAdminOrModerator: true });
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, playerId: 'staff', isAdminOrModerator: true, hasRole: () => true });
     renderFeed();
     await user.click(await screen.findByLabelText('Show archived'));
 
@@ -253,6 +254,25 @@ describe('PromoFeed', () => {
         expect.any(AbortSignal)
       );
     });
+  });
+
+  it('shows guests the feed read-only, with nothing that needs a player', async () => {
+    mockGetAllPromos.mockResolvedValue([makePromo({ wrestlerName: 'Undertaker' })]);
+    renderFeed();
+
+    await screen.findByText('Undertaker');
+    expect(screen.getByRole('button', { name: 'Fire' })).toBeDisabled();
+    expect(screen.queryByRole('tab', { name: /Mentions/ })).not.toBeInTheDocument();
+  });
+
+  it('lets a wrestler react', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, playerId: 'p-1', isAdminOrModerator: false, hasRole: () => true });
+    mockGetAllPromos.mockResolvedValue([makePromo({ wrestlerName: 'Undertaker' })]);
+    renderFeed();
+
+    await screen.findByText('Undertaker');
+    expect(screen.getByRole('button', { name: 'Fire' })).toBeEnabled();
+    expect(screen.getByRole('tab', { name: /Mentions/ })).toBeInTheDocument();
   });
 
   it('shows a retry when the feed fails to load', async () => {

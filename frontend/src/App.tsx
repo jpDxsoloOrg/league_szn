@@ -218,12 +218,10 @@ function AppLayout() {
               </FeatureRoute>
             } />
 
-            {/* Promo Routes - Wrestler only, feature-gated */}
+            {/* Promo Routes - reading is public as the API is; cutting one is Wrestler only */}
             <Route path="/promos" element={
               <FeatureRoute feature="promos">
-                <ProtectedRoute requiredRole="Wrestler" guestPrompt={PROMOS_GUEST_PROMPT}>
-                  <PromoFeed />
-                </ProtectedRoute>
+                <PromoFeed />
               </FeatureRoute>
             } />
             <Route path="/promos/new" element={
@@ -235,9 +233,7 @@ function AppLayout() {
             } />
             <Route path="/promos/:promoId" element={
               <FeatureRoute feature="promos">
-                <ProtectedRoute requiredRole="Wrestler" guestPrompt={PROMOS_GUEST_PROMPT}>
-                  <PromoThread />
-                </ProtectedRoute>
+                <PromoThread />
               </FeatureRoute>
             } />
 

@@ -1852,8 +1852,8 @@
       "all": "Alle"
     },
     "guest": {
-      "title": "Promos sind für Liga-Mitglieder",
-      "description": "Melde dich an, um Promos zu lesen und eigene zu schreiben. Rivalitäten, Faktionen und Tag Teams bleiben für alle offen."
+      "title": "Promos schreiben ist Liga-Mitgliedern vorbehalten",
+      "description": "Melde dich an, um eine eigene Promo zu schreiben. Den Promo-Feed können alle lesen."
     }
   },
   "shows": {

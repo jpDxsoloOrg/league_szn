@@ -1854,8 +1854,8 @@
       "all": "All"
     },
     "guest": {
-      "title": "Promos are for league members",
-      "description": "Sign in to read promos and cut your own. Rivalries, factions and tag teams stay open to everyone."
+      "title": "Cutting promos is for league members",
+      "description": "Sign in to cut your own promo. Anyone can read the promo feed."
     }
   },
   "shows": {
