@@ -1825,7 +1825,7 @@
     },
     "guest": {
       "title": "Promos sind für Liga-Mitglieder",
-      "description": "Melde dich an, um Promos zu lesen und eigene zu schreiben. Rivalitäten, Factions und Tag Teams bleiben für alle offen."
+      "description": "Melde dich an, um Promos zu lesen und eigene zu schreiben. Rivalitäten, Faktionen und Tag Teams bleiben für alle offen."
     }
   },
   "shows": {
@@ -2503,7 +2503,7 @@
   "search": {
     "title": "League SZN durchsuchen",
     "open": "Suche öffnen",
-    "placeholder": "Wrestler, Events, Factions, Seiten suchen",
+    "placeholder": "Wrestler, Events, Faktionen, Seiten suchen",
     "results": "Suchergebnisse",
     "noResults": "Keine Treffer gefunden",
     "loadFailed": "Suchdaten konnten nicht geladen werden. Aktuell sind nur Seiten durchsuchbar.",
@@ -2512,7 +2512,7 @@
       "event": "Event",
       "championship": "Titel",
       "page": "Seite",
-      "faction": "Faction",
+      "faction": "Faktion",
       "tagTeam": "Tag Team",
       "tournament": "Turnier",
       "rivalry": "Rivalität"
