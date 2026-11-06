@@ -266,7 +266,7 @@
   border-radius: 6px;
   background-color: var(--color-surface-raised);
   color: var(--color-text);
-  font-size: 0.9em;
+  font-size: max(0.9em, 0.9375rem);
 }
 
 .wiki-content pre {

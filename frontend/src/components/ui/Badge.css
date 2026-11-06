@@ -24,7 +24,7 @@
 .ui-badge--pink {
   border-color: var(--color-pink);
   background-color: var(--tint-pink);
-  color: var(--color-loss);
+  color: var(--color-pink-on-tint);
 }
 
 .ui-badge--violet {
@@ -42,7 +42,7 @@
 .ui-badge--loss {
   border-color: var(--color-loss);
   background-color: var(--tint-loss);
-  color: var(--color-loss);
+  color: var(--color-pink-on-tint);
 }
 
 .ui-badge--draw {
