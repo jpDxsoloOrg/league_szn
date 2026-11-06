@@ -1,6 +1,6 @@
 # Wie Rivalitäts-Hitze funktioniert
 
-Die Hitze einer Rivalität reagiert darauf, wie ihre Kämpfe bewertet werden. Je heißer eine Rivalität, desto sichtbarer ist sie auf dem Hub und dem Dashboard.
+Die Hitze einer Rivalität reagiert darauf, wie ihre Kämpfe bewertet werden und welche Promos zu ihr gehören. Die Stufe steht auf der Karte und der Seite der Rivalität, und im Rivalitäten-Hub kannst du danach filtern.
 
 ## Die fünf Stufen
 
@@ -14,11 +14,15 @@ Die Hitze einer Rivalität reagiert darauf, wie ihre Kämpfe bewertet werden. Je
 
 ## Die Formel (für die Neugierigen)
 
+Das sind die Standardwerte. Ein Admin kann sie unter Heat-Einstellungen ändern.
+
 Jeder bewertete Kampf in einer Rivalität trägt Punkte zum Hitze-Wert bei:
 
 `Beitrag = (Kampf-Durchschnitt − 2,5) × Gewicht`
 
-wobei `Gewicht = min(Anzahl Bewertungen, 5)`. Die 2,5 ist der neutrale Drehpunkt — ein Kampf mit genau 2,5 Sternen verändert die Hitze nicht. Höhere Bewertungen erhöhen die Hitze; niedrigere senken sie.
+wobei `Gewicht = min(Anzahl Bewertungen, 5)`. Die 2,5 ist der neutrale Drehpunkt — ein Kampf mit genau 2,5 Sternen verändert die Hitze nicht. Höhere Bewertungen erhöhen die Hitze; niedrigere senken sie. Ein als **Kampf des Abends** markierter Kampf zählt 1,5-fach, in beide Richtungen.
+
+Auch der Rivalität zugeordnete Promos der Typen Ansage und Rivalität bringen Hitze. Jede bringt 3 Punkte. Feuer-Reaktionen bringen je 1,4 Punkte, Müll-Reaktionen ziehen je 1,4 ab. Es zählen nur die ersten 5 von jeder Art, und Reaktionen können die Summe einer Promo um höchstens 7 Punkte verändern. Vom Liga-Team ausgeblendete Promos zählen nicht.
 
 Die Summe wird auf `[−100, +100]` begrenzt und einer Stufe zugeordnet:
 
@@ -30,8 +34,8 @@ Die Summe wird auf `[−100, +100]` begrenzt und einer Stufe zugeordnet:
 | −59 … −20      | Kalt         |
 | ≤ −60          | Eiskalt      |
 
-Die Werte sind in `backend/lib/policies/rivalryHeat.ts` einstellbar — bitte melde einen Bug im GM-Channel, falls sich die Schwellenwerte falsch anfühlen.
+Wenn sich die Schwellenwerte falsch anfühlen, sag einem GM Bescheid.
 
-## Hinweise für Admins
+## Hinweise für das Liga-Team
 
-Admins können die Hitze einer Rivalität im Bereich Admin → Rivalitäten manuell überschreiben. Die nächste Nutzerbewertung eines Kampfes dieser Rivalität berechnet die Hitze von Grund auf neu und überschreibt jeden manuellen Wert. Mit der Schaltfläche „Aus Bewertungen neu berechnen" lässt sich dies ohne Wartezeit erzwingen.
+GMs können die Hitze einer Rivalität im Bereich Admin → Rivalitäten manuell überschreiben. Die nächste Bewertung, Änderung am Kampf des Abends oder zählende Promo-Aktivität in dieser Rivalität berechnet die Hitze von Grund auf neu und überschreibt jeden manuellen Wert. Mit der Schaltfläche „Aus Bewertungen neu berechnen" lässt sich dies ohne Wartezeit erzwingen.

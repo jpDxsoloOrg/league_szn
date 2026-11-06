@@ -1,23 +1,18 @@
 # Dashboard
 
-Das Dashboard ist Ihre Liga-Übersicht. Hier sehen Sie auf einen Blick, was los ist, und können in die wichtigsten Bereiche der Seite wechseln.
+Das Dashboard ist die erste Seite im Bereich Start. Es zeigt dir auf einen Blick, was in der Liga los ist.
 
-## Was Sie sehen
+## Was du siehst
 
-- **Aktuelle Champions** — Eine Leiste mit aktiven Meisterschaften und ihren aktuellen Titelinhabern. Klicken Sie auf eine Meisterschaft für Historie und Details.
-- **Kommende Events** — Die nächsten Termine im Kalender. So sehen Sie die nächste Show oder den nächsten PPV und können die volle Match-Card öffnen.
-- **Letzte Ergebnisse** — Die neuesten abgeschlossenen Matches mit Siegern und Ergebnissen. So bleiben Sie auf dem Laufenden, ohne die Events- oder Matches-Ansicht zu öffnen.
-- **Saison-Fortschritt** — Bei aktiver Saison sehen Sie, wie die Saison läuft (z. B. gespielte Matches, Tabellen-Schnappschuss).
-- **Schnell-Statistiken** — Highlights wie die meisten Siege, längste Serie, neuester Champion oder ähnliche Liga-Statistiken.
-- **Aktive Herausforderungen** — Ein Link oder Überblick zu aktuellen Herausforderungen, damit Sie reagieren oder neue stellen können.
+- **Nächstes Event** — Ganz oben steht das laufende Event, markiert mit **Live**. Läuft gerade nichts, siehst du das nächste Event mit Countdown und, sobald es gebucht ist, dem Main Event. Mit **Zur Match Card** öffnest du es. Gibt es noch kein angelegtes Event, siehst du die nächste geplante Show. Weitere laufende und kommende Events stehen darunter.
+- **Aktuelle Champions** — Aktive Titel mit ihren Champions, der Dauer der Regentschaft und den Titelverteidigungen. Ein Klick führt zur Titel-Seite.
+- **Letzte Ergebnisse** — Die fünf neuesten abgeschlossenen Matches. Ein Unentschieden wird als solches angezeigt. Ein Klick öffnet das zugehörige Event oder den Tab Matches, wenn das Match zu keinem Event gehört.
+- **Tabellenspitze** — Die fünf besten Spieler der aktiven Saison. Ohne aktive Saison oder solange darin noch niemand gekämpft hat, siehst du die Gesamtführenden. Spieler ohne Match erscheinen hier nicht.
+- **Match finden** — Ein schneller Weg ins Matchmaking. Das sehen nur angemeldete Wrestler.
+- **Meine Rivalitäten** — Bis zu drei deiner aktiven Rivalitäten, falls du welche hast.
+- **Saison-Fortschritt** — Name und Startdatum der aktiven Saison, dazu ein Fortschrittsbalken, wenn sie ein Enddatum hat.
+- **Schnellstatistiken** — Anzahl der Spieler, Matches dieser Saison, Matches gesamt, aktive Titel und der Spieler mit den meisten Siegen.
 
 ## Navigation
 
-Vom Dashboard aus erreichen Sie:
-
-- **Tabelle** — Vollständige Liga-Rangliste (Gesamt oder nach Saison).
-- **Events** — Kalender und Event-Details mit Matches und Ergebnissen.
-- **Meisterschaften** — Alle Titel, aktuelle Champions und Historie.
-- **Statistiken** — Leaderboards, Rekorde, Rivalitäten und mehr.
-
-Nutzen Sie das Hauptmenü oder die Links auf dem Dashboard. Mehr zu jedem Bereich finden Sie in den zugehörigen [Wiki](getting-started)-Artikeln.
+Die meisten Bereiche haben einen Link zur vollständigen Seite, zum Beispiel zu allen Titeln, allen Matches oder zur Tabelle. Alles andere erreichst du über die Bereiche in der Hauptnavigation. Unter [Erste Schritte](getting-started) steht, was in welchem Bereich liegt.

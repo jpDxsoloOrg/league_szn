@@ -1,59 +1,65 @@
 # Rivalries
 
-A **rivalry** is a long-form storyline between two wrestlers. Unlike a one-off challenge, a rivalry persists across multiple matches and weeks of storyline. The Rivalries Hub at `/rivalries` is the home for every active, archived, and pending rivalry in the league.
+A **rivalry** is a long-form storyline between two wrestlers. Unlike a one-off challenge, a rivalry persists across multiple matches and weeks of storyline. Find every rivalry under **Storylines**, then **Rivalries**.
 
 ## Rivalry vs Challenge
 
 | | Rivalry | Challenge |
 |---|---|---|
-| **Lifetime** | weeks → months | hours → days |
-| **Approval** | GM review required | wrestler-to-wrestler |
+| **Lifetime** | weeks → months | up to 4 days to answer |
+| **Who starts it** | a GM | any wrestler |
 | **What it tracks** | matches, promos, notes, messages | one upcoming match |
 | **When to use** | a multi-match storyline beat | a single ad-hoc match |
 
-If you want a one-and-done match, issue a **challenge**. If you want a recurring beef with character beats and a payoff match later, open a **rivalry**.
+If you want a one-and-done match, issue a [challenge](challenges). If you want a recurring beef with character beats and a payoff match later, ask for a rivalry.
 
-## Requesting a Rivalry
+## Asking for a Rivalry
 
-1. From the Hub, click the gold **Request a Rivalry** button.
-2. **Step 1 — Who & Why:** pick your opponent from autocomplete, title the rivalry, choose an initial heat level (see below), and write a 50–1500 character pitch.
-3. **Step 2 — Pitch & Plans:** flesh out a 100–3000 character storyline, optionally add up to 5 plan beats with target dates (these become **plan notes** visible only to GMs by default).
-4. Submit. A GM will approve or reject within a few days.
+Only GMs (Moderators and Admins) can open a rivalry. To pitch one:
+
+1. Go to [My Profile](profile) and open the **Requests** tab.
+2. Choose **Rivalry** as the request type.
+3. Pick your target, describe your idea and click **Submit request**.
+
+A GM will acknowledge or decline your request, and you'll see the answer under **My requests**. An acknowledged request doesn't open a rivalry by itself. The GM still has to set it up.
+
+## Rivalries Hub
+
+The hub has three tabs: **Active Rivalries**, **My Rivalries** (once you're signed in) and **Legacy Archive** for concluded rivalries. Beside them, **Recent Rivalry Activity** lists the latest matches, promos, notes and messages.
 
 ## Heat Levels
 
-The heat meter tells the rest of the locker room how hot the storyline is. Pick the level that matches your pitch — GMs may adjust it after approval.
+Every rivalry has one of five heat tiers: Frozen, Cold, Warm, Hot or Scorching. Heat moves on its own as matches are rated and promos are cut. See [How rivalry heat works](rivalry-heat-explained).
 
-| Heat | When to use |
+The heat filter on the hub groups the tiers:
+
+| Filter | Tiers |
 |---|---|
-| **Slow Burn** | history is building; matches are sporadic |
-| **Brewing** | regular character work, no payoff yet |
-| **Heated** | active main-event-tier feud |
+| **Heated** | Hot and Scorching |
+| **Brewing** | Warm |
+| **Slow Burn** | Cold and Frozen |
 
-GMs may tag a rivalry as escalating beyond your initial choice as the storyline plays out.
+## Inside a Rivalry
 
-## Messages
+A rivalry's page shows its heat, head-to-head record and next event, with these tabs:
 
-The Messages tab on a rivalry's detail page is the private back-channel between you, your opponent, and the GMs:
-
-- **Loop in opponent** (toggle on the left rail): when **off**, your messages are seen only by the assigned GMs — a "talk to the booker" channel. When **on**, your messages also go to the opposing wrestler — a "trash talk between us" channel.
-- You can also override the audience on a single message via the composer toggle.
-- 🔒 indicates a message is GM-only; it's not visible to your opponent.
-- Polling refreshes the thread every 15 seconds while the tab is open; sent messages appear instantly with optimistic UI.
-
-## After You Submit
-
-Your request goes to the pending queue at `/admin/rivalries`. GMs see it and:
-
-- **Approve** → status flips to `active`, you get a notification, and the rivalry shows up on the Hub.
-- **Reject** → you get a notification with the GM's reason. You can request a different rivalry.
-- **Conclude** (later) → the rivalry moves to the **Legacy Archive** tab on the Hub.
+- **Overview** — A summary of the story so far.
+- **Match History** and **Future Matches** — Matches tied to the rivalry.
+- **Promos** — Promos tagged to the rivalry, and promos where one rival targets the other.
+- **Notes & Plans** — Only the rivals and the GMs can open this tab. Rivals can add storyline notes. Only GMs can add plans. Everything here is visible to both rivals and the GMs.
+- **Messages** — Only the rivals and the GMs can open this tab. It's one shared thread, and everything you post is seen by your opponent and the GMs.
 
 ## Matches and Promos Tagged to a Rivalry
 
-When a GM schedules a match between rivalry participants, they can tag the match to the rivalry — that match then shows up on the Match History or Future Matches tab. Promos cut by either participant can also be tagged so the storyline beats stay in one place.
+When a GM books a match between the rivals, it's tagged to the rivalry automatically, as long as they share exactly one active rivalry. Only tagged matches move the rivalry's heat.
 
-If you haven't seen a match show up in the rivalry detail yet, it might simply not be tagged. Ask your GM to attach it.
+To tag a promo, choose the **Rivalry** promo type and pick one of your rivalries. Only the rivals can do this.
+
+If a match doesn't show up in the rivalry, ask your GM.
+
+## When a Rivalry Ends
+
+A GM concludes the rivalry, and it moves to the **Legacy Archive** tab. An ongoing rivalry involving a hidden player doesn't appear in public lists until that player enters a wrestler name. The rivals can still see it.
 
 ## See also
 

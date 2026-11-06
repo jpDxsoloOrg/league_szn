@@ -1,27 +1,30 @@
 # Aktivitäts-Feed
 
-Der Aktivitäts-Feed zeigt die letzten Liga-Aktivitäten an einem Ort: Match-Ergebnisse, Titelwechsel, Saison-Events, Turnier-Updates, Herausforderungen und Promos.
+Der Aktivitäts-Feed zeigt die neuesten Liga-Ereignisse an einem Ort: Match-Ergebnisse, Titelwechsel, Saison-Ereignisse, Turnier-Updates, Herausforderungen und Promos. Du findest ihn im Bereich **Start**.
 
 ## Was angezeigt wird
 
-Einträge im Feed können sein:
+Der Feed kann Folgendes enthalten:
 
-- **Match-Ergebnisse** — Abgeschlossene Matches mit Siegern und bei Bedarf Meisterschafts-Auswirkungen.
-- **Meisterschafts-Wechsel** — Neue Champions oder vakante Titel.
-- **Saison-Events** — Saison-Start/-Ende oder andere saisonbezogene Meldungen.
-- **Turnier-Ergebnisse** — Turnier-Matches und Sieger.
-- **Herausforderungen** — Neue Herausforderungen oder angenommene.
-- **Promos** — Promo-Beiträge von Wrestlern.
+- **Match-Ergebnisse** — Abgeschlossene Matches mit Gewinnern und Verlierern. Ein Unentschieden erscheint als „Match completed“.
+- **Titelwechsel** — Neu gekrönte Champions.
+- **Saison-Ereignisse** — Start und Ende einer Saison.
+- **Turnier-Ergebnisse** — Neue Turniere und Turniersieger.
+- **Herausforderungen** — Ausgesprochene, angenommene, abgelehnte, gekonterte oder zurückgezogene Herausforderungen. Einfach abgelaufene Herausforderungen erscheinen nicht.
+- **Promos** — Promo-Beiträge von Wrestlern. Call-outs und Antworten verschwinden 4 Tage nach dem Posten aus dem Feed, außer das Liga-Team hat sie angepinnt.
+
+Promos und Herausforderungen mit nicht sichtbaren Spielern erscheinen hier nicht. Match-Ergebnisse und Titelwechsel bleiben, weil sie zur Liga-Geschichte gehören.
 
 ## Reihenfolge und Filter
 
-- **Reihenfolge** — Einträge sind nach Zeit sortiert, neueste zuerst.
-- **Typ-Filter** — Nutzen Sie den Filter (falls vorhanden), um nur bestimmte Typen anzuzeigen (z. B. Matches, Meisterschaften, Herausforderungen).
+- **Reihenfolge** — Einträge sind nach Zeit sortiert, die neuesten stehen oben.
+- **Typ-Filter** — Mit den Tabs zeigst du Alle, Matches, Meisterschaften, Saisons, Turniere oder Promos. Herausforderungen haben keinen eigenen Tab und erscheinen unter Alle.
+- **Mehr laden** — Der Feed lädt jeweils 20 Einträge.
 
 ## Verwandte Seiten
 
-- **Events** — Für den vollständigen Kalender und Match-Cards siehe den Artikel [Events](events).
-- **Meisterschaften** — Für Titel-Historie und aktuelle Champions siehe [Meisterschaften](championships).
-- **Tabelle** — Für Ranglisten und Rekorde siehe [Tabelle](standings).
+- **Events** — Den Kalender und die Match Cards erklärt der Artikel [Events](events).
+- **Meisterschaften** — Titel-Historie und aktuelle Champions findest du unter [Meisterschaften](championships).
+- **Tabelle** — Rangfolge und Bilanzen findest du unter [Tabelle](standings).
 
-Der Aktivitäts-Feed ist die schnelle Möglichkeit, auf dem Laufenden zu bleiben; nutzen Sie die Links in den Einträgen oder das Hauptmenü für Details.
+Der Aktivitäts-Feed hält dich schnell auf dem Laufenden. Klicke auf einen Eintrag oder nutze die Hauptnavigation, um mehr zu erfahren.
