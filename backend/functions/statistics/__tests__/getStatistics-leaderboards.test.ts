@@ -295,6 +295,23 @@ describe('getStatistics - records', () => {
     expect(overallRecords[3].value).toBe(2);
   });
 
+  it('counts draws in the unbeaten streak but not the win streak', async () => {
+    const match = (day: number, result: 'W' | 'D' | 'L') => makeMatch({
+      date: `2024-01-0${day}`,
+      winners: result === 'L' ? ['p2'] : result === 'D' ? ['p1', 'p2'] : ['p1'],
+      losers: result === 'L' ? ['p1'] : result === 'D' ? [] : ['p2'],
+      isDraw: result === 'D',
+    });
+    setupDefaultMocks([player1, player2], [match(1, 'W'), match(2, 'D'), match(3, 'W'), match(4, 'W'), match(5, 'L')]);
+
+    const result = await handler(makeEvent({ queryStringParameters: { section: 'records' } }), ctx, cb);
+
+    const streaks = JSON.parse(result!.body).records.streaks as Array<Record<string, unknown>>;
+    const record = (name: string) => streaks.find((entry) => entry.recordName === name);
+    expect(record('Longest Unbeaten Streak')).toMatchObject({ holderName: 'Alpha', value: 4 });
+    expect(record('Longest Win Streak')?.value).toBe(2);
+  });
+
   it('computes championship records including longest reign and most defenses', async () => {
     const matches = [
       makeMatch({ participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'], isChampionship: true }),

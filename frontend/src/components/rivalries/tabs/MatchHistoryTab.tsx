@@ -12,6 +12,11 @@ import EmptyState from '../../ui/EmptyState';
 import Skeleton from '../../ui/Skeleton';
 import { resolvePlayerFullLabel } from '../rivalryUtils';
 
+/** A draw is stored with every participant as a winner and no losers. */
+function isDrawnMatch(match: Match): boolean {
+  return match.isDraw === true || ((match.winners?.length ?? 0) > 0 && (match.losers?.length ?? 0) === 0);
+}
+
 interface TabProps {
   hydrated: HydratedRivalry;
   players: Player[];
@@ -104,7 +109,10 @@ export default function MatchHistoryTab({ hydrated, players }: TabProps) {
                 )}
               </span>
               <span className="rivalry-detail-matches__date">{formatMatchDate(m.date)}</span>
-              {m.winners && m.winners.length > 0 && (
+              {isDrawnMatch(m) && (
+                <span className="rivalry-detail-matches__winner">{t('dashboard.draw')}</span>
+              )}
+              {!isDrawnMatch(m) && m.winners && m.winners.length > 0 && (
                 <span className="rivalry-detail-matches__winner">
                   W: {m.winners.map(labelOf).join(', ')}
                 </span>

@@ -1,4 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
+import { matchWinners } from '../../lib/matchResult';
 import { toPublicRivalry, withDisplayableBooker } from '../../lib/publicRivalry';
 import { maskSystemMessageIds } from '../../lib/reviewerName';
 import { getRepositories } from '../../lib/repositories';
@@ -222,14 +223,14 @@ function computeHeadToHead(
   const sorted = [...completed].sort((a, b) => (a.date < b.date ? 1 : -1));
   for (const m of sorted) {
     if (m.isChampionship) championshipMatches++;
-    if (m.isDraw) {
+    // Same rule as lib/headToHead: only a win over the other rivals counts. A
+    // win they shared, or one by an outsider, leaves them level.
+    const rivalWinners = matchWinners(m).filter((winner) => set.has(winner));
+    if (rivalWinners.length === 1) {
+      const [winner] = rivalWinners;
+      winsByParticipant[winner] = (winsByParticipant[winner] ?? 0) + 1;
+    } else {
       draws++;
-    } else if (m.winners && m.winners.length > 0) {
-      for (const w of m.winners) {
-        if (set.has(w)) {
-          winsByParticipant[w] = (winsByParticipant[w] ?? 0) + 1;
-        }
-      }
     }
     if (!lastMatchDate || m.date > lastMatchDate) lastMatchDate = m.date;
   }

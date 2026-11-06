@@ -28,7 +28,7 @@ function categorizeMatch(match: Match): string {
 function computeStreaks(
   matches: Match[],
   playerId: string
-): { currentWinStreak: number; longestWinStreak: number; longestLossStreak: number } {
+): { currentWinStreak: number; longestWinStreak: number; longestLossStreak: number; longestUnbeatenStreak: number } {
   // Sort by date ascending
   const sorted = [...matches].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -39,10 +39,15 @@ function computeStreaks(
   let longestLossStreak = 0;
   let tempWinStreak = 0;
   let tempLossStreak = 0;
+  let longestUnbeatenStreak = 0;
+  let tempUnbeatenStreak = 0;
 
   for (const match of sorted) {
     const isWin = matchWinners(match).includes(playerId);
     const isLoss = match.losers?.includes(playerId);
+
+    tempUnbeatenStreak = isLoss && !isWin ? 0 : tempUnbeatenStreak + 1;
+    longestUnbeatenStreak = Math.max(longestUnbeatenStreak, tempUnbeatenStreak);
 
     if (isWin) {
       tempWinStreak++;
@@ -61,7 +66,7 @@ function computeStreaks(
 
   currentWinStreak = tempWinStreak;
 
-  return { currentWinStreak, longestWinStreak, longestLossStreak };
+  return { currentWinStreak, longestWinStreak, longestLossStreak, longestUnbeatenStreak };
 }
 
 function computePlayerStatistics(
@@ -77,6 +82,7 @@ function computePlayerStatistics(
   currentWinStreak: number;
   longestWinStreak: number;
   longestLossStreak: number;
+  longestUnbeatenStreak: number;
   firstMatchDate?: string;
   lastMatchDate?: string;
   championshipWins: number;
@@ -507,8 +513,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const longestActiveStreakPlayer = [...allPlayerStats].sort((a, b) => b.currentWinStreak - a.currentWinStreak)[0];
         const longestLossStreakPlayer = [...allPlayerStats].sort((a, b) => b.longestLossStreak - a.longestLossStreak)[0];
 
-        // Unbeaten streak (wins + draws without a loss) - approximate with win streak for now
-        const longestUnbeatenPlayer = longestWinStreakPlayer;
+        const longestUnbeatenPlayer = [...allPlayerStats].sort((a, b) => b.longestUnbeatenStreak - a.longestUnbeatenStreak)[0];
 
         // Match type records
         const mostSinglesWins = [...allMatchTypeStats].filter((s) => s.matchType === 'singles').sort((a, b) => b.wins - a.wins)[0];
@@ -544,7 +549,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             makeRecord('Longest Win Streak', longestWinStreakPlayer, longestWinStreakPlayer?.longestWinStreak || 0, 'Most consecutive victories without a loss or draw'),
             makeRecord('Longest Active Win Streak', longestActiveStreakPlayer, longestActiveStreakPlayer?.currentWinStreak || 0, 'Current longest active winning streak'),
             makeRecord('Longest Loss Streak', longestLossStreakPlayer, longestLossStreakPlayer?.longestLossStreak || 0, 'Most consecutive losses (a record nobody wants)'),
-            makeRecord('Longest Unbeaten Streak', longestUnbeatenPlayer, longestUnbeatenPlayer?.longestWinStreak || 0, 'Most consecutive matches without a loss (wins + draws)'),
+            makeRecord('Longest Unbeaten Streak', longestUnbeatenPlayer, longestUnbeatenPlayer?.longestUnbeatenStreak || 0, 'Most consecutive matches without a loss (wins + draws)'),
           ],
           matchTypes: [
             makeRecord('Most Singles Wins', mostSinglesWins, mostSinglesWins?.wins || 0, 'Most victories in singles competition'),

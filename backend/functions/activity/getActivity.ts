@@ -282,9 +282,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const loserNames = losers.map(nameOf);
         meta.winnerNames = winnerNames;
         meta.loserNames = loserNames;
-        item.summary = winnerNames.length && loserNames.length
-          ? `${winnerNames.join(' & ')} def. ${loserNames.join(' & ')}`
-          : 'Match completed';
+        // A draw stores every participant in winners, with no losers.
+        if (winnerNames.length && loserNames.length) {
+          item.summary = `${winnerNames.join(' & ')} def. ${loserNames.join(' & ')}`;
+        } else {
+          item.summary = winnerNames.length ? `${winnerNames.join(' & ')} drew` : 'Match completed';
+        }
       } else if (item.type === 'championship_change') {
         const meta = item.metadata;
         const champ = meta.champion;
