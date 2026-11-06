@@ -558,6 +558,7 @@
     "removeParticipant": "{{name}} entfernen",
     "challengeNeedsChampion": "Ein Titelkampf aus einer Herausforderung muss den aktuellen Champion enthalten. Füge ihn hinzu oder plane den Kampf ohne Titel.",
     "alreadyBooked": "Für diese Ansage oder Herausforderung ist bereits ein Kampf geplant",
+    "linkedTitleGone": "Den Titel aus dieser Herausforderung gibt es nicht mehr, daher ist dies als Kampf ohne Titel eingestellt.",
     "title": "Kampf planen",
     "dateTime": "Datum & Uhrzeit",
     "matchType": "Kampftyp",

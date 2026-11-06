@@ -558,6 +558,7 @@
     "removeParticipant": "Remove {{name}}",
     "challengeNeedsChampion": "A title match from a challenge must include the current champion. Add them, or book it as a non-title match.",
     "alreadyBooked": "This call-out or challenge already has a match booked",
+    "linkedTitleGone": "The title in this challenge no longer exists, so this is set up as a non-title match.",
     "title": "Schedule Match",
     "dateTime": "Date & Time",
     "matchType": "Match Type",
