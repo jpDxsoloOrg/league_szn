@@ -1,11 +1,29 @@
-/* Faction art often carries its own lettering, so tile text sits on a panel, not a scrim. */
-.faction-card .ui-tile__text {
-  background-color: var(--color-bg);
-  box-shadow: 0 -0.75rem 0.75rem var(--color-bg);
+/* Faction art often carries its own lettering, so the art gets its own band and the text a panel below it. */
+.ui-tile.faction-card {
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: auto;
 }
 
-.faction-card .ui-tile__image {
-  object-position: top;
+.ui-tile.faction-card::after {
+  content: none;
+}
+
+.faction-card .ui-tile__image,
+.faction-card .ui-tile__fallback {
+  position: static;
+  flex: none;
+  align-items: center;
+  width: 100%;
+  height: auto;
+  max-height: 14rem;
+  aspect-ratio: 5 / 2;
+}
+
+.faction-card .ui-tile__text {
+  position: static;
+  flex: 1;
+  background-color: var(--color-bg);
 }
 
 .faction-card .ui-tile__eyebrow {
@@ -20,6 +38,11 @@
 }
 
 @media (max-width: 768px) {
+  /* The band is short on a two-across tile, and a Q's tail must stay inside it. */
+  .faction-card .ui-tile__fallback {
+    font-size: 2.5rem;
+  }
+
   .faction-card .ui-tile__title {
     overflow-wrap: anywhere;
     font-size: 1.125rem;
