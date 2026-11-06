@@ -1361,6 +1361,8 @@
       "titleField": "Titel",
       "descriptionField": "Storyline-Pitch",
       "heatField": "Anfangshitze",
+      "myWrestler": "Welchen Wrestler benutzt du?",
+      "opponentWrestler": "Welchen Wrestler benutzt dein Gegner?",
       "submit": "Zur Freigabe einreichen",
       "cancel": "Abbrechen",
       "success": "Eingereicht! Ein GM prüft sie.",
