@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Megaphone } from 'lucide-react';
 import { challengesApi, profileApi } from '../../services/api';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
+import { useIsHiddenPlayer } from '../../hooks/useIsHiddenPlayer';
 import type { ChallengeWithPlayers } from '../../types/challenge';
 import Avatar from '../ui/Avatar';
 import Badge from '../ui/Badge';
@@ -14,6 +15,7 @@ import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import Tabs from '../ui/Tabs';
 import { useToast } from '../ui/toastContext';
+import HiddenPlayerNotice from '../profile/HiddenPlayerNotice';
 import ChallengeStatusBadge from './ChallengeStatusBadge';
 import { getChallengeSides, getDisplayStatus, isChallengedSide, isChallengerSide } from './challengeUtils';
 import './MyChallenges.css';
@@ -26,6 +28,7 @@ const CALL_OUT_PATH = '/promos/new?promoType=call-out';
 export default function MyChallenges() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const isHiddenPlayer = useIsHiddenPlayer();
   const { features } = useSiteConfig();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<MyTab>('received');
@@ -170,12 +173,13 @@ export default function MyChallenges() {
       );
     }
     if (currentList.length === 0) {
+      const canCallOut = activeTab === 'sent' && !isHiddenPlayer;
       return (
         <EmptyState
           icon={<Megaphone aria-hidden="true" />}
           title={activeTab === 'sent' ? t('challenges.my.noSent') : t('challenges.my.noReceived')}
-          actionLabel={activeTab === 'sent' ? t('promos.editor.cutCallOut', 'Cut a Call-Out Promo') : undefined}
-          onAction={activeTab === 'sent' ? () => navigate(CALL_OUT_PATH) : undefined}
+          actionLabel={canCallOut ? t('promos.editor.cutCallOut', 'Cut a Call-Out Promo') : undefined}
+          onAction={canCallOut ? () => navigate(CALL_OUT_PATH) : undefined}
         />
       );
     }
@@ -193,8 +197,11 @@ export default function MyChallenges() {
     <div className="my-challenges">
       <PageHeader
         title={t('challenges.my.title')}
-        actions={<Button to={CALL_OUT_PATH}>{t('promos.editor.cutCallOut', 'Cut a Call-Out Promo')}</Button>}
+        actions={isHiddenPlayer ? undefined : <Button to={CALL_OUT_PATH}>{t('promos.editor.cutCallOut', 'Cut a Call-Out Promo')}</Button>}
       />
+      {isHiddenPlayer && (
+        <HiddenPlayerNotice title={t('me.setup.cannotCallOutTitle')} body={t('me.setup.cannotCallOutBody')} />
+      )}
       <Tabs
         label={t('challenges.my.title')}
         value={activeTab}

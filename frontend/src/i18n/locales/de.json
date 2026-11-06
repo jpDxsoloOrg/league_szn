@@ -2605,7 +2605,11 @@
       "wrestlerHintRoster": "Wähle einen Wrestler aus. Du erscheinst auf der Seite, sobald du speicherst.",
       "enterName": "Wrestler-Namen eingeben",
       "placeholderRejected": "„Needs Wrestler“ ist nur ein Platzhalter. Gib den Namen ein, den du verwenden möchtest.",
-      "nowVisible": "Du bist jetzt auf der Seite. Andere Spieler können dich sehen."
+      "nowVisible": "Du bist jetzt auf der Seite. Andere Spieler können dich sehen.",
+      "cannotCallOutTitle": "Du kannst noch niemanden herausfordern",
+      "cannotCallOutBody": "Du bist auf der Seite nicht sichtbar, bis du einen Wrestler-Namen hast. Trage ihn in deinem Profil ein und komm dann zurück, um Call-Outs auszusprechen.",
+      "cannotCutPromoTitle": "Du kannst noch keine Promo schreiben",
+      "cannotCutPromoBody": "Du bist auf der Seite nicht sichtbar, also würde niemand deine Promo sehen. Trage einen Wrestler-Namen in deinem Profil ein und komm dann zurück, um sie zu veröffentlichen."
     },
     "auth": {
       "wrestlerAfterSignup": "Deinen Wrestler-Namen gibst du nach der Anmeldung ein. Bis dahin kannst du dein Konto nutzen, erscheinst aber nicht auf der Seite.",

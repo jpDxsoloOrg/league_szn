@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampionships, mockCreatePromo, mockCreateChallenge, mockGetAllStipulations, mockGetAllMatchTypes, mockGetAllTagTeams } =
+const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampionships, mockCreatePromo, mockCreateChallenge, mockGetAllStipulations, mockGetAllMatchTypes, mockGetAllTagTeams, mockIsHiddenPlayer } =
   vi.hoisted(() => ({
     mockGetAllPlayers: vi.fn(),
     mockGetAllPromos: vi.fn(),
@@ -15,6 +15,7 @@ const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampi
     mockGetAllStipulations: vi.fn(),
     mockGetAllMatchTypes: vi.fn(),
     mockGetAllTagTeams: vi.fn(),
+    mockIsHiddenPlayer: vi.fn(),
   }));
 
 vi.mock('../../../services/api', () => ({
@@ -95,6 +96,10 @@ vi.mock('../../../contexts/SiteConfigContext', () => ({
   }),
 }));
 
+vi.mock('../../../hooks/useIsHiddenPlayer', () => ({
+  useIsHiddenPlayer: mockIsHiddenPlayer,
+}));
+
 vi.mock('../PromoEditor.css', () => ({}));
 vi.mock('../PromoCard.css', () => ({}));
 vi.mock('../PromoReactions.css', () => ({}));
@@ -112,6 +117,7 @@ function renderEditor(initialEntry = '/promos/new') {
 describe('PromoEditor', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIsHiddenPlayer.mockReturnValue(false);
     mockGetAllPlayers.mockResolvedValue([
       { playerId: 'p-1', userId: 'u-1', name: 'John', currentWrestler: 'Stone Cold', wins: 0, losses: 0, draws: 0, createdAt: '', updatedAt: '' },
       { playerId: 'p-2', userId: 'u-2', name: 'Jane', currentWrestler: 'The Rock', wins: 0, losses: 0, draws: 0, createdAt: '', updatedAt: '' },
@@ -150,6 +156,18 @@ describe('PromoEditor', () => {
     // Content area
     expect(screen.getByText('Content')).toBeInTheDocument();
     expect(screen.getByText('Drop the Mic')).toBeInTheDocument();
+  });
+
+  it('tells a player with no wrestler name why they cannot post, and blocks the submit', async () => {
+    mockIsHiddenPlayer.mockReturnValue(true);
+    const user = userEvent.setup();
+    renderEditor();
+
+    expect(await screen.findByText('me.setup.cannotCutPromoTitle')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'me.setup.enterName' })).toHaveAttribute('href', '/profile');
+
+    await user.type(screen.getByPlaceholderText('Drop your promo here...'), 'x'.repeat(60));
+    expect(screen.getByRole('button', { name: 'Drop the Mic' })).toBeDisabled();
   });
 
   it('validates content minimum length and disables submit when too short', async () => {

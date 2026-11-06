@@ -2607,7 +2607,11 @@
       "wrestlerHintRoster": "Choose a wrestler. You'll appear on the site as soon as you save.",
       "enterName": "Enter wrestler name",
       "placeholderRejected": "\"Needs Wrestler\" is a placeholder. Enter the name you want to use.",
-      "nowVisible": "You're on the site now. Other players can see you."
+      "nowVisible": "You're on the site now. Other players can see you.",
+      "cannotCallOutTitle": "You can't call anyone out yet",
+      "cannotCallOutBody": "You're hidden from the site until you have a wrestler name. Enter one on your profile, then come back to issue call-outs.",
+      "cannotCutPromoTitle": "You can't cut a promo yet",
+      "cannotCutPromoBody": "You're hidden from the site, so nobody would see your promo. Enter a wrestler name on your profile, then come back to post it."
     },
     "auth": {
       "wrestlerAfterSignup": "You'll enter your wrestler name after you sign in. Until then you can use your account, but you won't appear on the site.",

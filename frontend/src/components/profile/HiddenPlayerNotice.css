@@ -1,0 +1,17 @@
+.hidden-player-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.hidden-player-notice__text {
+  flex: 1;
+  min-width: min(14rem, 100%);
+}
+
+.hidden-player-notice__text p {
+  margin: 0.25rem 0 0;
+}
