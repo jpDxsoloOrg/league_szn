@@ -10,7 +10,9 @@ import {
   fetchCompletedMatches,
   findTagTeamMatches,
   computeFormAndStreak,
+  computeTagTeamRecord,
 } from './computeTagTeamStats';
+import { computeWinPercentage } from '../../lib/stats/record';
 
 interface PlayerSummary {
   playerId: string;
@@ -196,11 +198,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     );
 
     // Compute standings info
-    const totalMatches = tagTeam.wins + tagTeam.losses + tagTeam.draws;
-    const winPercentage =
-      totalMatches > 0
-        ? Math.round((tagTeam.wins / totalMatches) * 1000) / 1000
-        : 0;
+    const record = computeTagTeamRecord(teamMatches);
+    const winPercentage = computeWinPercentage(record.wins, record.losses, record.draws);
     const { recentForm, currentStreak } = computeFormAndStreak(teamMatches, 10);
     const standings: TagTeamStandingsInfo = { winPercentage, recentForm, currentStreak };
 
@@ -215,6 +214,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     return success({
       ...tagTeam,
+      ...record,
       player1: player1Summary,
       player2: player2Summary,
       standings,

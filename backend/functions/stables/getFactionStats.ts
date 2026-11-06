@@ -14,6 +14,7 @@ import {
   computeMatchTypeRecords,
   computeHeadToHead,
   computeWinPercentage,
+  tallyRecord,
   type MatchRecord,
   type StableRecord,
 } from './computeStableStats';
@@ -186,14 +187,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const factionResults = computeStableMatchResults(matches, factionRecord, playerToStable);
 
     // Per-faction totals — deduped via computeStableMatchResults (one result per match).
-    let totalWins = 0;
-    let totalLosses = 0;
-    let totalDraws = 0;
-    for (const r of factionResults) {
-      if (r.outcome === 'W') totalWins++;
-      else if (r.outcome === 'L') totalLosses++;
-      else totalDraws++;
-    }
+    const { wins: totalWins, losses: totalLosses, draws: totalDraws } = tallyRecord(factionResults);
     const totalsForm = computeRecentFormAndStreak(
       factionResults.map((r) => r.outcome),
       RECENT_FORM_LIMIT,

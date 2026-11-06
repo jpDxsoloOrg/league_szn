@@ -13,6 +13,7 @@ import {
   computeHeadToHead,
   computeMatchTypeRecords,
   computeWinPercentage,
+  tallyRecord,
 } from './computeStableStats';
 
 interface PlayerSummary {
@@ -67,7 +68,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Build member list
     const members: PlayerSummary[] = [];
-    let leaderName = '';
+    // Stays undefined when the leader's player row is gone, so clients show their own fallback.
+    let leaderName: string | undefined;
 
     for (const player of memberResults) {
       if (player) {
@@ -121,17 +123,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const matchTypeRecords = computeMatchTypeRecords(matchResults);
 
     // Compute W/L/D from actual match data
-    let computedWins = 0;
-    let computedLosses = 0;
-    let computedDraws = 0;
-    for (const r of matchResults) {
-      if (r.outcome === 'W') computedWins++;
-      else if (r.outcome === 'L') computedLosses++;
-      else computedDraws++;
-    }
+    const record = tallyRecord(matchResults);
 
     const standings = {
-      winPercentage: computeWinPercentage(computedWins, computedLosses, computedDraws),
+      winPercentage: computeWinPercentage(record.wins, record.losses, record.draws),
       recentForm,
       currentStreak,
     };
@@ -145,9 +140,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       // FAC-22: override the (possibly stale or uninitialized) raw counters
       // with the values we just derived from completed-match outcomes so the
       // Detail hero matches Standings, which also computes from matches.
-      wins: computedWins,
-      losses: computedLosses,
-      draws: computedDraws,
+      ...record,
       members,
       leaderName,
       headToHead,

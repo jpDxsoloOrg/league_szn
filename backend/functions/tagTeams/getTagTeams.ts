@@ -4,6 +4,13 @@ import type { TagTeamStatus } from '../../lib/repositories/types';
 import { success, serverError } from '../../lib/response';
 import { isPlayerVisible } from '../../lib/needsWrestler';
 import { hasHiddenMember, resolveTagTeamViewer } from './tagTeamVisibility';
+import {
+  TagTeamRecord,
+  buildTagTeamMatchMap,
+  computeTagTeamRecord,
+  fetchCompletedMatches,
+  resolveMemberName,
+} from './computeTagTeamStats';
 
 interface PlayerRecord {
   playerId: string;
@@ -16,9 +23,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const statusFilter = event.queryStringParameters?.status;
     const { roster: { tagTeams: tagTeamsRepo, players: playersRepo } } = getRepositories();
 
-    const tagTeams = statusFilter
-      ? await tagTeamsRepo.listByStatus(statusFilter as TagTeamStatus)
-      : await tagTeamsRepo.list();
+    const [tagTeams, completedMatches] = await Promise.all([
+      statusFilter
+        ? tagTeamsRepo.listByStatus(statusFilter as TagTeamStatus)
+        : tagTeamsRepo.list(),
+      fetchCompletedMatches(),
+    ]);
 
     // Collect all unique player IDs
     const playerIds = new Set<string>();
@@ -56,14 +66,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           || team.player1Id === viewer.callerPlayerId
           || team.player2Id === viewer.callerPlayerId);
 
-    // Enrich tag teams with player names and image URLs
+    const matchMap = buildTagTeamMatchMap(listedTagTeams as unknown as TagTeamRecord[], completedMatches);
+
+    // Enrich tag teams with player names, image URLs and the computed record
     const enrichedTagTeams = listedTagTeams.map((team) => {
       const player1 = playerMap.get(team.player1Id);
       const player2 = playerMap.get(team.player2Id);
       return {
         ...team,
-        player1Name: player1?.name || 'Unknown',
-        player2Name: player2?.name || 'Unknown',
+        ...computeTagTeamRecord(matchMap.get(team.tagTeamId) || []),
+        player1Name: resolveMemberName(player1, team.player1WrestlerName),
+        player2Name: resolveMemberName(player2, team.player2WrestlerName),
         player1ImageUrl: player1?.imageUrl,
         player2ImageUrl: player2?.imageUrl,
       };
