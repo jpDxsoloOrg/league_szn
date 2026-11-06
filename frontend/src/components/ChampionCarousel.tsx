@@ -1,191 +1,81 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import type { DashboardChampion } from '../types';
-import {
-  DEFAULT_WRESTLER_IMAGE,
-  applyImageFallback,
-  resolveImageSrc,
-} from '../constants/imageFallbacks';
+import EmptyState from './ui/EmptyState';
+import PhotoTile from './ui/PhotoTile';
+import type { TileAccent } from './ui/PhotoTile';
+import SwipeRow from './ui/SwipeRow';
+import HomeSection from './home/HomeSection';
 import './ChampionCarousel.css';
 
-interface ChampionCarouselProps {
-  champions: DashboardChampion[];
-  /** Initial champion to display. If omitted, picks World Heavyweight then longest reign. */
-  initialChampionshipId?: string;
-  /** Auto-advance interval in ms. Set to 0 to disable. Defaults to 5000. */
-  autoPlayInterval?: number;
+const MS_PER_DAY = 86_400_000;
+
+/** Titles the league names after a known belt keep that belt's rim colour. */
+const TITLE_RIMS: { pattern: RegExp; accent: TileAccent }[] = [
+  { pattern: /\btag\b/i, accent: 'tag' },
+  { pattern: /\bworld\b|\bheavyweight\b|\buniversal\b|\bundisputed\b/i, accent: 'world' },
+  { pattern: /\bunited states\b|\bu\.?s\.?\b/i, accent: 'us' },
+  { pattern: /\bintercontinental\b|\bic\b/i, accent: 'ic' },
+];
+
+/** Other titles rotate through these, leaving gold to the world title. */
+const FALLBACK_RIMS: TileAccent[] = ['us', 'ic', 'tag'];
+
+function getTitleRim(championshipName: string, index: number): TileAccent {
+  const known = TITLE_RIMS.find(({ pattern }) => pattern.test(championshipName));
+  return known?.accent ?? FALLBACK_RIMS[index % FALLBACK_RIMS.length] ?? 'none';
 }
 
-function computeReignDays(wonDate?: string): number | null {
+function getReignDays(wonDate?: string): number | null {
   if (!wonDate) return null;
-  const diff = Date.now() - new Date(wonDate).getTime();
-  return Math.max(0, Math.floor(diff / 86400000));
+  const elapsed = Date.now() - new Date(wonDate).getTime();
+  return Number.isNaN(elapsed) ? null : Math.max(0, Math.floor(elapsed / MS_PER_DAY));
 }
 
-function pickInitialIndex(champions: DashboardChampion[], initialId?: string): number {
-  if (initialId) {
-    const idx = champions.findIndex((c) => c.championshipId === initialId);
-    if (idx >= 0) return idx;
-  }
-  const worldIdx = champions.findIndex((c) =>
-    c.championshipName.toLowerCase().includes('world heavyweight')
-  );
-  if (worldIdx >= 0) return worldIdx;
-  let bestIdx = 0;
-  let bestDays = -1;
-  champions.forEach((c, i) => {
-    const d = computeReignDays(c.wonDate) ?? 0;
-    if (d > bestDays) {
-      bestDays = d;
-      bestIdx = i;
-    }
-  });
-  return bestIdx;
+/** World title first; otherwise the order the API sends. */
+function orderChampions(champions: DashboardChampion[]): DashboardChampion[] {
+  const isWorldTitle = (champion: DashboardChampion) => /world heavyweight/i.test(champion.championshipName);
+  return [...champions.filter(isWorldTitle), ...champions.filter((champion) => !isWorldTitle(champion))];
 }
 
-export default function ChampionCarousel({
-  champions,
-  initialChampionshipId,
-  autoPlayInterval = 5000,
-}: ChampionCarouselProps) {
+export default function ChampionCarousel({ champions }: { champions: DashboardChampion[] }) {
   const { t } = useTranslation();
-  const [currentIndex, setCurrentIndex] = useState(() =>
-    pickInitialIndex(champions, initialChampionshipId)
-  );
-  const [isPaused, setIsPaused] = useState(false);
+  const navigate = useNavigate();
 
-  // Reset index when champions list changes (e.g., a champion is removed).
-  useEffect(() => {
-    setCurrentIndex((prev) =>
-      prev < champions.length ? prev : pickInitialIndex(champions, initialChampionshipId)
-    );
-  }, [champions, initialChampionshipId]);
-
-  const total = champions.length;
-  const current = champions[currentIndex];
-
-  const goNext = useCallback(() => {
-    setCurrentIndex((i) => (total === 0 ? 0 : (i + 1) % total));
-  }, [total]);
-
-  // Auto-advance
-  useEffect(() => {
-    if (autoPlayInterval <= 0 || isPaused || total <= 1) return;
-    const reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion) return;
-    const id = window.setInterval(goNext, autoPlayInterval);
-    return () => window.clearInterval(id);
-  }, [autoPlayInterval, isPaused, total, goNext]);
-
-  const reignDays = useMemo(
-    () => (current ? computeReignDays(current.wonDate) : null),
-    [current]
-  );
-
-  const others = useMemo(
-    () => champions.filter((_, idx) => idx !== currentIndex),
-    [champions, currentIndex]
-  );
-
-  if (total === 0 || !current) {
+  if (champions.length === 0) {
     return (
-      <section className="db-hero db-hero--empty">
-        <p className="db-empty-text">{t('dashboard.noChampions')}</p>
-        <Link className="db-empty-action" to="/championships">
-          {t('dashboard.emptyActions.viewChampionships', 'View championships')}
-        </Link>
-      </section>
+      <HomeSection title={t('dashboard.champions')}>
+        <EmptyState
+          title={t('dashboard.noChampions')}
+          actionLabel={t('dashboard.emptyActions.viewChampionships', 'View championships')}
+          onAction={() => navigate('/championships')}
+        />
+      </HomeSection>
     );
   }
+
+  const describeReign = (champion: DashboardChampion): string | undefined => {
+    const days = getReignDays(champion.wonDate);
+    if (days === null) return undefined;
+    const reign = t('home.reignDays', { count: days });
+    return champion.defenses == null ? reign : `${reign} · ${t('home.defenses', { count: champion.defenses })}`;
+  };
 
   return (
-    <section
-      className="db-hero champion-carousel"
-      aria-roledescription="carousel"
-      aria-label={t('dashboard.viewAllChampions', 'View All Champions')}
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
-      <div className="db-hero-image" key={`img-${current.championshipId}`}>
-        <img
-          src={resolveImageSrc(current.championImageUrl, DEFAULT_WRESTLER_IMAGE)}
-          onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-          alt={current.championName}
-        />
-        <span className="db-hero-pill">{t('dashboard.championBadge', 'Champion')}</span>
-      </div>
-      <div className="db-hero-content" aria-live="polite" aria-atomic="true">
-        <span className="db-hero-belt">{current.championshipName}</span>
-        <h2 className="db-hero-name">{current.championName}</h2>
-        {reignDays !== null && (
-          <div className="db-hero-stats">
-            <span className="db-hero-stat">
-              <span className="db-hero-stat-value">{reignDays}</span>
-              <span className="db-hero-stat-label">
-                {t('dashboard.daysReign', 'Day Reign')}
-              </span>
-            </span>
-            {current.defenses != null && (
-              <span className="db-hero-stat">
-                <span className="db-hero-stat-value">{current.defenses}</span>
-                <span className="db-hero-stat-label">
-                  {t('dashboard.defenses', 'Defenses')}
-                </span>
-              </span>
-            )}
-          </div>
-        )}
-        <Link to="/championships" className="db-hero-link">
-          {t('dashboard.viewAllChampions', 'View All Champions')} &rarr;
-        </Link>
-      </div>
-
-      {others.length > 0 && (
-        <div className="db-hero-others">
-          {others.map((c) => {
-            const idx = champions.findIndex((x) => x.championshipId === c.championshipId);
-            return (
-              <button
-                key={c.championshipId}
-                type="button"
-                className="db-hero-other btn-unstyled"
-                onClick={() => setCurrentIndex(idx)}
-                aria-label={`${c.championshipName} — ${c.championName}`}
-              >
-                <img
-                  src={resolveImageSrc(c.championImageUrl, DEFAULT_WRESTLER_IMAGE)}
-                  onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-                  alt=""
-                />
-                <div className="db-hero-other-info">
-                  <span className="db-hero-other-belt">{c.championshipName}</span>
-                  <span className="db-hero-other-name">{c.championName}</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {total > 1 && (
-        <div className="db-hero-dots">
-          {champions.map((c, idx) => (
-            <button
-              key={c.championshipId}
-              type="button"
-              className={
-                idx === currentIndex ? 'db-hero-dot db-hero-dot--active' : 'db-hero-dot'
-              }
-              onClick={() => setCurrentIndex(idx)}
-              aria-label={c.championshipName}
-              aria-current={idx === currentIndex}
-            />
-          ))}
-        </div>
-      )}
-    </section>
+    <HomeSection title={t('dashboard.champions')} linkTo="/championships" linkLabel={t('home.allTitles')}>
+      <SwipeRow label={t('dashboard.champions')} className="champion-row">
+        {orderChampions(champions).map((champion, index) => (
+          <PhotoTile
+            key={champion.championshipId}
+            to="/championships"
+            imageUrl={champion.championImageUrl}
+            title={champion.championName}
+            eyebrow={champion.championshipName}
+            meta={describeReign(champion)}
+            accent={getTitleRim(champion.championshipName, index)}
+          />
+        ))}
+      </SwipeRow>
+    </HomeSection>
   );
 }

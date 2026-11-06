@@ -1,16 +1,19 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeAll } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { DashboardChampion } from '../../types';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, fallback?: string) => {
+    t: (key: string, fallbackOrOptions?: string | { count?: number }) => {
       const map: Record<string, string> = {
         'dashboard.noChampions': 'No active champions',
+        'dashboard.champions': 'Current Champions',
       };
-      return map[key] ?? fallback ?? key;
+      if (map[key]) return map[key];
+      if (typeof fallbackOrOptions === 'string') return fallbackOrOptions;
+      return fallbackOrOptions?.count === undefined ? key : `${key}:${fallbackOrOptions.count}`;
     },
   }),
 }));
@@ -21,14 +24,6 @@ import ChampionCarousel from '../ChampionCarousel';
 
 const champions: DashboardChampion[] = [
   {
-    championshipId: 'c1',
-    championshipName: 'World Heavyweight Championship',
-    championName: 'Swerve Strickland',
-    playerId: 'p1',
-    wonDate: '2026-04-24',
-    defenses: 0,
-  },
-  {
     championshipId: 'c2',
     championshipName: 'Tag Team Championship',
     championName: 'MJF & Kazuchika Okada',
@@ -37,92 +32,91 @@ const champions: DashboardChampion[] = [
     defenses: 2,
   },
   {
+    championshipId: 'c1',
+    championshipName: 'World Heavyweight Championship',
+    championName: 'Swerve Strickland',
+    championImageUrl: 'https://example.com/swerve.png',
+    playerId: 'p1',
+    wonDate: '2026-04-24',
+    defenses: 0,
+  },
+  {
     championshipId: 'c3',
     championshipName: 'Mid Card Championship',
     championName: 'Ricky Saints',
     playerId: 'p3',
-    wonDate: '2026-04-01',
-    defenses: 1,
   },
 ];
 
-function renderCarousel(props: Partial<React.ComponentProps<typeof ChampionCarousel>> = {}) {
+function renderCarousel(list: DashboardChampion[] = champions) {
   return render(
     <MemoryRouter>
-      <ChampionCarousel champions={champions} autoPlayInterval={0} {...props} />
+      <Routes>
+        <Route path="/" element={<ChampionCarousel champions={list} />} />
+        <Route path="/championships" element={<p>Titles page</p>} />
+      </Routes>
     </MemoryRouter>
   );
 }
 
+function tileFor(name: string): HTMLElement {
+  return screen.getByRole('link', { name: new RegExp(name) });
+}
+
 describe('ChampionCarousel', () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+  beforeAll(() => {
+    // Embla measures with these, which jsdom does not provide.
+    class ObserverStub {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    vi.stubGlobal('ResizeObserver', ObserverStub);
+    vi.stubGlobal('IntersectionObserver', ObserverStub);
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('starts on the World Heavyweight champion when present', () => {
+  it('shows a linked tile for every champion, world title first', () => {
     renderCarousel();
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Swerve Strickland');
+    const tiles = screen.getAllByRole('link').filter((link) => link.classList.contains('ui-tile'));
+    expect(tiles).toHaveLength(3);
+    expect(tiles[0]).toHaveTextContent('Swerve Strickland');
+    tiles.forEach((tile) => expect(tile).toHaveAttribute('href', '/championships'));
   });
 
-  it('excludes the currently featured champion from the right-side strip', () => {
+  it('gives each title its rim colour', () => {
     renderCarousel();
-    // Swerve is featured (heading), so he should NOT be in the right strip buttons.
-    const buttons = screen.queryAllByRole('button');
-    const labels = buttons.map((b) => b.getAttribute('aria-label'));
-    expect(labels).not.toContain('World Heavyweight Championship — Swerve Strickland');
-    expect(labels).toContain('Tag Team Championship — MJF & Kazuchika Okada');
-    expect(labels).toContain('Mid Card Championship — Ricky Saints');
+    expect(tileFor('Swerve Strickland')).toHaveClass('ui-tile--world');
+    expect(tileFor('Okada')).toHaveClass('ui-tile--tag');
+    expect(tileFor('Ricky Saints').className).toMatch(/ui-tile--(us|ic|tag)/);
   });
 
-  it('switches to a champion when their right-side row is clicked', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+  it('does not treat a word containing "us" as the US title', () => {
+    const list = [
+      { championshipId: 'c8', championshipName: 'Tag Belt', championName: 'Pair', playerId: 'p8' },
+      { championshipId: 'c9', championshipName: 'Prestigious Belt', championName: 'Other', playerId: 'p9' },
+    ];
+    renderCarousel(list);
+    // Second slot in the rotation; a false US match would give ui-tile--us.
+    expect(tileFor('Other')).toHaveClass('ui-tile--ic');
+  });
+
+  it('shows reign length and defenses only when the data exists', () => {
     renderCarousel();
-
-    await user.click(
-      screen.getByRole('button', { name: 'Mid Card Championship — Ricky Saints' })
-    );
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Ricky Saints');
-    // The newly featured champion is now removed from the strip
-    expect(
-      screen.queryByRole('button', { name: 'Mid Card Championship — Ricky Saints' })
-    ).not.toBeInTheDocument();
+    expect(tileFor('Okada')).toHaveTextContent('home.defenses:2');
+    expect(tileFor('Ricky Saints')).not.toHaveTextContent('home.reignDays');
   });
 
-  it('auto-advances at the given interval', () => {
-    renderCarousel({ autoPlayInterval: 1000 });
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Swerve Strickland');
-
-    act(() => {
-      vi.advanceTimersByTime(1000);
-    });
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('MJF & Kazuchika Okada');
-
-    act(() => {
-      vi.advanceTimersByTime(1000);
-    });
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Ricky Saints');
+  it('uses the champion photo when there is one', () => {
+    renderCarousel();
+    const image = tileFor('Swerve Strickland').querySelector('img');
+    expect(image).toHaveAttribute('src', 'https://example.com/swerve.png');
+    expect(tileFor('Ricky Saints').querySelector('img')).toBeNull();
   });
 
-  it('renders empty state when no champions', () => {
-    render(
-      <MemoryRouter>
-        <ChampionCarousel champions={[]} />
-      </MemoryRouter>
-    );
+  it('renders an empty state that leads to the titles page', async () => {
+    renderCarousel([]);
     expect(screen.getByText('No active champions')).toBeInTheDocument();
-  });
-
-  it('hides the right-side strip when only one champion is present', () => {
-    render(
-      <MemoryRouter>
-        <ChampionCarousel champions={[champions[0]]} autoPlayInterval={0} />
-      </MemoryRouter>
-    );
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Swerve Strickland');
-    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    await userEvent.click(screen.getByRole('button', { name: 'View championships' }));
+    expect(screen.getByText('Titles page')).toBeInTheDocument();
   });
 });
