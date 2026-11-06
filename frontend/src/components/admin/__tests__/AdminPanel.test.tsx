@@ -32,7 +32,6 @@ vi.mock('../AdminPromos', () => ({ default: () => <div data-testid="admin-promos
 vi.mock('../StandaloneMatches', () => ({ default: () => <div data-testid="standalone">StandaloneMatches</div> }));
 vi.mock('../ManageOveralls', () => ({ default: () => <div data-testid="overalls">ManageOveralls</div> }));
 vi.mock('../ManageSeasons', () => ({ default: () => <div data-testid="manage-seasons">ManageSeasons</div> }));
-vi.mock('../MatchCardBuilder', () => ({ default: () => <div data-testid="match-card-builder">MatchCardBuilder</div> }));
 vi.mock('../AdminChallenges', () => ({ default: () => <div data-testid="admin-challenges">AdminChallenges</div> }));
 vi.mock('../ClearAllData', () => ({ default: () => <div data-testid="clear-all">ClearAllData</div> }));
 vi.mock('../ManageUsers', () => ({ default: () => <div data-testid="manage-users">ManageUsers</div> }));
@@ -159,6 +158,13 @@ describe('AdminPanel', () => {
     renderAdminPanel('/admin/standalone-matches');
     expect(screen.getByText('Admin Access Required')).toBeInTheDocument();
     expect(screen.queryByTestId('standalone')).not.toBeInTheDocument();
+  });
+
+  it('sends the old Match Card Builder URL to the events page', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: false });
+
+    renderAdminPanel('/admin/events');
+    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/events');
   });
 
   it('redirects an unknown tab to the admin root', () => {

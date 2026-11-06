@@ -5,10 +5,6 @@
   background-color: var(--color-surface);
 }
 
-.checkin-roster-panel--compact {
-  padding: 0.75rem;
-}
-
 .checkin-roster-header {
   display: flex;
   flex-wrap: wrap;
@@ -45,8 +41,7 @@
   min-width: 0;
 }
 
-.checkin-roster-column-title,
-.checkin-roster-compact-title {
+.checkin-roster-column-title {
   margin-bottom: 0.5rem;
   color: var(--color-text-secondary);
   font-family: var(--font-body);

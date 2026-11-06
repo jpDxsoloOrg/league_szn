@@ -806,8 +806,7 @@
         "storylineRequests": "Storyline Requests",
         "rivalries": "Rivalries",
         "heatConfig": "Heat Tunables",
-        "dangerZone": "Danger Zone",
-        "matchCards": "Match Cards"
+        "dangerZone": "Danger Zone"
       },
       "groups": {
         "matchOps": "Match Operations",
@@ -1643,15 +1642,7 @@
       "season": "Season",
       "noSeason": "No Season",
       "saveEvent": "Save Event",
-      "saveSuccess": "Event saved successfully!",
-      "matchCardBuilder": "Match Card Builder",
-      "noMatchesOnCard": "No matches on this card yet. Add matches below.",
-      "championshipMatch": "Title Match",
-      "moveUp": "Move Up",
-      "moveDown": "Move Down",
-      "removeMatch": "Remove Match",
-      "selectMatch": "Select a match to add...",
-      "addMatch": "Add Match"
+      "saveSuccess": "Event saved successfully!"
     },
     "booking": {
       "neverBooked": "Never booked",
@@ -2807,11 +2798,6 @@
       "deleteConfirm": "Are you sure you want to delete {{name}}? This action cannot be undone.",
       "keptWrestler": "{{name}} (custom name)",
       "clearWarning": "Saving removes this wrestler and hides the player from public pages."
-    },
-    "matchCard": {
-      "saveError": "Failed to save match card",
-      "designationFor": "Card position for",
-      "unresolvedMatch": "Match {{position}}"
     },
     "standalone": {
       "loadError": "Failed to load matches",

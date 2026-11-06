@@ -26,7 +26,6 @@ const DEFAULT_TAB: AdminTab = 'players';
 
 const TAB_COMPONENTS: Record<AdminTab, LazyExoticComponent<ComponentType>> = {
   schedule: lazy(() => import('./ScheduleMatch')),
-  events: lazy(() => import('./MatchCardBuilder')),
   'standalone-matches': lazy(() => import('./StandaloneMatches')),
   users: lazy(() => import('./ManageUsers')),
   players: lazy(() => import('./ManagePlayers')),
@@ -82,6 +81,11 @@ export default function AdminPanel() {
   // Call-outs moderation lives under Promos.
   if (tab === 'challenges') {
     return <Navigate to="/admin/promos?view=call-outs" replace />;
+  }
+
+  // The Match Card Builder lived here. Cards are now built on the event's own page.
+  if (tab === 'events') {
+    return <Navigate to="/events" replace />;
   }
 
   if (tab && !isAdminTab(tab)) {

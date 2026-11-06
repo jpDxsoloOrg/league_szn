@@ -15,7 +15,7 @@
 ## Titel & Events
 
 - [Meisterschaften](admin-championships) — Titel anlegen und verwalten, Gürtelbilder, Historie
-- [Events](admin-events) — Events anlegen, Match-Card-Builder, Event-Typen
+- [Events](admin-events) — Events anlegen, Match-Cards erstellen, Event-Typen
 - [Match planen](admin-schedule-match) — Matches anlegen, Typen, Stipulations, Meisterschaft/Turnier
 - [Ergebnisse eintragen](admin-record-results) — Sieger, Verlierer, Unentschieden; automatische Aktualisierung
 - [Turniere](admin-tournaments) — K.-o.-System und Rundensystem

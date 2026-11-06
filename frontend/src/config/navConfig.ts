@@ -24,7 +24,6 @@ import {
   Flame,
   GitBranch,
   House,
-  Layers,
   LayoutGrid,
   ListOrdered,
   Link2,
@@ -268,7 +267,6 @@ export function getSectionLandingPath(section: NavSection, context: NavContext):
 
 export const ADMIN_TABS = [
   'schedule',
-  'events',
   'standalone-matches',
   'users',
   'players',
@@ -323,7 +321,6 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     labelKey: 'admin.panel.groups.matchDay',
     entries: [
       { tab: 'schedule', labelKey: 'admin.panel.tabs.scheduleMatch', icon: CalendarPlus, minRole: 'Moderator' },
-      { tab: 'events', labelKey: 'admin.panel.tabs.matchCards', icon: Layers, minRole: 'Moderator' },
       { tab: 'standalone-matches', labelKey: 'admin.panel.tabs.standaloneMatches', icon: ClipboardList, minRole: 'Moderator' },
     ],
   },
