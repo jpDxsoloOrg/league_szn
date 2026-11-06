@@ -77,6 +77,25 @@ describe('getStandings — season-specific (with seasonId)', () => {
     expect(body.players.map((p: { name: string }) => p.name)).toEqual(['Alice', 'Unsynced']);
   });
 
+  it('computes form and streak from that season only', async () => {
+    mockSeasonStandingsListBySeason.mockResolvedValue([
+      { seasonId: 's1', playerId: 'p1', wins: 1, losses: 0, draws: 0 },
+    ]);
+    mockOverallsListAll.mockResolvedValue([]);
+    mockMatchesListCompleted.mockResolvedValue([
+      { matchId: 'm1', seasonId: 's1', winners: ['p1'], losers: ['p2'], participants: ['p1', 'p2'], date: '2026-02-01', updatedAt: '2026-02-01' },
+      { matchId: 'm2', seasonId: 'other', winners: ['p2'], losers: ['p1'], participants: ['p1', 'p2'], date: '2026-03-01', updatedAt: '2026-03-01' },
+      { matchId: 'm3', winners: ['p2'], losers: ['p1'], participants: ['p1', 'p2'], date: '2026-04-01', updatedAt: '2026-04-01' },
+    ]);
+    mockPlayersList.mockResolvedValue([{ playerId: 'p1', name: 'Alice', currentWrestler: 'Wrestler A' }]);
+
+    const result = await getStandings(makeSeasonEvent('s1'), ctx, cb);
+
+    const [player] = JSON.parse(result!.body).players;
+    expect(player.recentForm).toEqual(['W']);
+    expect(player.currentStreak).toEqual({ type: 'W', count: 1 });
+  });
+
   it('returns season standings merged with all players', async () => {
     mockSeasonStandingsListBySeason.mockResolvedValue([
       { seasonId: 's1', playerId: 'p1', wins: 5, losses: 2, draws: 1 },
