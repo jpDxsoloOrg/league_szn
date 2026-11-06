@@ -108,6 +108,17 @@ describe('serverless.yml edge and setup settings', () => {
     expect(template).toContain("ADMIN_SETUP_KEY: ${env:ADMIN_SETUP_KEY, ''}");
   });
 
+  it('requires an explicit stage, because the dev stage is production', () => {
+    expect(template).toMatch(/^ {2}stage: \$\{opt:stage\}$/m);
+  });
+
+  it('keeps npm run remove from reaching a stack', () => {
+    const packageJson = JSON.parse(readFileSync(join(backendRoot, 'package.json'), 'utf8')) as {
+      scripts: Record<string, string>;
+    };
+    expect(packageJson.scripts.remove).toMatch(/^echo '.*' >&2 && exit 1$/);
+  });
+
   it('attaches the managed security headers policy to every cache behavior', () => {
     const behaviors = template.match(/ViewerProtocolPolicy: redirect-to-https/g) ?? [];
     const attached = template.match(/ResponseHeadersPolicyId: \$\{self:custom\.securityHeadersPolicyId\}/g) ?? [];

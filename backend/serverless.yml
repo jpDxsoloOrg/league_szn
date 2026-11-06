@@ -6,7 +6,9 @@ provider:
   name: aws
   runtime: ${env:SLS_RUNTIME, 'nodejs20.x'}
   region: us-east-1
-  stage: ${opt:stage, 'dev'}
+  # No default: the stage named `dev` is production, so every command must
+  # name its stage. Use --stage devtest for the test environment.
+  stage: ${opt:stage}
   logRetentionInDays: 90
   environment:
     SERVICE_NAME: ${self:service}
