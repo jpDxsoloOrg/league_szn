@@ -58,16 +58,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const key = pairKey(a, b);
       const existing = aggMap.get(key);
       const winners = matchWinners(match);
-      const p1Won = winners.includes(a);
-      const p2Won = winners.includes(b);
-      const isDraw = !p1Won && !p2Won;
+      const isDraw = !winners.includes(a) && !winners.includes(b);
 
       if (!existing) {
         aggMap.set(key, {
           player1Id: a,
           player2Id: b,
-          player1Wins: p1Won ? 1 : 0,
-          player2Wins: p2Won ? 1 : 0,
+          player1Wins: winners.includes(a) ? 1 : 0,
+          player2Wins: winners.includes(b) ? 1 : 0,
           draws: isDraw ? 1 : 0,
           matchCount: 1,
           lastMatchDate: match.date,
@@ -75,8 +73,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           recentMatchIds: [match.matchId],
         });
       } else {
-        existing.player1Wins += p1Won ? 1 : 0;
-        existing.player2Wins += p2Won ? 1 : 0;
+        // Participant order varies between matches, so credit by player id.
+        existing.player1Wins += winners.includes(existing.player1Id) ? 1 : 0;
+        existing.player2Wins += winners.includes(existing.player2Id) ? 1 : 0;
         existing.draws += isDraw ? 1 : 0;
         existing.matchCount += 1;
         if (new Date(match.date) > new Date(existing.lastMatchDate)) {

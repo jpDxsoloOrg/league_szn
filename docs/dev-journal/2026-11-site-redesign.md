@@ -126,7 +126,6 @@ Smaller open items:
   public reads. New ones are refused.
 - `GET /challenges/{id}` still returns a lapsed challenge by direct link, the same
   way an archived promo stays reachable by link.
-- Faction pages still name a hidden leader.
 - The staff check-in roster leaves out blank-name players.
 - The wiki needs updating for admin events and recording results.
 - Text from the API, such as awards and activity summaries, stays English for
@@ -178,6 +177,34 @@ tests had not. The fixes are in this PR.
   rerun. Prod was checked and has none missing.
 - **Challenge notifications:** these stay off. They were removed on purpose when
   matchmaking replaced challenges, so a direct challenge can lapse unseen.
+
+## Release notes
+
+- **Contender rankings:** a new scheduled function recalculates every active title
+  every 6 hours, using the same code as the manual recalculate button. It uses the
+  default settings (3 minimum matches, 10 contenders) and honours active overrides.
+  Custom settings from a manual run last only until the next job or recorded match.
+- **Ranking writes:** new rankings now replace old ones row by row, and only
+  afterwards are dropped players removed. A failed title keeps its rankings and the
+  other titles still save. A partly failed manual run reports which titles failed.
+- **Ranking counters:** `weeksAtTop` now counts weeks rather than runs. An unchanged
+  rank keeps its last movement arrow, so the job doesn't reset arrows to zero. The
+  New badge clears at the next run, so within 6 hours.
+- **Transfers off:** `POST /transfers` returns 403 while the `transfers` flag is
+  off. A missing key means off, so prod needs no data change. Admins can still list
+  and review existing requests.
+- **Clearing transfer requests:** this deletes every row in that stage's
+  transfer-requests table. It doesn't change players or send notifications. Stage
+  `dev` is prod and `devtest` is the dev site. Run from `backend/`, and read the
+  dry-run counts before adding `--confirm`:
+
+  ```bash
+  # Dry run: prints counts by status, changes nothing
+  AWS_PROFILE=league-szn npm run delete-transfer-requests -- --stage dev
+
+  # Delete
+  AWS_PROFILE=league-szn npm run delete-transfer-requests -- --stage dev --confirm
+  ```
 
 ## Verification
 

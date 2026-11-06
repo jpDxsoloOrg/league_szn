@@ -129,6 +129,19 @@ describe('updateSiteConfig', () => {
     expect(result!.statusCode).toBe(403);
   });
 
+  it('saves the transfers flag', async () => {
+    const event = withAuth(
+      makeEvent({ body: JSON.stringify({ features: { transfers: true } }) }),
+      'Admin',
+    );
+
+    const result = await updateSiteConfig(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(JSON.parse(result!.body).features.transfers).toBe(true);
+    expect((await siteConfigRepo.getFeatures()).transfers).toBe(true);
+  });
+
   it('returns 400 when request body is missing', async () => {
     const event = withAuth(makeEvent({ body: null }), 'Admin');
 

@@ -469,7 +469,8 @@ class SiteConfigDelegate implements SiteConfigMethods {
     });
 
     if (result.Item?.features) {
-      return result.Item.features as FeatureFlags;
+      // A stored row predates any flag added since, so defaults fill the gaps.
+      return { ...DEFAULT_FEATURES, ...(result.Item.features as Partial<FeatureFlags>) };
     }
 
     return { ...DEFAULT_FEATURES };

@@ -902,6 +902,17 @@ functions:
     events:
       - schedule: rate(1 hour)
 
+  # Recalculates contender rankings for every active title, one title at a time
+  # in this single invocation, so it holds one of the account's 10 concurrent
+  # Lambdas. A run is a few seconds of work at current volume; the timeout leaves
+  # room for slow scans. The schedule's Events::Rule and Lambda::Permission route
+  # to Overflow through stacks-map.js.
+  recalculateContenders:
+    handler: functions/contenders/recalculateContendersJob.handler
+    timeout: 300
+    events:
+      - schedule: rate(6 hours)
+
   # Challenges (Phase 2 consolidated: getChallenges, getChallenge, create, respond, cancel, delete, bulkDelete)
   challenges:
     handler: functions/challenges/handler.handler

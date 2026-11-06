@@ -6,6 +6,7 @@ export interface FeatureFlags {
   stables: boolean;
   rivalries: boolean;
   notifications: boolean;
+  /** Division transfer requests. Off until the feature is reworked. */
   transfers: boolean;
 }
 

@@ -6,7 +6,7 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 const mockContendersRepo = {
   listByChampionship: vi.fn(),
   listByChampionshipRanked: vi.fn(),
-  deleteAllForChampionship: vi.fn(),
+  deleteRanking: vi.fn(),
   upsertRanking: vi.fn(),
   findOverride: vi.fn(),
   listActiveOverrides: vi.fn(),
@@ -129,7 +129,7 @@ describe('calculateRankings', () => {
     vi.clearAllMocks();
     mockContendersRepo.upsertRanking.mockResolvedValue({});
     mockContendersRepo.writeHistory.mockResolvedValue({});
-    mockContendersRepo.deleteAllForChampionship.mockResolvedValue(undefined);
+    mockContendersRepo.deleteRanking.mockResolvedValue(undefined);
     mockContendersRepo.listActiveOverrides.mockResolvedValue([]);
     mockSeasonsRepo.findActive.mockResolvedValue({
       seasonId: 'season-1',
@@ -177,17 +177,102 @@ describe('calculateRankings', () => {
     );
   });
 
-  it('deletes old rankings before writing new ones', async () => {
+  it('removes players who dropped out, after the new rows are written', async () => {
     mockChampionshipsRepo.listActive.mockResolvedValue([champ('c1', 'Tag Title', { type: 'tag' })]);
     mockContendersRepo.listByChampionship.mockResolvedValue([
-      { championshipId: 'c1', playerId: 'old-1', rank: 1 },
+      { championshipId: 'c1', playerId: 'kept', rank: 1 },
       { championshipId: 'c1', playerId: 'old-2', rank: 2 },
     ]);
-    mockCalcRankings.mockResolvedValue([]);
+    mockCalcRankings.mockResolvedValue([rankResult('kept', 1)]);
 
     await calculateRankings(makeEvent(), ctx, cb);
 
-    expect(mockContendersRepo.deleteAllForChampionship).toHaveBeenCalledWith('c1');
+    expect(mockContendersRepo.deleteRanking).toHaveBeenCalledTimes(1);
+    expect(mockContendersRepo.deleteRanking).toHaveBeenCalledWith('c1', 'old-2');
+    expect(mockContendersRepo.deleteRanking.mock.invocationCallOrder[0])
+      .toBeGreaterThan(mockContendersRepo.upsertRanking.mock.invocationCallOrder[0]);
+  });
+
+  it('keeps the last movement when a rank does not change', async () => {
+    mockChampionshipsRepo.listActive.mockResolvedValue([champ('c1', 'IC Title')]);
+    mockContendersRepo.listByChampionship.mockResolvedValue([
+      { championshipId: 'c1', playerId: 'p1', rank: 2, previousRank: 5 },
+    ]);
+    mockCalcRankings.mockResolvedValue([rankResult('p9', 1), rankResult('p1', 2)]);
+
+    await calculateRankings(makeEvent(), ctx, cb);
+
+    expect(mockContendersRepo.upsertRanking).toHaveBeenCalledWith(
+      expect.objectContaining({ playerId: 'p1', previousRank: 5 }),
+    );
+    expect(mockContendersRepo.writeHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ playerId: 'p1', movement: 3 }),
+    );
+  });
+
+  it('counts weeksAtTop once per week, not once per run', async () => {
+    mockChampionshipsRepo.listActive.mockResolvedValue([champ('c1', 'IC Title')]);
+    mockContendersRepo.listByChampionship.mockResolvedValue([
+      { championshipId: 'c1', playerId: 'p1', rank: 1, weeksAtTop: 4, calculatedAt: new Date().toISOString() },
+    ]);
+    mockCalcRankings.mockResolvedValue([rankResult('p1', 1)]);
+
+    await calculateRankings(makeEvent(), ctx, cb);
+
+    expect(mockContendersRepo.upsertRanking).toHaveBeenCalledWith(
+      expect.objectContaining({ playerId: 'p1', weeksAtTop: 4 }),
+    );
+  });
+
+  it('counts a new week at the top', async () => {
+    mockChampionshipsRepo.listActive.mockResolvedValue([champ('c1', 'IC Title')]);
+    const lastMonth = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    mockContendersRepo.listByChampionship.mockResolvedValue([
+      { championshipId: 'c1', playerId: 'p1', rank: 1, weeksAtTop: 4, calculatedAt: lastMonth },
+    ]);
+    mockCalcRankings.mockResolvedValue([rankResult('p1', 1)]);
+
+    await calculateRankings(makeEvent(), ctx, cb);
+
+    expect(mockContendersRepo.upsertRanking).toHaveBeenCalledWith(
+      expect.objectContaining({ playerId: 'p1', weeksAtTop: 5 }),
+    );
+  });
+
+  it('reports a partial failure and saves the other titles', async () => {
+    mockChampionshipsRepo.listActive.mockResolvedValue([champ('c1', 'World'), champ('c2', 'IC')]);
+    mockContendersRepo.listByChampionship.mockResolvedValue([]);
+    mockCalcRankings
+      .mockRejectedValueOnce(new Error('scan failed'))
+      .mockResolvedValueOnce([rankResult('p1', 1)]);
+
+    const result = await calculateRankings(makeEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    const body = JSON.parse(result!.body);
+    expect(body.championships).toEqual(['IC']);
+    expect(body.failedChampionships).toEqual(['World']);
+    expect(body.message).toContain('1 of 2 titles failed');
+  });
+
+  it('returns 500 when every title fails', async () => {
+    mockChampionshipsRepo.listActive.mockResolvedValue([champ('c1', 'World')]);
+    mockContendersRepo.listByChampionship.mockResolvedValue([]);
+    mockCalcRankings.mockRejectedValueOnce(new Error('scan failed'));
+
+    const result = await calculateRankings(makeEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(500);
+  });
+
+  it('rethrows on an async invocation when every title fails', async () => {
+    mockChampionshipsRepo.listActive.mockResolvedValue([champ('c1', 'World')]);
+    mockContendersRepo.listByChampionship.mockResolvedValue([]);
+    mockCalcRankings.mockRejectedValueOnce(new Error('scan failed'));
+
+    await expect(
+      calculateRankings({ source: 'recordResult' } as unknown as APIGatewayProxyEvent, ctx, cb),
+    ).rejects.toThrow('Rankings failed for: World');
   });
 
   it('writes ranking history entries with weekKey in YYYY-WW format', async () => {
