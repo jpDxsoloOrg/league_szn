@@ -234,6 +234,20 @@ describe('ManagePlayers', () => {
     });
   });
 
+  it('leaves a stored name alone when it has characters the form strips', async () => {
+    const user = userEvent.setup();
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([{ ...mockPlayers[0], name: 'Mike_23' }]);
+    mockPlayersApi.update.mockResolvedValue({ playerId: 'p1' });
+    renderComponent();
+    await waitFor(() => { expect(screen.getByText('Mike_23')).toBeInTheDocument(); });
+
+    await user.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
+    await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+    await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalled(); });
+    expect(mockPlayersApi.update.mock.calls[0][1]).not.toHaveProperty('name');
+  });
+
   it('clears the wrestler slot when the placeholder option is picked', async () => {
     const user = userEvent.setup();
     mockPlayersApi.update.mockResolvedValue({ playerId: 'p1' });

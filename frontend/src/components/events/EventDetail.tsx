@@ -217,8 +217,7 @@ export default function EventDetail() {
 
   const handleLoginRequired = useCallback(() => {
     if (!eventId) return;
-    const returnUrl = encodeURIComponent(`/events/${eventId}`);
-    navigate(`/login?returnUrl=${returnUrl}`);
+    navigate('/login', { state: { from: { pathname: `/events/${eventId}` } } });
   }, [eventId, navigate]);
 
   // ── Admin slot-edit dialog ────────────────────────────────────────────────
@@ -591,7 +590,9 @@ export default function EventDetail() {
     );
   }
 
-  if (error || !eventData) {
+  // A failed refetch keeps the page, so a save that worked doesn't look lost.
+  const hasLoadedEvent = eventData?.eventId === eventId;
+  if ((error && !hasLoadedEvent) || !eventData) {
     return (
       <div className="event-detail-page">
         <EmptyState
@@ -765,6 +766,7 @@ export default function EventDetail() {
 
   return (
     <div className="event-detail-page">
+      {error && <p className="event-detail-error" role="alert">{error}</p>}
       <Button className="event-detail-back" variant="ghost" size="sm" to="/events" icon={<ArrowLeft aria-hidden="true" size={18} />}>
         {t('events.detail.backToEvents')}
       </Button>

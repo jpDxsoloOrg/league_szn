@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
 const { api, authState } = vi.hoisted(() => ({
   api: {
@@ -107,6 +107,11 @@ const eventWithMatch = {
 
 const showToast = vi.fn();
 
+function LoginProbe() {
+  const { state } = useLocation();
+  return <p data-testid="return-path">{(state as { from?: { pathname?: string } } | null)?.from?.pathname}</p>;
+}
+
 function renderDetail() {
   return render(
     <ToastContext.Provider value={{ showToast }}>
@@ -114,6 +119,7 @@ function renderDetail() {
         <Routes>
           <Route path="/events/:eventId" element={<EventDetail />} />
           <Route path="/events" element={<div>Events list</div>} />
+          <Route path="/login" element={<LoginProbe />} />
         </Routes>
       </MemoryRouter>
     </ToastContext.Provider>,
@@ -197,6 +203,38 @@ describe('EventDetail', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Summer Slam' })).toBeInTheDocument();
     expect(await screen.findByText('Match TBA')).toBeInTheDocument();
+  });
+
+  it('keeps the page and shows the error when a background refetch fails', async () => {
+    const card: CardRow[] = [['m1', 'opener'], ['m2', 'midcard']];
+    api.getEvent.mockResolvedValueOnce(eventWithCard(card)).mockRejectedValue(new Error('Too many requests'));
+    api.updateEvent.mockRejectedValue(Object.assign(new Error('Conflict'), { status: 409 }));
+    const user = userEvent.setup();
+    renderDetail();
+
+    await user.click(await waitFor(() => moveDown('m1')));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Too many requests');
+    expect(screen.getByRole('heading', { level: 1, name: 'Summer Slam' })).toBeInTheDocument();
+  });
+
+  it('sends a guest who claims a spot to sign-in with the way back to this event', async () => {
+    authState.isAuthenticated = false;
+    authState.isAdminOrModerator = false;
+    const event = eventWithCard([['m1', 'opener']]);
+    api.getEvent.mockResolvedValue({
+      ...event,
+      enrichedMatches: event.enrichedMatches.map((entry) => ({
+        ...entry,
+        matchData: { ...entry.matchData, status: 'open-signups', slots: [{ slotId: 's1', position: 1 }] },
+      })),
+    });
+    const user = userEvent.setup();
+    renderDetail();
+
+    await user.click(await screen.findByRole('button', { name: 'Claim spot' }));
+
+    expect(await screen.findByTestId('return-path')).toHaveTextContent('/events/e1');
   });
 
   describe('a card whose match is gone', () => {
