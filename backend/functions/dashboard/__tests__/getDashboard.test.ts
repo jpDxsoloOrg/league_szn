@@ -134,6 +134,60 @@ describe('getDashboard', () => {
     expect(JSON.stringify(body.recentResults[0])).toContain('B');
   });
 
+  describe('drawn recent results', () => {
+    const recent = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    beforeEach(() => {
+      mockPlayersList.mockResolvedValue([
+        { playerId: 'p1', name: 'Alice', currentWrestler: 'A', hasWrestlerRole: true },
+        { playerId: 'p2', name: 'Bob', currentWrestler: 'B', hasWrestlerRole: true },
+        { playerId: 'p3', name: 'Cara', currentWrestler: 'C', hasWrestlerRole: true },
+        { playerId: 'p4', name: 'Dee', currentWrestler: 'D', hasWrestlerRole: true },
+      ]);
+    });
+
+    it('marks a draw and names everyone in it, with no winner', async () => {
+      mockMatchesList.mockResolvedValue([
+        { matchId: 'm1', date: recent, status: 'completed', participants: ['p1', 'p2'], winners: ['p1', 'p2'], losers: [], isDraw: true, matchFormat: 'singles' },
+      ]);
+
+      const result = await getDashboard({} as never, ctx, cb);
+
+      const [row] = JSON.parse(result!.body).recentResults;
+      expect(row.isDraw).toBe(true);
+      expect(row.participantsName).toBe('A vs B');
+      expect(row.winnerName).toBe('\u2014');
+      expect(row.winnerImageUrl).toBeUndefined();
+    });
+
+    it('keeps tag partners together in a drawn team match', async () => {
+      mockMatchesList.mockResolvedValue([
+        {
+          matchId: 'm1', date: recent, status: 'completed', participants: ['p1', 'p2', 'p3', 'p4'],
+          teams: [['p1', 'p2'], ['p3', 'p4']], winners: ['p1', 'p2', 'p3', 'p4'], losers: [], isDraw: true, matchFormat: 'tag',
+        },
+      ]);
+
+      const result = await getDashboard({} as never, ctx, cb);
+
+      expect(JSON.parse(result!.body).recentResults[0].participantsName).toBe('A & B vs C & D');
+    });
+
+    it('leaves a decided match as it was', async () => {
+      mockMatchesList.mockResolvedValue([
+        { matchId: 'm1', date: recent, status: 'completed', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'], matchFormat: 'singles' },
+      ]);
+
+      const result = await getDashboard({} as never, ctx, cb);
+
+      const [row] = JSON.parse(result!.body).recentResults;
+      expect(row.isDraw).toBe(false);
+      expect(row.participantsName).toBeUndefined();
+      expect(row.winnerName).toBe('A');
+      expect(row.loserName).toBe('B');
+    });
+  });
+
   it('names a player with no row Former member, and keeps the dash for an empty side', async () => {
     const recent = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     mockMatchesList.mockResolvedValue([

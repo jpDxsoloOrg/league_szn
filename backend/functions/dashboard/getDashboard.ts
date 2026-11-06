@@ -6,6 +6,7 @@ import { hasWrestlerRole } from '../../lib/wrestlerRole';
 import { FORMER_MEMBER, isNeedsWrestler, isPlayerVisible } from '../../lib/needsWrestler';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
+import { matchWinners } from '../../lib/matchResult';
 
 const RECENT_RESULTS_LIMIT = 5;
 
@@ -44,6 +45,9 @@ interface DashboardMatch {
   winnerImageUrl?: string;
   loserName: string;
   loserImageUrl?: string;
+  isDraw: boolean;
+  /** Everyone in a drawn match, as "A vs B". Only set when `isDraw` is true. */
+  participantsName?: string;
   eventId?: string;
   /** True iff the calling user has rated this match. False for guests (RIV-24). */
   userHasRated: boolean;
@@ -271,7 +275,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const recentResults: DashboardMatch[] = recentResultMatches.map((m) => {
-      const winnerIds = m.winners!;
+      const winnerIds = matchWinners(m);
+      const isDraw = Boolean(m.isDraw);
       const loserIds = m.losers!;
       const winnerName = (winnerIds || [])
         .map((id) => resultDisplayName(resultPlayerMap.get(id)))
@@ -280,6 +285,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       // Use " vs " for losers so triple threat / fatal four way read as "A vs B vs C" not "A vs B & C"
       const loserName = (loserIds || [])
         .map((id) => resultDisplayName(resultPlayerMap.get(id)))
+        .filter(Boolean)
+        .join(' vs ');
+      const drawnSides = isDraw ? m.teams ?? m.participants.map((id) => [id]) : [];
+      const participantsName = drawnSides
+        .map((side) => side.map((id) => resultDisplayName(resultPlayerMap.get(id))).filter(Boolean).join(' & '))
         .filter(Boolean)
         .join(' vs ');
       const firstWinner = winnerIds?.[0];
@@ -311,6 +321,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         loserImageUrl: firstLoser
           ? resultPlayerMap.get(firstLoser)?.imageUrl
           : undefined,
+        isDraw,
+        participantsName: participantsName || undefined,
         eventId: m.eventId,
         userHasRated: userRatingForMatch !== undefined,
         userRating: userRatingForMatch ?? null,

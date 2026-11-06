@@ -258,6 +258,9 @@ export interface DashboardMatch {
   winnerImageUrl?: string;
   loserName: string;
   loserImageUrl?: string;
+  isDraw?: boolean;
+  /** Everyone in a drawn match, as "A vs B". Only set when `isDraw` is true. */
+  participantsName?: string;
   eventId?: string;
 }
 

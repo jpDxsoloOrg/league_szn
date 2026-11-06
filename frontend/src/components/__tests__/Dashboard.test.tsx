@@ -155,6 +155,25 @@ describe('Dashboard', () => {
     expect(screen.getByText('Quick Stats')).toBeInTheDocument();
   });
 
+  it('shows a drawn match as a draw, not as a win over nobody', async () => {
+    mockGetDashboard.mockResolvedValue({
+      ...emptyDashboard,
+      recentResults: [
+        {
+          matchId: 'm1', date: '2025-01-15', matchType: 'singles', winnerName: '\u2014', loserName: '\u2014',
+          isDraw: true, participantsName: 'Alice vs Bob',
+        },
+      ],
+    });
+
+    renderDashboard();
+
+    expect(await screen.findByText('Alice vs Bob')).toBeInTheDocument();
+    expect(screen.getByText(/dashboard\.draw/)).toBeInTheDocument();
+    expect(screen.queryByText('dashboard.def')).not.toBeInTheDocument();
+    expect(screen.queryByText('\u2014')).not.toBeInTheDocument();
+  });
+
   it('renders empty states when no data', async () => {
     renderDashboard();
 

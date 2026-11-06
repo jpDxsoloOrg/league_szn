@@ -22,11 +22,18 @@ export default function LatestResults({ results }: { results: DashboardMatch[] }
             {results.slice(0, RESULTS_SHOWN).map((match) => (
               <li key={match.matchId}>
                 <Link to={match.eventId ? `/events/${match.eventId}` : '/matches'} className="home-result">
-                  <span className="home-result__outcome">
-                    <span className="home-result__winner">{match.winnerName}</span>
-                    <span className="home-result__def"> {t('dashboard.def')} </span>
-                    <span className="home-result__loser">{match.loserName}</span>
-                  </span>
+                  {match.isDraw ? (
+                    <span className="home-result__outcome">
+                      <span className="home-result__drawn">{match.participantsName}</span>
+                      <span className="home-result__def"> {t('dashboard.draw')}</span>
+                    </span>
+                  ) : (
+                    <span className="home-result__outcome">
+                      <span className="home-result__winner">{match.winnerName}</span>
+                      <span className="home-result__def"> {t('dashboard.def')} </span>
+                      <span className="home-result__loser">{match.loserName}</span>
+                    </span>
+                  )}
                   <span className="home-result__type">
                     {formatMatchType(match.matchType, t)}
                     {match.stipulation ? ` · ${match.stipulation}` : ''}
