@@ -1,0 +1,69 @@
+.challenge-versus {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: 'start vs end';
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.challenge-versus__side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  text-align: center;
+}
+
+.challenge-versus__side--start {
+  grid-area: start;
+}
+
+.challenge-versus__side--end {
+  grid-area: end;
+}
+
+.challenge-versus__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.challenge-versus__name {
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.challenge-versus--lg .challenge-versus__name {
+  font-size: 1.25rem;
+}
+
+.challenge-versus__detail {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.challenge-versus__role {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.challenge-versus__vs {
+  grid-area: vs;
+  color: var(--color-pink);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.challenge-versus--lg .challenge-versus__vs {
+  font-size: 1.5rem;
+}

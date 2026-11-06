@@ -1,16 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampionships, mockCreatePromo, mockGetAllStipulations, mockGetAllMatchTypes, mockGetAllTagTeams } =
+const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampionships, mockCreatePromo, mockCreateChallenge, mockGetAllStipulations, mockGetAllMatchTypes, mockGetAllTagTeams } =
   vi.hoisted(() => ({
     mockGetAllPlayers: vi.fn(),
     mockGetAllPromos: vi.fn(),
     mockGetAllMatches: vi.fn(),
     mockGetAllChampionships: vi.fn(),
     mockCreatePromo: vi.fn(),
+    mockCreateChallenge: vi.fn(),
     mockGetAllStipulations: vi.fn(),
     mockGetAllMatchTypes: vi.fn(),
     mockGetAllTagTeams: vi.fn(),
@@ -19,6 +20,7 @@ const { mockGetAllPlayers, mockGetAllPromos, mockGetAllMatches, mockGetAllChampi
 vi.mock('../../../services/api', () => ({
   playersApi: { getAll: mockGetAllPlayers },
   promosApi: { getAll: mockGetAllPromos, create: mockCreatePromo },
+  challengesApi: { create: mockCreateChallenge },
   matchesApi: { getAll: mockGetAllMatches },
   championshipsApi: { getAll: mockGetAllChampionships },
   stipulationsApi: { getAll: mockGetAllStipulations },
@@ -99,11 +101,11 @@ vi.mock('../PromoReactions.css', () => ({}));
 
 import PromoEditor from '../PromoEditor';
 
-function renderEditor() {
+function renderEditor(initialEntry = '/promos/new') {
   return render(
-    <BrowserRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <PromoEditor />
-    </BrowserRouter>
+    </MemoryRouter>
   );
 }
 
@@ -182,7 +184,8 @@ describe('PromoEditor', () => {
     // Type sufficient content (50+ chars)
     const textarea = screen.getByPlaceholderText('Drop your promo here...');
     const validContent = 'A'.repeat(60);
-    await user.type(textarea, validContent);
+    await user.click(textarea);
+    await user.paste(validContent);
 
     // Submit
     const submitBtn = screen.getByText('Drop the Mic');
@@ -203,6 +206,38 @@ describe('PromoEditor', () => {
       expect(screen.getByText('Promo Submitted!')).toBeInTheDocument();
       expect(screen.getByText('View Promo Feed')).toBeInTheDocument();
       expect(screen.getByText('Cut Another Promo')).toBeInTheDocument();
+    });
+  });
+
+  it('issues a challenge when a call-out is published', async () => {
+    const user = userEvent.setup();
+    mockCreatePromo.mockResolvedValue({});
+    mockCreateChallenge.mockResolvedValue({});
+    mockGetAllMatchTypes.mockResolvedValue([{ matchTypeId: 'mt-1', name: 'Singles' }]);
+
+    const { container } = renderEditor('/promos/new?promoType=call-out&targetPlayerId=p-2');
+
+    const textarea = await screen.findByPlaceholderText('Drop your promo here...');
+    await user.click(textarea);
+    await user.paste('A'.repeat(60));
+
+    // A call-out cannot go out without the match type the challenge needs.
+    const submitBtn = screen.getByText('Drop the Mic');
+    expect(submitBtn).toBeDisabled();
+
+    await waitFor(() => {
+      expect(container.querySelector('select option[value="Singles"]')).not.toBeNull();
+    });
+    const matchTypeSelect = container.querySelector('select option[value="Singles"]')?.parentElement as HTMLSelectElement;
+    fireEvent.change(matchTypeSelect, { target: { value: 'Singles' } });
+
+    await waitFor(() => expect(submitBtn).toBeEnabled());
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockCreateChallenge).toHaveBeenCalledWith(
+        expect.objectContaining({ challengedId: 'p-2', matchType: 'Singles' })
+      );
     });
   });
 });

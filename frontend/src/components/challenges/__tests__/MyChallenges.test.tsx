@@ -124,8 +124,9 @@ describe('MyChallenges', () => {
     expect(screen.getByText('Sent')).toBeInTheDocument();
 
     // Received tab count (1) and Sent tab count (1)
-    const counts = screen.getAllByText('1');
-    expect(counts.length).toBeGreaterThanOrEqual(2);
+    await waitFor(() => {
+      expect(screen.getAllByText('1').length).toBeGreaterThanOrEqual(2);
+    });
   });
 
   it('shows action buttons based on status and direction', async () => {
@@ -171,6 +172,23 @@ describe('MyChallenges', () => {
     });
 
     // Accept/Decline should NOT appear on sent challenges
+    expect(screen.queryByText('Accept')).not.toBeInTheDocument();
+    expect(screen.queryByText('Decline')).not.toBeInTheDocument();
+  });
+
+  it('shows an overdue pending challenge as expired with no actions', async () => {
+    mockGetAll.mockResolvedValue([
+      makeChallenge({
+        challengerId: 'p-2',
+        challengedId: currentPlayerId,
+        status: 'pending',
+        expiresAt: new Date(Date.now() - 1000).toISOString(),
+      }),
+    ]);
+
+    renderMyChallenges();
+
+    expect(await screen.findByText('challenges.status.expired')).toBeInTheDocument();
     expect(screen.queryByText('Accept')).not.toBeInTheDocument();
     expect(screen.queryByText('Decline')).not.toBeInTheDocument();
   });

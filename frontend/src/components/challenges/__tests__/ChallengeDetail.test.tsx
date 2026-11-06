@@ -96,7 +96,7 @@ const pendingChallenge: ChallengeWithPlayers = {
   status: 'pending',
   message: 'You are going down!',
   expiresAt: new Date(Date.now() + 5 * 86400000).toISOString(),
-  createdAt: '2024-06-01T00:00:00Z',
+  createdAt: new Date().toISOString(),
   updatedAt: '2024-06-01T00:00:00Z',
   challenger: { playerName: 'John', wrestlerName: 'Stone Cold' },
   challenged: { playerName: 'Jane', wrestlerName: 'The Rock' },

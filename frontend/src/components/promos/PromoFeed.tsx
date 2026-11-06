@@ -1,10 +1,16 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
-import { PromoWithContext } from '../../types/promo';
+import { useNavigate } from 'react-router-dom';
+import { Mic } from 'lucide-react';
+import type { PromoWithContext, ReactionType } from '../../types/promo';
 import { promosApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePromoReadState } from '../../hooks/usePromoReadState';
+import Button from '../ui/Button';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Skeleton from '../ui/Skeleton';
+import Tabs from '../ui/Tabs';
 import PromoCard from './PromoCard';
 import './PromoFeed.css';
 
@@ -52,32 +58,41 @@ function matchesFilter(promo: PromoWithContext, filter: FeedFilter, currentPlaye
 
 export default function PromoFeed() {
   const { t } = useTranslation();
-  const { playerId } = useAuth();
+  const navigate = useNavigate();
+  const { playerId, isAdminOrModerator } = useAuth();
   const [activeFilter, setActiveFilter] = useState<FeedFilter>('all');
   const [hideRead, setHideRead] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [promos, setPromos] = useState<PromoWithContext[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const { isRead, markAsRead, markAllAsRead, unreadCount } = usePromoReadState();
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
-    promosApi
-      .getAll({ excludeResponses: true }, controller.signal)
-      .then((data) => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        // The API leaves archived promos out unless staff ask for them.
+        const filters = showArchived
+          ? { excludeResponses: true, includeArchived: true }
+          : { excludeResponses: true };
+        const data = await promosApi.getAll(filters, controller.signal);
+        if (controller.signal.aborted) return;
         setPromos(data);
         setError(null);
-      })
-      .catch((err) => {
-        if (err.name !== 'AbortError') setError(err.message);
-      })
-      .finally(() => setLoading(false));
-
+      } catch (err) {
+        if (!controller.signal.aborted) setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    };
+    void load();
     return () => controller.abort();
-  }, []);
+  }, [showArchived, reloadKey]);
 
-  const handleReact = useCallback(async (promoId: string, reaction: import('../../types/promo').ReactionType) => {
+  const handleReact = useCallback(async (promoId: string, reaction: ReactionType) => {
     try {
       const result = await promosApi.react(promoId, reaction);
       setPromos((prev) =>
@@ -133,97 +148,47 @@ export default function PromoFeed() {
   }, [sortedPromos]);
 
   const unread = useMemo(() => unreadCount(promos), [unreadCount, promos]);
+  const isFiltered = activeFilter !== 'all' || hideRead;
 
-  if (loading) {
+  const renderFeed = () => {
+    if (loading) return <Skeleton variant="block" count={4} />;
+    if (error) {
+      return (
+        <EmptyState
+          title={t('promos.feed.loadError', 'Could not load promos')}
+          description={error}
+          actionLabel={t('common.retry', 'Retry')}
+          onAction={() => setReloadKey((key) => key + 1)}
+        />
+      );
+    }
     return (
-      <div className="promo-feed">
-        <div className="promo-feed-header">
-          <h2>{t('promos.feed.title', 'Wrestler Promos')}</h2>
-        </div>
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Loading promos...</div>
-      </div>
-    );
-  }
+      <>
+        {pinnedPromos.length > 0 && activeFilter === 'all' && (
+          <section className="promo-feed__group">
+            <h2 className="promo-feed__group-title">{t('promos.feed.pinnedPromos', 'Pinned')}</h2>
+            <div className="promo-feed__grid">
+              {pinnedPromos.map((promo) => (
+                <PromoCard key={promo.promoId} promo={promo} onReact={handleReact} />
+              ))}
+            </div>
+          </section>
+        )}
 
-  if (error) {
-    return (
-      <div className="promo-feed">
-        <div className="promo-feed-header">
-          <h2>{t('promos.feed.title', 'Wrestler Promos')}</h2>
-        </div>
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#ef4444' }}>Error: {error}</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="promo-feed">
-      <div className="promo-feed-header">
-        <h2>{t('promos.feed.title', 'Wrestler Promos')}</h2>
-        <div className="promo-feed-header-actions">
-          {unread > 0 && (
-            <span className="promo-unread-badge">
-              {unread} {t('promos.feed.unread', 'unread')}
-            </span>
-          )}
-          <button className="mark-all-read-btn" onClick={markAllAsRead}>
-            {t('promos.feed.markAllRead', 'Mark all as read')}
-          </button>
-          <Link to="/promos/new" className="cut-promo-btn">
-            {t('promos.feed.cutPromo', 'Cut a Promo')}
-          </Link>
-        </div>
-      </div>
-
-      <div className="promo-feed-toolbar">
-        <div className="promo-feed-filters">
-          {FILTER_TABS.map((tab) => (
-            <button
-              key={tab.key}
-              className={`filter-tab ${activeFilter === tab.key ? 'active' : ''}`}
-              onClick={() => setActiveFilter(tab.key)}
-            >
-              {t(tab.labelKey, tab.fallback)}
-              {tab.key === 'mentions' && mentionCount > 0 && (
-                <span className="filter-tab-badge">{mentionCount}</span>
-              )}
-            </button>
-          ))}
-        </div>
-        <label className="hide-read-toggle">
-          <span>{t('promos.feed.hideRead', 'Hide Read')}</span>
-          <div className={`toggle-switch ${hideRead ? 'active' : ''}`} onClick={() => setHideRead((v) => !v)}>
-            <div className="toggle-knob" />
-          </div>
-        </label>
-      </div>
-
-      {pinnedPromos.length > 0 && activeFilter === 'all' && (
-        <div className="promo-pinned-section">
-          <h3 className="promo-section-title">
-            {t('promos.feed.pinnedPromos', 'Pinned')}
-          </h3>
-          <div className="promo-grid">
-            {pinnedPromos.map((promo) => (
-              <PromoCard key={promo.promoId} promo={promo} onReact={handleReact} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="promo-list">
         {sortedPromos.length === 0 ? (
-          <div className="promo-empty-state">
-            <p>{t('promos.feed.noPromos', 'No promos found. Be the first to cut a promo!')}</p>
-            <Link to="/promos/new" className="cut-promo-btn secondary">
-              {t('promos.feed.cutPromo', 'Cut a Promo')}
-            </Link>
-          </div>
+          <EmptyState
+            icon={<Mic aria-hidden="true" />}
+            title={isFiltered
+              ? t('promos.feed.noFilterMatch', 'No promos match this filter.')
+              : t('promos.feed.noPromos', 'No promos found. Be the first to cut a promo!')}
+            actionLabel={isFiltered ? undefined : t('promos.feed.cutPromo', 'Cut a Promo')}
+            onAction={isFiltered ? undefined : () => navigate('/promos/new')}
+          />
         ) : (
           groupedPromos.map((group) => (
-            <div key={group.key} className="promo-date-group">
-              <h3 className="promo-date-group-title">{t(group.labelKey)}</h3>
-              <div className="promo-grid">
+            <section key={group.key} className="promo-feed__group">
+              <h2 className="promo-feed__group-title">{t(group.labelKey)}</h2>
+              <div className="promo-feed__grid">
                 {group.promos.map((promo) => (
                   <PromoCard
                     key={promo.promoId}
@@ -234,10 +199,62 @@ export default function PromoFeed() {
                   />
                 ))}
               </div>
-            </div>
+            </section>
           ))
         )}
+      </>
+    );
+  };
+
+  return (
+    <div className="promo-feed">
+      <PageHeader
+        title={t('promos.feed.title', 'Wrestler Promos')}
+        subtitle={unread > 0 ? `${unread} ${t('promos.feed.unread', 'unread')}` : undefined}
+        actions={(
+          <>
+            {unread > 0 && (
+              <Button variant="ghost" onClick={markAllAsRead}>
+                {t('promos.feed.markAllRead', 'Mark all as read')}
+              </Button>
+            )}
+            <Button to="/promos/new">{t('promos.feed.cutPromo', 'Cut a Promo')}</Button>
+          </>
+        )}
+      />
+
+      <div className="promo-feed__toolbar">
+        <Tabs
+          label={t('promos.feed.title', 'Wrestler Promos')}
+          value={activeFilter}
+          onValueChange={(value) => setActiveFilter(value as FeedFilter)}
+          items={FILTER_TABS.map((tab) => ({
+            value: tab.key,
+            label: (
+              <>
+                {t(tab.labelKey, tab.fallback)}
+                {tab.key === 'mentions' && mentionCount > 0 && (
+                  <span className="promo-feed__tab-count">{mentionCount}</span>
+                )}
+              </>
+            ),
+          }))}
+        />
+        <div className="promo-feed__toggles">
+          <label className="promo-feed__toggle">
+            <input type="checkbox" checked={hideRead} onChange={(event) => setHideRead(event.target.checked)} />
+            {t('promos.feed.hideRead', 'Hide Read')}
+          </label>
+          {isAdminOrModerator && (
+            <label className="promo-feed__toggle">
+              <input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.target.checked)} />
+              {t('promos.feed.showArchived', 'Show archived')}
+            </label>
+          )}
+        </div>
       </div>
+
+      {renderFeed()}
     </div>
   );
 }

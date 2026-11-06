@@ -1,104 +1,54 @@
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { Player } from '../../types';
-import type { Rivalry, RivalryStatus } from '../../types/rivalry';
-import {
-  DEFAULT_WRESTLER_IMAGE,
-  applyImageFallback,
-  resolveImageSrc,
-} from '../../constants/imageFallbacks';
-import { resolveWrestlerName, resolveWrestlerFullLabel } from './rivalryUtils';
+import type { Rivalry } from '../../types/rivalry';
+import Avatar from '../ui/Avatar';
+import Badge from '../ui/Badge';
+import Card from '../ui/Card';
+import { RIVALRY_STATUS_KEY, resolvePlayerCaption, resolveWrestlerName } from './rivalryUtils';
 import HeatBadge from './HeatBadge';
 import './RivalryCard.css';
 
 interface RivalryCardProps {
   rivalry: Rivalry;
   participants: Player[];
-  matchCount: number;
   lastActivityAt?: string;
 }
 
-const STATUS_LABEL_KEY: Record<RivalryStatus, string> = {
-  pending: 'rivalries.status.pending',
-  active: 'rivalries.status.active',
-  completed: 'rivalries.status.completed',
-  rejected: 'rivalries.status.rejected',
-  cancelled: 'rivalries.status.cancelled',
-};
-
-export default function RivalryCard({
-  rivalry,
-  participants,
-  matchCount,
-  lastActivityAt,
-}: RivalryCardProps) {
+export default function RivalryCard({ rivalry, participants, lastActivityAt }: RivalryCardProps) {
   const { t } = useTranslation();
-
   const lookup = new Map(participants.map((p) => [p.playerId, p] as const));
-  const partA = rivalry.participants[0];
-  const partB = rivalry.participants[1];
-  const a = partA ? lookup.get(partA.playerId) : undefined;
-  const b = partB ? lookup.get(partB.playerId) : undefined;
-  // Wrestler name (no extras) for image alt text — assistive tech reads
-  // the player+PSN info from the visible caption below it.
-  const nameA = resolveWrestlerName(partA, a);
-  const nameB = resolveWrestlerName(partB, b);
-  // Visible captions get the full WrestlerName (PlayerName · PSN) format.
-  const labelA = resolveWrestlerFullLabel(partA, a);
-  const labelB = resolveWrestlerFullLabel(partB, b);
-
-  const lastActivityLabel = lastActivityAt
-    ? new Date(lastActivityAt).toLocaleDateString()
-    : t('rivalries.card.noActivity');
+  const sides = rivalry.participants.slice(0, 2).map((participant) => {
+    const player = lookup.get(participant.playerId);
+    return {
+      playerId: participant.playerId,
+      name: resolveWrestlerName(participant, player),
+      caption: resolvePlayerCaption(player),
+      imageUrl: player?.imageUrl,
+    };
+  });
 
   return (
-    <Link to={`/rivalries/${rivalry.rivalryId}`} className="rivalry-card">
-      <div className="rivalry-card__faceoff">
-        <div className="rivalry-card__avatar">
-          <img
-            src={resolveImageSrc(a?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-            alt={nameA}
-            onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
-          />
-          <span className="rivalry-card__avatar-name">{labelA}</span>
-        </div>
-
-        <span className="rivalry-card__vs" aria-hidden="true">vs</span>
-
-        <div className="rivalry-card__avatar">
-          <img
-            src={resolveImageSrc(b?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-            alt={nameB}
-            onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
-          />
-          <span className="rivalry-card__avatar-name">{labelB}</span>
-        </div>
-      </div>
-
+    <Card to={`/rivalries/${rivalry.rivalryId}`} className="rivalry-card">
       <h3 className="rivalry-card__title">{rivalry.title}</h3>
 
-      <div className="rivalry-card__meta">
-        <span
-          className={`rivalry-card__status rivalry-card__status--${rivalry.status}`}
-        >
-          {t(STATUS_LABEL_KEY[rivalry.status])}
-        </span>
-        <HeatBadge heat={rivalry.heat} heatScore={rivalry.heatScore} size="sm" />
-      </div>
-
-      {/* Thin per-tier heat meter — mobile app shell only (hidden on
-          desktop via RivalryCard.css). Purely decorative; the badge
-          above carries the tier for assistive tech. */}
-      <div className="rivalry-card__meter" aria-hidden="true">
-        <div
-          className={`rivalry-card__meter-fill rivalry-card__meter-fill--${rivalry.heat}`}
-        />
+      <div className="rivalry-card__faceoff">
+        {sides.map((side) => (
+          <div key={side.playerId} className="rivalry-card__side">
+            <Avatar src={side.imageUrl} name={side.name} size="lg" />
+            <span className="rivalry-card__name">{side.name}</span>
+            {side.caption && <span className="rivalry-card__caption">{side.caption}</span>}
+          </div>
+        ))}
+        <span className="rivalry-card__vs" aria-hidden="true">{t('common.vs')}</span>
       </div>
 
       <div className="rivalry-card__footer">
-        <span>{t('rivalries.card.matchCount', { count: matchCount })}</span>
-        <span>{lastActivityLabel}</span>
+        <HeatBadge heat={rivalry.heat} heatScore={rivalry.heatScore} size="sm" />
+        {rivalry.status !== 'active' && <Badge>{t(RIVALRY_STATUS_KEY[rivalry.status])}</Badge>}
+        <span className="rivalry-card__date">
+          {lastActivityAt ? new Date(lastActivityAt).toLocaleDateString() : t('rivalries.card.noActivity')}
+        </span>
       </div>
-    </Link>
+    </Card>
   );
 }
