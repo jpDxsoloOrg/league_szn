@@ -3,18 +3,20 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // --- Hoisted mocks ---
-const { mockWrestlersApi } = vi.hoisted(() => ({
+const { mockFetchWithAuth, mockWrestlersApi } = vi.hoisted(() => ({
+  mockFetchWithAuth: vi.fn(),
   mockWrestlersApi: {
     getAll: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
     importBulk: vi.fn(),
-    resetAssignments: vi.fn(),
   },
 }));
 
 vi.mock('../../../services/api', () => ({
+  API_BASE_URL: 'http://api.test',
+  fetchWithAuth: mockFetchWithAuth,
   wrestlersApi: mockWrestlersApi,
 }));
 
@@ -68,6 +70,7 @@ describe('ManageWrestlers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.spyOn(window, 'prompt').mockReturnValue('RESET-ALL-ASSIGNMENTS');
   });
 
   describe('pagination', () => {
@@ -146,7 +149,7 @@ describe('ManageWrestlers', () => {
   });
 
   describe('reset all assignments', () => {
-    it('confirms, calls the API, refetches, and shows the result counts', async () => {
+    it('asks for the typed token, sends it, refetches, and shows the result counts', async () => {
       const assigned = makeWrestler(1, {
         isInUse: true,
         assignedPlayerId: 'p-1',
@@ -155,7 +158,7 @@ describe('ManageWrestlers', () => {
       mockWrestlersApi.getAll
         .mockResolvedValueOnce([assigned])
         .mockResolvedValueOnce([makeWrestler(1)]);
-      mockWrestlersApi.resetAssignments.mockResolvedValue({
+      mockFetchWithAuth.mockResolvedValue({
         clearedWrestlers: 1,
         clearedPlayers: 1,
       });
@@ -168,7 +171,7 @@ describe('ManageWrestlers', () => {
 
       await user.click(screen.getByRole('button', { name: 'Reset All Assignments' }));
 
-      expect(window.confirm).toHaveBeenCalledWith(
+      expect(window.prompt).toHaveBeenCalledWith(
         expect.stringContaining('Reset ALL wrestler assignments?'),
       );
       await waitFor(() => {
@@ -178,12 +181,16 @@ describe('ManageWrestlers', () => {
           ),
         ).toBeInTheDocument();
       });
-      expect(mockWrestlersApi.resetAssignments).toHaveBeenCalledTimes(1);
+      expect(mockFetchWithAuth).toHaveBeenCalledTimes(1);
+      expect(mockFetchWithAuth).toHaveBeenCalledWith(
+        'http://api.test/wrestlers/reset-assignments',
+        { method: 'POST', body: JSON.stringify({ confirm: 'RESET-ALL-ASSIGNMENTS' }) },
+      );
       expect(mockWrestlersApi.getAll).toHaveBeenCalledTimes(2);
     });
 
-    it('does nothing when the confirmation is dismissed', async () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(false);
+    it('does nothing when the prompt is dismissed', async () => {
+      vi.spyOn(window, 'prompt').mockReturnValue(null);
       mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1)]);
       const user = userEvent.setup();
 
@@ -194,12 +201,28 @@ describe('ManageWrestlers', () => {
 
       await user.click(screen.getByRole('button', { name: 'Reset All Assignments' }));
 
-      expect(mockWrestlersApi.resetAssignments).not.toHaveBeenCalled();
+      expect(mockFetchWithAuth).not.toHaveBeenCalled();
+    });
+
+    it('does not call the API when the typed text does not match', async () => {
+      vi.spyOn(window, 'prompt').mockReturnValue('reset');
+      mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1)]);
+      const user = userEvent.setup();
+
+      render(<ManageWrestlers />);
+      await waitFor(() => {
+        expect(screen.getByText('All Wrestlers (1)')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Reset All Assignments' }));
+
+      expect(mockFetchWithAuth).not.toHaveBeenCalled();
+      expect(screen.getByText('admin.manageWrestlers.resetTokenMismatch')).toBeInTheDocument();
     });
 
     it('surfaces an error message when the reset fails', async () => {
       mockWrestlersApi.getAll.mockResolvedValue([makeWrestler(1)]);
-      mockWrestlersApi.resetAssignments.mockRejectedValue(
+      mockFetchWithAuth.mockRejectedValue(
         new Error('Failed to reset wrestler assignments'),
       );
       const user = userEvent.setup();

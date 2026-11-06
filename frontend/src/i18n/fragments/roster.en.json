@@ -1,0 +1,8 @@
+{
+  "admin": {
+    "manageWrestlers": {
+      "resetTypeToken": "Type {{token}} to confirm.",
+      "resetTokenMismatch": "Reset cancelled: the confirmation text did not match."
+    }
+  }
+}

@@ -560,3 +560,46 @@ describe('updateMyProfile with FK fields', () => {
     expect(result!.statusCode).toBe(409);
   });
 });
+
+describe('assigning a wrestler with stale release state', () => {
+  async function seedStaleRelease() {
+    const wrestler = await repos.roster.wrestlers.create({
+      promotion: 'WWE',
+      name: 'Stale',
+      overallCap: 90,
+    });
+    const holder = await repos.roster.players.create({ name: 'Holder', currentWrestler: 'Stale' });
+    // The state an older release left behind: flagged free, still linked.
+    await repos.roster.wrestlers.update(wrestler.wrestlerId, {
+      isInUse: false,
+      assignedPlayerId: holder.playerId,
+      assignedSlot: 'primary',
+    } as Parameters<typeof repos.roster.wrestlers.update>[1]);
+    return { wrestler, holder };
+  }
+
+  it('rejects with 409 while the linked player still holds the wrestler', async () => {
+    const { wrestler, holder } = await seedStaleRelease();
+    await repos.roster.players.update(holder.playerId, { currentWrestlerId: wrestler.wrestlerId });
+
+    const result = await createPlayer(
+      makeEvent({ body: JSON.stringify({ name: 'New', currentWrestlerId: wrestler.wrestlerId }) }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(409);
+  });
+
+  it('allows it once the linked player no longer holds the wrestler', async () => {
+    const { wrestler } = await seedStaleRelease();
+
+    const result = await createPlayer(
+      makeEvent({ body: JSON.stringify({ name: 'New', currentWrestlerId: wrestler.wrestlerId }) }),
+      ctx,
+      cb,
+    );
+
+    expect(result!.statusCode).toBe(201);
+  });
+});
