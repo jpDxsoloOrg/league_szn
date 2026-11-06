@@ -104,6 +104,19 @@
   font-weight: 600;
 }
 
+/* A child article is open: the parent is marked, but it is not the current page. */
+.wiki-sidebar-list .wiki-sidebar-parent-current {
+  box-shadow: inset 2px 0 0 var(--color-selected);
+  color: var(--color-text);
+}
+
+.wiki-sidebar-sublist {
+  margin: 0 0 0 0.75rem;
+  padding: 0 0 0 0.5rem;
+  border-left: 1px solid var(--color-hairline);
+  list-style: none;
+}
+
 /* Index */
 .wiki-search-label {
   display: block;
@@ -159,6 +172,22 @@
 .wiki-index-list svg {
   flex-shrink: 0;
   color: var(--color-text-muted);
+}
+
+.wiki-index-sublist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The first child still needs the line that separates it from its parent. */
+.wiki-index-list .wiki-index-sublist li:first-child {
+  border-top: 1px solid var(--color-hairline);
+}
+
+.wiki-index-sublist a {
+  padding-left: 2.25rem;
+  font-weight: 500;
 }
 
 /* Article */
@@ -288,9 +317,11 @@
   overflow-x: auto;
 }
 
+/* Cells never break inside a word: a table too wide for the page scrolls instead. */
 .wiki-content th,
 .wiki-content td {
   padding: 0.5rem 0.75rem;
+  overflow-wrap: normal;
   border-bottom: 1px solid var(--color-hairline);
   text-align: left;
 }

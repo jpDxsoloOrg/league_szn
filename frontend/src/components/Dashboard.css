@@ -254,7 +254,8 @@
   overflow-wrap: anywhere;
 }
 
-.home-result__winner {
+.home-result__winner,
+.home-result__drawn {
   font-weight: 700;
 }
 

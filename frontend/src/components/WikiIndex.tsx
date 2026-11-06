@@ -8,14 +8,8 @@ import Card from './ui/Card';
 import EmptyState from './ui/EmptyState';
 import PageHeader from './ui/PageHeader';
 import Skeleton from './ui/Skeleton';
+import { buildWikiNav, type WikiArticleEntry } from './wikiNav';
 import './Wiki.css';
-
-interface WikiArticleEntry {
-  slug: string;
-  titleKey: string;
-  file: string;
-  adminOnly?: boolean;
-}
 
 interface SearchableEntry extends WikiArticleEntry {
   title: string;
@@ -71,12 +65,20 @@ export default function WikiIndex() {
     [searchableList]
   );
 
-  const filteredArticles = useMemo(() => {
-    const q = query.trim();
-    if (!q) return visibleArticles;
-    const results = fuse.search(q);
-    return results.map((r) => r.item);
-  }, [query, visibleArticles, fuse]);
+  const trimmedQuery = query.trim();
+  const searchResults = useMemo(
+    () => (trimmedQuery ? fuse.search(trimmedQuery).map((r) => r.item) : []),
+    [trimmedQuery, fuse]
+  );
+
+  // Search results are a flat ranked list, so they keep the full titles.
+  const navItems = useMemo(
+    () =>
+      trimmedQuery
+        ? searchResults.map((entry) => ({ entry, children: [] }))
+        : buildWikiNav(visibleArticles),
+    [trimmedQuery, searchResults, visibleArticles]
+  );
 
   if (loading) {
     return (
@@ -104,15 +106,27 @@ export default function WikiIndex() {
           autoComplete="off"
         />
       </label>
-      {filteredArticles.length > 0 ? (
+      {navItems.length > 0 ? (
         <Card padding="none">
           <ul className="wiki-index-list">
-            {filteredArticles.map((entry) => (
+            {navItems.map(({ entry, children }) => (
               <li key={entry.slug}>
                 <Link to={`/guide/wiki/${entry.slug}`}>
                   {t(entry.titleKey)}
                   <ChevronRight aria-hidden="true" size={18} />
                 </Link>
+                {children.length > 0 && (
+                  <ul className="wiki-index-sublist">
+                    {children.map((child) => (
+                      <li key={child.slug}>
+                        <Link to={`/guide/wiki/${child.slug}`}>
+                          {t(child.navTitleKey ?? child.titleKey)}
+                          <ChevronRight aria-hidden="true" size={18} />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>
