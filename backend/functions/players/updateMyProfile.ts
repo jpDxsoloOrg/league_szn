@@ -9,6 +9,7 @@ import { getAuthContext, requireRole } from '../../lib/auth';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
   filterExistingWrestlerIds,
+  parseSlotChange,
   rejectDuplicateSlotAssignment,
   resolveWrestlerForAssignment,
 } from './wrestlerAssignment';
@@ -24,17 +25,6 @@ const STRING_FIELDS = [
 const FK_FIELDS = ['currentWrestlerId', 'alternateWrestlerId'] as const;
 const MAX_NAME_LENGTH = 100;
 const MAX_URL_LENGTH = 2048;
-
-type SlotChange = { present: false } | { present: true; newId: string | null };
-
-function parseSlotChange(value: unknown): SlotChange {
-  if (value === undefined) return { present: false };
-  if (value === null || value === '') return { present: true, newId: null };
-  if (typeof value === 'string' && value.length > 0) {
-    return { present: true, newId: value };
-  }
-  return { present: false };
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Wrestler');
@@ -125,8 +115,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Parse FK changes.
-    const currentChange = parseSlotChange(body.currentWrestlerId);
-    const alternateChange = parseSlotChange(body.alternateWrestlerId);
+    const currentChange = parseSlotChange(body.currentWrestlerId, player.currentWrestlerId);
+    const alternateChange = parseSlotChange(body.alternateWrestlerId, player.alternateWrestlerId);
 
     if (currentChange.present || alternateChange.present) {
       const finalCurrent = currentChange.present

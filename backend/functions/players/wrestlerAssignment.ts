@@ -126,6 +126,29 @@ export async function filterExistingWrestlerIds(
   return checks.filter((wrestlerId): wrestlerId is string => wrestlerId !== null);
 }
 
+/** Requested FK transition on one slot: no change, a clear, or a new id. */
+export type SlotChange = { present: false } | { present: true; newId: string | null };
+
+/**
+ * Read a slot's FK from a request. `undefined` means no change, a string sets
+ * that wrestlerId, and `null` or '' clears the assignment.
+ *
+ * A clear only counts when the slot holds an FK. Edit forms echo an empty FK
+ * for players who have a wrestler name but no FK, and clearing would replace
+ * that name with the placeholder and hide the player.
+ */
+export function parseSlotChange(
+  value: unknown,
+  storedId: string | null | undefined,
+): SlotChange {
+  if (value === undefined) return { present: false };
+  if (value === null || value === '') {
+    return storedId ? { present: true, newId: null } : { present: false };
+  }
+  if (typeof value === 'string') return { present: true, newId: value };
+  return { present: false };
+}
+
 /**
  * Reject when the same wrestler is picked for both slots on a single player.
  */
