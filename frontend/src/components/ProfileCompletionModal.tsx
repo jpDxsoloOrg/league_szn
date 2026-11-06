@@ -262,11 +262,15 @@ export default function ProfileCompletionModal() {
       const becameVisible = missing.wrestler && !still.wrestler;
       setProfile(updated);
       setMissing(still);
-      if (becameVisible) setNowVisible(true);
       if (!still.name && !still.psnId && !hasSetupGaps(gaps)) {
         setShow(false);
         setDismissed(true);
+        // The toast is the only confirmation left, so nothing stays armed for
+        // an announcement that opens next.
+        setNowVisible(false);
         if (becameVisible) showToast(t('me.setup.nowVisible'), 'success');
+      } else if (becameVisible) {
+        setNowVisible(true);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('profileModal.saveFailed'));

@@ -442,6 +442,47 @@ describe('ProfileCompletionModal — setup gate', () => {
       expect(screen.queryByText('me.setup.nowVisible')).not.toBeInTheDocument();
     });
 
+    it('confirms once when one save finishes setup and an announcement follows', async () => {
+      mockGetMyProfile.mockResolvedValue(hidden);
+      mockUpdateMyProfile.mockImplementation(async (updates: Partial<Player>) => ({ ...complete, ...updates }));
+      renderAt();
+      await screen.findByRole('dialog');
+
+      await userEvent.type(screen.getByLabelText('me.setup.wrestlerLabel'), 'Seth Rollins');
+      await userEvent.click(screen.getByRole('button', { name: 'profileModal.saveAndContinue' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(mockShowToast).toHaveBeenCalledTimes(1);
+
+      act(() => setAnnouncementOpen(true));
+
+      await act(async () => {});
+      expect(mockShowToast).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not repeat a confirmation already shown in the dialog', async () => {
+      mockGetMyProfile.mockResolvedValue({ ...hidden, finishers: [] });
+      mockUpdateMyProfile.mockImplementation(async (updates: Partial<Player>) => ({
+        ...complete,
+        finishers: [],
+        ...updates,
+      }));
+      renderAt();
+      await screen.findByRole('dialog');
+
+      await userEvent.type(screen.getByLabelText('me.setup.wrestlerLabel'), 'Seth Rollins');
+      await userEvent.click(screen.getByRole('button', { name: 'profileModal.saveAndContinue' }));
+      await screen.findByText('me.setup.nowVisible');
+
+      await userEvent.type(screen.getByLabelText(/profileModal\.addFinisher — profile\.moves\.gameName/), 'Curb Stomp');
+      await userEvent.click(screen.getByRole('button', { name: 'profileModal.saveAndContinue' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+      act(() => setAnnouncementOpen(true));
+
+      await act(async () => {});
+      expect(mockShowToast).not.toHaveBeenCalled();
+    });
+
     it('offers the wrestler field before anything else', async () => {
       mockGetMyProfile.mockResolvedValue({ ...hidden, psnId: '', signatures: [], finishers: [] });
       renderAt();
