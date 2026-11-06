@@ -60,7 +60,6 @@ export default function FactionsList() {
         setLoading(true);
         setError(null);
 
-        // The directory rather than the roster, so a leader with no wrestler still has a name.
         const [factionList, standingsList, directoryList] = await Promise.all([
           factionsApi.getAll(undefined, controller.signal),
           factionsApi.getStandings(controller.signal).catch(() => [] as StableStanding[]),
@@ -97,8 +96,9 @@ export default function FactionsList() {
     return () => controller.abort();
   }, [isAuthenticated, isWrestler, reloadKey]);
 
+  // A hidden leader has no wrestler and stays unnamed, so the tile says the leader is no longer listed.
   const nameById = useMemo(
-    () => new Map(directory.map((entry) => [entry.playerId, entry.name])),
+    () => new Map(directory.filter((entry) => entry.currentWrestler !== null).map((entry) => [entry.playerId, entry.name])),
     [directory],
   );
 
