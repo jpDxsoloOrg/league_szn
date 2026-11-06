@@ -41,13 +41,15 @@ function mockPlayerLookup() {
   });
 }
 
+const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
+
 const mockChallenge1 = {
   challengeId: 'ch1', challengerId: 'p1', challengedId: 'p2',
-  matchType: 'Singles', status: 'pending', createdAt: '2025-01-15T10:00:00.000Z',
+  matchType: 'Singles', status: 'pending', createdAt: hoursAgo(2),
 };
 const mockChallenge2 = {
   challengeId: 'ch2', challengerId: 'p2', challengedId: 'p1',
-  matchType: 'Cage', status: 'accepted', createdAt: '2025-01-16T10:00:00.000Z',
+  matchType: 'Cage', status: 'accepted', createdAt: hoursAgo(1),
 };
 
 // ─── getChallenges ──────────────────────────────────────────────────
