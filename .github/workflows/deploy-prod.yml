@@ -78,6 +78,17 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: Check generated stacks for dependency cycles
+        working-directory: backend
+        run: |
+          npx serverless package --stage dev
+          node scripts/check-stack-cycles.js
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PROD_ACM_CERTIFICATE_ARN: ${{ secrets.PROD_ACM_CERTIFICATE_ARN }}
+          ADMIN_SETUP_KEY: ${{ secrets.ADMIN_SETUP_KEY }}
+
       - name: Deploy backend to production
         working-directory: backend
         run: npx serverless deploy --stage dev
