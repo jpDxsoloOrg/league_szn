@@ -205,7 +205,9 @@ tests had not. The fixes are in this PR.
   New badge clears at the next run, so within 6 hours.
 - **Transfers off:** `POST /transfers` returns 403 while the `transfers` flag is
   off. A missing key means off, so prod needs no data change. Admins can still list
-  and review existing requests.
+  and review existing requests through the API only: the admin tab is gated by the
+  same flag, so it disappears on deploy. Reaching a pending request in the UI means
+  turning the flag on, which also reopens `POST /transfers` to everyone.
 - **Clearing transfer requests:** this deletes every row in that stage's
   transfer-requests table. It doesn't change players or send notifications. Stage
   `dev` is prod and `devtest` is the dev site. Run from `backend/`, and read the
