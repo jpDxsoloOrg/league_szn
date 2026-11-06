@@ -4,7 +4,7 @@ import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { challengeExpiresAt } from '../../lib/challengeExpiry';
-import { isPlayerVisible, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
+import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 // Notifications intentionally not dispatched here while the challenge UI is hidden.
 
 interface CreateChallengeBody {
@@ -48,6 +48,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const challengerPlayer = await players.findByUserId(auth.sub);
     if (!challengerPlayer) {
       return badRequest('No player profile linked to your account');
+    }
+
+    if (!isPlayerVisible(challengerPlayer)) {
+      return badRequest(SET_WRESTLER_NAME_MESSAGE);
     }
 
     const challengerId = challengerPlayer.playerId;

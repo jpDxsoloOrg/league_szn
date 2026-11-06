@@ -57,7 +57,7 @@ describe('createPromo', () => {
 
   it('creates a promo with required fields and returns 201', async () => {
     mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }],
     });
     mockPut.mockResolvedValue({});
 
@@ -84,7 +84,7 @@ describe('createPromo', () => {
   });
 
   it('includes optional fields when provided', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }] });
     // mockGet is called for players.findById(targetPlayerId) during notification check
     mockGet.mockResolvedValue({ Item: { playerId: 'player-2', name: 'Target Player', currentWrestler: 'Target Wrestler', userId: 'user-sub-2' } });
     mockPut.mockResolvedValue({});
@@ -198,7 +198,7 @@ describe('createPromo', () => {
 
   it('accepts a response promo when targetPromoId is provided', async () => {
     mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }],
     });
     mockPut.mockResolvedValue({});
 
@@ -232,7 +232,7 @@ describe('createPromo', () => {
     const validTypes = ['open-mic', 'call-out', 'response', 'pre-match', 'post-match', 'championship', 'return'];
     for (const promoType of validTypes) {
       vi.clearAllMocks();
-      mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+      mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
       mockPut.mockResolvedValue({});
       const payload: Record<string, string> = { promoType, content: VALID_CONTENT };
       // Response promos require a target promo reference.
@@ -246,7 +246,7 @@ describe('createPromo', () => {
   });
 
   it('returns 500 when dynamodb put throws an error', async () => {
-    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
+    mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' }] });
     mockPut.mockRejectedValue(new Error('DynamoDB failure'));
     const event = withAuth(
       makeEvent({ body: JSON.stringify({ promoType: 'open-mic', content: VALID_CONTENT }) }),
@@ -262,7 +262,7 @@ describe('createPromo', () => {
     // then no rivalry rows on the second call (rivalry META lookup).
     mockQuery
       .mockResolvedValueOnce({
-        Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+        Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }],
       })
       .mockResolvedValueOnce({ Items: [] });
 
@@ -288,7 +288,7 @@ describe('createPromo', () => {
     // First query: find player. Second query: rivalry rows with a different participant.
     mockQuery
       .mockResolvedValueOnce({
-        Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+        Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }],
       })
       .mockResolvedValueOnce({
         Items: [
@@ -333,7 +333,7 @@ describe('createPromo', () => {
 
   it('returns 400 when a rivalry-type promo is submitted without rivalryId', async () => {
     mockQuery.mockResolvedValue({
-      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }],
+      Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player', currentWrestler: 'Cena' }],
     });
 
     const event = withAuth(
