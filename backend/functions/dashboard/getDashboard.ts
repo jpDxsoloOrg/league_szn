@@ -7,6 +7,8 @@ import { isNeedsWrestler, isPlayerVisible } from '../../lib/needsWrestler';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
 
+const RECENT_RESULTS_LIMIT = 5;
+
 interface DashboardChampion {
   championshipId: string;
   championshipName: string;
@@ -232,26 +234,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         matchCount: e.matchCards?.length,
       }));
 
-    // Recent results: only matches with updatedAt (recorded after we added it), sort by updatedAt desc, limit 20 for date grouping
+    // Recent results: the latest completed matches by match date, however old.
+    // Older rows have no updatedAt, so it only breaks ties within a date.
     const completedMatches = matchList.filter(
       (m) =>
         m.status === 'completed' &&
         m.winners &&
         m.losers &&
-        m.updatedAt
+        m.date
     );
     completedMatches.sort(
       (a, b) =>
-        new Date(b.updatedAt!).getTime() -
-        new Date(a.updatedAt!).getTime()
+        new Date(b.date).getTime() - new Date(a.date).getTime() ||
+        (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '')
     );
-    // Limit recent results to matches updated within the last 3 days
-    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-    const recentCompletedMatches = completedMatches.filter(
-      (m) => (m.updatedAt || m.date) >= threeDaysAgo
-    );
-    // Safety cap to avoid unbounded responses
-    const recentResultMatches = recentCompletedMatches.slice(0, 50);
+    const recentResultMatches = completedMatches.slice(0, RECENT_RESULTS_LIMIT);
 
     // RIV-24: batch-lookup the caller's ratings for the matches we're about
     // to project, so the FE rating widget renders in the right state without

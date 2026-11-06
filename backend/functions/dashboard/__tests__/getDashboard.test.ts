@@ -240,7 +240,7 @@ describe('getDashboard', () => {
     expect(body.upcomingEvents.length).toBeLessThanOrEqual(3);
   });
 
-  it('excludes completed matches without updatedAt from recent results', async () => {
+  it('includes completed matches without updatedAt when they have a date', async () => {
     mockMatchesList.mockResolvedValue([
       {
         matchId: 'm1',
@@ -260,13 +260,45 @@ describe('getDashboard', () => {
 
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
-    expect(body.recentResults).toHaveLength(0);
+    expect(body.recentResults.map((m: { matchId: string }) => m.matchId)).toEqual(['m1']);
   });
 
-  it('returns recent results from the last 3 days, excluding older matches', async () => {
+  it('keeps showing the latest results however long ago they were played', async () => {
+    const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+    mockMatchesList.mockResolvedValue([
+      { matchId: 'old', date: yearAgo, updatedAt: yearAgo, status: 'completed', winners: ['p1'], losers: ['p2'], matchFormat: 'singles' },
+    ]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', currentWrestler: 'A' },
+      { playerId: 'p2', currentWrestler: 'B' },
+    ]);
+
+    const result = await getDashboard({} as never, ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.recentResults.map((m: { matchId: string }) => m.matchId)).toEqual(['old']);
+  });
+
+  it('orders by match date, not by when the row was last updated', async () => {
+    mockMatchesList.mockResolvedValue([
+      { matchId: 'older', date: '2025-01-01T00:00:00Z', updatedAt: '2025-06-01T00:00:00Z', status: 'completed', winners: ['p1'], losers: ['p2'], matchFormat: 'singles' },
+      { matchId: 'newer', date: '2025-03-01T00:00:00Z', status: 'completed', winners: ['p1'], losers: ['p2'], matchFormat: 'singles' },
+    ]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', currentWrestler: 'A' },
+      { playerId: 'p2', currentWrestler: 'B' },
+    ]);
+
+    const result = await getDashboard({} as never, ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.recentResults.map((m: { matchId: string }) => m.matchId)).toEqual(['newer', 'older']);
+  });
+
+  it('returns only the latest 5 completed matches', async () => {
     const now = Date.now();
     const oneHourMs = 60 * 60 * 1000;
-    // 5 recent matches (within 3 days) + 5 old matches (> 3 days ago)
+    // 5 newer matches + 5 older ones
     const manyMatches = [
       ...Array.from({ length: 5 }, (_, i) => ({
         matchId: `recent${i}`,
