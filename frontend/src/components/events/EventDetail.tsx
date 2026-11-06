@@ -522,7 +522,7 @@ export default function EventDetail() {
     const ids = new Set<string>();
     const matches = eventData?.enrichedMatches ?? [];
     for (const match of matches) {
-      for (const participant of match.matchData.participants) {
+      for (const participant of match.matchData?.participants ?? []) {
         if (participant.playerId) {
           ids.add(participant.playerId);
         }

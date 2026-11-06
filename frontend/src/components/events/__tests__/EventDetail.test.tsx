@@ -187,6 +187,17 @@ describe('EventDetail', () => {
     expect(api.getRoster).not.toHaveBeenCalled();
   });
 
+  it('still opens when the card points at a deleted match', async () => {
+    api.getEvent.mockResolvedValue({
+      ...eventWithMatch,
+      enrichedMatches: [{ ...eventWithMatch.enrichedMatches[0], matchData: null }],
+    });
+    renderDetail();
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Summer Slam' })).toBeInTheDocument();
+    expect(await screen.findByText('Match TBA')).toBeInTheDocument();
+  });
+
   const withMatch = (matchFormat: string, participants: string[], teams?: string[][]) => ({
     ...eventWithMatch,
     enrichedMatches: [{

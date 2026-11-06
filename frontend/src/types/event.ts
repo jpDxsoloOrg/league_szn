@@ -66,7 +66,8 @@ export interface EnrichedMatchData {
 
 export interface EventWithMatches extends LeagueEvent {
   enrichedMatches: (MatchCardEntry & {
-    matchData: EnrichedMatchData;
+    /** Null when the card still points at a match that has been deleted. */
+    matchData: EnrichedMatchData | null;
   })[];
 }
 

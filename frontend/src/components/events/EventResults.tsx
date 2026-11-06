@@ -64,8 +64,8 @@ export default function EventResults() {
   }
 
   const enrichedMatches = eventData.enrichedMatches || [];
-  const completedMatches = enrichedMatches.filter(
-    (m) => m.matchData?.status === 'completed'
+  const completedMatches = enrichedMatches.flatMap((m) =>
+    m.matchData?.status === 'completed' ? [{ ...m, matchData: m.matchData }] : [],
   );
 
   if (completedMatches.length === 0) {
