@@ -401,7 +401,7 @@ export interface Announcement {
   announcementId: string;
   title: string;
   body: string;          // HTML content
-  createdBy: string;
+  createdBy?: string;    // Admin lists only; public reads leave it out
   isActive: boolean;
   priority: number;      // 1=low, 2=medium, 3=high
   expiresAt?: string;
@@ -421,7 +421,7 @@ export interface Video {
   category: VideoCategory;
   tags: string[];
   isPublished: boolean;
-  uploadedBy: string;
+  uploadedBy?: string;   // Admin lists only; public reads leave it out
   createdAt: string;
   updatedAt: string;
 }

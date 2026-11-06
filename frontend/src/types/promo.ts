@@ -26,7 +26,8 @@ export interface Promo {
   targetTagTeamName?: string;
   /** Optional pointer to the rivalry this promo advances (RIV-06). */
   rivalryId?: string;
-  reactions: Record<string, ReactionType>;
+  /** Keyed by account id, so public reads no longer carry it. */
+  reactions?: Record<string, ReactionType>;
   reactionCounts: Record<ReactionType, number>;
   isPinned: boolean;
   isHidden: boolean;

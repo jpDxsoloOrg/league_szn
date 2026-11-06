@@ -80,6 +80,50 @@ describe('getRivalry (hydrated)', () => {
     expect(body.notes).toEqual([]);
   });
 
+  describe('account ids', () => {
+    const accountId = '11111111-2222-3333-4444-555555555555';
+    const anonymousRead = async () => {
+      const res = await getRivalry(
+        makeEvent({ httpMethod: 'GET', pathParameters: { rivalryId: 'r1' } }),
+        ctx,
+        cb,
+      );
+      return JSON.parse(res!.body);
+    };
+
+    it('leaves moderatedBy and an id-valued bookerName out of the public payload', async () => {
+      mockRivalries.get.mockResolvedValue({ ...rivalry, moderatedBy: accountId, bookerName: accountId });
+
+      const body = await anonymousRead();
+
+      expect(JSON.stringify(body)).not.toContain(accountId);
+    });
+
+    it('keeps a real booker name', async () => {
+      mockRivalries.get.mockResolvedValue({ ...rivalry, bookerName: 'Jane GM' });
+
+      expect((await anonymousRead()).rivalry.bookerName).toBe('Jane GM');
+    });
+
+    it('masks the moderator id in stored system messages', async () => {
+      mockMessages.list.mockResolvedValue({
+        items: [{
+          rivalryId: 'r1',
+          messageId: 'm1',
+          authorPlayerId: 'system',
+          body: `Rivalry approved by ${accountId}.`,
+          audience: 'all',
+          createdAt: '',
+        }],
+        nextCursor: undefined,
+      });
+
+      const body = await anonymousRead();
+
+      expect(body.recentMessages[0].body).toBe('Rivalry approved by League Staff.');
+    });
+  });
+
   it('filters notes by visibility for anonymous callers', async () => {
     mockNotes.listByRivalry.mockResolvedValue([
       { rivalryId: 'r1', noteId: 'n1', noteType: 'storyline', visibility: 'all', body: 'public', authorPlayerId: 'admin', createdAt: '', updatedAt: '' },

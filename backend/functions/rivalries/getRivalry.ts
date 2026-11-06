@@ -1,4 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
+import { toPublicRivalry, withDisplayableBooker } from '../../lib/publicRivalry';
+import { maskSystemMessageIds } from '../../lib/reviewerName';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { authenticate } from '../../lib/authenticate';
@@ -130,12 +132,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const recentMessages = messagesPage.items
       .filter((m) => messageAudience.has(m.audience))
-      .slice(0, MAX_MESSAGES);
+      .slice(0, MAX_MESSAGES)
+      .map(maskSystemMessageIds);
 
     const notes = allNotes.filter((n) => noteVisibility.has(n.visibility));
 
     const payload: HydratedRivalry = {
-      rivalry: sanitizeRivalry(rivalry, isAdmin),
+      rivalry: isAdmin ? withDisplayableBooker(rivalry) : toPublicRivalry(rivalry),
       headToHead,
       nextEvent,
       recentPromos,
@@ -166,13 +169,6 @@ function computeAllowedVisibility(
   if (isAdmin) return new Set(['all', 'participants', 'admins']);
   if (isParticipant) return new Set(['all', 'participants']);
   return new Set(['all']);
-}
-
-function sanitizeRivalry(r: Rivalry, isAdmin: boolean): Rivalry {
-  if (isAdmin) return r;
-  const { moderationNote, ...rest } = r;
-  void moderationNote;
-  return rest as Rivalry;
 }
 
 interface MatchLite {

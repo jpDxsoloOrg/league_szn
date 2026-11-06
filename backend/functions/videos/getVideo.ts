@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
+import { toPublicVideo } from '../../lib/publicVideo';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -29,7 +30,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    return success(video);
+    return success(toPublicVideo(video));
   } catch (err) {
     console.error('Error fetching video:', err);
     return serverError('Failed to fetch video');

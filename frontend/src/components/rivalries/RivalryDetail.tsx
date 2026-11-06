@@ -49,7 +49,7 @@ export default function RivalryDetail() {
   const { t } = useTranslation();
   const { rivalryId } = useParams<{ rivalryId: string }>();
   const { showToast } = useToast();
-  const { isAdminOrModerator, email, isAuthenticated, isLoading: authLoading, playerId } = useAuth();
+  const { isAdminOrModerator, isAuthenticated, isLoading: authLoading, playerId } = useAuth();
   useLocationToast();
   const [hydrated, setHydrated] = useState<HydratedRivalry | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -141,7 +141,8 @@ export default function RivalryDetail() {
   const captionA = resolvePlayerCaption(a);
   const captionB = resolvePlayerCaption(b);
 
-  const callerLabel = email?.split('@')[0] ?? '';
+  // bookerName is public, so it holds the linked player's name, never the email.
+  const callerLabel = (playerId && playerLookup.get(playerId)?.name) || '';
   const isBooker = !!r.bookerName && r.bookerName === callerLabel;
   async function updateBooker(bookerName: string) {
     if (!isAdminOrModerator) return;

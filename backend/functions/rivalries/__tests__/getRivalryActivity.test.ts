@@ -144,6 +144,26 @@ describe('getRivalryActivity', () => {
     ]);
   });
 
+  it('masks the moderator id in a stored system message', async () => {
+    const accountId = '11111111-2222-3333-4444-555555555555';
+    mockRivalries.listByStatus.mockResolvedValue({ items: [makeRivalry()], nextCursor: undefined });
+    mockMessages.list.mockResolvedValue({
+      items: [{
+        rivalryId: 'r1',
+        messageId: 'msg-system',
+        authorPlayerId: 'system',
+        body: `Rivalry approved by ${accountId}.`,
+        audience: 'all',
+        createdAt: '2026-05-06T00:00:00.000Z',
+      }],
+      nextCursor: undefined,
+    });
+
+    const res = await getRivalryActivity(makeEvent({ httpMethod: 'GET' }), ctx, cb);
+
+    expect(res!.body).not.toContain(accountId);
+  });
+
   it('hides admins-only messages from a non-participant anonymous caller', async () => {
     mockRivalries.listByStatus.mockResolvedValue({
       items: [makeRivalry()],

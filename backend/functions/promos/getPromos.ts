@@ -5,6 +5,7 @@ import type { Promo, PromoType } from '../../lib/repositories/types';
 import { FORMER_MEMBER, isHiddenLivePlayer, resolveBilledName } from '../../lib/needsWrestler';
 import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
 import { isPromoArchived } from '../../lib/promoArchive';
+import { withoutReactions } from '../../lib/publicPromo';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -103,7 +104,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }
 
         return {
-          ...p,
+          ...withoutReactions(p),
           playerName: author?.name || FORMER_MEMBER,
           wrestlerName: author?.currentWrestler || FORMER_MEMBER,
           playerImageUrl: author?.imageUrl,

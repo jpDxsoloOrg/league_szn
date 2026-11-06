@@ -4,6 +4,7 @@ import { success, notFound, badRequest, serverError } from '../../lib/response';
 import type { Promo } from '../../lib/repositories/types';
 import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
 import { FORMER_MEMBER, findHiddenPlayerIds, isPlayerVisible, resolveBilledName } from '../../lib/needsWrestler';
+import { withoutReactions } from '../../lib/publicPromo';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -94,7 +95,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const rAuthor = playerMap[r.playerId];
         const rTarget = r.targetPlayerId ? playerMap[r.targetPlayerId] : undefined;
         return {
-          ...r,
+          ...withoutReactions(r),
           playerName: rAuthor?.name || FORMER_MEMBER,
           wrestlerName: rAuthor?.wrestlerName || FORMER_MEMBER,
           playerImageUrl: rAuthor?.imageUrl,
@@ -107,7 +108,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     return success({
       promo: {
-        ...promo,
+        ...withoutReactions(promo),
         playerName: author?.name || FORMER_MEMBER,
         wrestlerName: author?.wrestlerName || FORMER_MEMBER,
         playerImageUrl: author?.imageUrl,

@@ -127,7 +127,7 @@ describe('reactToPromo', () => {
 
     expect(result!.statusCode).toBe(200);
     const data = body(result);
-    expect(data.reactions['user-sub-1']).toBe('fire');
+    expect(data.reactions).toBeUndefined();
     expect(data.reactionCounts.fire).toBe(1);
     expect(mockUpdate).toHaveBeenCalledOnce();
   });
@@ -149,7 +149,6 @@ describe('reactToPromo', () => {
 
     expect(result!.statusCode).toBe(200);
     const data = body(result);
-    expect(data.reactions['user-sub-1']).toBeUndefined();
     expect(data.reactionCounts.fire).toBe(0);
   });
 
@@ -170,7 +169,6 @@ describe('reactToPromo', () => {
 
     expect(result!.statusCode).toBe(200);
     const data = body(result);
-    expect(data.reactions['user-sub-1']).toBe('mic');
     expect(data.reactionCounts.fire).toBe(0);
     expect(data.reactionCounts.mic).toBe(1);
   });
@@ -212,7 +210,7 @@ describe('reactToPromo', () => {
       );
       const result = await reactToPromo(event, ctx, cb);
       expect(result!.statusCode).toBe(200);
-      expect(body(result).reactions['user-sub-1']).toBe(reaction);
+      expect(body(result).reactionCounts[reaction]).toBe(1);
     }
   });
 
@@ -230,7 +228,6 @@ describe('reactToPromo', () => {
 
     expect(result!.statusCode).toBe(200);
     const data = body(result);
-    expect(data.reactions['user-sub-1']).toBe('clap');
     expect(data.reactionCounts.clap).toBe(1);
   });
 
