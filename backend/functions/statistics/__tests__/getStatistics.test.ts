@@ -387,6 +387,51 @@ describe('getStatistics - head-to-head', () => {
     expect(body.headToHead.championshipMatches).toBe(1);
   });
 
+  it('reports no winner for a recent match won by a third wrestler', async () => {
+    const matches = [
+      makeMatch({ matchId: 'm1', date: '2024-01-01', participants: ['p1', 'p2', 'p3'], winners: ['p3'], losers: ['p1', 'p2'] }),
+    ];
+    setupDefaultMocks([player1, player2, player3], matches);
+
+    const event = makeEvent({
+      queryStringParameters: { section: 'head-to-head', player1Id: 'p1', player2Id: 'p2' },
+    });
+    const body = JSON.parse((await handler(event, ctx, cb))!.body);
+
+    expect(body.headToHead.draws).toBe(1);
+    expect(body.headToHead.recentResults[0].winnerId).toBe('');
+  });
+
+  it('credits the selected player when a team win lists a third wrestler first', async () => {
+    const matches = [
+      makeMatch({ matchId: 'm1', date: '2024-01-01', participants: ['p1', 'p2', 'p3'], winners: ['p3', 'p2'], losers: ['p1'] }),
+    ];
+    setupDefaultMocks([player1, player2, player3], matches);
+
+    const event = makeEvent({
+      queryStringParameters: { section: 'head-to-head', player1Id: 'p1', player2Id: 'p2' },
+    });
+    const body = JSON.parse((await handler(event, ctx, cb))!.body);
+
+    expect(body.headToHead.player2Wins).toBe(1);
+    expect(body.headToHead.recentResults[0].winnerId).toBe('p2');
+  });
+
+  it('agrees with the record when both selected players are on the winning team', async () => {
+    const matches = [
+      makeMatch({ matchId: 'm1', date: '2024-01-01', participants: ['p1', 'p2', 'p3'], winners: ['p2', 'p1'], losers: ['p3'] }),
+    ];
+    setupDefaultMocks([player1, player2, player3], matches);
+
+    const event = makeEvent({
+      queryStringParameters: { section: 'head-to-head', player1Id: 'p1', player2Id: 'p2' },
+    });
+    const body = JSON.parse((await handler(event, ctx, cb))!.body);
+
+    expect(body.headToHead.player1Wins).toBe(1);
+    expect(body.headToHead.recentResults[0].winnerId).toBe('p1');
+  });
+
   it('returns recent 5 results sorted by date descending', async () => {
     const matches = Array.from({ length: 7 }, (_, i) =>
       makeMatch({
