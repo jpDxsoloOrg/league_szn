@@ -128,7 +128,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       participants.forEach((p) => playerIds.add(p));
       rawItems.push({
         type: 'match_result',
-        timestamp: m.updatedAt,
+        // The match date, not updatedAt: ratings and edits bump updatedAt, which
+        // would move an old result back to the top of the feed.
+        timestamp: m.date,
         id: `match-${m.matchId}`,
         summary: '', // filled after we have names
         metadata: {

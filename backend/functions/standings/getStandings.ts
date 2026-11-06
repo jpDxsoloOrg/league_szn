@@ -26,7 +26,7 @@ export const handler: APIGatewayProxyHandler = rejectOverlongQuery(async (event)
         .map(o => [o.playerId, o.mainOverall])
     );
 
-    // Last 5 and streak: only matches with updatedAt (same as dashboard recent results), sort by updatedAt desc
+    // Last 5 and streak: only matches with updatedAt, newest match date first
     const completedMatches = rawMatches.filter((m) => m.updatedAt);
 
     if (seasonId) {

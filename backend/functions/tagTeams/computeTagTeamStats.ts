@@ -6,6 +6,7 @@ import {
 import { tallyResults, type WinLossDrawRecord } from '../../lib/stats/record';
 import { resolveBilledName } from '../../lib/needsWrestler';
 import { isWithinLifetime } from '../../lib/stats/lifetime';
+import { compareMatchesNewestFirst } from '../../lib/recentForm';
 
 export type FormResult = SharedFormResult;
 
@@ -124,11 +125,7 @@ export function computeFormAndStreak(
   matchResults: TagTeamMatchResult[],
   limit: number
 ): { recentForm: FormResult[]; currentStreak: { type: FormResult; count: number } } {
-  const sorted = [...matchResults].sort((a, b) => {
-    const aTime = new Date(a.match.updatedAt ?? a.match.date).getTime();
-    const bTime = new Date(b.match.updatedAt ?? b.match.date).getTime();
-    return bTime - aTime;
-  });
+  const sorted = [...matchResults].sort((a, b) => compareMatchesNewestFirst(a.match, b.match));
 
   return computeRecentFormAndStreak(sorted.map((r) => r.result), limit);
 }

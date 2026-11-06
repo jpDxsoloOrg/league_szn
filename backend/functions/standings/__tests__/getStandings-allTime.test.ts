@@ -166,7 +166,7 @@ describe('getStandings — all-time (no seasonId)', () => {
     expect(mockPlayersList).toHaveBeenCalledTimes(1);
   });
 
-  it('includes recentForm and currentStreak on each player (ordered by updatedAt desc)', async () => {
+  it('includes recentForm and currentStreak on each player (ordered by match date desc)', async () => {
     const completedMatches = [
       { date: '2024-01-05', updatedAt: '2024-01-05T12:00:00Z', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'], status: 'completed' },
       { date: '2024-01-04', updatedAt: '2024-01-04T12:00:00Z', participants: ['p1', 'p3'], winners: ['p1'], losers: ['p3'], status: 'completed' },
@@ -184,7 +184,7 @@ describe('getStandings — all-time (no seasonId)', () => {
     expect(result!.statusCode).toBe(200);
     const body = JSON.parse(result!.body);
     const alice = body.players.find((p: { playerId: string }) => p.playerId === 'p1');
-    expect(alice.recentForm).toEqual(['W', 'W', 'L']); // newest first by updatedAt: 05 W, 04 W, 03 L
+    expect(alice.recentForm).toEqual(['W', 'W', 'L']); // newest first by date: 05 W, 04 W, 03 L
     expect(alice.currentStreak).toEqual({ type: 'W', count: 2 });
     const bob = body.players.find((p: { playerId: string }) => p.playerId === 'p2');
     expect(bob.recentForm).toEqual(['L', 'W']); // 05 L (vs p1), 03 W (vs p1)
