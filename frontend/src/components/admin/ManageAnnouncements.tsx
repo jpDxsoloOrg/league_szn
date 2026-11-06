@@ -17,6 +17,7 @@ import AdminNotice from './AdminNotice';
 import AnnouncementWizard from './AnnouncementWizard';
 import useAdminConfirm from './useAdminConfirm';
 import './adminContent.css';
+import '../announcementContent.css';
 import './ManageAnnouncements.css';
 
 const PRIORITY_KEYS: Record<number, string> = { 1: 'low', 2: 'medium', 3: 'high' };

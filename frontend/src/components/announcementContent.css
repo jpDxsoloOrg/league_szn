@@ -1,0 +1,268 @@
+/*
+ * Generated announcement bodies (admin/announcementHtml.ts). The Modal is the
+ * only surface: nothing here draws an outer panel.
+ */
+.ann-doc {
+  --ann-accent: var(--color-cyan);
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  color: var(--color-text);
+}
+
+.ann-doc .ann-doc__text,
+.ann-doc .ann-doc__scene,
+.ann-doc .ann-doc__attribution,
+.ann-doc .ann-doc__tagline,
+.ann-doc .ann-doc__signoff {
+  margin: 0;
+}
+
+.ann-doc__banner-row {
+  text-align: center;
+}
+
+.ann-doc__banner {
+  display: inline-block;
+  padding: 0.375rem 1rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-on-accent);
+}
+
+.ann-doc__banner--alert {
+  background-color: var(--color-pink);
+}
+
+.ann-doc__banner--official {
+  background-color: var(--color-cyan);
+}
+
+.ann-doc__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-hairline);
+  text-align: center;
+}
+
+.ann-doc__eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-cyan);
+}
+
+.ann-doc .ann-doc__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  line-height: 1.2;
+  color: var(--color-text);
+}
+
+.ann-doc__subtitle {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.ann-doc__meta {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.ann-doc .ann-doc__text {
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+}
+
+.ann-doc .ann-doc__scene {
+  line-height: 1.7;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+.ann-doc__quote {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--color-violet);
+}
+
+.ann-doc .ann-doc__attribution {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: right;
+  color: var(--color-cyan);
+}
+
+.ann-doc__match {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--color-hairline);
+}
+
+.ann-doc__match--main {
+  --ann-accent: var(--color-pink);
+
+  padding: 1rem;
+  border-top: none;
+  border-radius: var(--radius-card);
+  background-color: var(--tint-violet);
+}
+
+.ann-doc__match--accent-0 { --ann-accent: var(--color-cyan); }
+.ann-doc__match--accent-1 { --ann-accent: var(--rim-tag); }
+.ann-doc__match--accent-2 { --ann-accent: var(--color-win); }
+.ann-doc__match--accent-3 { --ann-accent: var(--rim-world); }
+.ann-doc__match--accent-4 { --ann-accent: var(--color-loss); }
+
+.ann-doc__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ann-doc__badge {
+  padding: 0.125rem 0.625rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.ann-doc__badge--lead {
+  border-color: var(--ann-accent);
+  color: var(--ann-accent);
+}
+
+.ann-doc__match--main .ann-doc__badge--lead {
+  border-color: transparent;
+  background-color: var(--color-pink);
+  color: var(--color-on-accent);
+}
+
+.ann-doc__fighters {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  text-align: center;
+}
+
+.ann-doc__fighter {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.ann-doc__fighter-wrestler {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.ann-doc__vs {
+  margin: 0.25rem 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-loss);
+}
+
+.ann-doc__tbd {
+  color: var(--color-text-muted);
+}
+
+.ann-doc__subject {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.ann-doc__subject-name {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.ann-doc__tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.ann-doc__tag {
+  padding: 0.125rem 0.75rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--tint-pink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-loss);
+}
+
+.ann-doc__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: 1rem;
+  border-left: 3px solid var(--color-pink);
+}
+
+.ann-doc__info-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-loss);
+}
+
+.ann-doc__media {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-control);
+  background-color: var(--color-bg);
+}
+
+.ann-doc__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-hairline);
+  text-align: center;
+}
+
+.ann-doc .ann-doc__tagline {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.ann-doc .ann-doc__signoff {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}

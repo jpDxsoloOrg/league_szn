@@ -9,6 +9,7 @@ import { toMediaUrl } from '../utils/mediaUrl';
 import { sanitizeHtml } from '../utils/sanitizeHtml';
 import Button from './ui/Button';
 import Modal from './ui/Modal';
+import './announcementContent.css';
 import './AnnouncementModal.css';
 
 const STORAGE_KEY = 'dismissed_announcements';

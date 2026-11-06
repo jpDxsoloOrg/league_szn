@@ -30,7 +30,7 @@
   content: '→';
   position: absolute;
   right: 0;
-  color: var(--color-hairline);
+  color: var(--color-text-muted);
   font-size: 0.75rem;
 }
 
@@ -385,6 +385,10 @@
   gap: 0.5rem;
 }
 
+.wizard-tags-row--spaced {
+  margin-top: 0.5rem;
+}
+
 .wizard-tags-row input {
   flex: 1;
   background: var(--color-surface-raised);
@@ -474,10 +478,6 @@
   padding: 1.5rem;
   max-height: 60vh;
   overflow-y: auto;
-}
-
-.wizard-preview-render {
-  /* Let the inline HTML styles do the work */
 }
 
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
