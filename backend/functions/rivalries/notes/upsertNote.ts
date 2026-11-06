@@ -31,8 +31,10 @@ interface UpsertBody {
  * Role rules (highest leak risk in the feature; enforced server-side):
  *  - GMs may write any noteType + any visibility.
  *  - Wrestlers may only write 'storyline' notes, and their visibility
- *    is forced to 'admins' regardless of what they passed.
+ *    is forced to 'participants' regardless of what they passed.
  *  - Wrestlers attempting to write 'plan' notes → 403.
+ *  - Edits (noteId supplied): GMs may edit any note, wrestlers only their
+ *    own. An unknown noteId → 404.
  *
  * 'plan' notes default to 'admins' visibility when authored by GMs and
  * no visibility was provided — spoilers must opt in to be visible to
@@ -110,9 +112,21 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     let saved: RivalryNote;
     if (input.noteId) {
+      // Same rule as deleteNote: the stored note decides, never the request.
+      // Without this, one participant could rewrite another's note under the
+      // original author's name, or a GM's plan by claiming noteType 'storyline'.
+      const existing = (await rivalryNotes.listByRivalry(rivalryId)).find(
+        (note) => note.noteId === input.noteId,
+      );
+      if (!existing) return notFound('Note not found');
+      if (!isGm && existing.authorPlayerId !== callerPlayerId) {
+        return forbidden('You may only edit your own notes');
+      }
+
       const patch: RivalryNotePatch = {
         body: rawContent,
-        visibility,
+        // An edit keeps the stored visibility unless a GM explicitly changes it.
+        visibility: isGm ? (input.visibility ?? existing.visibility) : existing.visibility,
       };
       if (input.linkedMatchId !== undefined) patch.linkedMatchId = input.linkedMatchId;
       if (input.linkedEventId !== undefined) patch.linkedEventId = input.linkedEventId;
