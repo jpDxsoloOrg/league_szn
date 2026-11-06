@@ -74,6 +74,42 @@ describe('ManageFactions', () => {
     expect(within(row).getByRole('button', { name: 'Disband' })).toBeInTheDocument();
   });
 
+  it('asks before disbanding, and sends nothing if the admin backs out', async () => {
+    const user = userEvent.setup();
+    mockFactionsApi.disband.mockResolvedValue(undefined);
+    render(<ManageFactions />);
+    const row = (await screen.findByText('The Bloodline')).closest('tr')!;
+
+    await user.click(within(row).getByRole('button', { name: 'Disband' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('Disband "The Bloodline"?');
+    expect(mockFactionsApi.disband).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(mockFactionsApi.disband).not.toHaveBeenCalled();
+
+    await user.click(within(row).getByRole('button', { name: 'Disband' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Disband' }));
+    await waitFor(() => expect(mockFactionsApi.disband).toHaveBeenCalledWith('s1'));
+  });
+
+  it('drops the Actions column for a Moderator with nothing to act on', async () => {
+    mockUseAuth.mockReturnValue({ isSuperAdmin: false });
+    mockFactionsApi.getAll.mockResolvedValue([factions[0]]);
+    render(<ManageFactions />);
+
+    await screen.findByText('The Bloodline');
+    expect(screen.queryByRole('columnheader', { name: /actions/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps the Actions column for a Moderator with a faction to reactivate', async () => {
+    mockUseAuth.mockReturnValue({ isSuperAdmin: false });
+    render(<ManageFactions />);
+
+    await screen.findByText('Judgment Day');
+    expect(screen.getByRole('columnheader', { name: /actions/i })).toBeInTheDocument();
+  });
+
   it('asks before deleting', async () => {
     const user = userEvent.setup();
     mockFactionsApi.delete.mockResolvedValue(undefined);

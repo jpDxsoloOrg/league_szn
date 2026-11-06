@@ -11,6 +11,7 @@ import EmptyState from '../ui/EmptyState';
 import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import AdminNotice from './AdminNotice';
+import useAdminConfirm from './useAdminConfirm';
 import './adminContent.css';
 
 const defaultConfig = (championshipId: string): ContenderConfig => ({
@@ -26,6 +27,7 @@ type FlagField = 'includeDraws' | 'divisionRestricted';
 
 export default function AdminContenderConfig() {
   const { t } = useTranslation();
+  const { confirm, confirmDialog } = useAdminConfirm();
   const [championships, setChampionships] = useState<Championship[]>([]);
   const [selectedChampionshipId, setSelectedChampionshipId] = useState('');
   const [config, setConfig] = useState<ContenderConfig>(defaultConfig(''));
@@ -72,6 +74,17 @@ export default function AdminContenderConfig() {
   };
 
   const handleRecalculate = async () => {
+    const confirmed = await confirm({
+      title: t('contenders.admin.recalculateTitle', 'Recalculate rankings?'),
+      description: t(
+        'contenders.admin.recalculateConfirm',
+        'This replaces the current rankings with new ones built from match results and the settings on this page.',
+      ),
+      confirmLabel: t('contenders.admin.recalculate'),
+      danger: false,
+    });
+    if (!confirmed) return;
+
     setRecalculating(true);
     setMessage(null);
     try {
@@ -196,6 +209,8 @@ export default function AdminContenderConfig() {
           </Button>
         </div>
       </Card>
+
+      {confirmDialog}
     </div>
   );
 }

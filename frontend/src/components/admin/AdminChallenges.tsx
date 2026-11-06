@@ -71,6 +71,13 @@ export default function AdminChallenges() {
   const matchup = (challenge: ChallengeWithPlayers) => `${challenge.challenger.wrestlerName} vs ${challenge.challenged.wrestlerName}`;
 
   const handleCancel = async (challenge: ChallengeWithPlayers) => {
+    const confirmed = await confirm({
+      title: t('adminContent.callOuts.expireTitle', 'Expire {{matchup}}?', { matchup: matchup(challenge) }),
+      description: t('adminContent.callOuts.expireConfirm', 'This cannot be undone.'),
+      confirmLabel: t('challenges.admin.expire', 'Expire'),
+    });
+    if (!confirmed) return;
+
     setSubmitting(challenge.challengeId);
     try {
       await challengesApi.cancel(challenge.challengeId);

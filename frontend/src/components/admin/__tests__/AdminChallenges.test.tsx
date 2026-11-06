@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
 const { mockChallengesApi } = vi.hoisted(() => ({
@@ -42,6 +43,26 @@ describe('AdminChallenges', () => {
     renderPage();
 
     expect(await screen.findByRole('button', { name: 'Expire' })).toBeInTheDocument();
+  });
+
+  it('asks before expiring, and sends nothing if the admin backs out', async () => {
+    const user = userEvent.setup();
+    mockUseAuth.mockReturnValue({ isSuperAdmin: true });
+    mockChallengesApi.getAll.mockResolvedValue([openCallOut]);
+    mockChallengesApi.cancel.mockResolvedValue(undefined);
+    render(<MemoryRouter><AdminChallenges /></MemoryRouter>);
+
+    await user.click(await screen.findByRole('button', { name: 'Expire' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('This cannot be undone.');
+    expect(mockChallengesApi.cancel).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(mockChallengesApi.cancel).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Expire' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Expire' }));
+    await waitFor(() => expect(mockChallengesApi.cancel).toHaveBeenCalledWith('c1'));
   });
 
   it('hides Expire from Moderators, which the API refuses', async () => {

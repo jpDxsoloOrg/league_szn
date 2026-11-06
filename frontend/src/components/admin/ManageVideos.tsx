@@ -312,12 +312,12 @@ export default function ManageVideos() {
         <div className="ac-field">
           <label className="ac-field__label" htmlFor="video-file">{t('videos.fields.videoFile')}</label>
           <input type="file" id="video-file" ref={videoInputRef} accept="video/mp4,video/webm,video/quicktime" />
-          {formData.videoUrl && <p className="ac-field__hint">{t('videos.currentUrl')}: {formData.videoUrl}</p>}
+          {formData.videoUrl && <p className="ac-field__hint">{t('videos.currentVideoHint')}</p>}
         </div>
         <div className="ac-field">
           <label className="ac-field__label" htmlFor="video-thumbnail">{t('videos.fields.thumbnail')}</label>
           <input type="file" id="video-thumbnail" ref={thumbInputRef} accept="image/jpeg,image/png,image/webp" />
-          {formData.thumbnailUrl && <p className="ac-field__hint">{t('videos.currentThumbnail')}: {formData.thumbnailUrl}</p>}
+          {formData.thumbnailUrl && <p className="ac-field__hint">{t('videos.currentThumbnailHint')}</p>}
         </div>
         <div className="ac-form__row">
           <div className="ac-field">
