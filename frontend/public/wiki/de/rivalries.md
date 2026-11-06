@@ -1,60 +1,68 @@
 # Rivalitäten
 
-Eine **Rivalität** ist eine längere Storyline zwischen zwei Wrestlern. Anders als eine einzelne Challenge erstreckt sich eine Rivalität über mehrere Matches und Storyline-Wochen. Der Rivalitäten-Hub unter `/rivalries` ist die Heimat jeder aktiven, archivierten oder pendenten Rivalität in der Liga.
+Eine **Rivalität** ist eine längere Storyline zwischen zwei Wrestlern. Anders als eine einmalige Herausforderung läuft eine Rivalität über mehrere Matches und Wochen. Alle Rivalitäten findest du unter **Storylines** und dann **Rivalitäten**.
 
-## Rivalität vs. Challenge
+## Rivalität oder Herausforderung
 
-| | Rivalität | Challenge |
+| | Rivalität | Herausforderung |
 |---|---|---|
-| **Laufzeit** | Wochen → Monate | Stunden → Tage |
-| **Freigabe** | GM-Prüfung erforderlich | Wrestler-zu-Wrestler |
-| **Was sie nachhält** | Matches, Promos, Notizen, Nachrichten | ein anstehendes Match |
-| **Wann nutzen** | Mehrere-Match-Storyline | Ein einzelnes Ad-hoc-Match |
+| **Dauer** | Wochen → Monate | bis zu 4 Tage für die Antwort |
+| **Wer startet sie** | ein GM | jeder Wrestler |
+| **Was wird erfasst** | Matches, Promos, Notizen, Nachrichten | ein kommendes Match |
+| **Wann nutzen** | ein Storyline-Bogen über mehrere Matches | ein einzelnes spontanes Match |
 
-Für ein einmaliges Match: starte eine **Challenge**. Für einen wiederkehrenden Konflikt mit Character-Beats und späterem Payoff-Match: öffne eine **Rivalität**.
+Wenn du ein einzelnes Match willst, sprich eine [Herausforderung](challenges) aus. Wenn du eine wiederkehrende Fehde mit Charakter-Momenten und einem späteren Höhepunkt willst, frag nach einer Rivalität.
 
-## Rivalität anfragen
+## Nach einer Rivalität fragen
 
-1. Vom Hub aus klicke den goldenen Button **Rivalität anfragen**.
-2. **Schritt 1 — Wer & Warum:** Wähle deinen Gegner per Autocomplete, vergib einen Titel, wähle eine Anfangshitze (siehe unten) und schreibe einen 50–1500 Zeichen langen Pitch.
-3. **Schritt 2 — Pitch & Pläne:** Schreibe eine 100–3000 Zeichen lange Storyline und optional bis zu 5 Plan-Beats mit Zieldatum (diese werden als **Plan-Notizen** angelegt, standardmäßig nur für GMs sichtbar).
-4. Absenden. Ein GM prüft den Antrag innerhalb weniger Tage.
+Nur GMs (Moderatoren und Admins) können eine Rivalität eröffnen. So schlägst du eine vor:
+
+1. Gehe zu [Mein Profil](profile) und öffne den Tab **Anfragen**.
+2. Wähle als Anfragetyp **Rivalität**.
+3. Wähle dein Ziel, beschreibe deine Idee und klicke auf **Anfrage absenden**.
+
+Ein GM bestätigt oder lehnt deine Anfrage ab. Die Antwort siehst du unter **Meine Anfragen**. Eine bestätigte Anfrage eröffnet noch keine Rivalität. Das muss der GM noch einrichten.
+
+## Rivalitäten-Hub
+
+Der Hub hat drei Tabs: **Aktive Rivalitäten**, **Meine Rivalitäten** (sobald du angemeldet bist) und **Archiv** für beendete Rivalitäten. Daneben listet **Letzte Rivalitäts-Aktivität** die neuesten Matches, Promos, Notizen und Nachrichten.
 
 ## Hitzestufen
 
-Die Hitze-Anzeige sagt dem Locker Room, wie heiß die Storyline ist. Wähle die Stufe, die zu deinem Pitch passt — GMs können sie nach der Freigabe noch anpassen.
+Jede Rivalität hat eine von fünf Hitzestufen: Eiskalt, Kalt, Warm, Heiß oder Glühend heiß. Die Hitze bewegt sich von selbst, wenn Matches bewertet und Promos geschnitten werden. Siehe [Wie Rivalitäts-Hitze funktioniert](rivalry-heat-explained).
 
-| Hitze | Wann nutzen |
+Der Heat-Filter im Hub fasst die Stufen zusammen:
+
+| Filter | Stufen |
 |---|---|
-| **Schwelend** | Geschichte baut sich auf, Matches sind sporadisch |
-| **Brodelnd** | regelmäßige Character-Arbeit, noch kein Payoff |
-| **Hitzig** | aktive Main-Event-Fehde |
+| **Hitzig** | Heiß und Glühend heiß |
+| **Brodelnd** | Warm |
+| **Schwelend** | Kalt und Eiskalt |
 
-## Nachrichten
+## In einer Rivalität
 
-Der Nachrichten-Tab auf der Detail-Seite einer Rivalität ist der private Backchannel zwischen dir, deinem Gegner und den GMs:
+Die Seite einer Rivalität zeigt ihre Hitze, die direkte Bilanz und das nächste Event sowie diese Tabs:
 
-- **Gegner einbeziehen** (Toggle in der linken Spalte): wenn **aus**, sehen nur die GMs deine Nachrichten — ein "Mit dem Booker reden"-Kanal. Wenn **an**, sieht auch der gegnerische Wrestler die Nachrichten — der "Trash Talk unter uns"-Kanal.
-- Du kannst die Audience auch pro Nachricht im Composer überschreiben.
-- 🔒 markiert eine GM-Only-Nachricht; dein Gegner sieht sie nicht.
-- Der Thread aktualisiert sich alle 15 Sekunden, solange der Tab geöffnet ist; gesendete Nachrichten erscheinen sofort dank Optimistic UI.
+- **Übersicht** — Eine Zusammenfassung der bisherigen Geschichte.
+- **Kampfhistorie** und **Zukünftige Kämpfe** — Matches, die zur Rivalität gehören.
+- **Promos** — Der Rivalität zugeordnete Promos und Promos, in denen ein Rivale den anderen anspricht.
+- **Notizen & Pläne** — Diesen Tab können nur die Rivalen und die GMs öffnen. Rivalen können Storyline-Notizen hinzufügen. Pläne können nur GMs hinzufügen. Alles hier sehen beide Rivalen und die GMs.
+- **Nachrichten** — Diesen Tab können nur die Rivalen und die GMs öffnen. Es ist ein gemeinsamer Verlauf. Alles, was du schreibst, sehen dein Gegner und die GMs.
 
-## Nach dem Absenden
+## Matches und Promos einer Rivalität zuordnen
 
-Dein Antrag landet in der Pending-Warteschlange unter `/admin/rivalries`. Die GMs sehen ihn und:
+Bucht ein GM ein Match zwischen den Rivalen, wird es der Rivalität automatisch zugeordnet, sofern die beiden genau eine aktive Rivalität teilen. Nur zugeordnete Matches bewegen die Hitze der Rivalität.
 
-- **Genehmigen** → Status wird `active`, du bekommst eine Benachrichtigung, die Rivalität erscheint im Hub.
-- **Ablehnen** → du bekommst eine Benachrichtigung mit dem Grund. Du kannst eine andere Rivalität anfragen.
-- **Abschließen** (später) → die Rivalität wandert ins **Archiv** im Hub.
+Um eine Promo zuzuordnen, wähle den Promo-Typ **Rivalität** und dann eine deiner Rivalitäten. Das können nur die Rivalen.
 
-## Matches und Promos mit Rivalitäten verknüpfen
+Wenn ein Match nicht in der Rivalität auftaucht, frag deinen GM.
 
-Wenn ein GM ein Match zwischen den Rivalitäts-Teilnehmern ansetzt, kann er es mit der Rivalität verknüpfen — das Match erscheint dann im Kampfhistorie- oder Zukünftige-Kämpfe-Tab. Auch Promos der Teilnehmer können verknüpft werden, damit die Storyline-Beats an einem Ort bleiben.
+## Wenn eine Rivalität endet
 
-Wenn ein Match noch nicht im Detail erscheint, ist es vielleicht einfach nicht verknüpft — bitte den GM, es zuzuordnen.
+Ein GM beendet die Rivalität, und sie wandert in den Tab **Archiv**. Eine laufende Rivalität mit einem nicht sichtbaren Spieler erscheint nicht in öffentlichen Listen, bis dieser Spieler einen Wrestler-Namen eingibt. Die Rivalen sehen sie weiterhin.
 
 ## Siehe auch
 
 - [Promos](/guide/wiki/promos)
-- [Challenges](/guide/wiki/challenges)
+- [Herausforderungen](/guide/wiki/challenges)
 - [Events](/guide/wiki/events)

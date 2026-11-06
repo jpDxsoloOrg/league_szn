@@ -1,11 +1,18 @@
 # Divisionen
 
-Spieler können in Divisionen organisiert werden, basierend auf Gewichtsklasse, Kartenposition oder Rolle.
+Das Liga-Team teilt Spieler in Divisionen ein. Die [Liga-Regeln](league-rules) nennen jede Division und ihre Rating-Obergrenze.
 
 ## Was sind Divisionen?
 
-Divisionen sind Gruppen, denen Spieler zugeordnet werden können, z. B. „Heavyweight", „Cruiserweight", „Main Event", „Mid Card" oder „Jobber". Das hilft bei der Organisation des Kaders und kann für divisionsspezifische Wettbewerbe und Titelkämpfe genutzt werden, wenn Divisionsbeschränkungen aktiviert sind.
+Divisionen sind Gruppen wie Heavyweight, Mid-Card und Jobber. Sie ordnen das Roster, und ein Titel kann an eine Division gebunden sein. Bei einem Divisionstitel erscheinen nur Spieler dieser Division in den [Herausforderer-Ranglisten](contenders).
 
-## Spieler-Divisionen anzeigen
+## Divisionen ansehen
 
-In der Tabelle sehen Sie, zu welcher Division jeder Spieler gehört. Einige Spieler sind ggf. keiner Division zugeordnet, wenn die Liga-Administration keine festgelegt hat.
+- Mit dem Division-Filter in der [Tabelle](standings) und bei den [Titeln](championships) siehst du jeweils eine Division. **Keine Division** listet Spieler oder Titel ohne Division.
+- Die Division eines Spielers steht auf seinem Profil und in der Karte, die erscheint, wenn du in der Tabelle mit der Maus über seinen Namen fährst.
+
+Manche Spieler haben keine Division, wenn das Liga-Team noch keine festgelegt hat.
+
+## Division ändern
+
+Nur das Liga-Team kann deine Division ändern. Divisionstransfers sind derzeit ausgeschaltet.
