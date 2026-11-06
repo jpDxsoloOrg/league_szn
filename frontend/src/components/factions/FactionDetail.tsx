@@ -1,75 +1,56 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
+import { Link, Outlet, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { factionsApi } from '../../services/api';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { logger } from '../../utils/logger';
-import type { StableDetailResponse } from '../../types/stable';
-import {
-  DEFAULT_FACTION_IMAGE,
-  resolveImageSrc,
-  applyImageFallback,
-} from '../../constants/imageFallbacks';
+import type { StableDetailResponse, StableStatus } from '../../types/stable';
+import { DEFAULT_FACTION_IMAGE, applyImageFallback } from '../../constants/imageFallbacks';
+import Badge from '../ui/Badge';
+import type { BadgeTone } from '../ui/Badge';
+import EmptyState from '../ui/EmptyState';
+import SectionTabs from '../ui/SectionTabs';
 import Skeleton from '../ui/Skeleton';
+import FactionHeat from './FactionHeat';
+import { formatRecord } from './factionFormat';
+import { useLocationToast } from './useLocationToast';
+import './groupUi.css';
 import './FactionDetail.css';
 
-/**
- * Outlet context contract — child tabs receive the loaded faction so they
- * don't re-fetch on mount. Each tab is free to fetch its own slice in
- * addition; the shell only loads the identity + standings record.
- */
+/** Tabs receive the loaded faction here so they do not refetch it on mount. */
 export interface FactionDetailContext {
   faction: StableDetailResponse;
 }
 
-const HEAT_FLAME_COUNT = 5;
-
-function clampHeat(count: number | undefined): number {
-  if (!count || count < 0) return 0;
-  return Math.min(HEAT_FLAME_COUNT, Math.floor(count));
-}
-
-// FAC-22: defensive against legacy / mis-typed records where wins/losses/draws
-// could be undefined or negative. The backend now computes these from match
-// outcomes, but this guard keeps "-1-1-0"-style renders out of the UI regardless.
-function safeCount(n: number | null | undefined): number {
-  if (typeof n !== 'number' || !Number.isFinite(n) || n < 0) return 0;
-  return Math.floor(n);
-}
-
-function formatRecord(wins: number | null | undefined, losses: number | null | undefined, draws: number | null | undefined): string {
-  return `${safeCount(wins)}-${safeCount(losses)}-${safeCount(draws)}`;
-}
-
-function FlameIcon({ lit }: { lit: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      focusable="false"
-      viewBox="0 0 16 16"
-      className={`faction-detail__flame ${lit ? 'faction-detail__flame--lit' : 'faction-detail__flame--dim'}`}
-    >
-      <path
-        d="M8 .5s2.5 3 2.5 5.5a2.5 2.5 0 0 1-1 2 1.5 1.5 0 0 0 1.5-2.5C12.5 7 14 9 14 11a6 6 0 1 1-12 0c0-2.5 2-4.5 2-7 0 2 2 3 4 3.5 0-2-1-3-1-4.5 0-1 1-2.5 1-2.5z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
 const TABS = [
-  { value: 'overview', path: '', i18nKey: 'factions.detailTabs.overview', fallback: 'Overview' },
-  { value: 'members', path: 'members', i18nKey: 'factions.detailTabs.members', fallback: 'Members' },
-  { value: 'stats', path: 'stats', i18nKey: 'factions.detailTabs.stats', fallback: 'Stats' },
-  { value: 'schedule', path: 'schedule', i18nKey: 'factions.detailTabs.schedule', fallback: 'Schedule' },
-  { value: 'promos', path: 'promos', i18nKey: 'factions.detailTabs.promos', fallback: 'Promos' },
-  { value: 'messages', path: 'messages', i18nKey: 'factions.detailTabs.messages', fallback: 'Messages' },
-  { value: 'manage', path: 'manage', i18nKey: 'factions.detailTabs.manage', fallback: 'Manage' },
+  { path: '', i18nKey: 'factions.detailTabs.overview', fallback: 'Overview' },
+  { path: 'members', i18nKey: 'factions.detailTabs.members', fallback: 'Members' },
+  { path: 'stats', i18nKey: 'factions.detailTabs.stats', fallback: 'Stats' },
+  { path: 'schedule', i18nKey: 'factions.detailTabs.schedule', fallback: 'Schedule' },
+  { path: 'promos', i18nKey: 'factions.detailTabs.promos', fallback: 'Promos' },
+  { path: 'messages', i18nKey: 'factions.detailTabs.messages', fallback: 'Messages' },
+  { path: 'manage', i18nKey: 'factions.detailTabs.manage', fallback: 'Manage' },
 ] as const;
+
+const STATUS_TONES: Record<StableStatus, BadgeTone> = {
+  pending: 'warning',
+  approved: 'win',
+  active: 'win',
+  disbanded: 'draw',
+};
+
+const STATUS_FALLBACKS: Record<StableStatus, string> = {
+  pending: 'Pending',
+  approved: 'Active',
+  active: 'Active',
+  disbanded: 'Disbanded',
+};
 
 export default function FactionDetail() {
   const { t } = useTranslation();
   const { factionId } = useParams<{ factionId: string }>();
+  const { pathname } = useLocation();
+  useLocationToast();
   const [faction, setFaction] = useState<StableDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,168 +60,94 @@ export default function FactionDetail() {
 
   useEffect(() => {
     if (!factionId) return;
-    const ac = new AbortController();
+    const controller = new AbortController();
 
     const fetchFaction = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await factionsApi.getById(factionId, ac.signal);
-        if (!ac.signal.aborted) {
-          setFaction(data);
-        }
+        const data = await factionsApi.getById(factionId, controller.signal);
+        if (!controller.signal.aborted) setFaction(data);
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
           logger.error('Failed to load faction detail');
           setError(err.message || 'Failed to load faction');
         }
       } finally {
-        if (!ac.signal.aborted) {
-          setLoading(false);
-        }
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
     fetchFaction();
-    return () => ac.abort();
+    return () => controller.abort();
   }, [factionId, reloadKey]);
 
-  if (loading) {
-    return <Skeleton variant="block" count={4} className="faction-detail-skeleton" />;
-  }
+  if (loading) return <Skeleton variant="block" count={4} />;
 
-  if (error) {
+  if (error || !faction) {
     return (
-      <div className="faction-detail__error">
-        <p>{t('common.error', 'Error')}: {error}</p>
-        <button
-          type="button"
-          className="faction-detail__retry"
-          onClick={() => setReloadKey((k) => k + 1)}
-        >
-          {t('common.retry', 'Retry')}
-        </button>
+      <div className="group-page">
+        <EmptyState
+          title={error ? t('common.error', 'Error') : t('factions.notFound', 'Faction not found.')}
+          description={error ?? undefined}
+          actionLabel={error ? t('common.retry', 'Retry') : undefined}
+          onAction={error ? () => setReloadKey((key) => key + 1) : undefined}
+        />
         <Link to="/factions" className="faction-detail__back-link">
           {t('factions.backToList', 'Back to Factions')}
         </Link>
       </div>
     );
   }
-
-  if (!faction) {
-    return (
-      <div className="faction-detail__error">
-        <p>{t('factions.notFound', 'Faction not found.')}</p>
-        <Link to="/factions" className="faction-detail__back-link">
-          {t('factions.backToList', 'Back to Factions')}
-        </Link>
-      </div>
-    );
-  }
-
-  const litHeat = clampHeat(faction.standings.currentStreak?.count);
-  const heatLabel = t('factions.hub.heatLabel', 'Heat: {{lit}} of {{total}}', {
-    lit: litHeat,
-    total: HEAT_FLAME_COUNT,
-  });
-  const statusFallbacks: Record<string, string> = {
-    pending: 'Pending',
-    approved: 'Active',
-    active: 'Active',
-    disbanded: 'Disbanded',
-  };
-  const statusLabel = t(
-    `factions.hub.status.${faction.status}`,
-    statusFallbacks[faction.status] ?? faction.status,
-  );
-  const leaderName = faction.leaderName ?? t('factions.unknownLeader', 'Unknown');
 
   const outletContext: FactionDetailContext = { faction };
+  const leaderName = faction.leaderName ?? t('factions.unknownLeader', 'Unknown');
 
-  // FAC-22: when a faction has a custom banner the banner art usually already
-  // carries the brand (logo / name baked into the image), so we drop the
-  // overlay <h1> to avoid the name reading twice. The fallback gradient
-  // placeholder has no text, so we still need the text header in that case.
+  // A custom banner usually carries the name in its artwork, so the title is
+  // kept for screen readers only rather than reading twice on screen.
   const hasCustomBanner = Boolean(faction.imageUrl);
 
   return (
-    <div className="faction-detail">
-      <header
-        className={`faction-detail__hero ${
-          hasCustomBanner ? 'faction-detail__hero--banner' : ''
-        }`}
-      >
-        <img
-          src={resolveImageSrc(faction.imageUrl, DEFAULT_FACTION_IMAGE)}
-          onError={(event) => applyImageFallback(event, DEFAULT_FACTION_IMAGE)}
-          alt={t('factions.heroAlt', '{{name}} faction banner', { name: faction.name })}
-          loading="lazy"
-          className="faction-detail__hero-image"
-        />
-        <div className="faction-detail__hero-overlay" aria-hidden="true" />
+    <div className="group-page">
+      <header className="faction-detail__hero">
+        {hasCustomBanner && (
+          <img
+            src={faction.imageUrl}
+            onError={(event) => applyImageFallback(event, DEFAULT_FACTION_IMAGE)}
+            alt={t('factions.heroAlt', '{{name}} faction banner', { name: faction.name })}
+            className="faction-detail__hero-image"
+          />
+        )}
         <div className="faction-detail__hero-content">
-          <div className="faction-detail__hero-left">
-            {!hasCustomBanner && (
-              <h1 className="faction-detail__hero-name">{faction.name}</h1>
-            )}
-            <p className="faction-detail__hero-caption">
-              <span
-                className={`faction-detail__hero-status faction-detail__hero-status--${faction.status}`}
-                aria-label={t('factions.statusLabel', 'Faction status: {{status}}', { status: statusLabel })}
-              >
-                {statusLabel}
-              </span>
-              <span className="faction-detail__hero-divider" aria-hidden="true">·</span>
-              <span className="faction-detail__hero-led">
-                {t('factions.hub.ledBy', 'Led by {{name}}', { name: leaderName })}
-              </span>
+          <div className="faction-detail__identity">
+            <Badge tone={STATUS_TONES[faction.status]}>
+              {t(`factions.hub.status.${faction.status}`, STATUS_FALLBACKS[faction.status])}
+            </Badge>
+            <h1 className={hasCustomBanner ? 'sr-only' : 'faction-detail__name'}>{faction.name}</h1>
+            <p className="faction-detail__leader">
+              {t('factions.hub.ledBy', 'Led by {{name}}', { name: leaderName })}
             </p>
           </div>
-          <div className="faction-detail__hero-right">
-            <div className="faction-detail__hero-record">
-              <span className="faction-detail__hero-record-label">
-                {t('factions.recordLabel', 'RECORD')}
-              </span>
-              <span className="faction-detail__hero-record-value">
-                {formatRecord(faction.wins, faction.losses, faction.draws)}
-              </span>
-            </div>
-            <div
-              className="faction-detail__hero-heat"
-              role="img"
-              aria-label={heatLabel}
-            >
-              {Array.from({ length: HEAT_FLAME_COUNT }, (_, i) => (
-                <FlameIcon key={i} lit={i < litHeat} />
-              ))}
-            </div>
+          <div className="faction-detail__record">
+            <span className="faction-detail__record-label">{t('factions.recordLabel', 'RECORD')}</span>
+            <span className="faction-detail__record-value">
+              {formatRecord(faction.wins, faction.losses, faction.draws)}
+            </span>
+            <FactionHeat count={faction.standings.currentStreak?.count} />
           </div>
         </div>
       </header>
 
-      <nav
-        className="faction-detail__tabs"
-        role="tablist"
-        aria-label={t('factions.detailTabs.label', 'Faction sections')}
-      >
-        {TABS.map((tab) => (
-          <NavLink
-            key={tab.value}
-            to={tab.path === '' ? `/factions/${factionId}` : `/factions/${factionId}/${tab.path}`}
-            end={tab.path === ''}
-            role="tab"
-            className={({ isActive }) =>
-              `faction-detail__tab ${isActive ? 'faction-detail__tab--active' : ''}`
-            }
-          >
-            {t(tab.i18nKey, tab.fallback)}
-          </NavLink>
-        ))}
-      </nav>
+      <SectionTabs
+        label={t('factions.detailTabs.label', 'Faction sections')}
+        activeTo={pathname.replace(/\/$/, '')}
+        items={TABS.map((tab) => ({
+          to: tab.path === '' ? `/factions/${factionId}` : `/factions/${factionId}/${tab.path}`,
+          label: t(tab.i18nKey, tab.fallback),
+        }))}
+      />
 
-      <div className="faction-detail__content">
-        <Outlet context={outletContext} />
-      </div>
+      <Outlet context={outletContext} />
     </div>
   );
 }

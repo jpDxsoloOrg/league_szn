@@ -1,36 +1,35 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Flag } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { profileApi, factionsApi } from '../../services/api';
+import { factionsApi, profileApi } from '../../services/api';
 import type { Player } from '../../types';
-import type { StableDetailResponse, StableInvitationWithDetails } from '../../types/stable';
-import {
-  DEFAULT_WRESTLER_IMAGE,
-  resolveImageSrc,
-  applyImageFallback,
-} from '../../constants/imageFallbacks';
+import type { StableInvitationWithDetails } from '../../types/stable';
+import Button from '../ui/Button';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Skeleton from '../ui/Skeleton';
+import { useToast } from '../ui/toastContext';
 import CreateFactionModal from './CreateFactionModal';
-import InviteToFactionModal from './InviteToFactionModal';
-import FactionImageUploader from './FactionImageUploader';
+import FactionsHubTabs from './FactionsHubTabs';
+import './groupUi.css';
 import './MyFaction.css';
 
+/**
+ * Create and invitation surface for players with no faction. Members are sent
+ * to the faction page, which holds all management.
+ */
 export default function MyFaction() {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
+  const { showToast } = useToast();
   const [profile, setProfile] = useState<Player | null>(null);
-  const [faction, setFaction] = useState<StableDetailResponse | null>(null);
-  const [pendingInvitations, setPendingInvitations] = useState<StableInvitationWithDetails[]>([]);
+  const [invitations, setInvitations] = useState<StableInvitationWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [disbanding, setDisbanding] = useState(false);
-  const [leaving, setLeaving] = useState(false);
-  const [memberToRemove, setMemberToRemove] = useState<{ playerId: string; playerName: string } | null>(null);
-  const [removingMember, setRemovingMember] = useState(false);
-  const [removeMemberErrors, setRemoveMemberErrors] = useState<Record<string, string>>({});
+  const [respondingTo, setRespondingTo] = useState<string | null>(null);
 
   const loadData = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
@@ -39,40 +38,23 @@ export default function MyFaction() {
     try {
       const myProfile = await profileApi.getMyProfile(signal);
       setProfile(myProfile);
+      if (myProfile.stableId) return;
 
-      // If user has a faction, fetch faction details and invitations
-      if (myProfile.stableId) {
-        const [factionDetail, invitations] = await Promise.all([
-          factionsApi.getById(myProfile.stableId, signal),
-          factionsApi.getInvitations(myProfile.stableId, signal).catch(() => [] as StableInvitationWithDetails[]),
-        ]);
-        setFaction(factionDetail);
-        setPendingInvitations(invitations.filter((inv) => inv.status === 'pending'));
-      } else {
-        setFaction(null);
-        setPendingInvitations([]);
-
-        // Check all factions for pending invitations sent to this player
-        // Since there's no direct "my invitations" endpoint, we look through all factions
-        // This is a best-effort approach; a dedicated endpoint would be more efficient
-        try {
-          const allStables = await factionsApi.getAll(undefined, signal);
-          const myInvitations: StableInvitationWithDetails[] = [];
-          for (const s of allStables) {
-            try {
-              const invs = await factionsApi.getInvitations(s.stableId, signal);
-              const pending = invs.filter(
-                (inv) => inv.invitedPlayerId === myProfile.playerId && inv.status === 'pending'
-              );
-              myInvitations.push(...pending);
-            } catch {
-              // Skip factions we can't access invitations for
-            }
+      // There is no "my invitations" endpoint, so this checks each faction.
+      try {
+        const allFactions = await factionsApi.getAll(undefined, signal);
+        const perFaction = await Promise.all(allFactions.map(async (faction) => {
+          try {
+            return await factionsApi.getInvitations(faction.stableId, signal);
+          } catch {
+            return [] as StableInvitationWithDetails[];
           }
-          setPendingInvitations(myInvitations);
-        } catch {
-          // Non-critical: invitations loading failed
-        }
+        }));
+        setInvitations(perFaction.flat().filter((invitation) => (
+          invitation.invitedPlayerId === myProfile.playerId && invitation.status === 'pending'
+        )));
+      } catch {
+        setInvitations([]);
       }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
@@ -84,478 +66,130 @@ export default function MyFaction() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-
     const controller = new AbortController();
     loadData(controller.signal);
-
     return () => controller.abort();
   }, [isAuthenticated, loadData]);
 
-  const handleDisband = useCallback(async () => {
-    if (!faction) return;
-    const confirmed = window.confirm(
-      t('factions.my.disbandConfirm', 'Are you sure you want to disband this faction? This cannot be undone.')
-    );
-    if (!confirmed) return;
-
-    setDisbanding(true);
+  const handleRespond = async (invitation: StableInvitationWithDetails, action: 'accept' | 'decline') => {
+    setRespondingTo(invitation.invitationId);
     try {
-      await factionsApi.disband(faction.stableId);
-      setActionFeedback(t('factions.my.disbanded', 'Faction has been disbanded.'));
-      setFaction(null);
-      // Refresh profile
-      const updatedProfile = await profileApi.getMyProfile();
-      setProfile(updatedProfile);
-    } catch (err) {
-      setActionFeedback(
-        `Error: ${err instanceof Error ? err.message : t('common.error', 'Failed')}`
-      );
-    } finally {
-      setDisbanding(false);
-      setTimeout(() => setActionFeedback(null), 3000);
-    }
-  }, [faction, t]);
-
-  const handleLeave = useCallback(async () => {
-    if (!faction || !profile) return;
-    const confirmed = window.confirm(
-      t('factions.my.leaveConfirm', 'Are you sure you want to leave this faction?')
-    );
-    if (!confirmed) return;
-
-    setLeaving(true);
-    try {
-      await factionsApi.leave(faction.stableId, profile.playerId);
-      setActionFeedback(t('factions.my.left', 'You have left the faction.'));
-      setFaction(null);
-      const updatedProfile = await profileApi.getMyProfile();
-      setProfile(updatedProfile);
-    } catch (err) {
-      setActionFeedback(
-        `Error: ${err instanceof Error ? err.message : t('common.error', 'Failed')}`
-      );
-    } finally {
-      setLeaving(false);
-      setTimeout(() => setActionFeedback(null), 3000);
-    }
-  }, [faction, profile, t]);
-
-  const handleConfirmRemoveMember = useCallback(async () => {
-    if (!faction || !memberToRemove) return;
-    const { playerId, playerName } = memberToRemove;
-    setRemovingMember(true);
-    setRemoveMemberErrors((prev) => {
-      const { [playerId]: _omit, ...rest } = prev;
-      return rest;
-    });
-    try {
-      const result = await factionsApi.removeMember(faction.stableId, playerId) as unknown as {
-        status?: string;
-      };
-      const wasDisbanded = result?.status === 'disbanded';
-      setMemberToRemove(null);
-      if (wasDisbanded) {
-        setActionFeedback(
-          t('factions.my.removeMemberDisbanded', 'Faction disbanded — only the leader remained.')
-        );
-      } else {
-        setActionFeedback(
-          t('factions.my.removeMemberSuccess', '{{playerName}} removed from the faction.', { playerName })
-        );
-      }
-      await loadData();
-    } catch (err) {
-      setRemoveMemberErrors((prev) => ({
-        ...prev,
-        [playerId]: err instanceof Error ? err.message : t('common.error', 'Failed'),
-      }));
-    } finally {
-      setRemovingMember(false);
-      setTimeout(() => setActionFeedback(null), 3000);
-    }
-  }, [faction, memberToRemove, loadData, t]);
-
-  const handleRespondToInvitation = useCallback(async (
-    stableId: string,
-    invitationId: string,
-    action: 'accept' | 'decline'
-  ) => {
-    try {
-      await factionsApi.respondToInvitation(stableId, invitationId, action);
-      setActionFeedback(
+      await factionsApi.respondToInvitation(invitation.stableId, invitation.invitationId, action);
+      showToast(
         action === 'accept'
           ? t('factions.my.invitationAccepted', 'Invitation accepted! You have joined the faction.')
-          : t('factions.my.invitationDeclined', 'Invitation declined.')
+          : t('factions.my.invitationDeclined', 'Invitation declined.'),
+        'success',
       );
-      // Refresh data
       await loadData();
     } catch (err) {
-      setActionFeedback(
-        `Error: ${err instanceof Error ? err.message : t('common.error', 'Failed')}`
-      );
+      showToast(err instanceof Error ? err.message : t('common.error', 'Failed'), 'error');
+    } finally {
+      setRespondingTo(null);
     }
-    setTimeout(() => setActionFeedback(null), 3000);
-  }, [t, loadData]);
+  };
 
-  const handleImageUploaded = useCallback((newImageUrl: string) => {
-    setFaction((current) => (current ? { ...current, imageUrl: newImageUrl } : current));
-  }, []);
-
-  const handleCreated = useCallback(() => {
-    loadData();
-  }, [loadData]);
-
-  const handleInvited = useCallback(() => {
-    if (faction) {
-      factionsApi.getInvitations(faction.stableId)
-        .then((invs) => setPendingInvitations(invs.filter((inv) => inv.status === 'pending')))
-        .catch(() => { /* ignore */ });
-    }
-  }, [faction]);
+  const header = (
+    <>
+      <PageHeader title={t('factions.my.title', 'My Faction')} />
+      <FactionsHubTabs />
+    </>
+  );
 
   if (!isAuthenticated) {
     return (
-      <div className="my-faction">
-        <div className="my-faction__empty">
-          <p>{t('factions.my.loginRequired', 'Please log in to manage your faction.')}</p>
-        </div>
+      <div className="group-page">
+        {header}
+        <EmptyState title={t('factions.my.loginRequired', 'Please log in to manage your faction.')} />
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="my-faction">
-        <div className="my-faction__loading">{t('common.loading', 'Loading...')}</div>
+      <div className="group-page">
+        {header}
+        <Skeleton variant="block" count={2} />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="my-faction">
-        <div className="my-faction__error">
-          <p>{error}</p>
-          <button onClick={() => loadData()} className="btn-primary">
-            {t('common.retry', 'Retry')}
-          </button>
-        </div>
+      <div className="group-page">
+        {header}
+        <EmptyState
+          title={t('common.error', 'Error')}
+          description={error}
+          actionLabel={t('common.retry', 'Retry')}
+          onAction={() => loadData()}
+        />
       </div>
     );
   }
 
-  // Members get redirected to the redesigned Faction Detail page; this
-  // route now only renders the "no faction yet / pending invitations"
-  // surface for users who don't have one.
   if (profile?.stableId) {
     return <Navigate to={`/factions/${profile.stableId}`} replace />;
   }
 
-  const isLeader = faction && profile && faction.leaderId === profile.playerId;
-  const isApprovedOrActive = faction && (faction.status === 'approved' || faction.status === 'active');
-
   return (
-    <div className="my-faction">
-      <div className="my-faction__header">
-        <h2>{t('factions.my.title', 'My Faction')}</h2>
+    <div className="group-page">
+      {header}
+
+      <div className="my-faction__start">
+        <Flag aria-hidden="true" size={32} className="my-faction__icon" />
+        <h2 className="my-faction__title">{t('factions.my.noStable', 'You are not in a faction')}</h2>
+        <p className="group-empty">
+          {t('factions.my.noStableDesc', 'Create your own faction or wait for an invitation from a faction leader.')}
+        </p>
+        <Button onClick={() => setShowCreateModal(true)}>
+          {t('factions.my.createStable', 'Create a Faction')}
+        </Button>
       </div>
 
-      {actionFeedback && (
-        <div className="my-faction__feedback">{actionFeedback}</div>
-      )}
-
-      {!faction && !profile?.stableId ? (
-        /* No faction - show create button and pending invitations */
-        <div className="my-faction__no-faction">
-          <div className="my-faction__no-faction-info">
-            <h3>{t('factions.my.noStable', 'You are not in a faction')}</h3>
-            <p>{t('factions.my.noStableDesc', 'Create your own faction or wait for an invitation from a faction leader.')}</p>
-            <button
-              className="btn-primary"
-              onClick={() => setShowCreateModal(true)}
-            >
-              {t('factions.my.createStable', 'Create a Faction')}
-            </button>
-          </div>
-
-          {pendingInvitations.length > 0 && (
-            <div className="my-faction__invitations">
-              <h3>{t('factions.my.pendingInvitations', 'Pending Invitations')}</h3>
-              <div className="my-faction__invitations-list">
-                {pendingInvitations.map((inv) => (
-                  <div key={inv.invitationId} className="my-faction__invitation-item">
-                    <div className="my-faction__invitation-info">
-                      <span className="my-faction__invitation-faction">
-                        {inv.stableName}
-                      </span>
-                      {inv.invitedByPlayerName && (
-                        <span className="my-faction__invitation-from">
-                          {t('factions.my.invitedBy', 'Invited by {{name}}', { name: inv.invitedByPlayerName })}
-                        </span>
-                      )}
-                      {inv.message && (
-                        <span className="my-faction__invitation-message">
-                          &ldquo;{inv.message}&rdquo;
-                        </span>
-                      )}
-                    </div>
-                    <div className="my-faction__invitation-actions">
-                      <button
-                        className="btn-sm-accept"
-                        onClick={() => handleRespondToInvitation(inv.stableId, inv.invitationId, 'accept')}
-                      >
-                        {t('common.accept', 'Accept')}
-                      </button>
-                      <button
-                        className="btn-sm-decline"
-                        onClick={() => handleRespondToInvitation(inv.stableId, inv.invitationId, 'decline')}
-                      >
-                        {t('common.decline', 'Decline')}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      ) : faction ? (
-        /* Has a faction - show details */
-        <div className="my-faction__detail">
-          <div className="my-faction__info-card">
-            {faction.imageUrl && (
-              <div className="my-faction__image-wrapper">
-                <img
-                  src={resolveImageSrc(faction.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-                  onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-                  alt={faction.name}
-                  className="my-faction__image"
-                />
-              </div>
-            )}
-            <div className="my-faction__info">
-              <h3 className="my-faction__name">
-                <Link to={`/factions/${faction.stableId}`}>{faction.name}</Link>
-              </h3>
-              <span className={`my-faction__status my-faction__status--${faction.status}`}>
-                {t(`factions.status.${faction.status}`, faction.status)}
-              </span>
-              <div className="my-faction__stats">
-                <span className="my-faction__stat my-faction__stat--wins">
-                  {faction.wins}{t('factions.wAbbrev', 'W')}
-                </span>
-                <span className="my-faction__stat my-faction__stat--losses">
-                  {faction.losses}{t('factions.lAbbrev', 'L')}
-                </span>
-                <span className="my-faction__stat my-faction__stat--draws">
-                  {faction.draws}{t('factions.dAbbrev', 'D')}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Image upload (leader, active/approved only) */}
-          {isLeader && isApprovedOrActive && (
-            <div className="my-faction__image-upload">
-              <h4>{t('factions.my.uploadImage', 'Upload faction image')}</h4>
-              <FactionImageUploader
-                stableId={faction.stableId}
-                currentImageUrl={faction.imageUrl}
-                factionName={faction.name}
-                onUploaded={handleImageUploaded}
-              />
-            </div>
-          )}
-
-          {/* Members list */}
-          <div className="my-faction__members">
-            <h4>{t('factions.my.members', 'Members')}</h4>
-            <div className="my-faction__members-list">
-              {faction.members.map((member) => (
-                <div key={member.playerId} className="my-faction__member-item">
-                  <div className="my-faction__member-avatar">
-                    <img
-                      src={resolveImageSrc(member.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-                      onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-                      alt={member.wrestlerName}
-                    />
-                  </div>
-                  <div className="my-faction__member-info">
-                    <span className="my-faction__member-wrestler">
-                      {member.wrestlerName}
-                    </span>
-                    <span className="my-faction__member-player">
-                      {member.playerName}
-                    </span>
-                    {member.psnId && (
-                      <span className="my-faction__member-psn">PSN: {member.psnId}</span>
-                    )}
-                  </div>
-                  {member.playerId === faction.leaderId && (
-                    <span className="my-faction__member-leader-badge">
-                      {t('factions.my.leader', 'Leader')}
+      {invitations.length > 0 && (
+        <section className="group-section">
+          <h2 className="group-heading">{t('factions.my.pendingInvitations', 'Pending Invitations')}</h2>
+          <ul className="group-list">
+            {invitations.map((invitation) => (
+              <li key={invitation.invitationId} className="my-faction__invitation">
+                <div className="group-person__text">
+                  <span className="group-person__name">{invitation.stableName}</span>
+                  {invitation.invitedByPlayerName && (
+                    <span className="group-muted">
+                      {t('factions.my.invitedBy', 'Invited by {{name}}', { name: invitation.invitedByPlayerName })}
                     </span>
                   )}
+                  {invitation.message && <q className="my-faction__message">{invitation.message}</q>}
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Manage Members (leader only) */}
-          {isLeader && isApprovedOrActive && faction.members.some((m) => m.playerId !== faction.leaderId) && (
-            <div className="my-faction__manage-members" data-testid="manage-members">
-              <h4>{t('factions.my.manageMembers', 'Manage Members')}</h4>
-              <div className="my-faction__manage-members-list">
-                {faction.members
-                  .filter((member) => member.playerId !== faction.leaderId)
-                  .map((member) => (
-                    <div key={member.playerId} className="my-faction__manage-member-row">
-                      <div className="my-faction__manage-member-info">
-                        <span className="my-faction__manage-member-name">{member.playerName}</span>
-                        <span className="my-faction__manage-member-wrestler">{member.wrestlerName}</span>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn-danger"
-                        onClick={() =>
-                          setMemberToRemove({ playerId: member.playerId, playerName: member.playerName })
-                        }
-                        disabled={removingMember}
-                      >
-                        {t('factions.my.removeMember', 'Remove')}
-                      </button>
-                      {removeMemberErrors[member.playerId] && (
-                        <div className="my-faction__manage-member-error" role="alert">
-                          {removeMemberErrors[member.playerId]}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* Leader actions */}
-          {isLeader && (
-            <div className="my-faction__leader-actions">
-              {isApprovedOrActive && (
-                <button
-                  className="btn-primary"
-                  onClick={() => setShowInviteModal(true)}
-                >
-                  {t('factions.my.invitePlayer', 'Invite Player')}
-                </button>
-              )}
-              <button
-                className="btn-danger"
-                onClick={handleDisband}
-                disabled={disbanding}
-              >
-                {disbanding
-                  ? t('common.processing', 'Processing...')
-                  : t('factions.my.disband', 'Disband Faction')}
-              </button>
-            </div>
-          )}
-
-          {/* Member actions (non-leader) */}
-          {!isLeader && isApprovedOrActive && (
-            <div className="my-faction__member-actions">
-              <button
-                className="btn-danger"
-                onClick={handleLeave}
-                disabled={leaving}
-              >
-                {leaving
-                  ? t('common.processing', 'Processing...')
-                  : t('factions.my.leave', 'Leave Faction')}
-              </button>
-            </div>
-          )}
-
-          {/* Pending invitations sent by leader */}
-          {isLeader && pendingInvitations.length > 0 && (
-            <div className="my-faction__sent-invitations">
-              <h4>{t('factions.my.sentInvitations', 'Pending Invitations')}</h4>
-              <div className="my-faction__sent-invitations-list">
-                {pendingInvitations.map((inv) => (
-                  <div key={inv.invitationId} className="my-faction__sent-invitation-item">
-                    <span className="my-faction__sent-invitation-player">
-                      {inv.invitedPlayerName || inv.invitedPlayerId}
-                    </span>
-                    <span className="my-faction__sent-invitation-status">
-                      {t('factions.invitationStatus.pending', 'Pending')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      ) : null}
+                <div className="my-faction__actions">
+                  <Button
+                    size="sm"
+                    disabled={respondingTo !== null}
+                    onClick={() => handleRespond(invitation, 'accept')}
+                  >
+                    {t('common.accept', 'Accept')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={respondingTo !== null}
+                    onClick={() => handleRespond(invitation, 'decline')}
+                  >
+                    {t('common.decline', 'Decline')}
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <CreateFactionModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onCreated={handleCreated}
+        onCreated={() => loadData()}
       />
-
-      {faction && (
-        <InviteToFactionModal
-          isOpen={showInviteModal}
-          stableId={faction.stableId}
-          currentMemberIds={faction.memberIds}
-          onClose={() => setShowInviteModal(false)}
-          onInvited={handleInvited}
-        />
-      )}
-
-      {faction && memberToRemove && (
-        <div className="my-faction__modal-overlay" role="dialog" aria-modal="true">
-          <div className="my-faction__modal">
-            <h3 className="my-faction__modal-title">
-              {t('factions.my.removeMemberConfirmTitle', 'Remove {{playerName}} from {{factionName}}?', {
-                playerName: memberToRemove.playerName,
-                factionName: faction.name,
-              })}
-            </h3>
-            {faction.members.length <= 2 && (
-              <p className="my-faction__modal-warning" role="alert">
-                {t(
-                  'factions.my.removeMemberDisbandWarning',
-                  'This will disband the faction — only the leader would remain.'
-                )}
-              </p>
-            )}
-            <p className="my-faction__modal-body">
-              {t(
-                'factions.my.removeMemberConfirmBody',
-                'They will lose access to faction-only surfaces and stop appearing in the roster.'
-              )}
-            </p>
-            <div className="my-faction__modal-actions">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setMemberToRemove(null)}
-                disabled={removingMember}
-              >
-                {t('factions.my.removeMemberCancel', 'Cancel')}
-              </button>
-              <button
-                type="button"
-                className="btn-danger"
-                onClick={handleConfirmRemoveMember}
-                disabled={removingMember}
-              >
-                {removingMember
-                  ? t('common.processing', 'Processing...')
-                  : t('factions.my.removeMemberConfirm', 'Remove member')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

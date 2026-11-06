@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -9,6 +9,7 @@ const {
   mockListMyThreads,
   mockListThread,
   mockPostDm,
+  mockGetDirectory,
   mockUseOutletContext,
   mockUseAuth,
 } = vi.hoisted(() => ({
@@ -17,6 +18,7 @@ const {
   mockListMyThreads: vi.fn(),
   mockListThread: vi.fn(),
   mockPostDm: vi.fn(),
+  mockGetDirectory: vi.fn(),
   mockUseOutletContext: vi.fn(),
   mockUseAuth: vi.fn(),
 }));
@@ -33,6 +35,7 @@ vi.mock('../../../../services/api', () => ({
       post: mockPostDm,
     },
   },
+  playersApi: { getDirectory: mockGetDirectory },
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -129,6 +132,7 @@ beforeEach(() => {
     },
   ]);
   mockListThread.mockResolvedValue({ items: [] });
+  mockGetDirectory.mockResolvedValue([]);
   Element.prototype.scrollIntoView = vi.fn();
   // Default to "visible" for polling tests; can be overridden per-test.
   Object.defineProperty(document, 'visibilityState', {
@@ -226,7 +230,7 @@ describe('FactionMessages tab (FAC-15)', () => {
   });
 
   // FAC-21: thread row avatars must use the partner's profile picture when
-  // we have one, and fall back to the default placeholder when we don't.
+  // we have one, and fall back to initials when we don't.
   it("renders the partner's profile image on each DM row when available", async () => {
     mockListMyThreads.mockResolvedValueOnce([
       {
@@ -267,12 +271,8 @@ describe('FactionMessages tab (FAC-15)', () => {
     const withPic = await screen.findByAltText('Edge');
     expect(withPic).toHaveAttribute('src', 'https://example.com/edge-portrait.jpg');
 
-    const withoutPic = screen.getByAltText('Christian');
-    // resolveImageSrc returns the default image when input is undefined/null —
-    // we don't assert the exact URL of the default (changing the asset would
-    // break the test) but we confirm we did NOT keep the partner's null URL.
-    expect(withoutPic.getAttribute('src')).not.toBe('null');
-    expect(withoutPic.getAttribute('src')).not.toBe('');
+    // With no picture the avatar shows initials, still named for screen readers.
+    expect(screen.getAllByRole('img', { name: 'Christian' })[0]).toHaveTextContent('C');
   });
 
   it('opens the deep-linked DM on mount when ?dm=<partnerPlayerId> is set', async () => {
@@ -335,16 +335,26 @@ describe('FactionMessages tab (FAC-15)', () => {
     expect(send).toBeEnabled();
   });
 
-  it('marks the attachments + emoji icons as disabled with a coming-soon tooltip', async () => {
-    renderTab();
-    await waitFor(() => {
-      expect(screen.getAllByText('Existing channel message').length).toBeGreaterThan(0);
+  it('names a message from a former member using the player directory', async () => {
+    mockListMessages.mockResolvedValueOnce({
+      items: [channelMsg({ messageId: 'old', authorPlayerId: 'p-left', body: 'From a past member' })],
     });
+    mockGetDirectory.mockResolvedValueOnce([
+      { playerId: 'p-left', name: 'Left Player', currentWrestler: null },
+    ]);
+    renderTab();
 
-    const attach = within(screen.getByLabelText('Attach (coming soon)'));
-    expect(screen.getByLabelText('Attach (coming soon)')).toBeDisabled();
-    expect(screen.getByLabelText('Emoji (coming soon)')).toBeDisabled();
-    // Use within just to assert the button is present and named.
-    expect(attach).toBeTruthy();
+    expect(await screen.findByText('Left Player')).toBeInTheDocument();
+    expect(screen.queryByText('p-left')).not.toBeInTheDocument();
+  });
+
+  it('never shows a raw player id when the directory has no entry either', async () => {
+    mockListMessages.mockResolvedValueOnce({
+      items: [channelMsg({ messageId: 'old', authorPlayerId: 'p-gone', body: 'From nobody we know' })],
+    });
+    renderTab();
+
+    expect(await screen.findByText('Former member')).toBeInTheDocument();
+    expect(screen.queryByText('p-gone')).not.toBeInTheDocument();
   });
 });

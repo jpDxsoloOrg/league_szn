@@ -1,20 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 
 const {
   mockFactionsGetAll,
   mockFactionsGetStandings,
-  mockPlayersGetAll,
+  mockPlayersGetDirectory,
   mockGetMyProfile,
   mockUseAuth,
+  mockShowToast,
 } = vi.hoisted(() => ({
   mockFactionsGetAll: vi.fn(),
   mockFactionsGetStandings: vi.fn(),
-  mockPlayersGetAll: vi.fn(),
+  mockPlayersGetDirectory: vi.fn(),
   mockGetMyProfile: vi.fn(),
   mockUseAuth: vi.fn(),
+  mockShowToast: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -23,7 +25,7 @@ vi.mock('../../../services/api', () => ({
     getStandings: mockFactionsGetStandings,
   },
   playersApi: {
-    getAll: mockPlayersGetAll,
+    getDirectory: mockPlayersGetDirectory,
   },
   profileApi: {
     getMyProfile: mockGetMyProfile,
@@ -49,6 +51,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('../FactionsList.css', () => ({}));
 vi.mock('../FactionCard.css', () => ({}));
+vi.mock('../../ui/toastContext', () => ({ useToast: () => ({ showToast: mockShowToast }) }));
 
 import FactionsList from '../FactionsList';
 
@@ -91,7 +94,7 @@ beforeEach(() => {
   mockUseAuth.mockReturnValue({ isAuthenticated: false, isWrestler: false });
   mockFactionsGetAll.mockResolvedValue([]);
   mockFactionsGetStandings.mockResolvedValue([]);
-  mockPlayersGetAll.mockResolvedValue([]);
+  mockPlayersGetDirectory.mockResolvedValue([]);
   mockGetMyProfile.mockResolvedValue(null);
 });
 
@@ -109,12 +112,13 @@ describe('FactionsList (FAC-10)', () => {
       basePlayer({ playerId: `p${i + 1}`, name: `Leader ${i + 1}` }),
     );
     mockFactionsGetAll.mockResolvedValue(factions);
-    mockPlayersGetAll.mockResolvedValue(players);
+    mockPlayersGetDirectory.mockResolvedValue(players);
 
     renderHub();
 
     for (let i = 1; i <= 6; i++) {
-      expect(await screen.findByText(`Faction ${i}`)).toBeInTheDocument();
+      expect(await screen.findByRole('link', { name: new RegExp(`Faction ${i}`) })).toBeInTheDocument();
+      expect(screen.getByText(`Led by Leader ${i}`)).toBeInTheDocument();
     }
   });
 
@@ -139,7 +143,7 @@ describe('FactionsList (FAC-10)', () => {
     });
     expect(screen.getByText('Alpha Active')).toBeInTheDocument();
     expect(screen.queryByText('Gamma Disbanded')).not.toBeInTheDocument();
-    expect(activeChip).toHaveAttribute('aria-pressed', 'true');
+    expect(activeChip).toHaveAttribute('aria-selected', 'true');
   });
 
   it('narrows by name via the search input (case-insensitive substring)', async () => {
@@ -179,7 +183,7 @@ describe('FactionsList (FAC-10)', () => {
 
     renderHub();
     // Wait for the page to finish loading
-    await screen.findByText('Default Faction');
+    await screen.findByRole('link', { name: /Default Faction/ });
     expect(screen.queryByRole('link', { name: 'Request a Faction' })).not.toBeInTheDocument();
   });
 
@@ -188,7 +192,7 @@ describe('FactionsList (FAC-10)', () => {
     mockFactionsGetAll.mockResolvedValue([baseFaction()]);
 
     renderHub();
-    await screen.findByText('Default Faction');
+    await screen.findByRole('link', { name: /Default Faction/ });
     expect(screen.queryByRole('link', { name: 'Request a Faction' })).not.toBeInTheDocument();
     // Profile should never even be fetched when not auth'd
     expect(mockGetMyProfile).not.toHaveBeenCalled();
@@ -225,5 +229,18 @@ describe('FactionsList (FAC-10)', () => {
 
     renderHub();
     expect(await screen.findByLabelText('Heat: 3 of 5')).toBeInTheDocument();
+  });
+
+  it('shows a toast passed in router state, once', async () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/factions', state: { toast: 'The Brood has been disbanded.' } }]}>
+        <FactionsList />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith('The Brood has been disbanded.', 'success');
+    });
+    expect(mockShowToast).toHaveBeenCalledTimes(1);
   });
 });

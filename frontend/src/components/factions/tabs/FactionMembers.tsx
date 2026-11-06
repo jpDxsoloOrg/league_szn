@@ -1,21 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useOutletContext } from 'react-router-dom';
+import { MoreHorizontal } from 'lucide-react';
 import { factionsApi } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { logger } from '../../../utils/logger';
-import {
-  DEFAULT_WRESTLER_IMAGE,
-  resolveImageSrc,
-  applyImageFallback,
-} from '../../../constants/imageFallbacks';
+import Avatar from '../../ui/Avatar';
+import Badge from '../../ui/Badge';
+import Button from '../../ui/Button';
+import Select from '../../ui/Select';
+import Tabs from '../../ui/Tabs';
+import { useToast } from '../../ui/toastContext';
+import GroupFormCell from '../GroupFormCell';
 import InviteToFactionModal from '../InviteToFactionModal';
 import RemoveMemberModal from '../RemoveMemberModal';
+import { formatRecord } from '../factionFormat';
 import type { FactionStatsResponse } from '../../../types/faction';
 import type { FactionDetailContext } from '../FactionDetail';
+import '../groupUi.css';
 import './FactionMembers.css';
 
-type SortKey = 'wins' | 'winPct' | 'activity' | 'tenure';
+type SortKey = 'wins' | 'winPct' | 'activity' | 'name';
 type FilterKey = 'all' | 'active' | 'inactive';
 
 type FormResult = 'W' | 'L' | 'D';
@@ -33,22 +38,6 @@ interface MemberRow {
   winPercentage: number;
   recentForm: FormResult[];
   currentStreak?: { type: FormResult; count: number };
-  /** Performance delta vs the per-faction average wins (integer rounded). */
-  deltaVsAvg: number;
-}
-
-function tenureLabel(joinedAt: string, now: number, t: (key: string, fallback: string, opts?: Record<string, unknown>) => string): string {
-  const start = new Date(joinedAt).getTime();
-  if (!Number.isFinite(start)) return '';
-  const days = Math.max(0, Math.floor((now - start) / (24 * 60 * 60 * 1000)));
-  if (days < 30) return t('factions.members.tenureDays', '{{count}}D', { count: days });
-  const months = Math.floor(days / 30);
-  if (months < 12) return t('factions.members.tenureMonths', '{{count}}MO', { count: months });
-  const years = Math.floor(months / 12);
-  const remMonths = months - years * 12;
-  return remMonths > 0
-    ? t('factions.members.tenureYearsMonths', '{{years}}Y {{months}}MO', { years, months: remMonths })
-    : t('factions.members.tenureYears', '{{count}}Y', { count: years });
 }
 
 function sortRows(rows: MemberRow[], by: SortKey): MemberRow[] {
@@ -61,10 +50,8 @@ function sortRows(rows: MemberRow[], by: SortKey): MemberRow[] {
         (a, b) =>
           b.recentForm.length - a.recentForm.length || b.wins + b.losses - (a.wins + a.losses),
       );
-    case 'tenure':
-      // Until per-member tenure exists every member shares stable.createdAt;
-      // fall back to a stable name sort so the order is at least deterministic.
-      return copy.sort((a, b) => a.playerName.localeCompare(b.playerName));
+    case 'name':
+      return copy.sort((a, b) => a.wrestlerName.localeCompare(b.wrestlerName));
     case 'wins':
     default:
       return copy.sort((a, b) => b.wins - a.wins || b.winPercentage - a.winPercentage);
@@ -89,45 +76,6 @@ function matchesQuery(row: MemberRow, q: string): boolean {
   );
 }
 
-// ─── Right-rail donut ────────────────────────────────────────────────
-
-interface DonutProps {
-  segments: ReadonlyArray<{ key: string; value: number; color: string; label: string }>;
-}
-
-function CompositionDonut({ segments }: DonutProps) {
-  const total = segments.reduce((acc, s) => acc + s.value, 0);
-  if (total <= 0) return null;
-  const radius = 36;
-  const circumference = 2 * Math.PI * radius;
-  let offset = 0;
-  return (
-    <svg width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="Faction composition">
-      <circle cx="48" cy="48" r={radius} fill="none" stroke="#2a2a2a" strokeWidth="14" />
-      {segments.map((s) => {
-        const portion = s.value / total;
-        const length = portion * circumference;
-        const el = (
-          <circle
-            key={s.key}
-            cx="48"
-            cy="48"
-            r={radius}
-            fill="none"
-            stroke={s.color}
-            strokeWidth="14"
-            strokeDasharray={`${length} ${circumference - length}`}
-            strokeDashoffset={-offset}
-            transform="rotate(-90 48 48)"
-          />
-        );
-        offset += length;
-        return el;
-      })}
-    </svg>
-  );
-}
-
 // ─── Main component ─────────────────────────────────────────────────
 
 export default function FactionMembers() {
@@ -135,6 +83,7 @@ export default function FactionMembers() {
   const navigate = useNavigate();
   const { faction } = useOutletContext<FactionDetailContext>();
   const auth = useAuth();
+  const { showToast } = useToast();
   const isLeader = auth.playerId !== null && auth.playerId === faction.leaderId;
 
   const [stats, setStats] = useState<FactionStatsResponse | null>(null);
@@ -152,28 +101,30 @@ export default function FactionMembers() {
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
   const [openMenuFor, setOpenMenuFor] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
 
   const menuContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch per-member stats on mount (and on reload).
   useEffect(() => {
-    const ac = new AbortController();
-    factionsApi
-      .getStats(faction.stableId, undefined, ac.signal)
-      .then((response) => {
-        if (!ac.signal.aborted) {
+    const controller = new AbortController();
+
+    const loadStats = async () => {
+      try {
+        const response = await factionsApi.getStats(faction.stableId, undefined, controller.signal);
+        if (!controller.signal.aborted) {
           setStats(response);
           setStatsError(null);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
           logger.error('Members tab: getStats failed');
           setStatsError(err.message);
         }
-      });
-    return () => ac.abort();
+      }
+    };
+
+    loadStats();
+    return () => controller.abort();
   }, [faction.stableId, reloadKey]);
 
   // Click-outside to close the 3-dot menu.
@@ -203,16 +154,8 @@ export default function FactionMembers() {
       (stats?.members ?? []).map((m) => [m.playerId, m]),
     );
 
-    const memberCount = Math.max(1, faction.members.length);
-    const totalWins = faction.members.reduce((acc, m) => {
-      const s = statsByPlayer.get(m.playerId);
-      return acc + (s?.wins ?? m.wins ?? 0);
-    }, 0);
-    const avgWins = totalWins / memberCount;
-
     return faction.members.map((member) => {
       const s = statsByPlayer.get(member.playerId);
-      const wins = s?.wins ?? member.wins ?? 0;
       return {
         playerId: member.playerId,
         playerName: member.playerName,
@@ -220,13 +163,12 @@ export default function FactionMembers() {
         imageUrl: member.imageUrl,
         psnId: member.psnId,
         isLeader: member.playerId === faction.leaderId,
-        wins,
+        wins: s?.wins ?? member.wins ?? 0,
         losses: s?.losses ?? member.losses ?? 0,
         draws: s?.draws ?? member.draws ?? 0,
         winPercentage: s?.winPercentage ?? 0,
         recentForm: (s?.recentForm ?? []) as FormResult[],
         currentStreak: s?.currentStreak,
-        deltaVsAvg: Math.round(wins - avgWins),
       };
     });
   }, [faction.members, faction.leaderId, stats]);
@@ -253,15 +195,6 @@ export default function FactionMembers() {
   const needsSupport = useMemo(() => {
     const scoreLosses = (r: MemberRow) => r.recentForm.filter((x) => x === 'L').length;
     return [...rows].sort((a, b) => scoreLosses(b) - scoreLosses(a))[0] ?? null;
-  }, [rows]);
-
-  const composition = useMemo(() => {
-    const leaderCount = rows.filter((r) => r.isLeader).length;
-    const memberCount = rows.length - leaderCount;
-    return [
-      { key: 'leader', value: leaderCount, color: '#d4af37', label: 'Leader' },
-      { key: 'member', value: memberCount, color: '#4a4a4a', label: 'Members' },
-    ];
   }, [rows]);
 
   const handleRemove = async () => {
@@ -310,12 +243,12 @@ export default function FactionMembers() {
         return;
       }
 
-      setFeedback(
+      showToast(
         t('factions.my.removeMemberSuccess', '{{playerName}} removed from the faction.', {
           playerName: removedName,
         }),
+        'success',
       );
-      setTimeout(() => setFeedback(null), 3000);
       // Refresh the per-member stats so the row disappears and the totals
       // recalculate. The shell's getById data is stale here but the tab
       // already reflects the new shape on the next mount.
@@ -334,7 +267,7 @@ export default function FactionMembers() {
     { value: 'wins', i18nKey: 'factions.members.sortByWins', fallback: 'By Wins' },
     { value: 'winPct', i18nKey: 'factions.members.sortByWinPct', fallback: 'By Win%' },
     { value: 'activity', i18nKey: 'factions.members.sortByActivity', fallback: 'By Activity' },
-    { value: 'tenure', i18nKey: 'factions.members.sortByTenure', fallback: 'By Tenure' },
+    { value: 'name', i18nKey: 'factions.redesign.sortByName', fallback: 'By Name' },
   ];
 
   const filterOptions: ReadonlyArray<{ value: FilterKey; i18nKey: string; fallback: string }> = [
@@ -344,403 +277,192 @@ export default function FactionMembers() {
   ];
 
   return (
-    <div className="faction-members">
-      {feedback && (
-        <div className="faction-members__feedback" role="status">
-          {feedback}
-        </div>
-      )}
+    <div className="group-page">
       {statsError && (
-        <p className="faction-members__error" role="alert">
+        <p className="group-error" role="alert">
           {t('factions.members.statsError', 'Could not load member stats.')}: {statsError}
         </p>
       )}
 
-      {/* Utility row */}
-      <div className="faction-members__utility">
-        <div className="faction-members__sort-wrap">
-          <label htmlFor="members-sort" className="visually-hidden">
-            {t('factions.members.sortLabel', 'Sort members')}
-          </label>
-          <select
-            id="members-sort"
-            className="faction-members__sort"
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-          >
-            {sortOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {t(opt.i18nKey, opt.fallback)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div
-          className="faction-members__filters"
-          role="tablist"
-          aria-label={t('factions.members.filterLabel', 'Filter by activity')}
-        >
-          {filterOptions.map((opt) => {
-            const isActive = filter === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                role="tab"
-                aria-pressed={isActive}
-                className={`faction-members__chip ${isActive ? 'faction-members__chip--active' : ''}`}
-                onClick={() => setFilter(opt.value)}
-              >
-                {t(opt.i18nKey, opt.fallback)}
-              </button>
-            );
-          })}
-        </div>
-
-        <label className="faction-members__search">
-          <span className="visually-hidden">
-            {t('factions.members.searchLabel', 'Search members')}
-          </span>
+      <div className="group-toolbar">
+        <Tabs
+          label={t('factions.members.filterLabel', 'Filter by activity')}
+          value={filter}
+          onValueChange={(value) => setFilter(value as FilterKey)}
+          items={filterOptions.map((option) => ({ value: option.value, label: t(option.i18nKey, option.fallback) }))}
+        />
+        <Select
+          label={t('factions.members.sortLabel', 'Sort members')}
+          value={sort}
+          onValueChange={(value) => setSort(value as SortKey)}
+          options={sortOptions.map((option) => ({ value: option.value, label: t(option.i18nKey, option.fallback) }))}
+        />
+        <label className="group-search">
+          <span className="sr-only">{t('factions.members.searchLabel', 'Search members')}</span>
           <input
             type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(event) => setQuery(event.target.value)}
             placeholder={t('factions.members.searchPlaceholder', 'Search…')}
           />
         </label>
-
         {isLeader && (
-          <button
-            type="button"
-            className="faction-members__invite-cta"
-            onClick={() => setInviteOpen(true)}
-          >
+          <Button className="group-toolbar__push" onClick={() => setInviteOpen(true)}>
             {t('factions.members.inviteCta', 'Invite member')}
-          </button>
+          </Button>
         )}
       </div>
 
-      {/* Main split: list + right rail */}
-      <div className="faction-members__main">
+      {visibleRows.length === 0 ? (
+        <p className="group-empty">{t('factions.members.empty', 'No members match the current filter.')}</p>
+      ) : (
         <div className="faction-members__list">
-          {visibleRows.length === 0 ? (
-            <p className="faction-members__empty">
-              {t('factions.members.empty', 'No members match the current filter.')}
-            </p>
-          ) : (
-            visibleRows.map((row) => {
-              const role = row.isLeader
-                ? t('factions.members.roleLeader', 'LEADER')
-                : t('factions.members.roleMember', 'MEMBER');
-              const tenure = tenureLabel(faction.createdAt, Date.now(), t);
-              const deltaText =
-                row.deltaVsAvg === 0
-                  ? t('factions.members.deltaEven', '0 vs avg')
-                  : row.deltaVsAvg > 0
-                    ? t('factions.members.deltaPositive', '+{{n}} vs avg', { n: row.deltaVsAvg })
-                    : t('factions.members.deltaNegative', '{{n}} vs avg', { n: row.deltaVsAvg });
-              const streakBadge =
-                row.currentStreak && row.currentStreak.count > 0
-                  ? `${row.currentStreak.count}${row.currentStreak.type}`
-                  : null;
-              const isMenuOpen = openMenuFor === row.playerId;
+          {visibleRows.map((row) => {
+            const isMenuOpen = openMenuFor === row.playerId;
+            return (
+              <article key={row.playerId} className="faction-members__row">
+                <Avatar src={row.imageUrl} name={row.wrestlerName} ring={row.isLeader ? 'pink' : 'none'} />
 
-              return (
-                <article key={row.playerId} className="faction-members__row">
-                  <img
-                    src={resolveImageSrc(row.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-                    onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
-                    alt=""
-                    className="faction-members__portrait"
-                  />
+                <div className="group-person__text faction-members__identity">
+                  <h3 className="faction-members__name">{row.wrestlerName}</h3>
+                  <span className="group-muted">{row.playerName}</span>
+                </div>
 
-                  <div className="faction-members__row-identity">
-                    <h3 className="faction-members__row-name">{row.wrestlerName}</h3>
-                    <span className="faction-members__row-player">{row.playerName}</span>
-                    <p className="faction-members__row-position">
-                      <span
-                        className={`faction-members__role faction-members__role--${row.isLeader ? 'leader' : 'member'}`}
+                <div className="faction-members__role">
+                  {row.isLeader && <Badge tone="pink">{t('factions.members.roleLeader', 'LEADER')}</Badge>}
+                </div>
+
+                <div className="faction-members__record">
+                  <strong>{formatRecord(row.wins, row.losses, row.draws)}</strong>
+                  <span className="group-muted">
+                    {row.winPercentage > 0 ? `${row.winPercentage.toFixed(1)}%` : '—'}
+                  </span>
+                </div>
+
+                <div className="faction-members__form">
+                  <GroupFormCell recentForm={row.recentForm.slice(0, 5)} currentStreak={row.currentStreak} />
+                </div>
+
+                <div className="faction-members__actions" ref={isMenuOpen ? menuContainerRef : null}>
+                  <button
+                    type="button"
+                    className="faction-members__menu-trigger"
+                    aria-haspopup="menu"
+                    aria-expanded={isMenuOpen}
+                    aria-label={t('factions.members.menuLabel', 'Actions for {{name}}', { name: row.wrestlerName })}
+                    onClick={() => setOpenMenuFor(isMenuOpen ? null : row.playerId)}
+                  >
+                    <MoreHorizontal aria-hidden="true" size={20} />
+                  </button>
+                  {isMenuOpen && (
+                    <div role="menu" className="faction-members__menu">
+                      <Link
+                        to={`/player/${row.playerId}`}
+                        className="faction-members__menu-item"
+                        role="menuitem"
+                        onClick={() => setOpenMenuFor(null)}
                       >
-                        {role}
-                      </span>
-                      <span className="faction-members__row-divider" aria-hidden="true">·</span>
-                      <span className="faction-members__row-tenure">{tenure}</span>
-                    </p>
-                  </div>
-
-                  <div className="faction-members__stats">
-                    <div className="faction-members__stat">
-                      <span className="faction-members__stat-label">{t('factions.hub.statWins', 'WINS')}</span>
-                      <strong className="faction-members__stat-value">{row.wins}</strong>
-                    </div>
-                    <div className="faction-members__stat">
-                      <span className="faction-members__stat-label">{t('factions.hub.statLosses', 'LOSSES')}</span>
-                      <strong className="faction-members__stat-value">{row.losses}</strong>
-                    </div>
-                    <div className="faction-members__stat">
-                      <span className="faction-members__stat-label">{t('factions.hub.statDraws', 'DRAWS')}</span>
-                      <strong className="faction-members__stat-value">{row.draws}</strong>
-                    </div>
-                    <div className="faction-members__stat">
-                      <span className="faction-members__stat-label">{t('factions.hub.statWinPct', 'WIN%')}</span>
-                      <strong className="faction-members__stat-value">
-                        {row.winPercentage > 0 ? `${row.winPercentage.toFixed(1)}` : '—'}
-                      </strong>
-                    </div>
-                  </div>
-
-                  <div className="faction-members__delta-form">
-                    <span
-                      className={`faction-members__delta ${
-                        row.deltaVsAvg > 0
-                          ? 'faction-members__delta--up'
-                          : row.deltaVsAvg < 0
-                            ? 'faction-members__delta--down'
-                            : 'faction-members__delta--flat'
-                      }`}
-                    >
-                      {deltaText}
-                    </span>
-                    <div
-                      className="faction-members__form"
-                      aria-label={t('factions.members.formLabel', 'Recent form')}
-                    >
-                      {row.recentForm.length === 0 ? (
-                        <span className="faction-members__form-empty">—</span>
-                      ) : (
-                        row.recentForm.slice(0, 5).map((r, i) => (
-                          <span
-                            key={i}
-                            className={`faction-members__form-cell faction-members__form-cell--${r.toLowerCase()}`}
-                            aria-hidden="true"
-                          />
-                        ))
+                        {t('factions.members.actionViewProfile', 'View profile')}
+                      </Link>
+                      <Link
+                        to={`/factions/${faction.stableId}/messages?dm=${row.playerId}`}
+                        className="faction-members__menu-item"
+                        role="menuitem"
+                        onClick={() => setOpenMenuFor(null)}
+                      >
+                        {t('factions.members.actionDm', 'Send direct message')}
+                      </Link>
+                      {isLeader && !row.isLeader && (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="faction-members__menu-item faction-members__menu-item--destructive"
+                          onClick={() => {
+                            setOpenMenuFor(null);
+                            setMemberToRemove({ playerId: row.playerId, playerName: row.wrestlerName, mode: 'remove' });
+                            setRemoveError(null);
+                          }}
+                        >
+                          {t('factions.members.actionRemove', 'Remove from faction')}
+                        </button>
+                      )}
+                      {/* Leaders disband from Manage instead of leaving. */}
+                      {!row.isLeader && row.playerId === auth.playerId && (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="faction-members__menu-item faction-members__menu-item--destructive"
+                          onClick={() => {
+                            setOpenMenuFor(null);
+                            setMemberToRemove({ playerId: row.playerId, playerName: row.wrestlerName, mode: 'leave' });
+                            setRemoveError(null);
+                          }}
+                        >
+                          {t('factions.members.actionLeave', 'Leave faction')}
+                        </button>
                       )}
                     </div>
-                    {streakBadge && (
-                      <span
-                        className={`faction-members__streak ${
-                          row.currentStreak?.type === 'W'
-                            ? 'faction-members__streak--hot'
-                            : 'faction-members__streak--cold'
-                        }`}
-                      >
-                        {streakBadge}
-                      </span>
-                    )}
-                  </div>
-
-                  <div
-                    className="faction-members__actions"
-                    ref={isMenuOpen ? menuContainerRef : null}
-                  >
-                    <button
-                      type="button"
-                      className="faction-members__menu-trigger"
-                      aria-haspopup="menu"
-                      aria-expanded={isMenuOpen}
-                      aria-label={t('factions.members.menuLabel', 'Actions for {{name}}', {
-                        name: row.wrestlerName,
-                      })}
-                      onClick={() => setOpenMenuFor(isMenuOpen ? null : row.playerId)}
-                    >
-                      ⋯
-                    </button>
-                    {isMenuOpen && (
-                      <div role="menu" className="faction-members__menu">
-                        <Link
-                          to={`/player/${row.playerId}`}
-                          className="faction-members__menu-item"
-                          role="menuitem"
-                          onClick={() => setOpenMenuFor(null)}
-                        >
-                          {t('factions.members.actionViewProfile', 'View profile')}
-                        </Link>
-                        <Link
-                          to={`/factions/${faction.stableId}/messages?dm=${row.playerId}`}
-                          className="faction-members__menu-item"
-                          role="menuitem"
-                          onClick={() => setOpenMenuFor(null)}
-                        >
-                          {t('factions.members.actionDm', 'Send direct message')}
-                        </Link>
-                        {isLeader && !row.isLeader && (
-                          <button
-                            type="button"
-                            role="menuitem"
-                            className="faction-members__menu-item faction-members__menu-item--destructive"
-                            onClick={() => {
-                              setOpenMenuFor(null);
-                              setMemberToRemove({
-                                playerId: row.playerId,
-                                playerName: row.wrestlerName,
-                                mode: 'remove',
-                              });
-                              setRemoveError(null);
-                            }}
-                          >
-                            {t('factions.members.actionRemove', 'Remove from faction')}
-                          </button>
-                        )}
-                        {/* FAC-23: caller's own row (only if they aren't the
-                            leader) gets a "Leave faction" option. Leaders
-                            use transfer-leadership / disband instead. */}
-                        {!row.isLeader && row.playerId === auth.playerId && (
-                          <button
-                            type="button"
-                            role="menuitem"
-                            className="faction-members__menu-item faction-members__menu-item--destructive"
-                            onClick={() => {
-                              setOpenMenuFor(null);
-                              setMemberToRemove({
-                                playerId: row.playerId,
-                                playerName: row.wrestlerName,
-                                mode: 'leave',
-                              });
-                              setRemoveError(null);
-                            }}
-                          >
-                            {t('factions.members.actionLeave', 'Leave faction')}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </article>
-              );
-            })
-          )}
-
-          {/* Footer card: faction totals */}
-          <section className="faction-members__totals" aria-labelledby="faction-members-totals">
-            <h2 id="faction-members-totals" className="faction-members__totals-title">
-              {t('factions.members.totalsTitle', 'Faction Totals')}
-            </h2>
-            <div className="faction-members__totals-grid">
-              <div className="faction-members__totals-stat">
-                <span className="faction-members__totals-label">
-                  {t('factions.hub.statWins', 'WINS')}
-                </span>
-                <strong>{totals.wins}</strong>
-              </div>
-              <div className="faction-members__totals-stat">
-                <span className="faction-members__totals-label">
-                  {t('factions.hub.statLosses', 'LOSSES')}
-                </span>
-                <strong>{totals.losses}</strong>
-              </div>
-              <div className="faction-members__totals-stat">
-                <span className="faction-members__totals-label">
-                  {t('factions.hub.statDraws', 'DRAWS')}
-                </span>
-                <strong>{totals.draws}</strong>
-              </div>
-              <div className="faction-members__totals-stat">
-                <span className="faction-members__totals-label">
-                  {t('factions.hub.statWinPct', 'WIN%')}
-                </span>
-                <strong>{totals.winPct}%</strong>
-              </div>
-            </div>
-
-            <div className="faction-members__callouts">
-              {bestPerformer && (
-                <div className="faction-members__callout">
-                  <span className="faction-members__callout-label">
-                    {t('factions.members.bestPerformer', 'BEST PERFORMER')}
-                  </span>
-                  <img
-                    src={resolveImageSrc(bestPerformer.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-                    onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
-                    alt=""
-                    className="faction-members__callout-image"
-                  />
-                  <span className="faction-members__callout-name">{bestPerformer.wrestlerName}</span>
-                  <span className="faction-members__callout-value">
-                    {bestPerformer.winPercentage > 0 ? `${bestPerformer.winPercentage.toFixed(1)}%` : '—'}
-                  </span>
+                  )}
                 </div>
-              )}
-              {needsSupport && needsSupport.playerId !== bestPerformer?.playerId && (
-                <div className="faction-members__callout">
-                  <span className="faction-members__callout-label">
-                    {t('factions.members.needsSupport', 'NEEDS SUPPORT')}
-                  </span>
-                  <img
-                    src={resolveImageSrc(needsSupport.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-                    onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
-                    alt=""
-                    className="faction-members__callout-image"
-                  />
-                  <span className="faction-members__callout-name">{needsSupport.wrestlerName}</span>
-                  <span className="faction-members__callout-value">
-                    {needsSupport.recentForm.length > 0
-                      ? needsSupport.recentForm.join(' · ')
-                      : '—'}
-                  </span>
-                </div>
-              )}
-            </div>
-          </section>
+              </article>
+            );
+          })}
         </div>
+      )}
 
-        {/* Right rail */}
-        <aside className="faction-members__rail">
-          <section className="faction-members__rail-card">
-            <h3 className="faction-members__rail-title">
-              {t('factions.members.compositionTitle', 'Faction Composition')}
-            </h3>
-            <div className="faction-members__rail-donut">
-              <CompositionDonut segments={composition} />
-              <ul className="faction-members__rail-legend">
-                {composition.map((s) => (
-                  <li key={s.key}>
-                    <span
-                      className="faction-members__rail-legend-dot"
-                      style={{ backgroundColor: s.color }}
-                      aria-hidden="true"
-                    />
-                    <span>
-                      {s.label} ({s.value})
-                    </span>
-                  </li>
-                ))}
-              </ul>
+      <section className="group-section" aria-labelledby="faction-members-totals">
+        <h2 id="faction-members-totals" className="group-heading">
+          {t('factions.members.totalsTitle', 'Faction Totals')}
+        </h2>
+        <dl className="group-stats">
+          <div>
+            <dt>{t('factions.hub.statWins', 'WINS')}</dt>
+            <dd>{totals.wins}</dd>
+          </div>
+          <div>
+            <dt>{t('factions.hub.statLosses', 'LOSSES')}</dt>
+            <dd>{totals.losses}</dd>
+          </div>
+          <div>
+            <dt>{t('factions.hub.statDraws', 'DRAWS')}</dt>
+            <dd>{totals.draws}</dd>
+          </div>
+          <div>
+            <dt>{t('factions.hub.statWinPct', 'WIN%')}</dt>
+            <dd>{totals.winPct}%</dd>
+          </div>
+        </dl>
+
+        <div className="faction-members__callouts">
+          {bestPerformer && (
+            <div className="group-person">
+              <Avatar src={bestPerformer.imageUrl} name={bestPerformer.wrestlerName} size="sm" />
+              <span className="group-person__text">
+                <span className="group-muted">{t('factions.members.bestPerformer', 'BEST PERFORMER')}</span>
+                <span className="group-person__name">
+                  {bestPerformer.wrestlerName}
+                  {' · '}
+                  {bestPerformer.winPercentage > 0 ? `${bestPerformer.winPercentage.toFixed(1)}%` : '—'}
+                </span>
+              </span>
             </div>
-          </section>
-
-          <section className="faction-members__rail-card">
-            <h3 className="faction-members__rail-title">
-              {t('factions.members.tenureTitle', 'Tenure')}
-            </h3>
-            <div
-              className="faction-members__tenure-bar"
-              role="img"
-              aria-label={t('factions.members.tenureAria', 'Tenure breakdown')}
-            >
-              {rows.map((r) => (
-                <span
-                  key={r.playerId}
-                  className={`faction-members__tenure-seg ${
-                    r.isLeader ? 'faction-members__tenure-seg--leader' : ''
-                  }`}
-                  style={{ flex: 1 }}
-                  title={r.wrestlerName}
-                />
-              ))}
+          )}
+          {needsSupport && needsSupport.playerId !== bestPerformer?.playerId && (
+            <div className="group-person">
+              <Avatar src={needsSupport.imageUrl} name={needsSupport.wrestlerName} size="sm" />
+              <span className="group-person__text">
+                <span className="group-muted">{t('factions.members.needsSupport', 'NEEDS SUPPORT')}</span>
+                <span className="group-person__name">
+                  {needsSupport.wrestlerName}
+                  {' · '}
+                  {needsSupport.recentForm.length > 0 ? needsSupport.recentForm.join(' ') : '—'}
+                </span>
+              </span>
             </div>
-            <p className="faction-members__tenure-note">
-              {t(
-                'factions.members.tenureNote',
-                'Per-member tenure is approximated from the faction creation date until per-member join tracking ships.',
-              )}
-            </p>
-          </section>
-        </aside>
-      </div>
+          )}
+        </div>
+      </section>
 
-      {/* Invite modal */}
       {inviteOpen && (
         <InviteToFactionModal
           isOpen={inviteOpen}
@@ -749,13 +471,11 @@ export default function FactionMembers() {
           onClose={() => setInviteOpen(false)}
           onInvited={() => {
             setInviteOpen(false);
-            setReloadKey((k) => k + 1);
+            setReloadKey((key) => key + 1);
           }}
         />
       )}
 
-      {/* Remove-member / leave-faction confirmation modal — shared with the
-          Manage tab. The mode flag picks between the two copy variants. */}
       {memberToRemove && (
         <RemoveMemberModal
           factionName={faction.name}

@@ -1,24 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
-import { factionsApi } from '../../../services/api';
+import { ArrowLeft, Plus } from 'lucide-react';
+import { factionsApi, playersApi } from '../../../services/api';
+import type { PlayerDirectoryEntry } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { logger } from '../../../utils/logger';
-import {
-  DEFAULT_WRESTLER_IMAGE,
-  resolveImageSrc,
-  applyImageFallback,
-} from '../../../constants/imageFallbacks';
 import type {
   FactionDirectMessage,
   FactionMessage,
 } from '../../../types/factionMessage';
 import type { DirectMessageThreadSummary } from '../../../types/faction';
 import type { FactionDetailContext } from '../FactionDetail';
+import Avatar from '../../ui/Avatar';
+import Badge from '../../ui/Badge';
+import Button from '../../ui/Button';
+import Skeleton from '../../ui/Skeleton';
+import '../groupUi.css';
 import './FactionMessages.css';
 
 const POLL_INTERVAL_MS = 10_000;
-const COMPOSER_MAX_LINES = 6;
 
 interface BaseDisplayMessage {
   messageId: string;
@@ -117,6 +118,9 @@ export default function FactionMessages() {
   const [feedError, setFeedError] = useState<string | null>(null);
   const [newDmOpen, setNewDmOpen] = useState(false);
   const [threadFilter, setThreadFilter] = useState('');
+  const [directory, setDirectory] = useState<PlayerDirectoryEntry[]>([]);
+  // Phones show one pane at a time. The active thread is the default.
+  const [listOpenOnMobile, setListOpenOnMobile] = useState(false);
   const [, setUnreadTick] = useState(0); // re-render trigger on focus
 
   // Per-page-load polling visibility flag.
@@ -128,23 +132,53 @@ export default function FactionMessages() {
   // Tracks whether the user has scrolled away from the bottom — when true we
   // avoid yanking them back on polled messages.
   const userScrolledUp = useRef(false);
-  const composerRef = useRef<HTMLTextAreaElement | null>(null);
 
   const memberById = useMemo(
     () => new Map(faction.members.map((m) => [m.playerId, m])),
     [faction.members],
   );
 
+  // Old messages can come from players who have since left the faction.
+  const directoryById = useMemo(
+    () => new Map(directory.map((entry) => [entry.playerId, entry])),
+    [directory],
+  );
+
+  const displayName = useCallback((playerId: string): string => {
+    const entry = directoryById.get(playerId);
+    return memberById.get(playerId)?.wrestlerName
+      ?? entry?.currentWrestler
+      ?? entry?.name
+      ?? t('factions.redesign.formerMember', 'Former member');
+  }, [directoryById, memberById, t]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const loadDirectory = async () => {
+      try {
+        const entries = await playersApi.getDirectory(controller.signal);
+        if (!controller.signal.aborted) setDirectory(entries);
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          logger.warn('Messages tab: directory load failed');
+        }
+      }
+    };
+    loadDirectory();
+    return () => controller.abort();
+  }, []);
+
   // ─── Initial load: threads + channel first page in parallel ────────
   useEffect(() => {
     const ac = new AbortController();
     setThreadsLoading(true);
 
-    Promise.all([
-      factionsApi.directMessages.listMyThreads(faction.stableId, ac.signal),
-      factionsApi.messages.list(faction.stableId, { limit: 50 }, ac.signal),
-    ])
-      .then(([threadList, channelPage]) => {
+    const loadInitial = async () => {
+      try {
+        const [threadList, channelPage] = await Promise.all([
+          factionsApi.directMessages.listMyThreads(faction.stableId, ac.signal),
+          factionsApi.messages.list(faction.stableId, { limit: 50 }, ac.signal),
+        ]);
         if (ac.signal.aborted) return;
         setThreads(threadList);
         setChannelMessages(
@@ -157,17 +191,17 @@ export default function FactionMessages() {
             messageType: m.messageType,
           })),
         );
-      })
-      .catch((err) => {
+      } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
           logger.error('Messages tab: initial load failed');
           setFeedError(err.message);
         }
-      })
-      .finally(() => {
+      } finally {
         if (!ac.signal.aborted) setThreadsLoading(false);
-      });
+      }
+    };
 
+    loadInitial();
     return () => ac.abort();
   }, [faction.stableId]);
 
@@ -202,9 +236,9 @@ export default function FactionMessages() {
     const ac = new AbortController();
     const partnerId = activeThread.partnerPlayerId;
 
-    factionsApi.directMessages
-      .listThread(faction.stableId, partnerId, { limit: 50 }, ac.signal)
-      .then((page) => {
+    const loadThread = async () => {
+      try {
+        const page = await factionsApi.directMessages.listThread(faction.stableId, partnerId, { limit: 50 }, ac.signal);
         if (ac.signal.aborted) return;
         setDmMessages((prev) => {
           const next = new Map(prev);
@@ -220,14 +254,15 @@ export default function FactionMessages() {
           );
           return next;
         });
-      })
-      .catch((err) => {
+      } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
           logger.error('Messages tab: dm thread fetch failed');
           setFeedError(err.message);
         }
-      });
+      }
+    };
 
+    loadThread();
     return () => ac.abort();
   }, [activeThread, faction.stableId, dmMessages]);
 
@@ -238,14 +273,16 @@ export default function FactionMessages() {
       // partners the user hasn't messaged yet appear without a reload, and
       // so the channel-pin / DM-row previews + unread dots stay current
       // even when a different conversation is active.
-      void factionsApi.directMessages
-        .listMyThreads(faction.stableId)
-        .then((list) => setThreads(list))
-        .catch((err) => {
+      const refreshThreads = async () => {
+        try {
+          setThreads(await factionsApi.directMessages.listMyThreads(faction.stableId));
+        } catch (err) {
           if (err instanceof Error && err.name !== 'AbortError') {
             logger.warn(`Messages tab: thread-list poll failed (${err.message})`);
           }
-        });
+        }
+      };
+      void refreshThreads();
 
       if (activeThread.type === 'channel') {
         const page = await factionsApi.messages.list(faction.stableId, { limit: 50 });
@@ -546,25 +583,22 @@ export default function FactionMessages() {
     ? t('factions.messages.audienceChannel', 'VISIBLE TO FACTION ONLY')
     : t('factions.messages.audienceDm', 'PRIVATE — JUST YOU TWO');
 
+  const partnerName = activeThread.type === 'dm' ? displayName(activeThread.partnerPlayerId) : '';
+
   const headerContext = activeThread.type === 'channel'
     ? t('factions.messages.headerChannel', 'FACTION-WIDE CHANNEL · {{count}} members', {
         count: faction.memberIds.length,
       })
-    : (() => {
-        const partner = memberById.get(activeThread.partnerPlayerId);
-        return t('factions.messages.headerDm', 'DIRECT · {{name}}', {
-          name: partner?.wrestlerName ?? activeThread.partnerPlayerId,
-        });
-      })();
+    : t('factions.messages.headerDm', 'DIRECT · {{name}}', { name: partnerName });
 
   const composerPlaceholder = activeThread.type === 'channel'
     ? t('factions.messages.composerChannelPlaceholder', 'Message the faction…')
-    : (() => {
-        const partner = memberById.get(activeThread.partnerPlayerId);
-        return t('factions.messages.composerDmPlaceholder', 'Message {{name}}…', {
-          name: partner?.wrestlerName ?? activeThread.partnerPlayerId,
-        });
-      })();
+    : t('factions.messages.composerDmPlaceholder', 'Message {{name}}…', { name: partnerName });
+
+  const openThread = (thread: ActiveThread) => {
+    setActiveThread(thread);
+    setListOpenOnMobile(false);
+  };
 
   // Group messages by day for date separators.
   const renderFeed = (): React.ReactNode[] => {
@@ -599,32 +633,19 @@ export default function FactionMessages() {
             m.hasError ? 'faction-messages__bubble--error' : ''
           }`}
         >
-          {!isSelf && (
-            <img
-              src={resolveImageSrc(author?.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-              onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
-              alt=""
-              className="faction-messages__bubble-avatar"
-            />
-          )}
+          {!isSelf && <Avatar src={author?.imageUrl} name={displayName(m.authorPlayerId)} size="sm" />}
           <div className="faction-messages__bubble-body">
             {!isSelf && (
               <span className="faction-messages__bubble-author">
-                {author?.wrestlerName ?? m.authorPlayerId}
+                {displayName(m.authorPlayerId)}
               </span>
             )}
             <p className="faction-messages__bubble-text">{m.body}</p>
-            <span className="faction-messages__bubble-time">
-              {formatTime(m.createdAt)}
-            </span>
+            <span className="group-muted">{formatTime(m.createdAt)}</span>
             {m.hasError && (
-              <button
-                type="button"
-                className="faction-messages__bubble-retry"
-                onClick={() => handleRetry(m)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => handleRetry(m)}>
                 {t('factions.messages.retry', 'Retry')}
-              </button>
+              </Button>
             )}
           </div>
         </div>,
@@ -634,81 +655,75 @@ export default function FactionMessages() {
   };
 
   return (
-    <div className="faction-messages">
-      {/* Conversation list */}
+    <div className={`faction-messages ${listOpenOnMobile ? 'faction-messages--list-open' : ''}`}>
       <aside className="faction-messages__list">
         <button
           type="button"
           className={`faction-messages__channel-pin ${
             activeThread.type === 'channel' ? 'faction-messages__channel-pin--active' : ''
           }`}
-          onClick={() => setActiveThread({ type: 'channel' })}
+          onClick={() => openThread({ type: 'channel' })}
         >
-          <span className="faction-messages__channel-label">
-            {t('factions.messages.channelLabel', 'FACTION-WIDE')}
-          </span>
-          <span className="faction-messages__channel-sub">
-            {channelMessages[0]
-              ? channelMessages[0].body.slice(0, 60)
-              : t('factions.messages.channelEmpty', 'No messages yet.')}
+          <span className="group-person__text">
+            <span className="group-person__name">{t('factions.messages.channelLabel', 'FACTION-WIDE')}</span>
+            <span className="faction-messages__preview">
+              {channelMessages[0]
+                ? channelMessages[0].body.slice(0, 60)
+                : t('factions.messages.channelEmpty', 'No messages yet.')}
+            </span>
           </span>
           {isChannelUnread && (
-            <span className="faction-messages__unread-dot" aria-label="unread" />
+            <span
+              className="faction-messages__unread-dot"
+              role="img"
+              aria-label={t('factions.redesign.unread', 'Unread')}
+            />
           )}
         </button>
 
-        <h3 className="faction-messages__section-title">
-          {t('factions.messages.dmsSection', 'Direct Messages')}
-        </h3>
+        <label className="group-search faction-messages__search">
+          <span className="sr-only">{t('factions.messages.searchLabel', 'Search threads')}</span>
+          <input
+            type="search"
+            placeholder={t('factions.messages.searchPlaceholder', 'Search…')}
+            value={threadFilter}
+            onChange={(event) => setThreadFilter(event.target.value)}
+          />
+        </label>
+
+        <h3 className="group-subheading">{t('factions.messages.dmsSection', 'Direct Messages')}</h3>
 
         {threadsLoading ? (
-          <p className="faction-messages__empty">
-            {t('common.loading', 'Loading…')}
-          </p>
+          <Skeleton variant="block" count={2} />
         ) : visibleThreads.length === 0 ? (
-          <p className="faction-messages__empty">
-            {t('factions.messages.dmsEmpty', 'No direct-message threads yet.')}
-          </p>
+          <p className="group-empty">{t('factions.messages.dmsEmpty', 'No direct-message threads yet.')}</p>
         ) : (
-          <ul className="faction-messages__thread-list">
+          <ul className="faction-messages__threads">
             {visibleThreads.map((thread) => {
               const isActive =
-                activeThread.type === 'dm' &&
-                activeThread.partnerPlayerId === thread.partnerPlayerId;
+                activeThread.type === 'dm' && activeThread.partnerPlayerId === thread.partnerPlayerId;
+              const threadName = thread.partnerWrestlerName
+                ?? thread.partnerPlayerName
+                ?? displayName(thread.partnerPlayerId);
               return (
                 <li key={thread.partnerPlayerId}>
                   <button
                     type="button"
-                    className={`faction-messages__thread-row ${
-                      isActive ? 'faction-messages__thread-row--active' : ''
-                    }`}
-                    onClick={() =>
-                      setActiveThread({ type: 'dm', partnerPlayerId: thread.partnerPlayerId })
-                    }
+                    className={`faction-messages__thread-row ${isActive ? 'faction-messages__thread-row--active' : ''}`}
+                    onClick={() => openThread({ type: 'dm', partnerPlayerId: thread.partnerPlayerId })}
                   >
-                    <img
-                      src={resolveImageSrc(thread.partnerImageUrl ?? undefined, DEFAULT_WRESTLER_IMAGE)}
-                      onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
-                      alt={
-                        thread.partnerWrestlerName ??
-                        thread.partnerPlayerName ??
-                        ''
-                      }
-                      className="faction-messages__thread-avatar"
-                    />
-                    <div className="faction-messages__thread-body">
-                      <span className="faction-messages__thread-name">
-                        {thread.partnerWrestlerName ?? thread.partnerPlayerName ?? thread.partnerPlayerId}
-                      </span>
-                      <span className="faction-messages__thread-preview">
-                        {thread.lastMessage?.body.slice(0, 40) ?? ''}
-                      </span>
-                    </div>
-                    <span className="faction-messages__thread-time">
-                      {formatTime(thread.lastMessageAt)}
+                    <Avatar src={thread.partnerImageUrl} name={threadName} size="sm" />
+                    <span className="group-person__text faction-messages__thread-text">
+                      <span className="group-person__name">{threadName}</span>
+                      <span className="faction-messages__preview">{thread.lastMessage?.body.slice(0, 40) ?? ''}</span>
                     </span>
+                    <span className="group-muted">{formatTime(thread.lastMessageAt)}</span>
                     {isThreadUnread(thread) && (
-                      <span className="faction-messages__unread-dot" aria-label="unread" />
+                      <span
+                        className="faction-messages__unread-dot"
+                        role="img"
+                        aria-label={t('factions.redesign.unread', 'Unread')}
+                      />
                     )}
                   </button>
                 </li>
@@ -717,41 +732,29 @@ export default function FactionMessages() {
           </ul>
         )}
 
-        <div className="faction-messages__search-wrap">
-          <label className="visually-hidden" htmlFor="faction-messages-search">
-            {t('factions.messages.searchLabel', 'Search threads')}
-          </label>
-          <input
-            id="faction-messages-search"
-            type="search"
-            placeholder={t('factions.messages.searchPlaceholder', 'Search…')}
-            value={threadFilter}
-            onChange={(e) => setThreadFilter(e.target.value)}
-          />
-        </div>
-
         {newDmCandidates.length > 0 && (
           <div className="faction-messages__new-dm">
-            <button
-              type="button"
-              className="faction-messages__new-dm-trigger"
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<Plus aria-hidden="true" size={16} />}
               aria-haspopup="menu"
               aria-expanded={newDmOpen}
-              onClick={() => setNewDmOpen((v) => !v)}
+              onClick={() => setNewDmOpen((open) => !open)}
             >
-              {t('factions.messages.newDm', '+ New DM')}
-            </button>
+              {t('factions.redesign.newDm', 'New DM')}
+            </Button>
             {newDmOpen && (
               <ul role="menu" className="faction-messages__new-dm-list">
                 {newDmCandidates.map((member) => (
-                  <li key={member.playerId}>
+                  <li key={member.playerId} role="none">
                     <button
                       type="button"
                       role="menuitem"
                       className="faction-messages__new-dm-item"
                       onClick={() => {
                         setNewDmOpen(false);
-                        setActiveThread({ type: 'dm', partnerPlayerId: member.playerId });
+                        openThread({ type: 'dm', partnerPlayerId: member.playerId });
                       }}
                     >
                       {member.wrestlerName}
@@ -764,84 +767,53 @@ export default function FactionMessages() {
         )}
       </aside>
 
-      {/* Active thread */}
       <section className="faction-messages__thread" aria-live="polite">
         <header className="faction-messages__thread-header">
-          <span className="faction-messages__thread-header-context">{headerContext}</span>
-          <span
-            className="faction-messages__audience-pill"
-            aria-label={t('factions.messages.audienceAria', 'Audience: {{label}}', {
-              label: audiencePill,
-            })}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="faction-messages__back"
+            icon={<ArrowLeft aria-hidden="true" size={16} />}
+            onClick={() => setListOpenOnMobile(true)}
+          >
+            {t('factions.redesign.conversations', 'Conversations')}
+          </Button>
+          <span className="group-person__name">{headerContext}</span>
+          <Badge
+            tone="primary"
+            aria-label={t('factions.messages.audienceAria', 'Audience: {{label}}', { label: audiencePill })}
           >
             {audiencePill}
-          </span>
+          </Badge>
         </header>
 
         {feedError && (
-          <p className="faction-messages__feed-error" role="alert">
+          <p className="group-error" role="alert">
             {t('factions.messages.feedError', 'Could not load messages.')}: {feedError}
           </p>
         )}
 
-        <div
-          className="faction-messages__feed"
-          ref={feedRef}
-          onScroll={handleFeedScroll}
-        >
+        <div className="faction-messages__feed" ref={feedRef} onScroll={handleFeedScroll}>
           {activeFeed.length === 0 ? (
-            <p className="faction-messages__empty">
-              {t('factions.messages.feedEmpty', 'No messages yet — start the conversation.')}
-            </p>
+            <p className="group-empty">{t('factions.messages.feedEmpty', 'No messages yet — start the conversation.')}</p>
           ) : (
             renderFeed()
           )}
         </div>
 
-        <p className="faction-messages__reminder">
-          {activeThread.type === 'channel'
-            ? t('factions.messages.reminderChannel', 'Only members can read this.')
-            : t('factions.messages.reminderDm', 'This is private — just you two.')}
-        </p>
-
         <div className="faction-messages__composer">
-          <button
-            type="button"
-            className="faction-messages__composer-icon"
-            disabled
-            title={t('factions.messages.attachComingSoon', 'Attachments coming soon')}
-            aria-label={t('factions.messages.attachAria', 'Attach (coming soon)')}
-          >
-            📎
-          </button>
-          <button
-            type="button"
-            className="faction-messages__composer-icon"
-            disabled
-            title={t('factions.messages.emojiComingSoon', 'Emoji picker coming soon')}
-            aria-label={t('factions.messages.emojiAria', 'Emoji (coming soon)')}
-          >
-            🙂
-          </button>
           <textarea
-            ref={composerRef}
             className="faction-messages__composer-input"
             placeholder={composerPlaceholder}
             value={composer}
-            onChange={(e) => setComposer(e.target.value)}
+            onChange={(event) => setComposer(event.target.value)}
             onKeyDown={handleComposerKeyDown}
             rows={1}
-            style={{ maxHeight: `${COMPOSER_MAX_LINES * 1.6}em` }}
             aria-label={composerPlaceholder}
           />
-          <button
-            type="button"
-            className="faction-messages__send"
-            disabled={posting || composer.trim().length === 0}
-            onClick={() => handleSend()}
-          >
+          <Button disabled={posting || composer.trim().length === 0} onClick={() => handleSend()}>
             {t('factions.messages.send', 'Send')}
-          </button>
+          </Button>
         </div>
       </section>
     </div>
