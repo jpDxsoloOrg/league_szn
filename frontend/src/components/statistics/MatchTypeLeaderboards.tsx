@@ -41,6 +41,7 @@ function MatchTypeLeaderboards() {
   return (
     <div className="stats-page">
       <PageHeader
+        className="stats-header--filters"
         eyebrow={t('statistics.leaderboards.title')}
         title={title}
         actions={<LeaderboardFilters filters={filters} />}

@@ -126,16 +126,41 @@
   }
 }
 
-/* Two across hides the wrestler that tells two similar player names apart. */
 @media (max-width: 480px) {
-  .stats-page .page-header__actions .ui-select__trigger {
+  /* Two across hides the wrestler that tells two similar player names apart. */
+  .stats-page .page-header:not(.stats-header--filters) .page-header__actions .ui-select__trigger {
     flex-basis: 100%;
+  }
+
+  /* Plain filters have short labels, so they sit two across where they fit. */
+  .stats-header--filters .page-header__actions {
+    gap: 0.5rem;
+  }
+
+  .stats-header--filters .page-header__actions .ui-select__trigger {
+    gap: 0.25rem;
+    padding-inline: 0.625rem;
+    font-size: 0.9375rem;
+  }
+
+  .stats-page .stats-header--filters .page-header__actions .ui-select__trigger > span:first-child {
+    white-space: normal;
   }
 
   /* The tab rows above already name the page, so the header gives its height to the data. */
   .stats-page .page-header {
     gap: 0.75rem;
     padding: 0.875rem 1rem;
+  }
+
+  /* A header with controls keeps its h1 for screen readers only. */
+  .stats-page .page-header:has(.page-header__actions) .page-header__text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .stats-page .page-header__eyebrow {

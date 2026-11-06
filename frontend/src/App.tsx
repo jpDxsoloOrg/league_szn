@@ -136,8 +136,10 @@ function AppLayout() {
       <a href="#main" className="skip-link">{t('nav.skipToContent')}</a>
       <div className="shell-top">
         {isMobile ? <MobileHeader /> : <ShellHeader />}
-        <SectionNav />
+        {!isMobile && <SectionNav />}
       </div>
+      {/* On phones the tab rows scroll away, so only the slim header stays pinned. */}
+      {isMobile && <SectionNav />}
       <p className="sr-only" role="status">{pageTitle}</p>
       <ProfileCompletionModal />
       <AnnouncementModal />

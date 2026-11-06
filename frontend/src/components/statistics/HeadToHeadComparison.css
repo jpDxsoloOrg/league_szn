@@ -161,6 +161,12 @@
     grid-row: 2;
   }
 
+  /* The wrestler in brackets is what people recognise, so the name wraps instead of cutting. */
+  .h2h-corner .h2h-corner__select > span:first-child {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
   .h2h-stat-list {
     padding: 0.5rem 1rem;
   }
@@ -177,8 +183,23 @@
   }
 }
 
+/* One picker per row with the avatar beside it, so the card stays as short as two across. */
 @media (max-width: 480px) {
+  .h2h-matchup {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .h2h-corner {
+    flex-direction: row;
+  }
+
+  .h2h-record {
+    grid-row: 3;
+  }
+
   .h2h-corner .ui-avatar--lg {
+    flex: none;
     width: 48px;
     height: 48px;
     font-size: 1rem;
