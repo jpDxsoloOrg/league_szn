@@ -43,9 +43,16 @@ jobs:
         working-directory: frontend
         run: npm test
 
+  checks:
+    name: Backend Checks & Secret Scan
+    uses: ./.github/workflows/ci-checks.yml
+
   deploy-dev:
     name: Deploy to Dev Environment
-    needs: test
+    needs: [test, checks]
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: false
     runs-on: ubuntu-latest
 
     steps:
@@ -118,13 +125,26 @@ jobs:
           VITE_COGNITO_CLIENT_ID: ${{ steps.cognito.outputs.client_id }}
           VITE_AWS_REGION: us-east-1
 
-      - name: Deploy frontend to S3
+      # Upload order matters. Hashed assets go first, so a new index.html never
+      # points at a file that is missing. assets/ is never pruned, because tabs
+      # still running the previous build load their chunks from it. index.html
+      # goes last, as no-cache, so browsers always pick up the current build.
+      - name: Upload hashed assets
         working-directory: frontend
-        run: aws s3 sync dist s3://dev.leagueszn.jpdxsolo.com --delete --exclude "*.map"
+        run: |
+          aws s3 sync dist/assets s3://dev.leagueszn.jpdxsolo.com/assets \
+            --exclude "*.map" \
+            --cache-control "public, max-age=31536000, immutable"
 
-      # The sync above uploads index.html with no Cache-Control, so browsers
-      # cache it heuristically and keep pointing at an old JS bundle. Re-upload
-      # it as no-cache; the hashed assets/* files stay long-lived.
+      - name: Upload remaining static files
+        working-directory: frontend
+        run: |
+          aws s3 sync dist s3://dev.leagueszn.jpdxsolo.com --delete \
+            --exclude "assets/*" \
+            --exclude "index.html" \
+            --exclude "*.map" \
+            --cache-control "public, max-age=300"
+
       - name: Upload index.html as no-cache
         working-directory: frontend
         run: |
@@ -147,11 +167,6 @@ jobs:
             --distribution-id ${{ steps.cloudfront.outputs.distribution_id }} \
             --paths "/*"
 
-      - name: Wait for CloudFront invalidation
-        run: |
-          echo "Waiting for CloudFront cache to propagate..."
-          sleep 30
-
       # E2E tests and screenshots temporarily disabled
       # - name: Install E2E test dependencies
       #   working-directory: e2e
@@ -166,6 +181,8 @@ jobs:
       #   run: npx playwright test --project=chromium
       #   env:
       #     TEST_ENV: dev
+      #     E2E_ADMIN_USERNAME: ${{ secrets.E2E_ADMIN_USERNAME }}
+      #     E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       #
       # - name: Upload E2E test results
       #   uses: actions/upload-artifact@v4
@@ -192,7 +209,7 @@ jobs:
       - name: Deployment summary
         if: always()
         run: |
-          echo "## Dev Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## Dev Deployment: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Frontend**: https://dev.leagueszn.jpdxsolo.com" >> $GITHUB_STEP_SUMMARY
           echo "- **CloudFront Distribution**: ${{ steps.cloudfront.outputs.distribution_id }}" >> $GITHUB_STEP_SUMMARY

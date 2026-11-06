@@ -39,9 +39,17 @@ jobs:
         working-directory: frontend
         run: npm test
 
+  checks:
+    name: Backend Checks & Secret Scan
+    uses: ./.github/workflows/ci-checks.yml
+
   deploy-prod:
     name: Deploy to Production Environment
-    needs: test
+    needs: [test, checks]
+    if: github.ref == 'refs/heads/main'
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -116,13 +124,26 @@ jobs:
           VITE_COGNITO_CLIENT_ID: ${{ steps.cognito.outputs.client_id }}
           VITE_AWS_REGION: us-east-1
 
-      - name: Deploy frontend to S3
+      # Upload order matters. Hashed assets go first, so a new index.html never
+      # points at a file that is missing. assets/ is never pruned, because tabs
+      # still running the previous build load their chunks from it. index.html
+      # goes last, as no-cache, so browsers always pick up the current build.
+      - name: Upload hashed assets
         working-directory: frontend
-        run: aws s3 sync dist s3://leagueszn.jpdxsolo.com --delete --exclude "*.map"
+        run: |
+          aws s3 sync dist/assets s3://leagueszn.jpdxsolo.com/assets \
+            --exclude "*.map" \
+            --cache-control "public, max-age=31536000, immutable"
 
-      # The sync above uploads index.html with no Cache-Control, so browsers
-      # cache it heuristically and keep pointing at an old JS bundle. Re-upload
-      # it as no-cache; the hashed assets/* files stay long-lived.
+      - name: Upload remaining static files
+        working-directory: frontend
+        run: |
+          aws s3 sync dist s3://leagueszn.jpdxsolo.com --delete \
+            --exclude "assets/*" \
+            --exclude "index.html" \
+            --exclude "*.map" \
+            --cache-control "public, max-age=300"
+
       - name: Upload index.html as no-cache
         working-directory: frontend
         run: |
