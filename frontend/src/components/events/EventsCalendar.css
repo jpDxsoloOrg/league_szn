@@ -49,10 +49,10 @@
   font-weight: 600;
 }
 
-/* Lists lead; the calendar sits beside them so an empty month buries nothing. */
+/* One column: a calendar sharing the row is too narrow for real show names. */
 .events-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 1.5rem;
 }
@@ -62,6 +62,10 @@
   flex-direction: column;
   gap: 1.5rem;
   min-width: 0;
+}
+
+.events-layout__lists:empty {
+  display: none;
 }
 
 .events-toolbar {
@@ -203,6 +207,15 @@ button.calendar-item {
   background-color: var(--tint-violet);
 }
 
+/* Struck through as well as muted, so it does not rely on colour alone. */
+.calendar-item--cancelled {
+  border-left-color: var(--color-text-muted);
+  background-color: transparent;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  text-decoration: line-through;
+}
+
 /* A scheduled show with no event yet. */
 .calendar-item--planned {
   background-color: transparent;
@@ -244,6 +257,10 @@ button.calendar-item {
   background-color: var(--color-violet);
 }
 
+.legend-dot--cancelled {
+  background-color: var(--color-text-muted);
+}
+
 .legend-dot--planned {
   border: 1px dashed var(--color-text-secondary);
   background-color: transparent;
@@ -273,12 +290,6 @@ button.calendar-item {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-}
-
-@media (max-width: 1100px) {
-  .events-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 @media (max-width: 768px) {

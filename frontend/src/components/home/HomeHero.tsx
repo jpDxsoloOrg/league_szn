@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CalendarDays } from 'lucide-react';
-import { eventsApi } from '../../services/api';
+import { eventsApi, showsApi } from '../../services/api';
 import type { DashboardEvent } from '../../types';
 import type { EventWithMatches } from '../../types/event';
 import { formatCalendarDate } from '../../utils/dateUtils';
 import { describeSides, groupMatchSides } from '../../utils/matchDisplay';
+import { getPlannedShows } from '../../utils/showSchedule';
+import type { PlannedShow } from '../../utils/showSchedule';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 
@@ -55,6 +57,8 @@ export default function HomeHero({ inProgressEvents, upcomingEvents }: HomeHeroP
   const { t } = useTranslation();
   const [now, setNow] = useState(() => Date.now());
   const [detail, setDetail] = useState<EventWithMatches | null>(null);
+  /** undefined until the schedule is in, null when it has nothing planned. */
+  const [nextPlanned, setNextPlanned] = useState<PlannedShow | null | undefined>(undefined);
 
   const [featured, ...otherLive] = inProgressEvents.length > 0 ? inProgressEvents : upcomingEvents;
   const isLive = inProgressEvents.length > 0;
@@ -85,12 +89,43 @@ export default function HomeHero({ inProgressEvents, upcomingEvents }: HomeHeroP
     return () => controller.abort();
   }, [featuredId]);
 
+  // Events are created late, so with no event open the schedule says what is next.
+  useEffect(() => {
+    if (featuredId) return undefined;
+    const controller = new AbortController();
+    const loadSchedule = async () => {
+      try {
+        const [shows, events] = await Promise.all([
+          showsApi.getAll(undefined, controller.signal),
+          eventsApi.getAll(undefined, controller.signal),
+        ]);
+        if (!controller.signal.aborted) setNextPlanned(getPlannedShows(shows, events, new Date())[0] ?? null);
+      } catch {
+        if (!controller.signal.aborted) setNextPlanned(null);
+      }
+    };
+    void loadSchedule();
+    return () => controller.abort();
+  }, [featuredId]);
+
   if (!featured) {
     return (
       <section className="poster-hero home-hero home-hero--empty">
         <div className="home-hero__text">
-          <h1 className="home-hero__title">{t('dashboard.title')}</h1>
-          <p className="home-hero__description">{t('dashboard.noUpcomingEvents')}</p>
+          {nextPlanned && (
+            <div className="home-hero__status">
+              <Badge tone="primary">{t('home.nextUp')}</Badge>
+            </div>
+          )}
+          <h1 className="home-hero__title">{nextPlanned ? nextPlanned.show.name : t('dashboard.title')}</h1>
+          {nextPlanned && (
+            <p className="home-hero__facts">
+              {formatCalendarDate(nextPlanned.date, undefined, { dateStyle: 'medium' })}
+              {' · '}
+              {t('events.calendar.plannedShow')}
+            </p>
+          )}
+          {nextPlanned === null && <p className="home-hero__description">{t('dashboard.noUpcomingEvents')}</p>}
           <div className="home-hero__actions">
             <Button to="/events" variant="secondary" size="lg" icon={<CalendarDays aria-hidden="true" size={18} />}>
               {t('dashboard.emptyActions.viewEvents', 'View events')}

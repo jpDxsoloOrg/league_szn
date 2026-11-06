@@ -180,6 +180,35 @@ describe('EventsCalendar', () => {
     expect(row.closest('.event-card')).toHaveTextContent('17');
   });
 
+  it('marks a cancelled event on the calendar and names its status', async () => {
+    mockGetAllEvents.mockResolvedValue([
+      { eventId: 'e-done', name: 'Finished Show', eventType: 'weekly', date: '2025-06-03', status: 'completed' },
+      { eventId: 'e-off', name: 'Called Off', eventType: 'weekly', date: '2025-06-14', status: 'cancelled' },
+    ]);
+    mockGetAllShows.mockResolvedValue([]);
+    renderEventsCalendar();
+
+    const cancelled = await screen.findByRole('link', { name: 'Called Off (events.status.cancelled)' });
+    const completed = screen.getByRole('link', { name: 'Finished Show (events.status.completed)' });
+    expect(cancelled).toHaveClass('calendar-item--cancelled');
+    expect(cancelled).toHaveAttribute('title', 'Called Off (events.status.cancelled)');
+    expect(completed).not.toHaveClass('calendar-item--cancelled');
+    expect(document.querySelector('.legend-dot--cancelled')).not.toBeNull();
+  });
+
+  it('puts the calendar ahead of past results', async () => {
+    mockGetAllEvents.mockResolvedValue([
+      { eventId: 'e-done', name: 'Finished Show', eventType: 'weekly', date: '2025-06-03', status: 'completed' },
+    ]);
+    mockGetAllShows.mockResolvedValue([]);
+    renderEventsCalendar();
+
+    await screen.findByRole('link', { name: 'Finished Show (events.status.completed)' });
+    const calendar = document.querySelector('.calendar') as HTMLElement;
+    const results = screen.getByRole('heading', { name: 'events.calendar.recentResults' });
+    expect(calendar.compareDocumentPosition(results) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('renders calendar grid with day headers and event dots for the current month', async () => {
     mockGetAllEvents.mockResolvedValue(mockEvents);
 
@@ -204,7 +233,7 @@ describe('EventsCalendar', () => {
     expect(screen.getByText('30')).toBeInTheDocument();
 
     // Event items rendered with title attributes for events in June
-    const wrestleManiaItem = screen.getByTitle('WrestleMania 42');
+    const wrestleManiaItem = screen.getByTitle(/^WrestleMania 42 \(/);
     expect(wrestleManiaItem).toBeInTheDocument();
     expect(wrestleManiaItem).toHaveClass('calendar-item');
 
@@ -216,7 +245,7 @@ describe('EventsCalendar', () => {
 
     // Legend
     const legendItems = document.querySelectorAll('.legend-item');
-    expect(legendItems.length).toBe(5); // four event types plus planned shows
+    expect(legendItems.length).toBe(6); // four event types, planned shows and cancelled
   });
 
   it('navigates between months using previous and next buttons', async () => {
@@ -235,7 +264,7 @@ describe('EventsCalendar', () => {
     expect(screen.getByText('May 2025')).toBeInTheDocument();
 
     // May event should now have a dot visible
-    const completedShowDot = screen.getByTitle('Completed Show');
+    const completedShowDot = screen.getByTitle(/^Completed Show \(/);
     expect(completedShowDot).toBeInTheDocument();
 
     // Navigate forward twice to July
@@ -263,25 +292,25 @@ describe('EventsCalendar', () => {
     const [allBtn, ppvBtn, weeklyBtn] = Array.from(filterButtons);
 
     // Initially "All" filter is active — all June events have dots
-    expect(screen.getByTitle('WrestleMania 42')).toBeInTheDocument();
+    expect(screen.getByTitle(/^WrestleMania 42 \(/)).toBeInTheDocument();
 
     // Click PPV filter
     fireEvent.mouseDown(ppvBtn);
 
     // Only PPV event dot should remain
-    expect(screen.getByTitle('WrestleMania 42')).toBeInTheDocument();
-    expect(screen.queryByTitle('Monday Night Raw')).not.toBeInTheDocument();
-    expect(screen.queryByTitle('Saturday Night Special')).not.toBeInTheDocument();
+    expect(screen.getByTitle(/^WrestleMania 42 \(/)).toBeInTheDocument();
+    expect(screen.queryByTitle(/^Monday Night Raw \(/)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/^Saturday Night Special \(/)).not.toBeInTheDocument();
 
     // Click Weekly filter
     fireEvent.mouseDown(weeklyBtn);
 
-    expect(screen.queryByTitle('WrestleMania 42')).not.toBeInTheDocument();
-    expect(screen.getByTitle('Monday Night Raw')).toBeInTheDocument();
+    expect(screen.queryByTitle(/^WrestleMania 42 \(/)).not.toBeInTheDocument();
+    expect(screen.getByTitle(/^Monday Night Raw \(/)).toBeInTheDocument();
 
     // Click All to reset
     fireEvent.mouseDown(allBtn);
-    expect(screen.getByTitle('WrestleMania 42')).toBeInTheDocument();
+    expect(screen.getByTitle(/^WrestleMania 42 \(/)).toBeInTheDocument();
   });
 
   it('shows upcoming events list with event cards', async () => {
