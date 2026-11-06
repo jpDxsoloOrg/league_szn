@@ -6,7 +6,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { UnconfirmedUserError } from '../../services/cognito';
 import { playersApi } from '../../services/api';
 import type { Player } from '../../types';
-import './Auth.css';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import AuthLayout from './AuthLayout';
 
 function DevLogin() {
   const { t } = useTranslation();
@@ -35,37 +37,28 @@ function DevLogin() {
   };
 
   return (
-    <div className="auth-card" style={{ marginTop: '1rem', border: '2px dashed #f59e0b' }}>
-      <h3 style={{ color: '#f59e0b' }}>{t('auth.devLoginTitle')}</h3>
-      <p className="auth-subtitle">{t('auth.devLoginSubtitle')}</p>
+    <Card padding="md" className="auth-dev">
+      <h2 className="auth-dev__title">{t('auth.devLoginTitle')}</h2>
+      <p className="me-hint">{t('auth.devLoginSubtitle')}</p>
 
-      <button
-        onClick={handleDevAdminLogin}
-        className="btn-submit"
-        style={{ textAlign: 'left', marginBottom: '1rem', backgroundColor: '#dc2626' }}
-      >
-        {t('auth.signInAsAdmin')}
-      </button>
+      <div className="auth-dev__list">
+        <Button variant="danger" fullWidth onClick={handleDevAdminLogin}>
+          {t('auth.signInAsAdmin')}
+        </Button>
 
-      {loadingPlayers ? (
-        <p>{t('auth.loadingPlayers')}</p>
-      ) : players.length === 0 ? (
-        <p>{t('auth.noPlayersFound')}</p>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {players.map((p) => (
-            <button
-              key={p.playerId}
-              onClick={() => handleDevLogin(p)}
-              className="btn-submit"
-              style={{ textAlign: 'left' }}
-            >
+        {loadingPlayers ? (
+          <p className="me-hint">{t('auth.loadingPlayers')}</p>
+        ) : players.length === 0 ? (
+          <p className="me-hint">{t('auth.noPlayersFound')}</p>
+        ) : (
+          players.map((p) => (
+            <Button key={p.playerId} variant="secondary" fullWidth onClick={() => handleDevLogin(p)}>
               {p.name} — {p.currentWrestler}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+            </Button>
+          ))
+        )}
+      </div>
+    </Card>
   );
 }
 
@@ -150,131 +143,121 @@ export default function Login() {
 
   if (step === 'confirm') {
     return (
-      <div className="auth-container">
-        <div className="auth-card">
-          <h2>{t('auth.verifyTitle')}</h2>
-          <p className="auth-subtitle">
-            {t('auth.verifySubtitle')} <strong>{email}</strong>
-          </p>
-
-          <form onSubmit={handleConfirm} aria-describedby={error ? 'confirm-error' : undefined}>
-            <div className="form-group">
-              <label htmlFor="code">{t('auth.verificationCode')}</label>
-              <input
-                type="text"
-                id="code"
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value)}
-                placeholder={t('auth.codePlaceholder')}
-                required
-                autoFocus
-                aria-invalid={error ? 'true' : undefined}
-              />
-            </div>
-
-            {info && (
-              <div className="success-message" role="status" aria-live="polite">
-                {info}
-              </div>
-            )}
-            {error && (
-              <div id="confirm-error" className="error-message" role="alert" aria-live="polite">
-                {error}
-              </div>
-            )}
-
-            <button type="submit" className="btn-submit" disabled={loading || resending} aria-busy={loading}>
-              {loading ? t('auth.verifying') : t('auth.verifyEmail')}
-            </button>
-          </form>
-
-          <div className="auth-footer">
-            <p>
-              <button
-                className="link-button"
-                onClick={handleResend}
-                disabled={loading || resending}
-              >
-                {resending ? t('auth.sendingCode') : t('auth.resendCode')}
-              </button>
-            </p>
-            <p>
-              <button
-                className="link-button"
-                onClick={() => {
-                  setStep('login');
-                  setVerificationCode('');
-                  setError(null);
-                  setInfo(null);
-                }}
-              >
-                {t('auth.backToSignIn')}
-              </button>
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h2>{t('auth.signInTitle')}</h2>
-        <p className="auth-subtitle">{t('auth.signInSubtitle')}</p>
-
-        <form onSubmit={handleSubmit} aria-describedby={error ? 'login-error' : undefined}>
-          <div className="form-group">
-            <label htmlFor="email">{t('auth.email')}</label>
+      <AuthLayout
+        title={t('auth.verifyTitle')}
+        subtitle={<>{t('auth.verifySubtitle')} <strong>{email}</strong></>}
+      >
+        <form onSubmit={handleConfirm} aria-describedby={error ? 'confirm-error' : undefined}>
+          <div className="me-field">
+            <label htmlFor="code">{t('auth.verificationCode')}</label>
             <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t('auth.enterEmail')}
+              type="text"
+              id="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value)}
+              placeholder={t('auth.codePlaceholder')}
               required
               autoFocus
               aria-invalid={error ? 'true' : undefined}
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password">{t('auth.password')}</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={t('auth.enterPassword')}
-              required
-              minLength={8}
-              aria-invalid={error ? 'true' : undefined}
-            />
-          </div>
-
+          {info && (
+            <div className="me-alert me-alert--success" role="status" aria-live="polite">
+              {info}
+            </div>
+          )}
           {error && (
-            <div id="login-error" className="error-message" role="alert" aria-live="polite">
+            <div id="confirm-error" className="me-alert me-alert--error" role="alert" aria-live="polite">
               {error}
             </div>
           )}
 
-          <button type="submit" className="btn-submit" disabled={loading} aria-busy={loading}>
-            {loading ? t('auth.signingIn') : t('auth.signInTitle')}
-          </button>
+          <Button type="submit" fullWidth loading={loading} disabled={resending}>
+            {loading ? t('auth.verifying') : t('auth.verifyEmail')}
+          </Button>
         </form>
 
         <div className="auth-footer">
-          <p>
-            <Link to="/forgot-password">{t('auth.forgotPasswordLink')}</Link>
-          </p>
-          <p>
-            {t('auth.noAccount')}{' '}
-            <Link to="/signup">{t('auth.signUpLink')}</Link>
-          </p>
+          <button type="button" className="auth-link" onClick={handleResend} disabled={loading || resending}>
+            {resending ? t('auth.sendingCode') : t('auth.resendCode')}
+          </button>
+          <button
+            type="button"
+            className="auth-link"
+            onClick={() => {
+              setStep('login');
+              setVerificationCode('');
+              setError(null);
+              setInfo(null);
+            }}
+          >
+            {t('auth.backToSignIn')}
+          </button>
         </div>
-      </div>
+      </AuthLayout>
+    );
+  }
 
-      {import.meta.env.DEV && <DevLogin />}
-    </div>
+  return (
+    <AuthLayout
+      title={t('auth.signInTitle')}
+      subtitle={t('auth.signInSubtitle')}
+      after={import.meta.env.DEV ? <DevLogin /> : undefined}
+    >
+      <form onSubmit={handleSubmit} aria-describedby={error ? 'login-error' : undefined}>
+        <div className="me-field">
+          <label htmlFor="email">{t('auth.email')}</label>
+          <input
+            type="email"
+            id="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t('auth.enterEmail')}
+            required
+            autoFocus
+            aria-invalid={error ? 'true' : undefined}
+          />
+        </div>
+
+        <div className="me-field">
+          <label htmlFor="password">{t('auth.password')}</label>
+          <input
+            type="password"
+            id="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={t('auth.enterPassword')}
+            required
+            minLength={8}
+            aria-invalid={error ? 'true' : undefined}
+          />
+        </div>
+
+        {error && (
+          <div id="login-error" className="me-alert me-alert--error" role="alert" aria-live="polite">
+            {error}
+          </div>
+        )}
+
+        <Button type="submit" fullWidth loading={loading}>
+          {loading ? t('auth.signingIn') : t('auth.signInTitle')}
+        </Button>
+      </form>
+
+      <div className="auth-footer">
+        <p>
+          <Link to="/forgot-password">{t('auth.forgotPasswordLink')}</Link>
+        </p>
+        <p>
+          {t('auth.noAccount')}{' '}
+          <Link to="/signup">{t('auth.signUpLink')}</Link>
+        </p>
+      </div>
+    </AuthLayout>
   );
 }
