@@ -307,6 +307,8 @@ export interface AdminEntry {
   /** Lowest role the API accepts for this page. */
   minRole: AdminMinRole;
   danger?: boolean;
+  /** Site feature this page needs. While it is off the page is not offered. */
+  feature?: keyof SiteFeatures;
 }
 
 export interface AdminGroup {
@@ -333,7 +335,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { tab: 'wrestlers', labelKey: 'admin.panel.tabs.wrestlers', icon: Swords, minRole: 'Moderator' },
       { tab: 'overalls', labelKey: 'overalls.admin.title', icon: TrendingUp, minRole: 'Moderator' },
       { tab: 'divisions', labelKey: 'admin.panel.tabs.divisions', icon: LayoutGrid, minRole: 'Moderator' },
-      { tab: 'transfers', labelKey: 'admin.panel.tabs.transfers', icon: ArrowLeftRight, minRole: 'Moderator' },
+      { tab: 'transfers', labelKey: 'admin.panel.tabs.transfers', icon: ArrowLeftRight, minRole: 'Moderator', feature: 'transfers' },
       { tab: 'tag-teams', labelKey: 'admin.panel.tabs.tagTeams', icon: Users, minRole: 'Moderator' },
       { tab: 'factions', labelKey: 'admin.panel.tabs.factions', icon: UsersRound, minRole: 'Moderator' },
     ],
@@ -390,15 +392,21 @@ export function canAccessAdminEntry(entry: AdminEntry, isSuperAdmin: boolean): b
   return entry.minRole === 'Moderator' || isSuperAdmin;
 }
 
+export function isAdminEntryEnabled(entry: AdminEntry, features: SiteFeatures): boolean {
+  return !entry.feature || features[entry.feature];
+}
+
 export function findAdminEntry(tab: AdminTab): AdminEntry | undefined {
   return ADMIN_GROUPS.flatMap((group) => group.entries).find((entry) => entry.tab === tab);
 }
 
 /** Admin groups trimmed to what the viewer may open. */
-export function getVisibleAdminGroups(isSuperAdmin: boolean): AdminGroup[] {
+export function getVisibleAdminGroups(isSuperAdmin: boolean, features: SiteFeatures): AdminGroup[] {
   return ADMIN_GROUPS.map((group) => ({
     ...group,
-    entries: group.entries.filter((entry) => canAccessAdminEntry(entry, isSuperAdmin)),
+    entries: group.entries.filter(
+      (entry) => canAccessAdminEntry(entry, isSuperAdmin) && isAdminEntryEnabled(entry, features),
+    ),
   })).filter((group) => group.entries.length > 0);
 }
 

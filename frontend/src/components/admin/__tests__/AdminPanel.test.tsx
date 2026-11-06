@@ -3,12 +3,17 @@ import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockUseAuth } = vi.hoisted(() => ({
+const { mockUseAuth, mockUseSiteConfig } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
+  mockUseSiteConfig: vi.fn(),
 }));
 
 vi.mock('../../../contexts/AuthContext', () => ({
   useAuth: mockUseAuth,
+}));
+
+vi.mock('../../../contexts/SiteConfigContext', () => ({
+  useSiteConfig: mockUseSiteConfig,
 }));
 
 // Mock Navigate to capture redirects
@@ -23,6 +28,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 // Mock all child admin components to isolate AdminPanel logic
+vi.mock('../ManageTransfers', () => ({ default: () => <div data-testid="manage-transfers">ManageTransfers</div> }));
 vi.mock('../ManagePlayers', () => ({ default: () => <div data-testid="manage-players">ManagePlayers</div> }));
 vi.mock('../ManageDivisions', () => ({ default: () => <div data-testid="manage-divisions">ManageDivisions</div> }));
 vi.mock('../ScheduleMatch', () => ({ default: () => <div data-testid="schedule-match">ScheduleMatch</div> }));
@@ -57,6 +63,7 @@ function renderAdminPanel(route: string) {
 describe('AdminPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseSiteConfig.mockReturnValue({ features: { transfers: false }, isLoading: false });
   });
 
   it('renders the correct tab component based on URL parameter', async () => {
@@ -147,9 +154,45 @@ describe('AdminPanel', () => {
   it('shows every registry entry to an Admin', async () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: true });
 
+    mockUseSiteConfig.mockReturnValue({ features: { transfers: true }, isLoading: false });
+
     renderAdminPanel('/admin/players');
     const nav = await screen.findByRole('navigation');
     expect(within(nav).getAllByRole('link')).toHaveLength(ADMIN_TABS.length);
+  });
+
+  it('leaves Transfers out of the nav while the feature is off', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: true });
+
+    renderAdminPanel('/admin/players');
+    const nav = await screen.findByRole('navigation');
+    const hrefs = within(nav).getAllByRole('link').map((link) => link.getAttribute('href'));
+    expect(hrefs).toHaveLength(ADMIN_TABS.length - 1);
+    expect(hrefs).not.toContain('/admin/transfers');
+  });
+
+  it('explains a direct Transfers URL while the feature is off', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: false });
+
+    renderAdminPanel('/admin/transfers');
+    expect(screen.getByText('This feature is turned off')).toBeInTheDocument();
+    expect(screen.queryByTestId('manage-transfers')).not.toBeInTheDocument();
+  });
+
+  it('does not call a feature off before the site config has loaded', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: false });
+    mockUseSiteConfig.mockReturnValue({ features: { transfers: false }, isLoading: true });
+
+    renderAdminPanel('/admin/transfers');
+    expect(screen.queryByText('This feature is turned off')).not.toBeInTheDocument();
+  });
+
+  it('opens Transfers once the feature is on', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: false });
+    mockUseSiteConfig.mockReturnValue({ features: { transfers: true }, isLoading: false });
+
+    renderAdminPanel('/admin/transfers');
+    expect(await screen.findByTestId('manage-transfers')).toBeInTheDocument();
   });
 
   it('serves standalone matches through the guarded tab registry', async () => {

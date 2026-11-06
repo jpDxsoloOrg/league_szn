@@ -3314,6 +3314,10 @@
       },
       "subtitle": "Toggle site features on or off. Disabled features will be hidden from navigation and inaccessible to users. Data continues to be collected while features are disabled.",
       "title": "Feature Management",
+      "transfers": {
+        "description": "Division transfer requests on player profiles and the admin Transfers page",
+        "name": "Division Transfers"
+      },
       "updateFailed": "Failed to update feature"
     },
     "heat": {
@@ -3359,6 +3363,8 @@
       "accessRequired": "Admin Access Required",
       "accessRequiredText": "You need admin privileges to access this panel.",
       "fullAccessRequired": "Full Admin Access Required",
+      "featureOff": "This feature is turned off",
+      "featureOffText": "An Admin can turn it back on in Feature Management.",
       "fullAccessRequiredText": "This action requires full Admin privileges.",
       "helpPrefix": "New to admin workflows?",
       "quickstart": "Admin Quickstart",

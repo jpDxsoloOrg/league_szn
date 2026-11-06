@@ -28,6 +28,7 @@ const ALL_ENABLED = {
   stables: true,
   notifications: true,
   rivalries: true,
+  transfers: false,
 };
 
 describe('SiteConfigContext', () => {
@@ -44,6 +45,7 @@ describe('SiteConfigContext', () => {
       stables: true,
       notifications: true,
       rivalries: true,
+      transfers: true,
     };
     mockGetFeatures.mockResolvedValue({ features: serverFeatures });
 
@@ -86,7 +88,18 @@ describe('SiteConfigContext', () => {
       stables: true,
       notifications: true,
       rivalries: true,
+      transfers: false,
     });
+  });
+
+  it('keeps division transfers off when the server has no value for them', async () => {
+    mockGetFeatures.mockResolvedValue({ features: { challenges: true } });
+
+    const { result } = renderHook(() => useSiteConfig(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.features.transfers).toBe(false);
+    expect(result.current.features.promos).toBe(true);
   });
 
   it('refreshConfig re-fetches features from the API', async () => {

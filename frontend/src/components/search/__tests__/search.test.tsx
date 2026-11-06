@@ -50,7 +50,7 @@ import {
   toWrestlerEntries,
 } from '../searchIndex';
 
-const FEATURES = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true };
+const FEATURES = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true, transfers: true };
 const t = (key: string) => key;
 
 const DIRECTORY = [
@@ -134,6 +134,14 @@ describe('search index', () => {
 
     const admin = toPageEntries({ ...visitor, isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: true }, t).map((entry) => entry.to);
     expect(admin).toContain('/admin/users');
+    expect(admin).toContain('/admin/transfers');
+
+    const noTransfers = toPageEntries(
+      { ...visitor, features: { ...FEATURES, transfers: false }, isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: true },
+      t,
+    ).map((entry) => entry.to);
+    expect(noTransfers).toContain('/admin/users');
+    expect(noTransfers).not.toContain('/admin/transfers');
   });
 });
 

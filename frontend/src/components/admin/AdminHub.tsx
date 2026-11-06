@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAdminPath, getVisibleAdminGroups } from '../../config/navConfig';
+import type { SiteFeatures } from '../../services/api';
 import PageHeader from '../ui/PageHeader';
 import './AdminHub.css';
 
@@ -12,16 +13,17 @@ import './AdminHub.css';
 
 interface AdminHubProps {
   isSuperAdmin: boolean;
+  features: SiteFeatures;
 }
 
-export default function AdminHub({ isSuperAdmin }: AdminHubProps) {
+export default function AdminHub({ isSuperAdmin, features }: AdminHubProps) {
   const { t } = useTranslation();
 
   return (
     <>
       <PageHeader title={t('admin.panel.title')} />
       <nav className="admin-hub" aria-label={t('admin.panel.title')}>
-        {getVisibleAdminGroups(isSuperAdmin).map((group) => (
+        {getVisibleAdminGroups(isSuperAdmin, features).map((group) => (
           <section key={group.key} className="admin-hub-group">
             <h2 className="admin-hub-group-title">{t(group.labelKey)}</h2>
             <div className="admin-hub-card">

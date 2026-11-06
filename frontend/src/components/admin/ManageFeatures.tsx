@@ -37,6 +37,10 @@ const FEATURE_LABELS: Record<keyof SiteFeatures, { name: string; description: st
     name: 'Rivalries',
     description: 'Persistent rivalries hub, messaging threads, and admin moderation',
   },
+  transfers: {
+    name: 'Division Transfers',
+    description: 'Division transfer requests on player profiles and the admin Transfers page',
+  },
 };
 
 export default function ManageFeatures() {

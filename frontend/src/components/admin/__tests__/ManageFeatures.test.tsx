@@ -56,6 +56,23 @@ describe('ManageFeatures', () => {
     expect(screen.getByLabelText('Disable Challenges')).toHaveTextContent('Enabled');
   });
 
+  it('lets an Admin turn division transfers back on', async () => {
+    mockUseSiteConfig.mockReturnValue({
+      features: { ...ALL_FEATURES, transfers: false },
+      refreshConfig: vi.fn().mockResolvedValue(undefined),
+    });
+    mockSiteConfigApi.updateFeatures.mockResolvedValue(undefined);
+
+    const user = userEvent.setup();
+    render(<ManageFeatures />);
+
+    await user.click(screen.getByLabelText('Enable Division Transfers'));
+
+    await waitFor(() => {
+      expect(mockSiteConfigApi.updateFeatures).toHaveBeenCalledWith({ transfers: true });
+    });
+  });
+
   it('toggles a feature flag and calls API then refreshes config', async () => {
     const mockRefresh = vi.fn().mockResolvedValue(undefined);
     mockUseSiteConfig.mockReturnValue({

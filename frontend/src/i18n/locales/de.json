@@ -3314,6 +3314,10 @@
       },
       "subtitle": "Schalte Website-Features ein oder aus. Deaktivierte Features werden aus der Navigation entfernt und sind für Nutzer nicht erreichbar. Daten werden weiterhin erfasst, solange ein Feature deaktiviert ist.",
       "title": "Feature-Verwaltung",
+      "transfers": {
+        "description": "Anfragen für Divisionstransfers in Spielerprofilen und die Admin-Seite für Transfers",
+        "name": "Divisionstransfers"
+      },
       "updateFailed": "Feature konnte nicht aktualisiert werden"
     },
     "heat": {
@@ -3359,6 +3363,8 @@
       "accessRequired": "Admin-Zugriff erforderlich",
       "accessRequiredText": "Du brauchst Admin-Rechte, um auf diesen Bereich zuzugreifen.",
       "fullAccessRequired": "Voller Admin-Zugriff erforderlich",
+      "featureOff": "Diese Funktion ist ausgeschaltet",
+      "featureOffText": "Ein Admin kann sie in der Feature-Verwaltung wieder einschalten.",
       "fullAccessRequiredText": "Für diese Aktion sind volle Admin-Rechte erforderlich.",
       "helpPrefix": "Neu in der Administration?",
       "quickstart": "Admin-Schnellstart",

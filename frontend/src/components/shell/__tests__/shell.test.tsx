@@ -20,7 +20,7 @@ import MeHub from '../MeHub';
 import SectionNav from '../SectionNav';
 import ShellHeader from '../ShellHeader';
 
-const FEATURES = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true };
+const FEATURES = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true, transfers: true };
 const SIGNED_OUT = { isAuthenticated: false, isWrestler: false, isAdminOrModerator: false, isSuperAdmin: false };
 const WRESTLER = { ...SIGNED_OUT, isAuthenticated: true, isWrestler: true };
 const MODERATOR = { ...SIGNED_OUT, isAuthenticated: true, isAdminOrModerator: true };
