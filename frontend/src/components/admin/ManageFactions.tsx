@@ -169,7 +169,7 @@ export default function ManageFactions() {
                 </Button>
               </>
             )}
-            {(faction.status === 'approved' || faction.status === 'active') && (
+            {isSuperAdmin && (faction.status === 'approved' || faction.status === 'active') && (
               <Button variant="secondary" size="sm" disabled={busy} onClick={() => handleDisband(faction)}>
                 {t('adminRoster.factions.disband', 'Disband')}
               </Button>

@@ -14,7 +14,7 @@ const {
   mockFactionsGetPromos: vi.fn(),
   mockFactionsGetSchedule: vi.fn(),
   mockGetDirectory: vi.fn(),
-  authState: { playerId: null as string | null, isAdminOrModerator: false },
+  authState: { playerId: null as string | null, isAdminOrModerator: false, isSuperAdmin: false },
 }));
 
 vi.mock('../../../contexts/AuthContext', () => ({ useAuth: () => authState }));
@@ -150,7 +150,7 @@ beforeEach(() => {
   mockFactionsGetPromos.mockResolvedValue({ items: [] });
   mockFactionsGetSchedule.mockResolvedValue({ items: [] });
   mockGetDirectory.mockResolvedValue([]);
-  Object.assign(authState, { playerId: null, isAdminOrModerator: false });
+  Object.assign(authState, { playerId: null, isAdminOrModerator: false, isSuperAdmin: false });
 });
 
 describe('FactionDetail shell (FAC-11)', () => {
@@ -183,11 +183,19 @@ describe('FactionDetail shell (FAC-11)', () => {
     expect(screen.queryByRole('link', { name: 'Manage' })).not.toBeInTheDocument();
   });
 
-  it('gives staff outside the faction Manage but not Messages, which the API refuses them', async () => {
-    Object.assign(authState, { playerId: 'staff', isAdminOrModerator: true });
+  it('gives an Admin outside the faction Manage but not Messages, which the API refuses them', async () => {
+    Object.assign(authState, { playerId: 'staff', isAdminOrModerator: true, isSuperAdmin: true });
     renderShell();
     await screen.findByText('12-4-1');
     expect(screen.getByRole('link', { name: 'Manage' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Messages' })).not.toBeInTheDocument();
+  });
+
+  it('gives a Moderator outside the faction neither Manage nor Messages', async () => {
+    Object.assign(authState, { playerId: 'staff', isAdminOrModerator: true, isSuperAdmin: false });
+    renderShell();
+    await screen.findByText('12-4-1');
+    expect(screen.queryByRole('link', { name: 'Manage' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Messages' })).not.toBeInTheDocument();
   });
 

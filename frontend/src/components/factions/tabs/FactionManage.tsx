@@ -7,7 +7,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { logger } from '../../../utils/logger';
 import type { Player } from '../../../types';
 import type { StableInvitationWithDetails } from '../../../types/stable';
-import { canManageFaction } from '../factionAccess';
+import { canManageFaction, isFactionLeader } from '../factionAccess';
 import type { FactionDetailContext } from '../FactionDetail';
 import Avatar from '../../ui/Avatar';
 import Badge from '../../ui/Badge';
@@ -55,8 +55,9 @@ export default function FactionManage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  const isAdmin = Boolean(auth.isAdminOrModerator);
-  const canAccess = canManageFaction(auth.playerId, isAdmin, faction);
+  const canAccess = canManageFaction(auth.playerId, Boolean(auth.isSuperAdmin), faction);
+  // The invite route accepts the leader alone, full Admins included.
+  const canInvite = isFactionLeader(auth.playerId, faction);
 
   // ─── State ────────────────────────────────────────────────────────
   const [name, setName] = useState(faction.name);
@@ -382,6 +383,8 @@ export default function FactionManage() {
             </ul>
           )}
 
+          {canInvite && (
+          <>
           <h3 className="group-subheading">{t('factions.manage.inviteNewTitle', 'Invite new member')}</h3>
           <div className="group-form">
             <div className="group-field">
@@ -415,6 +418,8 @@ export default function FactionManage() {
               </Button>
             </div>
           </div>
+          </>
+          )}
         </section>
       </div>
 

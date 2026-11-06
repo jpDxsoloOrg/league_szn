@@ -53,7 +53,7 @@ export default function FactionDetail() {
   const { t } = useTranslation();
   const { factionId } = useParams<{ factionId: string }>();
   const { pathname } = useLocation();
-  const { playerId, isAdminOrModerator } = useAuth();
+  const { playerId, isSuperAdmin } = useAuth();
   useLocationToast();
   const [faction, setFaction] = useState<StableDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,7 +108,7 @@ export default function FactionDetail() {
   const tabs = [
     ...PUBLIC_TABS,
     ...(canReadFactionMessages(playerId, faction) ? [MESSAGES_TAB] : []),
-    ...(canManageFaction(playerId, isAdminOrModerator, faction) ? [MANAGE_TAB] : []),
+    ...(canManageFaction(playerId, isSuperAdmin, faction) ? [MANAGE_TAB] : []),
   ];
 
   return (

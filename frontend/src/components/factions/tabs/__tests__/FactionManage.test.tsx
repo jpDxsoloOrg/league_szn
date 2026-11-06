@@ -119,7 +119,7 @@ function renderTab() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseOutletContext.mockReturnValue({ faction: baseFaction() });
-  mockUseAuth.mockReturnValue({ playerId: 'leader', isAdminOrModerator: false });
+  mockUseAuth.mockReturnValue({ playerId: 'leader', isSuperAdmin: false });
   mockUpdate.mockResolvedValue(undefined);
   mockInvite.mockResolvedValue(undefined);
   mockRemoveMember.mockResolvedValue({ status: 'active' });
@@ -141,7 +141,7 @@ describe('FactionManage tab (FAC-16)', () => {
   });
 
   it('redirects to the Overview tab when the caller is neither leader nor admin', async () => {
-    mockUseAuth.mockReturnValue({ playerId: 'someone-else', isAdminOrModerator: false });
+    mockUseAuth.mockReturnValue({ playerId: 'someone-else', isSuperAdmin: false });
 
     renderTab();
 
@@ -150,11 +150,36 @@ describe('FactionManage tab (FAC-16)', () => {
   });
 
   it('renders the full Manage surface for an admin caller who is not in the faction', async () => {
-    mockUseAuth.mockReturnValue({ playerId: 'admin-1', isAdminOrModerator: true });
+    mockUseAuth.mockReturnValue({ playerId: 'admin-1', isSuperAdmin: true });
 
     renderTab();
     await screen.findByText(/LEADER VIEW/);
     expect(screen.getByRole('heading', { name: 'Faction Identity' })).toBeInTheDocument();
+  });
+
+  it('leaves Invite out for an admin who does not lead the faction, as the API refuses them', async () => {
+    mockUseAuth.mockReturnValue({ playerId: 'admin-1', isSuperAdmin: true });
+
+    renderTab();
+    await screen.findByText(/LEADER VIEW/);
+    expect(screen.queryByRole('heading', { name: 'Invite new member' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Send invite' })).not.toBeInTheDocument();
+  });
+
+  it('redirects a Moderator who does not lead the faction, as the API refuses them', async () => {
+    mockUseAuth.mockReturnValue({ playerId: 'mod-1', isSuperAdmin: false, isAdminOrModerator: true });
+
+    renderTab();
+
+    expect(await screen.findByText('Overview page')).toBeInTheDocument();
+  });
+
+  it('gives a Moderator who leads the faction the full tab, Invite included', async () => {
+    mockUseAuth.mockReturnValue({ playerId: 'leader', isSuperAdmin: false, isAdminOrModerator: true });
+
+    renderTab();
+    await screen.findByText(/LEADER VIEW/);
+    expect(screen.getByRole('heading', { name: 'Invite new member' })).toBeInTheDocument();
   });
 
   it('saves identity changes via factionsApi.update and surfaces a success toast', async () => {

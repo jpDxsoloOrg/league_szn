@@ -57,12 +57,21 @@ describe('ManageFactions', () => {
     confirmSpy.mockRestore();
   });
 
-  it('hides Delete from Moderators, which the API refuses', async () => {
+  it('hides Delete and Disband from Moderators, which the API refuses, and keeps Reactivate', async () => {
     mockUseAuth.mockReturnValue({ isSuperAdmin: false });
     render(<ManageFactions />);
 
     await screen.findByText('The Bloodline');
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Disband' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reactivate' })).toBeInTheDocument();
+  });
+
+  it('offers Disband to Admins', async () => {
+    render(<ManageFactions />);
+
+    const row = (await screen.findByText('The Bloodline')).closest('tr')!;
+    expect(within(row).getByRole('button', { name: 'Disband' })).toBeInTheDocument();
   });
 
   it('asks before deleting', async () => {

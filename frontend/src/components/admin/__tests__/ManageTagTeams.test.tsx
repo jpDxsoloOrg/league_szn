@@ -47,13 +47,20 @@ describe('ManageTagTeams', () => {
     mockPlayersApi.getAllIncludingHidden.mockResolvedValue(players);
   });
 
-  it('hides Delete from Moderators, which the API refuses, and keeps staff actions', async () => {
+  it('hides Delete and Dissolve from Moderators, which the API refuses', async () => {
     mockUseAuth.mockReturnValue({ isSuperAdmin: false });
+    render(<ManageTagTeams />);
+
+    await screen.findByText('New Day');
+    expect(screen.queryByRole('button', { name: 'Dissolve' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+  });
+
+  it('offers Dissolve to Admins', async () => {
     render(<ManageTagTeams />);
 
     const row = (await screen.findByText('New Day')).closest('tr')!;
     expect(within(row).getByRole('button', { name: 'Dissolve' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
   });
 
   it('says when a team member no longer has a player record', async () => {

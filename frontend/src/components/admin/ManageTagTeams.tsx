@@ -181,7 +181,7 @@ export default function ManageTagTeams() {
                 </Button>
               </>
             )}
-            {tagTeam.status === 'active' && (
+            {isSuperAdmin && tagTeam.status === 'active' && (
               <Button
                 variant="secondary"
                 size="sm"

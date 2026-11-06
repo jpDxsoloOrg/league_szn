@@ -236,7 +236,7 @@ export default function AdminChallenges() {
                     {t('challenges.admin.schedule', 'Schedule')}
                   </Button>
                 )}
-                {isOpen(challenge) && (
+                {isSuperAdmin && isOpen(challenge) && (
                   <Button variant="ghost" size="sm" disabled={submitting === challenge.challengeId} onClick={() => handleCancel(challenge)}>
                     {t('challenges.admin.expire', 'Expire')}
                   </Button>
