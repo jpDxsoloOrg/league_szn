@@ -35,7 +35,7 @@ Eine eigene Ergebnisseite gibt es nicht mehr. Du trägst das Ergebnis direkt bei
 - **Die Saison des Matches ist beendet.** Beendete Saisons sind endgültig. Bearbeite das Match zuerst und wähle eine andere Saison.
 - **Ein Teilnehmer wurde entfernt.** Bearbeite zuerst die Teilnehmer des Matches.
 - **Das Match hat noch offene Plätze.** Besetze zuerst alle Plätze.
-- **Der Champion ist nicht mehr Teil eines Titelmatches, das aus einem Call-out oder einer Herausforderung gebucht wurde.** Der Titel hat nach der Buchung den Besitzer gewechselt. Bearbeite das Match oder mache daraus ein Match ohne Titel und trage dann das Ergebnis ein. Ein Unentschieden wird weiter angenommen. Ein Titelmatch, das du selbst gebucht hast, wird nicht abgelehnt, prüfe also vorher, wer den Titel hält.
+- **Der Champion ist nicht mehr Teil eines Titelkampfs, der aus einer Ansage oder Herausforderung gebucht wurde.** Der Titel hat nach der Buchung den Besitzer gewechselt. Bearbeite das Match oder mache daraus einen Kampf ohne Titel und trage dann das Ergebnis ein. Ein Unentschieden wird weiter angenommen. Ein Titelkampf, den du selbst gebucht hast, wird nicht abgelehnt, prüfe also vorher, wer den Titel hält.
 
 ## Fehler korrigieren
 
