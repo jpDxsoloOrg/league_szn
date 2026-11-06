@@ -223,7 +223,14 @@
     "psnId": "PSN ID",
     "active": "Active",
     "bio": "Bio",
-    "moveset": "Moveset"
+    "moveset": "Moveset",
+    "recentMatches": "Recent Matches",
+    "rivalries": "Rivalries",
+    "titleMatch": "Title match",
+    "titlesHeld": "Titles Held",
+    "overall": "Overall",
+    "playedBy": "Played by {{name}}",
+    "streakValue": "{{count}}{{type}} streak"
   },
   "emptyState": {
     "checkBackSoon": "Check back soon",
@@ -683,7 +690,7 @@
     "viewDetails": "View Details",
     "status": "Status",
     "statusUpcoming": "upcoming",
-    "statusInProgress": "in-progress",
+    "statusInProgress": "In progress",
     "statusCompleted": "completed",
     "standings": "Standings",
     "bracket": "Bracket",
@@ -1103,7 +1110,10 @@
       "totalMatches": "Total Matches",
       "championshipMatches": "Championship Matches",
       "record": "Record",
-      "stipulation": "Stipulation"
+      "stipulation": "Stipulation",
+      "reignCount_one": "{{count}} reign",
+      "reignCount_other": "{{count}} reigns",
+      "currentWinStreak": "Current Win Streak"
     },
     "matchTypes": {
       "singles": "Singles",
@@ -1175,7 +1185,8 @@
       "activeThreatsDesc": "These records are currently being challenged. Keep an eye on these players!",
       "currentHolder": "Current Holder",
       "challenger": "Challenger",
-      "noRecords": "No records available yet."
+      "noRecords": "No records available yet.",
+      "unclaimed": "Nobody qualifies for this record yet."
     },
     "taleOfTape": {
       "title": "Tale of the Tape",
@@ -1246,7 +1257,14 @@
       "loadMore": "Load more",
       "viewRivalry": "View",
       "loadError": "Could not load rivalries",
-      "heatFilter": "Filter by heat"
+      "heatFilter": "Filter by heat",
+      "activityBeat": "{{winner}} beat {{loser}}",
+      "activityDraw": "{{names}} fought to a draw",
+      "activityMatch": "{{names}} booked",
+      "activityPromoTitled": "{{name}}: \"{{title}}\"",
+      "activityPromo": "{{name}} cut a promo",
+      "activityNote": "Note: {{text}}",
+      "activityMessage": "{{name}} sent a message"
     },
     "card": {
       "matchCount_one": "{{count}} match",
@@ -1294,7 +1312,9 @@
       "heatScaleCold": "Cold",
       "heatScaleExtreme": "Extreme",
       "heatScoreOutOf": "Heat: {{score}}/100",
-      "notFound": "Rivalry not found"
+      "notFound": "Rivalry not found",
+      "insidersOnly": "Only the rivals and the GMs can open this tab.",
+      "headToHeadRecord": "{{wins}}W – {{losses}}L – {{draws}}D"
     },
     "messages": {
       "heading": "Messages",
@@ -1468,7 +1488,9 @@
       "recentResults": "Recent Results",
       "showMore": "Show more",
       "typeFilter": "Event type",
-      "viewCard": "View the card"
+      "viewCard": "View the card",
+      "plannedShow": "Planned show, card to come",
+      "plannedLegend": "Planned"
     },
     "designations": {
       "preShow": "Pre-Show",
@@ -1898,7 +1920,8 @@
         "disbanded": "Disbanded"
       },
       "activityTitle": "Recent Faction Activity",
-      "activityEmpty": "No recent activity yet."
+      "activityEmpty": "No recent activity yet.",
+      "leaderMissing": "Leader no longer listed"
     },
     "heroAlt": "{{name}} faction banner",
     "statusLabel": "Faction status: {{status}}",
@@ -1953,7 +1976,8 @@
       "milestoneLongestStreak": "Longest win streak",
       "milestoneMostWinsSeason": "Most wins in a season",
       "milestoneTitleReigns": "Title reigns",
-      "milestoneBestMonth": "Best month"
+      "milestoneBestMonth": "Best month",
+      "formerMember": "Former member"
     },
     "manage": {
       "notAllowed": "Only the leader and admins can access Manage.",
@@ -2011,7 +2035,8 @@
       "attachComingSoon": "Attachments coming soon",
       "attachAria": "Attach (coming soon)",
       "emojiComingSoon": "Emoji picker coming soon",
-      "emojiAria": "Emoji (coming soon)"
+      "emojiAria": "Emoji (coming soon)",
+      "membersOnly": "Only members of this faction can read its messages."
     },
     "schedule": {
       "error": "Could not load schedule.",
@@ -2105,7 +2130,13 @@
       "scheduleEmpty": "No matches scheduled in the next 60 days.",
       "scheduleError": "Could not load schedule.",
       "activityTitle": "Faction Activity",
-      "activityEmpty": "No recent activity."
+      "activityEmpty": "No recent activity.",
+      "rosterMissing_one": "{{count}} member is no longer listed on the roster.",
+      "rosterMissing_other": "{{count}} members are no longer listed on the roster.",
+      "resultFallback": "Match",
+      "versus": "vs {{names}}",
+      "formCaption_one": "Last result",
+      "formCaption_other": "Last {{count}} results, newest on the right"
     },
     "headToHead": "Head to Head",
     "matchTypes": "Match Type Breakdown",
@@ -2314,8 +2345,8 @@
       "eligibleChampionships": "Eligible Championships",
       "topContenderPositions": "#1 Contender Positions",
       "topThreePositions": "Top 3 Positions",
-      "comingSoon": "This feature will be available once player accounts are set up.",
-      "requiresAuth": "Player authentication is required to view your personal contender status.",
+      "comingSoon": "Personal contender status isn't available yet.",
+      "requiresAuth": "In the meantime, the overall rankings show where everyone stands.",
       "viewRankings": "View Overall Rankings"
     },
     "overrides": {
@@ -2527,12 +2558,14 @@
     "allMyRivalries": "All my rivalries",
     "topOfTable": "Top of the table",
     "fullStandings": "Full standings",
-    "noStandings": "No matches recorded yet.",
+    "noStandings": "The table fills up once listed wrestlers have results.",
     "standingsError": "Could not load the table.",
     "loadError": "Could not load the home page.",
     "stats": {
       "players": "Players",
-      "titles": "Active titles"
+      "titles": "Active titles",
+      "seasonMatches": "Matches this season",
+      "allTimeMatches": "Matches all time"
     }
   },
   "me": {
@@ -3350,5 +3383,14 @@
     "uploadNetworkError": "Network error during upload. Please check your internet connection and try again.",
     "uploadPrepareFailed": "Unable to prepare image upload. Please check your connection and try again.",
     "uploadStorageFailed": "Failed to upload image to storage. Please try again or use a different image."
+  },
+  "matchFormats": {
+    "singles": "Singles",
+    "tagTeam": "Tag Team",
+    "tripleThreat": "Triple Threat",
+    "fatalFourWay": "Fatal Four Way",
+    "sixPack": "6-Pack Challenge",
+    "battleRoyal": "Battle Royal",
+    "royalRumble": "Royal Rumble"
   }
 }

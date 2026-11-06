@@ -185,7 +185,7 @@
     },
     "moves": {
       "sectionTitle": "Moveset",
-      "signatures": "Signature Moves",
+      "signatures": "Signature-Moves",
       "finishers": "Finisher",
       "gameName": "Name im Spiel",
       "customName": "Dein Name dafür",
@@ -223,7 +223,14 @@
     "psnId": "PSN-ID",
     "active": "Aktiv",
     "bio": "Bio",
-    "moveset": "Moveset"
+    "moveset": "Moveset",
+    "recentMatches": "Letzte Kämpfe",
+    "rivalries": "Rivalitäten",
+    "titleMatch": "Titelkampf",
+    "titlesHeld": "Gehaltene Titel",
+    "overall": "Overall",
+    "playedBy": "Gespielt von {{name}}",
+    "streakValue": "Serie {{count}}{{type}}"
   },
   "emptyState": {
     "checkBackSoon": "Schau bald wieder vorbei",
@@ -555,8 +562,8 @@
   },
   "match": {
     "starRating": "Sternebewertung",
-    "matchOfTheNight": "Match of the Night",
-    "matchOfTheNightBadge": "Match of the Night",
+    "matchOfTheNight": "Kampf des Abends",
+    "matchOfTheNightBadge": "Kampf des Abends",
     "motn": {
       "markAs": "☆ Match of the Night",
       "unmark": "★ Match of the Night"
@@ -926,7 +933,7 @@
     }
   },
   "highlights": {
-    "title": "Highlights & Videos",
+    "title": "Highlights und Videos",
     "subtitle": "Match-Highlights, Promos und mehr ansehen",
     "noVideos": "Noch keine Videos verfügbar. Schauen Sie bald wieder vorbei!",
     "loadError": "Videos konnten nicht geladen werden.",
@@ -1103,7 +1110,10 @@
       "totalMatches": "Kämpfe gesamt",
       "championshipMatches": "Titelkämpfe",
       "record": "Bilanz",
-      "stipulation": "Stipulation"
+      "stipulation": "Stipulation",
+      "reignCount_one": "{{count}} Regentschaft",
+      "reignCount_other": "{{count}} Regentschaften",
+      "currentWinStreak": "Aktuelle Siegesserie"
     },
     "matchTypes": {
       "singles": "Einzel",
@@ -1175,7 +1185,8 @@
       "activeThreatsDesc": "Diese Rekorde werden derzeit herausgefordert. Behalten Sie diese Spieler im Auge!",
       "currentHolder": "Aktueller Halter",
       "challenger": "Herausforderer",
-      "noRecords": "Noch keine Rekorde verfügbar."
+      "noRecords": "Noch keine Rekorde verfügbar.",
+      "unclaimed": "Für diesen Rekord qualifiziert sich noch niemand."
     },
     "taleOfTape": {
       "title": "Tale of the Tape",
@@ -1246,7 +1257,14 @@
       "loadMore": "Mehr laden",
       "viewRivalry": "Ansehen",
       "loadError": "Rivalitäten konnten nicht geladen werden",
-      "heatFilter": "Nach Heat filtern"
+      "heatFilter": "Nach Heat filtern",
+      "activityBeat": "{{winner}} besiegte {{loser}}",
+      "activityDraw": "{{names}} trennten sich unentschieden",
+      "activityMatch": "{{names}} angesetzt",
+      "activityPromoTitled": "{{name}}: „{{title}}“",
+      "activityPromo": "{{name}} hielt eine Promo",
+      "activityNote": "Notiz: {{text}}",
+      "activityMessage": "{{name}} schickte eine Nachricht"
     },
     "card": {
       "matchCount_one": "{{count}} Kampf",
@@ -1294,7 +1312,9 @@
       "heatScaleCold": "Kalt",
       "heatScaleExtreme": "Extrem",
       "heatScoreOutOf": "Hitze: {{score}}/100",
-      "notFound": "Rivalität nicht gefunden"
+      "notFound": "Rivalität nicht gefunden",
+      "insidersOnly": "Diesen Tab können nur die Rivalen und die GMs öffnen.",
+      "headToHeadRecord": "{{wins}}S – {{losses}}N – {{draws}}U"
     },
     "messages": {
       "heading": "Nachrichten",
@@ -1466,7 +1486,9 @@
       "recentResults": "Neueste Ergebnisse",
       "showMore": "Mehr anzeigen",
       "typeFilter": "Event-Typ",
-      "viewCard": "Zur Match Card"
+      "viewCard": "Zur Match Card",
+      "plannedShow": "Geplante Show, Card folgt",
+      "plannedLegend": "Geplant"
     },
     "designations": {
       "preShow": "Vorshow",
@@ -1896,7 +1918,8 @@
         "disbanded": "Aufgelöst"
       },
       "activityTitle": "Neueste Faktionsaktivität",
-      "activityEmpty": "Noch keine Aktivität."
+      "activityEmpty": "Noch keine Aktivität.",
+      "leaderMissing": "Anführer nicht mehr gelistet"
     },
     "heroAlt": "{{name}}-Faktionsbanner",
     "statusLabel": "Faktionsstatus: {{status}}",
@@ -1951,7 +1974,8 @@
       "milestoneLongestStreak": "Längste Siegesserie",
       "milestoneMostWinsSeason": "Meiste Siege in einer Saison",
       "milestoneTitleReigns": "Titelregentschaften",
-      "milestoneBestMonth": "Bester Monat"
+      "milestoneBestMonth": "Bester Monat",
+      "formerMember": "Ehemaliges Mitglied"
     },
     "manage": {
       "notAllowed": "Nur Leader und Admins können auf den Verwalten-Tab zugreifen.",
@@ -2009,7 +2033,8 @@
       "attachComingSoon": "Anhänge folgen in Kürze",
       "attachAria": "Anhängen (folgt)",
       "emojiComingSoon": "Emoji-Auswahl folgt in Kürze",
-      "emojiAria": "Emoji (folgt)"
+      "emojiAria": "Emoji (folgt)",
+      "membersOnly": "Nur Mitglieder dieser Faction können ihre Nachrichten lesen."
     },
     "schedule": {
       "error": "Spielplan konnte nicht geladen werden.",
@@ -2103,7 +2128,13 @@
       "scheduleEmpty": "Keine Matches in den nächsten 60 Tagen.",
       "scheduleError": "Spielplan konnte nicht geladen werden.",
       "activityTitle": "Faktionsaktivität",
-      "activityEmpty": "Keine aktuellen Ereignisse."
+      "activityEmpty": "Keine aktuellen Ereignisse.",
+      "rosterMissing_one": "{{count}} Mitglied ist nicht mehr im Kader gelistet.",
+      "rosterMissing_other": "{{count}} Mitglieder sind nicht mehr im Kader gelistet.",
+      "resultFallback": "Kampf",
+      "versus": "gegen {{names}}",
+      "formCaption_one": "Letztes Ergebnis",
+      "formCaption_other": "Letzte {{count}} Ergebnisse, die neuesten rechts"
     },
     "headToHead": "Kopf an Kopf",
     "matchTypes": "Match-Typ-Aufschlüsselung",
@@ -2312,8 +2343,8 @@
       "eligibleChampionships": "Qualifizierte Meisterschaften",
       "topContenderPositions": "#1 Herausforderer-Positionen",
       "topThreePositions": "Top-3-Positionen",
-      "comingSoon": "Diese Funktion ist verfügbar, sobald Spielerkonten eingerichtet sind.",
-      "requiresAuth": "Für deinen persönlichen Herausforderer-Status ist eine Spieleranmeldung erforderlich.",
+      "comingSoon": "Dein persönlicher Herausforderer-Status ist noch nicht verfügbar.",
+      "requiresAuth": "Bis dahin zeigt die Gesamtrangliste, wo alle stehen.",
       "viewRankings": "Gesamtrangliste ansehen"
     },
     "overrides": {
@@ -2525,12 +2556,14 @@
     "allMyRivalries": "Alle meine Rivalitäten",
     "topOfTable": "Tabellenspitze",
     "fullStandings": "Zur Tabelle",
-    "noStandings": "Noch keine Matches eingetragen.",
+    "noStandings": "Die Tabelle füllt sich, sobald gelistete Wrestler Ergebnisse haben.",
     "standingsError": "Die Tabelle konnte nicht geladen werden.",
     "loadError": "Die Startseite konnte nicht geladen werden.",
     "stats": {
       "players": "Spieler",
-      "titles": "Aktive Titel"
+      "titles": "Aktive Titel",
+      "seasonMatches": "Kämpfe in dieser Saison",
+      "allTimeMatches": "Kämpfe insgesamt"
     }
   },
   "me": {
@@ -3348,5 +3381,14 @@
     "uploadNetworkError": "Netzwerkfehler beim Hochladen. Bitte prüfe deine Internetverbindung und versuche es erneut.",
     "uploadPrepareFailed": "Der Bild-Upload konnte nicht vorbereitet werden. Bitte prüfe deine Verbindung und versuche es erneut.",
     "uploadStorageFailed": "Das Bild konnte nicht gespeichert werden. Bitte versuche es erneut oder verwende ein anderes Bild."
+  },
+  "matchFormats": {
+    "singles": "Einzel",
+    "tagTeam": "Tag Team",
+    "tripleThreat": "Triple Threat",
+    "fatalFourWay": "Fatal Four Way",
+    "sixPack": "6-Pack Challenge",
+    "battleRoyal": "Battle Royal",
+    "royalRumble": "Royal Rumble"
   }
 }
