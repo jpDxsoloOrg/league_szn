@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 const { mockUseAuth, mockRivalriesApi, mockPlayersApi } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
   mockRivalriesApi: { list: vi.fn() },
-  mockPlayersApi: { getAllIncludingHidden: vi.fn() },
+  mockPlayersApi: { getDirectory: vi.fn() },
 }));
 
 vi.mock('react-i18next', async () => (await import('./i18nMock')).i18nMock);
@@ -25,7 +25,7 @@ describe('AdminRivalries', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRivalriesApi.list.mockResolvedValue({ rivalries: [] });
-    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([]);
+    mockPlayersApi.getDirectory.mockResolvedValue([]);
   });
 
   it('links full Admins to Heat Tunables', async () => {
@@ -33,6 +33,29 @@ describe('AdminRivalries', () => {
     renderPage();
 
     expect(await screen.findByRole('link', { name: 'Heat Tunables' })).toHaveAttribute('href', '/admin/heat-config');
+  });
+
+  it('names a hidden player on an existing rivalry by their own name', async () => {
+    mockUseAuth.mockReturnValue({ isSuperAdmin: false });
+    mockPlayersApi.getDirectory.mockResolvedValue([
+      { playerId: 'p1', name: 'Alex', currentWrestler: 'The Rock' },
+      { playerId: 'p2', name: 'Newbie', currentWrestler: null },
+    ]);
+    mockRivalriesApi.list.mockResolvedValue({
+      rivalries: [{
+        rivalryId: 'r1',
+        title: 'Old feud',
+        heat: 'warm',
+        heatScore: 10,
+        status: 'active',
+        requestedBy: 'p1',
+        participants: [{ playerId: 'p1' }, { playerId: 'p2' }],
+        createdAt: '2026-01-01T00:00:00Z',
+      }],
+    });
+    renderPage();
+
+    expect(await screen.findByText(/The Rock vs Newbie/)).toBeInTheDocument();
   });
 
   it('leaves the Heat Tunables link out for Moderators', async () => {

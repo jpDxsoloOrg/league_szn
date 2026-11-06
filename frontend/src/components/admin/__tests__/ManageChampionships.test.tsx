@@ -286,6 +286,26 @@ describe('ManageChampionships', () => {
     });
   });
 
+  it('leaves hidden players out of Assign Champion, except the current champion', async () => {
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([
+      ...mockPlayers,
+      { playerId: 'p3', name: 'Reigning Ghost', currentWrestler: 'Needs Wrestler', wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+      { playerId: 'p4', name: 'Other Ghost', currentWrestler: '', wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+    ]);
+    mockGetAllChampionships.mockResolvedValue([{ ...mockChampionships[0], currentChampion: 'p3' }]);
+
+    renderManageChampionships();
+
+    expect(await screen.findByText('Reigning Ghost')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Assign Champion' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('option', { name: 'Reigning Ghost' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('option', { name: 'The Rock' })).toBeInTheDocument();
+    expect(within(dialog).queryByRole('option', { name: 'Other Ghost' })).not.toBeInTheDocument();
+  });
+
   it('shows current champion and division assignment on each card', async () => {
     setupDefaultMocks();
 

@@ -75,4 +75,5 @@ Shared building blocks for the Main Event Arena redesign. Design rules live in
 - `fetchWithAuth` retries GETs twice on 429, 500, 502 and 503 with jittered backoff. Writes are never retried.
 - `useDocumentTitle` overrides the route title that `App` sets from `getPageInfo`.
 - `playersApi.getDirectory()` resolves names for all players, including those with no wrestler.
-  `playersApi.getAllIncludingHidden()` is the staff roster.
+  `playersApi.getAllIncludingHidden()` is the staff roster. Pass it through `pickablePlayers` in
+  `utils/pickablePlayers` before filling a picker: hidden players stay out unless already on the record.

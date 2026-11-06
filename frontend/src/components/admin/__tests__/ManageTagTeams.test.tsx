@@ -120,13 +120,13 @@ describe('ManageTagTeams', () => {
     expect(screen.getByRole('columnheader', { name: /actions/i })).toBeInTheDocument();
   });
 
-  it('resolves members from the staff roster and badges hidden players', async () => {
+  it('resolves members from the staff roster, naming hidden players without a tag', async () => {
     render(<ManageTagTeams />);
 
     const row = (await screen.findByText('The Usos')).closest('tr')!;
     expect(within(row).getByText('Jey Uso / jey_psn')).toBeInTheDocument();
     expect(within(row).getByText('Newbie')).toBeInTheDocument();
-    expect(within(row).getByText('Hidden')).toBeInTheDocument();
+    expect(within(row).queryByText('Hidden')).not.toBeInTheDocument();
     expect(within(row).queryByText('Needs Wrestler')).not.toBeInTheDocument();
   });
 

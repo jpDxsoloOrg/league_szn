@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
 const {
@@ -132,6 +132,11 @@ const mockMatchTypes = [
   { matchTypeId: 'mf3', name: 'Triple Threat', description: 'Three competitors', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
   { matchTypeId: 'mf4', name: 'Fatal 4-Way', description: 'Four competitors', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
 ];
+
+const hiddenPlayer = {
+  playerId: 'p5', name: 'Newbie', currentWrestler: 'Needs Wrestler',
+  wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+};
 
 function setupDefaultMocks() {
   mockGetAllPlayers.mockResolvedValue(mockPlayers);
@@ -360,26 +365,55 @@ describe('ScheduleMatch', () => {
     await waitFor(() => expect(mockScheduleMatch).toHaveBeenCalledTimes(1));
   });
 
-  it('lists players with no wrestler in the picker by name with a hidden badge', async () => {
+  it('leaves players with no wrestler out of the picker', async () => {
     const user = userEvent.setup();
     setupDefaultMocks();
-    mockGetAllPlayers.mockResolvedValue([
-      ...mockPlayers,
-      {
-        playerId: 'p5', name: 'Newbie', currentWrestler: 'Needs Wrestler',
-        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
-      },
-    ]);
+    mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
     renderScheduleMatch();
 
     await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
     await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
-    await pickParticipants(user, ['Newbie']);
+    await user.click(screen.getByRole('button', { name: /Add participants/ }));
 
-    const chip = screen.getByRole('button', { name: 'Remove Newbie' }).closest('li')!;
+    expect(screen.getByRole('option', { name: /The Rock/ })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Newbie/ })).not.toBeInTheDocument();
+  });
+
+  it('keeps a hidden player pre-filled from a challenge', async () => {
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
+    render(
+      <MemoryRouter
+        initialEntries={[{
+          pathname: '/admin/schedule',
+          state: { fromChallenge: { challengeId: 'ch1', challengerId: 'p1', challengedId: 'p5', matchType: 'Singles' } },
+        }]}
+      >
+        <ScheduleMatch />
+      </MemoryRouter>,
+    );
+
+    const chip = (await screen.findByRole('button', { name: 'Remove Newbie' })).closest('li')!;
     expect(chip).toHaveTextContent('Newbie');
-    expect(chip).toHaveTextContent('Hidden');
+    expect(chip).not.toHaveTextContent('Hidden');
     expect(chip).not.toHaveTextContent('Needs Wrestler');
+  });
+
+  it('does not offer a tag team with a hidden member', async () => {
+    const user = userEvent.setup();
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
+    mockGetAllTagTeams.mockResolvedValue([
+      { tagTeamId: 'tt1', name: 'Clean Team', player1Id: 'p1', player2Id: 'p2' },
+      { tagTeamId: 'tt2', name: 'Half Hidden', player1Id: 'p1', player2Id: 'p5' },
+    ]);
+    renderScheduleMatch();
+
+    await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
+    await user.selectOptions(screen.getByLabelText('Match Format'), 'Tag Team');
+
+    expect((await screen.findAllByRole('option', { name: /Clean Team/ })).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('option', { name: /Half Hidden/ })).not.toBeInTheDocument();
   });
 
   it('labels a blank-name player instead of leaving empty brackets', async () => {
@@ -412,7 +446,7 @@ describe('ScheduleMatch', () => {
     mockGetAllPlayers.mockResolvedValue([
       { ...mockPlayers[0]!, divisionId: 'd1' },
       {
-        playerId: 'p5', name: 'Newbie', currentWrestler: 'Needs Wrestler',
+        playerId: 'p5', name: 'Newbie', currentWrestler: 'Sid Vicious',
         wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
       },
     ]);
@@ -420,7 +454,7 @@ describe('ScheduleMatch', () => {
 
     await waitFor(() => expect(screen.getByLabelText('Match Format')).toBeInTheDocument());
     await user.selectOptions(screen.getByLabelText('Match Format'), 'Singles');
-    await pickParticipants(user, ['Newbie']);
+    await pickParticipants(user, ['Sid Vicious (Newbie)']);
 
     expect(screen.getByRole('button', { name: 'Remove Newbie' })).toBeInTheDocument();
   });

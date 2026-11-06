@@ -12,13 +12,10 @@ import EmptyState from '../ui/EmptyState';
 import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
+import { pickablePlayers } from '../../utils/pickablePlayers';
 import AdminNotice from './AdminNotice';
 import useAdminConfirm from './useAdminConfirm';
 import './adminContent.css';
-
-function playerLabel(player: Player): string {
-  return isNeedsWrestler(player.currentWrestler) ? player.name : `${player.name} (${player.currentWrestler})`;
-}
 
 export default function AdminContenderOverrides() {
   const { t } = useTranslation();
@@ -90,9 +87,10 @@ export default function AdminContenderOverrides() {
 
   const playersById = useMemo(() => new Map(players.map((player) => [player.playerId, player])), [players]);
   const selectedChampionship = championships.find((championship) => championship.championshipId === selectedChampionshipId);
+  const bookablePlayers = pickablePlayers(players);
   const filteredPlayers = selectedChampionship?.divisionId
-    ? players.filter((player) => player.divisionId === selectedChampionship.divisionId)
-    : players;
+    ? bookablePlayers.filter((player) => player.divisionId === selectedChampionship.divisionId)
+    : bookablePlayers;
 
   const clearForm = () => {
     setSelectedPlayerId('');
@@ -224,7 +222,7 @@ export default function AdminContenderOverrides() {
             <select id="override-player-select" value={selectedPlayerId} onChange={(event) => setSelectedPlayerId(event.target.value)}>
               <option value="">{t('contenders.admin.overrides.selectPlayer')}</option>
               {filteredPlayers.map((player) => (
-                <option key={player.playerId} value={player.playerId}>{playerLabel(player)}</option>
+                <option key={player.playerId} value={player.playerId}>{player.name} ({player.currentWrestler})</option>
               ))}
             </select>
           </div>

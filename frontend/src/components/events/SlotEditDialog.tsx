@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { HydratedMatchSlot, Player, PlayerBookingInfo } from '../../types';
+import { pickablePlayers } from '../../utils/pickablePlayers';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import PlayerBookingPicker, { type PickerCheckInStatus } from './PlayerBookingPicker';
@@ -167,7 +168,7 @@ export default function SlotEditDialog({
           </label>
           <PlayerBookingPicker
             id="slot-edit-player"
-            players={players}
+            players={pickablePlayers(players, slot.playerId ? [slot.playerId] : [])}
             value={playerId}
             onChange={setPlayerId}
             checkInStatusByPlayerId={checkInStatusByPlayerId}

@@ -15,13 +15,13 @@ import type { LeagueEvent, MatchDesignation } from '../../types/event';
 import type { ChallengeWithPlayers } from '../../types/challenge';
 import type { PromoWithContext } from '../../types/promo';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
+import { pickablePlayers, pickableTagTeams } from '../../utils/pickablePlayers';
 import { nameOrUnnamed } from '../../utils/playerName';
 import SearchableSelect from './SearchableSelect';
 import Button from '../ui/Button';
 import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import AdminNotice from './AdminNotice';
-import HiddenBadge from './HiddenBadge';
 import SourceLoadNotice from './SourceLoadNotice';
 import { settleSources } from './loadSources';
 import './adminRoster.css';
@@ -64,7 +64,6 @@ export default function ScheduleMatch() {
   const [stipulations, setStipulations] = useState<Stipulation[]>([]);
   const [matchTypes, setMatchTypes] = useState<MatchType[]>([]);
   const [divisions, setDivisions] = useState<Division[]>([]);
-  // Starts on everyone: hidden players usually have no division yet.
   const [divisionFilter, setDivisionFilter] = useState<string>('all');
   // Check-in roster for the selected event. Booking pickers use it to lead
   // with the people who said they can wrestle. Null until an event is picked
@@ -421,11 +420,16 @@ export default function ScheduleMatch() {
     return player ? displayName(player) : t('common.unknown');
   };
 
+  // A challenge or promo can pre-fill someone who has since become hidden.
+  const selectedPlayerIds = [...formData.participants, ...teams.flat(), ...slotRowPlayerIds];
+  const bookablePlayers = pickablePlayers(players, selectedPlayerIds);
+  const bookableTagTeams = pickableTagTeams(activeTagTeams, players, selectedPlayerIds);
+
   const filteredPlayers = divisionFilter === 'all'
-    ? players
+    ? bookablePlayers
     : divisionFilter === 'none'
-      ? players.filter(p => !p.divisionId)
-      : players.filter(p => p.divisionId === divisionFilter);
+      ? bookablePlayers.filter(p => !p.divisionId)
+      : bookablePlayers.filter(p => p.divisionId === divisionFilter);
 
   /** Selection set for the participants picker. */
   const selectedParticipantIds = useMemo(
@@ -780,7 +784,7 @@ export default function ScheduleMatch() {
                             className="tag-team-dropdown"
                           >
                             <option value="">{t('scheduleMatch.tagTeam.selectTagTeam', 'Select a Tag Team...')}</option>
-                            {activeTagTeams
+                            {bookableTagTeams
                               .filter(tt => {
                                 // Hide tag teams already assigned to other teams
                                 const assignedToOther = teams.some((otherTeam, i) => {
@@ -843,9 +847,9 @@ export default function ScheduleMatch() {
                                   {displayName(player)}
                                   <span className="sr-only"> ({statusLabel(status)})</span>
                                 </span>
-                                {isNeedsWrestler(player.currentWrestler)
-                                  ? <HiddenBadge />
-                                  : <span className="participant-wrestler">{player.currentWrestler}</span>}
+                                {!isNeedsWrestler(player.currentWrestler) && (
+                                  <span className="participant-wrestler">{player.currentWrestler}</span>
+                                )}
                                 {isInOtherTeam && (
                                   <span className="other-team-label">
                                     {t('scheduleMatch.tagTeam.team', 'Team')} {playerTeamIndex + 1}
@@ -883,7 +887,7 @@ export default function ScheduleMatch() {
                     <span className="slot-mode-row-position">{index + 1}</span>
                     <div className="slot-mode-row-player">
                       <PlayerBookingPicker
-                        players={players}
+                        players={bookablePlayers}
                         value={row.playerId}
                         onChange={(playerId) => updateSlotRow(index, { playerId })}
                         checkInStatusByPlayerId={checkInStatusByPlayerId}
@@ -950,7 +954,6 @@ export default function ScheduleMatch() {
                           {player && hidden && displayName(player)}
                           {!player && playerId}
                         </span>
-                        {hidden && <HiddenBadge />}
                         <button
                           type="button"
                           className="selected-participant-remove"

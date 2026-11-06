@@ -147,21 +147,47 @@ describe('MatchEditForm', () => {
     vi.clearAllMocks();
   });
 
-  it('badges a player with no wrestler instead of printing the placeholder', async () => {
+  const hiddenPlayer = {
+    playerId: 'p9', name: 'Newbie', currentWrestler: 'Needs Wrestler',
+    wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+  };
+
+  it('leaves a hidden player who is not on this match out of the list', async () => {
     setupDefaultMocks();
-    mockGetAllPlayers.mockResolvedValue([
-      ...mockPlayers,
-      {
-        playerId: 'p9', name: 'Newbie', currentWrestler: 'Needs Wrestler',
-        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
-      },
-    ]);
+    mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
+
+    render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    await screen.findByText('Undertaker', { selector: '.match-edit-form__player-name' });
+    expect(screen.queryByText('Newbie')).not.toBeInTheDocument();
+  });
+
+  it('keeps a hidden player already booked on this match, without tagging them', async () => {
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
+    mockGetAllMatches.mockResolvedValue([{ ...scheduledMatch, participants: ['p1', 'p9'] }]);
 
     render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
 
     const row = (await screen.findByText('Newbie')).closest('button')!;
-    expect(row).toHaveTextContent('Hidden');
+    expect(row).toHaveAttribute('aria-pressed', 'true');
+    expect(row).not.toHaveTextContent('Hidden');
     expect(row).not.toHaveTextContent('Needs Wrestler');
+  });
+
+  it('saves a booked hidden player back onto the match', async () => {
+    setupDefaultMocks();
+    mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]);
+    mockGetAllMatches.mockResolvedValue([{ ...scheduledMatch, participants: ['p1', 'p9'] }]);
+    mockUpdateMatch.mockResolvedValue({});
+
+    render(<MatchEditForm matchId="m1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    await screen.findByText('Newbie');
+    await userEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+    await waitFor(() => expect(mockUpdateMatch).toHaveBeenCalledTimes(1));
+    expect(mockUpdateMatch.mock.calls[0]![1]).toMatchObject({ participants: ['p1', 'p9'] });
   });
 
   it('loads existing match data into form fields', async () => {

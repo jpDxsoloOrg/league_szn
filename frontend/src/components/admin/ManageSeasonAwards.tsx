@@ -5,6 +5,7 @@ import { Award, Plus } from 'lucide-react';
 import { seasonAwardsApi, seasonsApi, playersApi } from '../../services/api';
 import type { SeasonAwardsResponse } from '../../services/api';
 import type { Season, Player, SeasonAward } from '../../types';
+import { pickablePlayers } from '../../utils/pickablePlayers';
 import Button from '../ui/Button';
 import DataTable from '../ui/DataTable';
 import EmptyState from '../ui/EmptyState';
@@ -48,7 +49,7 @@ export default function ManageSeasonAwards() {
           playersApi.getAllIncludingHidden(controller.signal),
         ]);
         setSeasons(seasonsData);
-        setPlayers(playersData);
+        setPlayers(pickablePlayers(playersData));
         setSelectedSeasonId(seasonsData[0]?.seasonId ?? '');
       } catch (err) {
         if (isAbort(err)) return;

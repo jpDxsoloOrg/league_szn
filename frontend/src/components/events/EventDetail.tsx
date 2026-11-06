@@ -126,7 +126,7 @@ export default function EventDetail() {
     try {
       const [scheduled, playersData, tagTeamsData, rosterData] = await Promise.all([
         matchesApi.getAll({ status: 'scheduled' }),
-        // Staff can book hidden players, so the pickers need the full roster.
+        // The full roster, so names on this card resolve for hidden players.
         playersApi.getAllIncludingHidden(),
         tagTeamsApi.getAll({ status: 'active' }).catch(() => [] as TagTeam[]),
         // Drives the colour-coded slot picker. A failure here only costs the

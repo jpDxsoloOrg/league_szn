@@ -3,8 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Flame } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { canAccessAdminEntry, findAdminEntry } from '../../config/navConfig';
-import { playersApi, rivalriesApi } from '../../services/api';
-import type { Player } from '../../types';
+import { playersApi, rivalriesApi, type PlayerDirectoryEntry } from '../../services/api';
 import type { Rivalry, RivalryHeat, RivalryStatus } from '../../types/rivalry';
 import Badge from '../ui/Badge';
 import type { BadgeTone } from '../ui/Badge';
@@ -44,7 +43,7 @@ export default function AdminRivalries() {
   const { t } = useTranslation();
   const { isSuperAdmin } = useAuth();
   const [rivalries, setRivalries] = useState<Rivalry[]>([]);
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useState<PlayerDirectoryEntry[]>([]);
   const [filter, setFilter] = useState<StatusFilter>('pending');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -86,7 +85,7 @@ export default function AdminRivalries() {
     const controller = new AbortController();
     const load = async () => {
       try {
-        setPlayers(await playersApi.getAllIncludingHidden(controller.signal));
+        setPlayers(await playersApi.getDirectory(controller.signal));
       } catch {
         // Names fall back to the stored player ID.
       }

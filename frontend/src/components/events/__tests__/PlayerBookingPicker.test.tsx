@@ -73,13 +73,13 @@ describe('PlayerBookingPicker', () => {
     expect(screen.queryByText(/No Response/)).not.toBeInTheDocument();
   });
 
-  it('shows a hidden player by name with a badge', async () => {
+  it('shows a kept hidden player by name alone, without a tag', async () => {
     const hiddenPlayer = player('p5', 'Eve', 'Needs Wrestler');
     renderPicker({ players: [hiddenPlayer], checkInStatusByPlayerId: undefined });
     await openMenu();
 
     const option = screen.getByRole('option', { name: /Eve/ });
-    expect(option).toHaveTextContent('Hidden');
+    expect(option).not.toHaveTextContent('Hidden');
     expect(option).not.toHaveTextContent('Needs Wrestler');
   });
 
@@ -94,17 +94,6 @@ describe('PlayerBookingPicker', () => {
     expect(screen.getByRole('option', { name: /Sid Vicious \(Unnamed player\)/ })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /^Unnamed player/ })).toBeInTheDocument();
     expect(screen.queryByText(/\(\s*\)/)).not.toBeInTheDocument();
-  });
-
-  it('keeps hidden players findable by searching for the badge text', async () => {
-    const hiddenPlayer = player('p5', 'Eve', 'Needs Wrestler');
-    renderPicker({ players: [...players, hiddenPlayer], checkInStatusByPlayerId: undefined });
-    await openMenu();
-
-    await userEvent.type(screen.getByRole('searchbox'), 'hidden');
-
-    expect(screen.getByRole('option', { name: /Eve/ })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: /Alice/ })).not.toBeInTheDocument();
   });
 
   it('lists only available and tentative players by default', async () => {
