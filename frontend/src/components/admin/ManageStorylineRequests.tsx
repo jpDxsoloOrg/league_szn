@@ -1,185 +1,206 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { BookOpen } from 'lucide-react';
 import { storylineRequestsApi } from '../../services/api';
 import type { StorylineRequestWithDetails, StorylineRequestType } from '../../types';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import DataTable from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Skeleton from '../ui/Skeleton';
+import Tabs from '../ui/Tabs';
+import AdminNotice from './AdminNotice';
+import './adminContent.css';
 import './ManageStorylineRequests.css';
 
-type StorylineTab = 'pending' | 'history';
-
-const REQUEST_TYPE_LABELS: Record<StorylineRequestType, string> = {
-  storyline: 'Storyline',
-  backstage_attack: 'Backstage Attack',
-  rivalry: 'Rivalry',
+const REQUEST_TYPE_LABELS: Record<StorylineRequestType, { key: string; fallback: string }> = {
+  storyline: { key: 'adminContent.storylines.typeStoryline', fallback: 'Storyline' },
+  backstage_attack: { key: 'adminContent.storylines.typeBackstageAttack', fallback: 'Backstage Attack' },
+  rivalry: { key: 'adminContent.storylines.typeRivalry', fallback: 'Rivalry' },
 };
 
 export default function ManageStorylineRequests() {
-  const [activeTab, setActiveTab] = useState<StorylineTab>('pending');
-  const [pendingRequests, setPendingRequests] = useState<StorylineRequestWithDetails[]>([]);
-  const [historyRequests, setHistoryRequests] = useState<StorylineRequestWithDetails[]>([]);
+  const { t } = useTranslation();
+  const [requests, setRequests] = useState<StorylineRequestWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [gmNoteMap, setGmNoteMap] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadAll();
-  }, []);
-
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const all = await storylineRequestsApi.getAll();
-      setPendingRequests(all.filter((r) => r.status === 'pending'));
-      setHistoryRequests(all.filter((r) => r.status !== 'pending'));
+      setRequests(await storylineRequestsApi.getAll());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load storyline requests');
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadAll();
+  }, [loadAll]);
 
   const handleReview = async (requestId: string, status: 'acknowledged' | 'declined') => {
     const gmNote = gmNoteMap[requestId]?.trim();
     if (status === 'declined' && !gmNote) {
-      setError('A note is required when declining a storyline request.');
+      setError(t('adminContent.storylines.noteRequired', 'A note is required when declining a storyline request.'));
       return;
     }
+    setSubmitting(requestId);
+    setError(null);
     try {
-      setSubmitting(requestId);
-      setError(null);
-      await storylineRequestsApi.review(requestId, {
-        status,
-        gmNote: gmNote || undefined,
-      });
+      await storylineRequestsApi.review(requestId, { status, gmNote: gmNote || undefined });
       await loadAll();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to review request');
+      setError(err instanceof Error ? err.message : t('adminContent.storylines.reviewFailed', 'Failed to review request'));
     } finally {
       setSubmitting(null);
     }
   };
 
-  const formatDate = (iso: string) => new Date(iso).toLocaleDateString();
-
-  const statusBadge = (status: string) => {
-    const cls =
-      status === 'acknowledged' ? 'storyline-badge acknowledged' :
-      status === 'declined' ? 'storyline-badge declined' :
-      'storyline-badge pending';
-    return <span className={cls}>{status}</span>;
+  const typeLabel = (type: string): string => {
+    const label = REQUEST_TYPE_LABELS[type as StorylineRequestType];
+    return label ? t(label.key, label.fallback) : type;
   };
 
-  const typeLabel = (type: string) =>
-    REQUEST_TYPE_LABELS[type as StorylineRequestType] ?? type;
+  const statusBadge = (status: string) => {
+    if (status === 'acknowledged') return <Badge tone="win">{t('adminContent.storylines.acknowledged', 'Acknowledged')}</Badge>;
+    if (status === 'declined') return <Badge tone="loss">{t('adminContent.storylines.declined', 'Declined')}</Badge>;
+    return <Badge tone="warning">{t('adminContent.storylines.pending', 'Pending')}</Badge>;
+  };
 
-  if (loading) return <div className="loading">Loading storyline requests...</div>;
+  const title = t('adminContent.storylines.title', 'Storyline Requests');
+
+  if (loading) {
+    return (
+      <div className="ac-page">
+        <PageHeader title={title} />
+        <Skeleton variant="block" count={3} />
+      </div>
+    );
+  }
+
+  const pendingRequests = requests.filter((request) => request.status === 'pending');
+  const historyRequests = requests.filter((request) => request.status !== 'pending');
+
+  const pendingContent = pendingRequests.length === 0 ? (
+    <EmptyState
+      icon={<BookOpen aria-hidden="true" size={32} />}
+      title={t('adminContent.storylines.noPending', 'No pending storyline requests.')}
+    />
+  ) : (
+    <div className="ac-section">
+      {pendingRequests.map((request) => (
+        <Card key={request.requestId} className="storyline-request">
+          <div className="storyline-request__header">
+            <span className="ac-cell__text">
+              <span className="ac-cell__title">{request.requesterName}</span>
+              <span className="ac-cell__sub">
+                {typeLabel(request.requestType)} · {new Date(request.createdAt).toLocaleDateString()}
+              </span>
+            </span>
+            {statusBadge(request.status)}
+          </div>
+          <p className="ac-section__text">
+            {t('adminContent.storylines.targets', 'Targets')}: {request.targetPlayerNames.join(', ')}
+          </p>
+          <p className="storyline-request__description">{request.description}</p>
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor={`gm-note-${request.requestId}`}>
+              {t('adminContent.storylines.gmNote', 'GM Note')}
+            </label>
+            <input
+              id={`gm-note-${request.requestId}`}
+              type="text"
+              placeholder={t('adminContent.storylines.notePlaceholder', 'GM note (required to decline)...')}
+              value={gmNoteMap[request.requestId] || ''}
+              onChange={(event) => setGmNoteMap((previous) => ({ ...previous, [request.requestId]: event.target.value }))}
+            />
+          </div>
+          <div className="ac-actions">
+            <Button
+              loading={submitting === request.requestId}
+              onClick={() => handleReview(request.requestId, 'acknowledged')}
+            >
+              {t('adminContent.storylines.acknowledge', 'Acknowledge')}
+            </Button>
+            <Button
+              variant="danger"
+              disabled={submitting === request.requestId}
+              onClick={() => handleReview(request.requestId, 'declined')}
+            >
+              {t('adminContent.storylines.decline', 'Decline')}
+            </Button>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const historyContent = (
+    <DataTable
+      caption={t('adminContent.storylines.history', 'History')}
+      density="dense"
+      rows={historyRequests}
+      rowKey={(request) => request.requestId}
+      empty={(
+        <EmptyState
+          icon={<BookOpen aria-hidden="true" size={32} />}
+          title={t('adminContent.storylines.noHistory', 'No resolved storyline requests yet.')}
+        />
+      )}
+      columns={[
+        {
+          key: 'requester',
+          header: t('adminContent.storylines.requester', 'Requester'),
+          render: (request) => (
+            <span className="ac-cell__text">
+              <span className="ac-cell__title">{request.requesterName}</span>
+              <span className="ac-cell__sub">{typeLabel(request.requestType)}</span>
+            </span>
+          ),
+        },
+        { key: 'targets', header: t('adminContent.storylines.targets', 'Targets'), render: (request) => request.targetPlayerNames.join(', ') },
+        { key: 'description', header: t('adminContent.description', 'Description'), render: (request) => request.description },
+        { key: 'status', header: t('adminContent.status', 'Status'), render: (request) => statusBadge(request.status) },
+        {
+          key: 'review',
+          header: t('adminContent.storylines.review', 'Review'),
+          render: (request) => (
+            <span className="ac-cell__text">
+              <span>{request.gmNote ?? '—'}</span>
+              <span className="ac-cell__sub">
+                {request.reviewedBy ?? '—'} · {new Date(request.updatedAt).toLocaleDateString()}
+              </span>
+            </span>
+          ),
+        },
+      ]}
+    />
+  );
 
   return (
-    <div className="manage-storyline-requests">
-      <h2>Storyline Requests</h2>
-
-      {error && <div className="error-message">{error}</div>}
-
-      <div className="storyline-tabs">
-        <button
-          className={`storyline-tab-btn ${activeTab === 'pending' ? 'active' : ''}`}
-          onClick={() => setActiveTab('pending')}
-        >
-          Pending ({pendingRequests.length})
-        </button>
-        <button
-          className={`storyline-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-          onClick={() => setActiveTab('history')}
-        >
-          History ({historyRequests.length})
-        </button>
-      </div>
-
-      {activeTab === 'pending' && (
-        pendingRequests.length === 0 ? (
-          <p className="no-data">No pending storyline requests.</p>
-        ) : (
-          <div className="storyline-list">
-            {pendingRequests.map((req) => (
-              <div key={req.requestId} className="storyline-card">
-                <div className="storyline-card-header">
-                  <span className="storyline-requester">{req.requesterName}</span>
-                  <span className="storyline-type">{typeLabel(req.requestType)}</span>
-                  {statusBadge(req.status)}
-                  <span className="storyline-date">{formatDate(req.createdAt)}</span>
-                </div>
-                <div className="storyline-card-body">
-                  <div className="storyline-targets-row">
-                    <strong>Target{req.targetPlayerNames.length > 1 ? 's' : ''}:</strong>{' '}
-                    {req.targetPlayerNames.join(', ')}
-                  </div>
-                  <p className="storyline-description">{req.description}</p>
-                  <div className="storyline-review-row">
-                    <input
-                      type="text"
-                      placeholder="GM note (required to decline)..."
-                      value={gmNoteMap[req.requestId] || ''}
-                      onChange={(e) =>
-                        setGmNoteMap((prev) => ({ ...prev, [req.requestId]: e.target.value }))
-                      }
-                      className="storyline-note-input"
-                    />
-                    <button
-                      className="acknowledge-btn"
-                      onClick={() => handleReview(req.requestId, 'acknowledged')}
-                      disabled={submitting === req.requestId}
-                    >
-                      {submitting === req.requestId ? 'Processing...' : 'Acknowledge'}
-                    </button>
-                    <button
-                      className="decline-btn"
-                      onClick={() => handleReview(req.requestId, 'declined')}
-                      disabled={submitting === req.requestId}
-                    >
-                      {submitting === req.requestId ? 'Processing...' : 'Decline'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )
-      )}
-
-      {activeTab === 'history' && (
-        historyRequests.length === 0 ? (
-          <p className="no-data">No resolved storyline requests yet.</p>
-        ) : (
-          <table className="storyline-table">
-            <thead>
-              <tr>
-                <th>Requester</th>
-                <th>Type</th>
-                <th>Targets</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th>Reviewed By</th>
-                <th>GM Note</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {historyRequests.map((req) => (
-                <tr key={req.requestId}>
-                  <td>{req.requesterName}</td>
-                  <td>{typeLabel(req.requestType)}</td>
-                  <td>{req.targetPlayerNames.join(', ')}</td>
-                  <td className="storyline-description-cell">{req.description}</td>
-                  <td>{statusBadge(req.status)}</td>
-                  <td>{req.reviewedBy ?? '—'}</td>
-                  <td>{req.gmNote ?? '—'}</td>
-                  <td>{formatDate(req.updatedAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )
-      )}
+    <div className="ac-page">
+      <PageHeader title={title} />
+      {error && <AdminNotice tone="error">{error}</AdminNotice>}
+      <Tabs
+        label={title}
+        items={[
+          {
+            value: 'pending',
+            label: `${t('adminContent.storylines.pending', 'Pending')} (${pendingRequests.length})`,
+            content: pendingContent,
+          },
+          {
+            value: 'history',
+            label: `${t('adminContent.storylines.history', 'History')} (${historyRequests.length})`,
+            content: historyContent,
+          },
+        ]}
+      />
     </div>
   );
 }

@@ -42,39 +42,7 @@
   font-size: var(--text-dense);
 }
 
-/* Notices keep .error-message and .success-message for the e2e page objects. */
-.ar-notice {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin: 0;
-  padding: 0.625rem 0.875rem;
-  border: 0;
-  border-left: 3px solid var(--color-hairline);
-  border-radius: var(--radius-control);
-  background-color: var(--color-overlay-soft);
-  color: var(--color-text);
-  font-size: var(--text-dense);
-}
-
-.ar-notice.error-message {
-  border-left-color: var(--color-loss);
-  background-color: var(--tint-loss);
-  color: var(--color-text);
-}
-
-.ar-notice.success-message {
-  border-left-color: var(--color-win);
-  background-color: var(--tint-win);
-  color: var(--color-text);
-}
-
-.ar-notice--warning {
-  border-left-color: var(--color-warn);
-  background-color: var(--tint-warn);
-}
-
+/* Notice body lists */
 .ar-notice__list {
   margin: 0.25rem 0 0;
   padding-left: 1.25rem;

@@ -14,7 +14,7 @@
   box-sizing: border-box;
 }
 
-.admin-hub :where(h3) {
+.admin-hub :where(h2) {
   all: unset;
   display: block;
   box-sizing: border-box;
@@ -108,16 +108,7 @@
   color: var(--color-text-muted);
 }
 
-/* Danger zone group (super-admin only) */
-
-.admin-hub-group-title-danger {
-  color: var(--color-danger-alt);
-}
-
-.admin-hub-card-danger {
-  border-color: color-mix(in srgb, var(--color-danger) 45%, transparent);
-  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
-}
+/* Danger entry (super-admin only) */
 
 .admin-hub-row-danger:hover,
 .admin-hub-row-danger:active {
@@ -129,22 +120,9 @@
   color: var(--color-danger-alt);
 }
 
-.admin-hub-row-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
 .admin-hub-row-label-danger {
   font-weight: 600;
   color: var(--color-danger-alt);
-}
-
-.admin-hub-row-caption {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-muted);
 }
 
 .admin-hub-row-chevron-danger {

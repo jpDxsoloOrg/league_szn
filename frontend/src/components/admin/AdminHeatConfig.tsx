@@ -1,7 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { siteConfigApi, type RivalryHeatTunables } from '../../services/api/siteConfig.api';
-import './AdminContenderConfig.css';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import PageHeader from '../ui/PageHeader';
+import Skeleton from '../ui/Skeleton';
+import AdminNotice from './AdminNotice';
+import './adminContent.css';
 
 /**
  * Mirrors `DEFAULT_HEAT_TUNABLES` on the backend. Used as the initial
@@ -116,42 +121,48 @@ export default function AdminHeatConfig() {
   const { t } = useTranslation();
   const [tunables, setTunables] = useState<RivalryHeatTunables>(DEFAULTS);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    siteConfigApi
-      .getHeatTunables(controller.signal)
-      .then((res) => setTunables(res.tunables))
-      .catch(() => {
-        // Fall through to DEFAULTS on load failure; admin can still save.
-      })
-      .finally(() => setLoading(false));
+    const load = async () => {
+      try {
+        const result = await siteConfigApi.getHeatTunables(controller.signal);
+        setTunables(result.tunables);
+      } catch {
+        // The defaults stay on screen and can still be saved, so say so.
+        if (!controller.signal.aborted) setLoadFailed(true);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    };
+    void load();
     return () => controller.abort();
   }, []);
 
   const handleChange = (key: keyof RivalryHeatTunables, value: string) => {
-    const num = parseFloat(value);
-    if (Number.isNaN(num)) return;
-    setTunables((prev) => ({ ...prev, [key]: num }));
+    const parsed = parseFloat(value);
+    if (Number.isNaN(parsed)) return;
+    setTunables((previous) => ({ ...previous, [key]: parsed }));
   };
 
   const handleSave = async () => {
     setSaving(true);
     setMessage(null);
     try {
-      const res = await siteConfigApi.updateHeatTunables(tunables);
-      setTunables(res.tunables);
+      const result = await siteConfigApi.updateHeatTunables(tunables);
+      setTunables(result.tunables);
+      setLoadFailed(false);
       setMessage({
         type: 'success',
         text: t('admin.heatConfig.savedMessage', 'Rivalry heat tunables saved. New rivalry writes will use these values.'),
       });
-      setTimeout(() => setMessage(null), 5000);
     } catch (err) {
       setMessage({
         type: 'error',
-        text: err instanceof Error ? err.message : 'Failed to save heat tunables',
+        text: err instanceof Error ? err.message : t('adminContent.heat.saveFailed', 'Failed to save heat tunables'),
       });
     } finally {
       setSaving(false);
@@ -163,71 +174,58 @@ export default function AdminHeatConfig() {
     setMessage(null);
   };
 
+  const title = t('admin.heatConfig.title', 'Rivalry Heat Tunables');
+
   if (loading) {
     return (
-      <div className="admin-contender-config">
-        <h3>{t('admin.heatConfig.title', 'Rivalry Heat Tunables')}</h3>
-        <p>{t('common.loading', 'Loading...')}</p>
+      <div className="ac-page">
+        <PageHeader title={title} />
+        <Skeleton variant="block" count={3} />
       </div>
     );
   }
 
   return (
-    <div className="admin-contender-config">
-      <h3>{t('admin.heatConfig.title', 'Rivalry Heat Tunables')}</h3>
-      <p className="config-subtitle">
-        {t(
+    <div className="ac-page">
+      <PageHeader
+        title={title}
+        subtitle={t(
           'admin.heatConfig.subtitle',
           'Tune the rivalry heat formula. Changes apply on the next rivalry write (match rating, promo create, manual recompute).',
         )}
-      </p>
+      />
 
-      <div className="config-fields">
-        {FIELDS.map((field) => (
-          <div className="config-field" key={field.key}>
-            <label className="config-label" htmlFor={`heat-${field.key}`}>
-              {t(field.labelKey, field.labelFallback)}
-            </label>
-            <input
-              id={`heat-${field.key}`}
-              type="number"
-              className="config-input"
-              value={tunables[field.key]}
-              onChange={(e) => handleChange(field.key, e.target.value)}
-              min={field.min}
-              max={field.max}
-              step={field.step}
-            />
-            <span className="config-hint">{t(field.hintKey, field.hintFallback)}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="config-actions">
-        <button className="btn-recalculate" onClick={handleSave} disabled={saving}>
-          {saving
-            ? t('common.saving', 'Saving...')
-            : t('admin.heatConfig.save', 'Save Heat Tunables')}
-        </button>
-        <button
-          type="button"
-          className="btn-recalculate"
-          style={{ marginLeft: '0.5rem', background: '#374151' }}
-          onClick={handleReset}
-          disabled={saving}
-        >
-          {t('admin.heatConfig.reset', 'Reset to Defaults')}
-        </button>
-      </div>
-
-      {message && (
-        <div
-          className={message.type === 'success' ? 'save-success-msg' : 'save-error-msg'}
-          style={message.type === 'error' ? { color: '#f87171', marginTop: '0.5rem' } : { marginTop: '0.5rem' }}
-        >
-          {message.text}
-        </div>
+      {loadFailed && (
+        <AdminNotice tone="error">
+          {t('adminContent.heat.loadFailed', 'Could not load the saved values. The defaults are shown below.')}
+        </AdminNotice>
       )}
+      {message && <AdminNotice tone={message.type}>{message.text}</AdminNotice>}
+
+      <Card className="ac-form">
+        <div className="ac-form__row">
+          {FIELDS.map((field) => (
+            <div className="ac-field" key={field.key}>
+              <label className="ac-field__label" htmlFor={`heat-${field.key}`}>{t(field.labelKey, field.labelFallback)}</label>
+              <input
+                id={`heat-${field.key}`}
+                type="number"
+                value={tunables[field.key]}
+                onChange={(event) => handleChange(field.key, event.target.value)}
+                min={field.min}
+                max={field.max}
+                step={field.step}
+              />
+              <p className="ac-field__hint">{t(field.hintKey, field.hintFallback)}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="ac-actions">
+          <Button onClick={handleSave} loading={saving}>{t('admin.heatConfig.save', 'Save Heat Tunables')}</Button>
+          <Button variant="ghost" onClick={handleReset} disabled={saving}>{t('admin.heatConfig.reset', 'Reset to Defaults')}</Button>
+        </div>
+      </Card>
     </div>
   );
 }

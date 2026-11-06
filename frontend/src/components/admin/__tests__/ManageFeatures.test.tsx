@@ -18,7 +18,6 @@ vi.mock('../../../contexts/SiteConfigContext', () => ({
   useSiteConfig: mockUseSiteConfig,
 }));
 
-vi.mock('../ManageFeatures.css', () => ({}));
 
 import ManageFeatures from '../ManageFeatures';
 

@@ -1,217 +1,277 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { CalendarRange, Plus } from 'lucide-react';
 import { seasonsApi } from '../../services/api';
 import type { Season } from '../../types';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import DataTable from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Skeleton from '../ui/Skeleton';
+import AdminFormModal from './AdminFormModal';
+import AdminNotice from './AdminNotice';
+import useAdminConfirm from './useAdminConfirm';
+import './adminContent.css';
 import './ManageSeasons.css';
 
+const EMPTY_FORM = { name: '', startDate: '', endDate: '' };
+
+function formatDate(value?: string): string {
+  return value ? new Date(value).toLocaleDateString() : '—';
+}
+
 export default function ManageSeasons() {
+  const { t } = useTranslation();
+  const { confirm, confirmDialog } = useAdminConfirm();
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    startDate: '',
-    endDate: '',
-  });
-
-  useEffect(() => {
-    loadSeasons();
-  }, []);
-
-  const loadSeasons = async () => {
+  const loadSeasons = useCallback(async () => {
     try {
-      setLoading(true);
-      const data = await seasonsApi.getAll();
-      setSeasons(data);
+      setSeasons(await seasonsApi.getAll());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load seasons');
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    void loadSeasons();
+  }, [loadSeasons]);
+
+  const closeForm = () => {
+    setShowForm(false);
+    setFormData(EMPTY_FORM);
+    setFormError(null);
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
     setError(null);
     setSuccess(null);
+    setFormError(null);
 
     if (!formData.name || !formData.startDate) {
-      setError('Season name and start date are required');
+      setFormError(t('adminContent.seasons.required', 'Season name and start date are required'));
       return;
     }
 
+    setSaving(true);
     try {
       await seasonsApi.create({
         name: formData.name,
         startDate: new Date(formData.startDate).toISOString(),
         endDate: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
       });
-
-      setSuccess('Season created successfully!');
-      setFormData({ name: '', startDate: '', endDate: '' });
-      setShowForm(false);
-      loadSeasons();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create season');
-    }
-  };
-
-  const handleEndSeason = async (seasonId: string) => {
-    if (!confirm('Are you sure you want to end this season? This will mark it as completed.')) {
-      return;
-    }
-
-    try {
-      setError(null);
-      await seasonsApi.update(seasonId, { status: 'completed' });
-      setSuccess('Season ended successfully!');
-      loadSeasons();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to end season');
-    }
-  };
-
-  const handleDelete = async (seasonId: string, seasonName: string) => {
-    if (!confirm(`Are you sure you want to delete "${seasonName}"? This will also delete all standings for this season. This action cannot be undone.`)) {
-      return;
-    }
-
-    setDeleting(seasonId);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      await seasonsApi.delete(seasonId);
-      setSuccess('Season deleted successfully!');
+      setSuccess(t('adminContent.seasons.created', 'Season created successfully!'));
+      closeForm();
       await loadSeasons();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete season');
+      setFormError(err instanceof Error ? err.message : t('adminContent.seasons.createFailed', 'Failed to create season'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEndSeason = async (season: Season) => {
+    const confirmed = await confirm({
+      title: t('adminContent.seasons.endTitle', 'End {{name}}?', { name: season.name }),
+      description: t('adminContent.seasons.endText', 'This marks the season as completed.'),
+      confirmLabel: t('adminContent.seasons.end', 'End Season'),
+    });
+    if (!confirmed) return;
+
+    setError(null);
+    setSuccess(null);
+    try {
+      await seasonsApi.update(season.seasonId, { status: 'completed' });
+      setSuccess(t('adminContent.seasons.ended', 'Season ended successfully!'));
+      await loadSeasons();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('adminContent.seasons.endFailed', 'Failed to end season'));
+    }
+  };
+
+  const handleDelete = async (season: Season) => {
+    const confirmed = await confirm({
+      title: t('adminContent.seasons.deleteTitle', 'Delete {{name}}?', { name: season.name }),
+      description: t('adminContent.seasons.deleteText', 'This also deletes all standings for this season. This cannot be undone.'),
+      confirmLabel: t('common.delete', 'Delete'),
+    });
+    if (!confirmed) return;
+
+    setDeleting(season.seasonId);
+    setError(null);
+    setSuccess(null);
+    try {
+      await seasonsApi.delete(season.seasonId);
+      setSuccess(t('adminContent.seasons.deleted', 'Season deleted successfully!'));
+      await loadSeasons();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('adminContent.seasons.deleteFailed', 'Failed to delete season'));
     } finally {
       setDeleting(null);
     }
   };
 
-  const getActiveSeason = () => seasons.find(s => s.status === 'active');
+  const activeSeason = seasons.find((season) => season.status === 'active');
+  const title = t('adminContent.seasons.title', 'Manage Seasons');
 
   if (loading) {
-    return <div className="loading">Loading seasons...</div>;
+    return (
+      <div className="ac-page">
+        <PageHeader title={title} />
+        <Skeleton variant="table" />
+      </div>
+    );
   }
 
-  const activeSeason = getActiveSeason();
-
   return (
-    <div className="manage-seasons">
-      <div className="seasons-header">
-        <h2>Manage Seasons</h2>
-        {!activeSeason && (
-          <button onClick={() => setShowForm(!showForm)}>
-            {showForm ? 'Cancel' : 'Create New Season'}
-          </button>
+    <div className="ac-page">
+      <PageHeader
+        title={title}
+        actions={!activeSeason && (
+          <Button icon={<Plus aria-hidden="true" size={18} />} onClick={() => setShowForm(true)}>
+            {t('adminContent.seasons.createNew', 'Create New Season')}
+          </Button>
         )}
-      </div>
+      />
 
-      {error && <div className="error-message">{error}</div>}
-      {success && <div className="success-message">{success}</div>}
-
-      {showForm && (
-        <div className="season-form-container">
-          <h3>Create New Season</h3>
-          <form onSubmit={handleSubmit} className="season-form">
-            <div className="form-group">
-              <label htmlFor="name">Season Name</label>
-              <input
-                type="text"
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Season 1, Spring 2024"
-                required
-              />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="startDate">Start Date</label>
-                <input
-                  type="date"
-                  id="startDate"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="endDate">End Date (Optional)</label>
-                <input
-                  type="date"
-                  id="endDate"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <button type="submit">Create Season</button>
-          </form>
-        </div>
-      )}
+      {error && <AdminNotice tone="error">{error}</AdminNotice>}
+      {success && <AdminNotice tone="success">{success}</AdminNotice>}
 
       {activeSeason && (
-        <div className="active-season-banner">
-          <div className="active-season-info">
-            <span className="status-badge active">Active Season</span>
-            <h3>{activeSeason.name}</h3>
-            <p>Started: {new Date(activeSeason.startDate).toLocaleDateString()}</p>
+        <Card variant="raised" className="seasons-active">
+          <div className="seasons-active__text">
+            <Badge tone="live">{t('adminContent.seasons.activeSeason', 'Active Season')}</Badge>
+            <h2 className="seasons-active__name">{activeSeason.name}</h2>
+            <p className="ac-section__text">
+              {t('adminContent.seasons.started', 'Started {{date}}', { date: formatDate(activeSeason.startDate) })}
+            </p>
           </div>
-          <button className="end-season-btn" onClick={() => handleEndSeason(activeSeason.seasonId)}>
-            End Season
-          </button>
-        </div>
+          <Button variant="danger" onClick={() => handleEndSeason(activeSeason)}>
+            {t('adminContent.seasons.end', 'End Season')}
+          </Button>
+        </Card>
       )}
 
-      <div className="seasons-list">
-        <h3>All Seasons</h3>
-        {seasons.length === 0 ? (
-          <p className="empty-state">No seasons have been created yet.</p>
-        ) : (
-          <div className="seasons-grid">
-            {seasons.map((season) => (
-              <div key={season.seasonId} className={`season-card ${season.status === 'active' ? 'active' : ''}`}>
-                <div className="season-card-header">
-                  <h4>{season.name}</h4>
-                  <span className={`status-badge ${season.status}`}>
-                    {season.status === 'active' ? 'Active' : 'Completed'}
-                  </span>
-                </div>
-                <div className="season-dates">
-                  <p><strong>Start:</strong> {new Date(season.startDate).toLocaleDateString()}</p>
-                  {season.endDate && (
-                    <p><strong>End:</strong> {new Date(season.endDate).toLocaleDateString()}</p>
-                  )}
-                </div>
-                <div className="season-actions">
-                  {season.status === 'active' && (
-                    <button className="end-season-btn small" onClick={() => handleEndSeason(season.seasonId)}>
-                      End Season
-                    </button>
-                  )}
-                  <button
-                    className="delete-season-btn small"
-                    onClick={() => handleDelete(season.seasonId, season.name)}
-                    disabled={deleting === season.seasonId}
+      <section className="ac-section">
+        <h2 className="ac-section__title">{t('adminContent.seasons.all', 'All Seasons')}</h2>
+        <DataTable
+          caption={t('adminContent.seasons.all', 'All Seasons')}
+          density="dense"
+          rows={seasons}
+          rowKey={(season) => season.seasonId}
+          empty={(
+            <EmptyState
+              icon={<CalendarRange aria-hidden="true" size={32} />}
+              title={t('adminContent.seasons.emptyTitle', 'No seasons yet')}
+              description={t('adminContent.seasons.emptyText', 'Create a season to start tracking season standings.')}
+            />
+          )}
+          columns={[
+            {
+              key: 'name',
+              header: t('adminContent.seasons.name', 'Season Name'),
+              render: (season) => <span className="ac-cell__title">{season.name}</span>,
+              sortValue: (season) => season.name,
+            },
+            {
+              key: 'status',
+              header: t('adminContent.status', 'Status'),
+              render: (season) => (
+                <Badge tone={season.status === 'active' ? 'win' : 'neutral'}>
+                  {season.status === 'active' ? t('common.active', 'Active') : t('common.completed', 'Completed')}
+                </Badge>
+              ),
+            },
+            {
+              key: 'start',
+              header: t('adminContent.seasons.startDate', 'Start Date'),
+              render: (season) => formatDate(season.startDate),
+              sortValue: (season) => season.startDate,
+            },
+            {
+              key: 'end',
+              header: t('adminContent.seasons.endDate', 'End Date'),
+              render: (season) => formatDate(season.endDate),
+            },
+            {
+              key: 'actions',
+              header: t('common.actions', 'Actions'),
+              align: 'end',
+              render: (season) => (
+                <div className="ac-actions ac-actions--end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    loading={deleting === season.seasonId}
+                    onClick={() => handleDelete(season)}
                   >
-                    {deleting === season.seasonId ? 'Deleting...' : 'Delete'}
-                  </button>
+                    {t('common.delete', 'Delete')}
+                  </Button>
                 </div>
-              </div>
-            ))}
+              ),
+            },
+          ]}
+        />
+      </section>
+
+      <AdminFormModal
+        open={showForm}
+        onClose={closeForm}
+        title={t('adminContent.seasons.createNew', 'Create New Season')}
+        submitLabel={t('adminContent.seasons.create', 'Create Season')}
+        onSubmit={handleSubmit}
+        busy={saving}
+        error={formError}
+      >
+        <div className="ac-field">
+          <label className="ac-field__label" htmlFor="season-name">{t('adminContent.seasons.name', 'Season Name')}</label>
+          <input
+            type="text"
+            id="season-name"
+            value={formData.name}
+            onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+            placeholder={t('adminContent.seasons.namePlaceholder', 'e.g., Season 1, Spring 2024')}
+            required
+          />
+        </div>
+        <div className="ac-form__row">
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="season-start">{t('adminContent.seasons.startDate', 'Start Date')}</label>
+            <input
+              type="date"
+              id="season-start"
+              value={formData.startDate}
+              onChange={(event) => setFormData({ ...formData, startDate: event.target.value })}
+              required
+            />
           </div>
-        )}
-      </div>
+          <div className="ac-field">
+            <label className="ac-field__label" htmlFor="season-end">{t('adminContent.seasons.endDateOptional', 'End Date (Optional)')}</label>
+            <input
+              type="date"
+              id="season-end"
+              value={formData.endDate}
+              onChange={(event) => setFormData({ ...formData, endDate: event.target.value })}
+            />
+          </div>
+        </div>
+      </AdminFormModal>
+
+      {confirmDialog}
     </div>
   );
 }
