@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { statisticsApi } from '../../services/api';
-import type { RecordEntry } from '../../types/statistics';
+import Card from '../ui/Card';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Skeleton from '../ui/Skeleton';
+import Tabs from '../ui/Tabs';
+import { useStatsResource } from './useStatsResource';
+import './stats-common.css';
 import './RecordBook.css';
 
 type RecordCategory = 'overall' | 'championships' | 'streaks' | 'matchTypes';
@@ -10,36 +15,9 @@ type RecordCategory = 'overall' | 'championships' | 'streaks' | 'matchTypes';
 function RecordBook() {
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<RecordCategory>('overall');
-  const [records, setRecords] = useState<Record<string, RecordEntry[]>>({});
-  const [activeThreats, setActiveThreats] = useState<{
-    recordName: string;
-    currentHolder: string;
-    currentValue: number | string;
-    threatPlayer: string;
-    threatValue: number | string;
-    gapDescription: string;
-  }[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const abortController = new AbortController();
-    const fetchRecords = async () => {
-      setLoading(true);
-      try {
-        const result = await statisticsApi.getRecords(abortController.signal);
-        setRecords(result.records);
-        setActiveThreats(result.activeThreats);
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name !== 'AbortError') {
-          console.error('Failed to load records', err);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRecords();
-    return () => abortController.abort();
-  }, []);
+  const loadRecords = useCallback((signal: AbortSignal) => statisticsApi.getRecords(signal), []);
+  const { data, loading, failed, reload } = useStatsResource(loadRecords);
 
   const categories: { key: RecordCategory; label: string }[] = [
     { key: 'overall', label: t('statistics.recordBook.categories.overall') },
@@ -48,91 +26,83 @@ function RecordBook() {
     { key: 'matchTypes', label: t('statistics.recordBook.categories.matchTypes') },
   ];
 
-  const currentRecords = records[activeCategory] || [];
+  const title = t('statistics.recordBook.title');
+  const currentRecords = data?.records[activeCategory] ?? [];
+  const activeThreats = data?.activeThreats ?? [];
+
+  const header = <PageHeader eyebrow={t('nav.statistics')} title={title} />;
 
   if (loading) {
     return (
-      <div className="record-book">
-        <h2>{t('statistics.recordBook.title')}</h2>
-        <p>{t('common.loading', 'Loading...')}</p>
+      <div className="stats-page">
+        {header}
+        <Skeleton variant="cards" count={4} />
+      </div>
+    );
+  }
+
+  if (failed) {
+    return (
+      <div className="stats-page">
+        {header}
+        <EmptyState title={t('statistics.loadFailed')} actionLabel={t('common.retry')} onAction={reload} />
       </div>
     );
   }
 
   return (
-    <div className="record-book">
-      <div className="rb-header">
-        <h2>{t('statistics.recordBook.title')}</h2>
-        <div className="rb-nav-links">
-          <Link to="/stats">{t('statistics.nav.playerStats')}</Link>
-          <Link to="/stats/leaderboards">{t('statistics.nav.leaderboards')}</Link>
-          <Link to="/stats/achievements">{t('statistics.nav.achievements')}</Link>
+    <div className="stats-page">
+      {header}
+
+      <Tabs
+        label={title}
+        value={activeCategory}
+        onValueChange={(value) => setActiveCategory(value as RecordCategory)}
+        items={categories.map((category) => ({ value: category.key, label: category.label }))}
+      />
+
+      {currentRecords.length === 0 ? (
+        <EmptyState title={title} description={t('statistics.recordBook.noRecords')} />
+      ) : (
+        <div className="rb-records">
+          {currentRecords.map((record) => (
+            <Card key={record.recordName} className="rb-record-card">
+              <h2 className="rb-record-name">{record.recordName}</h2>
+              <p className="rb-record-value">{record.value}</p>
+              <p className="rb-record-holder">
+                {record.holderName} <span className="rb-holder-wrestler">({record.wrestlerName})</span>
+              </p>
+              <p className="rb-record-desc">{record.description}</p>
+            </Card>
+          ))}
         </div>
-      </div>
+      )}
 
-      {/* Category Tabs */}
-      <div className="rb-tabs">
-        {categories.map((cat) => (
-          <button
-            key={cat.key}
-            className={`rb-tab ${activeCategory === cat.key ? 'rb-tab-active' : ''}`}
-            onClick={() => setActiveCategory(cat.key)}
-          >
-            {cat.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Record Cards */}
-      <div className="rb-records">
-        {currentRecords.map((record) => (
-          <div key={record.recordName} className="rb-record-card">
-            <div className="rb-record-header">
-              <h3 className="rb-record-name">{record.recordName}</h3>
-              <span className="rb-record-value">{record.value}</span>
-            </div>
-            <div className="rb-record-holder">
-              <span className="rb-holder-name">{record.holderName}</span>
-              <span className="rb-holder-wrestler">({record.wrestlerName})</span>
-            </div>
-            <p className="rb-record-desc">{record.description}</p>
-            <div className="rb-record-date">
-              {t('statistics.recordBook.setOn')} {record.date}
-            </div>
-          </div>
-        ))}
-        {currentRecords.length === 0 && (
-          <p>{t('statistics.recordBook.noRecords', 'No records available yet.')}</p>
-        )}
-      </div>
-
-      {/* Active Threats */}
       {activeThreats.length > 0 && (
-        <div className="rb-threats-section">
-          <h3>{t('statistics.recordBook.activeThreats')}</h3>
-          <p className="rb-threats-desc">{t('statistics.recordBook.activeThreatsDesc')}</p>
-          <div className="rb-threats-list">
+        <section className="stats-section">
+          <h2 className="stats-section__title">{t('statistics.recordBook.activeThreats')}</h2>
+          <p className="stats-section__note">{t('statistics.recordBook.activeThreatsDesc')}</p>
+          <ul className="stats-rows">
             {activeThreats.map((threat) => (
-              <div key={threat.recordName} className="rb-threat-card">
-                <div className="rb-threat-record">{threat.recordName}</div>
-                <div className="rb-threat-details">
-                  <div className="rb-threat-current">
-                    <span className="rb-threat-label">{t('statistics.recordBook.currentHolder')}</span>
-                    <span className="rb-threat-holder">{threat.currentHolder}</span>
-                    <span className="rb-threat-value">{threat.currentValue}</span>
-                  </div>
-                  <div className="rb-threat-arrow">vs</div>
-                  <div className="rb-threat-challenger">
-                    <span className="rb-threat-label">{t('statistics.recordBook.challenger')}</span>
-                    <span className="rb-threat-holder">{threat.threatPlayer}</span>
-                    <span className="rb-threat-value">{threat.threatValue}</span>
-                  </div>
+              <li key={threat.recordName} className="rb-threat">
+                <div className="stats-row__main">
+                  <span className="stats-row__title">{threat.recordName}</span>
+                  <span className="stats-row__detail">{threat.gapDescription}</span>
                 </div>
-                <div className="rb-threat-gap">{threat.gapDescription}</div>
-              </div>
+                <dl className="rb-threat-sides">
+                  <div>
+                    <dt>{t('statistics.recordBook.currentHolder')}</dt>
+                    <dd>{threat.currentHolder} <strong>{threat.currentValue}</strong></dd>
+                  </div>
+                  <div>
+                    <dt>{t('statistics.recordBook.challenger')}</dt>
+                    <dd>{threat.threatPlayer} <strong>{threat.threatValue}</strong></dd>
+                  </div>
+                </dl>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </section>
       )}
     </div>
   );

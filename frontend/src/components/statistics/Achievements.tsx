@@ -1,74 +1,43 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { statisticsApi } from '../../services/api';
-import type { StatsPlayer } from '../../services/api';
-import type { Achievement } from '../../types/statistics';
+import Badge from '../ui/Badge';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Select from '../ui/Select';
 import Skeleton from '../ui/Skeleton';
+import Tabs from '../ui/Tabs';
+import { useStatsResource } from './useStatsResource';
+import './stats-common.css';
 import './Achievements.css';
 
 type FilterType = 'all' | 'milestone' | 'record' | 'special';
 
 function Achievements() {
   const { t } = useTranslation();
-  const [players, setPlayers] = useState<StatsPlayer[]>([]);
-  const [selectedPlayerId, setSelectedPlayerId] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-  const [allAchievementDefs, setAllAchievementDefs] = useState<Omit<Achievement, 'playerId' | 'earnedAt'>[]>([]);
-  const [playerAchievements, setPlayerAchievements] = useState<Achievement[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  // Load player list and achievement definitions on mount
-  useEffect(() => {
-    const abortController = new AbortController();
-    const fetchInitial = async () => {
-      try {
-        const result = await statisticsApi.getAchievements(undefined, abortController.signal);
-        setPlayers(result.players);
-        setAllAchievementDefs(result.allAchievements);
-        if (result.players.length > 0 && result.players[0]) {
-          setSelectedPlayerId(result.players[0].playerId);
-        }
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name !== 'AbortError') {
-          console.error('Failed to load achievements', err);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchInitial();
-    return () => abortController.abort();
-  }, []);
+  const loadCatalog = useCallback((signal: AbortSignal) => statisticsApi.getAchievements(undefined, signal), []);
+  const catalog = useStatsResource(loadCatalog);
+  const players = catalog.data?.players ?? [];
 
-  // Load achievements for selected player
-  useEffect(() => {
-    if (!selectedPlayerId) return;
-    const abortController = new AbortController();
-    const fetchPlayerAchievements = async () => {
-      try {
-        const result = await statisticsApi.getAchievements(selectedPlayerId, abortController.signal);
-        setPlayerAchievements(result.achievements || []);
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name !== 'AbortError') {
-          console.error('Failed to load player achievements', err);
-        }
-      }
-    };
-    fetchPlayerAchievements();
-    return () => abortController.abort();
+  const requestedPlayerId = searchParams.get('player') ?? '';
+  const selectedPlayerId = players.some((player) => player.playerId === requestedPlayerId)
+    ? requestedPlayerId
+    : players[0]?.playerId ?? '';
+
+  const loadEarned = useCallback(async (signal: AbortSignal) => {
+    if (!selectedPlayerId) return [];
+    return (await statisticsApi.getAchievements(selectedPlayerId, signal)).achievements ?? [];
   }, [selectedPlayerId]);
+  const earned = useStatsResource(loadEarned);
 
   const earnedIds = useMemo(
-    () => new Set(playerAchievements.map((a) => a.achievementId)),
-    [playerAchievements]
+    () => new Set((earned.data ?? []).map((achievement) => achievement.achievementId)),
+    [earned.data],
   );
-
-  const filteredAchievements = useMemo(() => {
-    return allAchievementDefs.filter(
-      (a) => activeFilter === 'all' || a.achievementType === activeFilter
-    );
-  }, [allAchievementDefs, activeFilter]);
 
   const filters: { key: FilterType; label: string }[] = [
     { key: 'all', label: t('statistics.achievements.filters.all') },
@@ -77,117 +46,82 @@ function Achievements() {
     { key: 'special', label: t('statistics.achievements.filters.special') },
   ];
 
-  const player = players.find((p) => p.playerId === selectedPlayerId);
+  const title = t('statistics.achievements.title');
+  const shownAchievements = (catalog.data?.allAchievements ?? []).filter(
+    (achievement) => activeFilter === 'all' || achievement.achievementType === activeFilter,
+  );
+  const earnedCount = shownAchievements.filter((achievement) => earnedIds.has(achievement.achievementId)).length;
 
-  const earnedCount = filteredAchievements.filter((a) => earnedIds.has(a.achievementId)).length;
-  const totalCount = filteredAchievements.length;
-
-  if (loading) {
+  const renderBody = () => {
+    if (catalog.loading) return <Skeleton variant="block" count={4} />;
+    if (catalog.failed) {
+      return <EmptyState title={t('statistics.loadFailed')} actionLabel={t('common.retry')} onAction={catalog.reload} />;
+    }
+    if (players.length === 0) {
+      return <EmptyState title={title} description={t('statistics.achievements.noPlayers')} />;
+    }
     return (
-      <div className="achievements-page">
-        <h2>{t('statistics.achievements.title')}</h2>
-        <Skeleton variant="block" count={4} />
-      </div>
+      <>
+        <Tabs
+          label={title}
+          value={activeFilter}
+          onValueChange={(value) => setActiveFilter(value as FilterType)}
+          items={filters.map((filter) => ({ value: filter.key, label: filter.label }))}
+        />
+
+        {earned.failed ? (
+          <EmptyState title={t('statistics.loadFailed')} actionLabel={t('common.retry')} onAction={earned.reload} />
+        ) : earned.loading ? (
+          <Skeleton variant="block" count={4} />
+        ) : shownAchievements.length === 0 ? (
+          <EmptyState title={title} description={t('statistics.achievements.noAchievements')} />
+        ) : (
+          <>
+            <div className="ach-summary">
+              <span className="ach-summary-count">
+                {earnedCount}/{shownAchievements.length} {t('statistics.achievements.earned')}
+              </span>
+              <progress className="stats-bar" value={earnedCount} max={Math.max(shownAchievements.length, 1)} aria-hidden="true" />
+            </div>
+
+            <ul className="ach-grid">
+              {shownAchievements.map((achievement) => {
+                const isEarned = earnedIds.has(achievement.achievementId);
+                return (
+                  <li key={achievement.achievementId} className={`ach-card ${isEarned ? 'ach-card-earned' : 'ach-card-locked'}`}>
+                    <span className="ach-icon" aria-hidden="true">{achievement.icon}</span>
+                    <div className="stats-row__main">
+                      <span className="stats-row__title">{achievement.achievementName}</span>
+                      <span className="stats-row__detail">{achievement.description}</span>
+                    </div>
+                    {isEarned
+                      ? <Badge tone="win">{t('statistics.achievements.earned')}</Badge>
+                      : <Badge tone="neutral">{t('statistics.achievements.locked')}</Badge>}
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </>
     );
-  }
+  };
 
   return (
-    <div className="achievements-page">
-      <div className="ach-header">
-        <h2>{t('statistics.achievements.title')}</h2>
-        <div className="ach-nav-links">
-          <Link to="/stats">{t('statistics.nav.playerStats')}</Link>
-          <Link to="/stats/records">{t('statistics.nav.records')}</Link>
-          <Link to="/stats/leaderboards">{t('statistics.nav.leaderboards')}</Link>
-        </div>
-      </div>
-
-      {/* Player Selector */}
-      <div className="ach-player-selector">
-        <label htmlFor="ach-player-select">{t('statistics.playerStats.selectPlayer')}</label>
-        <select
-          id="ach-player-select"
-          value={selectedPlayerId}
-          onChange={(e) => setSelectedPlayerId(e.target.value)}
-        >
-          {players.map((p) => (
-            <option key={p.playerId} value={p.playerId}>
-              {p.name} ({p.wrestlerName})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Player Summary */}
-      <div className="ach-summary">
-        <span className="ach-summary-name">
-          {player?.name} ({player?.wrestlerName})
-        </span>
-        <span className="ach-summary-count">
-          {earnedCount}/{totalCount} {t('statistics.achievements.earned')}
-        </span>
-        <div className="ach-progress-bar">
-          <div
-            className="ach-progress-fill"
-            style={{ width: `${totalCount > 0 ? (earnedCount / totalCount) * 100 : 0}%` }}
+    <div className="stats-page">
+      <PageHeader
+        eyebrow={t('nav.statistics')}
+        title={title}
+        actions={players.length > 0 ? (
+          <Select
+            label={t('statistics.playerStats.selectPlayer')}
+            value={selectedPlayerId}
+            onValueChange={(player) => setSearchParams({ player }, { replace: true })}
+            options={players.map((player) => ({ value: player.playerId, label: `${player.name} (${player.wrestlerName})` }))}
           />
-        </div>
-      </div>
-
-      {/* Category Filter Tabs */}
-      <div className="ach-filters">
-        {filters.map((f) => (
-          <button
-            key={f.key}
-            className={`ach-filter-btn ${activeFilter === f.key ? 'ach-filter-active' : ''}`}
-            onClick={() => setActiveFilter(f.key)}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Achievement Grid */}
-      <div className="ach-grid">
-        {filteredAchievements.map((achievement) => {
-          const earned = earnedIds.has(achievement.achievementId);
-          const earnedAch = earned
-            ? playerAchievements.find((a) => a.achievementId === achievement.achievementId)
-            : null;
-
-          return (
-            <div
-              key={achievement.achievementId}
-              className={`ach-card ${earned ? 'ach-card-earned' : 'ach-card-locked'}`}
-            >
-              <div className={`ach-icon ${earned ? '' : 'ach-icon-locked'}`}>
-                {achievement.icon}
-              </div>
-              <div className="ach-info">
-                <span className="ach-name">{achievement.achievementName}</span>
-                <span className="ach-desc">{achievement.description}</span>
-                <span className="ach-type-badge" data-type={achievement.achievementType}>
-                  {achievement.achievementType}
-                </span>
-              </div>
-              {earned && earnedAch && (
-                <div className="ach-earned-date">
-                  {t('statistics.achievements.earnedOn')} {earnedAch.earnedAt}
-                </div>
-              )}
-              {!earned && (
-                <div className="ach-locked-label">{t('statistics.achievements.locked')}</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {filteredAchievements.length === 0 && (
-        <div className="ach-empty">
-          {t('statistics.achievements.noAchievements')}
-        </div>
-      )}
+        ) : undefined}
+      />
+      {renderBody()}
     </div>
   );
 }

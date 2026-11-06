@@ -1,114 +1,68 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { statisticsApi, playersApi } from '../../services/api';
-import type { RatedMatchSummary } from '../../services/api';
-import type { Player } from '../../types';
-import Skeleton from '../ui/Skeleton';
+import Badge from '../ui/Badge';
 import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Skeleton from '../ui/Skeleton';
 import { StarRating } from '../matches/StarRating';
+import { formatCalendarDate } from '../../utils/dateUtils';
+import { useStatsResource } from './useStatsResource';
+import './stats-common.css';
 import './BestMatches.css';
 
 export default function BestMatches() {
   const { t } = useTranslation();
-  const [matches, setMatches] = useState<RatedMatchSummary[]>([]);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const load = async () => {
-      try {
-        setLoading(true);
-        const [ratingsRes, playersRes] = await Promise.all([
-          statisticsApi.getMatchRatings(controller.signal),
-          playersApi.getAll(controller.signal),
-        ]);
-        setMatches(ratingsRes.highestRatedMatches);
-        setPlayers(playersRes);
-        setError(null);
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          setError(err instanceof Error ? err.message : 'Failed to load');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-    return () => controller.abort();
+  const loadMatches = useCallback(async (signal: AbortSignal) => {
+    const [ratings, directory] = await Promise.all([
+      statisticsApi.getMatchRatings(signal),
+      playersApi.getDirectory(signal),
+    ]);
+    return { matches: ratings.highestRatedMatches, directory };
   }, []);
+  const { data, loading, failed, reload } = useStatsResource(loadMatches);
 
-  const getPlayerName = (playerId: string): string => {
-    const p = players.find((x) => x.playerId === playerId);
-    return p ? p.currentWrestler : playerId;
+  const title = t('statistics.bestMatches.title');
+  const matches = data?.matches ?? [];
+
+  const participantName = (playerId: string): string => {
+    const player = data?.directory.find((entry) => entry.playerId === playerId);
+    return player?.currentWrestler ?? player?.name ?? t('statistics.bestMatches.unknownPlayer');
   };
 
-  if (loading) {
+  const renderBody = () => {
+    if (loading) return <Skeleton variant="block" count={5} />;
+    if (failed) {
+      return <EmptyState title={t('statistics.loadFailed')} actionLabel={t('common.retry')} onAction={reload} />;
+    }
+    if (matches.length === 0) {
+      return <EmptyState title={title} description={t('statistics.bestMatches.noData')} />;
+    }
     return (
-      <div className="best-matches">
-        <h2>{t('statistics.bestMatches.title')}</h2>
-        <Skeleton variant="block" count={5} />
-      </div>
+      <ol className="stats-rows">
+        {matches.map((match) => (
+          <li key={match.matchId} className="best-match">
+            <div className="stats-row__main">
+              <span className="stats-row__title">
+                {match.participants.map(participantName).join(` ${t('common.vs')} `)}
+              </span>
+              <span className="stats-row__detail">{formatCalendarDate(match.date)}</span>
+            </div>
+            <div className="best-match-awards">
+              {match.matchOfTheNight && <Badge tone="pink">{t('match.matchOfTheNightBadge')}</Badge>}
+              <StarRating starRating={match.starRating} ratingsCount={match.ratingsCount ?? 1} size="sm" />
+            </div>
+          </li>
+        ))}
+      </ol>
     );
-  }
-
-  if (error) {
-    return (
-      <div className="best-matches">
-        <h2>{t('statistics.bestMatches.title')}</h2>
-        <p className="best-matches-error">{error}</p>
-      </div>
-    );
-  }
+  };
 
   return (
-    <div className="best-matches">
-      <div className="best-matches-header">
-        <h2>{t('statistics.bestMatches.title')}</h2>
-        <div className="best-matches-nav">
-          <Link to="/stats">{t('statistics.nav.playerStats')}</Link>
-          <Link to="/stats/head-to-head">{t('statistics.nav.headToHead')}</Link>
-          <Link to="/stats/leaderboards">{t('statistics.nav.leaderboards')}</Link>
-          <Link to="/stats/records">{t('statistics.nav.records')}</Link>
-          <Link to="/stats/achievements">{t('statistics.nav.achievements')}</Link>
-        </div>
-      </div>
-
-      {matches.length === 0 ? (
-        <EmptyState
-          title={t('statistics.bestMatches.title')}
-          description={t('statistics.bestMatches.noData')}
-        />
-      ) : (
-        <ul className="best-matches-list">
-          {matches.map((m) => {
-            return (
-              <li key={m.matchId} className="best-match-item">
-                <span className="best-match-awards">
-                  <span className="best-match-stars">
-                    <StarRating
-                      starRating={m.starRating}
-                      ratingsCount={m.ratingsCount ?? 1}
-                      size="sm"
-                    />
-                  </span>
-                  {m.matchOfTheNight && (
-                    <span className="best-match-motn">{t('match.matchOfTheNightBadge')}</span>
-                  )}
-                </span>
-                <span className="best-match-date">
-                  {new Date(m.date).toLocaleDateString()}
-                </span>
-                <span className="best-match-participants">
-                  {m.participants.map((pid) => getPlayerName(pid)).join(' vs ')}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+    <div className="stats-page">
+      <PageHeader eyebrow={t('nav.statistics')} title={title} />
+      {renderBody()}
     </div>
   );
 }
