@@ -1,0 +1,48 @@
+{
+  "standings": {
+    "record": "Record",
+    "emptyTitle": "No standings yet",
+    "loadFailed": "Could not load the standings.",
+    "noMatchesTitle": "No wrestlers match these filters",
+    "noMatchesHint": "Try a different division or alignment.",
+    "topThree": "Top three",
+    "restOfTable": "The chase pack",
+    "ranksRange": "Ranks {{from}} - {{to}}",
+    "alignment": {
+      "label": "Alignment",
+      "all": "All alignments",
+      "face": "Face",
+      "neutral": "Neutral",
+      "heel": "Heel"
+    }
+  },
+  "championships": {
+    "emptyTitle": "No titles yet",
+    "loadFailed": "Could not load the championships.",
+    "historyLoadFailed": "Could not load this title's history.",
+    "noneInDivisionTitle": "No titles here",
+    "noneInDivision": "No championships belong to this division."
+  },
+  "contenders": {
+    "emptyTitle": "No rankings yet",
+    "selectChampionship": "Championship",
+    "openDivision": "Open",
+    "unknownDivision": "Unknown Division",
+    "loadFailed": "Could not load the championships.",
+    "rankingsLoadFailed": "Could not load the rankings for this title.",
+    "movedUp": "Up {{places}}",
+    "movedDown": "Down {{places}}",
+    "noMovement": "No change",
+    "myStatus": {
+      "comingSoon": "This feature will be available once player accounts are set up.",
+      "requiresAuth": "Player authentication is required to view your personal contender status.",
+      "viewRankings": "View Overall Rankings"
+    }
+  },
+  "seasonAwards": {
+    "loadFailed": "Could not load the awards.",
+    "seasonsLoadFailed": "Could not load the seasons.",
+    "noSeasons": "No seasons have been created yet.",
+    "emptyTitle": "No awards yet"
+  }
+}

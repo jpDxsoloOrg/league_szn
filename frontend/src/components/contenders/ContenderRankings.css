@@ -1,262 +1,66 @@
 .contender-rankings {
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
+  min-width: 0;
 }
 
-/* Header */
-.rankings-header {
-  margin-bottom: 2rem;
+.contender-rankings__select {
+  max-width: 100%;
 }
 
-.rankings-header h2 {
-  margin: 0 0 0.5rem 0;
-  font-size: 2rem;
-  color: #fff;
-}
-
-.rankings-header .subtitle {
-  margin: 0;
-  font-size: 1rem;
-  color: #888;
-}
-
-/* Championship Selector */
-.championship-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  margin-bottom: 2rem;
-}
-
-.championship-selector .division-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.championship-selector .division-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #d4af37;
-  padding-bottom: 0.25rem;
-  border-bottom: 1px solid #333;
-}
-
-.championship-selector .division-buttons {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 0.5rem;
-}
-
-.championship-selector .tab {
-  padding: 0.75rem 1rem;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 6px;
-  color: #aaa;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: center;
-}
-
-.championship-selector .tab:hover {
-  color: #fff;
-  border-color: #555;
-  background-color: #222;
-}
-
-.championship-selector .tab.active {
-  color: #d4af37;
-  border-color: #d4af37;
-  background-color: rgba(212, 175, 55, 0.08);
-  box-shadow: 0 0 12px rgba(212, 175, 55, 0.15);
-}
-
-/* Current Champion Section */
-.current-champion-section {
-  margin-bottom: 2rem;
-}
-
-.current-champion-section h3 {
-  margin: 0 0 1rem 0;
-  font-size: 1.25rem;
-  color: #d4af37;
-}
-
-.champion-card {
+.contender-champion {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), transparent);
-  border: 2px solid #d4af37;
-  border-radius: 8px;
-  box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
-}
-
-.champion-badge {
-  flex-shrink: 0;
-}
-
-.trophy-icon {
-  font-size: 3rem;
-  filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.5));
-}
-
-.champion-image {
-  flex-shrink: 0;
-  width: 80px;
-  height: 80px;
-}
-
-.champion-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 3px solid #d4af37;
-}
-
-.champion-image .placeholder-image {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #333;
-  border-radius: 8px;
-  border: 3px solid #d4af37;
-  font-size: 2rem;
-  font-weight: bold;
-  color: #d4af37;
-}
-
-.champion-info {
-  flex: 1;
-}
-
-.champion-wrestler-name {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.5rem;
-  color: #fff;
-}
-
-.champion-player-name {
-  margin: 0;
-  font-size: 1rem;
-  color: #888;
-}
-
-/* Contenders Section */
-.contenders-section {
-  margin-bottom: 2rem;
-}
-
-.contenders-section h3 {
-  margin: 0 0 1rem 0;
-  font-size: 1.25rem;
-  color: #d4af37;
-}
-
-.contenders-list {
-  display: flex;
-  flex-direction: column;
   gap: 1rem;
+  margin-bottom: 2rem;
 }
 
-/* Empty State */
-.empty-state {
-  padding: 3rem 2rem;
-  text-align: center;
-  background-color: #1a1a1a;
-  border: 2px dashed #333;
-  border-radius: 8px;
+.contender-champion__text {
+  min-width: 0;
 }
 
-.empty-state p {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.125rem;
-  color: #bbb;
-}
-
-.empty-state .hint {
-  font-size: 0.875rem;
-  color: #666;
-}
-
-/* Footer */
-.rankings-footer {
-  padding: 1.5rem;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 8px;
-}
-
-.last-calculated {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.875rem;
-  color: #888;
-}
-
-.config-info {
+.contender-champion__label {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
   align-items: center;
+  gap: 0.375rem;
+  color: var(--rim-world);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.contender-champion__wrestler {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.contender-champion__player {
+  color: var(--color-text-muted);
+}
+
+.contender-rankings__heading {
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+}
+
+.contender-rankings__list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contender-rankings__footer {
+  margin-top: 1.25rem;
+  color: var(--color-text-muted);
   font-size: 0.875rem;
-  color: #666;
 }
 
-.config-info .separator {
-  color: #444;
-}
-
-/* Error Message */
-.error-message {
-  padding: 2rem;
-  text-align: center;
-  background-color: rgba(248, 113, 113, 0.1);
-  border: 1px solid #f87171;
-  border-radius: 8px;
-  color: #f87171;
-}
-
-/* Responsive */
 @media (max-width: 768px) {
-  .championship-selector .division-buttons {
-    grid-template-columns: 1fr;
-  }
-
-  .champion-card {
-    flex-wrap: wrap;
-    justify-content: center;
-    text-align: center;
-  }
-
-  .trophy-icon {
-    font-size: 2.5rem;
-  }
-
-  .champion-image {
-    width: 70px;
-    height: 70px;
-  }
-
-  .champion-wrestler-name {
-    font-size: 1.25rem;
-  }
-
-  .config-info {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .config-info .separator {
-    display: none;
+  .contender-rankings .page-header__actions,
+  .contender-rankings__select {
+    width: 100%;
   }
 }
