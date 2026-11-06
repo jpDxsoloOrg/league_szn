@@ -53,7 +53,7 @@
   line-height: 1.05;
   text-transform: uppercase;
   letter-spacing: 1px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .commentary-card-player {
@@ -77,6 +77,8 @@
   border-radius: 4px;
   border: 1px solid var(--color-hairline);
   color: var(--color-text-secondary);
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .commentary-card-alignment--face { border-color: var(--color-cyan); color: var(--color-cyan); background: var(--tint-cyan); }
@@ -111,6 +113,7 @@
   color: var(--color-text);
   font-size: 1.35rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .commentary-card-moves {
@@ -178,5 +181,21 @@
 
   .commentary-card-name {
     font-size: 1.5rem;
+  }
+}
+
+/* Beside a portrait, a name or a division gets too little width at 320. */
+@media (max-width: 360px) {
+  .commentary-card-header {
+    flex-direction: column;
+  }
+
+  .commentary-card-record,
+  .commentary-card--compact .commentary-card-record {
+    padding: 0.25rem 0.125rem;
+  }
+
+  .commentary-card-record dd {
+    font-size: 1.05rem;
   }
 }
