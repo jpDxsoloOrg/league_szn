@@ -1229,8 +1229,11 @@ resources:
     # (can't be in CloudFormation due to circular dep with shared IAM role)
     LeagueUserPool:
       Type: AWS::Cognito::UserPool
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         UserPoolName: ${self:service}-pool-v3-${self:provider.stage}
+        DeletionProtection: ACTIVE
         # Tag bumped on 2026-05-03 to force CloudFormation to re-apply the
         # full User Pool config after a destructive update-user-pool call
         # in setup-cognito.sh wiped AutoVerifiedAttributes (verification
@@ -1276,9 +1279,12 @@ resources:
             RequireSymbols: false
             RequireUppercase: true
 
-    # Cognito Groups for role-based access
+    # Cognito Groups for role-based access. Retained with the pool, because
+    # deleting a group would drop every user's membership in it.
     AdminGroup:
       Type: AWS::Cognito::UserPoolGroup
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         GroupName: Admin
         UserPoolId: !Ref LeagueUserPool
@@ -1287,6 +1293,8 @@ resources:
 
     ModeratorGroup:
       Type: AWS::Cognito::UserPoolGroup
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         GroupName: Moderator
         UserPoolId: !Ref LeagueUserPool
@@ -1295,6 +1303,8 @@ resources:
 
     WrestlerGroup:
       Type: AWS::Cognito::UserPoolGroup
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         GroupName: Wrestler
         UserPoolId: !Ref LeagueUserPool
@@ -1303,6 +1313,8 @@ resources:
 
     LeagueUserPoolClient:
       Type: AWS::Cognito::UserPoolClient
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         ClientName: ${self:service}-client-v3-${self:provider.stage}
         UserPoolId: !Ref LeagueUserPool
@@ -1320,11 +1332,19 @@ resources:
           IdToken: hours
           RefreshToken: days
 
+    # Every table is retained on stack delete or replacement, has point-in-time
+    # recovery on, and refuses DeleteTable. New tables must keep all four
+    # settings (enforced by lib/__tests__/serverlessConfig.test.ts).
     PlayersTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.PLAYERS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: playerId
             AttributeType: S
@@ -1343,9 +1363,14 @@ resources:
 
     MatchesTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.MATCHES_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: matchId
             AttributeType: S
@@ -1370,9 +1395,14 @@ resources:
 
     ChampionshipsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.CHAMPIONSHIPS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: championshipId
             AttributeType: S
@@ -1382,9 +1412,14 @@ resources:
 
     ChampionshipHistoryTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.CHAMPIONSHIP_HISTORY_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: championshipId
             AttributeType: S
@@ -1398,9 +1433,14 @@ resources:
 
     TournamentsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.TOURNAMENTS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: tournamentId
             AttributeType: S
@@ -1410,9 +1450,14 @@ resources:
 
     SeasonsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.SEASONS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: seasonId
             AttributeType: S
@@ -1422,9 +1467,14 @@ resources:
 
     SeasonStandingsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.SEASON_STANDINGS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: seasonId
             AttributeType: S
@@ -1447,9 +1497,14 @@ resources:
 
     DivisionsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.DIVISIONS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: divisionId
             AttributeType: S
@@ -1459,9 +1514,14 @@ resources:
 
     WrestlersTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.WRESTLERS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: wrestlerId
             AttributeType: S
@@ -1492,9 +1552,14 @@ resources:
 
     EventsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.EVENTS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: eventId
             AttributeType: S
@@ -1537,9 +1602,14 @@ resources:
 
     EventCheckInsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.EVENT_CHECK_INS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: eventId
             AttributeType: S
@@ -1565,9 +1635,14 @@ resources:
 
     ContenderRankingsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.CONTENDER_RANKINGS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: championshipId
             AttributeType: S
@@ -1592,9 +1667,14 @@ resources:
 
     ContenderOverridesTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.CONTENDER_OVERRIDES_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: championshipId
             AttributeType: S
@@ -1619,9 +1699,14 @@ resources:
 
     RankingHistoryTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.RANKING_HISTORY_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: playerId
             AttributeType: S
@@ -1646,9 +1731,14 @@ resources:
 
     SiteConfigTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.SITE_CONFIG_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: configKey
             AttributeType: S
@@ -1658,9 +1748,14 @@ resources:
 
     ChallengesTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.CHALLENGES_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: challengeId
             AttributeType: S
@@ -1703,9 +1798,14 @@ resources:
 
     PromosTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.PROMOS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: promoId
             AttributeType: S
@@ -1738,9 +1838,14 @@ resources:
 
     StipulationsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.STIPULATIONS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: stipulationId
             AttributeType: S
@@ -1750,9 +1855,14 @@ resources:
 
     MatchTypesTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.MATCH_TYPES_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: matchTypeId
             AttributeType: S
@@ -1762,9 +1872,14 @@ resources:
 
     SeasonAwardsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.SEASON_AWARDS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: seasonId
             AttributeType: S
@@ -1778,9 +1893,14 @@ resources:
 
     ShowsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.SHOWS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: showId
             AttributeType: S
@@ -1799,9 +1919,14 @@ resources:
 
     CompaniesTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.COMPANIES_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: companyId
             AttributeType: S
@@ -1811,9 +1936,14 @@ resources:
 
     LocationsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.LOCATIONS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: locationId
             AttributeType: S
@@ -1823,9 +1953,14 @@ resources:
 
     StablesTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.STABLES_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: stableId
             AttributeType: S
@@ -1858,9 +1993,14 @@ resources:
 
     TagTeamsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.TAG_TEAMS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: tagTeamId
             AttributeType: S
@@ -1903,9 +2043,14 @@ resources:
 
     StableInvitationsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.STABLE_INVITATIONS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: invitationId
             AttributeType: S
@@ -1942,9 +2087,14 @@ resources:
     # is enforced in the handler, not the table.
     FactionMessagesTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.FACTION_MESSAGES_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: factionId
             AttributeType: S
@@ -1962,9 +2112,14 @@ resources:
     # thread. No GSI needed — the PK already scopes by thread.
     FactionDirectMessagesTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.FACTION_DIRECT_MESSAGES_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: factionThreadKey
             AttributeType: S
@@ -2010,9 +2165,14 @@ resources:
     # Both GSIs are sparse — items lacking the index attributes are skipped.
     RivalriesTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.RIVALRIES_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: rivalryId
             AttributeType: S
@@ -2053,9 +2213,14 @@ resources:
     # `admins`) lives on each row and is enforced by handlers.
     RivalryMessagesTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.RIVALRY_MESSAGES_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: rivalryId
             AttributeType: S
@@ -2074,9 +2239,14 @@ resources:
     # `visibility` is enforced in handlers based on the caller's role.
     RivalryNotesTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.RIVALRY_NOTES_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: rivalryId
             AttributeType: S
@@ -2107,9 +2277,14 @@ resources:
     # match-of-the-night) are computed downstream in RIV-22.
     MatchRatingsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.MATCH_RATINGS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: matchId
             AttributeType: S
@@ -2123,9 +2298,14 @@ resources:
 
     VideosTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.VIDEOS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: videoId
             AttributeType: S
@@ -2148,9 +2328,14 @@ resources:
 
     AnnouncementsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.ANNOUNCEMENTS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: announcementId
             AttributeType: S
@@ -2173,9 +2358,14 @@ resources:
 
     NotificationsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.NOTIFICATIONS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: userId
             AttributeType: S
@@ -2201,9 +2391,14 @@ resources:
 
     WrestlerOverallsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.WRESTLER_OVERALLS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: playerId
             AttributeType: S
@@ -2213,9 +2408,14 @@ resources:
 
     TransferRequestsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.TRANSFER_REQUESTS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: requestId
             AttributeType: S
@@ -2242,9 +2442,14 @@ resources:
 
     StorylineRequestsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.STORYLINE_REQUESTS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: requestId
             AttributeType: S
@@ -2277,9 +2482,14 @@ resources:
 
     PresenceTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.PRESENCE_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: playerId
             AttributeType: S
@@ -2292,9 +2502,14 @@ resources:
 
     MatchmakingQueueTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.MATCHMAKING_QUEUE_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: playerId
             AttributeType: S
@@ -2307,9 +2522,14 @@ resources:
 
     MatchInvitationsTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:provider.environment.MATCH_INVITATIONS_TABLE}
         BillingMode: PAY_PER_REQUEST
+        DeletionProtectionEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         AttributeDefinitions:
           - AttributeName: invitationId
             AttributeType: S
@@ -2345,8 +2565,22 @@ resources:
 
     ImagesBucket:
       Type: AWS::S3::Bucket
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         BucketName: ${self:provider.environment.IMAGES_BUCKET}
+        VersioningConfiguration:
+          Status: Enabled
+        # Versioning keeps every overwritten or deleted object, so old
+        # versions expire after 90 days to keep storage bounded.
+        LifecycleConfiguration:
+          Rules:
+            - Id: ExpireNoncurrentVersions
+              Status: Enabled
+              NoncurrentVersionExpiration:
+                NoncurrentDays: 90
+              AbortIncompleteMultipartUpload:
+                DaysAfterInitiation: 7
         PublicAccessBlockConfiguration:
           BlockPublicAcls: false
           BlockPublicPolicy: false
