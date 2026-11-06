@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { computeHeadToHead } from '../../lib/headToHead';
+import { computeHeadToHead, pairWinnerId } from '../../lib/headToHead';
+import { matchWinners } from '../../lib/matchResult';
 import type { Match, Player, Championship, ChampionshipHistoryEntry } from '../../lib/repositories';
 import { success, badRequest, serverError } from '../../lib/response';
 import { isPlayerVisible } from '../../lib/needsWrestler';
@@ -40,7 +41,7 @@ function computeStreaks(
   let tempLossStreak = 0;
 
   for (const match of sorted) {
-    const isWin = match.winners?.includes(playerId);
+    const isWin = matchWinners(match).includes(playerId);
     const isLoss = match.losers?.includes(playerId);
 
     if (isWin) {
@@ -100,7 +101,7 @@ function computePlayerStatistics(
   let championshipLosses = 0;
 
   for (const match of completed) {
-    const isWin = match.winners?.includes(playerId);
+    const isWin = matchWinners(match).includes(playerId);
     const isLoss = match.losers?.includes(playerId);
 
     if (isWin) {
@@ -287,13 +288,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
         // Recent results (last 5). Mirrors the record above: a match neither
         // player won has no winner here, so it reads as a draw between the pair.
-        const pairWinner = (winners: string[] | undefined): string => {
-          if (winners?.includes(player1Id)) return player1Id;
-          return winners?.includes(player2Id) ? player2Id : '';
-        };
         const recentResults = h2h.matches.slice(0, 5).map((m) => ({
           matchId: m.matchId,
-          winnerId: pairWinner(m.winners),
+          winnerId: pairWinnerId(m, player1Id, player2Id) ?? '',
           date: m.date,
         }));
 
@@ -707,11 +704,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             playerRatingSums.set(pid, { sum: cur.sum + rating, count: cur.count + 1 });
           }
         }
-        const playerAverageRatings = Array.from(playerRatingSums.entries()).map(([playerId, { sum, count }]) => ({
-          playerId,
-          averageRating: Math.round((sum / count) * 10) / 10,
-          matchCount: count,
-        })).sort((a, b) => b.averageRating - a.averageRating);
+        const visiblePlayerIds = new Set(players.map((p) => p.playerId));
+        const playerAverageRatings = Array.from(playerRatingSums.entries())
+          .filter(([playerId]) => visiblePlayerIds.has(playerId))
+          .map(([playerId, { sum, count }]) => ({
+            playerId,
+            averageRating: Math.round((sum / count) * 10) / 10,
+            matchCount: count,
+          }))
+          .sort((a, b) => b.averageRating - a.averageRating);
 
         return success({
           highestRatedMatches,
@@ -907,7 +908,7 @@ function computeAchievements(
     for (const m of playerMatches) {
       if (m.losers?.includes(playerId)) {
         lossStreak++;
-      } else if (m.winners?.includes(playerId)) {
+      } else if (matchWinners(m).includes(playerId)) {
         if (lossStreak >= 4) hadComebackAfterFour = true;
         lossStreak = 0;
       } else {

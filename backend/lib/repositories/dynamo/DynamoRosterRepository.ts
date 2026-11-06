@@ -47,6 +47,7 @@ export class DynamoRosterRepository implements RosterRepository {
     tableName: TableNames.PLAYERS,
     idField: 'playerId',
     entityName: 'Player',
+    updateCondition: 'attribute_not_exists(deletedAt)',
     buildItem: (input: PlayerCreateInput, id: string, now: string): Player => ({
       playerId: id,
       name: input.name,
@@ -68,8 +69,13 @@ export class DynamoRosterRepository implements RosterRepository {
   });
 
   players: RosterRepository['players'] = {
-    findById: (id: string) => this._playersCrud.findById(id),
-    list: () => this._playersCrud.list(),
+    findById: async (id: string) => {
+      const player = await this._playersCrud.findById(id);
+      return player?.deletedAt ? null : player;
+    },
+    list: async () => (await this._playersCrud.list()).filter((player) => !player.deletedAt),
+    findByIdWithDeleted: (id: string) => this._playersCrud.findById(id),
+    listWithDeleted: () => this._playersCrud.list(),
     create: (input: PlayerCreateInput) => this._playersCrud.create(input),
     update: (id: string, patch: PlayerPatch) => this._playersCrud.update(id, patch),
     delete: (id: string) => this._playersCrud.delete(id),
@@ -83,10 +89,8 @@ export class DynamoRosterRepository implements RosterRepository {
           ':userId': userId,
         },
       });
-      if (!result.Items || result.Items.length === 0) {
-        return null;
-      }
-      return result.Items[0] as Player;
+      const items = (result.Items ?? []) as Player[];
+      return items.find((player) => !player.deletedAt) ?? null;
     },
   };
 

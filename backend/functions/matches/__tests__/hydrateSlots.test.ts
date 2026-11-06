@@ -60,13 +60,13 @@ describe('hydrateMatchSlots', () => {
     expect(hydrateMatchSlots(slots, lookup)[0].wrestlerName).toBe('Doe');
   });
 
-  it('returns "Unknown Wrestler" when neither snapshot nor player record is available', () => {
+  it('returns "Former member" when neither snapshot nor player record is available', () => {
     const slots: MatchSlot[] = [
       { slotId: 's1', position: 1, playerId: 'p-missing' },
     ];
     const out = hydrateMatchSlots(slots, new Map());
-    expect(out[0].wrestlerName).toBe('Unknown Wrestler');
-    expect(out[0].playerName).toBe('Unknown Player');
+    expect(out[0].wrestlerName).toBe('Former member');
+    expect(out[0].playerName).toBe('Former member');
   });
 
   it('leaves open (unfilled) slots untouched', () => {

@@ -89,7 +89,7 @@ describe('getPromo', () => {
     expect(data.responses[0].wrestlerName).toBe('Bianca');
   });
 
-  it('shows "Unknown" when the promo author player has been deleted', async () => {
+  it('shows "Former member" when the promo author player has been deleted', async () => {
     const promo = {
       promoId: 'p1', playerId: 'deleted-pl', promoType: 'open-mic',
       content: 'test', isHidden: false, createdAt: '2024-01-01T00:00:00Z',
@@ -104,8 +104,8 @@ describe('getPromo', () => {
 
     expect(result!.statusCode).toBe(200);
     const data = body(result);
-    expect(data.promo.playerName).toBe('Unknown');
-    expect(data.promo.wrestlerName).toBe('Unknown');
+    expect(data.promo.playerName).toBe('Former member');
+    expect(data.promo.wrestlerName).toBe('Former member');
   });
 
   it('filters hidden response promos from the responses list', async () => {

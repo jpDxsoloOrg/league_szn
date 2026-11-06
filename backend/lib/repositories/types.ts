@@ -136,6 +136,12 @@ export interface Player {
    *               cannot blank the roster before the backfill has run.
    */
   hasWrestlerRole?: boolean;
+  /**
+   * Set when the player is deleted. The row stays so history keeps the name,
+   * but it reads as missing through every repository method except the
+   * `...WithDeleted` name lookups.
+   */
+  deletedAt?: string;
   name: string;
   currentWrestler: string;
   alternateWrestler?: string;

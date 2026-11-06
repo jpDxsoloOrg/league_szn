@@ -9,21 +9,22 @@ import { toPublicPlayer } from '../../lib/publicPlayer';
  * GET /players
  *
  * Public. Returns players who have a real wrestler name. Two query modes:
- *  - `view=directory`: public name lookup covering ALL players, so historical
- *    matches can still resolve names. Fields are whitelisted; a blank or
- *    placeholder wrestler comes back as null.
- *  - `includeHidden=true`: every player, for verified staff only. Anyone else
- *    gets the public list.
+ *  - `view=directory`: public name lookup covering ALL players, deleted ones
+ *    included, so historical matches can still resolve names. Fields are
+ *    whitelisted; a blank or placeholder wrestler comes back as null.
+ *  - `includeHidden=true`: every current player, for verified staff only. Anyone
+ *    else gets the public list.
  * Account ids go only to staff and to the player themselves.
  */
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { view, includeHidden } = event.queryStringParameters || {};
-    const players = await getRepositories().roster.players.list();
+    const { roster: { players: playersRepo } } = getRepositories();
 
     if (view === 'directory') {
+      const allPlayers = await playersRepo.listWithDeleted();
       return success(
-        players.map(({ playerId, name, currentWrestler }) => ({
+        allPlayers.map(({ playerId, name, currentWrestler }) => ({
           playerId,
           name,
           currentWrestler: isNeedsWrestler(currentWrestler) ? null : currentWrestler,
@@ -31,6 +32,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       );
     }
 
+    const players = await playersRepo.list();
     const caller = await getVerifiedCaller(event);
     const listed = includeHidden === 'true' && isStaff(caller)
       ? players

@@ -33,7 +33,7 @@ vi.mock('../../../lib/repositories', () => ({
       stipulations: { list: mockStipulationsList },
     },
     roster: {
-      players: { list: mockPlayersList },
+      players: { listWithDeleted: mockPlayersList },
     },
     season: {
       seasons: { list: mockSeasonsList },
@@ -132,6 +132,24 @@ describe('getDashboard', () => {
     expect(body.recentResults).toHaveLength(1);
     // History keeps its participants even though B no longer counts.
     expect(JSON.stringify(body.recentResults[0])).toContain('B');
+  });
+
+  it('names a player with no row Former member, and keeps the dash for an empty side', async () => {
+    const recent = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    mockMatchesList.mockResolvedValue([
+      { matchId: 'm1', date: recent, status: 'completed', winners: ['gone'], losers: ['p1'], matchFormat: 'singles' },
+      { matchId: 'm2', date: recent, status: 'completed', winners: ['p1'], losers: [], matchFormat: 'singles' },
+    ]);
+    mockPlayersList.mockResolvedValue([{ playerId: 'p1', name: 'Alice', currentWrestler: 'A' }]);
+
+    const result = await getDashboard({} as never, ctx, cb);
+
+    const rows = JSON.parse(result!.body).recentResults;
+    expect(rows.find((row: { matchId: string }) => row.matchId === 'm1')).toMatchObject({
+      winnerName: 'Former member',
+      loserName: 'A',
+    });
+    expect(rows.find((row: { matchId: string }) => row.matchId === 'm2').loserName).toBe('\u2014');
   });
 
   it('handles empty tables gracefully', async () => {

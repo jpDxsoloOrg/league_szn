@@ -3,6 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import type { Match, Player } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { isPlayerVisible } from '../../lib/needsWrestler';
+import { matchWinners } from '../../lib/matchResult';
 
 const MIN_MATCHES_FOR_RIVALRY = 3;
 const MAX_RIVALRIES_RETURNED = 20;
@@ -56,8 +57,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const [a, b] = participants;
       const key = pairKey(a, b);
       const existing = aggMap.get(key);
-      const p1Won = match.winners?.includes(a);
-      const p2Won = match.winners?.includes(b);
+      const winners = matchWinners(match);
+      const p1Won = winners.includes(a);
+      const p2Won = winners.includes(b);
       const isDraw = !p1Won && !p2Won;
 
       if (!existing) {

@@ -62,7 +62,8 @@ export class InMemoryUnitOfWork implements UnitOfWork {
 
   incrementPlayerRecord(playerId: string, delta: RecordDelta): void {
     this.preconditions.push(() => {
-      if (!this.stores.players.has(playerId)) throw new ConcurrencyError('Player', playerId);
+      const player = this.stores.players.get(playerId);
+      if (!player || player.deletedAt) throw new ConcurrencyError('Player', playerId);
     });
     this.staged.push(() => {
       const existing = this.stores.players.get(playerId);

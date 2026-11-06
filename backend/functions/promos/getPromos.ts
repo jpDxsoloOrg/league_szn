@@ -2,7 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import type { Promo, PromoType } from '../../lib/repositories/types';
-import { isPlayerVisible } from '../../lib/needsWrestler';
+import { FORMER_MEMBER, isHiddenLivePlayer, resolveBilledName } from '../../lib/needsWrestler';
 import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
 import { isPromoArchived } from '../../lib/promoArchive';
 
@@ -36,17 +36,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       if (p.targetPlayerId) uniquePlayerIds.add(p.targetPlayerId);
     }
     const playerIds = [...uniquePlayerIds];
-    const fetchedPlayers = await Promise.all(playerIds.map((pid) => players.findById(pid)));
+    const fetchedPlayers = await Promise.all(playerIds.map((pid) => players.findByIdWithDeleted(pid)));
 
     const playerMap: Record<string, { name: string; currentWrestler: string; imageUrl?: string }> = {};
     const hiddenPlayerIds = new Set<string>();
     playerIds.forEach((pid, index) => {
       const player = fetchedPlayers[index];
       if (player) {
-        if (!isPlayerVisible(player)) hiddenPlayerIds.add(pid);
+        if (isHiddenLivePlayer(player)) hiddenPlayerIds.add(pid);
         playerMap[pid] = {
           name: player.name,
-          currentWrestler: player.currentWrestler,
+          currentWrestler: resolveBilledName(undefined, player, FORMER_MEMBER),
           imageUrl: player.imageUrl,
         };
       }
@@ -104,8 +104,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
         return {
           ...p,
-          playerName: author?.name || 'Unknown',
-          wrestlerName: author?.currentWrestler || 'Unknown',
+          playerName: author?.name || FORMER_MEMBER,
+          wrestlerName: author?.currentWrestler || FORMER_MEMBER,
           playerImageUrl: author?.imageUrl,
           targetPlayerName: target?.name,
           targetWrestlerName: target?.currentWrestler,

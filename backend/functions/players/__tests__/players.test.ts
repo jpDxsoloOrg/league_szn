@@ -244,6 +244,21 @@ describe('getPlayers', () => {
 // ─── updatePlayer ────────────────────────────────────────────────────
 
 describe('updatePlayer', () => {
+  it.each([[''], ['   '], [null]])('rejects a blank name (%j) and changes nothing', async (name) => {
+    const player = await repos.roster.players.create({ name: 'Old Name', currentWrestler: 'Rock' });
+    const event = makeEvent({
+      pathParameters: { playerId: player.playerId },
+      body: JSON.stringify({ name, bio: 'kept out' }),
+    });
+
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    const stored = await repos.roster.players.findById(player.playerId);
+    expect(stored).toMatchObject({ name: 'Old Name' });
+    expect(stored?.bio).toBeUndefined();
+  });
+
   it('returns 403 for a Wrestler-role user (staff only)', async () => {
     const player = await repos.roster.players.create({ name: 'Old Name', currentWrestler: 'Rock' });
     const event = makeEvent({
@@ -587,7 +602,8 @@ describe('deletePlayer', () => {
       );
 
       expect(result!.statusCode).toBe(204);
-      expect(updatedPlayerIds).toEqual([partner.playerId]);
+      // Once for the partner, then the soft delete of the leaving player.
+      expect(updatedPlayerIds).toEqual([partner.playerId, leaving.playerId]);
       const partnerAfter = await repos.roster.players.findById(partner.playerId);
       expect(partnerAfter!.stableId).toBeUndefined();
       expect(partnerAfter!.tagTeamId).toBeUndefined();
@@ -631,7 +647,7 @@ describe('deletePlayer', () => {
       );
 
       expect(result!.statusCode).toBe(204);
-      expect(updatedPlayerIds).toEqual([]);
+      expect(updatedPlayerIds).toEqual([leaving.playerId]);
     });
 
     it('keeps the player and reports the failure when cleanup fails, then succeeds on retry', async () => {

@@ -122,7 +122,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const { roster: { players } } = getRepositories();
       const fetched = await Promise.all(
         [...allSlotPlayerIds].map(async (id) => {
-          const p = await players.findById(id);
+          const p = await players.findByIdWithDeleted(id);
           return p ? ([id, p] as const) : null;
         }),
       );

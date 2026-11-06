@@ -82,10 +82,10 @@ describe('updateMatch conditions', () => {
 });
 
 describe('ghost-row and ownership conditions', () => {
-  it('incrementPlayerRecord requires the player to exist', () => {
+  it('incrementPlayerRecord requires a live player', () => {
     const uow = new DynamoUnitOfWork();
     uow.incrementPlayerRecord('p1', { wins: 1 });
-    expect(lastUpdate(uow).ConditionExpression).toBe('attribute_exists(playerId)');
+    expect(lastUpdate(uow).ConditionExpression).toBe('attribute_exists(playerId) AND attribute_not_exists(deletedAt)');
   });
 
   it('incrementStanding stays unconditional because a first result creates the row', () => {

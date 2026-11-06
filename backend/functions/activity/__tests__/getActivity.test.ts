@@ -38,7 +38,7 @@ vi.mock('../../../lib/repositories', () => ({
       promos: { list: mockPromosList },
     },
     roster: {
-      players: { list: mockPlayersList },
+      players: { listWithDeleted: mockPlayersList },
     },
   }),
 }));
@@ -258,13 +258,13 @@ describe('getActivity', () => {
       return body.items.map((item) => item.summary);
     }
 
-    it('names deleted players Unknown in match results', async () => {
+    it('names deleted players Former member in match results', async () => {
       mockMatchesListCompleted.mockResolvedValue([
         { matchId: 'm1', date: stamp, updatedAt: stamp, status: 'completed', participants: [missingId, 'p2'], winners: [missingId], losers: ['p2'] },
       ]);
       mockPlayersList.mockResolvedValue([{ playerId: 'p2', name: 'Kept', currentWrestler: 'W' }]);
 
-      expect(await summaries()).toEqual(['Unknown def. Kept']);
+      expect(await summaries()).toEqual(['Former member def. Kept']);
     });
 
     it('never uses an id in title, tournament, challenge or promo summaries', async () => {
@@ -286,11 +286,11 @@ describe('getActivity', () => {
       expect(all).toHaveLength(4);
       expect(all.join(' ')).not.toContain(missingId);
       expect(all.join(' ')).not.toContain('gone-title');
-      expect(all).toContain('Unknown Championship: Unknown crowned');
-      expect(all).toContain('Tournament "Cup" completed — Unknown won');
+      expect(all).toContain('Unknown Championship: Former member crowned');
+      expect(all).toContain('Tournament "Cup" completed — Former member won');
     });
 
-    it('falls back to Unknown for a player row with no names, never the id', async () => {
+    it('falls back to Former member for a player row with no names, never the id', async () => {
       mockMatchesListCompleted.mockResolvedValue([
         { matchId: 'm1', date: stamp, updatedAt: stamp, status: 'completed', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] },
       ]);
@@ -299,7 +299,7 @@ describe('getActivity', () => {
         { playerId: 'p2', name: 'Kept', currentWrestler: 'W' },
       ]);
 
-      expect(await summaries()).toEqual(['Unknown def. Kept']);
+      expect(await summaries()).toEqual(['Former member def. Kept']);
     });
   });
 });

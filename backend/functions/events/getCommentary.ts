@@ -4,6 +4,7 @@ import { getRepositories } from '../../lib/repositories';
 import type { Match, MatchSlot, Player, WrestlerMove } from '../../lib/repositories/types';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { computeHeadToHead, pairwise } from '../../lib/headToHead';
+import { matchWinners } from '../../lib/matchResult';
 
 interface Record3 {
   wins: number;
@@ -73,10 +74,11 @@ function multiManRecord(playerId: string, completed: Match[]): Record3 {
   for (const m of completed) {
     const ids = participantIdsOf(m);
     if (ids.length < 3 || !ids.includes(playerId)) continue;
-    if (m.winners?.includes(playerId)) rec.wins++;
+    const winners = matchWinners(m);
+    if (winners.includes(playerId)) rec.wins++;
     // A draw, or a no-contest with nobody declared the winner, is not a loss
     // — same reading computeHeadToHead uses for a pair.
-    else if (m.isDraw || !m.winners?.length) rec.draws++;
+    else if (winners.length === 0) rec.draws++;
     else rec.losses++;
   }
   return rec;

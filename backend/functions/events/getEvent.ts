@@ -1,5 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { resolveBilledName } from '../../lib/needsWrestler';
+import { FORMER_MEMBER, resolveBilledName } from '../../lib/needsWrestler';
 import { getRepositories } from '../../lib/repositories';
 import type { MatchSlot, Player } from '../../lib/repositories/types';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
@@ -111,13 +111,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const playerLookup = new Map<string, Player>();
         if (Array.isArray(match.participants) && match.participants.length > 0) {
           const playerPromises = (match.participants as string[]).map(async (playerId: string) => {
-            const player = await players.findById(playerId);
+            const player = await players.findByIdWithDeleted(playerId);
             if (player) playerLookup.set(playerId, player);
             const snapshot = slotSnapshotByPlayer.get(playerId);
             return {
               playerId,
-              playerName: player?.name || 'Unknown Player',
-              wrestlerName: resolveBilledName(snapshot, player, 'Unknown Wrestler'),
+              playerName: player?.name || FORMER_MEMBER,
+              wrestlerName: resolveBilledName(snapshot, player, FORMER_MEMBER),
               psnId: player?.psnId,
             };
           });

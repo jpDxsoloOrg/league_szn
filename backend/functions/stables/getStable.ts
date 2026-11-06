@@ -68,7 +68,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Build member list
     const members: PlayerSummary[] = [];
-    // Stays undefined when the leader's player row is gone, so clients show their own fallback.
+    // Stays undefined when the leader is gone or hidden, so clients show their own fallback.
     let leaderName: string | undefined;
 
     for (const player of memberResults) {
@@ -85,10 +85,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             draws: player.draws || 0,
           };
           members.push(summary);
-        }
 
-        if (player.playerId === stable.leaderId) {
-          leaderName = player.name;
+          if (player.playerId === stable.leaderId) {
+            leaderName = player.name;
+          }
         }
       }
     }

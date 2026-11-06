@@ -48,7 +48,7 @@ vi.mock('../../../lib/repositories', () => ({
     },
     roster: {
       players: {
-      list: mockPlayersList,
+      listWithDeleted: mockPlayersList,
       findById: mockPlayersFind,
     },
     },
@@ -91,6 +91,20 @@ function makeEvent(overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayPro
 
 describe('getSeasonAwards', () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it('names an award winner with no player row Former member', async () => {
+    mockSeasonAwardsListBySeason.mockResolvedValue([]);
+    mockMatchesList.mockResolvedValue([
+      { matchId: 'm1', seasonId: 's1', participants: ['gone', 'p2'], winners: ['gone'], losers: ['p2'], status: 'completed', date: '2024-01-01' },
+    ]);
+    mockPlayersList.mockResolvedValue([{ playerId: 'p2', name: 'Player Two', currentWrestler: 'Christian' }]);
+    mockChampionshipsListAllHistory.mockResolvedValue([]);
+
+    const result = await getSeasonAwards(makeEvent({ pathParameters: { seasonId: 's1' } }), ctx, cb);
+
+    const mvp = JSON.parse(result!.body).autoAwards.find((a: Record<string, string>) => a.awardType === 'mvp');
+    expect(mvp.playerName).toBe('Former member');
+  });
 
   it('returns auto and custom awards for a season', async () => {
     mockSeasonAwardsListBySeason.mockResolvedValue([

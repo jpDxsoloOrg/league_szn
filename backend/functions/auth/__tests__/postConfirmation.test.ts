@@ -86,6 +86,19 @@ describe('postConfirmation handler', () => {
     mockDivisions.list.mockResolvedValue([]);
   });
 
+  it('never stores a blank name or the email when the name attribute is missing', async () => {
+    mockSend.mockResolvedValue({});
+    const event = makePostConfirmationEvent();
+    event.request.userAttributes = { sub: 'abcd1234-5678', email: 'person@example.com' };
+
+    await handler(event, dummyContext, dummyCallback);
+
+    expect(mockPlayers.create).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'Player abcd1234',
+      currentWrestler: NEEDS_WRESTLER,
+    }));
+  });
+
   it('adds user to Wrestler group and returns the event', async () => {
     mockSend.mockResolvedValue({});
 
