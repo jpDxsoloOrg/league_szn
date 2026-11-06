@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ArrowLeft } from 'lucide-react';
 import { playersApi, challengesApi, profileApi, stipulationsApi, matchTypesApi, tagTeamsApi } from '../../services/api';
 import type { Player, Stipulation, MatchType } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
-import { getInitial } from './challengeUtils';
+import Avatar from '../ui/Avatar';
+import Button from '../ui/Button';
+import PageHeader from '../ui/PageHeader';
 import './IssueChallenge.css';
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -123,18 +125,8 @@ export default function IssueChallenge() {
         <div className="issue-success-message">
           <p>{t('challenges.issue.success')}</p>
           <div className="issue-success-actions">
-            <Link
-              to="/challenges"
-              className="issue-success-back-link"
-            >
-              {t('challenges.detail.backToBoard')}
-            </Link>
-            <button
-              onClick={handleReset}
-              className="issue-success-another-btn"
-            >
-              {t('challenges.issue.issueAnother')}
-            </button>
+            <Button to="/challenges">{t('challenges.detail.backToBoard')}</Button>
+            <Button variant="secondary" onClick={handleReset}>{t('challenges.issue.issueAnother')}</Button>
           </div>
         </div>
       </div>
@@ -156,14 +148,14 @@ export default function IssueChallenge() {
 
   return (
     <div className="issue-challenge">
-      <Link to="/challenges" className="issue-challenge-back">
-        &larr; {t('challenges.detail.backToBoard')}
-      </Link>
+      <Button variant="ghost" size="sm" to="/challenges" icon={<ArrowLeft aria-hidden="true" size={18} />}>
+        {t('challenges.detail.backToBoard')}
+      </Button>
 
-      <h2>{t('challenges.issue.title')}</h2>
+      <PageHeader title={t('challenges.issue.title')} />
 
       {error && (
-        <div className="issue-error-message">
+        <div className="issue-error-message" role="alert">
           {error}
         </div>
       )}
@@ -282,23 +274,18 @@ export default function IssueChallenge() {
 
         {canShowPreview && (
           <div>
-            <button
-              className="issue-preview-toggle"
-              onClick={() => setShowPreview(!showPreview)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setShowPreview(!showPreview)}>
               {showPreview
                 ? t('challenges.issue.hidePreview')
                 : t('challenges.issue.showPreview')}
-            </button>
+            </Button>
 
             {showPreview && challengeMode === 'tag_team' && playerTagTeam && selectedTagTeam && (
               <div className="issue-preview">
                 <h3>{t('challenges.issue.preview')}</h3>
                 <div className="issue-preview-versus">
                   <div className="issue-preview-player">
-                    <div className="issue-preview-avatar">
-                      {getInitial(playerTagTeam.name)}
-                    </div>
+                    <Avatar name={playerTagTeam.name} />
                     <div className="issue-preview-wrestler">
                       {playerTagTeam.name}
                     </div>
@@ -308,9 +295,7 @@ export default function IssueChallenge() {
                   </div>
                   <span className="issue-preview-vs">{t('common.vs').toUpperCase()}</span>
                   <div className="issue-preview-player">
-                    <div className="issue-preview-avatar">
-                      {getInitial(selectedTagTeam.name)}
-                    </div>
+                    <Avatar name={selectedTagTeam.name} />
                     <div className="issue-preview-wrestler">
                       {selectedTagTeam.name}
                     </div>
@@ -343,9 +328,7 @@ export default function IssueChallenge() {
                 <h3>{t('challenges.issue.preview')}</h3>
                 <div className="issue-preview-versus">
                   <div className="issue-preview-player">
-                    <div className="issue-preview-avatar">
-                      {getInitial(currentPlayer.currentWrestler)}
-                    </div>
+                    <Avatar name={currentPlayer.currentWrestler} />
                     <div className="issue-preview-wrestler">
                       {currentPlayer.currentWrestler}
                     </div>
@@ -353,9 +336,7 @@ export default function IssueChallenge() {
                   </div>
                   <span className="issue-preview-vs">{t('common.vs').toUpperCase()}</span>
                   <div className="issue-preview-player">
-                    <div className="issue-preview-avatar">
-                      {getInitial(opponent.currentWrestler)}
-                    </div>
+                    <Avatar name={opponent.currentWrestler} />
                     <div className="issue-preview-wrestler">{opponent.currentWrestler}</div>
                     <div className="issue-preview-name">{opponent.name}</div>
                   </div>
@@ -382,16 +363,10 @@ export default function IssueChallenge() {
         )}
 
         <div className="issue-form-actions">
-          <Link to="/challenges" className="btn-cancel-form">
-            {t('common.cancel')}
-          </Link>
-          <button
-            className="btn-submit"
-            disabled={!isFormValid || submitting}
-            onClick={handleSubmit}
-          >
+          <Button variant="secondary" to="/challenges">{t('common.cancel')}</Button>
+          <Button disabled={!isFormValid || submitting} onClick={handleSubmit}>
             {submitting ? t('common.submitting') : t('challenges.issue.submit')}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

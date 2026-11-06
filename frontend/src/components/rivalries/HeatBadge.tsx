@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next';
+import { Flame, Snowflake, Sparkles, ThermometerSnowflake, Zap } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { RivalryHeat } from '../../types/rivalry';
 import './HeatBadge.css';
 
@@ -17,12 +19,12 @@ export interface HeatBadgeProps {
   showLabel?: boolean;
 }
 
-const HEAT_ICONS: Record<RivalryHeat, string> = {
-  frozen: '❄',
-  cold: '🧊',
-  warm: '✦',
-  hot: '🔥',
-  scorching: '🌋',
+const HEAT_ICONS: Record<RivalryHeat, LucideIcon> = {
+  frozen: Snowflake,
+  cold: ThermometerSnowflake,
+  warm: Sparkles,
+  hot: Flame,
+  scorching: Zap,
 };
 
 const defaultHeatLabel = (heat: RivalryHeat): string => {
@@ -47,6 +49,7 @@ export const HeatBadge = ({
   showLabel = true,
 }: HeatBadgeProps) => {
   const { t } = useTranslation();
+  const Icon = HEAT_ICONS[heat];
   const label = t(`rivalry.heat.${heat}`, { defaultValue: defaultHeatLabel(heat) });
   const title =
     heatScore != null
@@ -61,9 +64,7 @@ export const HeatBadge = ({
       title={title}
       data-testid="heat-badge"
     >
-      <span className="heat-badge__icon" aria-hidden>
-        {HEAT_ICONS[heat]}
-      </span>
+      <Icon className="heat-badge__icon" aria-hidden="true" />
       {showLabel && <span className="heat-badge__label">{label}</span>}
     </span>
   );

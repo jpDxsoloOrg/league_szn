@@ -1,26 +1,15 @@
 .issue-challenge {
-  width: 100%;
-  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 640px;
   margin: 0 auto;
 }
 
-.issue-challenge-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: #bbb;
-  text-decoration: none;
-  font-size: 0.95rem;
-  margin-bottom: 1.5rem;
-  transition: color 0.3s;
-}
-
-.issue-challenge-back:hover {
-  color: #d4af37;
-}
-
-.issue-challenge h2 {
-  margin-bottom: 1.5rem;
+.issue-challenge-form,
+.issue-error-message,
+.issue-success-message {
+  width: 100%;
 }
 
 .issue-challenge-form {
@@ -32,307 +21,165 @@
 .issue-form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
-.issue-form-group label {
-  font-size: 0.9rem;
-  color: #bbb;
-  font-weight: 500;
+.issue-form-group > label:not(.issue-championship-check) {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
 .issue-form-group select,
 .issue-form-group textarea {
   width: 100%;
-  background-color: #1a1a1a;
-  color: #fff;
-  border: 1px solid #444;
-  padding: 0.75rem;
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: border-color 0.3s;
-}
-
-.issue-form-group select:focus,
-.issue-form-group textarea:focus {
-  outline: none;
-  border-color: #d4af37;
+  min-height: var(--touch-target);
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-control);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
 }
 
 .issue-form-group textarea {
-  min-height: 100px;
   resize: vertical;
-  font-family: inherit;
 }
 
-.issue-char-count {
-  font-size: 0.8rem;
-  color: #888;
-  text-align: right;
-}
-
-.issue-char-count.over-limit {
-  color: #f87171;
-}
-
-.issue-championship-check {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background-color: #222;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.issue-championship-check input[type='checkbox'] {
-  width: 18px;
-  height: 18px;
-  accent-color: #d4af37;
-  cursor: pointer;
-}
-
-.issue-championship-check span {
-  color: #ccc;
-  font-size: 0.95rem;
+.issue-form-group select:focus-visible,
+.issue-form-group textarea:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
 }
 
 .challenge-mode-toggle {
   display: flex;
-  gap: 1.25rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-.challenge-mode-option {
+.challenge-mode-option,
+.issue-championship-check {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  background-color: #222;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #ccc;
-  font-size: 0.95rem;
-  transition: background-color 0.3s;
-}
-
-.challenge-mode-option:hover {
-  background-color: #333;
-}
-
-.challenge-mode-option input[type='radio'] {
-  accent-color: #d4af37;
+  min-height: var(--touch-target);
+  color: var(--color-text);
   cursor: pointer;
 }
 
-.on-behalf-of {
-  margin-top: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background-color: rgba(212, 175, 55, 0.1);
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  border-radius: 6px;
-  color: #ccc;
-  font-size: 0.9rem;
+.challenge-mode-option input,
+.issue-championship-check input {
+  accent-color: var(--color-cyan);
 }
 
-.on-behalf-of strong {
-  color: #d4af37;
+.on-behalf-of,
+.issue-char-count {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.issue-char-count {
+  text-align: right;
+}
+
+.issue-char-count.over-limit {
+  color: var(--color-loss);
 }
 
 .issue-preview {
-  background-color: #2d2d2d;
-  border-radius: 8px;
-  padding: 1.5rem;
-  border: 1px solid #444;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 1.25rem;
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface);
 }
 
 .issue-preview h3 {
-  color: #d4af37;
   margin-bottom: 1rem;
-  font-size: 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .issue-preview-versus {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
-  margin-bottom: 1rem;
+  gap: 0.75rem;
 }
 
 .issue-preview-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
   text-align: center;
 }
 
-.issue-preview-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background-color: #444;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-  font-weight: bold;
-  color: #d4af37;
-  margin: 0 auto 0.4rem;
-}
-
 .issue-preview-wrestler {
-  font-weight: 600;
-  color: #fff;
-  font-size: 0.95rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .issue-preview-name {
-  font-size: 0.8rem;
-  color: #888;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
 }
 
 .issue-preview-vs {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #d4af37;
+  color: var(--color-pink);
+  font-weight: 800;
 }
 
 .issue-preview-details {
   display: flex;
-  gap: 1rem;
-  justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 0.75rem;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
 }
 
 .issue-preview-detail-tag {
-  background-color: #333;
-  color: #ccc;
-  padding: 0.3rem 0.7rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
 }
 
 .issue-preview-message {
-  background-color: #222;
-  border-radius: 6px;
-  padding: 0.75rem;
+  margin-top: 0.75rem;
+  color: var(--color-text-secondary);
   font-style: italic;
-  color: #ccc;
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.issue-form-actions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
-}
-
-.issue-form-actions .btn-submit {
-  background-color: #d4af37;
-  color: #000;
-  font-weight: bold;
-  padding: 0.75rem 2rem;
-  border-radius: 6px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.issue-form-actions .btn-submit:hover {
-  background-color: #b8941f;
-}
-
-.issue-form-actions .btn-submit:disabled {
-  background-color: #555;
-  color: #888;
-  cursor: not-allowed;
-}
-
-.issue-form-actions .btn-cancel-form {
-  background-color: #444;
-  color: #ccc;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s;
-  border: none;
-}
-
-.issue-form-actions .btn-cancel-form:hover {
-  background-color: #555;
-}
-
-.issue-success-message {
   text-align: center;
-  padding: 2rem;
-  background-color: rgba(74, 222, 128, 0.1);
-  border: 1px solid rgba(74, 222, 128, 0.3);
-  border-radius: 8px;
+  overflow-wrap: anywhere;
 }
 
-.issue-success-message p {
-  color: #4ade80;
-  font-size: 1.1rem;
-  font-weight: 500;
-  margin-bottom: 1rem;
-}
-
+.issue-form-actions,
 .issue-success-actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.75rem;
-  justify-content: center;
-}
-
-.issue-success-back-link {
-  background-color: #d4af37;
-  color: #000;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: bold;
-}
-
-.issue-success-another-btn {
-  background-color: #444;
-  color: #ccc;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
 }
 
 .issue-error-message {
-  background-color: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
   margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-control);
+  background-color: var(--tint-loss);
+  color: var(--color-loss);
 }
 
-.issue-preview-toggle {
-  background: none;
-  border: 1px solid #444;
-  color: #bbb;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  width: 100%;
+.issue-success-message {
+  padding: 3rem 1rem;
+  text-align: center;
 }
 
-@media (max-width: 768px) {
-  .issue-form-actions {
-    flex-direction: column;
-  }
+.issue-success-message p {
+  margin-bottom: 1.25rem;
+  font-size: 1.125rem;
+}
 
-  .issue-form-actions button {
-    width: 100%;
-  }
-
-  .issue-preview-versus {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
+.issue-success-actions {
+  justify-content: center;
 }

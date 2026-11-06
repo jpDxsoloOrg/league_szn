@@ -1,5 +1,13 @@
 import type { Player } from '../../types';
-import type { RivalryParticipant, WrestlerVariant } from '../../types/rivalry';
+import type { RivalryParticipant, RivalryStatus, WrestlerVariant } from '../../types/rivalry';
+
+export const RIVALRY_STATUS_KEY: Record<RivalryStatus, string> = {
+  pending: 'rivalries.status.pending',
+  active: 'rivalries.status.active',
+  completed: 'rivalries.status.completed',
+  rejected: 'rivalries.status.rejected',
+  cancelled: 'rivalries.status.cancelled',
+};
 
 /**
  * Resolve the display name of a wrestler in a rivalry. Honors the
@@ -23,19 +31,20 @@ export function resolveWrestlerName(
   return participant.playerId;
 }
 
+/** `PlayerName · PSN` caption for a wrestler, or an empty string if neither is set. */
+export function resolvePlayerCaption(player: Player | undefined): string {
+  if (!player) return '';
+  return [player.name?.trim(), player.psnId?.trim()].filter(Boolean).join(' · ');
+}
+
 /**
  * Build the parenthesised player/PSN suffix for a wrestler name. Returns
  * an empty string when neither field is set so callers can append
  * unconditionally.
  */
 function buildPlayerSuffix(player: Player | undefined): string {
-  if (!player) return '';
-  const playerName = player.name?.trim();
-  const psn = player.psnId?.trim();
-  const parts: string[] = [];
-  if (playerName) parts.push(playerName);
-  if (psn) parts.push(psn);
-  return parts.length > 0 ? ` (${parts.join(' · ')})` : '';
+  const caption = resolvePlayerCaption(player);
+  return caption ? ` (${caption})` : '';
 }
 
 /**
@@ -54,7 +63,7 @@ export function resolveWrestlerFullLabel(
 
 /**
  * Normalize a raw rivalry heat score (clamped to ±100 by the backend
- * policy module) onto a 0–100 meter scale for the mobile heat meters:
+ * policy module) onto a 0–100 meter scale for the heat meter:
  * -100 (deep frozen) → 0, 0 (neutral warm) → 50, +100 (scorching) → 100.
  */
 export function heatScorePercent(heatScore: number): number {

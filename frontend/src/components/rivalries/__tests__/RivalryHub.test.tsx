@@ -22,8 +22,8 @@ vi.mock('../../../contexts/AuthContext', () => ({
 }));
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k: string, opts?: Record<string, unknown>) => {
-    if (opts && 'count' in opts) return `${opts.count} ${k}`;
+  useTranslation: () => ({ t: (k: string, opts?: string | Record<string, unknown>) => {
+    if (typeof opts === 'object' && 'count' in opts) return `${opts.count} ${k}`;
     return k;
   } }),
 }));

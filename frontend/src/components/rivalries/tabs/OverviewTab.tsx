@@ -41,7 +41,7 @@ export default function OverviewTab({ hydrated, players }: TabProps) {
             </ul>
           )}
           <Link to="notes" className="rivalry-detail-link">
-            {t('rivalries.detail.notesTab')} →
+            {t('rivalries.detail.notesTab')}
           </Link>
         </section>
 
@@ -99,7 +99,7 @@ export default function OverviewTab({ hydrated, players }: TabProps) {
             </ul>
           )}
           <Link to="promos" className="rivalry-detail-link">
-            {t('rivalries.detail.promosTab')} →
+            {t('rivalries.detail.promosTab')}
           </Link>
         </section>
 
@@ -117,7 +117,7 @@ export default function OverviewTab({ hydrated, players }: TabProps) {
             </p>
           )}
           <Link to="matches" className="rivalry-detail-link">
-            {t('rivalries.detail.matchesTab')} →
+            {t('rivalries.detail.matchesTab')}
           </Link>
         </section>
       </div>

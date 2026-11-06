@@ -76,6 +76,6 @@ describe('HeatBadge', () => {
     expect(screen.queryByText('Scorching')).not.toBeInTheDocument();
     // Icon should still be rendered.
     const badge = screen.getByTestId('heat-badge');
-    expect(badge.textContent ?? '').not.toBe('');
+    expect(badge.querySelector('svg')).not.toBeNull();
   });
 });

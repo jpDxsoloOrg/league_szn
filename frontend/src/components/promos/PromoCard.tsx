@@ -1,43 +1,48 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { PromoWithContext, PromoType } from '../../types/promo';
+import { Crown, Pin, Trophy } from 'lucide-react';
+import type { PromoType, PromoWithContext, ReactionType } from '../../types/promo';
+import type { ChallengeWithPlayers } from '../../types/challenge';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { challengesApi } from '../../services/api';
-import { resolveImageSrc, DEFAULT_WRESTLER_IMAGE } from '../../constants/imageFallbacks';
+import Avatar from '../ui/Avatar';
+import Badge from '../ui/Badge';
+import type { BadgeTone } from '../ui/Badge';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import ChallengeStatusBadge from '../challenges/ChallengeStatusBadge';
+import { findCallOutChallenge, getDisplayStatus } from '../challenges/challengeUtils';
 import PromoReactions from './PromoReactions';
 import './PromoCard.css';
 
 interface PromoCardProps {
-  promo: PromoWithContext;
+  /** `isArchived` is only sent to staff who ask for archived promos. */
+  promo: PromoWithContext & { isArchived?: boolean };
   compact?: boolean;
   isRead?: boolean;
   onView?: () => void;
-  onReact?: (promoId: string, reaction: import('../../types/promo').ReactionType) => void;
+  onReact?: (promoId: string, reaction: ReactionType) => void;
 }
 
-const PROMO_TYPE_COLORS: Record<PromoType, string> = {
-  'open-mic': '#6366f1',
-  'call-out': '#ef4444',
-  response: '#3b82f6',
-  'pre-match': '#f59e0b',
-  'post-match': '#10b981',
-  championship: '#d4af37',
-  return: '#ec4899',
-  rivalry: '#a855f7',
+const PROMO_TYPE_TONES: Record<PromoType, BadgeTone> = {
+  'open-mic': 'neutral',
+  'call-out': 'pink',
+  response: 'violet',
+  'pre-match': 'primary',
+  'post-match': 'win',
+  championship: 'warning',
+  return: 'violet',
+  rivalry: 'pink',
 };
-
-function getInitial(name: string): string {
-  return name.charAt(0).toUpperCase();
-}
 
 function highlightMentions(content: string): (string | JSX.Element)[] {
   const parts = content.split(/(@[\w\s]+?)(?=\s[^a-zA-Z]|\s@|,|!|\.|$)/g);
   return parts.map((part, idx) => {
     if (part.startsWith('@')) {
       return (
-        <span key={idx} className="promo-mention">
+        <span key={idx} className="promo-card__mention">
           {part}
         </span>
       );
@@ -53,12 +58,11 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
   const { playerId } = useAuth();
   const { features } = useSiteConfig();
   const [acceptingChallenge, setAcceptingChallenge] = useState(false);
-  const [challengeStatus, setChallengeStatus] = useState<'pending' | 'accepted' | 'not_found' | 'loading'>('loading');
+  const [challenge, setChallenge] = useState<ChallengeWithPlayers | null>(null);
   const [challengeError, setChallengeError] = useState<string | null>(null);
-  const [imageError, setImageError] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
-  const canTruncate = useMemo(() => promo.content.length > TRUNCATE_LENGTH, [promo.content]);
+  const canTruncate = promo.content.length > TRUNCATE_LENGTH;
   const displayContent = useMemo(
     () => canTruncate && !expanded ? promo.content.slice(0, TRUNCATE_LENGTH) + '...' : promo.content,
     [promo.content, canTruncate, expanded]
@@ -69,179 +73,141 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
     setExpanded((v) => !v);
   };
 
-  useEffect(() => {
-    setImageError(false);
-  }, [promo.playerImageUrl]);
-
-  const isTargetOfCallOut =
+  const isTargetOfCallOut = Boolean(
     features.challenges &&
     promo.promoType === 'call-out' &&
-    promo.targetPlayerId &&
     playerId &&
-    promo.targetPlayerId === playerId;
+    promo.targetPlayerId === playerId
+  );
 
-  // Check if the matching challenge is already accepted
+  const { playerId: authorId, createdAt: postedAt } = promo;
+
+  // The challenges API returns every status when given a player, so the status
+  // shown here always comes from the matched challenge itself.
   useEffect(() => {
     if (!isTargetOfCallOut || !playerId) return;
-    let cancelled = false;
-    const checkStatus = async () => {
+    const controller = new AbortController();
+    const loadChallenge = async () => {
       try {
-        // Check accepted challenges first
-        const accepted = await challengesApi.getAll({ status: 'accepted', playerId });
-        if (!cancelled && accepted.some((c) => c.challengerId === promo.playerId)) {
-          setChallengeStatus('accepted');
-          return;
-        }
-        // Check pending
-        const pending = await challengesApi.getAll({ status: 'pending', playerId });
-        if (!cancelled) {
-          setChallengeStatus(pending.some((c) => c.challengerId === promo.playerId) ? 'pending' : 'not_found');
+        const challenges = await challengesApi.getAll({ playerId }, controller.signal);
+        if (!controller.signal.aborted) {
+          setChallenge(findCallOutChallenge(challenges, { playerId: authorId, createdAt: postedAt }, playerId));
         }
       } catch {
-        if (!cancelled) setChallengeStatus('not_found');
+        if (!controller.signal.aborted) setChallenge(null);
       }
     };
-    checkStatus();
-    return () => { cancelled = true; };
-  }, [isTargetOfCallOut, playerId, promo.playerId]);
+    void loadChallenge();
+    return () => controller.abort();
+  }, [isTargetOfCallOut, playerId, authorId, postedAt]);
 
   const handleAcceptChallenge = async () => {
-    if (!playerId) return;
+    if (!challenge) return;
     setAcceptingChallenge(true);
     setChallengeError(null);
     try {
-      const challenges = await challengesApi.getAll({ status: 'pending', playerId });
-      const match = challenges.find((c) => c.challengerId === promo.playerId);
-      if (!match) {
-        setChallengeError(t('promos.card.challengeNotFound', 'Challenge not found'));
-        return;
-      }
-      await challengesApi.respond(match.challengeId, 'accept');
-      setChallengeStatus('accepted');
+      await challengesApi.respond(challenge.challengeId, 'accept');
+      setChallenge({ ...challenge, status: 'accepted' });
     } catch {
-      setChallengeError(t('promos.card.challengeNotFound', 'Challenge not found'));
+      setChallengeError(t('promos.card.acceptFailed', 'Could not accept the challenge. Try again.'));
     } finally {
       setAcceptingChallenge(false);
     }
   };
 
+  const renderChallengeStatus = (current: ChallengeWithPlayers) => {
+    const status = getDisplayStatus(current);
+    if (status === 'pending') {
+      return (
+        <Button size="sm" loading={acceptingChallenge} onClick={handleAcceptChallenge}>
+          {acceptingChallenge
+            ? t('promos.card.accepting', 'Accepting...')
+            : t('promos.card.acceptChallenge', 'Accept Challenge')}
+        </Button>
+      );
+    }
+    if (status === 'accepted') {
+      return <Badge tone="win">{t('promos.card.challengeAccepted', 'Challenge Accepted!')}</Badge>;
+    }
+    return <ChallengeStatusBadge challenge={current} />;
+  };
+
+  const classes = [
+    'promo-card',
+    promo.isPinned ? 'promo-card--pinned' : '',
+    compact ? 'promo-card--compact' : '',
+    isRead === false ? 'promo-card--unread' : '',
+  ].filter(Boolean).join(' ');
+
   return (
-    <div
-      className={`promo-card ${promo.isPinned ? 'pinned' : ''} ${compact ? 'compact' : ''} ${isRead === false ? 'unread' : ''}`}
+    <Card
+      padding={compact ? 'sm' : 'md'}
+      className={classes}
       onClick={() => { if (isRead === false) onView?.(); }}
     >
-      {promo.isPinned && (
-        <div className="promo-pinned-indicator">
-          <span className="pin-icon">{'\u{1F4CC}'}</span>
-          <span>{t('promos.card.pinned', 'Pinned')}</span>
+      <div className="promo-card__header">
+        <Avatar src={promo.playerImageUrl} name={promo.wrestlerName} />
+        <div className="promo-card__author">
+          <span className="promo-card__wrestler">{promo.wrestlerName}</span>
+          {promo.playerName && <span className="promo-card__player">{promo.playerName}</span>}
         </div>
-      )}
-
-      <div className="promo-card-header">
-        <div className="promo-avatar">
-          {promo.playerImageUrl && !imageError ? (
-            <img
-              src={resolveImageSrc(promo.playerImageUrl, DEFAULT_WRESTLER_IMAGE)}
-              alt={promo.wrestlerName}
-              className="promo-avatar-img"
-              onError={() => setImageError(true)}
-            />
-          ) : (
-            <span className="promo-avatar-initial">
-              {getInitial(promo.wrestlerName)}
-            </span>
+        <div className="promo-card__badges">
+          {promo.isPinned && (
+            <Badge tone="primary" icon={<Pin aria-hidden="true" size={12} />}>
+              {t('promos.card.pinned', 'Pinned')}
+            </Badge>
           )}
-        </div>
-        <div className="promo-author-info">
-          <div className="promo-author-line">
-            <span className="promo-wrestler-name">{promo.wrestlerName}</span>
-            <span
-              className="promo-type-badge"
-              style={{ backgroundColor: PROMO_TYPE_COLORS[promo.promoType] }}
-            >
-              {t(`promos.types.${promo.promoType}`, promo.promoType)}
-            </span>
-          </div>
+          {promo.isArchived && <Badge>{t('promos.card.archived', 'Archived')}</Badge>}
+          <Badge tone={PROMO_TYPE_TONES[promo.promoType]}>
+            {t(`promos.types.${promo.promoType}`, promo.promoType)}
+          </Badge>
         </div>
       </div>
 
       {promo.promoType === 'response' && promo.targetPromo && (
-        <div className="promo-responding-to">
-          <span className="responding-label">{t('promos.card.respondingTo', 'Responding to')}</span>
-          <Link to={`/promos/${promo.targetPromoId}`} className="responding-link">
+        <p className="promo-card__context">
+          {t('promos.card.respondingTo', 'Responding to')}{' '}
+          <Link to={`/promos/${promo.targetPromoId}`}>
             {promo.targetPromo.title || t('promos.card.aPromo', 'a promo')} {t('promos.card.by', 'by')}{' '}
             {promo.targetWrestlerName}
           </Link>
-        </div>
+        </p>
       )}
 
-      {(promo.promoType === 'call-out') && promo.challengeMode === 'tag_team' && promo.challengerTagTeamName && promo.targetTagTeamName && (
-        <div className="promo-target promo-target--tag-team">
-          <span className="target-name">{promo.challengerTagTeamName}</span>
-          <span className="target-label">{t('promos.card.callingOut', 'calling out')}</span>
-          <span className="target-name">{promo.targetTagTeamName}</span>
-        </div>
+      {promo.promoType === 'call-out' && promo.challengeMode === 'tag_team' && promo.challengerTagTeamName && promo.targetTagTeamName && (
+        <p className="promo-card__context">
+          <strong>{promo.challengerTagTeamName}</strong>{' '}
+          {t('promos.card.callingOut', 'calling out')}{' '}
+          <strong>{promo.targetTagTeamName}</strong>
+        </p>
       )}
 
-      {(promo.promoType === 'call-out') && promo.challengeMode !== 'tag_team' && promo.targetWrestlerName && (
-        <div className="promo-target">
-          <span className="target-label">{t('promos.card.callingOut', 'Calling out')}</span>
-          <span className="target-name">{promo.targetWrestlerName}</span>
-        </div>
-      )}
-
-      {isTargetOfCallOut && challengeStatus !== 'loading' && (
-        <div className="promo-challenge-actions">
-          {challengeStatus === 'accepted' ? (
-            <span className="promo-challenge-accepted">
-              {t('promos.card.challengeAccepted', 'Challenge Accepted!')}
-            </span>
-          ) : challengeStatus === 'pending' ? (
-            <>
-              <button
-                className="promo-accept-challenge-btn"
-                onClick={handleAcceptChallenge}
-                disabled={acceptingChallenge}
-              >
-                {acceptingChallenge
-                  ? t('promos.card.accepting', 'Accepting...')
-                  : t('promos.card.acceptChallenge', 'Accept Challenge')}
-              </button>
-              <Link to="/challenges" className="promo-view-challenge-link">
-                {t('promos.card.viewChallenge', 'View Challenge')}
-              </Link>
-            </>
-          ) : null}
-          {challengeError && (
-            <span className="promo-challenge-error">{challengeError}</span>
-          )}
-        </div>
+      {promo.promoType === 'call-out' && promo.challengeMode !== 'tag_team' && promo.targetWrestlerName && (
+        <p className="promo-card__context">
+          {t('promos.card.callingOut', 'Calling out')} <strong>{promo.targetWrestlerName}</strong>
+        </p>
       )}
 
       {promo.matchName && (
-        <div className="promo-match-context">
-          <span className="match-icon">{'\u{1F3C6}'}</span>
-          <span>{promo.matchName}</span>
-        </div>
+        <p className="promo-card__context">
+          <Trophy aria-hidden="true" size={16} />
+          {promo.matchName}
+        </p>
       )}
 
       {promo.championshipName && (
-        <div className="promo-championship-context">
-          <span className="championship-icon">{'\u{1F451}'}</span>
-          <span>{promo.championshipName}</span>
-        </div>
+        <p className="promo-card__context">
+          <Crown aria-hidden="true" size={16} />
+          {promo.championshipName}
+        </p>
       )}
 
-      {promo.title && <h3 className="promo-title">{promo.title}</h3>}
+      {promo.title && <h3 className="promo-card__title">{promo.title}</h3>}
 
-      {promo.playerName && (
-        <div className="promo-player-subtitle">{promo.playerName}</div>
-      )}
-
-      <div className="promo-content">
+      <div className="promo-card__content">
         <p>{highlightMentions(displayContent)}</p>
         {canTruncate && (
-          <button className="promo-read-more" onClick={toggleExpand}>
+          <button type="button" className="promo-card__more" onClick={toggleExpand}>
             {expanded
               ? t('promos.card.showLess', 'Show less')
               : t('promos.card.readMore', 'Read more')}
@@ -249,24 +215,31 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
         )}
       </div>
 
-      <div className="promo-card-footer">
+      {isTargetOfCallOut && challenge && (
+        <div className="promo-card__challenge">
+          {renderChallengeStatus(challenge)}
+          <Link to={`/challenges/${challenge.challengeId}`} className="promo-card__link">
+            {t('promos.card.viewChallenge', 'View Challenge')}
+          </Link>
+          {challengeError && <span className="promo-card__error" role="alert">{challengeError}</span>}
+        </div>
+      )}
+
+      <div className="promo-card__footer">
         <PromoReactions
           reactionCounts={promo.reactionCounts}
           onReact={onReact ? (reaction) => onReact(promo.promoId, reaction) : undefined}
         />
-
-        <div className="promo-footer-actions">
-          {promo.responseCount > 0 && (
-            <Link to={`/promos/${promo.promoId}`} className="promo-thread-link">
-              {promo.responseCount} {promo.responseCount === 1
-                ? t('promos.card.response', 'response')
-                : t('promos.card.responses', 'responses')}
-              {' \u2014 '}
-              {t('promos.card.viewThread', 'View Thread')}
-            </Link>
-          )}
-        </div>
+        {promo.responseCount > 0 && (
+          <Link to={`/promos/${promo.promoId}`} className="promo-card__link">
+            {promo.responseCount} {promo.responseCount === 1
+              ? t('promos.card.response', 'response')
+              : t('promos.card.responses', 'responses')}
+            {' — '}
+            {t('promos.card.viewThread', 'View Thread')}
+          </Link>
+        )}
       </div>
-    </div>
+    </Card>
   );
 }

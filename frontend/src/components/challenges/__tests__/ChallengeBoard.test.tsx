@@ -93,7 +93,7 @@ describe('ChallengeBoard', () => {
     });
 
     // Filter tab buttons rendered
-    const filterButtons = screen.getAllByRole('button');
+    const filterButtons = screen.getAllByRole('tab');
     const filterTexts = filterButtons.map((b) => b.textContent);
     expect(filterTexts).toContain('Active');
     expect(filterTexts).toContain('Pending');
@@ -101,7 +101,7 @@ describe('ChallengeBoard', () => {
     expect(filterTexts).toContain('Recent');
 
     // Both challenges shown in "Active" (pending + accepted are active)
-    expect(screen.getByText('Stone Cold')).toBeInTheDocument();
+    expect(await screen.findByText('Stone Cold')).toBeInTheDocument();
     expect(screen.getByText('Undertaker')).toBeInTheDocument();
   });
 

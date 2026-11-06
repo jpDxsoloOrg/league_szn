@@ -5,9 +5,10 @@ import { BrowserRouter } from 'react-router-dom';
 import type { PromoWithContext } from '../../../types/promo';
 
 // --- Hoisted mocks ---
-const { mockGetAllPromos, mockReact } = vi.hoisted(() => ({
+const { mockGetAllPromos, mockReact, mockUseAuth } = vi.hoisted(() => ({
   mockGetAllPromos: vi.fn(),
   mockReact: vi.fn(),
+  mockUseAuth: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -52,7 +53,7 @@ vi.mock('../PromoCard.css', () => ({}));
 vi.mock('../PromoReactions.css', () => ({}));
 
 vi.mock('../../../contexts/AuthContext', () => ({
-  useAuth: () => ({ isAuthenticated: false, playerId: null }),
+  useAuth: mockUseAuth,
 }));
 
 vi.mock('../../../contexts/SiteConfigContext', () => ({
@@ -93,6 +94,7 @@ function renderFeed() {
 describe('PromoFeed', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, playerId: null, isAdminOrModerator: false });
   });
 
   it('renders promo list with filter tabs after loading', async () => {
@@ -130,7 +132,7 @@ describe('PromoFeed', () => {
     );
 
     // Promo content rendered
-    expect(screen.getByText('Undertaker')).toBeInTheDocument();
+    expect(await screen.findByText('Undertaker')).toBeInTheDocument();
     expect(screen.getByText('The Rock')).toBeInTheDocument();
   });
 
@@ -226,9 +228,42 @@ describe('PromoFeed', () => {
     });
 
     // Parent promo's card is visible
-    expect(screen.getByText('Undertaker')).toBeInTheDocument();
+    expect(await screen.findByText('Undertaker')).toBeInTheDocument();
     // Response promo's card is filtered out client-side
     expect(screen.queryByText('The Rock')).not.toBeInTheDocument();
     expect(screen.queryByText('Bring it on!')).not.toBeInTheDocument();
+  });
+
+  it('offers archived promos to staff only', async () => {
+    mockGetAllPromos.mockResolvedValue([]);
+
+    const { unmount } = renderFeed();
+    await waitFor(() => expect(mockGetAllPromos).toHaveBeenCalled());
+    expect(screen.queryByLabelText('Show archived')).not.toBeInTheDocument();
+    unmount();
+
+    const user = userEvent.setup();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, playerId: 'staff', isAdminOrModerator: true });
+    renderFeed();
+    await user.click(await screen.findByLabelText('Show archived'));
+
+    await waitFor(() => {
+      expect(mockGetAllPromos).toHaveBeenLastCalledWith(
+        { excludeResponses: true, includeArchived: true },
+        expect.any(AbortSignal)
+      );
+    });
+  });
+
+  it('shows a retry when the feed fails to load', async () => {
+    const user = userEvent.setup();
+    mockGetAllPromos.mockRejectedValueOnce(new Error('Network down'));
+    mockGetAllPromos.mockResolvedValue([makePromo()]);
+
+    renderFeed();
+
+    await user.click(await screen.findByText('Retry'));
+
+    expect(await screen.findByText('Stone Cold')).toBeInTheDocument();
   });
 });

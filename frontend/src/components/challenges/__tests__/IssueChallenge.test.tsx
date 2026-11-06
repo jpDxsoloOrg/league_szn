@@ -172,7 +172,8 @@ describe('IssueChallenge', () => {
 
     const textarea = screen.getByPlaceholderText('Say something...');
     const longText = 'A'.repeat(500);
-    await user.type(textarea, longText);
+    await user.click(textarea);
+    await user.paste(longText);
 
     expect(screen.getByText('500/500')).toBeInTheDocument();
   });
