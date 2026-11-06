@@ -12,6 +12,8 @@
  * - Extract page content
  */
 
+import { adminCredentials } from '../config/credentials';
+
 export interface MCPPlaywrightAction {
   action: 'navigate' | 'click' | 'fill' | 'screenshot' | 'get_text' | 'wait';
   selector?: string;
@@ -59,17 +61,17 @@ When using MCP Playwright for browser automation, use the following tools:
 ### Example Workflow for Site Verification:
 
 1. Navigate to the site:
-   browser_navigate({ url: "http://dev.leagueszn.jpdxsolo.com" })
+   browser_navigate({ url: "https://dev.leagueszn.jpdxsolo.com" })
 
 2. Take a screenshot of standings:
    browser_screenshot()
 
 3. Navigate to admin:
-   browser_navigate({ url: "http://dev.leagueszn.jpdxsolo.com/admin" })
+   browser_navigate({ url: "https://dev.leagueszn.jpdxsolo.com/admin" })
 
 4. Login:
-   browser_fill({ selector: "#username", value: "admin" })
-   browser_fill({ selector: "#password", value: "FireGreen48!" })
+   browser_fill({ selector: "#username", value: "<E2E_ADMIN_USERNAME>" })
+   browser_fill({ selector: "#password", value: "<E2E_ADMIN_PASSWORD>" })
    browser_click({ selector: "button[type='submit']" })
 
 5. Wait for admin panel:
@@ -123,19 +125,17 @@ export const mcpEnvironments = {
     apiUrl: 'http://localhost:3001/dev',
   },
   dev: {
-    baseUrl: 'http://dev.leagueszn.jpdxsolo.com',
+    baseUrl: 'https://dev.leagueszn.jpdxsolo.com',
     apiUrl: 'https://dgsmskbzb2.execute-api.us-east-1.amazonaws.com/devtest',
   },
   prod: {
-    baseUrl: 'http://leagueszn.jpdxsolo.com',
+    baseUrl: 'https://leagueszn.jpdxsolo.com',
     apiUrl: 'https://9pcccl0caj.execute-api.us-east-1.amazonaws.com/dev',
   },
 };
 
 /**
- * Admin credentials for testing
+ * Admin credentials for testing, read from the environment.
+ * See e2e/README.md.
  */
-export const mcpAdminCredentials = {
-  username: 'admin',
-  password: 'FireGreen48!',
-};
+export const mcpAdminCredentials = adminCredentials;
