@@ -316,7 +316,7 @@ export default function MyTagTeam() {
             {tagTeam.standings?.recentForm.length > 0 && (
               <div>
                 <dt>{t('tagTeams.my.recentForm', 'Form')}</dt>
-                <dd><FormDots results={tagTeam.standings.recentForm} /></dd>
+                <dd><FormDots results={[...tagTeam.standings.recentForm].reverse()} /></dd>
               </div>
             )}
           </dl>

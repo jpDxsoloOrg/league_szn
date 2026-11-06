@@ -311,6 +311,16 @@ describe('ManagePlayers', () => {
       expect(body).not.toHaveProperty('alternateWrestlerId');
     });
 
+    it('leaves the video upload flag out of a save that did not change it', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+
+      await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+      expect(mockPlayersApi.update.mock.calls[0][1]).not.toHaveProperty('canUploadVideos');
+    });
+
     it('sends only the slot the admin changed', async () => {
       const user = userEvent.setup();
       await openEdit(user);

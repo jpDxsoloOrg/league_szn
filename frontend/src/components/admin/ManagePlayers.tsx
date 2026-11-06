@@ -285,7 +285,11 @@ export default function ManagePlayers() {
           divisionId: formData.divisionId || '',
           psnId: formData.psnId.trim() || undefined,
           alignment: formData.alignment || '',
-          canUploadVideos: formData.canUploadVideos,
+          // Public reads leave this flag out when the session has lapsed, so the
+          // form can start on a false it never read. Only a change goes out.
+          ...(formData.canUploadVideos !== (editingPlayer.canUploadVideos ?? false)
+            ? { canUploadVideos: formData.canUploadVideos }
+            : {}),
         });
       } else {
         await playersApi.create({

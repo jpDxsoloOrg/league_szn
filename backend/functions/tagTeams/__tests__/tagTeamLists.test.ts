@@ -154,6 +154,8 @@ describe('tag team lists', () => {
       ['the day before the team formed', '2026-03-09T23:59:59.000Z', false],
       ['earlier on the day the team formed', '2026-03-10T08:00:00.000Z', true],
       ['an event dated the day the team formed', '2026-03-10', true],
+      ['an event on the US evening before the UTC day the team formed', '2026-03-09', true],
+      ['an event two days before the team formed', '2026-03-08', false],
       ['during the team', '2026-04-01T20:00:00.000Z', true],
       ['later on the day the team dissolved', '2026-06-20T22:00:00.000Z', true],
       ['the day after the team dissolved', '2026-06-21T00:00:00.000Z', false],
