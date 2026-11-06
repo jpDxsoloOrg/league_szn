@@ -28,6 +28,8 @@ import MatchResultForm from './MatchResultForm';
 import MatchEditForm from './MatchEditForm';
 import EventCheckIn from './EventCheckIn';
 import EventCheckInRosterPanel from './EventCheckInRosterPanel';
+import MatchSides from './MatchSides';
+import type { MatchSideParticipant } from './MatchSides';
 import MatchSlots from './MatchSlots';
 import SlotEditDialog from './SlotEditDialog';
 import { buildCheckInStatusMap } from '../../utils/checkInStatus';
@@ -36,7 +38,9 @@ import { StarRating } from '../matches/StarRating';
 import { RateMatchWidget } from '../matches/RateMatchWidget';
 import { MotnToggleButton } from '../matches/MotnToggleButton';
 import { formatCalendarDate, toCalendarDate } from '../../utils/dateUtils';
+import { formatMatchType } from '../../utils/matchDisplay';
 import { DESIGNATION_LABEL_KEYS, EVENT_STATUS_TONES, EVENT_TYPE_TONES } from './eventDisplay';
+import '../posterHero.css';
 import './EventDetail.css';
 
 const EVENT_STATUSES: EventStatus[] = ['upcoming', 'in-progress', 'completed', 'cancelled'];
@@ -597,8 +601,7 @@ export default function EventDetail() {
         {t('events.detail.backToEvents')}
       </Button>
 
-      <section className={`event-hero${eventData.imageUrl ? ' event-hero--image' : ''}`}>
-        {eventData.imageUrl && <img src={eventData.imageUrl} alt="" className="event-hero__image" />}
+      <section className="poster-hero event-hero">
         <div className="event-hero__content">
           <div className="event-hero__badges">
             <Badge tone={EVENT_STATUS_TONES[eventData.status]}>{t(`events.status.${eventData.status}`)}</Badge>
@@ -640,6 +643,11 @@ export default function EventDetail() {
             </dl>
           )}
         </div>
+        {eventData.imageUrl && (
+          <div className="poster-hero__frame">
+            <img src={eventData.imageUrl} alt="" className="poster-hero__image" />
+          </div>
+        )}
       </section>
 
       {isAdminOrModerator && (
@@ -848,13 +856,8 @@ interface MatchEntryProps {
       matchFormat: string;
       stipulationId?: string;
       stipulationName?: string;
-      participants: {
-        playerId: string;
-        playerName: string;
-        wrestlerName: string;
-        /** Live PSN gamertag from the player record; undefined when unset. */
-        psnId?: string;
-      }[];
+      participants: MatchSideParticipant[];
+      teams?: string[][];
       winners?: string[];
       losers?: string[];
       isChampionship: boolean;
@@ -917,7 +920,7 @@ function MatchEntry({
       <div className="event-match__header">
         {designationBadge}
         <span className="event-match__type">
-          {matchData.matchFormat}
+          {formatMatchType(matchData.matchFormat, t)}
           {matchData.stipulationName && ` · ${matchData.stipulationName}`}
         </span>
         {matchData.isChampionship && (
@@ -931,27 +934,13 @@ function MatchEntry({
         )}
       </div>
 
-      <ul className="event-match__participants">
-        {matchData.participants.map((participant, index) => {
-          const isWinner = isCompleted && !isDraw && matchData.winners?.includes(participant.playerId);
-          const isLoser = isCompleted && matchData.losers?.includes(participant.playerId);
-          return (
-            <li key={participant.playerId} className="event-match__participant-item">
-              {index > 0 && <span className="event-match__vs">{t('common.vs')}</span>}
-              <span className={`event-match__participant${isWinner ? ' is-winner' : ''}${isLoser ? ' is-loser' : ''}`}>
-                <span className="event-match__wrestler">
-                  {participant.wrestlerName}
-                  {isWinner && <Badge tone="win">{t('events.detail.winner')}</Badge>}
-                </span>
-                <span className="event-match__player">
-                  {participant.playerName}
-                  {participant.psnId && ` · ${participant.psnId}`}
-                </span>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      <MatchSides
+        participants={matchData.participants}
+        teams={matchData.teams}
+        matchFormat={matchData.matchFormat}
+        winners={isCompleted && !isDraw ? matchData.winners : undefined}
+        losers={isCompleted ? matchData.losers : undefined}
+      />
 
       {match.notes && <p className="event-match__notes">{match.notes}</p>}
 

@@ -39,7 +39,7 @@
 
 .commentary-card-team {
   display: inline-block;
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--color-text-muted);
@@ -70,7 +70,7 @@
 
 .commentary-card-alignment,
 .commentary-card-division {
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 0.15rem 0.5rem;
@@ -100,7 +100,7 @@
 }
 
 .commentary-card-record dt {
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--color-text-muted);
@@ -168,7 +168,7 @@
 }
 
 .commentary-card--compact .commentary-card-bio {
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
 }
 
 @media (max-width: 768px) {

@@ -138,6 +138,51 @@ describe('EventDetail', () => {
     expect(api.getRoster).not.toHaveBeenCalled();
   });
 
+  const withMatch = (matchFormat: string, participants: string[], teams?: string[][]) => ({
+    ...eventWithMatch,
+    enrichedMatches: [{
+      ...eventWithMatch.enrichedMatches[0],
+      matchData: {
+        ...eventWithMatch.enrichedMatches[0]?.matchData,
+        matchFormat,
+        teams,
+        participants: participants.map((id) => ({ playerId: id, playerName: `Player ${id}`, wrestlerName: `Wrestler ${id}` })),
+      },
+    }],
+  });
+
+  it('puts one vs between tag team sides and groups the partners', async () => {
+    api.getEvent.mockResolvedValue(withMatch('tag-team', ['a', 'b', 'c', 'd'], [['a', 'c'], ['b', 'd']]));
+    const { container } = renderDetail();
+
+    await screen.findByText('Wrestler a');
+    expect(screen.getAllByText('common.vs')).toHaveLength(1);
+    const sides = container.querySelectorAll('.event-match__side');
+    expect(sides).toHaveLength(2);
+    expect(sides[0]).toHaveTextContent('Wrestler a');
+    expect(sides[0]).toHaveTextContent('Wrestler c');
+    expect(sides[1]).toHaveTextContent('Wrestler b');
+  });
+
+  it('lists a multi-man match without any vs chain', async () => {
+    api.getEvent.mockResolvedValue(withMatch('6-pack-challenge', ['a', 'b', 'c', 'd', 'e', 'f']));
+    const { container } = renderDetail();
+
+    await screen.findByText('Wrestler a');
+    expect(screen.queryByText('common.vs')).not.toBeInTheDocument();
+    expect(container.querySelectorAll('.event-match__field > li')).toHaveLength(6);
+  });
+
+  it('keeps the poster out from under the title', async () => {
+    api.getEvent.mockResolvedValue({ ...eventWithMatch, imageUrl: 'https://example.com/poster.png' });
+    const { container } = renderDetail();
+
+    await screen.findByRole('heading', { name: 'Summer Slam' });
+    const frame = container.querySelector('.poster-hero__frame');
+    expect(frame?.querySelector('img')).toHaveAttribute('src', 'https://example.com/poster.png');
+    expect(frame).not.toHaveTextContent('Summer Slam');
+  });
+
   it('gives staff the full roster, including hidden players, when recording a result', async () => {
     const user = userEvent.setup();
     renderDetail();

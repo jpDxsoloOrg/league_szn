@@ -20,10 +20,14 @@ import CreateEventModal from './CreateEventModal';
 import type { CreateEventPreset } from './CreateEventModal';
 import EventCard from './EventCard';
 import { EVENT_STATUS_TONES, EVENT_TYPE_TONES } from './eventDisplay';
+import '../posterHero.css';
 import './EventsCalendar.css';
 
 const EVENT_TYPES: EventType[] = ['ppv', 'weekly', 'special', 'house'];
 const PAST_PAGE_SIZE = 10;
+/** How far ahead the list names shows that have no event yet. */
+const PLANNED_DAYS_AHEAD = 35;
+const PLANNED_SHOWN = 5;
 
 type FilterTab = 'all' | EventType;
 type EventsView = 'upcoming' | 'past';
@@ -44,6 +48,19 @@ interface ShowCalendarEntry {
   companyName: string;
   date: string; // calendar date YYYY-MM-DD for this specific occurrence
   eventType: 'weekly' | 'ppv';
+}
+
+/** The next dates a show is due, soonest first, so the list agrees with the calendar. */
+function getShowDates(show: Show, today: Date): string[] {
+  if (show.schedule === 'ppv' && show.ppvDate) return [toCalendarDate(show.ppvDate)];
+  const targetDay = show.dayOfWeek ? dayOfWeekToNumber[show.dayOfWeek] : undefined;
+  if (show.schedule !== 'weekly' || targetDay === undefined) return [];
+  const dates: string[] = [];
+  for (let offset = 0; offset <= PLANNED_DAYS_AHEAD; offset++) {
+    const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset);
+    if (date.getDay() === targetDay) dates.push(dateToCalendarDate(date));
+  }
+  return dates;
 }
 
 export default function EventsCalendar() {
@@ -258,6 +275,23 @@ export default function EventsCalendar() {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [filteredEntries]);
 
+  // The next open date of each scheduled show, matching the planned chips on the calendar.
+  const plannedShows = useMemo(() => {
+    const today = new Date();
+    const todayYmd = dateToCalendarDate(today);
+    return shows
+      .filter((show) => activeFilter === 'all' || activeFilter === show.schedule)
+      .flatMap((show) => {
+        const date = getShowDates(show, today).find((ymd) => (
+          ymd >= todayYmd
+          && !calendarEntries.some((entry) => entry.showId === show.showId && toCalendarDate(entry.date) === ymd)
+        ));
+        return date ? [{ show, date }] : [];
+      })
+      .sort((first, second) => first.date.localeCompare(second.date))
+      .slice(0, PLANNED_SHOWN);
+  }, [shows, activeFilter, calendarEntries]);
+
   // Recent completed events
   const recentResults = useMemo(() => {
     return filteredEntries
@@ -390,8 +424,7 @@ export default function EventsCalendar() {
       {pageHeader}
 
       {heroEvent && (
-        <section className="events-hero" aria-label={t(`events.status.${heroEvent.status}`)}>
-          {heroEvent.imageUrl && <img src={heroEvent.imageUrl} alt="" className="events-hero__image" />}
+        <section className="poster-hero events-hero" aria-label={t(`events.status.${heroEvent.status}`)}>
           <div className="events-hero__content">
             <div className="events-hero__badges">
               <Badge tone={EVENT_STATUS_TONES[heroEvent.status]}>{t(`events.status.${heroEvent.status}`)}</Badge>
@@ -403,6 +436,11 @@ export default function EventsCalendar() {
             </p>
             <Button variant="hero" to={`/events/${heroEvent.eventId}`}>{t('events.calendar.viewCard', 'View the card')}</Button>
           </div>
+          {heroEvent.imageUrl && (
+            <div className="poster-hero__frame">
+              <img src={heroEvent.imageUrl} alt="" className="poster-hero__image" />
+            </div>
+          )}
         </section>
       )}
 
@@ -434,7 +472,78 @@ export default function EventsCalendar() {
             onValueChange={(value) => setActiveFilter(value as FilterTab)}
             items={filterTabs}
           />
+        </>
+      )}
 
+      <div className="events-layout">
+        <div className="events-layout__lists">
+          {showUpcoming && otherLiveEvents.length > 0 && (
+            <section className="events-section">
+              <h2 className="events-section__title">{t('events.calendar.inProgress')}</h2>
+              <div className="events-list">
+                {otherLiveEvents.map((event) => (
+                  <EventCard key={event.eventId} event={event} showStatus={false} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {showUpcoming && (otherUpcomingEvents.length > 0 || plannedShows.length > 0 || !heroCoversUpcoming) && (
+            <section className="events-section">
+              <h2 className="events-section__title">{t('events.calendar.upcoming')}</h2>
+              {otherUpcomingEvents.length === 0 && plannedShows.length === 0 ? (
+                <p className="events-section__empty">{t('events.calendar.noUpcoming')}</p>
+              ) : (
+                <div className="events-list">
+                  {otherUpcomingEvents.map((event) => (
+                    <EventCard key={event.eventId} event={event} showStatus={false} />
+                  ))}
+                  {plannedShows.map(({ show, date }) => (
+                    <div key={`${show.showId}-${date}`} className="event-card event-card--planned">
+                      <span className="event-card__date" aria-hidden="true">
+                        <span className="event-card__month">{formatCalendarDate(date, undefined, { month: 'short' })}</span>
+                        <span className="event-card__day">{formatCalendarDate(date, undefined, { day: '2-digit' })}</span>
+                      </span>
+                      <span className="event-card__body">
+                        <span className="event-card__name">{show.name}</span>
+                        <span className="event-card__meta">
+                          <span className="sr-only">{formatCalendarDate(date)}</span>
+                          {t('events.calendar.plannedShow', 'Planned show, card to come')}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {showPast && (
+            <section className="events-section">
+              <h2 className="events-section__title">{t('events.calendar.recentResults', 'Recent Results')}</h2>
+              {recentResults.length === 0 ? (
+                <p className="events-section__empty">{t('events.calendar.noResults', 'No completed events yet.')}</p>
+              ) : (
+                <div className="events-list">
+                  {recentResults.slice(0, pastLimit).map((event) => (
+                    <EventCard key={event.eventId} event={event} showStatus={false} />
+                  ))}
+                </div>
+              )}
+              {recentResults.length > pastLimit && (
+                <Button
+                  className="events-section__more"
+                  variant="secondary"
+                  onClick={() => setPastLimit((limit) => limit + PAST_PAGE_SIZE)}
+                >
+                  {t('events.calendar.showMore', 'Show more')}
+                </Button>
+              )}
+            </section>
+          )}
+        </div>
+
+        {!isMobile && (
           <section className="calendar" aria-label={`${monthNames[currentMonth]} ${currentYear}`}>
             <div className="calendar-nav">
               <button
@@ -513,60 +622,14 @@ export default function EventsCalendar() {
                   <span>{t(`events.types.${eventType}`)}</span>
                 </div>
               ))}
+              <div className="legend-item">
+                <span className="legend-dot legend-dot--planned" aria-hidden="true" />
+                <span>{t('events.calendar.plannedLegend', 'Planned')}</span>
+              </div>
             </div>
           </section>
-        </>
-      )}
-
-      {showUpcoming && otherLiveEvents.length > 0 && (
-        <section className="events-section">
-          <h2 className="events-section__title">{t('events.calendar.inProgress')}</h2>
-          <div className="events-list">
-            {otherLiveEvents.map((event) => (
-              <EventCard key={event.eventId} event={event} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {showUpcoming && (otherUpcomingEvents.length > 0 || !heroCoversUpcoming) && (
-        <section className="events-section">
-          <h2 className="events-section__title">{t('events.calendar.upcoming')}</h2>
-          {otherUpcomingEvents.length === 0 ? (
-            <p className="events-section__empty">{t('events.calendar.noUpcoming')}</p>
-          ) : (
-            <div className="events-list">
-              {otherUpcomingEvents.map((event) => (
-                <EventCard key={event.eventId} event={event} />
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {showPast && (
-        <section className="events-section">
-          <h2 className="events-section__title">{t('events.calendar.recentResults', 'Recent Results')}</h2>
-          {recentResults.length === 0 ? (
-            <p className="events-section__empty">{t('events.calendar.noResults', 'No completed events yet.')}</p>
-          ) : (
-            <div className="events-list">
-              {recentResults.slice(0, pastLimit).map((event) => (
-                <EventCard key={event.eventId} event={event} />
-              ))}
-            </div>
-          )}
-          {recentResults.length > pastLimit && (
-            <Button
-              className="events-section__more"
-              variant="secondary"
-              onClick={() => setPastLimit((limit) => limit + PAST_PAGE_SIZE)}
-            >
-              {t('events.calendar.showMore', 'Show more')}
-            </Button>
-          )}
-        </section>
-      )}
+        )}
+      </div>
 
       {createModal}
     </div>

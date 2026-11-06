@@ -11,6 +11,7 @@ import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import { StarRating } from '../matches/StarRating';
 import { DESIGNATION_LABEL_KEYS } from './eventDisplay';
+import { formatMatchType } from '../../utils/matchDisplay';
 import './EventResults.css';
 
 export default function EventResults() {
@@ -138,7 +139,7 @@ export default function EventResults() {
                 <div className="event-result__meta">
                   <Badge tone={designation === 'main-event' ? 'pink' : 'neutral'}>{t(DESIGNATION_LABEL_KEYS[designation])}</Badge>
                   <span>
-                    {matchData.matchFormat}
+                    {formatMatchType(matchData.matchFormat, t)}
                     {matchData.stipulationName && ` · ${matchData.stipulationName}`}
                   </span>
                   {matchData.isChampionship && (

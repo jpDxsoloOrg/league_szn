@@ -13,33 +13,16 @@
 
 /* Spotlight: the live or next show. */
 .events-hero {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius-card);
-  background-image: var(--gradient-hero);
-}
-
-.events-hero__image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.events-hero__image + .events-hero__content {
-  background-image: var(--gradient-tile-scrim);
+  padding: 1.75rem;
 }
 
 .events-hero__content {
-  position: relative;
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.625rem;
-  min-height: 240px;
-  justify-content: flex-end;
-  padding: 1.75rem;
+  min-width: 0;
 }
 
 .events-hero__badges {
@@ -64,6 +47,21 @@
 .events-hero__date {
   color: var(--color-text);
   font-weight: 600;
+}
+
+/* Lists lead; the calendar sits beside them so an empty month buries nothing. */
+.events-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  align-items: start;
+  gap: 1.5rem;
+}
+
+.events-layout__lists {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
 }
 
 .events-toolbar {
@@ -132,7 +130,7 @@
   border-right: 1px solid var(--color-hairline);
   border-bottom: 1px solid var(--color-hairline);
   color: var(--color-text-muted);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   text-align: center;
   text-transform: uppercase;
@@ -143,8 +141,8 @@
   flex-direction: column;
   gap: 0.25rem;
   min-width: 0;
-  min-height: 92px;
-  padding: 0.375rem;
+  min-height: 72px;
+  padding: 0.25rem;
   border-right: 1px solid var(--color-hairline);
   border-bottom: 1px solid var(--color-hairline);
 }
@@ -155,7 +153,7 @@
 
 .calendar-day-number {
   color: var(--color-text-muted);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
 }
 
 .calendar-item {
@@ -170,7 +168,7 @@
   background-color: var(--color-overlay-soft);
   color: var(--color-text);
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   text-align: left;
   text-decoration: none;
@@ -215,7 +213,7 @@ button.calendar-item {
   gap: 1rem;
   margin-top: 0.75rem;
   color: var(--color-text-secondary);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .legend-item {
@@ -241,6 +239,11 @@ button.calendar-item {
 
 .legend-dot--special {
   background-color: var(--color-violet);
+}
+
+.legend-dot--planned {
+  border: 1px dashed var(--color-text-secondary);
+  background-color: transparent;
 }
 
 .events-section {
@@ -269,9 +272,14 @@ button.calendar-item {
   gap: 0.5rem;
 }
 
+@media (max-width: 1100px) {
+  .events-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
-  .events-hero__content {
-    min-height: 200px;
+  .events-hero {
     padding: 1.25rem;
   }
 

@@ -26,7 +26,7 @@
 
 .event-results-stats dt {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .event-results-stats dd {
@@ -98,7 +98,7 @@
 .event-result__def {
   color: var(--color-cyan);
   font-family: var(--font-body);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 

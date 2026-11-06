@@ -32,7 +32,7 @@
 
 .event-card__month {
   color: var(--color-cyan);
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -67,7 +67,7 @@
   flex-wrap: wrap;
   gap: 0.125rem 0.75rem;
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .event-card__results {
@@ -85,6 +85,17 @@
 .event-card__chevron {
   flex: none;
   color: var(--color-text-muted);
+}
+
+/* A planned show has no event page yet, so it reads as a quieter row. */
+.event-card--planned {
+  border-style: dashed;
+  background-color: transparent;
+}
+
+.event-card--planned:hover {
+  border-color: var(--color-hairline);
+  background-color: transparent;
 }
 
 @media (max-width: 768px) {

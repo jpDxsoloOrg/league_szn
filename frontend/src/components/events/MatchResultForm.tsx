@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { matchesApi } from '../../services/api';
 import type { Match, Player } from '../../types';
 import type { TagTeam } from '../../types/tagTeam';
+import { formatMatchDate } from '../../utils/dateUtils';
+import { formatMatchType } from '../../utils/matchDisplay';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import './MatchResultForm.css';
@@ -115,11 +117,11 @@ export default function MatchResultForm({
       <dl className="match-result-form__details">
         <div>
           <dt>{t('recordResult.matchType')}</dt>
-          <dd>{match.matchFormat}</dd>
+          <dd>{formatMatchType(match.matchFormat, t)}</dd>
         </div>
         <div>
           <dt>{t('recordResult.date')}</dt>
-          <dd>{new Date(match.date).toLocaleString()}</dd>
+          <dd>{formatMatchDate(match.date)}</dd>
         </div>
       </dl>
 

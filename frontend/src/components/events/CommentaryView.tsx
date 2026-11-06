@@ -6,6 +6,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { formatCalendarDate } from '../../utils/dateUtils';
 import type { CommentaryParticipant, EventCommentary } from '../../types/event';
 import { defaultMatchIndex, groupByTeam } from '../../utils/commentary';
+import { formatMatchType } from '../../utils/matchDisplay';
 import Badge from '../ui/Badge';
 import type { BadgeTone } from '../ui/Badge';
 import Button from '../ui/Button';
@@ -14,15 +15,6 @@ import { DESIGNATION_LABEL_KEYS } from './eventDisplay';
 import CommentaryWrestlerCard from './CommentaryWrestlerCard';
 import HeadToHeadStrip from './HeadToHeadStrip';
 import './CommentaryView.css';
-
-/** "singles" → "Singles", "triple-threat" → "Triple Threat". */
-function prettyFormat(format: string): string {
-  return format
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
-}
 
 export default function CommentaryView() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -143,7 +135,7 @@ export default function CommentaryView() {
               <span className="commentary-sep">·</span>
               <span>{t(DESIGNATION_LABEL_KEYS[match.designation])}</span>
               <span className="commentary-sep">·</span>
-              <span>{prettyFormat(match.matchFormat)}</span>
+              <span>{formatMatchType(match.matchFormat, t)}</span>
               {match.stipulationName && (
                 <>
                   <span className="commentary-sep">·</span>

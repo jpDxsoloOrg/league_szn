@@ -60,7 +60,7 @@
 .h2h-multi-label {
   margin: 0 0 0.35rem;
   color: var(--color-text-muted);
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -86,7 +86,7 @@
 
 .h2h-multi-name {
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
 }
 
 .h2h-multi-record {
@@ -107,7 +107,7 @@
 .h2h-caption {
   caption-side: bottom;
   color: var(--color-text-muted);
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   padding-top: 0.5rem;
   text-align: left;
 }
@@ -121,7 +121,7 @@
 
 .h2h-grid th {
   color: var(--color-text-secondary);
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   background: var(--color-surface-raised);
@@ -183,5 +183,5 @@
 .h2h-pair-meta {
   grid-column: 1 / -1;
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: 0.9375rem;
 }

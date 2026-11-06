@@ -9,9 +9,11 @@ import './EventCard.css';
 
 interface EventCardProps {
   event: EventCalendarEntry;
+  /** Off inside a section that already names the status. */
+  showStatus?: boolean;
 }
 
-export default function EventCard({ event }: EventCardProps) {
+export default function EventCard({ event, showStatus = true }: EventCardProps) {
   const { t } = useTranslation();
   const month = formatCalendarDate(event.date, undefined, { month: 'short' });
   const day = formatCalendarDate(event.date, undefined, { day: '2-digit' });
@@ -34,7 +36,7 @@ export default function EventCard({ event }: EventCardProps) {
         <span className="event-card__name">{event.name}</span>
         <span className="event-card__meta">
           <span className="sr-only">{fullDate}</span>
-          <span>{event.matchCount} {t('events.card.matches', { count: event.matchCount })}</span>
+          <span>{t('rivalries.card.matchCount', { count: event.matchCount })}</span>
           {event.championshipMatchCount > 0 && (
             <span>{event.championshipMatchCount} {t('events.card.titleMatches')}</span>
           )}
@@ -44,7 +46,7 @@ export default function EventCard({ event }: EventCardProps) {
 
       <span className="event-card__badges">
         <Badge tone={EVENT_TYPE_TONES[event.eventType]}>{t(`events.types.${event.eventType}`)}</Badge>
-        <Badge tone={EVENT_STATUS_TONES[event.status]}>{t(`events.status.${event.status}`)}</Badge>
+        {showStatus && <Badge tone={EVENT_STATUS_TONES[event.status]}>{t(`events.status.${event.status}`)}</Badge>}
       </span>
 
       <ChevronRight className="event-card__chevron" aria-hidden="true" size={20} />
