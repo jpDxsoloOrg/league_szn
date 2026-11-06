@@ -394,6 +394,12 @@ describe('MatchSearch', () => {
       fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'singles' } });
       expect(rows()).toHaveLength(50);
 
+      // Clearing the search is a change too, not a return to the old page count.
+      fireEvent.click(await showMoreButton());
+      fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'singles x' } });
+      fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'singles' } });
+      expect(rows()).toHaveLength(50);
+
       fireEvent.click(await showMoreButton());
       expect(rows()).toHaveLength(100);
       fireEvent.mouseDown(screen.getByRole('tab', { name: 'Completed' }));
