@@ -7,6 +7,7 @@ import type { FactionScheduleResponse, FactionScheduledMatch } from '../../../ty
 import type { FactionDetailContext } from '../FactionDetail';
 import EmptyState from '../../ui/EmptyState';
 import Skeleton from '../../ui/Skeleton';
+import { formatMatchType } from '../../../utils/matchDisplay';
 import { formatCountdown } from '../factionFormat';
 import '../groupUi.css';
 import './FactionSchedule.css';
@@ -189,7 +190,7 @@ export default function FactionSchedule() {
                       </span>
 
                       <span className="group-person__text">
-                        <span className="group-person__name">{match.matchFormat.toUpperCase()}</span>
+                        <span className="group-person__name">{formatMatchType(match.matchFormat, t)}</span>
                         {memberCompeting && (
                           <span>
                             {memberCompeting.playerName}

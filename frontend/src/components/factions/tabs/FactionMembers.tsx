@@ -314,7 +314,13 @@ export default function FactionMembers() {
       </div>
 
       {visibleRows.length === 0 ? (
-        <p className="group-empty">{t('factions.members.empty', 'No members match the current filter.')}</p>
+        <p className="group-empty">
+          {rows.length === 0 && faction.memberIds.length > 0
+            ? t('factions.overview.rosterMissing', '{{count}} members are no longer listed on the roster.', {
+                count: faction.memberIds.length,
+              })
+            : t('factions.members.empty', 'No members match the current filter.')}
+        </p>
       ) : (
         <div className="faction-members__list">
           {visibleRows.map((row) => {
@@ -410,6 +416,7 @@ export default function FactionMembers() {
         </div>
       )}
 
+      {rows.length > 0 && (
       <section className="group-section" aria-labelledby="faction-members-totals">
         <h2 id="faction-members-totals" className="group-heading">
           {t('factions.members.totalsTitle', 'Faction Totals')}
@@ -462,6 +469,7 @@ export default function FactionMembers() {
           )}
         </div>
       </section>
+      )}
 
       {inviteOpen && (
         <InviteToFactionModal

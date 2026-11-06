@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useOutletContext } from 'react-router-dom';
 import { factionsApi, seasonsApi, championshipsApi } from '../../../services/api';
 import { logger } from '../../../utils/logger';
+import { formatMatchType, matchFormatKey } from '../../../utils/matchDisplay';
 import type { Championship, Season } from '../../../types';
 import type {
   FactionStatsResponse,
@@ -19,6 +20,8 @@ import './FactionStats.css';
 
 const LEADERBOARD_LIMIT = 5;
 const H2H_LIMIT = 5;
+/** One season is a single point, so it reads better as a row than as a chart. */
+const MIN_CHART_SEASONS = 2;
 
 type SeasonKey = string | 'all';
 
@@ -49,7 +52,7 @@ function MatchTypeBars({ rows, ariaLabel }: MatchTypeBarsProps) {
         return (
           <li key={row.matchFormat} className="faction-stats__bar-row">
             <div className="faction-stats__bar-label">
-              <span>{row.matchFormat}</span>
+              <span>{formatMatchType(row.matchFormat, t)}</span>
               <span className="group-muted">{row.wins}-{row.losses}-{row.draws}</span>
             </div>
             <svg
@@ -58,7 +61,7 @@ function MatchTypeBars({ rows, ariaLabel }: MatchTypeBarsProps) {
               preserveAspectRatio="none"
               role="img"
               aria-label={t('factions.redesign.recordAria', '{{label}}: {{wins}} wins, {{losses}} losses, {{draws}} draws', {
-                label: row.matchFormat,
+                label: formatMatchType(row.matchFormat, t),
                 wins: row.wins,
                 losses: row.losses,
                 draws: row.draws,
@@ -294,8 +297,21 @@ export default function FactionStats() {
     [championships, memberIds],
   );
 
+  // Stored formats vary in spelling, so "Single" and "singles" share one row.
+  const matchTypeRows = useMemo(() => {
+    const merged = new Map<string, FactionStatsMatchTypeRow>();
+    for (const row of activeStats?.matchTypeBreakdown ?? []) {
+      const key = matchFormatKey(row.matchFormat);
+      const existing = merged.get(key);
+      merged.set(key, existing
+        ? { ...existing, wins: existing.wins + row.wins, losses: existing.losses + row.losses, draws: existing.draws + row.draws }
+        : row);
+    }
+    return [...merged.values()];
+  }, [activeStats]);
+
   const dominantFormat = useMemo<{ format: string; winPct: number } | null>(() => {
-    const rows = activeStats?.matchTypeBreakdown ?? [];
+    const rows = matchTypeRows;
     if (rows.length === 0) return null;
     const ranked = rows
       .map((r) => {
@@ -304,7 +320,7 @@ export default function FactionStats() {
       })
       .sort((a, b) => b.winPct - a.winPct);
     return ranked[0] ?? null;
-  }, [activeStats]);
+  }, [matchTypeRows]);
 
   const seasonPoints: SeasonPoint[] = useMemo(() => {
     return seasons
@@ -326,6 +342,12 @@ export default function FactionStats() {
       .sort((a, b) => b.winPercentage - a.winPercentage || b.wins - a.wins)
       .slice(0, LEADERBOARD_LIMIT);
   }, [activeStats]);
+
+  // Stats still count people who have since left the roster.
+  const leaderName = (member: { playerId: string; wrestlerName: string }) =>
+    (faction.members.some((current) => current.playerId === member.playerId)
+      ? member.wrestlerName
+      : t('factions.stats.formerMember', 'Former member'));
 
   const h2hOrdered: FactionStatsHeadToHeadRow[] = useMemo(() => {
     const rows = activeStats?.headToHead ?? [];
@@ -436,18 +458,18 @@ export default function FactionStats() {
         <div className="faction-stats__column">
           <section className="group-section">
             <h2 className="group-heading">{t('factions.stats.matchTypeTitle', 'Performance by Match Type')}</h2>
-            {totals.matchCount === 0 || (activeStats?.matchTypeBreakdown ?? []).length === 0 ? (
+            {totals.matchCount === 0 || matchTypeRows.length === 0 ? (
               <p className="group-empty">{t('factions.stats.matchTypeEmpty', 'No completed matches yet.')}</p>
             ) : (
               <>
                 <MatchTypeBars
-                  rows={activeStats?.matchTypeBreakdown ?? []}
+                  rows={matchTypeRows}
                   ariaLabel={t('factions.stats.matchTypeAria', 'Performance by match type')}
                 />
                 {dominantFormat && (
                   <p className="faction-stats__callout">
                     {t('factions.stats.dominantIn', 'DOMINANT IN: {{format}} ({{pct}}%)', {
-                      format: dominantFormat.format,
+                      format: formatMatchType(dominantFormat.format, t),
                       pct: dominantFormat.winPct.toFixed(1),
                     })}
                   </p>
@@ -460,6 +482,15 @@ export default function FactionStats() {
             <h2 className="group-heading">{t('factions.stats.seasonByTitle', 'Season-by-Season Record')}</h2>
             {seasonPoints.length === 0 ? (
               <p className="group-empty">{t('factions.stats.seasonByEmpty', 'No season data available yet.')}</p>
+            ) : seasonPoints.length < MIN_CHART_SEASONS ? (
+              <ul className="group-list">
+                {seasonPoints.map((point) => (
+                  <li key={point.seasonId} className="faction-stats__h2h-row">
+                    <span className="group-person__name">{point.seasonName}</span>
+                    <span>{point.wins}-{point.losses}</span>
+                  </li>
+                ))}
+              </ul>
             ) : (
               <>
                 <SeasonLineChart
@@ -521,8 +552,8 @@ export default function FactionStats() {
                 {leaderboard.map((member, index) => (
                   <li key={member.playerId} className="faction-stats__leader-row">
                     <span className="group-muted">{index + 1}</span>
-                    <Avatar src={imageByMember.get(member.playerId)} name={member.wrestlerName} size="sm" />
-                    <span className="group-person__name">{member.wrestlerName}</span>
+                    <Avatar src={imageByMember.get(member.playerId)} name={leaderName(member)} size="sm" />
+                    <span className="group-person__name">{leaderName(member)}</span>
                     <span>{member.winPercentage > 0 ? `${member.winPercentage.toFixed(1)}%` : '—'}</span>
                   </li>
                 ))}

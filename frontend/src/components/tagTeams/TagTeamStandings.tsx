@@ -12,6 +12,7 @@ import Podium from '../ui/Podium';
 import Skeleton from '../ui/Skeleton';
 import GroupFormCell from '../factions/GroupFormCell';
 import { formatRecord } from '../factions/factionFormat';
+import '../rankPodium.css';
 import '../factions/groupUi.css';
 
 const PODIUM_SIZE = 3;
@@ -120,6 +121,7 @@ export default function TagTeamStandings() {
     <div className="group-page">
       {showPodium && (
         <Podium
+          className="rank-podium"
           label={t('tagTeams.standings', 'Tag Team Standings')}
           entries={ranked.slice(0, PODIUM_SIZE).map((team) => ({
             id: team.tagTeamId,

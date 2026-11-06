@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { factionsApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { logger } from '../../utils/logger';
 import type { StableDetailResponse, StableStatus } from '../../types/stable';
@@ -12,8 +13,10 @@ import EmptyState from '../ui/EmptyState';
 import SectionTabs from '../ui/SectionTabs';
 import Skeleton from '../ui/Skeleton';
 import FactionHeat from './FactionHeat';
-import { formatRecord } from './factionFormat';
+import { canManageFaction, canReadFactionMessages } from './factionAccess';
+import { formatRecord, normalizeStreak } from './factionFormat';
 import { useLocationToast } from './useLocationToast';
+import '../posterHero.css';
 import './groupUi.css';
 import './FactionDetail.css';
 
@@ -22,15 +25,15 @@ export interface FactionDetailContext {
   faction: StableDetailResponse;
 }
 
-const TABS = [
+const PUBLIC_TABS = [
   { path: '', i18nKey: 'factions.detailTabs.overview', fallback: 'Overview' },
   { path: 'members', i18nKey: 'factions.detailTabs.members', fallback: 'Members' },
   { path: 'stats', i18nKey: 'factions.detailTabs.stats', fallback: 'Stats' },
   { path: 'schedule', i18nKey: 'factions.detailTabs.schedule', fallback: 'Schedule' },
   { path: 'promos', i18nKey: 'factions.detailTabs.promos', fallback: 'Promos' },
-  { path: 'messages', i18nKey: 'factions.detailTabs.messages', fallback: 'Messages' },
-  { path: 'manage', i18nKey: 'factions.detailTabs.manage', fallback: 'Manage' },
-] as const;
+];
+const MESSAGES_TAB = { path: 'messages', i18nKey: 'factions.detailTabs.messages', fallback: 'Messages' };
+const MANAGE_TAB = { path: 'manage', i18nKey: 'factions.detailTabs.manage', fallback: 'Manage' };
 
 const STATUS_TONES: Record<StableStatus, BadgeTone> = {
   pending: 'warning',
@@ -50,6 +53,7 @@ export default function FactionDetail() {
   const { t } = useTranslation();
   const { factionId } = useParams<{ factionId: string }>();
   const { pathname } = useLocation();
+  const { playerId, isAdminOrModerator } = useAuth();
   useLocationToast();
   const [faction, setFaction] = useState<StableDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -101,31 +105,25 @@ export default function FactionDetail() {
   }
 
   const outletContext: FactionDetailContext = { faction };
-  const leaderName = faction.leaderName ?? t('factions.unknownLeader', 'Unknown');
-
-  // A custom banner usually carries the name in its artwork, so the title is
-  // kept for screen readers only rather than reading twice on screen.
-  const hasCustomBanner = Boolean(faction.imageUrl);
+  const tabs = [
+    ...PUBLIC_TABS,
+    ...(canReadFactionMessages(playerId, faction) ? [MESSAGES_TAB] : []),
+    ...(canManageFaction(playerId, isAdminOrModerator, faction) ? [MANAGE_TAB] : []),
+  ];
 
   return (
     <div className="group-page">
-      <header className="faction-detail__hero">
-        {hasCustomBanner && (
-          <img
-            src={faction.imageUrl}
-            onError={(event) => applyImageFallback(event, DEFAULT_FACTION_IMAGE)}
-            alt={t('factions.heroAlt', '{{name}} faction banner', { name: faction.name })}
-            className="faction-detail__hero-image"
-          />
-        )}
+      <header className="poster-hero faction-detail__hero">
         <div className="faction-detail__hero-content">
           <div className="faction-detail__identity">
             <Badge tone={STATUS_TONES[faction.status]}>
               {t(`factions.hub.status.${faction.status}`, STATUS_FALLBACKS[faction.status])}
             </Badge>
-            <h1 className={hasCustomBanner ? 'sr-only' : 'faction-detail__name'}>{faction.name}</h1>
+            <h1 className="faction-detail__name">{faction.name}</h1>
             <p className="faction-detail__leader">
-              {t('factions.hub.ledBy', 'Led by {{name}}', { name: leaderName })}
+              {faction.leaderName
+                ? t('factions.hub.ledBy', 'Led by {{name}}', { name: faction.leaderName })
+                : t('factions.hub.leaderMissing', 'Leader no longer listed')}
             </p>
           </div>
           <div className="faction-detail__record">
@@ -133,15 +131,25 @@ export default function FactionDetail() {
             <span className="faction-detail__record-value">
               {formatRecord(faction.wins, faction.losses, faction.draws)}
             </span>
-            <FactionHeat count={faction.standings.currentStreak?.count} />
+            <FactionHeat count={normalizeStreak(faction.standings.currentStreak)?.count} />
           </div>
         </div>
+        {faction.imageUrl && (
+          <div className="poster-hero__frame">
+            <img
+              src={faction.imageUrl}
+              onError={(event) => applyImageFallback(event, DEFAULT_FACTION_IMAGE)}
+              alt={t('factions.heroAlt', '{{name}} faction banner', { name: faction.name })}
+              className="poster-hero__image"
+            />
+          </div>
+        )}
       </header>
 
       <SectionTabs
         label={t('factions.detailTabs.label', 'Faction sections')}
         activeTo={pathname.replace(/\/$/, '')}
-        items={TABS.map((tab) => ({
+        items={tabs.map((tab) => ({
           to: tab.path === '' ? `/factions/${factionId}` : `/factions/${factionId}/${tab.path}`,
           label: t(tab.i18nKey, tab.fallback),
         }))}

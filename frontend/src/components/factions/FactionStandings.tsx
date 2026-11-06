@@ -15,6 +15,7 @@ import Skeleton from '../ui/Skeleton';
 import FactionsHubTabs from './FactionsHubTabs';
 import GroupFormCell from './GroupFormCell';
 import { formatRecord } from './factionFormat';
+import '../rankPodium.css';
 import './groupUi.css';
 
 const PODIUM_SIZE = 3;
@@ -124,6 +125,7 @@ export default function FactionStandings() {
       <>
         {showPodium && (
           <Podium
+            className="rank-podium"
             label={t('factions.standings', 'Faction Standings')}
             entries={ranked.slice(0, PODIUM_SIZE).map((row) => ({
               id: row.stableId,

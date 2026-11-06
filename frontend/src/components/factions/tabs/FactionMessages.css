@@ -58,7 +58,7 @@
 .faction-messages__preview {
   overflow: hidden;
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -143,7 +143,7 @@
 .faction-messages__day-sep,
 .faction-messages__system {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   text-align: center;
 }
 
@@ -181,7 +181,7 @@
 
 .faction-messages__bubble-author {
   color: var(--color-cyan);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 

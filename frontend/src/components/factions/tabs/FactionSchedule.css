@@ -57,7 +57,7 @@
 
 .faction-schedule__countdown {
   color: var(--color-cyan);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -80,7 +80,7 @@
   border-radius: var(--radius-control);
   color: var(--color-text-muted);
   font-family: var(--font-body);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .faction-schedule__day--has-matches {

@@ -14,6 +14,8 @@ import EmptyState from '../ui/EmptyState';
 import FormDots from '../ui/FormDots';
 import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
+import { formatMatchDate } from '../../utils/dateUtils';
+import { formatMatchType } from '../../utils/matchDisplay';
 import '../factions/groupUi.css';
 import './TagTeamDetail.css';
 
@@ -196,7 +198,7 @@ export default function TagTeamDetail() {
             <dd>{standings.currentStreak.count > 0 ? `${standings.currentStreak.count}${standings.currentStreak.type}` : '-'}</dd>
           </div>
         </dl>
-        {standings.recentForm.length > 0 && <FormDots results={standings.recentForm} />}
+        {standings.recentForm.length > 0 && <FormDots results={[...standings.recentForm].reverse()} />}
       </section>
 
       {!hasHistory && (
@@ -213,8 +215,8 @@ export default function TagTeamDetail() {
             {tagTeam.recentMatches.map((match, index) => {
               const matchData = match as Record<string, unknown>;
               const matchId = (matchData['matchId'] as string) || String(index);
-              const matchDate = matchData['date'] ? new Date(matchData['date'] as string).toLocaleDateString() : '';
-              const matchType = (matchData['matchType'] as string) || '';
+              const matchDate = matchData['date'] ? formatMatchDate(matchData['date'] as string) : '';
+              const matchType = formatMatchType(matchData['matchType'] as string | undefined, t);
               const result = (matchData['result'] as string) || '';
               const opponent = (matchData['opponentName'] as string)
                 || t('tagTeams.detailPage.unknownOpponent', 'Unknown');
@@ -241,7 +243,7 @@ export default function TagTeamDetail() {
             rows={tagTeam.matchTypeRecords}
             rowKey={(record) => record.matchFormat}
             columns={[
-              { key: 'format', header: t('tagTeams.detailPage.matchFormat', 'Match Format'), render: (record) => record.matchFormat },
+              { key: 'format', header: t('tagTeams.detailPage.matchFormat', 'Match Format'), render: (record) => formatMatchType(record.matchFormat, t) },
               { key: 'wins', header: recordColumns.wins, render: (record) => record.wins, align: 'end' },
               { key: 'losses', header: recordColumns.losses, render: (record) => record.losses, align: 'end' },
               { key: 'draws', header: recordColumns.draws, render: (record) => record.draws, align: 'end' },

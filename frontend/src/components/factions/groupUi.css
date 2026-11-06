@@ -6,6 +6,11 @@
   min-width: 0;
 }
 
+/* The page gap already spaces the header from what follows. */
+.group-page .page-header {
+  margin-bottom: 0;
+}
+
 .group-section {
   display: flex;
   flex-direction: column;
@@ -43,7 +48,7 @@
 
 .group-muted {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .group-toolbar {
@@ -123,7 +128,7 @@
 
 .group-stats dt {
   color: var(--color-text-muted);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
 }
 
 .group-stats dd {
@@ -190,6 +195,10 @@
 }
 
 @media (max-width: 768px) {
+  .group-page {
+    gap: 1rem;
+  }
+
   .group-search {
     flex-basis: 100%;
     max-width: none;

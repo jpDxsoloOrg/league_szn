@@ -11,8 +11,8 @@ import Avatar from '../ui/Avatar';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
 import PageHeader from '../ui/PageHeader';
+import Select from '../ui/Select';
 import Skeleton from '../ui/Skeleton';
-import Tabs from '../ui/Tabs';
 import FactionCard from './FactionCard';
 import FactionsHubTabs from './FactionsHubTabs';
 import { deriveFactionActivity } from './factionActivity';
@@ -102,8 +102,8 @@ export default function FactionsList() {
     [directory],
   );
 
-  const streakByFaction = useMemo(
-    () => new Map(standings.map((standing) => [standing.stableId, standing.currentStreak])),
+  const standingByFaction = useMemo(
+    () => new Map(standings.map((standing) => [standing.stableId, standing])),
     [standings],
   );
 
@@ -158,14 +158,15 @@ export default function FactionsList() {
     <div className="group-page">
       {header}
 
-      <div className="group-toolbar">
-        <Tabs
+      <div className="group-toolbar factions-hub__toolbar">
+        <Select
+          className="factions-hub__status"
           label={t('factions.hub.filterLabel', 'Filter by status')}
           value={statusFilter}
           onValueChange={(value) => setStatusFilter(value as StatusFilter)}
-          items={STATUS_FILTERS.map(({ value, i18nKey, fallback }) => ({ value, label: t(i18nKey, fallback) }))}
+          options={STATUS_FILTERS.map(({ value, i18nKey, fallback }) => ({ value, label: t(i18nKey, fallback) }))}
         />
-        <label className="group-search group-toolbar__push">
+        <label className="group-search">
           <span className="sr-only">{t('factions.hub.searchLabel', 'Search factions by name')}</span>
           <input
             type="search"
@@ -190,7 +191,7 @@ export default function FactionsList() {
                   key={faction.stableId}
                   faction={faction}
                   leaderName={nameById.get(faction.leaderId)}
-                  currentStreak={streakByFaction.get(faction.stableId)}
+                  standing={standingByFaction.get(faction.stableId)}
                 />
               ))}
             </div>

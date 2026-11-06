@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useOutletContext, useSearchParams } from 'react-router-dom';
+import { Navigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { factionsApi, playersApi } from '../../../services/api';
 import type { PlayerDirectoryEntry } from '../../../services/api';
@@ -11,6 +11,7 @@ import type {
   FactionMessage,
 } from '../../../types/factionMessage';
 import type { DirectMessageThreadSummary } from '../../../types/faction';
+import { canReadFactionMessages } from '../factionAccess';
 import type { FactionDetailContext } from '../FactionDetail';
 import Avatar from '../../ui/Avatar';
 import Badge from '../../ui/Badge';
@@ -94,7 +95,28 @@ function generateTempId(): string {
 
 // ─── Component ─────────────────────────────────────────────────────
 
+/** Sends anyone outside the faction back to the overview, before any request goes out. */
 export default function FactionMessages() {
+  const { t } = useTranslation();
+  const { faction } = useOutletContext<FactionDetailContext>();
+  const { isLoading, playerId } = useAuth();
+
+  if (isLoading) return <Skeleton variant="block" count={3} />;
+
+  if (!canReadFactionMessages(playerId, faction)) {
+    return (
+      <Navigate
+        to={`/factions/${faction.stableId}`}
+        replace
+        state={{ toast: t('factions.messages.membersOnly', 'Only members of this faction can read its messages.') }}
+      />
+    );
+  }
+
+  return <FactionMessagesPanel />;
+}
+
+function FactionMessagesPanel() {
   const { t } = useTranslation();
   const { faction } = useOutletContext<FactionDetailContext>();
   const auth = useAuth();
@@ -795,7 +817,7 @@ export default function FactionMessages() {
 
         <div className="faction-messages__feed" ref={feedRef} onScroll={handleFeedScroll}>
           {activeFeed.length === 0 ? (
-            <p className="group-empty">{t('factions.messages.feedEmpty', 'No messages yet — start the conversation.')}</p>
+            !feedError && <p className="group-empty">{t('factions.messages.feedEmpty', 'No messages yet — start the conversation.')}</p>
           ) : (
             renderFeed()
           )}
