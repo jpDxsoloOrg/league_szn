@@ -1,4 +1,4 @@
-import type { ChampionshipContenders, ContenderOverride, SetOverrideRequest } from '../../types/contender';
+import type { ChampionshipContenders, ContenderOverride, SetOverrideRequest, SetOverrideResult } from '../../types/contender';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
 export const contendersApi = {
@@ -6,25 +6,7 @@ export const contendersApi = {
     return fetchWithAuth(`${API_BASE_URL}/championships/${championshipId}/contenders`, {}, signal);
   },
 
-  recalculate: async (
-    championshipId?: string,
-    config?: {
-      minimumMatches?: number;
-      maxContenders?: number;
-      includeDraws?: boolean;
-      divisionRestricted?: boolean;
-    },
-  ): Promise<{ message: string; summary: Record<string, number> }> => {
-    return fetchWithAuth(`${API_BASE_URL}/admin/contenders/recalculate`, {
-      method: 'POST',
-      body: JSON.stringify({
-        ...(championshipId ? { championshipId } : {}),
-        ...(config || {}),
-      }),
-    });
-  },
-
-  setOverride: async (body: SetOverrideRequest): Promise<ContenderOverride> => {
+  setOverride: async (body: SetOverrideRequest): Promise<SetOverrideResult> => {
     return fetchWithAuth(`${API_BASE_URL}/admin/contenders/overrides`, {
       method: 'POST',
       body: JSON.stringify(body),

@@ -146,6 +146,15 @@ describe('ChallengeDetail', () => {
     expect(screen.getByText('Challenged')).toBeInTheDocument();
   });
 
+  it('names the title on the line', async () => {
+    mockGetById.mockResolvedValue({ ...pendingChallenge, championshipId: 'world', championshipName: 'World Title' });
+    mockGetMyProfile.mockResolvedValue({ playerId: 'p-3' });
+
+    renderDetail();
+
+    expect(await screen.findByText('World Title')).toBeInTheDocument();
+  });
+
   it('shows accept, decline, counter buttons for the challenged player on pending', async () => {
     mockGetById.mockResolvedValue(pendingChallenge);
     mockGetMyProfile.mockResolvedValue({ playerId: 'p-2' }); // challenged

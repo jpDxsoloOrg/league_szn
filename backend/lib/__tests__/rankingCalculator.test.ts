@@ -305,6 +305,83 @@ describe('calculateRankingsForChampionship', () => {
     }
   });
 
+  describe('alwaysIncludePlayerIds', () => {
+    const params = {
+      championshipId: 'champ-1',
+      championshipType: 'singles' as const,
+      currentChampion: undefined as string | undefined,
+      seasonId: 'season-1',
+      minimumMatches: 3,
+      maxContenders: 10,
+    };
+    const threeMatches = [
+      makeMatch({ matchId: 'm1', date: daysAgo(1), winners: ['p1'], losers: ['p2'], participants: ['p1', 'p2'] }),
+      makeMatch({ matchId: 'm2', date: daysAgo(2), winners: ['p1'], losers: ['p2'], participants: ['p1', 'p2'] }),
+      makeMatch({ matchId: 'm3', date: daysAgo(3), winners: ['p1'], losers: ['p2'], participants: ['p1', 'p2'] }),
+      makeMatch({ matchId: 'm4', date: daysAgo(4), winners: ['p3'], losers: ['p1'], participants: ['p3', 'p1'] }),
+    ];
+    const roster = (extra: Array<Record<string, unknown>> = []) => [
+      { playerId: 'p1', currentWrestler: 'Edge' },
+      { playerId: 'p2', currentWrestler: 'Christian' },
+      { playerId: 'p3', currentWrestler: 'Kane' },
+      ...extra,
+    ];
+
+    it('adds a row with real stats for a player under the match minimum', async () => {
+      mockTables(threeMatches, roster());
+      const results = await calculateRankingsForChampionship({ ...params, alwaysIncludePlayerIds: ['p3'] });
+
+      expect(results.find((r) => r.playerId === 'p3')).toMatchObject({
+        rank: 0, matchesInPeriod: 1, winsInPeriod: 1, winPercentage: 100,
+      });
+    });
+
+    it('adds an empty row for a player with no matches, with no matches in the season at all', async () => {
+      mockTables([], roster([{ playerId: 'fresh', currentWrestler: 'Sting' }]));
+      const results = await calculateRankingsForChampionship({ ...params, alwaysIncludePlayerIds: ['fresh'] });
+
+      expect(results).toEqual([{
+        playerId: 'fresh', rank: 0, rankingScore: 0, winPercentage: 0, currentStreak: 0,
+        qualityScore: 0, recencyScore: 0, matchesInPeriod: 0, winsInPeriod: 0,
+      }]);
+    });
+
+    it('keeps the organic rank of a scored player outside the top N', async () => {
+      mockTables(threeMatches, roster());
+      const results = await calculateRankingsForChampionship({
+        ...params, maxContenders: 1, alwaysIncludePlayerIds: ['p2'],
+      });
+
+      expect(results.map((r) => [r.playerId, r.rank])).toEqual([['p1', 1], ['p2', 2]]);
+    });
+
+    it('gives no row to the champion, a deleted, hidden or out-of-division player', async () => {
+      const blocked = [
+        { playerId: 'champ', currentWrestler: 'Sting', divisionId: 'd1' },
+        { playerId: 'gone', currentWrestler: 'Sting', divisionId: 'd1', deletedAt: '2026-01-01' },
+        { playerId: 'hidden', currentWrestler: 'Needs Wrestler', divisionId: 'd1' },
+        { playerId: 'other', currentWrestler: 'Sting', divisionId: 'd2' },
+      ];
+      mockTables([
+        makeMatch({ matchId: 'm1', date: daysAgo(1), winners: ['gone'], losers: ['other'], participants: ['gone', 'other'] }),
+      ], blocked);
+      const results = await calculateRankingsForChampionship({
+        ...params,
+        currentChampion: 'champ',
+        divisionId: 'd1',
+        alwaysIncludePlayerIds: blocked.map((player) => player.playerId as string),
+      });
+
+      expect(results).toEqual([]);
+    });
+
+    it('adds nothing past the top N when no one is named', async () => {
+      mockTables(threeMatches, roster());
+      const results = await calculateRankingsForChampionship({ ...params, maxContenders: 1 });
+      expect(results.map((r) => r.playerId)).toEqual(['p1']);
+    });
+  });
+
   it('excludes the current champion (string)', async () => {
     mockTables([
       makeMatch({ matchId: 'm1', date: daysAgo(1), winners: ['champ'], losers: ['p1'], participants: ['champ', 'p1'] }),

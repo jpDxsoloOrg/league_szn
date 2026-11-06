@@ -135,6 +135,7 @@ export default function MyChallenges() {
         <p className="my-challenge__match">
           {matchLine}
           {challenge.challengeMode === 'tag_team' && <Badge>{t('challenges.board.tagTeamMatch')}</Badge>}
+          {challenge.championshipName && <Badge tone="warning">{challenge.championshipName}</Badge>}
         </p>
 
         {challenge.message && <p className="my-challenge__message">&ldquo;{challenge.message}&rdquo;</p>}

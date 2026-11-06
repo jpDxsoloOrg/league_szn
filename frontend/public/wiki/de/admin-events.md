@@ -29,6 +29,8 @@ Du baust die Karte auf der Seite des Events auf:
 
 **Bearbeiten** gibt es nur bei Matches, die noch nicht gespielt wurden. Beim Löschen eines abgeschlossenen Matches werden seine Statistiken zurückgesetzt.
 
+Wurde ein Match der Karte gelöscht, zeigt sein Platz **Match noch offen**. Klicke auf **Von der Matchcard entfernen**, um diesen Platz zu räumen.
+
 Titelkämpfe werden auf der Karte mit einem eigenen Abzeichen hervorgehoben.
 
 ## Event führen

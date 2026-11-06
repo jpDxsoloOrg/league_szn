@@ -19,6 +19,8 @@ export interface Challenge {
   responseMessage?: string;
   counteredChallengeId?: string;
   matchId?: string;
+  /** The call-out promo this challenge came from. */
+  promoId?: string;
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamId?: string;
   challengedTagTeamId?: string;
@@ -46,6 +48,8 @@ export interface ChallengeWithPlayers extends Challenge {
   challenged: ChallengePlayerInfo;
   challengerTagTeam?: TagTeamChallengeInfo;
   challengedTagTeam?: TagTeamChallengeInfo;
+  /** Name of the title on the line, when it still exists. */
+  championshipName?: string;
 }
 
 export interface CreateChallengeInput {
@@ -56,6 +60,7 @@ export interface CreateChallengeInput {
   message?: string;
   challengeMode?: 'singles' | 'tag_team';
   challengedTagTeamId?: string;
+  promoId?: string;
 }
 
 export interface CounterChallengeInput {

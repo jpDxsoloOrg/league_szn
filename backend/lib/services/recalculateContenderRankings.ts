@@ -62,16 +62,6 @@ async function recalculateChampionship(
     ? undefined
     : championship.divisionId;
 
-  const rankings: RankingResult[] = await calculateRankingsForChampionship({
-    championshipId,
-    championshipType: championship.type,
-    currentChampion: championship.currentChampion,
-    divisionId: useDivisionId,
-    seasonId,
-    minimumMatches: configOverrides?.minimumMatches ?? 3,
-    maxContenders: configOverrides?.maxContenders ?? 10,
-  });
-
   const activeOverrides = await contenders.listActiveOverrides(championshipId);
 
   const validOverrides: ActiveOverride[] = activeOverrides
@@ -79,9 +69,25 @@ async function recalculateChampionship(
     .map((o) => ({
       playerId: o.playerId,
       overrideType: o.overrideType as OverrideType,
+      createdAt: o.createdAt,
     }));
 
-  const adjustedRankings: RankingWithOverride[] = applyOverrides(rankings, validOverrides);
+  const maxContenders = configOverrides?.maxContenders ?? 10;
+
+  const rankings: RankingResult[] = await calculateRankingsForChampionship({
+    championshipId,
+    championshipType: championship.type,
+    currentChampion: championship.currentChampion,
+    divisionId: useDivisionId,
+    seasonId,
+    minimumMatches: configOverrides?.minimumMatches ?? 3,
+    maxContenders,
+    alwaysIncludePlayerIds: validOverrides
+      .filter((o) => o.overrideType === 'bump_to_top')
+      .map((o) => o.playerId),
+  });
+
+  const adjustedRankings: RankingWithOverride[] = applyOverrides(rankings, validOverrides, maxContenders);
 
   const weekKey = `${championshipId}#${currentWeek}`;
 

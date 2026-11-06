@@ -13,7 +13,9 @@ Eine Herausforderung läuft 4 Tage nach ihrer Ausstellung ab, wenn niemand antwo
 
 ## Kampf aus einer Herausforderung planen
 
-Klicke bei einer angenommenen Herausforderung auf **Kampf planen**, um die Planung mit vorausgefüllten Teilnehmern, Match-Typ und optionaler Stipulation zu öffnen. Beim Speichern wird die Herausforderung als geplant markiert und mit dem Match verknüpft.
+Klicke bei einer angenommenen Herausforderung auf **Kampf planen**, um die Planung mit vorausgefüllten Teilnehmern, Match-Typ und optionaler Stipulation zu öffnen. Eine Tag-Team-Herausforderung füllt beide Teams aus, und eine Titel-Herausforderung kreuzt **Titelkampf** an und wählt den Titel. In der Liste steht der Titel unter dem Match-Typ. Beim Speichern wird die Herausforderung als geplant markiert und mit dem Match verknüpft. Eine Herausforderung lässt sich nur einmal buchen, außer ihr Match wird gelöscht oder abgesagt.
+
+Hat der Titel seit der Herausforderung den Besitzer gewechselt, muss ein Titelkampf den aktuellen Champion enthalten, sonst wird er abgelehnt. Füge den Champion hinzu oder plane den Kampf ohne Titel. Für einen vakanten Titel gilt das nicht. Titelkämpfe, die du direkt ohne Herausforderung planst, sind davon nicht betroffen.
 
 ## Aktionen für volle Admins
 

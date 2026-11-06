@@ -20,7 +20,7 @@ Klicke nach den Matches auf der Event-Seite bei jedem Match auf **Ergebnis eintr
 
 ## 5. Herausforderer prüfen
 
-Hier musst du nichts tun. Die Herausforderer-Ranglisten werden nach jedem Ergebnis und erneut alle 6 Stunden berechnet. Unter **Herausforderer Konfig** kannst du sofort neu berechnen, und unter **Herausforderer Anpassungen** nimmst du Änderungen für Storylines vor.
+Hier musst du nichts tun. Die Herausforderer-Ranglisten werden nach jedem Ergebnis und erneut alle 6 Stunden berechnet. Unter **Herausforderer Anpassungen** nimmst du Änderungen für Storylines vor.
 
 ## 6. Tabelle prüfen
 

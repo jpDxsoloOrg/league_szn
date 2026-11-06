@@ -39,7 +39,7 @@ All-Time shows every match ever recorded. Season standings show only matches tha
 It goes in your record as a draw for everyone in the match. It isn't a win or a loss. It ends a winning or losing streak, a title can't change hands on a draw, and a round-robin draw is worth 1 point.
 
 **How often do contender rankings update?**  
-After each recorded result and every 6 hours. Staff can also recalculate them by hand. See [Contender Rankings](contenders).
+After each recorded result and every 6 hours. See [Contender Rankings](contenders).
 
 ## Divisions
 

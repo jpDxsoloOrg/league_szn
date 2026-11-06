@@ -163,6 +163,7 @@ class ChallengesImpl implements ChallengesCrudType {
       ...(input.challengeMode !== undefined ? { challengeMode: input.challengeMode } : {}),
       ...(input.challengerTagTeamId !== undefined ? { challengerTagTeamId: input.challengerTagTeamId } : {}),
       ...(input.challengedTagTeamId !== undefined ? { challengedTagTeamId: input.challengedTagTeamId } : {}),
+      ...(input.promoId !== undefined ? { promoId: input.promoId } : {}),
       status: 'pending',
       expiresAt: input.expiresAt,
       createdAt: now,

@@ -29,6 +29,8 @@ Build the card on the event's own page:
 
 **Edit** is only there for matches that haven't been played. Deleting a completed match rolls back its stats.
 
+If a match on the card has been deleted, its slot shows **Match TBA**. Click **Remove from card** to clear that slot.
+
 Championship matches are highlighted with a special badge on the card.
 
 ## Running an Event

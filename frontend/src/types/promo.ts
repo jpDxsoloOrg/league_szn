@@ -20,6 +20,8 @@ export interface Promo {
   targetPromoId?: string;
   matchId?: string;
   championshipId?: string;
+  /** The challenge this call-out produced. Older call-outs don't have one. */
+  challengeId?: string;
   imageUrl?: string;
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamName?: string;

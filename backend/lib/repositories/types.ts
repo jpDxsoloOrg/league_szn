@@ -197,6 +197,8 @@ export interface Challenge {
   responseMessage?: string;
   counteredChallengeId?: string;
   matchId?: string;
+  /** The call-out promo this challenge came from. */
+  promoId?: string;
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamId?: string;
   challengedTagTeamId?: string;
@@ -412,6 +414,8 @@ export interface Promo {
   targetPromoId?: string;
   matchId?: string;
   championshipId?: string;
+  /** The challenge this call-out produced. Older call-outs don't have one. */
+  challengeId?: string;
   imageUrl?: string;
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamName?: string;
@@ -612,6 +616,7 @@ export interface Championship {
   name: string;
   type: 'singles' | 'tag';
   currentChampion?: string | string[];
+  divisionId?: string;
   imageUrl?: string;
   isActive?: boolean;
   defenses?: number;

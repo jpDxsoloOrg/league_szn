@@ -35,7 +35,7 @@ You can open Schedule Match from **Promos**:
 - On the **Call-outs** tab, click **Schedule** on an accepted challenge
 - On the **Promos** tab, click **Schedule Match** on a call-out promo that names a target
 
-Participants and the match type are filled in for you, and a challenge also fills in its stipulation. You can change them before saving. A challenge for a tag team match needs its teams picked by hand, and a title match needs **Championship Match** ticked and the title chosen.
+Participants and the match type are filled in for you, and a challenge also fills in its stipulation. You can change them before saving. A tag team challenge also fills in both teams. A title challenge, or a call-out promo that names a title, ticks **Championship Match** and selects the title. If that title has been deactivated, choose another one or untick the box.
 
 Saving marks the challenge as scheduled, or hides the promo from the public feed. The match keeps a link to it.
 

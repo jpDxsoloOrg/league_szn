@@ -30,7 +30,7 @@ Use the links below to open each part of the admin guide.
 
 - [Challenges](admin-challenges) — Moderate call-outs, now under Promos
 - [Promos](admin-promos) — Manage the promo feed: pin, hide, schedule a match from a call-out
-- [Contender Config](admin-contender-config) — #1 contender rankings per championship
+- [Contender Rankings](admin-contender-config) — How #1 contender rankings update, and how to override them
 - [Rivalries](admin-rivalries) — Open, conclude and clean up rivalries; notes and heat
 
 ## Data & workflow

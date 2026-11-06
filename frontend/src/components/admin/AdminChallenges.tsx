@@ -140,6 +140,9 @@ export default function AdminChallenges() {
           championshipId: challenge.championshipId,
           challenger: challenge.challenger,
           challenged: challenge.challenged,
+          challengeMode: challenge.challengeMode,
+          challengerTagTeam: challenge.challengerTagTeam,
+          challengedTagTeam: challenge.challengedTagTeam,
         },
       },
     });
@@ -222,6 +225,7 @@ export default function AdminChallenges() {
               <span className="ac-cell__text">
                 <span>{challenge.matchType}</span>
                 {challenge.stipulation && <span className="ac-cell__sub">{challenge.stipulation}</span>}
+                {challenge.championshipName && <span className="ac-cell__sub">{challenge.championshipName}</span>}
               </span>
             ),
           },

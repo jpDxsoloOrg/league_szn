@@ -215,6 +215,12 @@ export default function ChallengeDetail() {
       )}
 
       <dl className="challenge-detail__facts">
+        {challenge.championshipName && (
+          <div>
+            <dt>{t('challenges.issue.titleOnTheLine')}</dt>
+            <dd>{challenge.championshipName}</dd>
+          </div>
+        )}
         <div>
           <dt>{t('challenges.detail.created')}</dt>
           <dd>{new Date(challenge.createdAt).toLocaleDateString(undefined, LONG_DATE)}</dd>

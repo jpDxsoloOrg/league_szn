@@ -42,4 +42,4 @@ The **Championships** page allows you to create and manage titles.
 - When the result is recorded, the winner becomes champion. If the champion wins, it counts as a successful defense
 - A draw leaves the title where it is
 - Championship history is tracked automatically with dates, reign lengths and defenses
-- Each active title has its own #1 contender rankings; see [Contender Config](admin-contender-config)
+- Each active title has its own #1 contender rankings; see [Contender Rankings](admin-contender-config)

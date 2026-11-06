@@ -1,10 +1,17 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { v4 as uuidv4 } from 'uuid';
 import { getRepositories } from '../../lib/repositories';
-import type { MatchDesignation, MatchCardEntry, MatchSlot, MatchStatus } from '../../lib/repositories/types';
+import type { Championship, MatchDesignation, MatchCardEntry, MatchSlot, MatchStatus } from '../../lib/repositories/types';
 import { created, badRequest, notFound, serverError, error as errorResponse } from '../../lib/response';
 import { createNotifications } from '../../lib/notifications';
 import { parseBody } from '../../lib/parseBody';
+import { CHALLENGE_NEEDS_CHAMPION_MESSAGE, championIsOnASide, titleFormatError } from '../../lib/challengeTitle';
+import { findPromoChallenge, followCounters } from '../../lib/callOutChallenge';
+
+/** The frontend matches this wording to show its translation, in ScheduleMatch.tsx. */
+export const ALREADY_BOOKED_MESSAGE = 'This call-out or challenge already has a match booked';
+
+const OPEN_CHALLENGE_STATUSES = ['pending', 'countered', 'accepted'];
 
 export interface SlotInput {
   position: number;
@@ -183,11 +190,20 @@ export async function scheduleMatchInternal(
   }
 
   // Validate championship exists if provided
+  let championship: Championship | null = null;
   if (input.championshipId) {
-    const championship = await competition.championships.findById(input.championshipId);
+    championship = await competition.championships.findById(input.championshipId);
 
     if (!championship) {
       throw new ScheduleMatchError(404, `Championship not found: ${input.championshipId}`);
+    }
+
+    if (input.isChampionship) {
+      if (championship.isActive === false) {
+        throw new ScheduleMatchError(400, 'This championship is inactive and cannot be defended');
+      }
+      const formatError = titleFormatError(championship.type, input.matchFormat);
+      if (formatError) throw new ScheduleMatchError(400, formatError);
     }
 
     // Enforce division restriction: all participants must belong to the championship's division
@@ -289,6 +305,38 @@ export async function scheduleMatchInternal(
     }
   }
 
+  // A call-out and its challenge are one booking, reached from either side.
+  // A booking counts until its match is deleted or cancelled, so that match
+  // can still be rebooked.
+  const requestedPromo = input.promoId ? await content.promos.findById(input.promoId) : null;
+  const namedChallenge = input.challengeId
+    ? await user.challenges.findById(input.challengeId)
+    : requestedPromo && await findPromoChallenge(requestedPromo, user.challenges);
+  const linkedChallenge = namedChallenge ? await followCounters(namedChallenge, user.challenges) : null;
+  const linkedPromo = requestedPromo
+    ?? (linkedChallenge?.promoId ? await content.promos.findById(linkedChallenge.promoId) : null);
+
+  const hasLiveMatch = async (matchId: string | undefined): Promise<boolean> => {
+    if (!matchId) return false;
+    const booked = await competition.matches.findById(matchId);
+    return Boolean(booked) && booked?.status !== 'cancelled';
+  };
+  const challengeIsBooked = linkedChallenge?.status === 'scheduled' && await hasLiveMatch(linkedChallenge.matchId);
+  const callOutIsBooked = linkedPromo?.promoType === 'call-out' && await hasLiveMatch(linkedPromo.matchId);
+  if (challengeIsBooked || callOutIsBooked) {
+    throw new ScheduleMatchError(400, ALREADY_BOOKED_MESSAGE);
+  }
+
+  // The title can change hands after a challenge is issued, and the result
+  // crowns whoever wins. Staff booking a title match directly are not held to
+  // this: they can see who is in it, and it isn't tied to an old agreement.
+  if (input.isChampionship && linkedChallenge && championship) {
+    const sides = input.teams && input.teams.length > 0 ? input.teams : [derivedParticipants];
+    if (!championIsOnASide(championship, sides)) {
+      throw new ScheduleMatchError(400, CHALLENGE_NEEDS_CHAMPION_MESSAGE);
+    }
+  }
+
   // Status: open-signups when slot-mode has any unfilled slot; scheduled otherwise.
   const hasOpenSlot = resolvedSlots
     ? resolvedSlots.some((s) => !s.playerId)
@@ -314,34 +362,31 @@ export async function scheduleMatchInternal(
   }
   if (input.eventId) match.eventId = input.eventId;
   if (input.teams && input.teams.length > 0) match.teams = input.teams;
-  if (input.challengeId) match.challengeId = input.challengeId;
-  if (input.promoId) match.promoId = input.promoId;
+  const challengeId = linkedChallenge?.challengeId ?? input.challengeId;
+  const promoId = linkedPromo?.promoId ?? input.promoId;
+  if (challengeId) match.challengeId = challengeId;
+  if (promoId) match.promoId = promoId;
   if (resolvedRivalryId) match.rivalryId = resolvedRivalryId;
 
   await competition.matches.create(match);
 
-  // If challengeId provided, mark challenge as scheduled and link match
-  if (input.challengeId) {
-    const challenge = await user.challenges.findById(input.challengeId);
-    if (challenge && ['pending', 'countered', 'accepted'].includes(challenge.status)) {
-      await user.challenges.update(input.challengeId, {
-        status: 'scheduled',
-        matchId: match.matchId as string,
-        updatedAt: now,
-      });
-    }
+  // Mark the challenge scheduled and link the match. A scheduled challenge that
+  // got here lost its match, so it takes the new one.
+  if (linkedChallenge && [...OPEN_CHALLENGE_STATUSES, 'scheduled'].includes(linkedChallenge.status)) {
+    await user.challenges.update(linkedChallenge.challengeId, {
+      status: 'scheduled',
+      matchId: match.matchId as string,
+      updatedAt: now,
+    });
   }
 
-  // If promoId provided, hide promo and optionally link match (scheduling from call-out auto-hides it)
-  if (input.promoId) {
-    const promo = await content.promos.findById(input.promoId);
-    if (promo) {
-      await content.promos.update(input.promoId, {
-        isHidden: true,
-        matchId: match.matchId as string,
-        updatedAt: now,
-      });
-    }
+  // Hide the promo and link the match (scheduling from a call-out auto-hides it)
+  if (linkedPromo) {
+    await content.promos.update(linkedPromo.promoId, {
+      isHidden: true,
+      matchId: match.matchId as string,
+      updatedAt: now,
+    });
   }
 
   // If an event was specified, auto-add the match to the event's matchCards

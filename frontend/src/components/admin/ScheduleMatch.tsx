@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Plus, X } from 'lucide-react';
-import { matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi, stipulationsApi, matchTypesApi, tagTeamsApi, divisionsApi } from '../../services/api';
+import { challengesApi, matchesApi, playersApi, championshipsApi, tournamentsApi, seasonsApi, eventsApi, stipulationsApi, matchTypesApi, tagTeamsApi, divisionsApi } from '../../services/api';
 import type { Player, Championship, Tournament, Season, Stipulation, MatchType, Division, PlayerBookingInfo } from '../../types';
 import type { EventCheckInRoster } from '../../types/event';
 import PlayerBookingPicker from '../events/PlayerBookingPicker';
@@ -12,8 +12,9 @@ import {
 } from '../../utils/checkInStatus';
 import type { TagTeam } from '../../types/tagTeam';
 import type { LeagueEvent, MatchDesignation } from '../../types/event';
-import type { ChallengeWithPlayers } from '../../types/challenge';
+import type { ChallengeWithPlayers, TagTeamChallengeInfo } from '../../types/challenge';
 import type { PromoWithContext } from '../../types/promo';
+import { findChallengeToBook } from '../challenges/challengeUtils';
 import { isNeedsWrestler } from '../../utils/needsWrestler';
 import { pickablePlayers, pickableTagTeams } from '../../utils/pickablePlayers';
 import { nameOrUnnamed } from '../../utils/playerName';
@@ -46,6 +47,20 @@ const SCHEDULE_SOURCES = {
 };
 
 type ScheduleSource = keyof typeof SCHEDULE_SOURCES;
+
+/** The API's wording for the booking refusals, so they can show translated. */
+const SCHEDULE_ERROR_KEYS: Record<string, string> = {
+  'A title match from a challenge must include the current champion. Add them, or book it as a non-title match.': 'scheduleMatch.challengeNeedsChampion',
+  'This call-out or challenge already has a match booked': 'scheduleMatch.alreadyBooked',
+};
+
+const isTagFormat = (matchFormat: string) => matchFormat.toLowerCase().includes('tag');
+
+/** A team's members from a challenge, or just its named player if the team has gone. */
+const challengeTeamMembers = (team: TagTeamChallengeInfo | undefined, fallbackPlayerId: string): string[] => {
+  const members = [team?.player1.playerId, team?.player2.playerId].filter((id): id is string => Boolean(id));
+  return members.length > 0 ? members : [fallbackPlayerId];
+};
 
 export default function ScheduleMatch() {
   const { t } = useTranslation();
@@ -165,34 +180,68 @@ export default function ScheduleMatch() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount to load options and apply pre-fill from location state
   }, []);
 
-  /** Challenge and promo pre-fill resolve names against these two lists. */
-  const applyLinkedPreFill = (matchTypesData: MatchType[], stipulationsData: Stipulation[]) => {
+  /** A challenge's terms. Names resolve against these two lists. */
+  const applyChallengePreFill = (ch: ChallengeWithPlayers, matchTypesData: MatchType[], stipulationsData: Stipulation[]) => {
+    const isTagChallenge = ch.challengeMode === 'tag_team';
+    const fallbackFormat = (isTagChallenge ? matchTypesData.find((mt) => isTagFormat(mt.name)) : undefined)
+      ?? matchTypesData[0];
+    const matchFormat = matchTypesData.some((mt) => mt.name === ch.matchType)
+      ? ch.matchType
+      : fallbackFormat?.name ?? 'Singles';
+    const stipulationId = ch.stipulation
+      ? (stipulationsData.find((s) => s.name === ch.stipulation)?.stipulationId ?? '')
+      : '';
+    // A tag format books teams rather than participants.
+    const bookTeams = isTagFormat(matchFormat);
+    setFormData((prev) => ({
+      ...prev,
+      participants: bookTeams ? [] : [ch.challengerId, ch.challengedId],
+      matchFormat,
+      stipulationId,
+      isChampionship: Boolean(ch.championshipId),
+      championshipId: ch.championshipId ?? '',
+    }));
+    if (bookTeams) {
+      setTeams([
+        challengeTeamMembers(ch.challengerTagTeam, ch.challengerId),
+        challengeTeamMembers(ch.challengedTagTeam, ch.challengedId),
+      ]);
+    }
+    setLinkChallengeId(ch.challengeId);
+  };
+
+  /**
+   * The promo's challenge, or null if there isn't one or it can't be read. The
+   * form then falls back to the promo alone, and the API still finds the link.
+   */
+  const loadPromoChallenge = async (promo: PromoWithContext): Promise<ChallengeWithPlayers | null> => {
+    try {
+      return findChallengeToBook(await challengesApi.getAll({ playerId: promo.playerId }), promo);
+    } catch {
+      return null;
+    }
+  };
+
+  const applyLinkedPreFill = async (matchTypesData: MatchType[], stipulationsData: Stipulation[]) => {
     if (state?.fromChallenge) {
-      const ch = state.fromChallenge;
-      const matchFormat = matchTypesData.some((mt) => mt.name === ch.matchType)
-        ? ch.matchType
-        : matchTypesData[0]?.name ?? 'Singles';
-      const stipulationId = ch.stipulation
-        ? (stipulationsData.find((s) => s.name === ch.stipulation)?.stipulationId ?? '')
-        : '';
-      setFormData((prev) => ({
-        ...prev,
-        participants: [ch.challengerId, ch.challengedId],
-        matchFormat,
-        stipulationId,
-        championshipId: ch.championshipId ?? prev.championshipId,
-      }));
-      setLinkChallengeId(ch.challengeId);
+      applyChallengePreFill(state.fromChallenge, matchTypesData, stipulationsData);
     } else if (state?.fromPromo && state.fromPromo.targetPlayerId) {
       const promo = state.fromPromo;
+      setLinkPromoId(promo.promoId);
+      const challenge = await loadPromoChallenge(promo);
+      if (challenge) {
+        applyChallengePreFill(challenge, matchTypesData, stipulationsData);
+        return;
+      }
       const targetId = promo.targetPlayerId;
       const defaultFormat = matchTypesData.find((mt) => mt.name === 'Singles')?.name ?? matchTypesData[0]?.name ?? 'Singles';
       setFormData((prev) => ({
         ...prev,
         participants: targetId ? [promo.playerId, targetId] : prev.participants,
         matchFormat: defaultFormat,
+        isChampionship: Boolean(promo.championshipId),
+        championshipId: promo.championshipId ?? '',
       }));
-      setLinkPromoId(promo.promoId);
     }
   };
 
@@ -231,7 +280,7 @@ export default function ScheduleMatch() {
       }
       if (!failed.includes('matchTypes') && !failed.includes('stipulations')) {
         preFillApplied.current = true;
-        applyLinkedPreFill(values.matchTypes ?? matchTypes, values.stipulations ?? stipulations);
+        await applyLinkedPreFill(values.matchTypes ?? matchTypes, values.stipulations ?? stipulations);
       }
     }
   };
@@ -258,7 +307,7 @@ export default function ScheduleMatch() {
     setRetrying(false);
   };
 
-  const isTagTeamMatch = formData.matchFormat.toLowerCase().includes('tag');
+  const isTagTeamMatch = isTagFormat(formData.matchFormat);
 
   /** The participant half of the request, or null after reporting a validation error. */
   const buildParticipantPayload = () => {
@@ -342,7 +391,9 @@ export default function ScheduleMatch() {
       }
       resetForm();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('scheduleMatch.error'));
+      const translationKey = err instanceof Error ? SCHEDULE_ERROR_KEYS[err.message] : undefined;
+      if (translationKey) setError(t(translationKey));
+      else setError(err instanceof Error ? err.message : t('scheduleMatch.error'));
     } finally {
       setSubmitting(false);
     }
@@ -442,7 +493,7 @@ export default function ScheduleMatch() {
     setTeams([[], []]);
     setTagTeamSelectionMode('tag-teams');
     // Slot mode is incompatible with tag-team formats (out of scope for v1).
-    if (newFormat.toLowerCase().includes('tag')) {
+    if (isTagFormat(newFormat)) {
       setSlotMode(false);
     }
   };

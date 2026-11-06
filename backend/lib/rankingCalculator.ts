@@ -14,10 +14,16 @@ export interface RankingCalculationParams {
   seasonId: string;
   minimumMatches: number;
   maxContenders: number;
+  /**
+   * Players who get a row even when they would not qualify on merit, as long
+   * as they could contend for the title at all. Their rows follow the top N.
+   */
+  alwaysIncludePlayerIds?: readonly string[];
 }
 
 export interface RankingResult {
   playerId: string;
+  /** Position on merit, or 0 for a player below the minimum-match threshold. */
   rank: number;
   rankingScore: number;
   winPercentage: number;
@@ -69,7 +75,9 @@ const RECENCY_DECAY_DAYS = 30;
  *   - Recency weighting     (15%)
  *
  * The current champion and players below the minimum-match threshold are
- * excluded from the results.
+ * excluded from the results. `alwaysIncludePlayerIds` adds rows past the top N
+ * for the eligible players it names, whatever their record. Anyone who may not
+ * contend for this title gets no row, so no later step can place them.
  */
 export async function calculateRankingsForChampionship(
   params: RankingCalculationParams,
@@ -80,6 +88,7 @@ export async function calculateRankingsForChampionship(
     seasonId,
     minimumMatches = 3,
     maxContenders = 10,
+    alwaysIncludePlayerIds = [],
   } = params;
 
   // ------------------------------------------------------------------
@@ -118,10 +127,6 @@ export async function calculateRankingsForChampionship(
   });
 
   const matches: MatchRecord[] = allMatches as unknown as MatchRecord[];
-
-  if (matches.length === 0) {
-    return [];
-  }
 
   // ------------------------------------------------------------------
   // 2. Build per-player match lists and aggregate stats
@@ -171,6 +176,8 @@ export async function calculateRankingsForChampionship(
   // 4. Score each eligible player
   // ------------------------------------------------------------------
   const scoredPlayers: RankingResult[] = [];
+  const alwaysIncluded = new Set(alwaysIncludePlayerIds);
+  const belowThreshold: RankingResult[] = [];
 
   for (const [playerId, playerMatches] of playerMatchMap.entries()) {
     // Exclude the current champion
@@ -185,6 +192,9 @@ export async function calculateRankingsForChampionship(
 
     // Exclude players who have not met the minimum-match threshold
     if (playerMatches.length < minimumMatches) {
+      if (alwaysIncluded.has(playerId)) {
+        belowThreshold.push(calculatePlayerScore(playerId, playerMatches, playerStats));
+      }
       continue;
     }
 
@@ -197,14 +207,41 @@ export async function calculateRankingsForChampionship(
   // ------------------------------------------------------------------
   scoredPlayers.sort((a, b) => b.rankingScore - a.rankingScore);
 
-  const topContenders = scoredPlayers.slice(0, maxContenders);
-
   // Assign final rank positions (1-indexed)
-  for (let i = 0; i < topContenders.length; i++) {
-    topContenders[i].rank = i + 1;
+  for (let i = 0; i < scoredPlayers.length; i++) {
+    scoredPlayers[i].rank = i + 1;
   }
 
-  return topContenders;
+  const topContenders = scoredPlayers.slice(0, maxContenders);
+  const beyondTop = scoredPlayers
+    .slice(maxContenders)
+    .filter((player) => alwaysIncluded.has(player.playerId));
+
+  // An eligible player with no matches in the season has nothing to score.
+  const noMatches = [...alwaysIncluded]
+    .filter((playerId) => (
+      eligiblePlayerIds.has(playerId)
+      && !championIds.has(playerId)
+      && !playerMatchMap.has(playerId)
+    ))
+    .map(emptyRanking);
+
+  return [...topContenders, ...beyondTop, ...belowThreshold, ...noMatches];
+}
+
+/** The row for a player with no matches in the period. */
+function emptyRanking(playerId: string): RankingResult {
+  return {
+    playerId,
+    rank: 0,
+    rankingScore: 0,
+    winPercentage: 0,
+    currentStreak: 0,
+    qualityScore: 0,
+    recencyScore: 0,
+    matchesInPeriod: 0,
+    winsInPeriod: 0,
+  };
 }
 
 // ---------------------------------------------------------------------------

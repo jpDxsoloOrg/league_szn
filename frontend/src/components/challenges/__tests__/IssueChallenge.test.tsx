@@ -5,13 +5,14 @@ import { BrowserRouter } from 'react-router-dom';
 import type { Player } from '../../../types';
 
 // --- Hoisted mocks ---
-const { mockGetAllPlayers, mockGetMyProfile, mockCreateChallenge, mockGetAllStipulations, mockGetAllMatchTypes, mockGetAllTagTeams } = vi.hoisted(() => ({
+const { mockGetAllPlayers, mockGetMyProfile, mockCreateChallenge, mockGetAllStipulations, mockGetAllMatchTypes, mockGetAllTagTeams, mockGetAllChampionships } = vi.hoisted(() => ({
   mockGetAllPlayers: vi.fn(),
   mockGetMyProfile: vi.fn(),
   mockCreateChallenge: vi.fn(),
   mockGetAllStipulations: vi.fn(),
   mockGetAllMatchTypes: vi.fn(),
   mockGetAllTagTeams: vi.fn(),
+  mockGetAllChampionships: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -21,6 +22,7 @@ vi.mock('../../../services/api', () => ({
   stipulationsApi: { getAll: mockGetAllStipulations },
   matchTypesApi: { getAll: mockGetAllMatchTypes },
   tagTeamsApi: { getAll: mockGetAllTagTeams },
+  championshipsApi: { getAll: mockGetAllChampionships },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -33,7 +35,8 @@ vi.mock('react-i18next', () => ({
         'challenges.issue.matchType': 'Match Type',
         'challenges.issue.selectMatchType': '-- Select Match Type --',
         'challenges.issue.stipulation': 'Stipulation',
-        'challenges.issue.championshipMatch': 'Championship Match',
+        'challenges.issue.titleOnTheLine': 'Title on the line',
+        'challenges.issue.noTitle': 'No title',
         'challenges.issue.message': 'Message',
         'challenges.issue.messagePlaceholder': 'Say something...',
         'challenges.issue.showPreview': 'Show Preview',
@@ -85,6 +88,7 @@ describe('IssueChallenge', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetAllPlayers.mockResolvedValue(players);
+    mockGetAllChampionships.mockResolvedValue([]);
     mockGetMyProfile.mockResolvedValue({ playerId: 'p-1' });
     mockGetAllStipulations.mockResolvedValue([
       { stipulationId: 'stip-1', name: 'Steel Cage', createdAt: '', updatedAt: '' },
@@ -219,6 +223,27 @@ describe('IssueChallenge', () => {
     // Success screen
     await waitFor(() => {
       expect(screen.getByText('Challenge issued successfully!')).toBeInTheDocument();
+    });
+  });
+
+  it('sends the real title the opponent holds', async () => {
+    const user = userEvent.setup();
+    mockCreateChallenge.mockResolvedValue({});
+    mockGetAllChampionships.mockResolvedValue([
+      { championshipId: 'world', name: 'World Title', type: 'singles', currentChampion: 'p-2', isActive: true, createdAt: '' },
+    ]);
+
+    renderIssue();
+    await screen.findByText('Issue a Challenge');
+
+    const selects = screen.getAllByRole('combobox');
+    await user.selectOptions(selects[0]!, 'p-2');
+    await user.selectOptions(selects[1]!, 'Singles');
+    await user.selectOptions(await screen.findByLabelText('Title on the line'), 'world');
+    await user.click(screen.getByText('Submit Challenge'));
+
+    await waitFor(() => {
+      expect(mockCreateChallenge).toHaveBeenCalledWith(expect.objectContaining({ championshipId: 'world' }));
     });
   });
 });

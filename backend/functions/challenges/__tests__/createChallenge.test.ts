@@ -3,12 +3,12 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockGet, mockPut, mockQuery } = vi.hoisted(() => ({
-  mockGet: vi.fn(), mockPut: vi.fn(), mockQuery: vi.fn(),
+const { mockGet, mockPut, mockQuery, mockQueryAll } = vi.hoisted(() => ({
+  mockGet: vi.fn(), mockPut: vi.fn(), mockQuery: vi.fn(), mockQueryAll: vi.fn(),
 }));
 
 vi.mock('../../../lib/dynamodb', () => ({
-  dynamoDb: { get: mockGet, put: mockPut, query: mockQuery },
+  dynamoDb: { get: mockGet, put: mockPut, query: mockQuery, queryAll: mockQueryAll },
   TableNames: { CHALLENGES: 'Challenges', PLAYERS: 'Players', TAG_TEAMS: 'TagTeams' },
 }));
 
@@ -206,6 +206,78 @@ describe('createChallenge', () => {
     const event = withAuth(makeEvent({ body: JSON.stringify({ challengedId: 'p2', matchType: 'Singles' }) }), 'Admin', 'admin-sub');
     const result = await createChallenge(event, ctx, cb);
     expect(result!.statusCode).toBe(201);
+  });
+
+  describe('titles', () => {
+    const challenger = { playerId: 'p1', userId: 'user-sub-1', currentWrestler: 'Cena' };
+    const challenged = { playerId: 'p2', name: 'The Rock', currentWrestler: 'The Rock' };
+    const worldTitle = { championshipId: 'world', name: 'World Title', type: 'singles', currentChampion: 'p2', isActive: true };
+    const tagTitle = { championshipId: 'tag', name: 'Tag Titles', type: 'tag', currentChampion: ['p3', 'p4'], isActive: true };
+    const myTeam = { tagTeamId: 'team-1', name: 'Us', player1Id: 'p1', player2Id: 'p2', status: 'active' };
+    const theirTeam = { tagTeamId: 'team-2', name: 'Them', player1Id: 'p3', player2Id: 'p4', status: 'active' };
+
+    function mockLookups() {
+      mockQuery.mockResolvedValue({ Items: [challenger] });
+      mockQueryAll.mockImplementation(({ IndexName }: { IndexName: string }) =>
+        Promise.resolve(IndexName === 'Player1Index' ? [myTeam] : []));
+      mockGet.mockImplementation(({ Key }: { Key: Record<string, string> }) => {
+        if (Key.championshipId) {
+          return Promise.resolve({ Item: [worldTitle, tagTitle].find((item) => item.championshipId === Key.championshipId) });
+        }
+        if (Key.tagTeamId) return Promise.resolve({ Item: theirTeam });
+        return Promise.resolve({ Item: { ...challenged, playerId: Key.playerId } });
+      });
+      mockPut.mockResolvedValue({});
+    }
+
+    it('rejects the placeholder id the old form sent', async () => {
+      mockLookups();
+      const result = await createChallenge(
+        wrestlerEvent({ challengedId: 'p2', matchType: 'Singles', championshipId: 'championship-match' }), ctx, cb,
+      );
+      expect(result!.statusCode).toBe(400);
+      expect(JSON.parse(result!.body).message).toBe('Championship not found');
+    });
+
+    it('records a singles title held by the opponent', async () => {
+      mockLookups();
+      const result = await createChallenge(
+        wrestlerEvent({ challengedId: 'p2', matchType: 'Singles', championshipId: 'world' }), ctx, cb,
+      );
+      expect(result!.statusCode).toBe(201);
+      expect(JSON.parse(result!.body).championshipId).toBe('world');
+    });
+
+    it('rejects a tag title on a singles challenge', async () => {
+      mockLookups();
+      const result = await createChallenge(
+        wrestlerEvent({ challengedId: 'p2', matchType: 'Singles', championshipId: 'tag' }), ctx, cb,
+      );
+      expect(result!.statusCode).toBe(400);
+      expect(JSON.parse(result!.body).message).toBe('A tag team title can only be challenged for in a tag team challenge');
+      expect(mockPut).not.toHaveBeenCalled();
+    });
+
+    it('records a tag title held by the challenged team', async () => {
+      mockLookups();
+      const result = await createChallenge(
+        wrestlerEvent({ challengeMode: 'tag_team', challengedTagTeamId: 'team-2', matchType: 'Tag Team', championshipId: 'tag' }), ctx, cb,
+      );
+      expect(result!.statusCode).toBe(201);
+      const body = JSON.parse(result!.body);
+      expect(body.championshipId).toBe('tag');
+      expect(body.challengeMode).toBe('tag_team');
+    });
+
+    it('rejects a singles title on a tag team challenge', async () => {
+      mockLookups();
+      const result = await createChallenge(
+        wrestlerEvent({ challengeMode: 'tag_team', challengedTagTeamId: 'team-2', matchType: 'Tag Team', championshipId: 'world' }), ctx, cb,
+      );
+      expect(result!.statusCode).toBe(400);
+      expect(JSON.parse(result!.body).message).toBe('A singles title cannot be challenged for in a tag team challenge');
+      expect(mockPut).not.toHaveBeenCalled();
+    });
   });
 
   it('returns 500 when an unexpected error occurs', async () => {

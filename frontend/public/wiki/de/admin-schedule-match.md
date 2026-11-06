@@ -35,7 +35,7 @@ Du kannst die Planung unter **Promos** starten:
 - Klicke im Tab **Call-outs** bei einer angenommenen Herausforderung auf **Kampf planen**
 - Klicke im Tab **Promos** bei einer Ansage, die ein Ziel nennt, auf **Kampf planen**
 
-Teilnehmer und Match-Typ werden für dich ausgefüllt, bei einer Herausforderung auch die Stipulation. Vor dem Speichern kannst du alles ändern. Bei einer Herausforderung zu einem Tag-Team-Match musst du die Teams von Hand wählen, und bei einem Titelkampf musst du **Titelkampf** ankreuzen und den Titel wählen.
+Teilnehmer und Match-Typ werden für dich ausgefüllt, bei einer Herausforderung auch die Stipulation. Vor dem Speichern kannst du alles ändern. Eine Tag-Team-Herausforderung füllt auch beide Teams aus. Eine Titel-Herausforderung oder eine Call-out-Promo mit einem Titel kreuzt **Titelkampf** an und wählt den Titel. Wurde dieser Titel deaktiviert, wähle einen anderen oder entferne das Häkchen.
 
 Beim Speichern wird die Herausforderung als geplant markiert oder die Promo aus dem öffentlichen Feed ausgeblendet. Das Match behält einen Link darauf.
 

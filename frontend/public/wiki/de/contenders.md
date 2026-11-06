@@ -7,13 +7,13 @@ Die Seite Herausforderer zeigt die offiziellen #1-Herausforderer-Ranglisten für
 Die Ranglisten werden automatisch aus den abgeschlossenen Matches der aktiven Saison berechnet. Ist keine Saison aktiv, werden sie nicht aktualisiert. Jede Meisterschaft hat eine eigene Rangliste, die zeigt, wer sich eine Titelchance verdient hat.
 
 - Der aktuelle Champion steht oben und wird nicht gerankt.
-- Du brauchst mindestens 3 Matches in der Saison, und ein Titel listet bis zu 10 Herausforderer. Das sind die Standardwerte.
+- Du brauchst mindestens 3 Matches in der Saison, und ein Titel listet bis zu 10 Herausforderer. Das Team kann einen Spieler auch ohne sie auf die Liste setzen.
 - Ein an eine Division gebundener Titel rankt normalerweise nur Spieler dieser Division.
 - Nicht sichtbare und vom Liga-Team entfernte Spieler werden nicht gerankt.
 
 ## Wann die Ranglisten aktualisiert werden
 
-Die Ranglisten werden nach jedem eingetragenen Ergebnis und alle 6 Stunden neu berechnet. Das Liga-Team kann die Berechnung auch von Hand starten. Der Zeitpunkt der letzten Berechnung steht unten auf der Seite.
+Die Ranglisten werden nach jedem eingetragenen Ergebnis und alle 6 Stunden neu berechnet. Der Zeitpunkt der letzten Berechnung steht unten auf der Seite.
 
 ## Die Rangliste lesen
 

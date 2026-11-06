@@ -5,6 +5,7 @@ import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { challengeExpiresAt, isChallengeExpired } from '../../lib/challengeExpiry';
+import { CHAMPIONSHIP_NOT_FOUND_MESSAGE, challengeTitleFitError, titleAvailabilityError } from '../../lib/challengeTitle';
 import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 
 type ChallengeAction = 'accept' | 'decline' | 'counter';
@@ -36,7 +37,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('action must be accept, decline, or counter');
     }
 
-    const { user: { challenges }, roster: { players, tagTeams } } = getRepositories();
+    const { user: { challenges }, roster: { players, tagTeams }, competition: { championships } } = getRepositories();
 
     // Get the challenge via repo
     const challenge = await challenges.findById(challengeId);
@@ -103,6 +104,30 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);
     }
 
+    // A counter changes the terms, not the stakes, so a title stays on the line
+    // and the new match type has to suit it.
+    if (challenge.championshipId) {
+      const championship = await championships.findById(challenge.championshipId);
+      if (!championship) return badRequest(CHAMPIONSHIP_NOT_FOUND_MESSAGE);
+
+      const isTagChallenge = challenge.challengeMode === 'tag_team';
+      const teams = isTagChallenge
+        ? await Promise.all([challenge.challengerTagTeamId, challenge.challengedTagTeamId].map((id) => (id ? tagTeams.findById(id) : null)))
+        : [];
+      const sides = isTagChallenge
+        ? await Promise.all(teams.map(async (team) => {
+          const members = await Promise.all((team ? [team.player1Id, team.player2Id] : []).map((id) => players.findById(id)));
+          return members.filter((member) => member !== null);
+        }))
+        : [[responderPlayer], counterTarget ? [counterTarget] : []];
+      const titleError = titleAvailabilityError(championship) ?? challengeTitleFitError(championship, {
+        challengeMode: challenge.challengeMode,
+        matchType: counterMatchType,
+        sides,
+      });
+      if (titleError) return badRequest(titleError);
+    }
+
     const counterChallengeId = uuidv4();
 
     const counterChallenge: Record<string, unknown> = {
@@ -120,6 +145,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       counterChallenge.challengerTagTeamId = challenge.challengedTagTeamId;
       counterChallenge.challengedTagTeamId = challenge.challengerTagTeamId;
     }
+    if (challenge.championshipId) counterChallenge.championshipId = challenge.championshipId;
+    if (challenge.promoId) counterChallenge.promoId = challenge.promoId;
     if (counterStipulation) counterChallenge.stipulation = counterStipulation;
     if (counterMessage) counterChallenge.message = counterMessage;
 

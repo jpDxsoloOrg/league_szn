@@ -28,6 +28,7 @@ export interface ChallengeCreateInput {
   challengeMode?: 'singles' | 'tag_team';
   challengerTagTeamId?: string;
   challengedTagTeamId?: string;
+  promoId?: string;
   expiresAt: string;
 }
 

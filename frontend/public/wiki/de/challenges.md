@@ -14,11 +14,13 @@ Klicke auf **Call-Out-Promo schneiden**, um den Promo-Editor im Call-out-Modus z
 
 Wähle dein Ziel und einen Kampftyp, füge bei Bedarf eine Stipulation hinzu und schreibe deine Promo. Beim Absenden wird die Promo veröffentlicht und die Herausforderung ausgesprochen. Bist du in einem aktiven Tag Team, kannst du auch eine Tag-Team-Herausforderung gegen ein anderes Team aussprechen.
 
+Um einen Titel aufs Spiel zu setzen, wähle ihn unter **Titel im Einsatz**. Es stehen nur Titel zur Wahl, die diese Herausforderung entscheiden kann: Titel, die du oder dein Gegner hält, und vakante Titel. Eine Einzel-Herausforderung braucht einen Einzeltitel und einen Kampftyp ohne „Tag“ im Namen. Eine Tag-Team-Herausforderung braucht einen Tag-Team-Titel und einen Tag-Kampftyp. Ist der Titel auf eine Division beschränkt, müssen alle Beteiligten in dieser Division sein.
+
 Eine gesendete Herausforderung kannst du zurückziehen, solange sie nicht beantwortet ist.
 
 ## Auf eine Herausforderung reagieren
 
-Öffne eine Herausforderung im Tab Empfangen. Du kannst **Annehmen**, **Ablehnen** oder **Kontern**. Ein Konter schickt eine neue Herausforderung mit deinem eigenen Kampftyp, deiner Stipulation und deiner Nachricht zurück. Annehmen kannst du auch direkt an der Call-out-Promo.
+Öffne eine Herausforderung im Tab Empfangen. Du kannst **Annehmen**, **Ablehnen** oder **Kontern**. Ein Konter schickt eine neue Herausforderung mit deinem eigenen Kampftyp, deiner Stipulation und deiner Nachricht zurück. Ein Titel bleibt dabei im Einsatz, der neue Kampftyp muss also zu ihm passen. Annehmen kannst du auch direkt an der Call-out-Promo.
 
 Bei einer Tag-Team-Herausforderung kann jedes Mitglied des herausgeforderten Teams reagieren.
 
@@ -28,7 +30,7 @@ Du hast 4 Tage Zeit für eine Antwort. Danach wird die Herausforderung als **Abg
 
 ## Nach dem Annehmen
 
-Annehmen bucht das Match noch nicht. Das Liga-Team muss es erst ansetzen. Dann ändert sich der Status zu **Geplant**, und an der Herausforderung erscheint ein Link zum Match.
+Annehmen bucht das Match noch nicht. Das Liga-Team muss es erst ansetzen. Dann ändert sich der Status zu **Geplant**, und an der Herausforderung erscheint ein Link zum Match. Eine Titel-Herausforderung wird als Titelkampf gebucht, der Titel kann also den Besitzer wechseln.
 
 ## Status von Herausforderungen
 

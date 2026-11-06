@@ -4,6 +4,7 @@ import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { challengeExpiresAt } from '../../lib/challengeExpiry';
+import { challengeTitleFitError, titleAvailabilityError } from '../../lib/challengeTitle';
 import { isPlayerVisible, SET_WRESTLER_NAME_MESSAGE, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 // Notifications intentionally not dispatched here while the challenge UI is hidden.
 
@@ -15,6 +16,21 @@ interface CreateChallengeBody {
   message?: string;
   challengeMode?: 'singles' | 'tag_team';
   challengedTagTeamId?: string;
+  /** The call-out promo this challenge comes from. */
+  promoId?: string;
+}
+
+/**
+ * Records the challenge on its promo. The challenge already exists by now, so a
+ * failure here is logged rather than reported as a failed challenge. Scheduling
+ * can still find it from the promo, the way it does for older call-outs.
+ */
+async function linkPromoToChallenge(promoId: string, challengeId: string): Promise<void> {
+  try {
+    await getRepositories().content.promos.update(promoId, { challengeId });
+  } catch (err) {
+    console.warn(`Failed to link promo ${promoId} to challenge ${challengeId}:`, err);
+  }
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -26,7 +42,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { data: body, error: parseError } = parseBody<CreateChallengeBody>(event);
     if (parseError) return parseError;
-    const { challengedId, matchType, stipulation, championshipId, message, challengeMode, challengedTagTeamId } = body;
+    const { challengedId, matchType, stipulation, championshipId, message, challengeMode, challengedTagTeamId, promoId } = body;
 
     if (!matchType) {
       return badRequest('matchType is required');
@@ -34,14 +50,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { roster: { players, tagTeams }, user: { challenges }, competition: { championships } } = getRepositories();
 
+    const championship = championshipId ? await championships.findById(championshipId) : null;
     if (championshipId) {
-      const championship = await championships.findById(championshipId);
-      if (!championship) {
-        return badRequest('Championship not found');
-      }
-      if (championship.isActive === false) {
-        return badRequest('This championship is inactive and cannot be challenged for');
-      }
+      const titleError = titleAvailabilityError(championship);
+      if (titleError) return badRequest(titleError);
     }
 
     // Find the challenger's player record via their user sub
@@ -55,6 +67,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const challengerId = challengerPlayer.playerId;
+
+    if (promoId) {
+      const promo = await getRepositories().content.promos.findById(promoId);
+      if (promo?.playerId !== challengerId) {
+        return badRequest('A challenge can only be linked to your own promo');
+      }
+    }
 
     const expiresAt = challengeExpiresAt();
 
@@ -91,6 +110,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return badRequest('A member of that tag team has not set a wrestler name yet');
       }
 
+      if (championship) {
+        const challengerMembers = await Promise.all(
+          [challengerTagTeam.player1Id, challengerTagTeam.player2Id].map((id) => players.findById(id)),
+        );
+        const titleError = challengeTitleFitError(championship, {
+          challengeMode: 'tag_team',
+          matchType,
+          sides: [challengerMembers, challengedMembers].map((members) => members.filter((member) => member !== null)),
+        });
+        if (titleError) return badRequest(titleError);
+      }
+
       const challenge = await challenges.create({
         challengerId,
         challengedId: challengedTeam.player1Id,
@@ -101,8 +132,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         stipulation: stipulation || undefined,
         championshipId: championshipId || undefined,
         message: message || undefined,
+        promoId: promoId || undefined,
         expiresAt,
       });
+      if (promoId) await linkPromoToChallenge(promoId, challenge.challengeId);
 
       // Notification dispatch intentionally disabled while the challenge UI is hidden.
       // The challenge row is still persisted so direct API calls keep working.
@@ -128,6 +161,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);
     }
 
+    if (championship) {
+      const titleError = challengeTitleFitError(championship, {
+        challengeMode: 'singles',
+        matchType,
+        sides: [[challengerPlayer], [challengedPlayer]],
+      });
+      if (titleError) return badRequest(titleError);
+    }
+
     const challenge = await challenges.create({
       challengerId,
       challengedId,
@@ -135,8 +177,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       stipulation: stipulation || undefined,
       championshipId: championshipId || undefined,
       message: message || undefined,
+      promoId: promoId || undefined,
       expiresAt,
     });
+    if (promoId) await linkPromoToChallenge(promoId, challenge.challengeId);
 
     // Notification dispatch intentionally disabled while the challenge UI is hidden.
     return created(challenge);

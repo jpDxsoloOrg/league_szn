@@ -2,7 +2,7 @@
 
 **Admin → Rivalries** is the GM control page for long-running storylines. This article covers how rivalries start, how to write notes and plans, how matches get linked, and how to clean up. Moderators and Admins can use everything here except **Heat Tunables**, which is for full Admins.
 
-> **Spoiler warning.** Everything you save on the **Notes & Plans** tab can be read by the rivals in that rivalry, including plans. There is no GM-only option on the page, so keep finishes and surprises out of it.
+The **Notes & Plans** tab is where the two rivals and the GMs plan the storyline together. Everything saved there, plans included, is shared between them.
 
 ## Starting a Rivalry
 

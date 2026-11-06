@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 const { mockChampionshipsApi, mockContendersApi, mockPlayersApi } = vi.hoisted(() => ({
   mockChampionshipsApi: { getAll: vi.fn() },
@@ -52,6 +52,55 @@ describe('AdminContenderOverrides', () => {
 
     expect(await screen.findByText('Unassigned')).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /Unassigned/ })).not.toBeInTheDocument();
+  });
+
+  describe('reporting what an override did', () => {
+    const applyOverride = async () => {
+      mockContendersApi.getOverrides.mockResolvedValue([]);
+      render(<AdminContenderOverrides />);
+
+      await screen.findByRole('option', { name: 'Alex (The Rock)' });
+      fireEvent.change(screen.getByLabelText('contenders.admin.overrides.selectPlayer'), { target: { value: 'p1' } });
+      fireEvent.change(screen.getByLabelText('contenders.admin.overrides.reason'), { target: { value: 'Storyline' } });
+      fireEvent.click(screen.getByRole('button', { name: 'contenders.admin.overrides.apply' }));
+      const dialog = await screen.findByRole('dialog');
+      fireEvent.click(within(dialog).getByRole('button', { name: 'contenders.admin.overrides.apply' }));
+    };
+
+    it('says success when the player reached the list', async () => {
+      mockContendersApi.setOverride.mockResolvedValue({ ...override('c1', 'Storyline'), placement: { status: 'onList', rank: 1 } });
+      await applyOverride();
+      const notice = await screen.findByText('contenders.admin.overrides.placedOnList');
+      expect(notice.closest('.admin-notice')).toHaveClass('admin-notice--success');
+    });
+
+    it.each([
+      ['notOnList', 'contenders.admin.overrides.placedNotOnList'],
+      ['noActiveSeason', 'contenders.admin.overrides.placedNoSeason'],
+      ['recalculationFailed', 'contenders.admin.overrides.placedFailed'],
+    ])('warns rather than claims success for %s', async (status, text) => {
+      mockContendersApi.setOverride.mockResolvedValue({ ...override('c1', 'Storyline'), placement: { status, rank: null } });
+      await applyOverride();
+      const notice = await screen.findByText(text);
+      expect(notice.closest('.admin-notice')).toHaveClass('admin-notice--warning');
+    });
+
+    it('translates the refusal of an expiry that has passed', async () => {
+      mockContendersApi.setOverride.mockRejectedValue(new Error('expiresAt must be in the future'));
+      await applyOverride();
+      expect(await screen.findByText('contenders.admin.overrides.errorExpiryPast')).toBeInTheDocument();
+    });
+  });
+
+  it('shows where each active override has put its player', async () => {
+    mockContendersApi.getOverrides.mockResolvedValue([
+      { ...override('c1', 'Top'), currentRank: 1 },
+      { ...override('c1', 'Off list'), playerId: 'p2', overrideType: 'send_to_bottom', currentRank: null },
+    ]);
+    render(<AdminContenderOverrides />);
+
+    expect(await screen.findByText('contenders.admin.overrides.positionRank')).toBeInTheDocument();
+    expect(screen.getByText('contenders.admin.overrides.positionNone')).toBeInTheDocument();
   });
 
   it('ignores a slow response for the previously selected championship', async () => {

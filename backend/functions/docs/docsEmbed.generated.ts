@@ -317,6 +317,7 @@ components:
         responseMessage: { type: string }
         counteredChallengeId: { type: string }
         matchId: { type: string }
+        promoId: { type: string, description: The call-out promo this challenge came from }
         expiresAt: { type: string }
         createdAt: { type: string }
         updatedAt: { type: string }
@@ -345,6 +346,7 @@ components:
         stipulation: { type: string }
         championshipId: { type: string }
         message: { type: string }
+        promoId: { type: string, description: The caller's own call-out promo to link this challenge to }
 
     RespondChallengeInput:
       type: object
@@ -2501,10 +2503,11 @@ paths:
           in: query
           schema: { type: string }
       responses:
-        '200': { description: List of overrides with player info }
+        '200': { description: 'List of overrides with player info and currentRank, the stored position or null when the player is not on the list' }
     post:
       tags: [Contenders]
       summary: Set contender override
+      description: Saves the override, recalculates the title and reports where the player ended up.
       security: [{ BearerAuth: [] }]
       requestBody:
         content:
@@ -2519,7 +2522,8 @@ paths:
                 reason: { type: string }
                 expiresAt: { type: string, format: date-time }
       responses:
-        '201': { description: Override created }
+        '201':
+          description: Override created. placement.status is onList, notOnList, noActiveSeason or recalculationFailed, and placement.rank is set for onList.
         '400': { description: 'Bad request', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '401': { description: 'Unauthorized', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '403': { description: 'Forbidden', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
