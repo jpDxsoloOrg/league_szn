@@ -10,8 +10,8 @@
 }
 
 .video-form-container {
-  background-color: #0f1429;
-  border: 2px solid #d4af37;
+  background-color: var(--color-surface);
+  border: 2px solid var(--color-hairline);
   border-radius: 8px;
   padding: 2rem;
   margin-bottom: 2rem;
@@ -20,7 +20,7 @@
 .video-form-container h3 {
   margin-top: 0;
   margin-bottom: 1.5rem;
-  color: #d4af37;
+  color: var(--color-primary);
 }
 
 .video-form {
@@ -31,10 +31,10 @@
 .video-form textarea {
   width: 100%;
   padding: 0.75rem;
-  background-color: #161d3a;
-  border: 2px solid #334155;
+  background-color: var(--color-surface-raised);
+  border: 2px solid var(--color-hairline);
   border-radius: 4px;
-  color: #fff;
+  color: var(--color-text);
   font-family: inherit;
   font-size: 1rem;
   resize: vertical;
@@ -42,33 +42,33 @@
 
 .video-form textarea:focus {
   outline: none;
-  border-color: #d4af37;
+  border-color: var(--color-primary);
 }
 
 .video-form select {
   width: 100%;
   padding: 0.75rem;
-  background-color: #161d3a;
-  border: 2px solid #334155;
+  background-color: var(--color-surface-raised);
+  border: 2px solid var(--color-hairline);
   border-radius: 4px;
-  color: #fff;
+  color: var(--color-text);
   font-size: 1rem;
 }
 
 .video-form input[type="file"] {
-  color: #e2e8f0;
+  color: var(--color-text-secondary);
   padding: 0.5rem 0;
 }
 
 .current-url {
-  color: #94a3b8;
+  color: var(--color-text-muted);
   font-size: 0.75rem;
   margin-top: 0.25rem;
   word-break: break-all;
 }
 
 .upload-progress {
-  color: #d4af37;
+  color: var(--color-primary);
   font-weight: bold;
   padding: 0.5rem;
   text-align: center;
@@ -85,8 +85,8 @@
 }
 
 .video-card {
-  background-color: #0f1429;
-  border: 2px solid #d4af37;
+  background-color: var(--color-surface);
+  border: 2px solid var(--color-hairline);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -94,7 +94,7 @@
 .video-card-preview {
   width: 100%;
   aspect-ratio: 16 / 9;
-  background-color: #161d3a;
+  background-color: var(--color-surface-raised);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -108,7 +108,7 @@
 
 .video-placeholder {
   font-size: 3rem;
-  color: #d4af37;
+  color: var(--color-primary);
 }
 
 .video-card-info {
@@ -117,7 +117,7 @@
 
 .video-card-info h4 {
   margin: 0 0 0.5rem 0;
-  color: #d4af37;
+  color: var(--color-primary);
   font-size: 1.1rem;
 }
 
@@ -138,32 +138,32 @@
 }
 
 .category-match {
-  background-color: #1e3a2a;
-  color: #86efac;
+  background-color: var(--tint-win);
+  color: var(--color-win);
 }
 
 .category-highlight {
-  background-color: #3a351e;
-  color: #fde68a;
+  background-color: var(--tint-warn);
+  color: var(--color-warn);
 }
 
 .category-promo {
-  background-color: #1e2a3a;
-  color: #93c5fd;
+  background-color: var(--tint-cyan);
+  color: var(--color-cyan);
 }
 
 .category-other {
-  background-color: #2a2a3a;
-  color: #c4b5fd;
+  background-color: var(--tint-violet);
+  color: var(--color-text-secondary);
 }
 
 .video-date {
-  color: #94a3b8;
+  color: var(--color-text-muted);
   font-size: 0.8rem;
 }
 
 .video-description {
-  color: #94a3b8;
+  color: var(--color-text-muted);
   font-size: 0.85rem;
   margin: 0.5rem 0;
   display: -webkit-box;
@@ -177,30 +177,31 @@
   gap: 0.75rem;
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #1e2a4a;
+  border-top: 1px solid var(--color-hairline);
 }
 
 .video-edit-btn {
-  background-color: #3b82f6;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   flex: 1;
 }
 
 .video-edit-btn:hover {
-  background-color: #2563eb;
+  background-color: var(--color-primary-hover);
 }
 
 .video-delete-btn {
-  background-color: #7f1d1d !important;
-  color: #fecaca;
+  background-color: var(--color-danger) !important;
+  color: var(--color-text);
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   flex: 1;
 }
 
 .video-delete-btn:hover:not(:disabled) {
-  background-color: #991b1b !important;
+  background-color: var(--color-danger-hover) !important;
 }
 
 .video-delete-btn:disabled {
