@@ -9,71 +9,74 @@ import { handler as getMyCheckInHandler } from './getMyCheckIn';
 import { handler as deleteCheckInHandler } from './deleteCheckIn';
 import { handler as getCheckInSummaryHandler } from './getCheckInSummary';
 import { handler as getCheckInsHandler } from './getCheckIns';
-import { createRouter, RouteConfig } from '../../lib/router';
+import { createRouter, type RouteConfig, STAFF } from '../../lib/router';
 
-const routes: ReadonlyArray<RouteConfig> = [
+export const routes: ReadonlyArray<RouteConfig> = [
   {
     resource: '/events',
     method: 'GET',
     handler: getEventsHandler,
+    access: 'public',
   },
   {
     resource: '/events/{eventId}',
     method: 'GET',
     handler: getEventHandler,
+    access: 'public',
   },
   {
     resource: '/events/{eventId}/commentary',
     method: 'GET',
     handler: getCommentaryHandler,
+    access: 'public',
   },
   {
     resource: '/events',
     method: 'POST',
     handler: createEventHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/events/{eventId}',
     method: 'PUT',
     handler: updateEventHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/events/{eventId}',
     method: 'DELETE',
     handler: deleteEventHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/events/{eventId}/check-in',
     method: 'POST',
     handler: checkInHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/events/{eventId}/check-in/me',
     method: 'GET',
     handler: getMyCheckInHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/events/{eventId}/check-in',
     method: 'DELETE',
     handler: deleteCheckInHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/events/{eventId}/check-ins/summary',
     method: 'GET',
     handler: getCheckInSummaryHandler,
-    requireAuth: true,
+    access: 'self-service',
   },
   {
     resource: '/events/{eventId}/check-ins',
     method: 'GET',
     handler: getCheckInsHandler,
-    requireAuth: true,
+    access: STAFF,
   },
 ];
 export const handler = createRouter(routes);

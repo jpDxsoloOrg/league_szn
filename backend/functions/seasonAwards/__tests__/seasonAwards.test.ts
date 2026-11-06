@@ -313,6 +313,7 @@ describe('handler (router)', () => {
 
     const event = makeEvent({
       httpMethod: 'GET',
+      resource: '/seasons/{seasonId}/awards',
       pathParameters: { seasonId: 's1' },
     });
 
@@ -327,7 +328,11 @@ describe('handler (router)', () => {
 
     const event = makeEvent({
       httpMethod: 'DELETE',
+      resource: '/seasons/{seasonId}/awards/{awardId}',
       pathParameters: { seasonId: 's1', awardId: 'a1' },
+      requestContext: {
+        authorizer: { principalId: 'admin-sub', groups: 'Admin' },
+      } as unknown as APIGatewayProxyEvent['requestContext'],
     });
 
     const result = await routerHandler(event, ctx, cb);
@@ -338,11 +343,43 @@ describe('handler (router)', () => {
   it('returns 405 for unsupported methods', async () => {
     const event = makeEvent({
       httpMethod: 'PATCH',
+      resource: '/seasons/{seasonId}/awards',
       pathParameters: { seasonId: 's1' },
     });
 
     const result = await routerHandler(event, ctx, cb);
 
     expect(result!.statusCode).toBe(405);
+  });
+
+  it('rejects a Wrestler creating or deleting an award', async () => {
+    const wrestlerContext = {
+      authorizer: { principalId: 'wrestler-sub', groups: 'Wrestler' },
+    } as unknown as APIGatewayProxyEvent['requestContext'];
+
+    const createResult = await routerHandler(
+      makeEvent({
+        httpMethod: 'POST',
+        resource: '/seasons/{seasonId}/awards',
+        pathParameters: { seasonId: 's1' },
+        requestContext: wrestlerContext,
+      }),
+      ctx,
+      cb,
+    );
+    const deleteResult = await routerHandler(
+      makeEvent({
+        httpMethod: 'DELETE',
+        resource: '/seasons/{seasonId}/awards/{awardId}',
+        pathParameters: { seasonId: 's1', awardId: 'a1' },
+        requestContext: wrestlerContext,
+      }),
+      ctx,
+      cb,
+    );
+
+    expect(createResult!.statusCode).toBe(403);
+    expect(deleteResult!.statusCode).toBe(403);
+    expect(mockSeasonAwardsDelete).not.toHaveBeenCalled();
   });
 });

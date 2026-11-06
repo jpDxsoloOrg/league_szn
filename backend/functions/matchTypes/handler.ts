@@ -1,4 +1,4 @@
-import { createRouter, type RouteConfig } from '../../lib/router';
+import { createRouter, type RouteConfig, STAFF } from '../../lib/router';
 import { handler as getMatchTypesHandler } from './getMatchTypes';
 import { handler as createMatchTypeHandler } from './createMatchType';
 import { handler as updateMatchTypeHandler } from './updateMatchType';
@@ -7,29 +7,30 @@ import { handler as deleteMatchTypeHandler } from './deleteMatchType';
 /**
  * Single Lambda for match types: routes by method + resource.
  */
-const routes: ReadonlyArray<RouteConfig> = [
+export const routes: ReadonlyArray<RouteConfig> = [
   {
     resource: '/match-types',
     method: 'GET',
     handler: getMatchTypesHandler,
+    access: 'public',
   },
   {
     resource: '/match-types',
     method: 'POST',
     handler: createMatchTypeHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/match-types/{matchTypeId}',
     method: 'PUT',
     handler: updateMatchTypeHandler,
-    requireAuth: true,
+    access: STAFF,
   },
   {
     resource: '/match-types/{matchTypeId}',
     method: 'DELETE',
     handler: deleteMatchTypeHandler,
-    requireAuth: true,
+    access: STAFF,
   },
 ];
 
