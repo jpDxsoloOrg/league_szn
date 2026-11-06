@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { Flag } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { factionsApi, profileApi } from '../../services/api';
+import { isApiError } from '../../services/api/apiClient';
 import type { Player } from '../../types';
-import type { StableInvitationWithDetails } from '../../types/stable';
+import type { Stable, StableInvitationWithDetails } from '../../types/stable';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
 import PageHeader from '../ui/PageHeader';
@@ -26,6 +27,8 @@ export default function MyFaction() {
   const { showToast } = useToast();
   const [profile, setProfile] = useState<Player | null>(null);
   const [invitations, setInvitations] = useState<StableInvitationWithDetails[]>([]);
+  const [pendingFaction, setPendingFaction] = useState<Stable | null>(null);
+  const [noPlayerProfile, setNoPlayerProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -34,6 +37,7 @@ export default function MyFaction() {
   const loadData = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError(null);
+    setNoPlayerProfile(false);
 
     try {
       const myProfile = await profileApi.getMyProfile(signal);
@@ -43,6 +47,10 @@ export default function MyFaction() {
       // There is no "my invitations" endpoint, so this checks each faction.
       try {
         const allFactions = await factionsApi.getAll(undefined, signal);
+        // A request only reaches the player's record once an admin approves it.
+        setPendingFaction(allFactions.find((faction) => (
+          faction.status === 'pending' && faction.leaderId === myProfile.playerId
+        )) ?? null);
         const perFaction = await Promise.all(allFactions.map(async (faction) => {
           try {
             return await factionsApi.getInvitations(faction.stableId, signal);
@@ -58,6 +66,10 @@ export default function MyFaction() {
       }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
+      if (isApiError(err, 404)) {
+        setNoPlayerProfile(true);
+        return;
+      }
       setError(err instanceof Error ? err.message : t('common.error', 'An error occurred'));
     } finally {
       setLoading(false);
@@ -128,6 +140,19 @@ export default function MyFaction() {
     );
   }
 
+  if (noPlayerProfile) {
+    return (
+      <div className="group-page">
+        {header}
+        <EmptyState
+          icon={<Flag aria-hidden="true" />}
+          title={t('factions.my.noPlayerTitle', 'No player profile on this account')}
+          description={t('factions.my.noPlayerBody', 'Your account is not linked to a player, so you cannot join or create a faction.')}
+        />
+      </div>
+    );
+  }
+
   if (profile?.stableId) {
     return <Navigate to={`/factions/${profile.stableId}`} replace />;
   }
@@ -138,13 +163,24 @@ export default function MyFaction() {
 
       <div className="my-faction__start">
         <Flag aria-hidden="true" size={32} className="my-faction__icon" />
-        <h2 className="my-faction__title">{t('factions.my.noStable', 'You are not in a faction')}</h2>
-        <p className="group-empty">
-          {t('factions.my.noStableDesc', 'Create your own faction or wait for an invitation from a faction leader.')}
-        </p>
-        <Button onClick={() => setShowCreateModal(true)}>
-          {t('factions.my.createStable', 'Create a Faction')}
-        </Button>
+        {pendingFaction ? (
+          <>
+            <h2 className="my-faction__title">{t('factions.my.requestPendingTitle', 'Your faction request is pending')}</h2>
+            <p className="group-empty">
+              {t('factions.my.requestPendingBody', '{{name}} is waiting for an admin to approve it.', { name: pendingFaction.name })}
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 className="my-faction__title">{t('factions.my.noStable', 'You are not in a faction')}</h2>
+            <p className="group-empty">
+              {t('factions.my.noStableDesc', 'Create your own faction or wait for an invitation from a faction leader.')}
+            </p>
+            <Button onClick={() => setShowCreateModal(true)}>
+              {t('factions.my.createStable', 'Create a Faction')}
+            </Button>
+          </>
+        )}
       </div>
 
       {invitations.length > 0 && (

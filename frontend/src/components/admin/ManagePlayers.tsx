@@ -281,9 +281,11 @@ export default function ManagePlayers() {
               ? { alternateWrestlerId: formData.alternateWrestlerId }
               : { clearAlternateWrestler: true }
             : {}),
-          imageUrl: imageUrl || undefined,
+          // These two only go out when changed, so an empty value always means
+          // the admin cleared it, not that a public read left the field out.
+          ...((imageUrl ?? '') !== (editingPlayer.imageUrl ?? '') ? { imageUrl: imageUrl ?? '' } : {}),
           divisionId: formData.divisionId || '',
-          psnId: formData.psnId.trim() || undefined,
+          ...(formData.psnId.trim() !== (editingPlayer.psnId ?? '') ? { psnId: formData.psnId.trim() } : {}),
           alignment: formData.alignment || '',
           // Public reads leave this flag out when the session has lapsed, so the
           // form can start on a false it never read. Only a change goes out.

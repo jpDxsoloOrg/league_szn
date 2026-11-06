@@ -922,8 +922,6 @@
     "deleteError": "Video konnte nicht gelöscht werden.",
     "uploadingVideo": "Video wird hochgeladen...",
     "uploadingThumbnail": "Vorschaubild wird hochgeladen...",
-    "currentUrl": "Aktuelle Video-URL",
-    "currentThumbnail": "Aktuelles Vorschaubild",
     "published": "Veröffentlicht",
     "draft": "Entwurf",
     "tagsPlaceholder": "Tag1, Tag2, Tag3",
@@ -942,7 +940,9 @@
       "promo": "Promo",
       "other": "Sonstiges"
     },
-    "update": "Video aktualisieren"
+    "update": "Video aktualisieren",
+    "currentVideoHint": "Es ist bereits ein Video hinterlegt. Wähle nur dann eine Datei aus, wenn du es ersetzen möchtest.",
+    "currentThumbnailHint": "Es ist bereits ein Vorschaubild hinterlegt. Wähle nur dann eine Datei aus, wenn du es ersetzen möchtest."
   },
   "highlights": {
     "title": "Highlights und Videos",
@@ -1058,7 +1058,9 @@
       "noReceived": "Du hast noch keine Herausforderungen empfangen.",
       "actionFeedback": "{{action}} für Herausforderung gegen {{opponent}}",
       "response": "Antwort",
-      "viewDetails": "Details anzeigen"
+      "viewDetails": "Details anzeigen",
+      "noPlayerTitle": "Kein Spielerprofil für dieses Konto",
+      "noPlayerBody": "Dein Konto ist mit keinem Spieler verknüpft, daher gibt es hier keine eigenen Herausforderungen."
     },
     "admin": {
       "title": "Herausforderungen verwalten",
@@ -2193,7 +2195,11 @@
       "noStable": "Du bist in keiner Faktion",
       "noStableDesc": "Erstelle deine eigene Faktion oder warte auf die Einladung eines Faktionsanführers.",
       "pendingInvitations": "Offene Einladungen",
-      "title": "Meine Faktion"
+      "title": "Meine Faktion",
+      "noPlayerTitle": "Kein Spielerprofil für dieses Konto",
+      "noPlayerBody": "Dein Konto ist mit keinem Spieler verknüpft, daher kannst du keiner Faktion beitreten und keine gründen.",
+      "requestPendingTitle": "Deine Faktionsanfrage wird geprüft",
+      "requestPendingBody": "{{name}} wartet auf die Freigabe durch einen Admin."
     },
     "backToList": "Zurück zu den Faktionen",
     "create": {
@@ -2416,7 +2422,9 @@
         "errorWrongDivision": "Dieser Spieler ist nicht in der richtigen Division für diese Meisterschaft",
         "reasonColumn": "Grund",
         "expiresColumn": "Automatischer Ablauf"
-      }
+      },
+      "recalculateTitle": "Rangliste neu berechnen?",
+      "recalculateConfirm": "Die aktuelle Rangliste wird durch eine neue ersetzt, die aus den Match-Ergebnissen und den Einstellungen auf dieser Seite berechnet wird."
     },
     "emptyTitle": "Noch keine Rangliste",
     "selectChampionship": "Titel",
@@ -2611,7 +2619,9 @@
       "cannotCallOutTitle": "Du kannst noch niemanden herausfordern",
       "cannotCallOutBody": "Du bist auf der Seite nicht sichtbar, bis du einen Wrestler-Namen hast. Trage ihn in deinem Profil ein und komm dann zurück, um Call-Outs auszusprechen.",
       "cannotCutPromoTitle": "Du kannst noch keine Promo schreiben",
-      "cannotCutPromoBody": "Du bist auf der Seite nicht sichtbar, also würde niemand deine Promo sehen. Trage einen Wrestler-Namen in deinem Profil ein und komm dann zurück, um sie zu veröffentlichen."
+      "cannotCutPromoBody": "Du bist auf der Seite nicht sichtbar, also würde niemand deine Promo sehen. Trage einen Wrestler-Namen in deinem Profil ein und komm dann zurück, um sie zu veröffentlichen.",
+      "wrestlerRequired": "Gib deinen Wrestler-Namen ein, um fortzufahren.",
+      "wrestlerRequiredRoster": "Wähle deinen Wrestler aus, um fortzufahren."
     },
     "auth": {
       "wrestlerAfterSignup": "Deinen Wrestler-Namen gibst du nach der Anmeldung ein. Bis dahin kannst du dein Konto nutzen, erscheinst aber nicht auf der Seite.",
@@ -3005,7 +3015,9 @@
       },
       "count_one": "{{count}} Tag Team",
       "count_other": "{{count}} Tag Teams",
-      "playerMissing": "Spieler nicht gefunden"
+      "playerMissing": "Spieler nicht gefunden",
+      "dissolveTitle": "Tag Team auflösen",
+      "dissolveConfirm": "„{{name}}“ auflösen? Dies kann nicht rückgängig gemacht werden."
     },
     "factions": {
       "loadError": "Fraktionen konnten nicht geladen werden",
@@ -3041,7 +3053,9 @@
         "disbanded": "Aufgelöst"
       },
       "count_one": "{{count}} Fraktion",
-      "count_other": "{{count}} Fraktionen"
+      "count_other": "{{count}} Fraktionen",
+      "disbandTitle": "Fraktion auflösen",
+      "disbandConfirm": "„{{name}}“ auflösen? Bei einer späteren Reaktivierung werden Mitglieder übersprungen, die einer anderen Fraktion beigetreten sind."
     },
     "tournament": {
       "loadError": "Spieler konnten nicht geladen werden",
@@ -3101,7 +3115,9 @@
       "clearFailed": "Erledigte Herausforderungen konnten nicht gelöscht werden",
       "deleteFailed": "Herausforderung konnte nicht gelöscht werden",
       "emptyText": "Herausforderungen zwischen Wrestlern erscheinen hier.",
-      "emptyTitle": "Keine Call-outs vorhanden"
+      "emptyTitle": "Keine Call-outs vorhanden",
+      "expireTitle": "{{matchup}} ablaufen lassen?",
+      "expireConfirm": "Dies kann nicht rückgängig gemacht werden."
     },
     "championships": {
       "activate": "Aktivieren",

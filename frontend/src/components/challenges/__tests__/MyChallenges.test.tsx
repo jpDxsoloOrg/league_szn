@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
+import { ApiError } from '../../../services/api/apiClient';
 import type { ChallengeWithPlayers } from '../../../types/challenge';
 
 // --- Hoisted mocks ---
@@ -208,5 +209,25 @@ describe('MyChallenges', () => {
     expect(await screen.findByText('challenges.status.expired')).toBeInTheDocument();
     expect(screen.queryByText('Accept')).not.toBeInTheDocument();
     expect(screen.queryByText('Decline')).not.toBeInTheDocument();
+  });
+
+  it('tells staff with no player why the page is empty, with no raw error or retry', async () => {
+    mockGetMyProfile.mockRejectedValue(new ApiError('No player profile found for this user', 404));
+    mockGetAll.mockResolvedValue([makeChallenge()]);
+    renderMyChallenges();
+
+    expect(await screen.findByText('challenges.my.noPlayerTitle')).toBeInTheDocument();
+    expect(screen.queryByText('No player profile found for this user')).not.toBeInTheDocument();
+    expect(screen.queryByText('common.retry')).not.toBeInTheDocument();
+    expect(screen.queryByText('promos.editor.cutCallOut')).not.toBeInTheDocument();
+  });
+
+  it('still reports other load failures with a retry', async () => {
+    mockGetMyProfile.mockRejectedValue(new ApiError('Service unavailable', 503));
+    mockGetAll.mockResolvedValue([]);
+    renderMyChallenges();
+
+    expect(await screen.findByText('Service unavailable')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'common.retry' })).toBeInTheDocument();
   });
 });

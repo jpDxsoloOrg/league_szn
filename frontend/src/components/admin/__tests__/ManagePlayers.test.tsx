@@ -396,6 +396,64 @@ describe('ManagePlayers', () => {
     expect(mockPlayersApi.update.mock.calls[0][1]).not.toHaveProperty('currentWrestlerId');
   });
 
+  describe('clearing the PSN ID and the image', () => {
+    const fullPlayer = { ...mockPlayers[0], psnId: 'rock_psn' };
+
+    const openEdit = async (user: ReturnType<typeof userEvent.setup>) => {
+      mockPlayersApi.getAllIncludingHidden.mockResolvedValue([fullPlayer]);
+      mockPlayersApi.update.mockResolvedValue(fullPlayer);
+      renderComponent();
+      await waitFor(() => { expect(screen.getByText('John')).toBeInTheDocument(); });
+      await user.click(screen.getByRole('button', { name: 'Edit' }));
+    };
+
+    const save = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByRole('button', { name: 'Update Player' }));
+      await waitFor(() => { expect(mockPlayersApi.update).toHaveBeenCalledTimes(1); });
+      return mockPlayersApi.update.mock.calls[0][1];
+    };
+
+    it('sends neither field on a save that left them alone', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+
+      const body = await save(user);
+      expect(body).not.toHaveProperty('psnId');
+      expect(body).not.toHaveProperty('imageUrl');
+    });
+
+    it('sends an empty PSN ID when the admin blanked it', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+      await user.clear(screen.getByLabelText(/PSN ID/i));
+
+      const body = await save(user);
+      expect(body.psnId).toBe('');
+      expect(body).not.toHaveProperty('imageUrl');
+    });
+
+    it('sends an empty image URL when the admin removed the image', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+      await user.click(screen.getByRole('button', { name: /Remove Image/i }));
+
+      const body = await save(user);
+      expect(body.imageUrl).toBe('');
+      expect(body).not.toHaveProperty('psnId');
+    });
+
+    it('sends a changed PSN ID', async () => {
+      const user = userEvent.setup();
+      await openEdit(user);
+      const field = screen.getByLabelText(/PSN ID/i);
+      await user.clear(field);
+      await user.type(field, 'new_psn');
+
+      const body = await save(user);
+      expect(body.psnId).toBe('new_psn');
+    });
+  });
+
   it('deletes player after confirming in the dialog', async () => {
     const user = userEvent.setup();
     mockPlayersApi.delete.mockResolvedValue(undefined);

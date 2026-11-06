@@ -47,6 +47,7 @@ export default function ManageTagTeams() {
   const [statusFilter, setStatusFilter] = useState<TagTeamStatus | 'all'>('all');
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<TagTeam | null>(null);
+  const [pendingDissolve, setPendingDissolve] = useState<TagTeam | null>(null);
 
   const loadTagTeams = useCallback(async () => {
     try {
@@ -101,9 +102,26 @@ export default function ManageTagTeams() {
     setPendingDelete(null);
   };
 
-  const renderPlayer = (playerId: string) => {
+  const handleDissolve = async () => {
+    if (!pendingDissolve) return;
+    const tagTeam = pendingDissolve;
+    await runAction(
+      tagTeam,
+      () => tagTeamsApi.dissolve(tagTeam.tagTeamId),
+      t('adminRoster.tagTeams.dissolved', 'Dissolved'),
+      t('adminRoster.tagTeams.dissolveError', 'Failed to dissolve tag team'),
+    );
+    setPendingDissolve(null);
+  };
+
+  const renderPlayer = (playerId: string, storedWrestlerName?: string) => {
     const player = players.find((candidate) => candidate.playerId === playerId);
-    if (!player) return <span className="ar-sub">{t('adminRoster.tagTeams.playerMissing', 'Player not found')}</span>;
+    if (!player) {
+      // The team keeps the wrestler it was billed with, as the public page shows.
+      return storedWrestlerName
+        ? <span>{storedWrestlerName}</span>
+        : <span className="ar-sub">{t('adminRoster.tagTeams.playerMissing', 'Player not found')}</span>;
+    }
     const details = [isNeedsWrestler(player.currentWrestler) ? '' : player.currentWrestler, player.psnId]
       .filter(Boolean)
       .join(' / ');
@@ -123,8 +141,8 @@ export default function ManageTagTeams() {
       render: (tagTeam) => <span className="ar-strong">{tagTeam.name}</span>,
       sortValue: (tagTeam) => tagTeam.name,
     },
-    { key: 'player1', header: t('adminRoster.tagTeams.player1', 'Player 1'), render: (tagTeam) => renderPlayer(tagTeam.player1Id) },
-    { key: 'player2', header: t('adminRoster.tagTeams.player2', 'Player 2'), render: (tagTeam) => renderPlayer(tagTeam.player2Id) },
+    { key: 'player1', header: t('adminRoster.tagTeams.player1', 'Player 1'), render: (tagTeam) => renderPlayer(tagTeam.player1Id, tagTeam.player1WrestlerName) },
+    { key: 'player2', header: t('adminRoster.tagTeams.player2', 'Player 2'), render: (tagTeam) => renderPlayer(tagTeam.player2Id, tagTeam.player2WrestlerName) },
     {
       key: 'status',
       header: t('adminRoster.tagTeams.statusColumn', 'Status'),
@@ -144,7 +162,12 @@ export default function ManageTagTeams() {
       render: (tagTeam) => new Date(tagTeam.createdAt).toLocaleDateString(),
       sortValue: (tagTeam) => tagTeam.createdAt,
     },
-    {
+  ];
+
+  // Moderators can only act on pending teams, so the column can be all blanks.
+  const hasRowActions = isSuperAdmin || filtered.some((tagTeam) => tagTeam.status === 'pending_admin');
+  if (hasRowActions) {
+    columns.push({
       key: 'actions',
       header: t('common.actions', 'Actions'),
       align: 'end',
@@ -186,12 +209,7 @@ export default function ManageTagTeams() {
                 variant="secondary"
                 size="sm"
                 disabled={busy}
-                onClick={() => runAction(
-                  tagTeam,
-                  () => tagTeamsApi.dissolve(tagTeam.tagTeamId),
-                  t('adminRoster.tagTeams.dissolved', 'Dissolved'),
-                  t('adminRoster.tagTeams.dissolveError', 'Failed to dissolve tag team'),
-                )}
+                onClick={() => setPendingDissolve(tagTeam)}
               >
                 {t('adminRoster.tagTeams.dissolve', 'Dissolve')}
               </Button>
@@ -204,8 +222,8 @@ export default function ManageTagTeams() {
           </div>
         );
       },
-    },
-  ];
+    });
+  }
 
   return (
     <div className="ar-page admin-tagteams">
@@ -259,6 +277,19 @@ export default function ManageTagTeams() {
         busy={submitting !== null}
         onConfirm={handleDelete}
         onCancel={() => setPendingDelete(null)}
+      />
+
+      <ConfirmModal
+        open={pendingDissolve !== null}
+        title={t('adminRoster.tagTeams.dissolveTitle', 'Dissolve tag team')}
+        message={t('adminRoster.tagTeams.dissolveConfirm', {
+          defaultValue: 'Dissolve "{{name}}"? This cannot be undone.',
+          name: pendingDissolve?.name ?? '',
+        })}
+        confirmLabel={t('adminRoster.tagTeams.dissolve', 'Dissolve')}
+        busy={submitting !== null}
+        onConfirm={handleDissolve}
+        onCancel={() => setPendingDissolve(null)}
       />
     </div>
   );

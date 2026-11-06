@@ -32,7 +32,7 @@ const STATUS_DEFAULTS: Record<StableStatus, string> = {
   disbanded: 'Disbanded',
 };
 
-type PendingConfirm = { kind: 'delete' | 'reactivate'; faction: Stable };
+type PendingConfirm = { kind: 'delete' | 'reactivate' | 'disband'; faction: Stable };
 
 export default function ManageFactions() {
   const { t } = useTranslation();
@@ -100,7 +100,9 @@ export default function ManageFactions() {
   const handleConfirm = async () => {
     if (!pendingConfirm) return;
     const { kind, faction } = pendingConfirm;
-    if (kind === 'delete') {
+    if (kind === 'disband') {
+      await handleDisband(faction);
+    } else if (kind === 'delete') {
       await runAction(faction, async () => {
         await factionsApi.delete(faction.stableId);
         return `${t('adminRoster.factions.deleted', 'Deleted')}: ${faction.name}`;
@@ -151,7 +153,13 @@ export default function ManageFactions() {
       render: (faction) => new Date(faction.createdAt).toLocaleDateString(),
       sortValue: (faction) => faction.createdAt,
     },
-    {
+  ];
+
+  // Moderators can only act on pending and disbanded factions, so the column can be all blanks.
+  const hasRowActions = isSuperAdmin
+    || filtered.some((faction) => faction.status === 'pending' || faction.status === 'disbanded');
+  if (hasRowActions) {
+    columns.push({
       key: 'actions',
       header: t('common.actions', 'Actions'),
       align: 'end',
@@ -170,7 +178,7 @@ export default function ManageFactions() {
               </>
             )}
             {isSuperAdmin && (faction.status === 'approved' || faction.status === 'active') && (
-              <Button variant="secondary" size="sm" disabled={busy} onClick={() => handleDisband(faction)}>
+              <Button variant="secondary" size="sm" disabled={busy} onClick={() => setPendingConfirm({ kind: 'disband', faction })}>
                 {t('adminRoster.factions.disband', 'Disband')}
               </Button>
             )}
@@ -187,10 +195,36 @@ export default function ManageFactions() {
           </div>
         );
       },
-    },
-  ];
+    });
+  }
 
   const confirmName = pendingConfirm?.faction.name ?? '';
+  const confirmCopy = {
+    delete: {
+      title: t('adminRoster.factions.deleteTitle', 'Delete faction'),
+      message: t('adminRoster.factions.deleteConfirm', {
+        defaultValue: 'Delete "{{name}}"? This cannot be undone.',
+        name: confirmName,
+      }),
+      label: t('common.delete', 'Delete'),
+    },
+    disband: {
+      title: t('adminRoster.factions.disbandTitle', 'Disband faction'),
+      message: t('adminRoster.factions.disbandConfirm', {
+        defaultValue: 'Disband "{{name}}"? Reactivating it later skips members who have joined another faction.',
+        name: confirmName,
+      }),
+      label: t('adminRoster.factions.disband', 'Disband'),
+    },
+    reactivate: {
+      title: t('adminRoster.factions.reactivateTitle', 'Reactivate faction'),
+      message: t('factions.admin.confirmReactivate', {
+        defaultValue: 'Reactivate "{{name}}"? Members who have since joined another faction will be skipped.',
+        name: confirmName,
+      }),
+      label: t('adminRoster.factions.reactivate', 'Reactivate'),
+    },
+  }[pendingConfirm?.kind ?? 'delete'];
 
   return (
     <div className="ar-page admin-factions">
@@ -235,21 +269,9 @@ export default function ManageFactions() {
 
       <ConfirmModal
         open={pendingConfirm !== null}
-        title={pendingConfirm?.kind === 'reactivate'
-          ? t('adminRoster.factions.reactivateTitle', 'Reactivate faction')
-          : t('adminRoster.factions.deleteTitle', 'Delete faction')}
-        message={pendingConfirm?.kind === 'reactivate'
-          ? t('factions.admin.confirmReactivate', {
-            defaultValue: 'Reactivate "{{name}}"? Members who have since joined another faction will be skipped.',
-            name: confirmName,
-          })
-          : t('adminRoster.factions.deleteConfirm', {
-            defaultValue: 'Delete "{{name}}"? This cannot be undone.',
-            name: confirmName,
-          })}
-        confirmLabel={pendingConfirm?.kind === 'reactivate'
-          ? t('adminRoster.factions.reactivate', 'Reactivate')
-          : t('common.delete', 'Delete')}
+        title={confirmCopy.title}
+        message={confirmCopy.message}
+        confirmLabel={confirmCopy.label}
         busy={submitting !== null}
         onConfirm={handleConfirm}
         onCancel={() => setPendingConfirm(null)}

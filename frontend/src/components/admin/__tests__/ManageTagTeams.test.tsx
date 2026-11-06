@@ -71,6 +71,55 @@ describe('ManageTagTeams', () => {
     expect(within(row).getAllByText('Player not found')).toHaveLength(2);
   });
 
+  it('falls back to the wrestler the team was billed with when the player record is gone', async () => {
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([]);
+    mockTagTeamsApi.getAll.mockResolvedValue([
+      { ...tagTeams[1], player1WrestlerName: 'Undertaker', player2WrestlerName: 'Kane' },
+    ]);
+    render(<ManageTagTeams />);
+
+    const row = (await screen.findByText('New Day')).closest('tr')!;
+    expect(within(row).getByText('Undertaker')).toBeInTheDocument();
+    expect(within(row).getByText('Kane')).toBeInTheDocument();
+    expect(within(row).queryByText('Player not found')).not.toBeInTheDocument();
+  });
+
+  it('asks before dissolving, and sends nothing if the admin backs out', async () => {
+    const user = userEvent.setup();
+    mockTagTeamsApi.dissolve.mockResolvedValue(undefined);
+    render(<ManageTagTeams />);
+    const row = (await screen.findByText('New Day')).closest('tr')!;
+
+    await user.click(within(row).getByRole('button', { name: 'Dissolve' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('Dissolve "New Day"? This cannot be undone.');
+    expect(mockTagTeamsApi.dissolve).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(mockTagTeamsApi.dissolve).not.toHaveBeenCalled();
+
+    await user.click(within(row).getByRole('button', { name: 'Dissolve' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Dissolve' }));
+    await waitFor(() => expect(mockTagTeamsApi.dissolve).toHaveBeenCalledWith('t2'));
+  });
+
+  it('drops the Actions column for a Moderator with nothing to act on', async () => {
+    mockUseAuth.mockReturnValue({ isSuperAdmin: false });
+    mockTagTeamsApi.getAll.mockResolvedValue([tagTeams[1]]);
+    render(<ManageTagTeams />);
+
+    await screen.findByText('New Day');
+    expect(screen.queryByRole('columnheader', { name: /actions/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps the Actions column for a Moderator with a team to approve', async () => {
+    mockUseAuth.mockReturnValue({ isSuperAdmin: false });
+    render(<ManageTagTeams />);
+
+    await screen.findByText('The Usos');
+    expect(screen.getByRole('columnheader', { name: /actions/i })).toBeInTheDocument();
+  });
+
   it('resolves members from the staff roster and badges hidden players', async () => {
     render(<ManageTagTeams />);
 

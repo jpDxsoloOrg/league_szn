@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Megaphone } from 'lucide-react';
 import { challengesApi, profileApi } from '../../services/api';
+import { isApiError } from '../../services/api/apiClient';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import { useIsHiddenPlayer } from '../../hooks/useIsHiddenPlayer';
+import type { Player } from '../../types';
 import type { ChallengeWithPlayers } from '../../types/challenge';
 import Avatar from '../ui/Avatar';
 import Badge from '../ui/Badge';
@@ -25,6 +27,16 @@ type ChallengeAction = 'accept' | 'decline' | 'cancel';
 
 const CALL_OUT_PATH = '/promos/new?promoType=call-out';
 
+/** Null for an account with no player, such as staff who do not wrestle. */
+async function loadOwnProfile(signal: AbortSignal): Promise<Player | null> {
+  try {
+    return await profileApi.getMyProfile(signal);
+  } catch (err) {
+    if (isApiError(err, 404)) return null;
+    throw err;
+  }
+}
+
 export default function MyChallenges() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -34,6 +46,7 @@ export default function MyChallenges() {
   const [activeTab, setActiveTab] = useState<MyTab>('received');
   const [challenges, setChallenges] = useState<ChallengeWithPlayers[]>([]);
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
+  const [noPlayerProfile, setNoPlayerProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -46,12 +59,13 @@ export default function MyChallenges() {
       try {
         // profileApi identifies the current player through backend auth.
         const [myProfile, allChallenges] = await Promise.all([
-          profileApi.getMyProfile(controller.signal),
+          loadOwnProfile(controller.signal),
           challengesApi.getAll(undefined, controller.signal),
         ]);
         if (controller.signal.aborted) return;
         setChallenges(allChallenges);
-        setCurrentPlayerId(myProfile.playerId);
+        setCurrentPlayerId(myProfile?.playerId ?? null);
+        setNoPlayerProfile(myProfile === null);
         setError(null);
       } catch (err) {
         if (!controller.signal.aborted) setError(err instanceof Error ? err.message : String(err));
@@ -192,6 +206,19 @@ export default function MyChallenges() {
       <span className="my-challenges__count">{count}</span>
     </>
   );
+
+  if (noPlayerProfile) {
+    return (
+      <div className="my-challenges">
+        <PageHeader title={t('challenges.my.title')} />
+        <EmptyState
+          icon={<Megaphone aria-hidden="true" />}
+          title={t('challenges.my.noPlayerTitle')}
+          description={t('challenges.my.noPlayerBody')}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="my-challenges">

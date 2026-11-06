@@ -192,4 +192,15 @@ describe('ChallengeDetail', () => {
       expect(mockRespond).toHaveBeenCalledWith('ch-1', 'accept');
     });
   });
+
+  it('shows the challenge read-only to a viewer with no player profile', async () => {
+    mockGetById.mockResolvedValue(pendingChallenge);
+    mockGetMyProfile.mockRejectedValue(new Error('No player profile found for this user'));
+    renderDetail();
+
+    expect(await screen.findByText(/You are going down!/)).toBeInTheDocument();
+    expect(screen.queryByText('Challenge not found')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel Challenge' })).not.toBeInTheDocument();
+  });
 });

@@ -24,6 +24,16 @@ type DetailAction = 'accept' | 'decline' | 'cancel' | 'counter';
 
 const LONG_DATE: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
 
+/** The profile only decides which actions show, so a staff account without one still reads the page. */
+async function loadViewerPlayerId(signal: AbortSignal): Promise<string | null> {
+  try {
+    const profile = await profileApi.getMyProfile(signal);
+    return profile.playerId;
+  } catch {
+    return null;
+  }
+}
+
 export default function ChallengeDetail() {
   const { t } = useTranslation();
   const { challengeId } = useParams<{ challengeId: string }>();
@@ -48,14 +58,14 @@ export default function ChallengeDetail() {
     setCounterChallenge(null);
     const load = async () => {
       try {
-        const [mainChallenge, myProfile, stips, mTypes] = await Promise.all([
+        const [mainChallenge, viewerPlayerId, stips, mTypes] = await Promise.all([
           challengesApi.getById(challengeId!, controller.signal),
-          profileApi.getMyProfile(controller.signal),
+          loadViewerPlayerId(controller.signal),
           stipulationsApi.getAll(controller.signal),
           matchTypesApi.getAll(controller.signal),
         ]);
         setChallenge(mainChallenge);
-        setCurrentPlayerId(myProfile.playerId);
+        setCurrentPlayerId(viewerPlayerId);
         setStipulations(stips);
         setMatchTypes(mTypes);
 

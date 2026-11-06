@@ -286,4 +286,23 @@ describe('PromoFeed', () => {
 
     expect(await screen.findByText('Stone Cold')).toBeInTheDocument();
   });
+
+  it('keeps the unread count and Mark all as read from guests', async () => {
+    mockGetAllPromos.mockResolvedValue([makePromo()]);
+    renderFeed();
+
+    expect(await screen.findByText('I am the best wrestler in this league!')).toBeInTheDocument();
+    expect(screen.queryByText(/unread/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Mark all as read' })).not.toBeInTheDocument();
+  });
+
+  it('shows the unread count and Mark all as read to a signed-in member', async () => {
+    localStorage.clear();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, playerId: 'p-9', isAdminOrModerator: false, hasRole: () => true });
+    mockGetAllPromos.mockResolvedValue([makePromo()]);
+    renderFeed();
+
+    expect(await screen.findByText(/unread/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Mark all as read' })).toBeInTheDocument();
+  });
 });

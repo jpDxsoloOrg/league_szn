@@ -922,8 +922,6 @@
     "deleteError": "Failed to delete video.",
     "uploadingVideo": "Uploading video...",
     "uploadingThumbnail": "Uploading thumbnail...",
-    "currentUrl": "Current video URL",
-    "currentThumbnail": "Current thumbnail",
     "published": "Published",
     "draft": "Draft",
     "tagsPlaceholder": "tag1, tag2, tag3",
@@ -942,7 +940,9 @@
       "promo": "Promo",
       "other": "Other"
     },
-    "update": "Update Video"
+    "update": "Update Video",
+    "currentVideoHint": "A video is already attached. Choose a file only to replace it.",
+    "currentThumbnailHint": "A thumbnail is already attached. Choose a file only to replace it."
   },
   "highlights": {
     "title": "Highlights & Videos",
@@ -1058,7 +1058,9 @@
       "noReceived": "You haven't received any challenges yet.",
       "actionFeedback": "{{action}} for challenge against {{opponent}}",
       "response": "Response",
-      "viewDetails": "View Details"
+      "viewDetails": "View Details",
+      "noPlayerTitle": "No player profile on this account",
+      "noPlayerBody": "Your account is not linked to a player, so you have no challenges of your own to show here."
     },
     "admin": {
       "title": "Manage Challenges",
@@ -2193,7 +2195,11 @@
       "noStable": "You are not in a faction",
       "noStableDesc": "Create your own faction or wait for an invitation from a faction leader.",
       "pendingInvitations": "Pending Invitations",
-      "title": "My Faction"
+      "title": "My Faction",
+      "noPlayerTitle": "No player profile on this account",
+      "noPlayerBody": "Your account is not linked to a player, so you cannot join or create a faction.",
+      "requestPendingTitle": "Your faction request is pending",
+      "requestPendingBody": "{{name}} is waiting for an admin to approve it."
     },
     "backToList": "Back to Factions",
     "create": {
@@ -2416,7 +2422,9 @@
         "errorWrongDivision": "This player is not in the correct division for this championship",
         "reasonColumn": "Reason",
         "expiresColumn": "Auto-expire"
-      }
+      },
+      "recalculateTitle": "Recalculate rankings?",
+      "recalculateConfirm": "This replaces the current rankings with new ones built from match results and the settings on this page."
     },
     "emptyTitle": "No rankings yet",
     "selectChampionship": "Championship",
@@ -2611,7 +2619,9 @@
       "cannotCallOutTitle": "You can't call anyone out yet",
       "cannotCallOutBody": "You're hidden from the site until you have a wrestler name. Enter one on your profile, then come back to issue call-outs.",
       "cannotCutPromoTitle": "You can't cut a promo yet",
-      "cannotCutPromoBody": "You're hidden from the site, so nobody would see your promo. Enter a wrestler name on your profile, then come back to post it."
+      "cannotCutPromoBody": "You're hidden from the site, so nobody would see your promo. Enter a wrestler name on your profile, then come back to post it.",
+      "wrestlerRequired": "Enter your wrestler name to continue.",
+      "wrestlerRequiredRoster": "Choose your wrestler to continue."
     },
     "auth": {
       "wrestlerAfterSignup": "You'll enter your wrestler name after you sign in. Until then you can use your account, but you won't appear on the site.",
@@ -3001,7 +3011,9 @@
       },
       "count_one": "{{count}} tag team",
       "count_other": "{{count}} tag teams",
-      "playerMissing": "Player not found"
+      "playerMissing": "Player not found",
+      "dissolveTitle": "Dissolve tag team",
+      "dissolveConfirm": "Dissolve \"{{name}}\"? This cannot be undone."
     },
     "factions": {
       "loadError": "Failed to load factions",
@@ -3037,7 +3049,9 @@
         "disbanded": "Disbanded"
       },
       "count_one": "{{count}} faction",
-      "count_other": "{{count}} factions"
+      "count_other": "{{count}} factions",
+      "disbandTitle": "Disband faction",
+      "disbandConfirm": "Disband \"{{name}}\"? Reactivating it later skips members who have joined another faction."
     },
     "searchableSelect": {
       "clear": "Clear selection",
@@ -3101,7 +3115,9 @@
       "clearFailed": "Failed to clear resolved challenges",
       "deleteFailed": "Failed to delete challenge",
       "emptyText": "Challenges between wrestlers will appear here.",
-      "emptyTitle": "No call-outs to show"
+      "emptyTitle": "No call-outs to show",
+      "expireTitle": "Expire {{matchup}}?",
+      "expireConfirm": "This cannot be undone."
     },
     "championships": {
       "activate": "Activate",

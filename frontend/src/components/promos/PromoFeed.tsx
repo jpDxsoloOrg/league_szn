@@ -59,7 +59,7 @@ function matchesFilter(promo: PromoWithContext, filter: FeedFilter, currentPlaye
 export default function PromoFeed() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { playerId, isAdminOrModerator, hasRole } = useAuth();
+  const { isAuthenticated, playerId, isAdminOrModerator, hasRole } = useAuth();
   // Reacting needs the Wrestler role; everyone else sees the counts read-only.
   const canReact = hasRole('Wrestler');
   const [activeFilter, setActiveFilter] = useState<FeedFilter>('all');
@@ -149,7 +149,8 @@ export default function PromoFeed() {
     return groups.filter((g) => g.promos.length > 0);
   }, [sortedPromos]);
 
-  const unread = useMemo(() => unreadCount(promos), [unreadCount, promos]);
+  // Read state belongs to a signed-in member, so guests get no count to clear.
+  const unread = useMemo(() => (isAuthenticated ? unreadCount(promos) : 0), [isAuthenticated, unreadCount, promos]);
   const isFiltered = activeFilter !== 'all' || hideRead;
 
   const renderFeed = () => {
