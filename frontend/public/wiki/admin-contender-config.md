@@ -1,37 +1,21 @@
-# Contender Configuration
+# Contender Rankings
 
-Each active championship has its own #1 contender rankings, shown under **Rankings → Contenders**. They are built automatically, and staff can run them by hand or adjust them.
+Each active championship has its own #1 contender rankings, shown under **Rankings → Contenders**. They build and update on their own, and staff can change a position with an override.
 
 ## How Contender Rankings Work
 
 - Rankings use completed matches in the active season. With no active season, nothing is calculated
 - A player's score combines win percentage, current streak, quality of wins and how recent their matches are
+- A player needs at least 3 matches to appear, and each title lists up to 10 contenders
 - The current champion is left out, and so are removed players
 - A title locked to a division (set under **Championships**) only ranks players in that division
 
 ## When Rankings Update
 
-Rankings recalculate for all active titles:
+There's nothing to run. Rankings recalculate for all active titles:
 
 - After every match result
 - Every 6 hours
-- When staff click **Recalculate Rankings**, which updates the selected title only
-
-Automatic runs always use the standard settings: at least 3 matches, up to 10 contenders, and the title's division lock.
-
-## Recalculating by Hand
-
-1. Go to **Contender Config**
-2. Select a championship
-3. Adjust the settings for this run:
-   - **Minimum Matches** — How many matches a player needs to appear in rankings (1–50)
-   - **Maximum Contenders** — How many ranked contenders to keep (1–20)
-   - **Division Restricted** — Untick it to ignore the title's division lock for this run
-4. Click **Recalculate Rankings** and confirm
-
-These settings are not saved. They apply to that one run, and the next automatic run goes back to the standard settings. The page also resets when you reopen it or pick another title.
-
-The **Include Draws in Rankings** checkbox currently has no effect.
 
 ## Contender Overrides
 

@@ -22,7 +22,7 @@ Neu als Admin? Mit diesen Schritten richtest du deine Liga von Grund auf ein. Ö
 
 9. **Ergebnisse eintragen** — Klicke nach einem Match auf der Event-Seite auf **Ergebnis eintragen**. Matches ohne Event findest du unter **Einzelne Matches**. Wähle den Sieger oder setze das Häkchen bei **Unentschieden** und speichere. Tabelle, Meisterschaften und Turnierbäume aktualisieren sich automatisch.
 
-10. **Herausforderer prüfen** — Die Herausforderer-Ranglisten werden nach jedem Ergebnis und alle 6 Stunden neu berechnet. Unter **Herausforderer Konfig** kannst du sie von Hand neu berechnen, und unter **Herausforderer Anpassungen** nimmst du Änderungen für Storylines vor.
+10. **Herausforderer prüfen** — Die Herausforderer-Ranglisten werden nach jedem Ergebnis und alle 6 Stunden von selbst neu berechnet. Unter **Herausforderer Anpassungen** nimmst du Änderungen für Storylines vor.
 
 ## Schneller Demo-Modus
 

@@ -42,4 +42,4 @@ Auf der Seite **Meisterschaften** erstellst und verwaltest du Titel.
 - Beim Eintragen des Ergebnisses wird der Sieger Champion. Gewinnt der Champion, zählt das als erfolgreiche Verteidigung
 - Bei einem Unentschieden bleibt der Titel, wo er ist
 - Die Titelhistorie wird automatisch mit Daten, Regentschaftsdauer und Verteidigungen geführt
-- Jeder aktive Titel hat eine eigene #1-Herausforderer-Rangliste; siehe [Herausforderer-Konfig](admin-contender-config)
+- Jeder aktive Titel hat eine eigene #1-Herausforderer-Rangliste; siehe [Herausforderer-Ranglisten](admin-contender-config)

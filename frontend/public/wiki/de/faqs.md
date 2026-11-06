@@ -39,7 +39,7 @@ Die Gesamt-Tabelle zeigt jedes jemals erfasste Match. Die Saison-Tabelle zeigt n
 Es geht für alle Beteiligten als Unentschieden in die Bilanz ein, weder als Sieg noch als Niederlage. Es beendet eine Sieges- oder Niederlagenserie, ein Titel kann dabei nicht wechseln, und bei Jeder gegen Jeden bringt es 1 Punkt.
 
 **Wie oft werden die Herausforderer-Ranglisten aktualisiert?**  
-Nach jedem eingetragenen Ergebnis und alle 6 Stunden. Das Liga-Team kann sie auch von Hand neu berechnen. Siehe [Herausforderer-Ranglisten](contenders).
+Nach jedem eingetragenen Ergebnis und alle 6 Stunden. Siehe [Herausforderer-Ranglisten](contenders).
 
 ## Divisionen
 

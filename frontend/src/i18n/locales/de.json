@@ -733,7 +733,7 @@
     "standings": "Tabelle",
     "bracket": "Turnierbaum",
     "round": "Runde",
-    "summaryLeader": "Fuehrend",
+    "summaryLeader": "Führend",
     "summaryPoints": "Punkte",
     "summaryGap": "Abstand",
     "summaryGapValue": "{{count}} Pkt",
@@ -1846,7 +1846,7 @@
     "reactions": {
       "fire": "Feuer",
       "mic": "Mikro",
-      "trash": "Muell",
+      "trash": "Müll",
       "mind-blown": "Wahnsinn",
       "clap": "Applaus"
     },

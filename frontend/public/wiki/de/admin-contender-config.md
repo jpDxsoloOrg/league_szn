@@ -1,37 +1,21 @@
-# Herausforderer-Konfiguration
+# Herausforderer-Ranglisten
 
-Jede aktive Meisterschaft hat eine eigene #1-Herausforderer-Rangliste, zu sehen unter **Ranglisten → Herausforderer**. Sie entsteht automatisch, und das Team kann sie von Hand neu berechnen oder anpassen.
+Jede aktive Meisterschaft hat eine eigene #1-Herausforderer-Rangliste, zu sehen unter **Ranglisten → Herausforderer**. Sie entsteht und aktualisiert sich von selbst, und das Team kann eine Position mit einer Anpassung ändern.
 
 ## So funktionieren die Ranglisten
 
 - Die Ranglisten nutzen abgeschlossene Matches der aktiven Saison. Ohne aktive Saison wird nichts berechnet
 - Die Wertung eines Spielers kombiniert Siegquote, aktuelle Serie, Qualität der Siege und wie aktuell seine Matches sind
+- Ein Spieler braucht mindestens 3 Matches, um zu erscheinen, und jeder Titel listet bis zu 10 Herausforderer
 - Der aktuelle Champion wird nicht aufgeführt, entfernte Spieler ebenfalls nicht
 - Ein auf eine Division beschränkter Titel (festgelegt unter **Meisterschaften**) wertet nur Spieler dieser Division
 
 ## Wann die Ranglisten aktualisiert werden
 
-Die Ranglisten aller aktiven Titel werden neu berechnet:
+Du musst nichts starten. Die Ranglisten aller aktiven Titel werden neu berechnet:
 
 - Nach jedem Match-Ergebnis
 - Alle 6 Stunden
-- Wenn das Team auf **Rangliste neu berechnen** klickt; das aktualisiert nur den gewählten Titel
-
-Automatische Läufe nutzen immer die Standardwerte: mindestens 3 Matches, bis zu 10 Herausforderer und die Divisionsbeschränkung des Titels.
-
-## Von Hand neu berechnen
-
-1. Gehe zu **Herausforderer Konfig**
-2. Wähle eine Meisterschaft
-3. Passe die Werte für diesen Lauf an:
-   - **Mindestanzahl Kämpfe** — Wie viele Matches ein Spieler für die Rangliste braucht (1–50)
-   - **Maximale Herausforderer** — Wie viele Herausforderer in der Rangliste bleiben (1–20)
-   - **Auf Division beschränkt** — Entferne das Häkchen, um die Divisionsbeschränkung des Titels für diesen Lauf zu ignorieren
-4. Klicke auf **Rangliste neu berechnen** und bestätige
-
-Diese Werte werden nicht gespeichert. Sie gelten nur für diesen einen Lauf, und der nächste automatische Lauf nutzt wieder die Standardwerte. Die Seite setzt sich auch zurück, wenn du sie neu öffnest oder einen anderen Titel wählst.
-
-Das Kontrollkästchen **Unentschieden in Rangliste einbeziehen** hat derzeit keine Wirkung.
 
 ## Herausforderer Anpassungen
 

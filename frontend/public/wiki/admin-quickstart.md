@@ -22,7 +22,7 @@ New admin? Follow these steps to set up your league from scratch. Open **Admin**
 
 9. **Record Results** — After a match is played, click **Record Result** on it on the event page. Standalone matches are under **Standalone Matches**. Pick the winner or tick **Draw**, then save. Standings, championships and tournament brackets update automatically.
 
-10. **Check Contenders** — Contender rankings recalculate after each result and every 6 hours. Use **Contender Config** if you want to run them by hand, and **Contender Overrides** for storyline changes.
+10. **Check Contenders** — Contender rankings recalculate on their own after each result and every 6 hours. Use **Contender Overrides** for storyline changes.
 
 ## Quick Demo Mode
 

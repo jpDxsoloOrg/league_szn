@@ -20,7 +20,7 @@ After the matches are played, click **Record Result** on each match on the event
 
 ## 5. Check Contenders
 
-There's nothing you have to do here. Contender rankings recalculate after each result and again every 6 hours. Use **Contender Config** if you want an immediate recalculation, and **Contender Overrides** for storyline changes.
+There's nothing you have to do here. Contender rankings recalculate after each result and again every 6 hours. Use **Contender Overrides** for storyline changes.
 
 ## 6. Review Standings
 

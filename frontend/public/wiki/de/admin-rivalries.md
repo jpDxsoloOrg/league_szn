@@ -2,7 +2,7 @@
 
 **Admin → Rivalitäten** ist die Steuerseite der GMs für langfristige Storylines. Dieser Artikel erklärt, wie Rivalitäten beginnen, wie du Notizen und Pläne schreibst, wie Matches verknüpft werden und wie du aufräumst. Moderatoren und Admins können hier alles nutzen, außer den **Heat-Einstellungen**, die vollen Admins vorbehalten sind.
 
-> **Spoiler-Warnung.** Alles, was du im Tab **Notizen & Pläne** speicherst, können die Rivalen dieser Rivalität lesen, auch Pläne. Eine Option „Nur GMs“ gibt es auf der Seite nicht, also lass Finishes und Überraschungen dort weg.
+Im Tab **Notizen & Pläne** planen die beiden Rivalen und die GMs die Storyline gemeinsam. Alles, was dort gespeichert ist, auch Pläne, teilen sie miteinander.
 
 ## Rivalität starten
 
