@@ -2,38 +2,21 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useSiteConfig } from '../contexts/SiteConfigContext';
-import { setAnnouncementOpen } from '../hooks/useAnnouncementOpen';
+import { setAnnouncementOpen, useWrestlerPromptPending } from '../hooks/useAnnouncementOpen';
 import { announcementsApi } from '../services/api';
 import type { Announcement } from '../types';
+import {
+  closeAnnouncementsForSession,
+  dismissAnnouncement,
+  getHiddenAnnouncementIds,
+} from '../utils/announcementDismissal';
+import { waitForPageRequests } from '../utils/deferShellRequest';
 import { toMediaUrl } from '../utils/mediaUrl';
 import { sanitizeHtml } from '../utils/sanitizeHtml';
 import Button from './ui/Button';
 import Modal from './ui/Modal';
 import './announcementContent.css';
 import './AnnouncementModal.css';
-
-const STORAGE_KEY = 'dismissed_announcements';
-
-function getDismissedIds(): string[] {
-  try {
-    const stored: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    return Array.isArray(stored) ? stored.filter((id): id is string => typeof id === 'string') : [];
-  } catch {
-    return [];
-  }
-}
-
-function dismissAnnouncement(id: string): void {
-  const ids = getDismissedIds();
-  if (!ids.includes(id)) {
-    ids.push(id);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
-    } catch {
-      // Storage is unavailable, so the announcement shows again next visit.
-    }
-  }
-}
 
 function AnnouncementVideo({ url }: { url: string }) {
   const { t } = useTranslation();
@@ -57,6 +40,7 @@ export default function AnnouncementModal() {
   const { isAuthenticated, isLoading } = useAuth();
   const { features, isLoading: isConfigLoading } = useSiteConfig();
   const notificationsEnabled = !isConfigLoading && features.notifications;
+  const wrestlerPromptPending = useWrestlerPromptPending();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -68,14 +52,13 @@ export default function AnnouncementModal() {
 
     const fetchAnnouncements = async () => {
       try {
+        await waitForPageRequests(controller.signal);
+        if (!mounted) return;
         const active = await announcementsApi.getActive(controller.signal);
         if (!mounted) return;
 
-        const dismissedIds = getDismissedIds();
-        const filtered = active.filter(
-          (a) => !dismissedIds.includes(a.announcementId)
-        );
-        setAnnouncements(filtered);
+        const hiddenIds = getHiddenAnnouncementIds();
+        setAnnouncements(active.filter((a) => !hiddenIds.has(a.announcementId)));
         setCurrentIndex(0);
       } catch {
         // Fail silently — don't show modal if API errors
@@ -91,7 +74,7 @@ export default function AnnouncementModal() {
   }, [isAuthenticated, isLoading, notificationsEnabled]);
 
   // Let other overlays (the profile-setup modal) wait while this is up.
-  const isOpen = notificationsEnabled && announcements[currentIndex] !== undefined;
+  const isOpen = notificationsEnabled && !wrestlerPromptPending && announcements[currentIndex] !== undefined;
   useEffect(() => {
     setAnnouncementOpen(isOpen);
     return () => setAnnouncementOpen(false);
@@ -101,16 +84,17 @@ export default function AnnouncementModal() {
   if (!isOpen || !current) return null;
   const isLast = currentIndex >= announcements.length - 1;
 
+  const handleClose = () => {
+    closeAnnouncementsForSession(announcements.map((announcement) => announcement.announcementId));
+    setAnnouncements([]);
+  };
+
   const handleNext = () => {
     if (isLast) {
-      setAnnouncements([]);
+      handleClose();
     } else {
       setCurrentIndex((prev) => prev + 1);
     }
-  };
-
-  const handleClose = () => {
-    setAnnouncements([]);
   };
 
   const handleDontShowAgain = () => {

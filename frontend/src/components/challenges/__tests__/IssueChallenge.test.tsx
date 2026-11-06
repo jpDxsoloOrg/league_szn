@@ -123,6 +123,9 @@ describe('IssueChallenge', () => {
       expect(screen.getByText('Issue a Challenge')).toBeInTheDocument();
     });
 
+    // The title renders before the players arrive, so wait for the list itself.
+    await screen.findByRole('option', { name: 'The Rock (Jane)' });
+
     // The opponent dropdown should contain "The Rock (Jane)" but NOT self or unlinked
     const opponentSelect = screen.getAllByRole('combobox')[0]!;
     const options = Array.from(opponentSelect.querySelectorAll('option'));

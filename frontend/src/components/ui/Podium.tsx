@@ -31,7 +31,7 @@ export interface PodiumProps {
 }
 
 const RANK_CLASSES = ['first', 'second', 'third'] as const;
-const AVATAR_RINGS = ['pink', 'cyan', 'violet'] as const;
+const AVATAR_RINGS = ['gold', 'cyan', 'violet'] as const;
 
 function PodiumCard({ entry, rank }: { entry: PodiumEntry; rank: number }) {
   const rankClass = RANK_CLASSES[rank - 1] ?? 'third';

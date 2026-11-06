@@ -35,10 +35,11 @@
   outline-offset: 1px;
 }
 
-.rivalry-hub__chip.is-active {
-  border-color: var(--color-cyan);
-  background-color: var(--tint-cyan);
-  color: var(--color-text);
+.rivalry-hub__chip.is-active,
+.rivalry-hub__chip.is-active:hover {
+  border-color: var(--color-selected);
+  background-color: var(--color-selected);
+  color: var(--color-on-selected);
 }
 
 .rivalry-hub__layout {

@@ -43,8 +43,8 @@
     "sending": "Wird gesendet…",
     "sortBy": "Sortieren nach",
     "sortDefault": "Standardreihenfolge",
-    "sortAscending": "Aufsteigend",
-    "sortDescending": "Absteigend"
+    "sortAscending": "{{column}}, aufsteigend",
+    "sortDescending": "{{column}}, absteigend"
   },
   "notFound": {
     "title": "Seite nicht gefunden",
@@ -297,7 +297,8 @@
     },
     "pages": {
       "forgotPassword": "Passwort zurücksetzen",
-      "welcome": "Willkommen"
+      "welcome": "Willkommen",
+      "playerProfile": "Spielerprofil"
     }
   },
   "mobileNav": {
@@ -381,7 +382,6 @@
   "wiki": {
     "title": "Wiki",
     "indexTitle": "Wiki-Artikel",
-    "backToGuide": "Zurück zur Anleitung",
     "previousArticle": "Zurück: {{title}}",
     "nextArticle": "Weiter: {{title}}",
     "articleNavLabel": "Vorheriger und nächster Artikel",
@@ -438,7 +438,10 @@
       "adminRivalries": "Admin: Rivalitäten",
       "rateMatches": "Kämpfe bewerten",
       "rivalryHeatExplained": "Wie Rivalitäts-Hitze funktioniert"
-    }
+    },
+    "articleNotFound": "Artikel nicht gefunden",
+    "articleNotFoundHint": "Dieser Hilfeartikel wurde vielleicht verschoben. Sieh dir stattdessen die ganze Liste an.",
+    "browseArticles": "Alle Artikel ansehen"
   },
   "languageSwitcher": {
     "label": "Sprache",
@@ -1823,6 +1826,10 @@
       "confirmDelete": "Bist du sicher, dass du diese Promo löschen möchtest?",
       "filterByType": "Nach Typ filtern",
       "all": "Alle"
+    },
+    "guest": {
+      "title": "Promos sind für Liga-Mitglieder",
+      "description": "Melde dich an, um Promos zu lesen und eigene zu schreiben. Rivalitäten, Faktionen und Tag Teams bleiben für alle offen."
     }
   },
   "shows": {
@@ -2403,7 +2410,9 @@
     "deleteAllRead": "Gelesene löschen",
     "typeStable": "Stable",
     "typeTagTeam": "Tag Team",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "Transfer",
+    "typeRivalry": "Rivalität",
+    "typeStoryline": "Storyline"
   },
   "findMatch": {
     "title": "Match finden",
@@ -2502,7 +2511,7 @@
   "search": {
     "title": "League SZN durchsuchen",
     "open": "Suche öffnen",
-    "placeholder": "Wrestler, Events, Seiten suchen",
+    "placeholder": "Wrestler, Events, Faktionen, Seiten suchen",
     "results": "Suchergebnisse",
     "noResults": "Keine Treffer gefunden",
     "loadFailed": "Suchdaten konnten nicht geladen werden. Aktuell sind nur Seiten durchsuchbar.",
@@ -2510,7 +2519,11 @@
       "wrestler": "Wrestler",
       "event": "Event",
       "championship": "Titel",
-      "page": "Seite"
+      "page": "Seite",
+      "faction": "Faktion",
+      "tagTeam": "Tag Team",
+      "tournament": "Turnier",
+      "rivalry": "Rivalität"
     }
   },
   "ui": {

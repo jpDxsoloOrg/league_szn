@@ -16,7 +16,13 @@ vi.mock('../../services/api', () => ({
   wrestlersApi: { getAll: vi.fn().mockResolvedValue([]) },
 }));
 
-const authState = vi.hoisted(() => ({ isAuthenticated: true, isLoading: false, isAdminOrModerator: false }));
+const authState = vi.hoisted(() => ({
+  isAuthenticated: true,
+  isLoading: false,
+  isAdminOrModerator: false,
+  isWrestler: true,
+  profile: null as Player | null,
+}));
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => ({ ...authState, refreshProfile: mockRefreshProfile }),
 }));
@@ -30,8 +36,9 @@ vi.mock('react-i18next', () => ({
 }));
 
 import ProfileCompletionModal from '../ProfileCompletionModal';
-import { setAnnouncementOpen } from '../../hooks/useAnnouncementOpen';
-import { PROFILE_SETUP_SNOOZE_KEY } from '../../utils/profileSetup';
+import { ANNOUNCEMENT_OPEN_ATTR, WRESTLER_PROMPT_PENDING_ATTR, setAnnouncementOpen } from '../../hooks/useAnnouncementOpen';
+import { ApiError } from '../../services/api/apiClient';
+import { NO_PLAYER_ROW_KEY, PROFILE_SETUP_SNOOZE_KEY } from '../../utils/profileSetup';
 
 const complete = {
   playerId: 'p1',
@@ -59,7 +66,70 @@ beforeEach(() => {
   setAnnouncementOpen(false);
   authState.isAuthenticated = true;
   authState.isAdminOrModerator = false;
+  authState.isWrestler = true;
+  authState.profile = null;
   mockUpdateMyProfile.mockImplementation(async (updates: Partial<Player>) => ({ ...complete, ...updates }));
+});
+
+describe('ProfileCompletionModal — order and requests', () => {
+  const hiddenPlayer = { ...complete, currentWrestler: 'Needs Wrestler' } as Player;
+
+  it('shows the wrestler prompt to a hidden player even with an announcement up', async () => {
+    setAnnouncementOpen(true);
+    mockGetMyProfile.mockResolvedValue(hiddenPlayer);
+    renderAt();
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('me.setup.hiddenNotice')).toBeInTheDocument();
+  });
+
+  it('holds announcements while checking and until the prompt is put off', async () => {
+    let finishCheck: (player: Player) => void = () => undefined;
+    mockGetMyProfile.mockReturnValue(new Promise<Player>((resolve) => { finishCheck = resolve; }));
+    renderAt();
+    await waitFor(() => expect(document.body).toHaveAttribute(WRESTLER_PROMPT_PENDING_ATTR));
+
+    finishCheck(hiddenPlayer);
+    await screen.findByRole('dialog');
+    expect(document.body).toHaveAttribute(WRESTLER_PROMPT_PENDING_ATTR);
+
+    await userEvent.click(screen.getByRole('button', { name: 'profileModal.remindLater' }));
+    await waitFor(() => expect(document.body).not.toHaveAttribute(WRESTLER_PROMPT_PENDING_ATTR));
+  });
+
+  it('lets announcements go first when the wrestler is already set', async () => {
+    mockGetMyProfile.mockResolvedValue({ ...complete, signatures: [] });
+    renderAt();
+    await waitFor(() => expect(mockGetMyProfile).toHaveBeenCalled());
+    await waitFor(() => expect(document.body).not.toHaveAttribute(WRESTLER_PROMPT_PENDING_ATTR));
+    expect(document.body).not.toHaveAttribute(ANNOUNCEMENT_OPEN_ATTR);
+  });
+
+  it('uses the profile the session already loaded instead of fetching it again', async () => {
+    authState.profile = hiddenPlayer;
+    renderAt();
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(mockGetMyProfile).not.toHaveBeenCalled();
+  });
+
+  it('asks once per session for a staff account with no player row', async () => {
+    authState.isWrestler = false;
+    mockGetMyProfile.mockRejectedValue(new ApiError('Player not found', 404));
+    const first = renderAt();
+    await waitFor(() => expect(sessionStorage.getItem(NO_PLAYER_ROW_KEY)).toBe('1'));
+    first.unmount();
+
+    renderAt();
+    await waitFor(() => expect(document.body).not.toHaveAttribute(WRESTLER_PROMPT_PENDING_ATTR));
+    expect(mockGetMyProfile).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps checking a wrestler whose row may still be on its way', async () => {
+    mockGetMyProfile.mockRejectedValue(new ApiError('Player not found', 404));
+    renderAt();
+    await waitFor(() => expect(mockGetMyProfile).toHaveBeenCalled());
+    await waitFor(() => expect(document.body).not.toHaveAttribute(WRESTLER_PROMPT_PENDING_ATTR));
+    expect(sessionStorage.getItem(NO_PLAYER_ROW_KEY)).toBeNull();
+  });
 });
 
 describe('ProfileCompletionModal — setup gate', () => {

@@ -1,8 +1,9 @@
-import { useId, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import Select from './Select';
 import Skeleton from './Skeleton';
 import './DataTable.css';
 
@@ -43,13 +44,12 @@ function compareValues(first: string | number, second: string | number): number 
 
 /**
  * Responsive table. At phone widths each row becomes a stacked card with
- * column headers as labels, so keep public tables to about six columns.
+ * column headers as labels, so keep public tables to about six columns. The
+ * header row is not on screen there, so a Select takes over sorting.
  */
 export default function DataTable<Row>({ columns, rows, rowKey, caption, density = 'default', loading = false, empty, className = '' }: DataTableProps<Row>) {
   const { t } = useTranslation();
-  const sortSelectId = useId();
-  // The header row is gone in the card layout, so phones sort from a control.
-  const isCardLayout = useMediaQuery('(max-width: 768px)');
+  const isMobile = useIsMobile();
   const [sort, setSort] = useState<SortState | null>(null);
 
   const sortedRows = useMemo(() => {
@@ -69,36 +69,35 @@ export default function DataTable<Row>({ columns, rows, rowKey, caption, density
     }));
   };
 
-  const sortableColumns = columns.filter((column) => column.sortValue && !column.hideOnMobile);
-  const descending = sort?.direction === 'descending';
+  // Columns the cards leave out are not offered: a phone user could not see
+  // what the rows were being ordered by.
+  const sortOptions = columns.filter((column) => column.sortValue && !column.hideOnMobile).flatMap((column) => [
+    { value: `${column.key}:ascending`, label: t('common.sortAscending', { column: column.header }) },
+    { value: `${column.key}:descending`, label: t('common.sortDescending', { column: column.header }) },
+  ]);
+
+  const applySort = (value: string) => {
+    const separator = value.lastIndexOf(':');
+    if (separator < 0) {
+      setSort(null);
+      return;
+    }
+    const direction = value.slice(separator + 1) === 'descending' ? 'descending' : 'ascending';
+    setSort({ key: value.slice(0, separator), direction });
+  };
 
   return (
     <div className={`ui-table-wrap ui-table-wrap--${density} ${className}`.trim()}>
-      {isCardLayout && sortableColumns.length > 0 && (
+      {isMobile && sortOptions.length > 0 && (
         <div className="ui-table__card-sort">
-          <label htmlFor={sortSelectId}>{t('common.sortBy', 'Sort by')}</label>
-          <select
-            id={sortSelectId}
-            value={sort?.key ?? ''}
-            onChange={(event) => {
-              const key = event.target.value;
-              setSort(key ? { key, direction: sort?.direction ?? 'ascending' } : null);
-            }}
-          >
-            <option value="">{t('common.sortDefault', 'Default order')}</option>
-            {sortableColumns.map((column) => (
-              <option key={column.key} value={column.key}>{column.header}</option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className="ui-table__card-sort-direction"
-            disabled={!sort}
-            aria-label={descending ? t('common.sortDescending', 'Descending') : t('common.sortAscending', 'Ascending')}
-            onClick={() => sort && toggleSort(sort.key)}
-          >
-            {descending ? <ChevronDown aria-hidden="true" size={20} /> : <ChevronUp aria-hidden="true" size={20} />}
-          </button>
+          <span aria-hidden="true">{t('common.sortBy')}</span>
+          <Select
+            className="ui-table__card-sort-select"
+            label={t('common.sortBy')}
+            value={sort ? `${sort.key}:${sort.direction}` : ''}
+            onValueChange={applySort}
+            options={[{ value: '', label: t('common.sortDefault') }, ...sortOptions]}
+          />
         </div>
       )}
       <table className="ui-table">

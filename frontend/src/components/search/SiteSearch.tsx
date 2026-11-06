@@ -6,12 +6,24 @@ import Fuse from 'fuse.js';
 import { Search } from 'lucide-react';
 import Badge from '../ui/Badge';
 import Modal from '../ui/Modal';
-import { championshipsApi, eventsApi, playersApi } from '../../services/api';
+import {
+  championshipsApi,
+  eventsApi,
+  factionsApi,
+  playersApi,
+  rivalriesApi,
+  tagTeamsApi,
+  tournamentsApi,
+} from '../../services/api';
 import { useNavContext } from '../../hooks/useNavContext';
 import {
   toChampionshipEntries,
   toEventEntries,
+  toFactionEntries,
   toPageEntries,
+  toRivalryEntries,
+  toTagTeamEntries,
+  toTournamentEntries,
   toWrestlerEntries,
   type SearchEntry,
 } from './searchIndex';
@@ -25,11 +37,19 @@ export interface SiteSearchProps {
 const MAX_RESULTS = 20;
 const IDLE_PAGE_COUNT = 8;
 
+/** 0 is exact and 1 matches anything. This forgives a typo in a longer word only. */
+const FUZZY_THRESHOLD = 0.2;
+
 type LoadState = 'idle' | 'loading' | 'ready' | 'failed';
 
-/** Command-style search over wrestlers, events, championships and pages. */
+/** The value of a settled request, or nothing to add if it failed or was skipped. */
+function entriesFrom<Value>(result: PromiseSettledResult<Value>, toEntries: (value: Value) => SearchEntry[]): SearchEntry[] {
+  return result.status === 'fulfilled' ? toEntries(result.value) : [];
+}
+
+/** Command-style search over the league's people, shows, titles, stories and pages. */
 export default function SiteSearch({ open, onClose }: SiteSearchProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const navContext = useNavContext();
   const listId = useId();
@@ -52,12 +72,32 @@ export default function SiteSearch({ open, onClose }: SiteSearchProps) {
         championshipsApi.getAll(signal),
       ]);
       if (signal.aborted) return;
-      setRemoteEntries([
-        ...(players.status === 'fulfilled' ? toWrestlerEntries(players.value) : []),
-        ...(events.status === 'fulfilled' ? toEventEntries(events.value) : []),
-        ...(championships.status === 'fulfilled' ? toChampionshipEntries(championships.value) : []),
+      const firstEntries = [
+        ...entriesFrom(players, toWrestlerEntries),
+        ...entriesFrom(events, (list) => toEventEntries(list, i18n.language)),
+        ...entriesFrom(championships, toChampionshipEntries),
+      ];
+      setRemoteEntries(firstEntries);
+
+      // A second, smaller wave keeps this under the account's Lambda limit
+      // when the page behind the search box is still loading.
+      const { stables, rivalries } = navContext.features;
+      const [factions, tagTeams, tournaments, rivalryList] = await Promise.allSettled([
+        stables ? factionsApi.getAll({ status: 'active' }, signal) : Promise.resolve([]),
+        stables ? tagTeamsApi.getAll({ status: 'active' }, signal) : Promise.resolve([]),
+        tournamentsApi.getAll(signal),
+        rivalries ? rivalriesApi.list({ status: 'active' }, signal) : Promise.resolve({ rivalries: [] }),
       ]);
-      const failed = [players, events, championships].every((result) => result.status === 'rejected');
+      if (signal.aborted) return;
+      setRemoteEntries([
+        ...firstEntries,
+        ...entriesFrom(factions, toFactionEntries),
+        ...entriesFrom(tagTeams, toTagTeamEntries),
+        ...entriesFrom(tournaments, toTournamentEntries),
+        ...entriesFrom(rivalryList, (response) => toRivalryEntries(response.rivalries)),
+      ]);
+      const failed = [players, events, championships, factions, tagTeams, tournaments, rivalryList]
+        .every((result) => result.status === 'rejected');
       setLoadState(failed ? 'failed' : 'ready');
     };
 
@@ -78,7 +118,7 @@ export default function SiteSearch({ open, onClose }: SiteSearchProps) {
 
   const fuse = useMemo(() => new Fuse([...remoteEntries, ...pageEntries], {
     keys: [{ name: 'title', weight: 2 }, { name: 'subtitle', weight: 1 }],
-    threshold: 0.35,
+    threshold: FUZZY_THRESHOLD,
     ignoreLocation: true,
   }), [remoteEntries, pageEntries]);
 

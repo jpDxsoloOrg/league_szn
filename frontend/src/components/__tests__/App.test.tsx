@@ -181,6 +181,24 @@ describe('App', () => {
     expect(await screen.findByTestId('admin-panel')).toBeInTheDocument();
   });
 
+  it('themes the page by section and names it in the tab title', async () => {
+    mockUseAuth.mockReturnValue(unauthenticatedAuth());
+    testEntries = ['/matches'];
+    const { container } = render(<App />);
+    await screen.findByTestId('match-search');
+    expect(container.querySelector('.App')).toHaveAttribute('data-section', 'events');
+    expect(document.title).toBe('nav.tabs.matches | League SZN');
+  });
+
+  it('shows guests on /promos a sign-in prompt and keeps the section', async () => {
+    mockUseAuth.mockReturnValue(unauthenticatedAuth());
+    testEntries = ['/promos'];
+    const { container } = render(<App />);
+    expect(await screen.findByRole('heading', { name: 'promos.guest.title' })).toBeInTheDocument();
+    expect(screen.queryByTestId('navigate')).not.toBeInTheDocument();
+    expect(container.querySelector('.App')).toHaveAttribute('data-section', 'storylines');
+  });
+
   it('redirects /guide to /guide/wiki', async () => {
     mockUseAuth.mockReturnValue(unauthenticatedAuth());
     testEntries = ['/guide'];

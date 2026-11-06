@@ -37,7 +37,7 @@
   justify-content: center;
   gap: 2px;
   margin: 0;
-  padding: 6px 2px;
+  padding: 6px 0;
   color: var(--color-text-muted);
   text-decoration: none;
   text-align: center;
@@ -69,18 +69,20 @@
 }
 
 .bottom-tab-bar__item--active {
-  color: var(--color-pink);
+  color: var(--section-accent);
 }
 
 .bottom-tab-bar__icon {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
 }
 
 .bottom-tab-bar__label {
-  font-size: 11px;
-  font-weight: 700;
+  /* 15px from a 390px phone up. Narrower phones scale down so all five labels fit. */
+  font-size: clamp(0.8125rem, 3.85vw, 0.9375rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
   line-height: 1.2;
   white-space: nowrap;
 }

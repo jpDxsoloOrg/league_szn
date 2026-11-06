@@ -141,5 +141,28 @@ describe('PhotoTile', () => {
     fireEvent.error(image as HTMLImageElement);
     expect(container.querySelector('img')).not.toBeInTheDocument();
     expect(screen.getByText('Edge')).toBeInTheDocument();
+    expect(container.querySelector('.ui-tile')).toHaveClass('ui-tile--fallback');
+    expect(container.querySelector('.ui-tile__fallback')).toHaveTextContent('E');
+  });
+
+  it('shows initials over a colour wash when there is no photo', () => {
+    const { container } = render(<PhotoTile title="Adam Copeland" accent="world" imageUrl=" " />);
+    expect(container.querySelector('img')).not.toBeInTheDocument();
+    expect(container.querySelector('.ui-tile')).toHaveClass('ui-tile--world', 'ui-tile--fallback');
+    const fallback = container.querySelector('.ui-tile__fallback');
+    expect(fallback).toHaveTextContent('AC');
+    expect(fallback).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('uses the caller\'s icon in place of initials, such as for a vacant title', () => {
+    const { container } = render(<PhotoTile title="Vacant" fallbackIcon={<svg data-testid="belt" />} />);
+    expect(screen.getByTestId('belt')).toBeInTheDocument();
+    expect(container.querySelector('.ui-tile__fallback')).not.toHaveTextContent('V');
+  });
+
+  it('keeps a photo tile free of the fallback', () => {
+    const { container } = render(<PhotoTile title="Edge" imageUrl="/edge.png" />);
+    expect(container.querySelector('.ui-tile')).not.toHaveClass('ui-tile--fallback');
+    expect(container.querySelector('.ui-tile__fallback')).not.toBeInTheDocument();
   });
 });

@@ -2,8 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import type { Championship } from '../../../types';
+import type { Championship, Tournament } from '../../../types';
 import type { LeagueEvent } from '../../../types/event';
+import type { Rivalry } from '../../../types/rivalry';
+import type { Stable } from '../../../types/stable';
+import type { TagTeam } from '../../../types/tagTeam';
 
 const { mockUseAuth, mockUseSiteConfig, mockApis } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
@@ -12,23 +15,40 @@ const { mockUseAuth, mockUseSiteConfig, mockApis } = vi.hoisted(() => ({
     getDirectory: vi.fn(),
     getEvents: vi.fn(),
     getChampionships: vi.fn(),
+    getFactions: vi.fn(),
+    getTagTeams: vi.fn(),
+    getTournaments: vi.fn(),
+    listRivalries: vi.fn(),
   },
 }));
 
 vi.mock('../../../contexts/AuthContext', () => ({ useAuth: mockUseAuth }));
 vi.mock('../../../contexts/SiteConfigContext', () => ({ useSiteConfig: mockUseSiteConfig }));
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en-US' } }),
 }));
 vi.mock('../../../services/api', () => ({
   playersApi: { getDirectory: mockApis.getDirectory },
   eventsApi: { getAll: mockApis.getEvents },
   championshipsApi: { getAll: mockApis.getChampionships },
+  factionsApi: { getAll: mockApis.getFactions },
+  tagTeamsApi: { getAll: mockApis.getTagTeams },
+  tournamentsApi: { getAll: mockApis.getTournaments },
+  rivalriesApi: { list: mockApis.listRivalries },
 }));
 
 import SiteSearch from '../SiteSearch';
 import SearchLauncher from '../SearchLauncher';
-import { toChampionshipEntries, toEventEntries, toPageEntries, toWrestlerEntries } from '../searchIndex';
+import {
+  toChampionshipEntries,
+  toEventEntries,
+  toFactionEntries,
+  toPageEntries,
+  toRivalryEntries,
+  toTagTeamEntries,
+  toTournamentEntries,
+  toWrestlerEntries,
+} from '../searchIndex';
 
 const FEATURES = { challenges: true, promos: true, contenders: true, statistics: true, stables: true, notifications: true, rivalries: true };
 const t = (key: string) => key;
@@ -62,6 +82,10 @@ beforeEach(() => {
   mockApis.getDirectory.mockResolvedValue(DIRECTORY);
   mockApis.getEvents.mockResolvedValue([{ eventId: 'e1', name: 'Toxic Tuesday', date: '2026-11-01T00:00:00Z' }]);
   mockApis.getChampionships.mockResolvedValue([{ championshipId: 'c1', name: 'World Heavyweight', isActive: true }]);
+  mockApis.getFactions.mockResolvedValue([{ stableId: 's1', name: 'Ministry of Darkness' }]);
+  mockApis.getTagTeams.mockResolvedValue([{ tagTeamId: 't1', name: 'Brothers of Destruction', player1WrestlerName: 'Undertaker', player2WrestlerName: 'Kane' }]);
+  mockApis.getTournaments.mockResolvedValue([{ tournamentId: 'g1', name: 'G1 Climax' }]);
+  mockApis.listRivalries.mockResolvedValue({ rivalries: [{ rivalryId: 'r1', title: 'Bottom Line vs The Rock' }] });
 });
 
 describe('search index', () => {
@@ -78,6 +102,20 @@ describe('search index', () => {
       { championshipId: 'c2', name: 'Retired', isActive: false },
     ] as Championship[]);
     expect(titles.map((entry) => entry.title)).toEqual(['Live']);
+  });
+
+  it('keeps a date-only event on its calendar day in any timezone', () => {
+    const event = { eventId: 'e1', name: 'Show', date: '2026-09-01' } as LeagueEvent;
+    expect(toEventEntries([event], 'en-US')[0]?.subtitle).toBe('Sep 1, 2026');
+  });
+
+  it('indexes factions, tag teams, tournaments and rivalries', () => {
+    expect(toFactionEntries([{ stableId: 's1', name: 'DX' } as Stable])[0]?.to).toBe('/factions/s1');
+    expect(toTagTeamEntries([
+      { tagTeamId: 't1', name: 'Team', player1WrestlerName: 'Kane' } as TagTeam,
+    ])[0]).toMatchObject({ subtitle: 'Kane', to: '/tag-teams/t1' });
+    expect(toTournamentEntries([{ tournamentId: 'g1', name: 'G1' } as Tournament])[0]?.to).toBe('/tournaments');
+    expect(toRivalryEntries([{ rivalryId: 'r1', title: 'Feud' } as Rivalry])[0]?.to).toBe('/rivalries/r1');
   });
 
   it('respects flags and roles for pages', () => {
@@ -100,6 +138,68 @@ describe('search index', () => {
 });
 
 describe('SiteSearch', () => {
+  it.each([
+    ['Ministry', 'Ministry of Darkness'],
+    ['Brothers', 'Brothers of Destruction'],
+    ['G1', 'G1 Climax'],
+    ['Bottom Line', 'Bottom Line vs The Rock'],
+  ])('finds %s', async (query, title) => {
+    const user = userEvent.setup();
+    renderSearch();
+    await waitFor(() => expect(mockApis.listRivalries).toHaveBeenCalled());
+
+    await user.type(screen.getByRole('combobox'), query);
+    expect(await screen.findByRole('option', { name: new RegExp(title) })).toBeInTheDocument();
+  });
+
+  it('skips sources whose feature is off, and only asks for active groups', async () => {
+    mockUseSiteConfig.mockReturnValue({ features: { ...FEATURES, stables: false, rivalries: false } });
+    renderSearch();
+    await waitFor(() => expect(mockApis.getTournaments).toHaveBeenCalled());
+    expect(mockApis.getFactions).not.toHaveBeenCalled();
+    expect(mockApis.getTagTeams).not.toHaveBeenCalled();
+    expect(mockApis.listRivalries).not.toHaveBeenCalled();
+  });
+
+  it('loads in two waves of at most four requests', async () => {
+    let finishPlayers: (value: unknown[]) => void = () => undefined;
+    mockApis.getDirectory.mockReturnValue(new Promise((resolve) => { finishPlayers = resolve; }));
+    renderSearch();
+    await waitFor(() => expect(mockApis.getChampionships).toHaveBeenCalled());
+    expect(mockApis.getFactions).not.toHaveBeenCalled();
+
+    finishPlayers(DIRECTORY);
+    await waitFor(() => expect(mockApis.getFactions).toHaveBeenCalledWith({ status: 'active' }, expect.any(AbortSignal)));
+  });
+
+  it('does not match a name on a loose fuzzy hit', async () => {
+    mockApis.getDirectory.mockResolvedValue([
+      ...DIRECTORY,
+      { playerId: 'p5', name: 'Randy Legend', currentWrestler: 'Randy Orton' },
+      { playerId: 'p6', name: 'Kaz', currentWrestler: 'Kazuchika Okada' },
+    ]);
+    const user = userEvent.setup();
+    renderSearch();
+    await waitFor(() => expect(mockApis.listRivalries).toHaveBeenCalled());
+
+    await user.type(screen.getByRole('combobox'), 'edge');
+    await screen.findByRole('option', { name: /Edge/ });
+    expect(screen.queryByRole('option', { name: /Randy/ })).not.toBeInTheDocument();
+
+    await user.clear(screen.getByRole('combobox'));
+    await user.type(screen.getByRole('combobox'), 'adam');
+    expect(screen.queryByRole('option', { name: /Okada/ })).not.toBeInTheDocument();
+  });
+
+  it('still forgives a typo in a long name', async () => {
+    const user = userEvent.setup();
+    renderSearch();
+    await waitFor(() => expect(mockApis.listRivalries).toHaveBeenCalled());
+
+    await user.type(screen.getByRole('combobox'), 'Minstry of Darkness');
+    expect(await screen.findByRole('option', { name: /Ministry of Darkness/ })).toBeInTheDocument();
+  });
+
   it('finds a wrestler and navigates with Enter', async () => {
     const user = userEvent.setup();
     const onClose = renderSearch();
@@ -142,6 +242,10 @@ describe('SiteSearch', () => {
     mockApis.getDirectory.mockRejectedValue(new Error('down'));
     mockApis.getEvents.mockRejectedValue(new Error('down'));
     mockApis.getChampionships.mockRejectedValue(new Error('down'));
+    mockApis.getFactions.mockRejectedValue(new Error('down'));
+    mockApis.getTagTeams.mockRejectedValue(new Error('down'));
+    mockApis.getTournaments.mockRejectedValue(new Error('down'));
+    mockApis.listRivalries.mockRejectedValue(new Error('down'));
     renderSearch();
 
     expect(await screen.findByText('search.loadFailed')).toBeInTheDocument();

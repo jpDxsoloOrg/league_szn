@@ -43,8 +43,8 @@
     "sending": "Sending…",
     "sortBy": "Sort by",
     "sortDefault": "Default order",
-    "sortAscending": "Ascending",
-    "sortDescending": "Descending"
+    "sortAscending": "{{column}}, ascending",
+    "sortDescending": "{{column}}, descending"
   },
   "notFound": {
     "title": "Page Not Found",
@@ -297,7 +297,8 @@
     },
     "pages": {
       "forgotPassword": "Reset Password",
-      "welcome": "Welcome"
+      "welcome": "Welcome",
+      "playerProfile": "Player Profile"
     }
   },
   "mobileNav": {
@@ -381,7 +382,6 @@
   "wiki": {
     "title": "Wiki",
     "indexTitle": "Wiki Articles",
-    "backToGuide": "Back to guide",
     "previousArticle": "Previous: {{title}}",
     "nextArticle": "Next: {{title}}",
     "articleNavLabel": "Previous and next article",
@@ -438,7 +438,10 @@
       "adminRivalries": "Admin: Rivalries",
       "rateMatches": "Rate Matches",
       "rivalryHeatExplained": "How Rivalry Heat Works"
-    }
+    },
+    "articleNotFound": "Article not found",
+    "articleNotFoundHint": "This help article may have moved. Browse the full list instead.",
+    "browseArticles": "Browse all articles"
   },
   "languageSwitcher": {
     "label": "Language",
@@ -1825,6 +1828,10 @@
       "confirmDelete": "Are you sure you want to delete this promo?",
       "filterByType": "Filter by Type",
       "all": "All"
+    },
+    "guest": {
+      "title": "Promos are for league members",
+      "description": "Sign in to read promos and cut your own. Rivalries, factions and tag teams stay open to everyone."
     }
   },
   "shows": {
@@ -2405,7 +2412,9 @@
     "deleteAllRead": "Delete read",
     "typeStable": "Stable",
     "typeTagTeam": "Tag Team",
-    "typeTransfer": "Transfer"
+    "typeTransfer": "Transfer",
+    "typeRivalry": "Rivalry",
+    "typeStoryline": "Storyline"
   },
   "findMatch": {
     "title": "Find a Match",
@@ -2504,7 +2513,7 @@
   "search": {
     "title": "Search League SZN",
     "open": "Open search",
-    "placeholder": "Search wrestlers, events, pages",
+    "placeholder": "Search wrestlers, events, factions, pages",
     "results": "Search results",
     "noResults": "No matches found",
     "loadFailed": "Could not load search data. Only pages are searchable right now.",
@@ -2512,7 +2521,11 @@
       "wrestler": "Wrestler",
       "event": "Event",
       "championship": "Title",
-      "page": "Page"
+      "page": "Page",
+      "faction": "Faction",
+      "tagTeam": "Tag Team",
+      "tournament": "Tournament",
+      "rivalry": "Rivalry"
     }
   },
   "ui": {

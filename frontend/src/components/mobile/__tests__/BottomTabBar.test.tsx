@@ -75,6 +75,13 @@ describe('BottomTabBar', () => {
     expect(screen.queryByRole('link', { name: 'nav.sections.me' })).not.toBeInTheDocument();
   });
 
+  it('does not light Sign In for a guest reading help', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: false, isWrestler: false, isAdminOrModerator: false, isSuperAdmin: false });
+    renderTabBar('/guide/wiki/league-rules');
+    const current = screen.getAllByRole('link').filter((link) => link.getAttribute('aria-current') === 'page');
+    expect(current).toEqual([]);
+  });
+
   it('lands Storylines on the first enabled tab', () => {
     mockUseSiteConfig.mockReturnValue({ features: { ...ALL_FEATURES, rivalries: false } });
     renderTabBar();

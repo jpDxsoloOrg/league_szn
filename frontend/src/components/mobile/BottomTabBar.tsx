@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LogIn } from 'lucide-react';
 import { useNavContext } from '../../hooks/useNavContext';
-import { findSectionForPath, getSectionLandingPath, getVisibleSections } from '../../config/navConfig';
+import { getActiveSectionKey, getSectionLandingPath, getVisibleSections, isAdminPath } from '../../config/navConfig';
 import './BottomTabBar.css';
 
 /** Fixed tab bar with the same sections as the desktop header. */
@@ -12,8 +12,7 @@ export default function BottomTabBar() {
   const navContext = useNavContext();
 
   // Admin hangs off the Me hub on phones, so its pages keep Me highlighted.
-  const isAdminPath = pathname === '/admin' || pathname.startsWith('/admin/');
-  const activeKey = isAdminPath ? 'me' : findSectionForPath(pathname)?.key;
+  const activeKey = isAdminPath(pathname) ? 'me' : getActiveSectionKey(pathname, navContext.isAuthenticated);
 
   return (
     <nav className="bottom-tab-bar" aria-label={t('mobileNav.ariaLabel')}>

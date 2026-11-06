@@ -187,39 +187,51 @@ describe('DataTable', () => {
     expect(screen.getByRole('columnheader', { name: 'Wins' })).toHaveAttribute('aria-sort', 'descending');
   });
 
-  describe('in the phone card layout', () => {
+  describe('on a phone', () => {
+    const realMatchMedia = window.matchMedia;
+
     beforeEach(() => {
-      vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
-        matches: query.includes('max-width'),
-        media: query,
-        onchange: null,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      }));
+      window.matchMedia = ((query: string) => ({
+        ...realMatchMedia(query),
+        matches: true,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      })) as typeof window.matchMedia;
     });
 
     afterEach(() => {
-      vi.restoreAllMocks();
+      window.matchMedia = realMatchMedia;
     });
 
-    it('sorts from a visible control, in both directions', async () => {
+    it('sorts from a Select in both directions, because the header row is hidden there', async () => {
       const user = userEvent.setup();
       render(<DataTable {...props} rows={rows} />);
 
-      await user.selectOptions(screen.getByLabelText('common.sortBy'), 'name');
-      expect(firstCells()).toEqual(['Bandido', 'Edge']);
+      await user.click(screen.getByRole('combobox', { name: 'common.sortBy' }));
+      await user.click(await screen.findByRole('option', { name: 'common.sortAscending' }));
+      await waitFor(() => expect(firstCells()).toEqual(['Bandido', 'Edge']));
 
-      await user.click(screen.getByRole('button', { name: 'common.sortAscending' }));
-      expect(firstCells()).toEqual(['Edge', 'Bandido']);
-      expect(screen.getByRole('button', { name: 'common.sortDescending' })).toBeInTheDocument();
+      await user.click(screen.getByRole('combobox', { name: 'common.sortBy' }));
+      await user.click(await screen.findByRole('option', { name: 'common.sortDescending' }));
+      await waitFor(() => expect(firstCells()).toEqual(['Edge', 'Bandido']));
+
+      await user.click(screen.getByRole('combobox', { name: 'common.sortBy' }));
+      await user.click(await screen.findByRole('option', { name: 'common.sortDefault' }));
+      await waitFor(() => expect(firstCells()).toEqual(['Edge', 'Bandido']));
     });
 
-    it('leaves out columns the cards do not show', () => {
+    it('leaves out columns the cards do not show', async () => {
+      const user = userEvent.setup();
       render(<DataTable {...props} rows={rows} />);
-      expect(within(screen.getByLabelText('common.sortBy')).queryByRole('option', { name: 'Wins' })).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('combobox', { name: 'common.sortBy' }));
+      // The default order, then Name both ways. Wins is hidden on phones.
+      expect(await screen.findAllByRole('option')).toHaveLength(3);
+    });
+
+    it('offers no Select when nothing can be sorted', () => {
+      render(<DataTable {...props} columns={[{ key: 'name', header: 'Name', render: (row) => row.name }]} rows={rows} />);
+      expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
     });
   });
 

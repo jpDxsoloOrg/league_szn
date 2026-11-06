@@ -68,6 +68,19 @@ describe('ShellHeader', () => {
     expect(screen.getByRole('link', { name: 'common.signIn' })).toHaveAttribute('href', '/login');
     expect(screen.queryByRole('link', { name: 'nav.sections.me' })).not.toBeInTheDocument();
   });
+
+  it('does not light Sign In for a guest reading help, and marks the help icon instead', () => {
+    mockUseAuth.mockReturnValue(SIGNED_OUT);
+    renderAt('/guide/wiki', <ShellHeader />);
+    expect(screen.getByRole('link', { name: 'common.signIn' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'nav.help' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('lights Sign In on the sign-in page', () => {
+    mockUseAuth.mockReturnValue(SIGNED_OUT);
+    renderAt('/login', <ShellHeader />);
+    expect(screen.getByRole('link', { name: 'common.signIn' })).toHaveAttribute('aria-current', 'page');
+  });
 });
 
 describe('SectionNav', () => {
@@ -107,6 +120,24 @@ describe('MeHub', () => {
     mockUseAuth.mockReturnValue({ ...MODERATOR, signOut: vi.fn() });
     renderAt('/me', <MeHub />);
     expect(linkNames()[0]).toBe('nav.admin');
+  });
+
+  it('tells a hidden player why and how to fix it', () => {
+    mockUseAuth.mockReturnValue({ ...WRESTLER, playerId: 'p1', currentWrestler: 'Needs Wrestler', signOut: vi.fn() });
+    renderAt('/me', <MeHub />);
+    expect(screen.getByRole('heading', { name: 'me.setup.hiddenTitle' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'me.setup.enterName' })).toHaveAttribute('href', '/profile');
+  });
+
+  it('shows no hidden notice to a player with a wrestler, or to staff with no player', () => {
+    mockUseAuth.mockReturnValue({ ...WRESTLER, playerId: 'p1', currentWrestler: 'Edge', signOut: vi.fn() });
+    const view = renderAt('/me', <MeHub />);
+    expect(screen.queryByRole('heading', { name: 'me.setup.hiddenTitle' })).not.toBeInTheDocument();
+    view.unmount();
+
+    mockUseAuth.mockReturnValue({ ...MODERATOR, playerId: null, currentWrestler: null, signOut: vi.fn() });
+    renderAt('/me', <MeHub />);
+    expect(screen.queryByRole('heading', { name: 'me.setup.hiddenTitle' })).not.toBeInTheDocument();
   });
 
   it('offers sign in, sign up and help when signed out', () => {

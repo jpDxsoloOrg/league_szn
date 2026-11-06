@@ -60,6 +60,7 @@
 
 .ui-modal__close {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
   width: var(--touch-target);

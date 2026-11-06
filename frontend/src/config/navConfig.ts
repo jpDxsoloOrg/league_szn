@@ -91,6 +91,12 @@ export interface NavContext {
 
 export const ME_HUB_PATH = '/me';
 
+/** Where a guest's Sign In item leads. These pages have no secondary tabs. */
+export const SIGN_IN_PATHS = [ME_HUB_PATH, '/login', '/signup', '/forgot-password', '/welcome'];
+
+/** Colour identity for a page: its section, or the plain admin theme. */
+export type SectionTheme = SectionKey | 'admin';
+
 export const STATS_TABS: NavTab[] = [
   { path: '/stats', labelKey: 'statistics.nav.playerStats', matches: ['/stats/player'] },
   { path: '/stats/head-to-head', labelKey: 'statistics.nav.headToHead', matches: ['/stats/tale-of-tape'] },
@@ -197,6 +203,30 @@ export function findSectionForPath(pathname: string): NavSection | null {
     }
   }
   return best;
+}
+
+/**
+ * The section to highlight in the main nav. For a guest the Me item reads
+ * Sign In, so it only lights up on the sign-in pages themselves, not on Help.
+ */
+export function getActiveSectionKey(pathname: string, isAuthenticated: boolean): SectionKey | undefined {
+  const key = findSectionForPath(pathname)?.key;
+  const isSignInPage = SIGN_IN_PATHS.some((path) => pathMatches(pathname, path));
+  return key === 'me' && !isAuthenticated && !isSignInPage ? undefined : key;
+}
+
+export function isAdminPath(pathname: string): boolean {
+  return pathMatches(pathname, '/admin');
+}
+
+export function isHelpPath(pathname: string): boolean {
+  return pathMatches(pathname, '/guide');
+}
+
+/** Pages outside any section, such as the 404, take the Home colour. */
+export function getSectionTheme(pathname: string): SectionTheme {
+  if (isAdminPath(pathname)) return 'admin';
+  return findSectionForPath(pathname)?.key ?? 'home';
 }
 
 /** The tab a path belongs to within a tab list. The longest matching prefix wins. */
@@ -441,7 +471,7 @@ export function getPageInfo(path: string, t: TranslateFn): PageInfo {
   const detail = DETAIL_TITLES.find(({ pattern }) => pattern.test(path));
   if (detail) return { title: t(detail.titleKey), parent: t(detail.parentKey) };
 
-  if (path.startsWith('/player/')) return { title: t('nav.profile') };
+  if (path.startsWith('/player/')) return { title: t('nav.pages.playerProfile') };
   if (path.startsWith('/guide')) return { title: t('nav.help') };
 
   const section = findSectionForPath(path);

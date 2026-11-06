@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getInitials } from '../../utils/initials';
 import './Avatar.css';
 
 export interface AvatarProps {
@@ -9,13 +10,6 @@ export interface AvatarProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   ring?: 'none' | 'pink' | 'cyan' | 'violet' | 'gold';
   className?: string;
-}
-
-function getInitials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  const first = words[0]?.[0] ?? '';
-  const last = words.length > 1 ? words[words.length - 1]?.[0] ?? '' : '';
-  return `${first}${last}`.toUpperCase() || '?';
 }
 
 export default function Avatar({ src, name, size = 'md', ring = 'none', className = '' }: AvatarProps) {

@@ -7,6 +7,8 @@
 .App {
   min-height: 100vh;
   background-color: var(--color-bg);
+  background-image: var(--section-wash);
+  background-repeat: no-repeat;
   color: var(--color-text);
 }
 
@@ -180,9 +182,9 @@ th, td {
 th {
   background-color: var(--color-surface);
   color: var(--color-text-secondary);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
@@ -207,6 +209,7 @@ tr:hover {
   main,
   body {
     background: #fff !important;
+    background-image: none !important;
     color: #000 !important;
   }
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useScrollFade } from '../../hooks/useScrollFade';
 import './SectionTabs.css';
 
 export interface SectionTabItem {
@@ -15,7 +16,7 @@ export interface SectionTabsProps {
   label: string;
   /** `to` of the active item. Defaults to an exact match on the current path. */
   activeTo?: string | null;
-  /** `compact` is the quieter third-level row. */
+  /** `default` is the underlined section row. `compact` is the third-level row of pills. */
   variant?: 'default' | 'compact';
   className?: string;
 }
@@ -24,6 +25,8 @@ export interface SectionTabsProps {
 export default function SectionTabs({ items, label, activeTo, variant = 'default', className = '' }: SectionTabsProps) {
   const { pathname } = useLocation();
   const activeLinkRef = useRef<HTMLAnchorElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  useScrollFade(listRef);
   const currentTo = activeTo === undefined ? pathname : activeTo;
 
   useEffect(() => {
@@ -36,7 +39,7 @@ export default function SectionTabs({ items, label, activeTo, variant = 'default
 
   return (
     <nav className={`section-tabs section-tabs--${variant} ${className}`.trim()} aria-label={label}>
-      <ul className="section-tabs__list">
+      <ul ref={listRef} className="section-tabs__list">
         {items.map((item) => {
           const active = item.to === currentTo;
           return (
