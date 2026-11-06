@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
+import { createReviewerNameLookup } from '../../lib/reviewerName';
 import type { TransferRequest, Player, Division } from '../../lib/repositories/types';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -45,11 +46,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         .map((d) => [d.divisionId, d.name])
     );
 
+    const reviewerName = createReviewerNameLookup(players as Player[]);
+
+    // reviewedBy is display-only on this admin list, so it carries the name.
     const enriched = requests.map((req) => ({
       ...req,
       playerName: playersMap.get(req.playerId) ?? 'Unknown Player',
-      fromDivisionName: divisionsMap.get(req.fromDivisionId) ?? req.fromDivisionId,
-      toDivisionName: divisionsMap.get(req.toDivisionId) ?? req.toDivisionId,
+      fromDivisionName: divisionsMap.get(req.fromDivisionId) ?? 'Unknown Division',
+      toDivisionName: divisionsMap.get(req.toDivisionId) ?? 'Unknown Division',
+      reviewedBy: reviewerName(req.reviewedBy),
     }));
 
     enriched.sort((a, b) => b.createdAt.localeCompare(a.createdAt));

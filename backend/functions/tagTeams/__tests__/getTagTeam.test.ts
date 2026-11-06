@@ -151,4 +151,33 @@ describe('getTagTeam — TTP-01 wrestler-name fallback', () => {
     expect(body.player1.wrestlerName).toBe('Edge (solo)');
     expect(body.player2.wrestlerName).toBe('Christian (solo)');
   });
+
+
+  it('derives the record from the same matches as the streak and breakdown', async () => {
+    mockTagTeamsFindById.mockResolvedValue({
+      tagTeamId: 'tt1',
+      name: 'Brothers',
+      player1Id: 'p1',
+      player2Id: 'p2',
+      status: 'active',
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      createdAt: '',
+      updatedAt: '',
+    });
+    mockMatchesListCompleted.mockResolvedValue([
+      { matchId: 'm1', date: '2025-01-01', matchFormat: 'tag', participants: ['p1', 'p2', 'x', 'y'], teams: [['p1', 'p2'], ['x', 'y']], winners: ['p1', 'p2'], losers: ['x', 'y'], status: 'completed' },
+      { matchId: 'm2', date: '2025-01-02', matchFormat: 'tag', participants: ['p1', 'p2', 'x', 'y'], teams: [['p1', 'p2'], ['x', 'y']], winners: ['x', 'y'], losers: ['p1', 'p2'], status: 'completed' },
+      { matchId: 'm3', date: '2025-01-03', matchFormat: 'tag', participants: ['p1', 'p2', 'x', 'y'], teams: [['p1', 'p2'], ['x', 'y']], winners: ['p1', 'p2'], losers: ['x', 'y'], status: 'completed' },
+    ]);
+
+    const result = await getTagTeam(makeEvent(), ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect([body.wins, body.losses, body.draws]).toEqual([2, 1, 0]);
+    expect(body.standings.winPercentage).toBe(66.7);
+    expect(body.standings.currentStreak).toEqual({ type: 'W', count: 1 });
+    expect(body.matchTypeRecords).toEqual([{ matchFormat: 'tag', wins: 2, losses: 1, draws: 0 }]);
+  });
 });

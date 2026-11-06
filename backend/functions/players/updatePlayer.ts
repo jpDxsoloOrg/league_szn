@@ -9,24 +9,10 @@ import { applyMovesetFields } from './movesetFields';
 import type { PlayerPatch } from '../../lib/repositories';
 import {
   filterExistingWrestlerIds,
+  parseSlotChange,
   rejectDuplicateSlotAssignment,
   resolveWrestlerForAssignment,
 } from './wrestlerAssignment';
-
-/**
- * Request shape for FK transitions on the two slots. `undefined` = no change,
- * `null` = clear the assignment, string = set to that wrestlerId.
- */
-type SlotChange = { present: false } | { present: true; newId: string | null };
-
-function parseSlotChange(value: unknown): SlotChange {
-  if (value === undefined) return { present: false };
-  if (value === null || value === '') return { present: true, newId: null };
-  if (typeof value === 'string' && value.length > 0) {
-    return { present: true, newId: value };
-  }
-  return { present: false };
-}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   // Any signed-in user could previously hit this route; with free-text bio
@@ -129,8 +115,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       hasChanges = true;
     }
 
-    const currentChange = parseSlotChange(body.currentWrestlerId);
-    const alternateChange = parseSlotChange(body.alternateWrestlerId);
+    const currentChange = parseSlotChange(body.currentWrestlerId, player.currentWrestlerId);
+    const alternateChange = parseSlotChange(body.alternateWrestlerId, player.alternateWrestlerId);
 
     if (currentChange.present || alternateChange.present) {
       // Guard against picking the same wrestler for both slots, accounting

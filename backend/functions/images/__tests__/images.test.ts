@@ -258,6 +258,29 @@ describe('generateUploadUrl — auth & validation', () => {
     expect(result!.statusCode).toBe(200);
   });
 
+  it.each(['championships', 'shows'])('refuses %s uploads from a plain wrestler', async (folder) => {
+    const event = withAuth(
+      makeEvent({ body: JSON.stringify({ fileName: 'photo.png', fileType: 'image/png', folder }) }),
+      'Wrestler',
+    );
+
+    const result = await generateUploadUrl(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(403);
+    expect(mockGetSignedUrl).not.toHaveBeenCalled();
+  });
+
+  it.each(['championships', 'shows'])('accepts %s uploads from a moderator', async (folder) => {
+    const event = withAuth(
+      makeEvent({ body: JSON.stringify({ fileName: 'photo.png', fileType: 'image/png', folder }) }),
+      'Moderator',
+    );
+
+    const result = await generateUploadUrl(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+  });
+
   it('accepts "factions" as a valid folder and prefixes the file key with factions/', async () => {
     const event = withAuth(
       makeEvent({

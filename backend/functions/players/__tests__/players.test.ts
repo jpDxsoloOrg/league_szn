@@ -196,6 +196,19 @@ describe('getPlayers', () => {
     expect(JSON.parse(result!.body)).toHaveLength(2);
   });
 
+  it('keeps account ids out of the public list but says who is linked', async () => {
+    const linked = await repos.roster.players.create({ name: 'P1', currentWrestler: 'The Rock' });
+    await repos.roster.players.update(linked.playerId, { userId: 'secret-sub', psnId: 'rock_psn' });
+    await repos.roster.players.create({ name: 'P2', currentWrestler: 'John Cena' });
+
+    const result = await getPlayers(makeEvent(), ctx, cb);
+
+    expect(result!.body).not.toContain('secret-sub');
+    const rows = JSON.parse(result!.body) as Array<{ name: string; hasLinkedAccount: boolean; psnId?: string }>;
+    expect(rows.find((row) => row.name === 'P1')).toMatchObject({ hasLinkedAccount: true, psnId: 'rock_psn' });
+    expect(rows.find((row) => row.name === 'P2')?.hasLinkedAccount).toBe(false);
+  });
+
   it('filters out players without currentWrestler', async () => {
     await repos.roster.players.create({ name: 'P1', currentWrestler: 'The Rock' });
     // Create a player without currentWrestler via store directly

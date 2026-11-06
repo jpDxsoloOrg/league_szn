@@ -1,4 +1,8 @@
 import { getRepositories } from '../../lib/repositories';
+import { computeRecentFormAndStreak, type FormAndStreak } from '../../lib/stats/recentFormAndStreak';
+import { tallyResults, type WinLossDrawRecord } from '../../lib/stats/record';
+
+export { computeWinPercentage } from '../../lib/stats/record';
 
 /** A completed match record from DynamoDB */
 export interface MatchRecord {
@@ -59,10 +63,8 @@ export interface MatchTypeRecord {
   draws: number;
 }
 
-export interface StableStandingsData {
+export interface StableStandingsData extends FormAndStreak {
   winPercentage: number;
-  recentForm: string[];
-  currentStreak: string;
 }
 
 /**
@@ -200,24 +202,34 @@ export function computeStableMatchResults(
 export function computeFormAndStreak(
   results: StableMatchResult[],
   formCount: number = 10
-): { recentForm: string[]; currentStreak: string } {
-  const recentForm = results.slice(0, formCount).map((r) => r.outcome);
+): FormAndStreak {
+  return computeRecentFormAndStreak(results.map((r) => r.outcome), formCount);
+}
 
-  let currentStreak = '';
-  if (results.length > 0) {
-    const firstOutcome = results[0].outcome;
-    let streakCount = 0;
-    for (const result of results) {
-      if (result.outcome === firstOutcome) {
-        streakCount++;
-      } else {
-        break;
-      }
-    }
-    currentStreak = `${firstOutcome}${streakCount}`;
+/**
+ * Tallies W/L/D from match outcomes. Faction records always come from here, so
+ * the list, detail, standings and stats pages show the same numbers. The stored
+ * wins/losses/draws counters on a stable are not read for display.
+ */
+export function tallyRecord(results: ReadonlyArray<{ outcome: MatchOutcome }>): WinLossDrawRecord {
+  return tallyResults(results.map((r) => r.outcome));
+}
+
+/**
+ * A faction's record from completed matches, for callers that need only the
+ * totals and not the per-match results.
+ */
+export function computeStableRecord(
+  matches: ReadonlyArray<MatchRecord>,
+  memberIds: ReadonlyArray<string>,
+): WinLossDrawRecord {
+  const memberSet = new Set(memberIds);
+  const outcomes: MatchOutcome[] = [];
+  for (const match of matches) {
+    const outcome = determineStableOutcome(match, memberSet);
+    if (outcome !== null) outcomes.push(outcome);
   }
-
-  return { recentForm, currentStreak };
+  return tallyResults(outcomes);
 }
 
 /**
@@ -283,12 +295,4 @@ export function computeMatchTypeRecords(results: StableMatchResult[]): MatchType
   }
 
   return records.sort((a, b) => (b.wins + b.losses + b.draws) - (a.wins + a.losses + a.draws));
-}
-
-/**
- * Computes win percentage from W/L/D counts.
- */
-export function computeWinPercentage(wins: number, losses: number, draws: number): number {
-  const total = wins + losses + draws;
-  return total > 0 ? Math.round((wins / total) * 1000) / 1000 : 0;
 }

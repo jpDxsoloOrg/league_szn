@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError, forbidden } from '../../lib/response';
+import { parseBody } from '../../lib/parseBody';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { challengeExpiresAt, isChallengeExpired } from '../../lib/challengeExpiry';
@@ -20,24 +21,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('challengeId is required');
     }
 
-    if (!event.body) {
-      return badRequest('Request body is required');
-    }
-
-    let body;
-    try {
-      body = JSON.parse(event.body);
-    } catch {
-      return badRequest('Invalid JSON in request body');
-    }
-
-    const { action, responseMessage, counterMatchType, counterStipulation, counterMessage } = body as {
+    const { data: body, error: parseError } = parseBody<{
       action: ChallengeAction;
       responseMessage?: string;
       counterMatchType?: string;
       counterStipulation?: string;
       counterMessage?: string;
-    };
+    }>(event);
+    if (parseError) return parseError;
+
+    const { action, responseMessage, counterMatchType, counterStipulation, counterMessage } = body;
 
     if (!action || !['accept', 'decline', 'counter'].includes(action)) {
       return badRequest('action must be accept, decline, or counter');

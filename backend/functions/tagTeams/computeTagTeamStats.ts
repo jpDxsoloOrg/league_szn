@@ -3,6 +3,8 @@ import {
   computeRecentFormAndStreak,
   type FormResult as SharedFormResult,
 } from '../../lib/stats/recentFormAndStreak';
+import { tallyResults, type WinLossDrawRecord } from '../../lib/stats/record';
+import { resolveBilledName } from '../../lib/needsWrestler';
 
 export type FormResult = SharedFormResult;
 
@@ -121,6 +123,28 @@ export function computeFormAndStreak(
   });
 
   return computeRecentFormAndStreak(sorted.map((r) => r.result), limit);
+}
+
+/**
+ * A team's record from the matches its members fought together. Every tag team
+ * response uses this, so the record agrees with the streak and match breakdown
+ * shown beside it. The stored wins/losses/draws counters are not read for display.
+ */
+export function computeTagTeamRecord(
+  matchResults: ReadonlyArray<TagTeamMatchResult>,
+): WinLossDrawRecord {
+  return tallyResults(matchResults.map((r) => r.result));
+}
+
+/**
+ * Name of a team member for lists: the player's name, then the wrestler name
+ * stored on the team, which outlives a deleted player row.
+ */
+export function resolveMemberName(
+  player: { name?: string | null } | undefined,
+  storedWrestlerName: string | undefined,
+): string {
+  return player?.name?.trim() || resolveBilledName(storedWrestlerName, null, 'Unknown');
 }
 
 /**

@@ -3,6 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { isNeedsWrestler, isPlayerVisible } from '../../lib/needsWrestler';
 import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
+import { toPublicPlayer } from '../../lib/publicPlayer';
 
 /**
  * GET /players
@@ -13,6 +14,7 @@ import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
  *    placeholder wrestler comes back as null.
  *  - `includeHidden=true`: every player, for verified staff only. Anyone else
  *    gets the public list.
+ * Account ids go only to staff and to the player themselves.
  */
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -29,11 +31,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       );
     }
 
-    if (includeHidden === 'true' && isStaff(await getVerifiedCaller(event))) {
-      return success(players);
-    }
+    const caller = await getVerifiedCaller(event);
+    const listed = includeHidden === 'true' && isStaff(caller)
+      ? players
+      : players.filter(isPlayerVisible);
 
-    return success(players.filter(isPlayerVisible));
+    return success(listed.map((player) => toPublicPlayer(player, caller)));
   } catch (err) {
     console.error('Error fetching players:', err);
     return serverError('Failed to fetch players');

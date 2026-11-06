@@ -246,4 +246,60 @@ describe('getActivity', () => {
     expect(result!.statusCode).toBe(500);
     expect(JSON.parse(result!.body).message).toBe('Failed to fetch activity');
   });
+
+
+  describe('ids with no matching row', () => {
+    const missingId = '9277aa8e-6517-4362-a95a-749e10615306';
+    const stamp = '2024-02-01T14:00:00.000Z';
+
+    async function summaries(): Promise<string[]> {
+      const result = await getActivity(makeEvent(), ctx, cb);
+      const body = JSON.parse(result!.body) as { items: Array<{ summary: string }> };
+      return body.items.map((item) => item.summary);
+    }
+
+    it('names deleted players Unknown in match results', async () => {
+      mockMatchesListCompleted.mockResolvedValue([
+        { matchId: 'm1', date: stamp, updatedAt: stamp, status: 'completed', participants: [missingId, 'p2'], winners: [missingId], losers: ['p2'] },
+      ]);
+      mockPlayersList.mockResolvedValue([{ playerId: 'p2', name: 'Kept', currentWrestler: 'W' }]);
+
+      expect(await summaries()).toEqual(['Unknown def. Kept']);
+    });
+
+    it('never uses an id in title, tournament, challenge or promo summaries', async () => {
+      mockChampionshipsListAllHistory.mockResolvedValue([
+        { championshipId: 'gone-title', wonDate: stamp, updatedAt: stamp, champion: missingId },
+      ]);
+      mockTournamentsList.mockResolvedValue([
+        { tournamentId: 't1', name: 'Cup', type: 'single-elimination', status: 'completed', winner: missingId, updatedAt: stamp },
+      ]);
+      mockChallengesList.mockResolvedValue([
+        { challengeId: 'c1', challengerId: missingId, challengedId: missingId, status: 'pending', updatedAt: stamp },
+      ]);
+      mockPromosList.mockResolvedValue([
+        { promoId: 'pr1', playerId: missingId, promoType: 'open', updatedAt: stamp },
+      ]);
+
+      const all = await summaries();
+
+      expect(all).toHaveLength(4);
+      expect(all.join(' ')).not.toContain(missingId);
+      expect(all.join(' ')).not.toContain('gone-title');
+      expect(all).toContain('Unknown Championship: Unknown crowned');
+      expect(all).toContain('Tournament "Cup" completed — Unknown won');
+    });
+
+    it('falls back to Unknown for a player row with no names, never the id', async () => {
+      mockMatchesListCompleted.mockResolvedValue([
+        { matchId: 'm1', date: stamp, updatedAt: stamp, status: 'completed', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] },
+      ]);
+      mockPlayersList.mockResolvedValue([
+        { playerId: 'p1', name: '', currentWrestler: '' },
+        { playerId: 'p2', name: 'Kept', currentWrestler: 'W' },
+      ]);
+
+      expect(await summaries()).toEqual(['Unknown def. Kept']);
+    });
+  });
 });

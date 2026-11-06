@@ -602,4 +602,110 @@ describe('assigning a wrestler with stale release state', () => {
 
     expect(result!.statusCode).toBe(201);
   });
+
+
+  describe('players with a wrestler name but no FK', () => {
+    async function seedLegacyPlayer() {
+      const player = await repos.roster.players.create({ name: 'Adam', currentWrestler: 'Edge' });
+      await repos.roster.players.update(player.playerId, {
+        userId: 'user-sub-1',
+        alternateWrestler: 'Christian',
+      });
+      return player.playerId;
+    }
+
+    function adminSave(playerId: string, body: Record<string, unknown>) {
+      return updatePlayer(
+        makeEvent({ httpMethod: 'PUT', pathParameters: { playerId }, body: JSON.stringify(body) }),
+        ctx,
+        cb,
+      );
+    }
+
+    function selfSave(body: Record<string, unknown>) {
+      return updateMyProfile(
+        withWrestlerAuth(makeEvent({ httpMethod: 'PUT', body: JSON.stringify(body) })),
+        ctx,
+        cb,
+      );
+    }
+
+    it.each([['an empty string', ''], ['null', null]])(
+      'updatePlayer keeps both names when the form echoes %s for the FKs',
+      async (_label, emptyId) => {
+        const playerId = await seedLegacyPlayer();
+
+        const result = await adminSave(playerId, {
+          name: 'Renamed',
+          currentWrestlerId: emptyId,
+          alternateWrestlerId: emptyId,
+        });
+
+        expect(result!.statusCode).toBe(200);
+        const after = await repos.roster.players.findById(playerId);
+        expect(after?.name).toBe('Renamed');
+        expect(after?.currentWrestler).toBe('Edge');
+        expect(after?.alternateWrestler).toBe('Christian');
+      },
+    );
+
+    it('updatePlayer keeps the current name when only that slot echoes empty', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      await adminSave(playerId, { name: 'Renamed', currentWrestlerId: '' });
+
+      expect((await repos.roster.players.findById(playerId))?.currentWrestler).toBe('Edge');
+    });
+
+    it('updatePlayer keeps the alternate name when only that slot echoes empty', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      await adminSave(playerId, { name: 'Renamed', alternateWrestlerId: '' });
+
+      expect((await repos.roster.players.findById(playerId))?.alternateWrestler).toBe('Christian');
+    });
+
+    it('updateMyProfile keeps both names when the form echoes empty FKs', async () => {
+      const playerId = await seedLegacyPlayer();
+
+      const result = await selfSave({ name: 'Renamed', currentWrestlerId: '', alternateWrestlerId: '' });
+
+      expect(result!.statusCode).toBe(200);
+      const after = await repos.roster.players.findById(playerId);
+      expect(after?.currentWrestler).toBe('Edge');
+      expect(after?.alternateWrestler).toBe('Christian');
+    });
+
+    it('updatePlayer still assigns a real wrestler over the legacy name', async () => {
+      const playerId = await seedLegacyPlayer();
+      const rock = await seedWrestler('The Rock');
+
+      await adminSave(playerId, { currentWrestlerId: rock.wrestlerId });
+
+      const after = await repos.roster.players.findById(playerId);
+      expect(after?.currentWrestlerId).toBe(rock.wrestlerId);
+      expect(after?.currentWrestler).toBe('The Rock');
+    });
+
+    it.each([
+      ['current', 'currentWrestlerId', 'currentWrestler'],
+      ['alternate', 'alternateWrestlerId', 'alternateWrestler'],
+    ] as const)('updatePlayer still clears the %s slot when it holds an FK', async (_label, idField, nameField) => {
+      const rock = await seedWrestler('The Rock');
+      const created = await createPlayer(
+        makeEvent({ body: JSON.stringify({ name: 'X', [idField]: rock.wrestlerId }) }),
+        ctx,
+        cb,
+      );
+      const { playerId } = JSON.parse(created!.body);
+
+      const result = await adminSave(playerId, { [idField]: '' });
+
+      expect(result!.statusCode).toBe(200);
+      const after = await repos.roster.players.findById(playerId);
+      expect(after?.[idField]).toBeFalsy();
+      expect(after?.[nameField]).not.toBe('The Rock');
+      expect((await repos.roster.wrestlers.findById(rock.wrestlerId))?.isInUse).toBe(false);
+    });
+  });
 });
