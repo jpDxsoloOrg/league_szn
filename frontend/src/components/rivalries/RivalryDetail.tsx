@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactElement } from 'react';
 import { Routes, Route, useParams, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
@@ -18,6 +19,7 @@ import EmptyState from '../ui/EmptyState';
 import SectionTabs from '../ui/SectionTabs';
 import Skeleton from '../ui/Skeleton';
 import { useToast } from '../ui/toastContext';
+import { useLocationToast } from '../factions/useLocationToast';
 import OverviewTab from './tabs/OverviewTab';
 import MatchHistoryTab from './tabs/MatchHistoryTab';
 import FutureMatchesTab from './tabs/FutureMatchesTab';
@@ -34,20 +36,21 @@ import {
 import HeatBadge from './HeatBadge';
 import './RivalryDetail.css';
 
-const TAB_DEFS: Array<{ id: string; labelKey: string }> = [
+const TAB_DEFS: Array<{ id: string; labelKey: string; insidersOnly?: boolean }> = [
   { id: 'overview', labelKey: 'rivalries.detail.overviewTab' },
   { id: 'matches', labelKey: 'rivalries.detail.matchesTab' },
   { id: 'future', labelKey: 'rivalries.detail.futureTab' },
   { id: 'promos', labelKey: 'rivalries.detail.promosTab' },
-  { id: 'notes', labelKey: 'rivalries.detail.notesTab' },
-  { id: 'messages', labelKey: 'rivalries.detail.messagesTab' },
+  { id: 'notes', labelKey: 'rivalries.detail.notesTab', insidersOnly: true },
+  { id: 'messages', labelKey: 'rivalries.detail.messagesTab', insidersOnly: true },
 ];
 
 export default function RivalryDetail() {
   const { t } = useTranslation();
   const { rivalryId } = useParams<{ rivalryId: string }>();
   const { showToast } = useToast();
-  const { isAdminOrModerator, email, isAuthenticated } = useAuth();
+  const { isAdminOrModerator, email, isAuthenticated, isLoading: authLoading, playerId } = useAuth();
+  useLocationToast();
   const [hydrated, setHydrated] = useState<HydratedRivalry | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,10 +118,14 @@ export default function RivalryDetail() {
   }
 
   if (error || !hydrated) {
+    const notFoundTitle = t('rivalries.detail.notFound', { defaultValue: 'Rivalry not found' });
     return (
       <div className="rivalry-detail">
         {backLink}
-        <EmptyState title={t('rivalries.detail.notFound', { defaultValue: 'Rivalry not found' })} description={error ?? undefined} />
+        <EmptyState
+          title={notFoundTitle}
+          description={error && error !== notFoundTitle ? error : undefined}
+        />
       </div>
     );
   }
@@ -153,10 +160,23 @@ export default function RivalryDetail() {
   const winsB = hydrated.headToHead.winsByParticipant[pidB] ?? 0;
   const heatPercent = heatScorePercent(r.heatScore);
   const basePath = `/rivalries/${rivalryId}`;
-  const tabItems = TAB_DEFS.map((tab) => ({
+  // Notes and messages are refused to everyone but the rivals and the GMs.
+  const isInsider = isAdminOrModerator || r.participants.some((participant) => participant.playerId === playerId);
+  const tabItems = TAB_DEFS.filter((tab) => isInsider || !tab.insidersOnly).map((tab) => ({
     to: tab.id === 'overview' ? basePath : `${basePath}/${tab.id}`,
     label: t(tab.labelKey),
   }));
+  const insidersOnly = (tab: ReactElement) => {
+    if (isInsider) return tab;
+    if (authLoading) return <Skeleton variant="block" count={3} />;
+    return (
+      <Navigate
+        to={basePath}
+        replace
+        state={{ toast: t('rivalries.detail.insidersOnly', { defaultValue: 'Only the rivals and the GMs can open this tab.' }) }}
+      />
+    );
+  };
 
   return (
     <div className="rivalry-detail">
@@ -231,7 +251,12 @@ export default function RivalryDetail() {
         <div className="rivalry-detail__stat">
           <span className="rivalry-detail__stat-label">{t('rivalries.detail.headToHead')}</span>
           <span className="rivalry-detail__stat-value">
-            {winsA}W – {winsB}L – {hydrated.headToHead.draws}D
+            {t('rivalries.detail.headToHeadRecord', {
+              defaultValue: '{{wins}}W – {{losses}}L – {{draws}}D',
+              wins: winsA,
+              losses: winsB,
+              draws: hydrated.headToHead.draws,
+            })}
           </span>
         </div>
         <div className="rivalry-detail__stat">
@@ -252,12 +277,12 @@ export default function RivalryDetail() {
 
       <div className="rivalry-detail__content">
         <Routes>
-          <Route index element={<OverviewTab hydrated={hydrated} players={players} />} />
+          <Route index element={<OverviewTab hydrated={hydrated} players={players} showNotesLink={isInsider} />} />
           <Route path="matches" element={<MatchHistoryTab hydrated={hydrated} players={players} />} />
           <Route path="future" element={<FutureMatchesTab hydrated={hydrated} players={players} />} />
           <Route path="promos" element={<PromosTab hydrated={hydrated} players={players} />} />
-          <Route path="notes" element={<NotesPlansTab hydrated={hydrated} players={players} />} />
-          <Route path="messages" element={<MessagesTab hydrated={hydrated} players={players} />} />
+          <Route path="notes" element={insidersOnly(<NotesPlansTab hydrated={hydrated} players={players} />)} />
+          <Route path="messages" element={insidersOnly(<MessagesTab hydrated={hydrated} players={players} />)} />
           <Route path="*" element={<Navigate to="" replace />} />
         </Routes>
       </div>

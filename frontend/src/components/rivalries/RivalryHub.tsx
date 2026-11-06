@@ -7,6 +7,7 @@ import { playersApi, rivalriesApi } from '../../services/api';
 import type { PlayerDirectoryEntry } from '../../services/api/players.api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Player } from '../../types';
+import { formatMatchDate } from '../../utils/dateUtils';
 import type {
   Rivalry,
   RivalryActivityItem,
@@ -16,6 +17,7 @@ import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
 import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
+import Select from '../ui/Select';
 import Tabs from '../ui/Tabs';
 import { useToast } from '../ui/toastContext';
 import RivalryCard from './RivalryCard';
@@ -30,6 +32,8 @@ const TAB_LABEL: Record<TabId, string> = {
   mine: 'rivalries.hub.tabs.mine',
   archive: 'rivalries.hub.tabs.archive',
 };
+
+const CHIPS: ChipId[] = ['all', 'heated', 'brewing', 'slowBurn'];
 
 const CHIP_LABEL: Record<ChipId, string> = {
   all: 'rivalries.hub.chips.all',
@@ -48,6 +52,9 @@ const CHIP_TO_HEAT: Record<Exclude<ChipId, 'all'>, ReadonlyArray<RivalryHeat>> =
 };
 
 const ACTIVITY_PAGE_SIZE = 25;
+/** The feed backs up the rivalries, so only the latest few show until asked for. */
+const ACTIVITY_SHOWN = 4;
+const NOTE_EXCERPT_LENGTH = 80;
 
 const ACTIVITY_ICONS: Record<RivalryActivityItem['kind'], LucideIcon> = {
   message: MessageSquare,
@@ -74,6 +81,7 @@ export default function RivalryHub() {
   const [rivalries, setRivalries] = useState<Rivalry[]>([]);
   const [activity, setActivity] = useState<RivalryActivityItem[]>([]);
   const [activityCursor, setActivityCursor] = useState<string | null>(null);
+  const [activityExpanded, setActivityExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activityLoading, setActivityLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -158,6 +166,47 @@ export default function RivalryHub() {
     return () => controller.abort();
   }, [activeTab, eventId, playerId]);
 
+  const nameOf = useMemo(() => {
+    const names = new Map(players.map((player) => [player.playerId, player.currentWrestler || player.name]));
+    return (playerId: string) => names.get(playerId) || t('common.unknown');
+  }, [players, t]);
+
+  // A card's date is its latest story beat, which the feed already knows.
+  const lastActivityByRivalry = useMemo(() => {
+    const latest = new Map<string, string>();
+    for (const item of activity) {
+      const current = latest.get(item.rivalryId);
+      if (!current || item.occurredAt > current) latest.set(item.rivalryId, item.occurredAt);
+    }
+    return latest;
+  }, [activity]);
+
+  const describeActivity = (item: RivalryActivityItem): string => {
+    switch (item.kind) {
+      case 'match': {
+        const winners = item.winners ?? [];
+        const losers = item.participants.filter((playerId) => !winners.includes(playerId));
+        const names = item.participants.map(nameOf).join(` ${t('common.vs')} `);
+        if (winners.length === 0) return t('rivalries.hub.activityMatch', { names });
+        if (losers.length === 0) return t('rivalries.hub.activityDraw', { names });
+        return t('rivalries.hub.activityBeat', {
+          winner: winners.map(nameOf).join(' & '),
+          loser: losers.map(nameOf).join(' & '),
+        });
+      }
+      case 'promo':
+        return item.title
+          ? t('rivalries.hub.activityPromoTitled', { name: nameOf(item.authorPlayerId), title: item.title })
+          : t('rivalries.hub.activityPromo', { name: nameOf(item.authorPlayerId) });
+      case 'note': {
+        const excerpt = item.body.length > NOTE_EXCERPT_LENGTH ? `${item.body.slice(0, NOTE_EXCERPT_LENGTH)}…` : item.body;
+        return t('rivalries.hub.activityNote', { text: excerpt });
+      }
+      case 'message':
+        return t('rivalries.hub.activityMessage', { name: nameOf(item.authorPlayerId) });
+    }
+  };
+
   const filtered = useMemo(() => {
     if (activeChip === 'all') return rivalries;
     const tiers = CHIP_TO_HEAT[activeChip];
@@ -219,7 +268,7 @@ export default function RivalryHub() {
             key={rivalry.rivalryId}
             rivalry={rivalry}
             participants={players}
-            lastActivityAt={rivalry.updatedAt}
+            lastActivityAt={lastActivityByRivalry.get(rivalry.rivalryId) ?? rivalry.updatedAt}
           />
         ))}
       </div>
@@ -229,27 +278,33 @@ export default function RivalryHub() {
   const renderActivity = () => {
     if (activityLoading) return <p className="rivalry-hub__activity-note">{t('rivalries.hub.activityLoading')}</p>;
     if (activity.length === 0) return <p className="rivalry-hub__activity-note">{t('rivalries.hub.activityEmpty')}</p>;
+    const shown = activityExpanded ? activity : activity.slice(0, ACTIVITY_SHOWN);
+    const canExpand = !activityExpanded && activity.length > ACTIVITY_SHOWN;
     return (
       <>
         <ul className="rivalry-hub__activity-list">
-          {activity.map((item) => {
+          {shown.map((item) => {
             const Icon = ACTIVITY_ICONS[item.kind];
             return (
-              <li key={activityKey(item)} className="rivalry-hub__activity-row">
-                <Icon className="rivalry-hub__activity-icon" aria-hidden="true" size={18} />
-                <span className="rivalry-hub__activity-text">
-                  <span className="rivalry-hub__activity-kind">{t(`rivalries.activityKind.${item.kind}`)}</span>
-                  <span className="rivalry-hub__activity-time">{new Date(item.occurredAt).toLocaleString()}</span>
-                </span>
-                <Link to={`/rivalries/${item.rivalryId}`} className="rivalry-hub__activity-link">
-                  {t('rivalries.hub.viewRivalry')}
+              <li key={activityKey(item)}>
+                <Link to={`/rivalries/${item.rivalryId}`} className="rivalry-hub__activity-row">
+                  <Icon className="rivalry-hub__activity-icon" aria-hidden="true" size={18} />
+                  <span className="rivalry-hub__activity-text">{describeActivity(item)}</span>
+                  <time className="rivalry-hub__activity-time" dateTime={item.occurredAt}>
+                    {formatMatchDate(item.occurredAt, undefined, { month: 'short', day: 'numeric' })}
+                  </time>
                 </Link>
               </li>
             );
           })}
         </ul>
-        {activityCursor && (
-          <Button variant="ghost" size="sm" fullWidth loading={loadingMore} onClick={loadMoreActivity}>
+        {(canExpand || activityCursor) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            loading={loadingMore}
+            onClick={canExpand ? () => setActivityExpanded(true) : loadMoreActivity}
+          >
             {t('rivalries.hub.loadMore')}
           </Button>
         )}
@@ -272,25 +327,19 @@ export default function RivalryHub() {
           onValueChange={(value) => setActiveTab(value as TabId)}
           items={tabs.map((id) => ({ value: id, label: t(TAB_LABEL[id]) }))}
         />
-        <div className="rivalry-hub__chips" role="group" aria-label={t('rivalries.hub.heatFilter', { defaultValue: 'Filter by heat' })}>
-          {(['all', 'heated', 'brewing', 'slowBurn'] as ChipId[]).map((id) => (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={activeChip === id}
-              className={`rivalry-hub__chip ${activeChip === id ? 'is-active' : ''}`}
-              onClick={() => setActiveChip(id)}
-            >
-              {t(CHIP_LABEL[id])}
-            </button>
-          ))}
-        </div>
+        <Select
+          className="rivalry-hub__heat"
+          label={t('rivalries.hub.heatFilter', { defaultValue: 'Filter by heat' })}
+          value={activeChip}
+          onValueChange={(value) => setActiveChip(value as ChipId)}
+          options={CHIPS.map((id) => ({ value: id, label: t(CHIP_LABEL[id]) }))}
+        />
       </div>
 
       <div className="rivalry-hub__layout">
         <section aria-busy={loading}>{renderGrid()}</section>
-        <aside className="rivalry-hub__activity">
-          <h2 className="rivalry-hub__activity-heading">{t('rivalries.hub.activityHeading')}</h2>
+        <aside className="rivalry-hub__activity" aria-labelledby="rivalry-hub-activity">
+          <h2 id="rivalry-hub-activity" className="rivalry-hub__activity-heading">{t('rivalries.hub.activityHeading')}</h2>
           {renderActivity()}
         </aside>
       </div>

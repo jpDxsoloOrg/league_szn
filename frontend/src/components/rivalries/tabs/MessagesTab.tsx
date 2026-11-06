@@ -340,7 +340,7 @@ export default function MessagesTab({ hydrated, players }: TabProps) {
 
       <div className="rivalry-msgs__feed" ref={feedRef} onScroll={handleFeedScroll}>
         {activeFeed.length === 0 ? (
-          <p className="rivalry-msgs__empty">{t('rivalries.messages.empty')}</p>
+          !feedError && <p className="rivalry-msgs__empty">{t('rivalries.messages.empty')}</p>
         ) : (
           renderFeed()
         )}

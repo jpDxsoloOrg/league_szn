@@ -2,11 +2,14 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { Player } from '../../../types';
 import type { HydratedRivalry } from '../../../types/rivalry';
+import { formatCalendarDate } from '../../../utils/dateUtils';
 import { resolvePlayerFullLabel } from '../rivalryUtils';
 
 interface TabProps {
   hydrated: HydratedRivalry;
   players: Player[];
+  /** The notes tab is only there for the rivals and the GMs. */
+  showNotesLink: boolean;
 }
 
 /**
@@ -15,7 +18,7 @@ interface TabProps {
  * `getRivalry` handler applies role-based filtering before returning),
  * so this tab can just render what it gets.
  */
-export default function OverviewTab({ hydrated, players }: TabProps) {
+export default function OverviewTab({ hydrated, players, showNotesLink }: TabProps) {
   const { t } = useTranslation();
   const playerLookup = new Map(players.map((p) => [p.playerId, p] as const));
 
@@ -40,9 +43,11 @@ export default function OverviewTab({ hydrated, players }: TabProps) {
               ))}
             </ul>
           )}
-          <Link to="notes" className="rivalry-detail-link">
-            {t('rivalries.detail.notesTab')}
-          </Link>
+          {showNotesLink && (
+            <Link to="notes" className="rivalry-detail-link">
+              {t('rivalries.detail.notesTab')}
+            </Link>
+          )}
         </section>
 
         <section className="rivalry-tab__card">
@@ -73,7 +78,7 @@ export default function OverviewTab({ hydrated, players }: TabProps) {
           {hydrated.nextEvent ? (
             <>
               <p><strong>{hydrated.nextEvent.name}</strong></p>
-              <p>{new Date(hydrated.nextEvent.date).toLocaleString()}</p>
+              <p>{formatCalendarDate(hydrated.nextEvent.date)}</p>
               {hydrated.nextEvent.venue && <p>{hydrated.nextEvent.venue}</p>}
             </>
           ) : (
@@ -91,7 +96,7 @@ export default function OverviewTab({ hydrated, players }: TabProps) {
                 const author = playerLookup.get(p.playerId);
                 return (
                   <li key={p.promoId}>
-                    <strong>{resolvePlayerFullLabel(author, p.playerId)}</strong>
+                    <strong>{resolvePlayerFullLabel(author, t('common.unknown'))}</strong>
                     <p>{p.title ?? p.content.slice(0, 80)}</p>
                   </li>
                 );

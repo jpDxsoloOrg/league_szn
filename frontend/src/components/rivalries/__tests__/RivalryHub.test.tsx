@@ -97,6 +97,27 @@ describe('RivalryHub', () => {
     });
   });
 
+  it('writes the feed as readable rows that link to the rivalry, latest few first', async () => {
+    mockPlayersGetAll.mockResolvedValue([
+      { playerId: 'p1', name: 'Ann', currentWrestler: 'Okada' },
+      { playerId: 'p2', name: 'Ben', currentWrestler: 'Bully Ray' },
+    ]);
+    const match = (matchId: string) => ({
+      kind: 'match', rivalryId: 'r1', matchId, participants: ['p1', 'p2'], winners: ['p1'], status: 'completed', occurredAt: '2026-05-05',
+    });
+    mockGetActivity.mockResolvedValue({
+      items: [match('m1'), match('m2'), match('m3'), match('m4'), match('m5')],
+      nextCursor: null,
+    });
+    setup();
+
+    const rows = await screen.findAllByRole('link', { name: /rivalries.hub.activityBeat/ });
+    expect(rows).toHaveLength(4);
+    expect(rows[0]).toHaveAttribute('href', '/rivalries/r1');
+    await userEvent.click(screen.getByRole('button', { name: 'rivalries.hub.loadMore' }));
+    expect(screen.getAllByRole('link', { name: /rivalries.hub.activityBeat/ })).toHaveLength(5);
+  });
+
   it('applies heat chip on top of tab filter without refetching', async () => {
     mockList.mockResolvedValueOnce({
       rivalries: [
@@ -109,8 +130,8 @@ describe('RivalryHub', () => {
     await waitFor(() => expect(mockList).toHaveBeenCalled());
     const callsBefore = mockList.mock.calls.length;
 
-    const heatedChip = screen.getByText('rivalries.hub.chips.heated');
-    await userEvent.click(heatedChip);
+    await userEvent.click(screen.getByRole('combobox', { name: 'rivalries.hub.heatFilter' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'rivalries.hub.chips.heated' }));
 
     // Chip filtering is purely client-side; no additional list call.
     expect(mockList).toHaveBeenCalledTimes(callsBefore);
