@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
 const { mockSignIn, mockConfirmSignUp, mockResendConfirmationCode, mockNavigate } = vi.hoisted(() => ({
@@ -159,7 +159,28 @@ describe('Login', () => {
     await user.click(screen.getByRole('button', { name: 'Sign In' }));
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/');
+      expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
+    });
+  });
+
+  it('returns to the page that required sign-in', async () => {
+    const user = userEvent.setup();
+    mockSignIn.mockResolvedValue(undefined);
+
+    render(
+      <MemoryRouter
+        initialEntries={[{ pathname: '/login', state: { from: { pathname: '/promos/abc', search: '?x=1', hash: '#top' } } }]}
+      >
+        <Login />
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText('Email'), 'user@league.com');
+    await user.type(screen.getByLabelText('Password'), 'securePass1');
+    await user.click(screen.getByRole('button', { name: 'Sign In' }));
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/promos/abc?x=1#top', { replace: true });
     });
   });
 

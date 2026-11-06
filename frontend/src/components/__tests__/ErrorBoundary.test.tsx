@@ -72,4 +72,20 @@ describe('ErrorBoundary', () => {
     expect(screen.getByText('Custom Error')).toBeInTheDocument();
     expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
   });
+
+  it('clears the error when resetKey changes', () => {
+    const { rerender } = render(
+      <ErrorBoundary variant="section" resetKey="/broken">
+        <ThrowingComponent message="boom" />
+      </ErrorBoundary>,
+    );
+    expect(screen.getByRole('button')).toBeInTheDocument();
+
+    rerender(
+      <ErrorBoundary variant="section" resetKey="/working">
+        <div>Recovered</div>
+      </ErrorBoundary>,
+    );
+    expect(screen.getByText('Recovered')).toBeInTheDocument();
+  });
 });

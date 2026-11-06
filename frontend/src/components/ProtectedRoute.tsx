@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import type { UserRole } from '../services/cognito';
 
@@ -10,13 +10,14 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children, requiredRole, fallback = '/login' }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, hasRole } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return <div className="loading-screen">Loading...</div>;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to={fallback} replace />;
+    return <Navigate to={fallback} replace state={{ from: location }} />;
   }
 
   if (requiredRole && !hasRole(requiredRole)) {

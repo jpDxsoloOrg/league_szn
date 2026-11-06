@@ -1,96 +1,90 @@
-import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
 import { PresenceProvider } from './contexts/PresenceContext';
 import { SiteConfigProvider } from './contexts/SiteConfigContext';
-import { MenuModeProvider } from './contexts/MenuModeProvider';
 import ErrorBoundary from './components/ErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
 import NotFound from './components/NotFound';
-import Sidebar from './components/Sidebar';
-import TopBar from './components/TopBar';
-// Mobile app shell
+import ShellHeader from './components/shell/ShellHeader';
+import SectionNav from './components/shell/SectionNav';
 import MobileHeader from './components/mobile/MobileHeader';
 import BottomTabBar from './components/mobile/BottomTabBar';
-import MoreSheet from './components/mobile/MoreSheet';
-import { useMediaQuery } from './hooks/useMediaQuery';
-import Dashboard from './components/Dashboard';
-import Standings from './components/Standings';
-import ActivityFeed from './components/ActivityFeed';
-import Championships from './components/Championships';
-import Tournaments from './components/Tournaments';
-import MatchSearch from './components/MatchSearch';
-import SeasonAwardsPage from './components/SeasonAwardsPage';
-import { WikiLayout } from './components/Wiki';
-import WikiIndex from './components/WikiIndex';
-import WikiArticle from './components/WikiArticle';
-import AdminPanel from './components/admin/AdminPanel';
-import StandaloneMatches from './components/admin/StandaloneMatches';
-// Auth components
-import Login from './components/auth/Login';
-import Signup from './components/auth/Signup';
-import ForgotPassword from './components/auth/ForgotPassword';
-import PostSignupWelcome from './components/auth/PostSignupWelcome';
-// Challenge components
-import ChallengeDetail from './components/challenges/ChallengeDetail';
-// IssueChallenge kept as a component but route redirects to PromoEditor in call-out mode
-import MyChallenges from './components/challenges/MyChallenges';
-// Promo components
-import PromoFeed from './components/promos/PromoFeed';
-import PromoThread from './components/promos/PromoThread';
-import PromoEditor from './components/promos/PromoEditor';
-// Statistics components
-import PlayerStats from './components/statistics/PlayerStats';
-import HeadToHeadComparison from './components/statistics/HeadToHeadComparison';
-import Leaderboards from './components/statistics/Leaderboards';
-import RecordBook from './components/statistics/RecordBook';
-import BestMatches from './components/statistics/BestMatches';
-import Rivalries from './components/statistics/Rivalries';
-import TaleOfTheTape from './components/statistics/TaleOfTheTape';
-import Achievements from './components/statistics/Achievements';
-import MatchTypeLeaderboards from './components/statistics/MatchTypeLeaderboards';
-// Contender components
-import ContenderRankings from './components/contenders/ContenderRankings';
-import MyContenderStatus from './components/contenders/MyContenderStatus';
-// Events components
-import EventsCalendar from './components/events/EventsCalendar';
-import EventDetail from './components/events/EventDetail';
-import EventResults from './components/events/EventResults';
-import CommentaryView from './components/events/CommentaryView';
-// Factions components
-import FactionsList from './components/factions/FactionsList';
-import FactionStandings from './components/factions/FactionStandings';
-import FactionDetail from './components/factions/FactionDetail';
-import FactionOverview from './components/factions/tabs/FactionOverview';
-import FactionMembers from './components/factions/tabs/FactionMembers';
-import FactionStats from './components/factions/tabs/FactionStats';
-import FactionScheduleTab from './components/factions/tabs/FactionSchedule';
-import FactionPromosTab from './components/factions/tabs/FactionPromos';
-import FactionMessages from './components/factions/tabs/FactionMessages';
-import FactionManage from './components/factions/tabs/FactionManage';
-import MyFaction from './components/factions/MyFaction';
-// Tag Teams components
-import TagTeamsList from './components/tagTeams/TagTeamsList';
-import TagTeamDetail from './components/tagTeams/TagTeamDetail';
-import MyTagTeam from './components/tagTeams/MyTagTeam';
-// Rivalries components
-import RivalryHub from './components/rivalries/RivalryHub';
-import RivalryDetail from './components/rivalries/RivalryDetail';
-import RequestRivalry from './components/rivalries/RequestRivalry';
-// Profile components
-import WrestlerProfile from './components/profile/WrestlerProfile';
-import PublicProfile from './components/profile/PublicProfile';
-import MyVideos from './components/profile/MyVideos';
-// Matchmaking components
-import FindMatchPage from './components/matchmaking/FindMatchPage';
-// Route guard
+import Skeleton from './components/ui/Skeleton';
+import { ToastProvider } from './components/ui/Toast';
+import { useIsMobile } from './hooks/useIsMobile';
+import { getPageInfo } from './config/navConfig';
+// Route guards
 import ProtectedRoute from './components/ProtectedRoute';
 import FeatureRoute from './components/FeatureRoute';
 import ProfileCompletionModal from './components/ProfileCompletionModal';
-import Highlights from './components/Highlights';
 import AnnouncementModal from './components/AnnouncementModal';
 import './App.css';
+
+// Each route is its own chunk, so a visitor only downloads the pages they open.
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const Standings = lazy(() => import('./components/Standings'));
+const ActivityFeed = lazy(() => import('./components/ActivityFeed'));
+const Championships = lazy(() => import('./components/Championships'));
+const Tournaments = lazy(() => import('./components/Tournaments'));
+const MatchSearch = lazy(() => import('./components/MatchSearch'));
+const SeasonAwardsPage = lazy(() => import('./components/SeasonAwardsPage'));
+const WikiIndex = lazy(() => import('./components/WikiIndex'));
+const WikiArticle = lazy(() => import('./components/WikiArticle'));
+const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
+const Login = lazy(() => import('./components/auth/Login'));
+const Signup = lazy(() => import('./components/auth/Signup'));
+const ForgotPassword = lazy(() => import('./components/auth/ForgotPassword'));
+const PostSignupWelcome = lazy(() => import('./components/auth/PostSignupWelcome'));
+const ChallengeDetail = lazy(() => import('./components/challenges/ChallengeDetail'));
+const MyChallenges = lazy(() => import('./components/challenges/MyChallenges'));
+const PromoFeed = lazy(() => import('./components/promos/PromoFeed'));
+const PromoThread = lazy(() => import('./components/promos/PromoThread'));
+const PromoEditor = lazy(() => import('./components/promos/PromoEditor'));
+const PlayerStats = lazy(() => import('./components/statistics/PlayerStats'));
+const HeadToHeadComparison = lazy(() => import('./components/statistics/HeadToHeadComparison'));
+const Leaderboards = lazy(() => import('./components/statistics/Leaderboards'));
+const RecordBook = lazy(() => import('./components/statistics/RecordBook'));
+const BestMatches = lazy(() => import('./components/statistics/BestMatches'));
+const Rivalries = lazy(() => import('./components/statistics/Rivalries'));
+const TaleOfTheTape = lazy(() => import('./components/statistics/TaleOfTheTape'));
+const Achievements = lazy(() => import('./components/statistics/Achievements'));
+const MatchTypeLeaderboards = lazy(() => import('./components/statistics/MatchTypeLeaderboards'));
+const ContenderRankings = lazy(() => import('./components/contenders/ContenderRankings'));
+const MyContenderStatus = lazy(() => import('./components/contenders/MyContenderStatus'));
+const EventsCalendar = lazy(() => import('./components/events/EventsCalendar'));
+const EventDetail = lazy(() => import('./components/events/EventDetail'));
+const EventResults = lazy(() => import('./components/events/EventResults'));
+const CommentaryView = lazy(() => import('./components/events/CommentaryView'));
+const FactionsList = lazy(() => import('./components/factions/FactionsList'));
+const FactionStandings = lazy(() => import('./components/factions/FactionStandings'));
+const FactionDetail = lazy(() => import('./components/factions/FactionDetail'));
+const FactionOverview = lazy(() => import('./components/factions/tabs/FactionOverview'));
+const FactionMembers = lazy(() => import('./components/factions/tabs/FactionMembers'));
+const FactionStats = lazy(() => import('./components/factions/tabs/FactionStats'));
+const FactionScheduleTab = lazy(() => import('./components/factions/tabs/FactionSchedule'));
+const FactionPromosTab = lazy(() => import('./components/factions/tabs/FactionPromos'));
+const FactionMessages = lazy(() => import('./components/factions/tabs/FactionMessages'));
+const FactionManage = lazy(() => import('./components/factions/tabs/FactionManage'));
+const MyFaction = lazy(() => import('./components/factions/MyFaction'));
+const TagTeamsList = lazy(() => import('./components/tagTeams/TagTeamsList'));
+const TagTeamDetail = lazy(() => import('./components/tagTeams/TagTeamDetail'));
+const MyTagTeam = lazy(() => import('./components/tagTeams/MyTagTeam'));
+const RivalryHub = lazy(() => import('./components/rivalries/RivalryHub'));
+const RivalryDetail = lazy(() => import('./components/rivalries/RivalryDetail'));
+const RequestRivalry = lazy(() => import('./components/rivalries/RequestRivalry'));
+const WrestlerProfile = lazy(() => import('./components/profile/WrestlerProfile'));
+const PublicProfile = lazy(() => import('./components/profile/PublicProfile'));
+const MyVideos = lazy(() => import('./components/profile/MyVideos'));
+const FindMatchPage = lazy(() => import('./components/matchmaking/FindMatchPage'));
+const Highlights = lazy(() => import('./components/Highlights'));
+const MeHub = lazy(() => import('./components/shell/MeHub'));
+const WikiLayout = lazy(async () => {
+  const { WikiLayout: Layout } = await import('./components/Wiki');
+  return { default: Layout };
+});
 
 function LegacyFactionDetailRedirect() {
   const { stableId } = useParams<{ stableId: string }>();
@@ -105,9 +99,9 @@ function App() {
         <AuthProvider>
           <PresenceProvider>
             <SiteConfigProvider>
-              <MenuModeProvider>
+              <ToastProvider>
                 <AppLayout />
-              </MenuModeProvider>
+              </ToastProvider>
             </SiteConfigProvider>
           </PresenceProvider>
         </AuthProvider>
@@ -116,29 +110,41 @@ function App() {
   );
 }
 
+function getLayoutClass(isMobile: boolean, pathname: string): string {
+  const classes = ['App'];
+  if (isMobile) classes.push('app-layout--mobile');
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) classes.push('app-layout--wide');
+  return classes.join(' ');
+}
+
 function AppLayout() {
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const { t } = useTranslation();
+  const isMobile = useIsMobile();
+  const { pathname } = useLocation();
 
   return (
-    <div className={isMobile ? 'App layout-sidebar app-layout--mobile' : 'App layout-sidebar'}>
-      {isMobile ? (
-        <MobileHeader />
-      ) : (
-        <>
-          <Sidebar />
-          <TopBar />
-        </>
-      )}
+    <div className={getLayoutClass(isMobile, pathname)}>
+      <a href="#main" className="skip-link">{t('nav.skipToContent')}</a>
+      <div className="shell-top">
+        {isMobile ? <MobileHeader /> : <ShellHeader />}
+        <SectionNav />
+      </div>
+      <p className="sr-only" role="status">{getPageInfo(pathname, t).title}</p>
       <ProfileCompletionModal />
       <AnnouncementModal />
-      <main>
+      <main id="main" tabIndex={-1}>
+        {/* Inside main so a failed page or chunk leaves the navigation working. */}
+        <ErrorBoundary variant="section" resetKey={pathname}>
+          <Suspense fallback={<Skeleton variant="block" />}>
           <Routes>
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/welcome" element={<PostSignupWelcome />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+
+            {/* Personal hub: profile links, help, language, Admin row on phones */}
+            <Route path="/me" element={<MeHub />} />
 
             {/* Public Routes */}
             <Route path="/" element={<Dashboard />} />
@@ -161,7 +167,6 @@ function AppLayout() {
             {/* Admin Routes - Admin only (protected inside AdminPanel) */}
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/:tab" element={<AdminPanel />} />
-            <Route path="/admin/standalone-matches" element={<StandaloneMatches />} />
 
             {/* Wrestler Profile */}
             <Route path="/profile" element={
@@ -338,13 +343,10 @@ function AppLayout() {
             {/* Catch-all 404 */}
             <Route path="*" element={<NotFound />} />
         </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </main>
-      {isMobile && (
-        <>
-          <BottomTabBar onMoreClick={() => setIsMoreOpen(true)} isMoreOpen={isMoreOpen} />
-          <MoreSheet open={isMoreOpen} onClose={() => setIsMoreOpen(false)} />
-        </>
-      )}
+      {isMobile && <BottomTabBar />}
     </div>
   );
 }

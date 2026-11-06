@@ -70,6 +70,9 @@ describe('ProtectedRoute', () => {
     renderProtectedRoute();
 
     expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/login');
+    expect(mockNavigate).toHaveBeenCalledWith(expect.objectContaining({
+      state: { from: expect.objectContaining({ pathname: '/' }) },
+    }));
     expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
   });
 

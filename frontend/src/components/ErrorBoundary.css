@@ -4,27 +4,27 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #0f0f0f;
-  color: #fff;
+  background-color: var(--color-bg);
+  color: var(--color-text);
   text-align: center;
   padding: 2rem;
 }
 
 .error-boundary h1 {
-  color: #d4af37;
+  color: var(--color-text);
   font-size: 2rem;
   margin-bottom: 1rem;
 }
 
 .error-boundary p {
-  color: #999;
+  color: var(--color-text-secondary);
   margin-bottom: 2rem;
   max-width: 400px;
 }
 
 .error-boundary button {
-  background-color: #d4af37;
-  color: #000;
+  background-color: var(--color-text);
+  color: var(--color-on-primary);
   border: none;
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
@@ -35,4 +35,9 @@
 
 .error-boundary button:hover {
   background-color: #b8941f;
+}
+
+.error-boundary--section {
+  min-height: 50vh;
+  background-color: transparent;
 }

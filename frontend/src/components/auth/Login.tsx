@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import type { Location } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { UnconfirmedUserError } from '../../services/cognito';
@@ -68,9 +69,17 @@ function DevLogin() {
   );
 }
 
+/** Where a guarded route sent the visitor from, as a path. Defaults to home. */
+function getReturnPath(state: unknown): string {
+  const from = (state as { from?: Partial<Location> } | null)?.from;
+  if (!from?.pathname) return '/';
+  return `${from.pathname}${from.search ?? ''}${from.hash ?? ''}`;
+}
+
 export default function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn, confirmSignUp, resendConfirmationCode } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -88,7 +97,7 @@ export default function Login() {
 
     try {
       await signIn(email, password);
-      navigate('/');
+      navigate(getReturnPath(location.state), { replace: true });
     } catch (err) {
       if (err instanceof UnconfirmedUserError) {
         // The account exists but the email was never verified — move the
