@@ -2,8 +2,8 @@
   "name": "League SZN",
   "short_name": "League SZN",
   "display": "standalone",
-  "background_color": "#0f0f0f",
-  "theme_color": "#0f0f0f",
+  "background_color": "#0d0a1a",
+  "theme_color": "#0d0a1a",
   "start_url": "/",
   "icons": [
     {

@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import './LanguageSwitcher.css';
 
@@ -40,71 +41,35 @@ const languages = [
 ];
 
 export default function LanguageSwitcher() {
-  const { i18n } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const { t, i18n } = useTranslation();
 
-  const foundLang = languages.find(lang => lang.code === i18n.language);
-  const currentLang = foundLang ?? languages[0];
-  // Get flag component, with a safe default
-  const flagComponent = currentLang ? flags[currentLang.code] : undefined;
-  const CurrentFlag = flagComponent ?? FlagUK;
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleLanguageChange = (langCode: string) => {
-    i18n.changeLanguage(langCode);
-    setIsOpen(false);
-  };
+  // The detector can report a region such as de-DE.
+  const baseLanguage = i18n.language?.split('-')[0] ?? 'en';
+  const currentLang = languages.find((lang) => lang.code === baseLanguage) ?? languages[0];
+  const CurrentFlag = (currentLang && flags[currentLang.code]) ?? FlagUK;
 
   return (
-    <div className="language-switcher" ref={dropdownRef}>
-      <button
-        className="language-switcher-btn"
-        onClick={() => setIsOpen(!isOpen)}
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
-      >
+    <DropdownMenu.Root modal={false}>
+      <DropdownMenu.Trigger className="language-switcher-btn" aria-label={t('languageSwitcher.label')}>
         <CurrentFlag />
-        <svg
-          className={`dropdown-arrow ${isOpen ? 'open' : ''}`}
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-        >
-          <path d="M3 5L6 8L9 5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-        </svg>
-      </button>
-
-      {isOpen && (
-        <ul className="language-dropdown" role="listbox">
-          {languages.map((lang) => {
-            const Flag = flags[lang.code];
-            if (!Flag) return null;
-            return (
-              <li
-                key={lang.code}
-                className={`language-option ${lang.code === i18n.language ? 'active' : ''}`}
-                onClick={() => handleLanguageChange(lang.code)}
-                role="option"
-                aria-selected={lang.code === i18n.language}
-              >
-                <Flag />
-                <span className="lang-name">{lang.name}</span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
+        <ChevronDown aria-hidden="true" className="dropdown-arrow" size={14} />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content className="language-dropdown" align="end" sideOffset={6}>
+          <DropdownMenu.RadioGroup value={currentLang?.code} onValueChange={(code) => i18n.changeLanguage(code)}>
+            {languages.map((lang) => {
+              const Flag = flags[lang.code];
+              if (!Flag) return null;
+              return (
+                <DropdownMenu.RadioItem key={lang.code} value={lang.code} className="language-option">
+                  <Flag />
+                  <span className="lang-name">{lang.name}</span>
+                </DropdownMenu.RadioItem>
+              );
+            })}
+          </DropdownMenu.RadioGroup>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }

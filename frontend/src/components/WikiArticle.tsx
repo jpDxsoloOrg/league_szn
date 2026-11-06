@@ -4,8 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { Components } from 'react-markdown';
 import Skeleton from './ui/Skeleton';
 import './Wiki.css';
@@ -64,30 +62,6 @@ function parseHeadings(markdown: string): TocItem[] {
   return items;
 }
 
-const baseMarkdownComponents: Components = {
-  code({ className, children, ...props }) {
-    const match = /language-(\w+)/.exec(className ?? '');
-    if (match) {
-      return (
-        <SyntaxHighlighter
-          style={oneDark}
-          language={match[1]}
-          PreTag="div"
-          customStyle={{ margin: '0.75rem 0', borderRadius: '6px' }}
-          codeTagProps={{ style: { fontFamily: 'inherit' } }}
-        >
-          {String(children).replace(/\n$/, '')}
-        </SyntaxHighlighter>
-      );
-    }
-    return (
-      <code className={className} {...props}>
-        {children}
-      </code>
-    );
-  },
-};
-
 export default function WikiArticle() {
   const { slug } = useParams<{ slug: string }>();
   const { t, i18n } = useTranslation();
@@ -106,7 +80,6 @@ export default function WikiArticle() {
   if (content) headingIndexRef.current = 0;
   const wikiMarkdownComponents = useMemo(
     (): Components => ({
-      ...baseMarkdownComponents,
       h2: ({ children }) => {
         const id = tocItems[headingIndexRef.current]?.id ?? slugify(String(children));
         headingIndexRef.current += 1;

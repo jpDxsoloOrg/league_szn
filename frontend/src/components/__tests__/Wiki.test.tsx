@@ -26,12 +26,6 @@ vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-vi.mock('react-syntax-highlighter', () => ({
-  Prism: ({ children }: { children?: React.ReactNode }) =>
-    React.createElement('pre', { 'data-testid': 'syntax-highlighter' }, React.createElement('code', null, children)),
-}));
-vi.mock('react-syntax-highlighter/dist/esm/styles/prism', () => ({ oneDark: {} }));
-
 import { WikiLayout } from '../Wiki';
 import WikiIndex from '../WikiIndex';
 import WikiArticle from '../WikiArticle';

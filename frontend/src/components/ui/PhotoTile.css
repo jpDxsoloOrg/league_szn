@@ -1,0 +1,92 @@
+.ui-tile {
+  --tile-rim: var(--color-hairline);
+  --tile-accent: var(--color-text-secondary);
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--tile-rim);
+  border-radius: var(--radius-card);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.ui-tile--world {
+  --tile-rim: var(--rim-world);
+  --tile-accent: var(--rim-world);
+}
+
+.ui-tile--us {
+  --tile-rim: var(--rim-us);
+  --tile-accent: var(--rim-us);
+}
+
+.ui-tile--ic {
+  --tile-rim: var(--rim-ic);
+  --tile-accent: var(--rim-ic);
+}
+
+.ui-tile--tag {
+  --tile-rim: var(--rim-tag);
+  --tile-accent: var(--rim-tag);
+}
+
+.ui-tile__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ui-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-tile-scrim);
+  pointer-events: none;
+}
+
+.ui-tile__badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 1;
+}
+
+.ui-tile__text {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 1rem;
+}
+
+.ui-tile__eyebrow {
+  color: var(--tile-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ui-tile__title {
+  font-family: var(--font-heading);
+  font-size: 1.375rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.ui-tile__meta {
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+}
+
+a.ui-tile:hover {
+  border-color: var(--color-cyan);
+}

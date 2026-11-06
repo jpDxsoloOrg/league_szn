@@ -1,0 +1,120 @@
+.ui-table-wrap {
+  overflow-x: auto;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+}
+
+.ui-table {
+  margin: 0;
+}
+
+.ui-table th {
+  padding: 0.875rem 1rem;
+  background-color: transparent;
+  color: var(--color-text-muted);
+}
+
+.ui-table td {
+  padding: 0.875rem 1rem;
+}
+
+.ui-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ui-table tbody tr:hover {
+  background-color: var(--color-overlay-soft);
+}
+
+.ui-table-wrap--dense .ui-table td {
+  padding: 0.5rem 0.75rem;
+  font-size: var(--text-dense);
+}
+
+.ui-table-wrap--dense .ui-table th {
+  padding: 0.625rem 0.75rem;
+}
+
+.ui-table .ui-table__cell--center {
+  text-align: center;
+}
+
+.ui-table .ui-table__cell--end {
+  text-align: right;
+}
+
+.ui-table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.ui-table__sort:hover {
+  background-color: transparent;
+  color: var(--color-text);
+}
+
+@media (max-width: 768px) {
+  .ui-table-wrap {
+    overflow: visible;
+    background-color: transparent;
+    border: none;
+  }
+
+  .ui-table,
+  .ui-table tbody,
+  .ui-table tr,
+  .ui-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .ui-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .ui-table tbody tr {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-hairline);
+    border-radius: var(--radius-card);
+  }
+
+  .ui-table td,
+  .ui-table-wrap--dense .ui-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.375rem 0;
+    border-bottom: none;
+    font-size: var(--text-body);
+    text-align: right;
+  }
+
+  .ui-table td::before {
+    content: attr(data-label);
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    text-align: left;
+  }
+
+  .ui-table td.ui-table__cell--desktop-only {
+    display: none;
+  }
+}

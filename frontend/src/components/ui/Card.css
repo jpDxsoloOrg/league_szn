@@ -1,0 +1,44 @@
+.ui-card {
+  display: block;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  color: var(--color-text);
+}
+
+.ui-card--default {
+  background-color: var(--color-surface);
+}
+
+.ui-card--raised {
+  background-color: var(--color-surface-raised);
+}
+
+.ui-card--plain {
+  background-color: transparent;
+}
+
+.ui-card--pad-none {
+  padding: 0;
+}
+
+.ui-card--pad-sm {
+  padding: 0.75rem;
+}
+
+.ui-card--pad-md {
+  padding: 1.25rem;
+}
+
+.ui-card--pad-lg {
+  padding: 1.75rem;
+}
+
+.ui-card--link {
+  text-decoration: none;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.ui-card--link:hover {
+  border-color: var(--color-cyan);
+  background-color: var(--color-surface-raised);
+}
