@@ -43,6 +43,23 @@ async function statusFor(id: string, groups: string, sub: string) {
   return result?.statusCode;
 }
 
+async function invitedPlayerIdsFor(id: string, groups: string, sub: string) {
+  const result = await getInvitations(makeEvent(id, groups, sub), ctx, cb);
+  expect(result?.statusCode).toBe(200);
+  const rows = JSON.parse(result!.body) as Array<{ invitedPlayerId: string }>;
+  return rows.map((row) => row.invitedPlayerId).sort();
+}
+
+async function invite(invitedPlayerId: string, invitedByPlayerId: string) {
+  await repos.roster.stables.createInvitation({
+    stableId,
+    invitedPlayerId,
+    invitedByPlayerId,
+    message: 'Join us',
+    expiresAt: '2099-01-01T00:00:00.000Z',
+  });
+}
+
 describe('getInvitations', () => {
   beforeEach(async () => {
     repos = buildInMemoryRepositories();
@@ -64,8 +81,39 @@ describe('getInvitations', () => {
     expect(await statusFor(stableId, 'Wrestler', 'member-sub')).toBe(200);
   });
 
-  it('refuses a wrestler outside the stable', async () => {
-    expect(await statusFor(stableId, 'Wrestler', 'outsider-sub')).toBe(403);
+  it('gives a wrestler with no invitation an empty list, not an error', async () => {
+    const leader = await repos.roster.players.findByUserId('leader-sub');
+    const other = await addPlayer('Other', 'other-sub');
+    await invite(other.playerId, leader!.playerId);
+
+    expect(await invitedPlayerIdsFor(stableId, 'Wrestler', 'outsider-sub')).toEqual([]);
+  });
+
+  it('shows an invited player only the invitations addressed to them', async () => {
+    const leader = await repos.roster.players.findByUserId('leader-sub');
+    const invited = await addPlayer('Invited', 'invited-sub');
+    const other = await addPlayer('Other', 'other-sub');
+    await invite(invited.playerId, leader!.playerId);
+    await invite(other.playerId, leader!.playerId);
+
+    expect(await invitedPlayerIdsFor(stableId, 'Wrestler', 'invited-sub')).toEqual([invited.playerId]);
+  });
+
+  it('shows the leader, members and staff every invitation', async () => {
+    const leader = await repos.roster.players.findByUserId('leader-sub');
+    const invited = await addPlayer('Invited', 'invited-sub');
+    const other = await addPlayer('Other', 'other-sub');
+    await invite(invited.playerId, leader!.playerId);
+    await invite(other.playerId, leader!.playerId);
+    const everyone = [invited.playerId, other.playerId].sort();
+
+    expect(await invitedPlayerIdsFor(stableId, 'Wrestler', 'leader-sub')).toEqual(everyone);
+    expect(await invitedPlayerIdsFor(stableId, 'Wrestler', 'member-sub')).toEqual(everyone);
+    expect(await invitedPlayerIdsFor(stableId, 'Moderator', 'staff-sub')).toEqual(everyone);
+  });
+
+  it('gives a wrestler with no player record an empty list', async () => {
+    expect(await invitedPlayerIdsFor(stableId, 'Wrestler', 'no-player-sub')).toEqual([]);
   });
 
   it('lets staff without a player record read invitations', async () => {

@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { success, badRequest, forbidden, notFound, serverError } from '../../lib/response';
+import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -22,21 +22,27 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return notFound('Stable not found');
     }
 
-    // Invitations carry private messages: only the stable's own members and staff may read them.
+    // Invitations carry private messages. The stable's own members and staff
+    // read them all; anyone else sees only the ones addressed to them, which
+    // is how an invited player finds an invitation to accept.
+    let visibleToPlayerId: string | null = null;
     if (!hasRole(auth, 'Admin', 'Moderator')) {
       const callerPlayer = await playersRepo.findByUserId(auth.sub);
       if (!callerPlayer) {
-        return badRequest('Player not found');
+        return success([]);
       }
       const isMember = stable.leaderId === callerPlayer.playerId
         || stable.memberIds.includes(callerPlayer.playerId);
       if (!isMember) {
-        return forbidden('Only members of this stable can view its invitations');
+        visibleToPlayerId = callerPlayer.playerId;
       }
     }
 
     // Query invitations for this stable
-    const invitations = await stablesRepo.listInvitationsByStable(stableId);
+    const allInvitations = await stablesRepo.listInvitationsByStable(stableId);
+    const invitations = visibleToPlayerId === null
+      ? allInvitations
+      : allInvitations.filter((inv) => inv.invitedPlayerId === visibleToPlayerId);
 
     const enriched = await Promise.all(
       invitations.map(async (inv) => {
