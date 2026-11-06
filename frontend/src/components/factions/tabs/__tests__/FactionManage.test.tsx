@@ -11,6 +11,8 @@ const {
   mockGetInvitations,
   mockListMessages,
   mockPlayersGetAll,
+  mockPlayersGetDirectory,
+  mockShowToast,
   mockUseOutletContext,
   mockUseAuth,
   mockNavigate,
@@ -22,6 +24,8 @@ const {
   mockGetInvitations: vi.fn(),
   mockListMessages: vi.fn(),
   mockPlayersGetAll: vi.fn(),
+  mockPlayersGetDirectory: vi.fn(),
+  mockShowToast: vi.fn(),
   mockUseOutletContext: vi.fn(),
   mockUseAuth: vi.fn(),
   mockNavigate: vi.fn(),
@@ -36,7 +40,7 @@ vi.mock('../../../../services/api', () => ({
     getInvitations: mockGetInvitations,
     messages: { list: mockListMessages },
   },
-  playersApi: { getAll: mockPlayersGetAll },
+  playersApi: { getAll: mockPlayersGetAll, getDirectory: mockPlayersGetDirectory },
   imagesApi: { generateUploadUrl: vi.fn(), uploadToS3: vi.fn() },
 }));
 
@@ -67,8 +71,8 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../FactionManage.css', () => ({}));
+vi.mock('../../../ui/toastContext', () => ({ useToast: () => ({ showToast: mockShowToast }) }));
 vi.mock('../../FactionImageUploader.css', () => ({}));
-vi.mock('../../RemoveMemberModal.css', () => ({}));
 vi.mock('../../FactionImageUploader', () => ({
   default: () => <div data-testid="image-uploader-stub" />,
 }));
@@ -123,6 +127,7 @@ beforeEach(() => {
   mockGetInvitations.mockResolvedValue([]);
   mockListMessages.mockResolvedValue({ items: [] });
   mockPlayersGetAll.mockResolvedValue([]);
+  mockPlayersGetDirectory.mockResolvedValue([]);
 });
 
 describe('FactionManage tab (FAC-16)', () => {
@@ -170,7 +175,7 @@ describe('FactionManage tab (FAC-16)', () => {
       );
     });
 
-    expect(await screen.findByText('Faction identity saved.')).toBeInTheDocument();
+    await waitFor(() => expect(mockShowToast).toHaveBeenCalledWith('Faction identity saved.', 'success'));
   });
 
   it('triggers the disband flow on confirm and navigates to /factions with a toast', async () => {
@@ -239,18 +244,37 @@ describe('FactionManage tab (FAC-16)', () => {
     renderTab();
     await screen.findByText(/LEADER VIEW/);
 
-    // Wait for the eligible-players dropdown to populate.
-    const playerSelect = await screen.findByLabelText('Player');
-    await waitFor(() => {
-      expect(within(playerSelect as HTMLSelectElement).getByRole('option', { name: /Eligible/ })).toBeInTheDocument();
-    });
-    await user.selectOptions(playerSelect, 'eligible-1');
+    await waitFor(() => expect(mockPlayersGetAll).toHaveBeenCalled());
+    await user.click(screen.getByLabelText('Player'));
+    await user.click(await screen.findByRole('option', { name: /Eligible/ }));
 
     await user.click(screen.getByRole('button', { name: 'Send invite' }));
 
     await waitFor(() => {
       expect(mockInvite).toHaveBeenCalledWith('f1', { playerId: 'eligible-1', message: undefined });
     });
+  });
+
+  it('names an invited player from the directory when the invitation has no name', async () => {
+    mockGetInvitations.mockResolvedValueOnce([
+      {
+        invitationId: 'i1',
+        stableId: 'f1',
+        stableName: 'The Brood',
+        invitedPlayerId: 'p-hidden',
+        invitedByPlayerId: 'p-leader',
+        status: 'pending',
+        expiresAt: '2026-06-01T00:00:00.000Z',
+        createdAt: '2026-05-01T00:00:00.000Z',
+        updatedAt: '2026-05-01T00:00:00.000Z',
+      },
+    ]);
+    mockPlayersGetDirectory.mockResolvedValueOnce([
+      { playerId: 'p-hidden', name: 'Hidden Player', currentWrestler: null },
+    ]);
+    renderTab();
+    expect(await screen.findByText('Hidden Player')).toBeInTheDocument();
+    expect(screen.queryByText('p-hidden')).not.toBeInTheDocument();
   });
 
   it('derives the audit log from channel system messages', async () => {

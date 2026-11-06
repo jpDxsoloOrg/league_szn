@@ -1,8 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tagTeamsApi, playersApi, profileApi } from '../../services/api';
 import type { Player } from '../../types';
-import './CreateTagTeamModal.css';
+import Button from '../ui/Button';
+import Modal from '../ui/Modal';
+import Select from '../ui/Select';
+import { useToast } from '../ui/toastContext';
+import '../factions/groupUi.css';
+
+const FORM_ID = 'create-tag-team-form';
 
 interface Props {
   isOpen: boolean;
@@ -12,6 +19,7 @@ interface Props {
 
 export default function CreateTagTeamModal({ isOpen, onClose, onCreated }: Props) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [name, setName] = useState('');
   const [partnerId, setPartnerId] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -19,7 +27,6 @@ export default function CreateTagTeamModal({ isOpen, onClose, onCreated }: Props
   const [loadingPlayers, setLoadingPlayers] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -30,7 +37,6 @@ export default function CreateTagTeamModal({ isOpen, onClose, onCreated }: Props
     setPartnerId('');
     setImageUrl('');
     setError(null);
-    setSuccess(false);
 
     const loadPlayers = async () => {
       try {
@@ -38,29 +44,23 @@ export default function CreateTagTeamModal({ isOpen, onClose, onCreated }: Props
           playersApi.getAll(controller.signal),
           profileApi.getMyProfile(controller.signal),
         ]);
-        // Filter out self and players already in a tag team
-        const available = allPlayers.filter(
-          (p) => p.playerId !== myProfile.playerId && !p.tagTeamId
-        );
-        setPlayers(available);
+        // Leave out the caller and anyone already on a team.
+        setPlayers(allPlayers.filter((player) => player.playerId !== myProfile.playerId && !player.tagTeamId));
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError') {
           setError(t('tagTeams.create.loadPlayersFailed', 'Failed to load players'));
         }
       } finally {
-        setLoadingPlayers(false);
+        if (!controller.signal.aborted) setLoadingPlayers(false);
       }
     };
 
     loadPlayers();
-
     return () => controller.abort();
   }, [isOpen, t]);
 
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
     setError(null);
 
     const trimmedName = name.trim();
@@ -80,15 +80,9 @@ export default function CreateTagTeamModal({ isOpen, onClose, onCreated }: Props
         partnerId,
         ...(imageUrl.trim() ? { imageUrl: imageUrl.trim() } : {}),
       });
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        setName('');
-        setPartnerId('');
-        setImageUrl('');
-        onCreated();
-        onClose();
-      }, 2000);
+      showToast(t('tagTeams.create.success', 'Tag team request sent to partner!'), 'success');
+      onCreated();
+      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error', 'An error occurred'));
     } finally {
@@ -96,109 +90,69 @@ export default function CreateTagTeamModal({ isOpen, onClose, onCreated }: Props
     }
   };
 
-  const handleOverlayClick = () => {
-    if (!submitting) onClose();
-  };
-
   return (
-    <div className="create-tagteam-modal-overlay" onClick={handleOverlayClick} role="dialog" aria-modal="true">
-      <div className="create-tagteam-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="create-tagteam-modal__header">
-          <h2>{t('tagTeams.create.title', 'Create a Tag Team')}</h2>
-          <button
-            className="create-tagteam-modal__close"
-            onClick={onClose}
+    <Modal
+      open={isOpen}
+      title={t('tagTeams.create.title', 'Create a Tag Team')}
+      onClose={() => { if (!submitting) onClose(); }}
+      footer={(
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={submitting}>
+            {t('common.cancel', 'Cancel')}
+          </Button>
+          <Button type="submit" form={FORM_ID} loading={submitting} disabled={loadingPlayers || players.length === 0}>
+            {submitting ? t('common.submitting', 'Submitting...') : t('tagTeams.create.submit', 'Send Request')}
+          </Button>
+        </>
+      )}
+    >
+      <form id={FORM_ID} className="group-form" onSubmit={handleSubmit}>
+        <label className="group-field">
+          <span className="group-field__label">{t('tagTeams.create.nameLabel', 'Tag Team Name')}</span>
+          <input
+            type="text"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder={t('tagTeams.create.namePlaceholder', 'e.g. The Hardy Boyz, DX')}
             disabled={submitting}
-            aria-label={t('common.close', 'Close')}
-          >
-            &times;
-          </button>
+            maxLength={50}
+          />
+        </label>
+
+        <div className="group-field">
+          <span className="group-field__label">{t('tagTeams.create.partnerLabel', 'Select Partner')}</span>
+          {loadingPlayers ? (
+            <p className="group-empty">{t('common.loading', 'Loading...')}</p>
+          ) : players.length === 0 ? (
+            <p className="group-empty">{t('tagTeams.create.noAvailablePlayers', 'No available players')}</p>
+          ) : (
+            <Select
+              label={t('tagTeams.create.partnerLabel', 'Select Partner')}
+              placeholder={t('tagTeams.create.selectPartner', '-- Select a partner --')}
+              value={partnerId}
+              onValueChange={setPartnerId}
+              disabled={submitting}
+              options={players.map((player) => ({
+                value: player.playerId,
+                label: `${player.currentWrestler || player.name} (${player.name})`,
+              }))}
+            />
+          )}
         </div>
 
-        {success ? (
-          <div className="create-tagteam-modal__success">
-            <p>{t('tagTeams.create.success', 'Tag team request sent to partner!')}</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="create-tagteam-modal__form">
-            <div className="form-group">
-              <label htmlFor="tagteam-name">{t('tagTeams.create.nameLabel', 'Tag Team Name')}</label>
-              <input
-                type="text"
-                id="tagteam-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t('tagTeams.create.namePlaceholder', 'e.g. The Hardy Boyz, DX')}
-                disabled={submitting}
-                autoFocus
-                maxLength={50}
-              />
-            </div>
+        <label className="group-field">
+          <span className="group-field__label">{t('tagTeams.create.imageLabel', 'Image URL (optional)')}</span>
+          <input
+            type="url"
+            value={imageUrl}
+            onChange={(event) => setImageUrl(event.target.value)}
+            placeholder={t('tagTeams.create.imagePlaceholder', 'https://...')}
+            disabled={submitting}
+          />
+        </label>
 
-            <div className="form-group">
-              <label htmlFor="tagteam-partner">{t('tagTeams.create.partnerLabel', 'Select Partner')}</label>
-              {loadingPlayers ? (
-                <p className="create-tagteam-modal__loading">{t('common.loading', 'Loading...')}</p>
-              ) : players.length === 0 ? (
-                <p className="create-tagteam-modal__empty">
-                  {t('tagTeams.create.noAvailablePlayers', 'No available players')}
-                </p>
-              ) : (
-                <select
-                  id="tagteam-partner"
-                  value={partnerId}
-                  onChange={(e) => setPartnerId(e.target.value)}
-                  disabled={submitting}
-                >
-                  <option value="">{t('tagTeams.create.selectPartner', '-- Select a partner --')}</option>
-                  {players.map((player) => (
-                    <option key={player.playerId} value={player.playerId}>
-                      {player.currentWrestler || player.name} ({player.name})
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="tagteam-image">{t('tagTeams.create.imageLabel', 'Image URL (optional)')}</label>
-              <input
-                type="url"
-                id="tagteam-image"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder={t('tagTeams.create.imagePlaceholder', 'https://...')}
-                disabled={submitting}
-              />
-            </div>
-
-            {error && (
-              <div className="create-tagteam-modal__error" role="alert">{error}</div>
-            )}
-
-            <div className="create-tagteam-modal__actions">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={onClose}
-                disabled={submitting}
-              >
-                {t('common.cancel', 'Cancel')}
-              </button>
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={submitting || loadingPlayers || players.length === 0}
-                aria-busy={submitting}
-              >
-                {submitting
-                  ? t('common.submitting', 'Submitting...')
-                  : t('tagTeams.create.submit', 'Send Request')}
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
+        {error && <p className="group-error" role="alert">{error}</p>}
+      </form>
+    </Modal>
   );
 }

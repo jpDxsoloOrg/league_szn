@@ -114,7 +114,7 @@ describe('FactionSchedule tab (FAC-14)', () => {
 
     await waitFor(() => expect(mockGetSchedule).toHaveBeenCalled());
     const rows = await screen.findAllByRole('listitem');
-    const matchRows = rows.filter((r) => r.classList.contains('faction-schedule__row'));
+    const matchRows = rows.filter((r) => r.querySelector('.faction-schedule__row'));
     expect(matchRows).toHaveLength(2);
     // The backend already sorts ascending — assert the order surfaces as-is.
     expect(within(matchRows[0]).getByText(/SINGLES/)).toBeInTheDocument();
@@ -149,7 +149,7 @@ describe('FactionSchedule tab (FAC-14)', () => {
 
     await waitFor(() => {
       const rows = screen.getAllByRole('listitem').filter((r) =>
-        r.classList.contains('faction-schedule__row'),
+        r.querySelector('.faction-schedule__row'),
       );
       expect(rows).toHaveLength(1);
     });

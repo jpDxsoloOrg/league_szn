@@ -146,10 +146,8 @@ beforeEach(() => {
 
 describe('FactionDetail shell (FAC-11)', () => {
   it('renders the hero with name, status, leader, record, and heat label', async () => {
-    // FAC-22: when a custom imageUrl is set, the <h1> is intentionally
-    // suppressed (banner art carries the brand). Wait on the record value
-    // as the "got past loading" signal instead. Also verify the banner
-    // image alt still announces the faction name for screen readers.
+    // Wait on the record value as the "got past loading" signal, and verify
+    // the banner image alt announces the faction name.
     renderShell();
     expect(await screen.findByText('12-4-1')).toBeInTheDocument();
     expect(screen.getByAltText('The Brood faction banner')).toBeInTheDocument();
@@ -162,9 +160,9 @@ describe('FactionDetail shell (FAC-11)', () => {
     renderShell();
     await screen.findByText('12-4-1');
     for (const label of ['Overview', 'Members', 'Stats', 'Schedule', 'Promos', 'Messages', 'Manage']) {
-      expect(screen.getByRole('tab', { name: label })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
     }
-    expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('navigates between tabs and applies the active class', async () => {
@@ -173,13 +171,13 @@ describe('FactionDetail shell (FAC-11)', () => {
 
     // Tabs are stubbed at the top of the file so this assertion stays
     // focused on routing — placeholders verify the right tab rendered.
-    await userEvent.click(screen.getByRole('tab', { name: 'Manage' }));
+    await userEvent.click(screen.getByRole('link', { name: 'Manage' }));
     await waitFor(() => {
       expect(screen.getByText('Manage placeholder')).toBeInTheDocument();
     });
-    expect(screen.getByRole('tab', { name: 'Manage' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute('aria-current', 'page');
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Members' }));
+    await userEvent.click(screen.getByRole('link', { name: 'Members' }));
     await waitFor(() => {
       expect(screen.getByText('Members placeholder')).toBeInTheDocument();
     });
@@ -189,7 +187,7 @@ describe('FactionDetail shell (FAC-11)', () => {
     mockFactionsGetById.mockRejectedValueOnce(new Error('Boom'));
     renderShell();
 
-    expect(await screen.findByText(/Error.*Boom/)).toBeInTheDocument();
+    expect(await screen.findByText('Boom')).toBeInTheDocument();
     const retry = screen.getByRole('button', { name: 'Retry' });
 
     // Subsequent call succeeds — Retry recovers without a page reload.
@@ -200,7 +198,7 @@ describe('FactionDetail shell (FAC-11)', () => {
 });
 
 describe('FactionDetail hero — FAC-22 record + banner-name fixes', () => {
-  it('suppresses the name <h1> when the faction has a custom banner', async () => {
+  it('keeps the name <h1> for screen readers only when the faction has a custom banner', async () => {
     mockFactionsGetById.mockResolvedValueOnce(
       baseFaction({ imageUrl: '/images/brood.png' }),
     );
@@ -208,10 +206,9 @@ describe('FactionDetail hero — FAC-22 record + banner-name fixes', () => {
 
     // Wait for the hero to render (record is the "got past loading" signal).
     await screen.findByText('12-4-1');
-    // The <h1> name overlay should NOT appear when a banner is set —
-    // the banner art carries the brand and we don't want the name to read
-    // twice.
-    expect(screen.queryByRole('heading', { name: 'The Brood' })).toBeNull();
+    // The banner art carries the brand, so the name must not read twice on
+    // screen, but the page still needs its h1.
+    expect(screen.getByRole('heading', { level: 1, name: 'The Brood' })).toHaveClass('sr-only');
     // The banner image's alt text still announces the name for a11y.
     expect(screen.getByAltText('The Brood faction banner')).toBeInTheDocument();
   });
@@ -226,7 +223,7 @@ describe('FactionDetail hero — FAC-22 record + banner-name fixes', () => {
     // name needs to be visible.
     expect(
       await screen.findByRole('heading', { name: 'The Brood' }),
-    ).toBeInTheDocument();
+    ).not.toHaveClass('sr-only');
   });
 
   it('clamps undefined wins/losses/draws to 0 instead of rendering "-1"', async () => {

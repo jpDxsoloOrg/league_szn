@@ -141,6 +141,11 @@ beforeEach(() => {
   ]);
 });
 
+async function pickOption(label: string, option: string) {
+  await userEvent.click(screen.getByLabelText(label));
+  await userEvent.click(await screen.findByRole('option', { name: option }));
+}
+
 describe('FactionStats tab (FAC-13)', () => {
   it('renders all four KPI tiles with values from getStats', async () => {
     renderTab();
@@ -159,7 +164,7 @@ describe('FactionStats tab (FAC-13)', () => {
     expect(screen.getByLabelText('Heat: 3 of 5')).toBeInTheDocument();
   });
 
-  it('switches the segmented control to a season and refetches with the seasonId', async () => {
+  it('switches the season picker to a season and refetches with the seasonId', async () => {
     // Vary the mock by season so we can detect the switch took effect.
     mockGetStats.mockImplementation(async (_factionId: string, opts?: { seasonId?: string }) => {
       if (opts?.seasonId === 's2') {
@@ -182,7 +187,7 @@ describe('FactionStats tab (FAC-13)', () => {
     renderTab();
     await screen.findByText('70.6%'); // initial render done
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Season 2' }));
+    await pickOption('Time window', 'Season 2');
 
     await waitFor(() => {
       expect(mockGetStats).toHaveBeenCalledWith(
@@ -205,7 +210,7 @@ describe('FactionStats tab (FAC-13)', () => {
     const firstRowBefore = h2hCard.querySelector('.faction-stats__h2h-row');
     expect(firstRowBefore?.textContent).toContain('Evolution');
 
-    await userEvent.selectOptions(screen.getByLabelText('Compare against'), 'op2');
+    await pickOption('Compare against', 'D-X');
 
     const firstRowAfter = h2hCard.querySelector('.faction-stats__h2h-row');
     expect(firstRowAfter?.textContent).toContain('D-X');

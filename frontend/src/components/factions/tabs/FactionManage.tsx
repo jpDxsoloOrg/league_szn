@@ -1,19 +1,22 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate, useOutletContext } from 'react-router-dom';
 import { factionsApi, playersApi } from '../../../services/api';
+import type { PlayerDirectoryEntry } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { logger } from '../../../utils/logger';
-import {
-  DEFAULT_WRESTLER_IMAGE,
-  resolveImageSrc,
-  applyImageFallback,
-} from '../../../constants/imageFallbacks';
 import type { Player } from '../../../types';
 import type { StableInvitationWithDetails } from '../../../types/stable';
 import type { FactionDetailContext } from '../FactionDetail';
+import Avatar from '../../ui/Avatar';
+import Badge from '../../ui/Badge';
+import Button from '../../ui/Button';
+import Modal from '../../ui/Modal';
+import Select from '../../ui/Select';
+import { useToast } from '../../ui/toastContext';
 import FactionImageUploader from '../FactionImageUploader';
 import RemoveMemberModal from '../RemoveMemberModal';
+import '../groupUi.css';
 import './FactionManage.css';
 
 const AUDIT_LIMIT = 10;
@@ -48,6 +51,7 @@ export default function FactionManage() {
   const { faction } = useOutletContext<FactionDetailContext>();
   const auth = useAuth();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const isLeader = auth.playerId !== null && auth.playerId === faction.leaderId;
   const isAdmin = Boolean(auth.isAdminOrModerator);
@@ -58,11 +62,11 @@ export default function FactionManage() {
   const [imageUrl, setImageUrl] = useState<string | undefined>(faction.imageUrl);
   const [imageUrlInput, setImageUrlInput] = useState(faction.imageUrl ?? '');
   const [identitySaving, setIdentitySaving] = useState(false);
-  const [identityToast, setIdentityToast] = useState<string | null>(null);
   const [identityError, setIdentityError] = useState<string | null>(null);
 
   const [invitations, setInvitations] = useState<StableInvitationWithDetails[]>([]);
   const [eligiblePlayers, setEligiblePlayers] = useState<Player[]>([]);
+  const [directory, setDirectory] = useState<PlayerDirectoryEntry[]>([]);
   const [invitePlayerId, setInvitePlayerId] = useState('');
   const [inviteMessage, setInviteMessage] = useState('');
   const [inviteSubmitting, setInviteSubmitting] = useState(false);
@@ -89,46 +93,53 @@ export default function FactionManage() {
     if (!canAccess) return;
     const ac = new AbortController();
 
-    Promise.all([
-      factionsApi.getInvitations(faction.stableId, ac.signal).catch((err) => {
-        if (err instanceof Error && err.name !== 'AbortError') {
-          logger.error('Manage tab: getInvitations failed');
-        }
-        return [] as StableInvitationWithDetails[];
-      }),
-      playersApi.getAll(ac.signal).catch((err) => {
-        if (err instanceof Error && err.name !== 'AbortError') {
-          logger.error('Manage tab: playersApi.getAll failed');
-        }
-        return [] as Player[];
-      }),
-      loadAuditFromChannel(faction.stableId).catch((err) => {
-        if (err instanceof Error && err.name !== 'AbortError') {
-          logger.warn('Manage tab: audit derivation failed');
-        }
-        return [] as AuditEntry[];
-      }),
-    ]).then(([inv, allPlayers, audit]) => {
+    const ignoreAbort = (message: string) => (err: unknown) => {
+      if (err instanceof Error && err.name !== 'AbortError') logger.error(message);
+    };
+
+    const loadRoster = async () => {
+      const [inv, allPlayers, directoryList, audit] = await Promise.all([
+        factionsApi.getInvitations(faction.stableId, ac.signal).catch((err: unknown) => {
+          ignoreAbort('Manage tab: getInvitations failed')(err);
+          return [] as StableInvitationWithDetails[];
+        }),
+        playersApi.getAll(ac.signal).catch((err: unknown) => {
+          ignoreAbort('Manage tab: playersApi.getAll failed')(err);
+          return [] as Player[];
+        }),
+        playersApi.getDirectory(ac.signal).catch((err: unknown) => {
+          ignoreAbort('Manage tab: playersApi.getDirectory failed')(err);
+          return [] as PlayerDirectoryEntry[];
+        }),
+        loadAuditFromChannel(faction.stableId).catch((err: unknown) => {
+          ignoreAbort('Manage tab: audit derivation failed')(err);
+          return [] as AuditEntry[];
+        }),
+      ]);
       if (ac.signal.aborted) return;
-      // Pending only — backend filters happen-on-respond but we belt-and-
-      // braces filter to "pending" here too.
-      setInvitations(inv.filter((i) => i.status === 'pending'));
-      // Eligible: not already in the faction, not already invited, not
-      // already in another stable.
+      setInvitations(inv.filter((invitation) => invitation.status === 'pending'));
+      // Eligible: not a member, not already invited, and not in another faction.
       const memberSet = new Set(faction.memberIds);
-      const invitedSet = new Set(inv.map((i) => i.invitedPlayerId));
+      const invitedSet = new Set(inv.map((invitation) => invitation.invitedPlayerId));
       setEligiblePlayers(
         allPlayers.filter(
-          (p) => !memberSet.has(p.playerId) && !invitedSet.has(p.playerId) && !p.stableId,
+          (player) => !memberSet.has(player.playerId) && !invitedSet.has(player.playerId) && !player.stableId,
         ),
       );
+      setDirectory(directoryList);
       setAuditEntries(audit);
-    });
+    };
 
+    loadRoster();
     return () => ac.abort();
   }, [faction.stableId, faction.memberIds, rosterReloadKey, canAccess]);
 
   const reloadRoster = useCallback(() => setRosterReloadKey((k) => k + 1), []);
+
+  const nameById = useMemo(
+    () => new Map(directory.map((entry) => [entry.playerId, entry.currentWrestler ?? entry.name])),
+    [directory],
+  );
 
   // ─── Gating (after hooks per Rules of Hooks) ─────────────────────
   if (!canAccess) {
@@ -156,14 +167,12 @@ export default function FactionManage() {
     if (!identityDirty || !identityValid) return;
     setIdentitySaving(true);
     setIdentityError(null);
-    setIdentityToast(null);
     try {
       await factionsApi.update(faction.stableId, {
         name: trimmedName,
         imageUrl: imageUrl?.trim() || undefined,
       });
-      setIdentityToast(t('factions.manage.savedToast', 'Faction identity saved.'));
-      setTimeout(() => setIdentityToast(null), 3000);
+      showToast(t('factions.manage.savedToast', 'Faction identity saved.'), 'success');
     } catch (err) {
       setIdentityError(err instanceof Error ? err.message : t('common.error', 'Failed'));
     } finally {
@@ -233,6 +242,12 @@ export default function FactionManage() {
   };
 
   // ─── Disband ─────────────────────────────────────────────────────
+  const closeDisband = () => {
+    if (disbanding) return;
+    setShowDisbandConfirm(false);
+    setDisbandError(null);
+  };
+
   const handleConfirmDisband = async () => {
     if (disbanding) return;
     setDisbanding(true);
@@ -253,18 +268,14 @@ export default function FactionManage() {
   };
 
   return (
-    <div className="faction-manage">
-      <div className="faction-manage__banner" role="status">
-        {t(
-          'factions.manage.leaderBanner',
-          'LEADER VIEW · Only you and admins can see this tab.',
-        )}
-      </div>
+    <div className="group-page">
+      <p className="faction-manage__banner" role="status">
+        {t('factions.manage.leaderBanner', 'LEADER VIEW · Only you and admins can see this tab.')}
+      </p>
 
       <div className="faction-manage__columns">
-        {/* ─── Identity ─── */}
-        <section className="faction-manage__card" aria-labelledby="manage-identity">
-          <h2 id="manage-identity" className="faction-manage__card-title">
+        <section className="group-section" aria-labelledby="manage-identity">
+          <h2 id="manage-identity" className="group-heading">
             {t('factions.manage.identityTitle', 'Faction Identity')}
           </h2>
 
@@ -278,277 +289,174 @@ export default function FactionManage() {
             }}
           />
 
-          <label className="faction-manage__field">
-            <span className="faction-manage__field-label">
-              {t('factions.manage.imageUrlLabel', 'Or paste an image URL')}
-            </span>
+          <label className="group-field">
+            <span className="group-field__label">{t('factions.manage.imageUrlLabel', 'Or paste an image URL')}</span>
             <input
               type="url"
               value={imageUrlInput}
-              onChange={(e) => setImageUrlInput(e.target.value)}
+              onChange={(event) => setImageUrlInput(event.target.value)}
               onBlur={handleUrlInputBlur}
               placeholder="https://…"
             />
           </label>
 
-          <label className="faction-manage__field">
-            <span className="faction-manage__field-label">
-              {t('factions.manage.nameLabel', 'Faction Name')}
-            </span>
+          <label className="group-field">
+            <span className="group-field__label">{t('factions.manage.nameLabel', 'Faction Name')}</span>
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(event) => setName(event.target.value)}
               maxLength={100}
               required
             />
           </label>
 
-          {/* tagline + visibility are documented as future-facing in the
-           * ticket; backend doesn't carry these fields yet. Hidden in v1
-           * to keep the UI honest. */}
+          {identityError && <p className="group-error" role="alert">{identityError}</p>}
 
-          {identityToast && (
-            <p className="faction-manage__toast" role="status">
-              {identityToast}
-            </p>
-          )}
-          {identityError && (
-            <p className="faction-manage__error" role="alert">
-              {identityError}
-            </p>
-          )}
-
-          <button
-            type="button"
-            className="faction-manage__save"
-            onClick={handleSaveIdentity}
-            disabled={!identityDirty || !identityValid || identitySaving}
-          >
-            {identitySaving
-              ? t('common.saving', 'Saving…')
-              : t('factions.manage.saveIdentity', 'Save')}
-          </button>
+          <div>
+            <Button onClick={handleSaveIdentity} disabled={!identityDirty || !identityValid} loading={identitySaving}>
+              {identitySaving ? t('common.saving', 'Saving…') : t('factions.manage.saveIdentity', 'Save')}
+            </Button>
+          </div>
         </section>
 
-        {/* ─── Roster ─── */}
-        <section className="faction-manage__card" aria-labelledby="manage-roster">
-          <h2 id="manage-roster" className="faction-manage__card-title">
+        <section className="group-section" aria-labelledby="manage-roster">
+          <h2 id="manage-roster" className="group-heading">
             {t('factions.manage.rosterTitle', 'Roster Management')}
           </h2>
 
-          <h3 className="faction-manage__subheading">
-            {t('factions.manage.activeMembers', 'Active members ({{count}})', {
-              count: faction.members.length,
-            })}
+          <h3 className="group-subheading">
+            {t('factions.manage.activeMembers', 'Active members ({{count}})', { count: faction.members.length })}
           </h3>
-          <ul className="faction-manage__list">
+          <ul className="group-list">
             {faction.members.map((member) => {
               const isLeaderRow = member.playerId === faction.leaderId;
               return (
-                <li key={member.playerId} className="faction-manage__list-row">
-                  <img
-                    src={resolveImageSrc(member.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-                    onError={(e) => applyImageFallback(e, DEFAULT_WRESTLER_IMAGE)}
-                    alt=""
-                    className="faction-manage__avatar"
-                  />
-                  <span className="faction-manage__row-name">
-                    {member.wrestlerName}
-                  </span>
-                  <span
-                    className={`faction-manage__role-pill ${
-                      isLeaderRow ? 'faction-manage__role-pill--leader' : ''
-                    }`}
-                  >
-                    {isLeaderRow
-                      ? t('factions.members.roleLeader', 'LEADER')
-                      : t('factions.members.roleMember', 'MEMBER')}
+                <li key={member.playerId} className="faction-manage__row">
+                  <span className="group-person">
+                    <Avatar src={member.imageUrl} name={member.wrestlerName} size="sm" />
+                    <span className="group-person__name">{member.wrestlerName}</span>
+                    {isLeaderRow && <Badge tone="pink">{t('factions.members.roleLeader', 'LEADER')}</Badge>}
                   </span>
                   {!isLeaderRow && (
-                    <button
-                      type="button"
-                      className="faction-manage__row-remove"
-                      aria-label={t(
-                        'factions.manage.removeAria',
-                        'Remove {{name}} from the faction',
-                        { name: member.wrestlerName },
-                      )}
-                      onClick={() =>
-                        setMemberToRemove({
-                          playerId: member.playerId,
-                          playerName: member.wrestlerName,
-                        })
-                      }
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={t('factions.manage.removeAria', 'Remove {{name}} from the faction', {
+                        name: member.wrestlerName,
+                      })}
+                      onClick={() => setMemberToRemove({ playerId: member.playerId, playerName: member.wrestlerName })}
                     >
                       {t('factions.my.removeMember', 'Remove')}
-                    </button>
+                    </Button>
                   )}
                 </li>
               );
             })}
           </ul>
 
-          <h3 className="faction-manage__subheading">
-            {t('factions.manage.pendingInvitations', 'Pending invitations ({{count}})', {
-              count: invitations.length,
-            })}
+          <h3 className="group-subheading">
+            {t('factions.manage.pendingInvitations', 'Pending invitations ({{count}})', { count: invitations.length })}
           </h3>
           {invitations.length === 0 ? (
-            <p className="faction-manage__empty">
-              {t('factions.manage.noInvitations', 'No pending invitations.')}
-            </p>
+            <p className="group-empty">{t('factions.manage.noInvitations', 'No pending invitations.')}</p>
           ) : (
-            <ul className="faction-manage__list">
-              {invitations.map((inv) => (
-                <li key={inv.invitationId} className="faction-manage__invite-row">
-                  <span className="faction-manage__row-name">
-                    {inv.invitedPlayerName ?? inv.invitedPlayerId}
+            <ul className="group-list">
+              {invitations.map((invitation) => (
+                <li key={invitation.invitationId} className="faction-manage__row">
+                  <span className="group-person__name">
+                    {invitation.invitedPlayerName
+                      ?? nameById.get(invitation.invitedPlayerId)
+                      ?? t('factions.redesign.unknownPlayer', 'Unknown player')}
                   </span>
-                  <span className="faction-manage__invite-meta">
+                  <span className="group-muted">
                     {t('factions.manage.invitedOn', 'Invited {{date}}', {
-                      date: new Date(inv.createdAt).toLocaleDateString(),
+                      date: new Date(invitation.createdAt).toLocaleDateString(),
                     })}
                   </span>
-                  {/* Resend + Revoke require backend handlers that don't
-                   * exist yet. Hidden in v1 — captured as a follow-up. */}
                 </li>
               ))}
             </ul>
           )}
 
-          <h3 className="faction-manage__subheading">
-            {t('factions.manage.inviteNewTitle', 'Invite new member')}
-          </h3>
-          <div className="faction-manage__invite-form">
-            <label className="faction-manage__field">
-              <span className="faction-manage__field-label">
-                {t('factions.manage.invitePlayerLabel', 'Player')}
-              </span>
-              <select
+          <h3 className="group-subheading">{t('factions.manage.inviteNewTitle', 'Invite new member')}</h3>
+          <div className="group-form">
+            <div className="group-field">
+              <span className="group-field__label">{t('factions.manage.invitePlayerLabel', 'Player')}</span>
+              <Select
+                label={t('factions.manage.invitePlayerLabel', 'Player')}
+                placeholder={t('factions.manage.invitePlayerPlaceholder', 'Select a wrestler…')}
                 value={invitePlayerId}
-                onChange={(e) => setInvitePlayerId(e.target.value)}
-              >
-                <option value="">
-                  {t('factions.manage.invitePlayerPlaceholder', 'Select a wrestler…')}
-                </option>
-                {eligiblePlayers.map((p) => (
-                  <option key={p.playerId} value={p.playerId}>
-                    {p.currentWrestler} ({p.name})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="faction-manage__field">
-              <span className="faction-manage__field-label">
+                onValueChange={setInvitePlayerId}
+                options={eligiblePlayers.map((player) => ({
+                  value: player.playerId,
+                  label: `${player.currentWrestler} (${player.name})`,
+                }))}
+              />
+            </div>
+            <label className="group-field">
+              <span className="group-field__label">
                 {t('factions.manage.inviteMessageLabel', 'Personal message (optional)')}
               </span>
               <textarea
                 value={inviteMessage}
-                onChange={(e) => setInviteMessage(e.target.value)}
+                onChange={(event) => setInviteMessage(event.target.value)}
                 rows={2}
-                placeholder={t(
-                  'factions.manage.inviteMessagePlaceholder',
-                  'Join us…',
-                )}
+                placeholder={t('factions.manage.inviteMessagePlaceholder', 'Join us…')}
               />
             </label>
-            {inviteError && (
-              <p className="faction-manage__error" role="alert">
-                {inviteError}
-              </p>
-            )}
-            <button
-              type="button"
-              className="faction-manage__send-invite"
-              onClick={handleInvite}
-              disabled={!invitePlayerId || inviteSubmitting}
-            >
-              {inviteSubmitting
-                ? t('common.sending', 'Sending…')
-                : t('factions.manage.sendInvite', 'Send invite')}
-            </button>
+            {inviteError && <p className="group-error" role="alert">{inviteError}</p>}
+            <div>
+              <Button variant="secondary" onClick={handleInvite} disabled={!invitePlayerId} loading={inviteSubmitting}>
+                {inviteSubmitting ? t('common.sending', 'Sending…') : t('factions.manage.sendInvite', 'Send invite')}
+              </Button>
+            </div>
           </div>
-        </section>
-
-        {/* ─── Danger zone ─── */}
-        <section
-          className="faction-manage__card faction-manage__card--danger"
-          aria-labelledby="manage-danger"
-        >
-          <h2 id="manage-danger" className="faction-manage__card-title">
-            {t('factions.manage.dangerTitle', 'Danger Zone')}
-          </h2>
-
-          {/* Transfer leadership: backend handler missing — gated until
-           * it exists. Kept as a documentation seam so wiring it in
-           * later is a one-line UI change. */}
-          <p className="faction-manage__danger-note">
-            {t(
-              'factions.manage.transferComingSoon',
-              'Transfer leadership: coming soon.',
-            )}
-          </p>
-
-          <h3 className="faction-manage__danger-heading">
-            {t('factions.manage.disbandHeading', 'Disband faction')}
-          </h3>
-          <p className="faction-manage__danger-copy">
-            {t(
-              'factions.manage.disbandCopy',
-              'Permanently removes the faction and clears every member\'s faction reference. This cannot be undone.',
-            )}
-          </p>
-          <button
-            type="button"
-            className="faction-manage__disband"
-            aria-label={t('factions.manage.disbandAria', 'Disband {{name}}', {
-              name: faction.name,
-            })}
-            onClick={() => setShowDisbandConfirm(true)}
-          >
-            {t('factions.manage.disbandButton', 'Disband faction')}
-          </button>
         </section>
       </div>
 
-      {/* ─── Audit log ─── */}
-      <section
-        className="faction-manage__audit"
-        aria-labelledby="manage-audit"
-      >
-        <h2 id="manage-audit" className="faction-manage__card-title">
+      <section className="group-section" aria-labelledby="manage-audit">
+        <h2 id="manage-audit" className="group-heading">
           {t('factions.manage.auditTitle', 'Audit log (last 10 actions)')}
         </h2>
         {auditEntries.length === 0 ? (
-          <p className="faction-manage__empty">
-            {t('factions.manage.auditEmpty', 'No recent admin actions.')}
-          </p>
+          <p className="group-empty">{t('factions.manage.auditEmpty', 'No recent admin actions.')}</p>
         ) : (
-          <ol className="faction-manage__audit-list">
-            {auditEntries.map((entry, i) => (
-              <li
-                key={entry.id}
-                className={`faction-manage__audit-row ${
-                  i === 0 ? 'faction-manage__audit-row--latest' : ''
-                }`}
-              >
-                <div className="faction-manage__audit-body">
-                  <span className="faction-manage__audit-summary">{entry.summary}</span>
-                  <time
-                    className="faction-manage__audit-time"
-                    dateTime={entry.timestamp}
-                  >
-                    {new Date(entry.timestamp).toLocaleString()}
-                  </time>
-                </div>
+          <ol className="group-list">
+            {auditEntries.map((entry) => (
+              <li key={entry.id} className="faction-manage__row">
+                <span>{entry.summary}</span>
+                <time className="group-muted" dateTime={entry.timestamp}>
+                  {new Date(entry.timestamp).toLocaleString()}
+                </time>
               </li>
             ))}
           </ol>
         )}
       </section>
 
-      {/* ─── Modals ─── */}
+      <section className="group-section faction-manage__danger" aria-labelledby="manage-danger">
+        <h2 id="manage-danger" className="group-heading faction-manage__danger-heading">
+          {t('factions.manage.dangerTitle', 'Danger Zone')}
+        </h2>
+        <h3 className="group-subheading">{t('factions.manage.disbandHeading', 'Disband faction')}</h3>
+        <p className="group-empty">
+          {t(
+            'factions.manage.disbandCopy',
+            "Permanently removes the faction and clears every member's faction reference. This cannot be undone.",
+          )}
+        </p>
+        <div>
+          <Button
+            variant="danger"
+            aria-label={t('factions.manage.disbandAria', 'Disband {{name}}', { name: faction.name })}
+            onClick={() => setShowDisbandConfirm(true)}
+          >
+            {t('factions.manage.disbandButton', 'Disband faction')}
+          </Button>
+        </div>
+      </section>
+
       {memberToRemove && (
         <RemoveMemberModal
           factionName={faction.name}
@@ -564,57 +472,29 @@ export default function FactionManage() {
         />
       )}
 
-      {showDisbandConfirm && (
-        <div
-          className="faction-manage__disband-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="disband-title"
-        >
-          <div className="faction-manage__disband-modal">
-            <h2 id="disband-title" className="faction-manage__disband-title">
-              {t('factions.manage.disbandConfirmTitle', 'Disband {{factionName}}?', {
-                factionName: faction.name,
-              })}
-            </h2>
-            <p className="faction-manage__disband-copy">
-              {t(
-                'factions.manage.disbandConfirmBody',
-                'This will clear every member\'s faction reference and cannot be undone.',
-              )}
-            </p>
-            {disbandError && (
-              <p className="faction-manage__error" role="alert">
-                {disbandError}
-              </p>
-            )}
-            <div className="faction-manage__disband-actions">
-              <button
-                type="button"
-                className="faction-manage__disband-cancel"
-                onClick={() => {
-                  setShowDisbandConfirm(false);
-                  setDisbandError(null);
-                }}
-                disabled={disbanding}
-              >
-                {t('common.cancel', 'Cancel')}
-              </button>
-              <button
-                type="button"
-                className="faction-manage__disband-confirm"
-                onClick={handleConfirmDisband}
-                disabled={disbanding}
-              >
-                {disbanding
-                  ? t('factions.my.disbanding', 'Disbanding…')
-                  : t('factions.manage.disbandButton', 'Disband faction')}
-              </button>
-            </div>
-          </div>
+      <Modal
+        open={showDisbandConfirm}
+        size="sm"
+        title={t('factions.manage.disbandConfirmTitle', 'Disband {{factionName}}?', { factionName: faction.name })}
+        onClose={closeDisband}
+        footer={(
+          <>
+            <Button variant="secondary" onClick={closeDisband} disabled={disbanding}>
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button variant="danger" onClick={handleConfirmDisband} loading={disbanding}>
+              {disbanding ? t('factions.my.disbanding', 'Disbanding…') : t('factions.manage.disbandButton', 'Disband faction')}
+            </Button>
+          </>
+        )}
+      >
+        <div className="group-form">
+          <p className="group-empty">
+            {t('factions.manage.disbandConfirmBody', "This will clear every member's faction reference and cannot be undone.")}
+          </p>
+          {disbandError && <p className="group-error" role="alert">{disbandError}</p>}
         </div>
-      )}
-
+      </Modal>
     </div>
   );
 }
