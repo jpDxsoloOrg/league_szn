@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
@@ -30,7 +30,7 @@ vi.mock('../../../services/api', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, fallback?: string) => {
+    t: (key: string, fallback?: string | { defaultValue?: string; position?: number }) => {
       const translations: Record<string, string> = {
         'events.admin.matchCardBuilder': 'Match Card Builder',
         'events.admin.matchCardBuilderHint': 'Reorder matches, change designations, or add unassigned matches to an event card.',
@@ -54,6 +54,9 @@ vi.mock('react-i18next', () => ({
         'common.loading': 'Loading...',
         'common.saving': 'Saving...',
       };
+      if (typeof fallback === 'object') {
+        return (fallback.defaultValue ?? key).replace('{{position}}', String(fallback.position));
+      }
       return translations[key] || fallback || key;
     },
   }),
@@ -129,6 +132,43 @@ function renderMatchCardBuilder() {
 describe('MatchCardBuilder', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe('rows that are not scheduled matches', () => {
+    const uuid = '2279a4bd-a0d8-435a-9f86-b9000509e47d';
+
+    const openCard = async (matchCards: { position: number; matchId: string; designation: 'midcard' }[]) => {
+      mockGetAllEvents.mockResolvedValue([{ ...mockEventsData[0]!, matchCards }]);
+      renderMatchCardBuilder();
+      fireEvent.focus(await screen.findByRole('combobox', { name: 'Select Event' }));
+      fireEvent.click(await screen.findByText(/WrestleMania/));
+    };
+
+    it('names a completed match and keeps it out of the add list', async () => {
+      setupDefaultMocks();
+      mockGetAllMatches.mockResolvedValue([
+        ...mockScheduledMatches,
+        { ...matchBase, matchId: uuid, status: 'completed', matchFormat: 'singles', participants: ['p1', 'p4'], isChampionship: true },
+      ]);
+      await openCard([{ position: 1, matchId: uuid, designation: 'midcard' }]);
+
+      const row = (await screen.findByText(/\(singles\)$/, { selector: '.ar-strong' })).closest('li')!;
+      expect(row).not.toHaveTextContent(uuid);
+      expect(row).toHaveTextContent('Championship');
+      expect(mockGetAllMatches).toHaveBeenCalledWith();
+      const addOptions = within(screen.getByRole('combobox', { name: '-- Select a match --' })).getAllByRole('option');
+      expect(addOptions.map((option) => (option as HTMLOptionElement).value)).toEqual(['', 'm1', 'm2', 'm3']);
+    });
+
+    it('never shows the id of a match that cannot be found', async () => {
+      setupDefaultMocks();
+      await openCard([{ position: 1, matchId: uuid, designation: 'midcard' }]);
+
+      const label = await screen.findByText('Match 1');
+      expect(label.closest('li')).not.toHaveTextContent(uuid);
+      expect(screen.getByLabelText(/Match 1$/)).toBeInTheDocument();
+      expect(document.body.innerHTML).not.toContain(uuid);
+    });
   });
 
   it('renders event selector and shows match cards for selected event', async () => {

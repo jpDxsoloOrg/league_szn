@@ -491,6 +491,8 @@ export interface TransferRequest {
   createdAt: string;
   updatedAt: string;
   reviewedBy?: string;
+  /** Display name for `reviewedBy`, which is a raw account id. */
+  reviewedByName?: string;
   reviewNote?: string;
 }
 
@@ -512,6 +514,8 @@ export interface StorylineRequest {
   status: StorylineRequestStatus;
   gmNote?: string;
   reviewedBy?: string;
+  /** Display name for `reviewedBy`, which is a raw account id. */
+  reviewedByName?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -28,10 +28,12 @@ interface AvailableMatch {
   matchId: string;
   label: string;
   isChampionship: boolean;
+  isScheduled: boolean;
 }
 
 interface CardMatch extends MatchCardEntry {
-  label: string;
+  /** Null when the match can't be found, so the row falls back to its position. */
+  label: string | null;
   isChampionship: boolean;
 }
 
@@ -41,7 +43,8 @@ export default function MatchCardBuilder() {
   const [events, setEvents] = useState<LeagueEvent[]>([]);
   const [selectedEventId, setSelectedEventId] = useState('');
   const [cardMatches, setCardMatches] = useState<CardMatch[]>([]);
-  const [availableMatches, setAvailableMatches] = useState<AvailableMatch[]>([]);
+  // Every match, because a card keeps its rows after they leave 'scheduled'.
+  const [knownMatches, setKnownMatches] = useState<AvailableMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -54,7 +57,7 @@ export default function MatchCardBuilder() {
 
       const [eventsResult, matchesResult, playersResult] = await Promise.allSettled([
         eventsApi.getAll(),
-        matchesApi.getAll({ status: 'scheduled' }),
+        matchesApi.getAll(),
         playersApi.getAllIncludingHidden(),
       ]);
 
@@ -74,18 +77,19 @@ export default function MatchCardBuilder() {
       );
 
       if (matchesResult.status === 'fulfilled') {
-        const available: AvailableMatch[] = matchesResult.value.map((match) => {
+        const known: AvailableMatch[] = matchesResult.value.map((match) => {
           const participantNames = match.participants
-            .map((id) => playerMap.get(id)?.name ?? 'Unknown')
+            .map((id) => playerMap.get(id)?.name ?? t('common.unknown', 'Unknown'))
             .join(' vs ');
           const label = `${participantNames} (${match.matchFormat})`;
           return {
             matchId: match.matchId,
             label,
             isChampionship: match.isChampionship,
+            isScheduled: match.status === 'scheduled',
           };
         });
-        setAvailableMatches(available);
+        setKnownMatches(known);
       } else {
         errors.push(`Matches: ${matchesResult.reason}`);
       }
@@ -96,6 +100,7 @@ export default function MatchCardBuilder() {
       setLoading(false);
     };
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, []);
 
   // When event selection changes, load its existing match cards
@@ -111,23 +116,26 @@ export default function MatchCardBuilder() {
     }
 
     const existingCards: CardMatch[] = (selectedEvent.matchCards || []).map((card) => {
-      const matchInfo = availableMatches.find((m) => m.matchId === card.matchId);
+      const matchInfo = knownMatches.find((m) => m.matchId === card.matchId);
       return {
         ...card,
-        label: matchInfo?.label ?? card.matchId,
+        label: matchInfo?.label ?? null,
         isChampionship: matchInfo?.isChampionship ?? false,
       };
     });
     setCardMatches(existingCards);
-  }, [selectedEventId, events, availableMatches]);
+  }, [selectedEventId, events, knownMatches]);
 
   const [selectedMatchToAdd, setSelectedMatchToAdd] = useState('');
 
   const usedMatchIds = new Set(cardMatches.map((m) => m.matchId));
-  const availableToAdd = availableMatches.filter(
-    (m) => !usedMatchIds.has(m.matchId)
+  const availableToAdd = knownMatches.filter(
+    (m) => m.isScheduled && !usedMatchIds.has(m.matchId)
   );
   const selectedEvent = events.find((event) => event.eventId === selectedEventId);
+
+  const cardMatchLabel = (match: CardMatch) =>
+    match.label ?? t('adminRoster.matchCard.unresolvedMatch', { defaultValue: 'Match {{position}}', position: match.position });
 
   const handleDesignationChange = (index: number, designation: MatchDesignation) => {
     setCardMatches((prev) =>
@@ -161,7 +169,7 @@ export default function MatchCardBuilder() {
 
   const handleAddMatch = () => {
     if (!selectedMatchToAdd) return;
-    const match = availableMatches.find((m) => m.matchId === selectedMatchToAdd);
+    const match = knownMatches.find((m) => m.matchId === selectedMatchToAdd);
     if (!match) return;
 
     setCardMatches((prev) => [
@@ -258,7 +266,7 @@ export default function MatchCardBuilder() {
                         <span className="builder-match-position">#{match.position}</span>
 
                         <div className="builder-match-content">
-                          <span className="ar-strong">{match.label}</span>
+                          <span className="ar-strong">{cardMatchLabel(match)}</span>
                           {match.isChampionship && (
                             <Badge tone="warning">{t('events.admin.championshipMatch')}</Badge>
                           )}
@@ -266,7 +274,7 @@ export default function MatchCardBuilder() {
 
                         <select
                           className="ar-input designation-select"
-                          aria-label={`${t('adminRoster.matchCard.designationFor', 'Card position for')} ${match.label}`}
+                          aria-label={`${t('adminRoster.matchCard.designationFor', 'Card position for')} ${cardMatchLabel(match)}`}
                           value={match.designation}
                           onChange={(e) => handleDesignationChange(index, e.target.value as MatchDesignation)}
                         >

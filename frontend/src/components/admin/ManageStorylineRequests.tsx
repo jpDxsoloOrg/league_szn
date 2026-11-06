@@ -12,6 +12,7 @@ import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import Tabs from '../ui/Tabs';
 import AdminNotice from './AdminNotice';
+import { readableName } from './readableName';
 import './adminContent.css';
 import './ManageStorylineRequests.css';
 
@@ -64,6 +65,14 @@ export default function ManageStorylineRequests() {
   const typeLabel = (type: string): string => {
     const label = REQUEST_TYPE_LABELS[type as StorylineRequestType];
     return label ? t(label.key, label.fallback) : type;
+  };
+
+  const reviewerLabel = (request: StorylineRequestWithDetails) => {
+    if (!request.reviewedBy) return '—';
+    return readableName(
+      request.reviewedByName ?? request.reviewedBy,
+      t('adminContent.storylines.staffReviewer', 'Staff member'),
+    );
   };
 
   const statusBadge = (status: string) => {
@@ -173,7 +182,7 @@ export default function ManageStorylineRequests() {
             <span className="ac-cell__text">
               <span>{request.gmNote ?? '—'}</span>
               <span className="ac-cell__sub">
-                {request.reviewedBy ?? '—'} · {new Date(request.updatedAt).toLocaleDateString()}
+                {reviewerLabel(request)} · {new Date(request.updatedAt).toLocaleDateString()}
               </span>
             </span>
           ),

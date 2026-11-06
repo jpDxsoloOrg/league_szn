@@ -13,6 +13,7 @@ import PageHeader from '../ui/PageHeader';
 import Skeleton from '../ui/Skeleton';
 import Tabs from '../ui/Tabs';
 import AdminNotice from './AdminNotice';
+import { readableName } from './readableName';
 import './adminRoster.css';
 import './ManageTransfers.css';
 
@@ -71,11 +72,22 @@ export default function ManageTransfers() {
 
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString();
 
+  const divisionLabel = (name: string) =>
+    readableName(name, t('adminRoster.transfers.deletedDivision', 'Deleted division'));
+
+  const reviewerLabel = (request: TransferRequestWithDetails) => {
+    if (!request.reviewedBy) return '—';
+    return readableName(
+      request.reviewedByName ?? request.reviewedBy,
+      t('adminRoster.transfers.staffReviewer', 'Staff member'),
+    );
+  };
+
   const renderMove = (request: TransferRequestWithDetails) => (
     <span className="transfer-move">
-      {request.fromDivisionName}
+      {divisionLabel(request.fromDivisionName)}
       <ArrowRight aria-label={t('adminRoster.transfers.to', 'to')} size={16} />
-      {request.toDivisionName}
+      {divisionLabel(request.toDivisionName)}
     </span>
   );
 
@@ -97,12 +109,12 @@ export default function ManageTransfers() {
       ),
       sortValue: (request) => request.status,
     },
-    { key: 'reviewer', header: t('adminRoster.transfers.reviewedBy', 'Reviewed By'), render: (request) => request.reviewedBy ?? '—' },
+    { key: 'reviewer', header: t('adminRoster.transfers.reviewedBy', 'Reviewed By'), render: reviewerLabel },
     { key: 'note', header: t('adminRoster.transfers.note', 'Note'), render: (request) => request.reviewNote ?? '—' },
     {
       key: 'date',
       header: t('adminRoster.transfers.date', 'Date'),
-      render: (request) => formatDate(request.updatedAt),
+      render: (request) => <span className="ar-nowrap">{formatDate(request.updatedAt)}</span>,
       sortValue: (request) => request.updatedAt,
     },
   ];
