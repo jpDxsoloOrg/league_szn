@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { MatchInvitation } from '../../types/matchmaking';
+import Avatar from '../ui/Avatar';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
 
 interface InvitationCardProps {
   invitation: MatchInvitation;
@@ -28,33 +31,26 @@ export default function InvitationCard({
   );
   const [submitting, setSubmitting] = useState<boolean>(false);
 
+  // Read the clock on every tick: browsers throttle timers in hidden tabs,
+  // so counting down from the last value would drift.
   useEffect(() => {
-    setSecondsRemaining(computeSecondsRemaining(invitation.expiresAt));
-  }, [invitation.expiresAt]);
+    const update = (): boolean => {
+      const remaining = computeSecondsRemaining(invitation.expiresAt);
+      setSecondsRemaining(remaining);
+      if (remaining <= 0) onExpire?.(invitation.invitationId);
+      return remaining > 0;
+    };
 
-  useEffect(() => {
-    if (secondsRemaining <= 0) {
-      onExpire?.(invitation.invitationId);
-      return;
-    }
+    if (!update()) return undefined;
 
     const intervalId = window.setInterval(() => {
-      setSecondsRemaining((prev) => {
-        const next = prev - 1;
-        if (next <= 0) {
-          window.clearInterval(intervalId);
-          onExpire?.(invitation.invitationId);
-          return 0;
-        }
-        return next;
-      });
+      if (!update()) window.clearInterval(intervalId);
     }, 1000);
 
     return () => {
       window.clearInterval(intervalId);
     };
-    // Re-run if a new invitation is passed in (different id or expiry)
-  }, [invitation.invitationId, invitation.expiresAt, onExpire, secondsRemaining]);
+  }, [invitation.invitationId, invitation.expiresAt, onExpire]);
 
   const otherPlayer =
     direction === 'incoming' ? invitation.from : invitation.to;
@@ -79,51 +75,32 @@ export default function InvitationCard({
     }
   };
 
+  const expired = secondsRemaining <= 0;
+
   return (
-    <div className="invitation-card">
-      <div className="invitation-card-player">
-        <div className="invitation-card-name">{otherPlayer.name}</div>
-        <div className="invitation-card-wrestler">
-          {otherPlayer.currentWrestler}
-        </div>
+    <li className="match-row">
+      <Avatar src={otherPlayer.imageUrl} name={otherPlayer.currentWrestler || otherPlayer.name} size="md" />
+      <div className="match-row__text">
+        <p className="match-row__name">{otherPlayer.currentWrestler}</p>
+        <p className="match-row__meta">{otherPlayer.name}</p>
+        <p className={expired ? 'match-row__timer match-row__timer--expired' : 'match-row__timer'}>
+          {expired
+            ? t('findMatch.invitations.expired')
+            : t('findMatch.invitations.expiresIn', { seconds: secondsRemaining })}
+        </p>
       </div>
-
-      <div className="invitation-card-meta">
-        {secondsRemaining > 0 ? (
-          <span className="invitation-card-timer">
-            {t('findMatch.invitations.expiresIn', { seconds: secondsRemaining })}
-          </span>
-        ) : (
-          <span className="invitation-card-timer expired">
-            {t('findMatch.invitations.expired')}
-          </span>
-        )}
-      </div>
-
       {direction === 'incoming' ? (
-        <div className="invitation-card-actions">
-          <button
-            type="button"
-            className="btn-accept"
-            onClick={handleAccept}
-            disabled={submitting || secondsRemaining <= 0}
-          >
+        <div className="match-row__actions">
+          <Button size="sm" onClick={handleAccept} disabled={submitting || expired}>
             {t('findMatch.invitations.accept')}
-          </button>
-          <button
-            type="button"
-            className="btn-decline"
-            onClick={handleDecline}
-            disabled={submitting || secondsRemaining <= 0}
-          >
+          </Button>
+          <Button size="sm" variant="secondary" onClick={handleDecline} disabled={submitting || expired}>
             {t('findMatch.invitations.decline')}
-          </button>
+          </Button>
         </div>
       ) : (
-        <div className="invitation-card-waiting">
-          {t('findMatch.online.alreadyInvited')}
-        </div>
+        <Badge tone="neutral">{t('findMatch.online.alreadyInvited')}</Badge>
       )}
-    </div>
+    </li>
   );
 }
