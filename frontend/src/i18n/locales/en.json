@@ -2967,7 +2967,7 @@
         "rejected": "Rejected"
       },
       "deletedDivision": "Deleted division",
-      "staffReviewer": "Staff member"
+      "staffReviewer": "League Staff"
     },
     "tagTeams": {
       "loadError": "Failed to load tag teams",
@@ -3431,7 +3431,7 @@
       "typeBackstageAttack": "Backstage Attack",
       "typeRivalry": "Rivalry",
       "typeStoryline": "Storyline",
-      "staffReviewer": "Staff member"
+      "staffReviewer": "League Staff"
     },
     "uploadFailed": "Failed to upload image. Please try again.",
     "uploadNetworkError": "Network error during upload. Please check your internet connection and try again.",

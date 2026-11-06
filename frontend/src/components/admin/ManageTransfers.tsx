@@ -79,7 +79,7 @@ export default function ManageTransfers() {
     if (!request.reviewedBy) return '—';
     return readableName(
       request.reviewedByName ?? request.reviewedBy,
-      t('adminRoster.transfers.staffReviewer', 'Staff member'),
+      t('adminRoster.transfers.staffReviewer', 'League Staff'),
     );
   };
 

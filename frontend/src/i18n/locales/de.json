@@ -2969,7 +2969,7 @@
         "rejected": "Abgelehnt"
       },
       "deletedDivision": "Gelöschte Division",
-      "staffReviewer": "Teammitglied"
+      "staffReviewer": "Liga-Team"
     },
     "tagTeams": {
       "loadError": "Tag Teams konnten nicht geladen werden",
@@ -3429,7 +3429,7 @@
       "typeBackstageAttack": "Backstage-Angriff",
       "typeRivalry": "Rivalität",
       "typeStoryline": "Storyline",
-      "staffReviewer": "Teammitglied"
+      "staffReviewer": "Liga-Team"
     },
     "uploadFailed": "Das Bild konnte nicht hochgeladen werden. Bitte versuche es erneut.",
     "uploadNetworkError": "Netzwerkfehler beim Hochladen. Bitte prüfe deine Internetverbindung und versuche es erneut.",
