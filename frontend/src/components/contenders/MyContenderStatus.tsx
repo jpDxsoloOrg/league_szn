@@ -4,7 +4,7 @@ import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
 import PageHeader from '../ui/PageHeader';
 
-/** Personal contender status needs player sign-in, which does not exist yet. */
+/** Placeholder until personal contender status is built; it points people to the rankings. */
 export default function MyContenderStatus() {
   const { t } = useTranslation();
   useDocumentTitle(t('contenders.myStatus.title'));

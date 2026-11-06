@@ -23,7 +23,7 @@
   gap: 0.375rem;
   color: var(--rim-world);
   font-family: var(--font-body);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -55,7 +55,7 @@
 .contender-rankings__footer {
   margin-top: 1.25rem;
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 @media (max-width: 768px) {
