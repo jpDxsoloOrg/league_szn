@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { success, badRequest, forbidden, serverError } from '../../lib/response';
+import { success, badRequest, forbidden, notFound, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import type { EventCheckInStatus } from '../../lib/repositories/types';
 
@@ -34,6 +34,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const { leagueOps: { events }, roster: { players } } = getRepositories();
+
+    const eventItem = await events.findById(eventId);
+    if (!eventItem) {
+      return notFound('Event not found');
+    }
 
     // Fetch all check-in rows for this event.
     const checkInItems = await events.listCheckIns(eventId);
