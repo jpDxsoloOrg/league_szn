@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult, Context } from "aws-lambda";
-import { methodNotAllowed, notFound, unauthorized } from "./response";
+import { badRequest, methodNotAllowed, notFound, unauthorized } from "./response";
 import { authenticate } from "./authenticate";
 import { requireRole, type UserRole } from "./auth";
 
@@ -45,6 +45,15 @@ const noopCallback = () => {};
  * limit makes the query itself fail, which would otherwise surface as a 500.
  */
 const MAX_PATH_PARAM_BYTES = 256;
+
+/**
+ * Longest query value we pass on. Handlers use ids from the query as DynamoDB
+ * keys, which fail above their size limit (1024 bytes for a sort key). Paging
+ * cursors are the longest real values, at a few hundred bytes.
+ */
+const MAX_QUERY_VALUE_BYTES = 1024;
+
+const QUERY_VALUE_TOO_LONG = 'Query parameter value is too long';
 
 export function createRouter(routes: ReadonlyArray<RouteConfig>): APIGatewayProxyHandler {
     routes.forEach(assertAccessDeclared);
@@ -138,7 +147,22 @@ async function dispatch(
         }
     }
     if (hasOverlongPathParam(event)) return notFound();
+    if (hasOverlongQueryValue(event)) return badRequest(QUERY_VALUE_TOO_LONG);
     return (await route.handler(event, context, callback ?? noopCallback)) as APIGatewayProxyResult;
+}
+
+/** The router's query limit, for a handler deployed without a router. */
+export function rejectOverlongQuery(handler: APIGatewayProxyHandler): APIGatewayProxyHandler {
+    return async (event, context, callback) => {
+        if (hasOverlongQueryValue(event)) return badRequest(QUERY_VALUE_TOO_LONG);
+        return (await handler(event, context, callback)) as APIGatewayProxyResult;
+    };
+}
+
+function hasOverlongQueryValue(event: APIGatewayProxyEvent): boolean {
+    return Object.values(event.queryStringParameters ?? {}).some(
+        (value) => value !== undefined && Buffer.byteLength(value) > MAX_QUERY_VALUE_BYTES
+    );
 }
 
 function hasOverlongPathParam(event: APIGatewayProxyEvent): boolean {
