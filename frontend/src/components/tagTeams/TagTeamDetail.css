@@ -43,7 +43,7 @@
   gap: 0.75rem;
 }
 
-/* Stacked, so the ampersand always sits between the two names. */
+/* Stacked, with the ampersand on the avatar column so it stays tied to the names. */
 @media (max-width: 480px) {
   .tag-team-detail__players {
     flex-direction: column;
@@ -52,6 +52,7 @@
   }
 
   .tag-team-detail__ampersand {
+    width: 72px;
     text-align: center;
   }
 }

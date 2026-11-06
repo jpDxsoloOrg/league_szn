@@ -201,6 +201,7 @@ tr:hover {
 /* Print: hide app chrome and ensure readable contrast */
 @media print {
   .shell-top,
+  .section-nav,
   .bottom-tab-bar {
     display: none !important;
   }

@@ -255,6 +255,11 @@ describe('SiteSearch', () => {
 });
 
 describe('SearchLauncher', () => {
+  it('uses the short label, because the full placeholder does not fit the top bar', () => {
+    render(<MemoryRouter><SearchLauncher /></MemoryRouter>);
+    expect(screen.getByRole('button', { name: 'search.open' })).toHaveTextContent('search.launcher');
+  });
+
   it('opens from the button and from Ctrl+K', async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><SearchLauncher /></MemoryRouter>);

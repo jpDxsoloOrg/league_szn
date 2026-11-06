@@ -15,13 +15,15 @@
 
 .promo-card__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
 }
 
+/* The basis sends the badges to their own line before they can squeeze a name mid-word. */
 .promo-card__author {
   display: flex;
-  flex: 1;
+  flex: 1 1 9rem;
   flex-direction: column;
   min-width: 0;
 }
@@ -42,6 +44,7 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.375rem;
+  margin-left: auto;
 }
 
 .promo-card__context {

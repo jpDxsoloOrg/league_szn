@@ -48,6 +48,7 @@ function Leaderboards() {
   return (
     <div className="stats-page">
       <PageHeader
+        className="stats-header--filters"
         eyebrow={t('nav.statistics')}
         title={t('statistics.leaderboards.title')}
         actions={<LeaderboardFilters filters={filters} />}

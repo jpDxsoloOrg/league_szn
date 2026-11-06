@@ -17,7 +17,7 @@ export interface PodiumEntry {
   subtitle?: string;
   /** Pill above the card. Defaults to the rank number. */
   label?: string;
-  /** Hidden on phones to keep the podium compact. */
+  /** Phones show only the first value, to keep the podium compact. */
   stats?: PodiumStat[];
   to?: string;
 }

@@ -24,6 +24,9 @@ vi.mock('react-i18next', () => ({
 vi.mock('../../i18n', () => ({}));
 
 // Mock heavy child components to keep tests lightweight
+const { mockIsMobile } = vi.hoisted(() => ({ mockIsMobile: { value: false } }));
+vi.mock('../../hooks/useIsMobile', () => ({ useIsMobile: () => mockIsMobile.value }));
+vi.mock('../mobile/MobileHeader', () => ({ default: () => <header data-testid="mobile-header">MobileHeader</header> }));
 vi.mock('../shell/ShellHeader', () => ({ default: () => <nav data-testid="shell-header">ShellHeader</nav> }));
 vi.mock('../shell/SectionNav', () => ({ default: () => <div data-testid="section-nav">SectionNav</div> }));
 vi.mock('../Dashboard', () => ({ default: () => <div data-testid="dashboard">Dashboard</div> }));
@@ -128,6 +131,7 @@ describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     testEntries = ['/'];
+    mockIsMobile.value = false;
     mockUseSiteConfig.mockReturnValue({ features: ALL_FEATURES, isLoading: false });
   });
 
@@ -139,6 +143,21 @@ describe('App', () => {
     expect(screen.getByTestId('section-nav')).toBeInTheDocument();
     expect(await screen.findByTestId('dashboard')).toBeInTheDocument();
     expect(screen.getByRole('main')).toContainElement(screen.getByTestId('dashboard'));
+  });
+
+  it('pins the section tabs on desktop but lets them scroll away on phones', async () => {
+    mockUseAuth.mockReturnValue(authenticatedAuth());
+    const { container, unmount } = render(<App />);
+    await screen.findByTestId('dashboard');
+    expect(container.querySelector('.shell-top')).toContainElement(screen.getByTestId('section-nav'));
+    unmount();
+
+    mockIsMobile.value = true;
+    const phone = render(<App />);
+    await screen.findByTestId('dashboard');
+    const pinned = phone.container.querySelector('.shell-top');
+    expect(pinned).toContainElement(screen.getByTestId('mobile-header'));
+    expect(pinned).not.toContainElement(screen.getByTestId('section-nav'));
   });
 
   it('renders public routes without authentication', async () => {

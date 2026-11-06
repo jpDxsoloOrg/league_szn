@@ -662,6 +662,9 @@
     "details": "Details",
     "detailsFor": "Details: {{names}}",
     "detailsTitle": "Match details",
+    "noParticipants": "No participants yet",
+    "spotsOpen_one": "{{count}} spot open",
+    "spotsOpen_other": "{{count}} spots open",
     "filtersButton": "Filters",
     "filtersHelp": "Filters are combined together. Use \"Clear Filters\" to quickly reset and broaden results.",
     "learnMore": "Learn more",
@@ -2554,6 +2557,7 @@
   "search": {
     "title": "Search League SZN",
     "open": "Open search",
+    "launcher": "Search the league",
     "placeholder": "Search wrestlers, events, factions, pages",
     "results": "Search results",
     "noResults": "No matches found",

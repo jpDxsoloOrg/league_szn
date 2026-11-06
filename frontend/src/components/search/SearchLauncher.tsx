@@ -46,7 +46,7 @@ export default function SearchLauncher({ compact = false }: SearchLauncherProps)
         aria-haspopup="dialog"
       >
         <Search aria-hidden="true" size={compact ? 22 : 18} />
-        {!compact && <span className="search-launcher__label">{t('search.placeholder')}</span>}
+        {!compact && <span className="search-launcher__label">{t('search.launcher')}</span>}
       </button>
       {used && (
         <Suspense fallback={null}>

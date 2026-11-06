@@ -57,6 +57,9 @@ vi.mock('react-i18next', () => ({
         'matchSearch.filters.dateTo': 'To',
         'matchSearch.filters.clearAll': 'Clear Filters',
         'matchSearch.resultsCount': `${opts?.count ?? 0} match(es) found`,
+        'matchSearch.spotsOpen': `${opts?.count ?? 0} spots open`,
+        'matchSearch.noParticipants': 'No participants yet',
+        'matchSearch.detailsFor': `Details: ${opts?.names ?? ''}`,
         'matchSearch.noResults': 'No Matches Found',
         'matchSearch.noResultsFiltered': 'No matches match your current filters.',
         'matchSearch.noMatches': 'No matches have been recorded yet.',
@@ -305,10 +308,23 @@ describe('MatchSearch', () => {
     expect(mockGetAllMatches.mock.calls[0][0]).toBeUndefined();
   });
 
+  it('says what is on offer when an open sign-up has nobody on it yet', async () => {
+    mockGetAllMatches.mockResolvedValue([
+      { ...mockMatches[1], matchId: 'm3', participants: [], slotsRequired: 4, status: 'open-signups' as const },
+      { ...mockMatches[1], matchId: 'm4', participants: [], status: 'cancelled' as const },
+    ]);
+
+    renderWithRouter();
+
+    expect(await screen.findByText('4 spots open')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Details: 4 spots open' })).toBeInTheDocument();
+    expect(screen.getByText('No participants yet')).toBeInTheDocument();
+  });
+
   it('shows extra match data in the detail dialog', async () => {
     renderWithRouter();
     await screen.findAllByText('John Cena');
-    fireEvent.click(screen.getAllByRole('button', { name: 'matchSearch.detailsFor' })[0]!);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Details: John Cena, The Rock' })[0]!);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('matchSearch.detailDate')).toBeInTheDocument();
   });

@@ -249,6 +249,7 @@ describe('Standings', () => {
       // The API order, which puts 0-0-0 above 0-2-0.
       players: [
         { ...mockPlayers[0], wins: 3, losses: 0, draws: 0 },
+        { ...chasePack[0], wins: 2, losses: 0, draws: 0 },
         { ...mockPlayers[1], wins: 0, losses: 0, draws: 0, recentForm: ['W'], currentStreak: { type: 'W', count: 1 } },
         { ...mockPlayers[2], wins: 0, losses: 2, draws: 0 },
       ],
@@ -258,14 +259,43 @@ describe('Standings', () => {
 
     const podium = await screen.findByRole('list', { name: 'Top three' });
     expect(within(podium).getByText('John Cena')).toBeInTheDocument();
+    expect(within(podium).getByText('Stone Cold')).toBeInTheDocument();
     expect(within(podium).getByText('Undertaker')).toBeInTheDocument();
     expect(within(podium).queryByText('The Rock')).not.toBeInTheDocument();
 
     const table = screen.getByRole('table');
-    expect(within(table).getByText('#3')).toBeInTheDocument();
+    expect(within(table).getByText('#4')).toBeInTheDocument();
     expect(within(table).getByText('The Rock')).toBeInTheDocument();
     // Nothing recorded in this scope, so form from elsewhere stays out of the row.
     expect(within(table).queryByText('W1')).not.toBeInTheDocument();
+  });
+
+  it('skips the podium until three players have wrestled, so the table starts at #1', async () => {
+    mockGetStandings.mockResolvedValue({
+      sortedByWins: true,
+      players: [
+        { ...mockPlayers[0], wins: 3, losses: 0, draws: 0 },
+        { ...mockPlayers[1], wins: 1, losses: 2, draws: 0 },
+        { ...mockPlayers[2], wins: 0, losses: 0, draws: 0 },
+      ],
+    });
+
+    renderStandings();
+
+    const table = await screen.findByRole('table');
+    expect(screen.queryByRole('list', { name: 'Top three' })).not.toBeInTheDocument();
+    expect(screen.queryByText('The chase pack')).not.toBeInTheDocument();
+    expect(within(table).getByText('#1')).toBeInTheDocument();
+    expect(within(table).getByText('John Cena')).toBeInTheDocument();
+  });
+
+  it('shows the win rate on the phone rows', async () => {
+    mockMobile.value = true;
+
+    renderStandings();
+
+    const link = await screen.findByRole('link', { name: /Stone Cold/ });
+    expect(link).toHaveTextContent('50.0%');
   });
 
   it('uses a row list instead of the table on phones', async () => {
@@ -306,9 +336,10 @@ describe('Standings', () => {
     await user.click(await screen.findByRole('button', { name: 'SmackDown' }));
 
     expect(screen.getByRole('button', { name: 'SmackDown' })).toHaveAttribute('aria-pressed', 'true');
-    const podium = screen.getByRole('list', { name: 'Top three' });
-    expect(within(podium).getByText('The Rock')).toBeInTheDocument();
-    expect(within(podium).getByText('Mankind')).toBeInTheDocument();
+    const table = screen.getByRole('table');
+    expect(within(table).getByText('#1')).toBeInTheDocument();
+    expect(within(table).getByText('The Rock')).toBeInTheDocument();
+    expect(within(table).getByText('Mankind')).toBeInTheDocument();
     expect(screen.queryByText('John Cena')).not.toBeInTheDocument();
   });
 

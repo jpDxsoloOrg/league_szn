@@ -43,6 +43,7 @@
 .ui-select__content {
   z-index: var(--z-modal);
   min-width: var(--radix-select-trigger-width);
+  max-width: var(--radix-select-content-available-width);
   max-height: var(--radix-select-content-available-height);
   overflow: hidden;
   background-color: var(--color-surface-raised);
