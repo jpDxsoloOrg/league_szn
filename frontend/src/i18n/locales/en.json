@@ -2426,13 +2426,19 @@
         "confirmRemove": "Remove the override for {{player}}? Their rank will return to the algorithmic position on next recalculation.",
         "activeOverrides": "Active Overrides",
         "noOverrides": "No active overrides",
-        "applySuccess": "Override applied for {{player}}",
         "removeSuccess": "Override removed for {{player}}",
-        "errorNotEligible": "This player is not in the current rankings. They must meet minimum match requirements first.",
+        "placedOnList": "Override applied. {{player}} is now #{{rank}} on the list",
+        "placedNotOnList": "Override saved for {{player}}, but they are not on the list, so nothing moved. It takes effect if they reach the list.",
+        "placedNoSeason": "Override saved for {{player}}, but no season is active, so there is no list yet. It takes effect once a season starts.",
+        "placedFailed": "Override saved for {{player}}, but the rankings could not be recalculated. It takes effect at the next recalculation, within 6 hours.",
+        "errorExpiryPast": "The auto-expire date must be after today",
         "errorIsChampion": "Cannot override the current champion's ranking",
         "errorWrongDivision": "This player is not in the correct division for this championship",
         "reasonColumn": "Reason",
-        "expiresColumn": "Auto-expire"
+        "expiresColumn": "Auto-expire",
+        "positionColumn": "Position",
+        "positionRank": "#{{rank}}",
+        "positionNone": "Not on the list"
       }
     },
     "emptyTitle": "No rankings yet",

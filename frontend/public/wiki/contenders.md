@@ -7,7 +7,7 @@ The Contenders page shows the official #1 contender rankings for each championsh
 Contender rankings are calculated automatically from completed matches in the active season. If no season is active, they aren't updated. Each championship has its own rankings, showing who has earned the right to challenge for the title.
 
 - The current champion is shown at the top and isn't ranked.
-- You need at least 3 matches in the season to qualify, and a title lists up to 10 contenders.
+- You need at least 3 matches in the season to qualify, and a title lists up to 10 contenders. Staff can place a player on the list without them.
 - A title tied to a division normally ranks only players in that division.
 - Hidden players and players removed by staff aren't ranked.
 

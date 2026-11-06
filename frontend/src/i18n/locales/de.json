@@ -2426,13 +2426,19 @@
         "confirmRemove": "Anpassung für {{player}} entfernen? Der Rang wird bei der nächsten Berechnung auf die algorithmische Position zurückgesetzt.",
         "activeOverrides": "Aktive Anpassungen",
         "noOverrides": "Keine aktiven Anpassungen",
-        "applySuccess": "Anpassung für {{player}} angewendet",
         "removeSuccess": "Anpassung für {{player}} entfernt",
-        "errorNotEligible": "Dieser Spieler ist nicht in den aktuellen Rankings. Mindestanzahl an Kämpfen muss erfüllt sein.",
+        "placedOnList": "Anpassung angewendet. {{player}} steht jetzt auf Platz #{{rank}} der Liste",
+        "placedNotOnList": "Anpassung für {{player}} gespeichert, aber der Spieler steht nicht auf der Liste, also hat sich nichts bewegt. Sie greift, sobald er die Liste erreicht.",
+        "placedNoSeason": "Anpassung für {{player}} gespeichert, aber es ist keine Saison aktiv, also gibt es noch keine Liste. Sie greift, sobald eine Saison beginnt.",
+        "placedFailed": "Anpassung für {{player}} gespeichert, aber die Ranglisten konnten nicht neu berechnet werden. Sie greift bei der nächsten Neuberechnung, spätestens in 6 Stunden.",
+        "errorExpiryPast": "Das Ablaufdatum muss nach dem heutigen Tag liegen",
         "errorIsChampion": "Das Ranking des aktuellen Champions kann nicht angepasst werden",
         "errorWrongDivision": "Dieser Spieler ist nicht in der richtigen Division für diese Meisterschaft",
         "reasonColumn": "Grund",
-        "expiresColumn": "Automatischer Ablauf"
+        "expiresColumn": "Automatischer Ablauf",
+        "positionColumn": "Position",
+        "positionRank": "#{{rank}}",
+        "positionNone": "Nicht auf der Liste"
       }
     },
     "emptyTitle": "Noch keine Rangliste",

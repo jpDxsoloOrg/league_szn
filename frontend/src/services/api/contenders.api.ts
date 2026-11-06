@@ -1,4 +1,4 @@
-import type { ChampionshipContenders, ContenderOverride, SetOverrideRequest } from '../../types/contender';
+import type { ChampionshipContenders, ContenderOverride, SetOverrideRequest, SetOverrideResult } from '../../types/contender';
 import { API_BASE_URL, fetchWithAuth } from './apiClient';
 
 export const contendersApi = {
@@ -6,7 +6,7 @@ export const contendersApi = {
     return fetchWithAuth(`${API_BASE_URL}/championships/${championshipId}/contenders`, {}, signal);
   },
 
-  setOverride: async (body: SetOverrideRequest): Promise<ContenderOverride> => {
+  setOverride: async (body: SetOverrideRequest): Promise<SetOverrideResult> => {
     return fetchWithAuth(`${API_BASE_URL}/admin/contenders/overrides`, {
       method: 'POST',
       body: JSON.stringify(body),

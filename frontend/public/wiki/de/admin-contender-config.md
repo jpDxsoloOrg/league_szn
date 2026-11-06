@@ -26,4 +26,12 @@ Unter **Herausforderer Anpassungen** änderst du eine Position aus Storyline- od
 3. Gib einen Grund ein und optional ein Datum, an dem die Anpassung abläuft
 4. Klicke auf **Anpassung anwenden**
 
-Ist der Titel auf eine Division beschränkt, muss der Spieler in dieser Division sein, und der aktuelle Champion kann nicht angepasst werden. Das Anwenden oder Entfernen einer Anpassung berechnet diesen Titel neu. Aktive Anpassungen stehen auf der Seite und bleiben bei jeder Neuberechnung bestehen, bis sie ablaufen oder du auf **Anpassung entfernen** klickst. Eine Anpassung endet von selbst, wenn der Spieler Champion wird.
+Anpassungen gelten für jeden, der um den Titel antreten kann, unabhängig von seiner Bilanz:
+
+- **Auf #1 Herausforderer setzen** setzt den Spieler auf Platz 1, auch mit weniger als 3 Matches, ganz ohne Matches oder mit einer Wertung außerhalb der Top 10. Seine Zeile zeigt seine echten Werte der Saison, und der am niedrigsten platzierte Spieler fällt heraus, damit die Liste bei 10 bleibt
+- **Ans Ende setzen** setzt den Spieler auf den letzten Platz der Liste. Ein Spieler, der nicht auf der Liste steht, bleibt draußen, und die Seite sagt dir, dass sich nichts bewegt hat
+- Bei mehreren Anpassungen auf einem Titel steht die neueste Hochstufung auf Platz 1, ältere folgen darunter, und die neueste Anpassung **Ans Ende setzen** steht ganz hinten
+
+Der Spieler muss mit einem Wrestler-Namen im Roster stehen, und bei einem auf eine Division beschränkten Titel muss er in dieser Division sein. Der aktuelle Champion kann nicht angepasst werden.
+
+Das Anwenden einer Anpassung berechnet diesen Titel sofort neu, und die Seite zeigt dir den erreichten Platz oder warum der Spieler nicht auf der Liste steht. Auch das Entfernen berechnet den Titel neu. Die Spalte **Position** zeigt, wo jede aktive Anpassung gerade steht. Anpassungen bleiben bei jeder Neuberechnung bestehen, bis sie ablaufen oder du auf **Anpassung entfernen** klickst. Eine Anpassung endet von selbst, wenn der Spieler Champion wird.

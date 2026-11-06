@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SlidersHorizontal } from 'lucide-react';
 import type { Championship, Player } from '../../types';
-import type { ContenderOverride, OverrideType } from '../../types/contender';
+import type { ContenderOverride, OverridePlacement, OverrideType } from '../../types/contender';
 import { championshipsApi, contendersApi, playersApi } from '../../services/api';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
@@ -16,6 +16,15 @@ import { pickablePlayers } from '../../utils/pickablePlayers';
 import AdminNotice from './AdminNotice';
 import useAdminConfirm from './useAdminConfirm';
 import './adminContent.css';
+
+/** The API's wording for an expiry already past. Other errors show as sent. */
+const EXPIRY_PAST_MESSAGE = 'expiresAt must be in the future';
+
+const PLACEMENT_MESSAGE_KEYS: Record<Exclude<OverridePlacement['status'], 'onList'>, string> = {
+  notOnList: 'contenders.admin.overrides.placedNotOnList',
+  noActiveSeason: 'contenders.admin.overrides.placedNoSeason',
+  recalculationFailed: 'contenders.admin.overrides.placedFailed',
+};
 
 export default function AdminContenderOverrides() {
   const { t } = useTranslation();
@@ -34,7 +43,7 @@ export default function AdminContenderOverrides() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -116,21 +125,23 @@ export default function AdminContenderOverrides() {
     setSubmitting(true);
     setMessage(null);
     try {
-      await contendersApi.setOverride({
+      const { placement } = await contendersApi.setOverride({
         championshipId: selectedChampionshipId,
         playerId: selectedPlayerId,
         overrideType,
         reason: reason.trim(),
         expiresAt: expiresAt || undefined,
       });
-      setMessage({ type: 'success', text: t('contenders.admin.overrides.applySuccess', { player: player?.name }) });
+      setMessage(placement.status === 'onList'
+        ? { type: 'success', text: t('contenders.admin.overrides.placedOnList', { player: player?.name, rank: placement.rank }) }
+        : { type: 'warning', text: t(PLACEMENT_MESSAGE_KEYS[placement.status], { player: player?.name }) });
       clearForm();
       setOverridesReloadKey((key) => key + 1);
     } catch (err) {
-      setMessage({
-        type: 'error',
-        text: err instanceof Error ? err.message : t('adminContent.contenders.applyFailed', 'Failed to apply override'),
-      });
+      const text = err instanceof Error && err.message === EXPIRY_PAST_MESSAGE
+        ? t('contenders.admin.overrides.errorExpiryPast')
+        : err instanceof Error ? err.message : t('adminContent.contenders.applyFailed', 'Failed to apply override');
+      setMessage({ type: 'error', text });
     } finally {
       setSubmitting(false);
     }
@@ -313,6 +324,17 @@ export default function AdminContenderOverrides() {
                     ? t('contenders.admin.overrides.bumpToTop')
                     : t('contenders.admin.overrides.sendToBottom')}
                 </Badge>
+              ),
+            },
+            {
+              key: 'position',
+              header: t('contenders.admin.overrides.positionColumn'),
+              render: (override) => (
+                <span className="ac-nowrap">
+                  {override.currentRank
+                    ? t('contenders.admin.overrides.positionRank', { rank: override.currentRank })
+                    : t('contenders.admin.overrides.positionNone')}
+                </span>
               ),
             },
             { key: 'reason', header: t('contenders.admin.overrides.reasonColumn', 'Reason'), render: (override) => override.reason },
