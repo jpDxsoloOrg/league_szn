@@ -144,6 +144,11 @@
   white-space: nowrap;
 }
 
+.standings-row__win-rate {
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+}
+
 .standings-row__form {
   display: flex;
   align-items: center;

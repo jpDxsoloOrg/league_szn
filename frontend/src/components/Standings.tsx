@@ -158,7 +158,9 @@ export default function Standings() {
   }, [standings, selectedDivision, selectedAlignment]);
 
   // Only players who have wrestled earn a medal position.
-  const podiumPlayers = rankedPlayers.filter((player) => player.matchesPlayed > 0).slice(0, PODIUM_SIZE);
+  const playedPlayers = rankedPlayers.filter((player) => player.matchesPlayed > 0);
+  // Fewer than three is not a podium, so the table starts at #1 instead.
+  const podiumPlayers = playedPlayers.length >= PODIUM_SIZE ? playedPlayers.slice(0, PODIUM_SIZE) : [];
   const listedPlayers = rankedPlayers.slice(podiumPlayers.length);
 
   const podiumEntries: PodiumEntry[] = podiumPlayers.map((player) => ({
@@ -297,6 +299,7 @@ export default function Standings() {
                       </span>
                       <span className="standings-row__stats">
                         <span className="standings-row__record">{formatRecord(player)}</span>
+                        <span className="standings-row__win-rate">{formatWinRate(player)}</span>
                         <span className="standings-row__form">
                           <Streak streak={player.currentStreak} />
                           {player.recentForm && player.recentForm.length > 0 && <RecentForm player={player} />}

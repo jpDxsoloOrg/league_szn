@@ -167,9 +167,29 @@ a.ui-podium__card:hover {
     font-size: 1rem;
   }
 
-  .ui-podium__subtitle,
-  .ui-podium__stats {
+  .ui-podium__subtitle {
     display: none;
+  }
+
+  /* The headline stat stays as a bare value under the record. */
+  .ui-podium__stats {
+    justify-content: center;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .ui-podium__stat:not(:first-child) {
+    display: none;
+  }
+
+  .ui-podium__stat dt {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .ui-podium .ui-avatar--xl {
