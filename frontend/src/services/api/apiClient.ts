@@ -5,13 +5,33 @@ export const getAuthToken = (): string | null => {
   return sessionStorage.getItem('accessToken');
 };
 
+/** Fired when a signed-in request gets a 401 that a refresh could not fix. */
+export const AUTH_EXPIRED_EVENT = 'league:auth-expired';
+
+/** A failed API response. `message` is the server's, `status` the HTTP code. */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
+/** True when `err` is an API failure with this status. */
+export const isApiError = (err: unknown, status: number): err is ApiError =>
+  err instanceof ApiError && err.status === status;
+
 const buildRequest = (
   options: RequestInit,
   token: string | null,
   signal?: AbortSignal,
 ): RequestInit => {
+  // Content-Type is only sent with a body: on a GET it would turn a simple
+  // cross-origin request into one that needs a preflight.
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
     ...(options.headers as Record<string, string> || {}),
   };
   if (token) {
@@ -40,10 +60,11 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}, sign
 
   if (!response.ok) {
     if (response.status === 401 && token) {
-      throw new Error('Your session has expired. Please sign in again.');
+      window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+      throw new ApiError('Your session has expired. Please sign in again.', response.status);
     }
     const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || `HTTP ${response.status}`);
+    throw new ApiError(error.message || `HTTP ${response.status}`, response.status);
   }
 
   // Handle 204 No Content responses (e.g., from DELETE operations)

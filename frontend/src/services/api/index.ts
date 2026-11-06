@@ -1,5 +1,5 @@
 // Shared utilities
-export { API_BASE_URL, getAuthToken, fetchWithAuth } from './apiClient';
+export { API_BASE_URL, AUTH_EXPIRED_EVENT, ApiError, getAuthToken, fetchWithAuth, isApiError } from './apiClient';
 
 // API modules
 export { playersApi } from './players.api';
@@ -42,6 +42,7 @@ export { locationsApi } from './locations.api';
 
 // Type/interface re-exports
 export type { SiteFeatures } from './siteConfig.api';
+export type { PlayerDirectoryEntry } from './players.api';
 export type {
   StatsPlayer,
   PlayerStatsResponse,

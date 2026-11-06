@@ -5,6 +5,7 @@ import {
   imagesApi,
   divisionsApi,
   wrestlersApi,
+  isApiError,
 } from '../../services/api';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
@@ -78,7 +79,7 @@ export default function ManagePlayers() {
     try {
       setLoading(true);
       const [playersData, divisionsData, wrestlersData] = await Promise.all([
-        playersApi.getAll(),
+        playersApi.getAllIncludingHidden(),
         divisionsApi.getAll(),
         wrestlersApi.getAll(),
       ]);
@@ -176,7 +177,7 @@ export default function ManagePlayers() {
         imageUrl = response.imageUrl;
       } catch (err) {
         logger.error('Failed to get upload URL for player image');
-        if (err instanceof Error && err.message.includes('401')) {
+        if (isApiError(err, 401)) {
           throw new Error('Session expired. Please log in again to upload images.');
         }
         throw new Error('Unable to prepare image upload. Please check your connection and try again.');

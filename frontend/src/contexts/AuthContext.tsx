@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { PROFILE_SETUP_SNOOZE_KEY } from '../utils/profileSetup';
 import { cognitoAuth, type UserRole } from '../services/cognito';
 import { profileApi } from '../services/api';
+import { AUTH_EXPIRED_EVENT } from '../services/api/apiClient';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -196,6 +197,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       alternateWrestler: null,
     });
   }, []);
+
+  // The API client fires this once a 401 survives a token refresh. Dropping to
+  // signed-out here shows the sign-in entry instead of a shell whose requests fail.
+  useEffect(() => {
+    const onAuthExpired = () => {
+      void handleSignOut();
+    };
+    window.addEventListener(AUTH_EXPIRED_EVENT, onAuthExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onAuthExpired);
+  }, [handleSignOut]);
 
   const refreshProfile = useCallback(async () => {
     try {

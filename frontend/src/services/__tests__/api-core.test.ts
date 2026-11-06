@@ -7,7 +7,7 @@
  * global.fetch was invoked.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { authApi, profileApi, playersApi } from '../api';
+import { ApiError, AUTH_EXPIRED_EVENT, authApi, eventsApi, isApiError, profileApi, playersApi, promosApi } from '../api';
 
 // fetchWithAuth lazily imports the cognito service on the 401-refresh path;
 // mock it so tests never load aws-amplify.
@@ -58,7 +58,6 @@ describe('fetchWithAuth (indirect)', () => {
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: 'Bearer test-jwt-token',
-          'Content-Type': 'application/json',
         }),
       }),
     );
@@ -72,7 +71,58 @@ describe('fetchWithAuth (indirect)', () => {
     const callArgs = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     const headers = callArgs[1].headers as Record<string, string>;
     expect(headers).not.toHaveProperty('Authorization');
-    expect(headers['Content-Type']).toBe('application/json');
+  });
+
+  it('sends Content-Type only when the request has a body', async () => {
+    global.fetch = mockFetchResponse([]);
+
+    await playersApi.getAll();
+    await playersApi.create({ name: 'A', currentWrestler: 'B' } as never);
+
+    const calls = (global.fetch as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls[0]![1].headers).not.toHaveProperty('Content-Type');
+    expect(calls[1]![1].headers['Content-Type']).toBe('application/json');
+  });
+
+  it('throws an ApiError carrying the HTTP status', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      json: vi.fn().mockResolvedValue({ message: 'Player not found' }),
+    });
+
+    const failure = await playersApi.getById('missing').catch((err: unknown) => err);
+
+    expect(failure).toBeInstanceOf(ApiError);
+    expect(failure).toMatchObject({ status: 404, message: 'Player not found' });
+    expect(isApiError(failure, 404)).toBe(true);
+    expect(isApiError(failure, 401)).toBe(false);
+  });
+
+  it('requests the directory and staff views of players', async () => {
+    global.fetch = mockFetchResponse([]);
+
+    await playersApi.getDirectory();
+    await playersApi.getAllIncludingHidden();
+
+    const urls = (global.fetch as ReturnType<typeof vi.fn>).mock.calls.map((call) => call[0]);
+    expect(urls).toEqual([`${API_BASE}/players?view=directory`, `${API_BASE}/players?includeHidden=true`]);
+  });
+
+  it('passes includeArchived to the promos API', async () => {
+    global.fetch = mockFetchResponse([]);
+
+    await promosApi.getAll({ includeArchived: true });
+
+    expect(global.fetch).toHaveBeenCalledWith(`${API_BASE}/promos?includeArchived=true`, expect.anything());
+  });
+
+  it('getMyCheckIn resolves null on 404 and rethrows other failures', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404, json: vi.fn().mockResolvedValue({ message: 'none' }) });
+    await expect(eventsApi.getMyCheckIn('event-1')).resolves.toBeNull();
+
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 500, json: vi.fn().mockResolvedValue({ message: 'boom' }) });
+    await expect(eventsApi.getMyCheckIn('event-1')).rejects.toThrow('boom');
   });
 
   it('returns undefined for 204 No Content responses', async () => {
@@ -153,11 +203,17 @@ describe('fetchWithAuth (indirect)', () => {
         json: vi.fn().mockResolvedValue({ message: 'Unauthorized' }),
       });
 
+      const onExpired = vi.fn();
+      window.addEventListener(AUTH_EXPIRED_EVENT, onExpired);
+
       await expect(playersApi.getAll()).rejects.toThrow(
         'Your session has expired. Please sign in again.',
       );
+      window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
+
       expect(mockRefreshSession).toHaveBeenCalledTimes(1);
       expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(onExpired).toHaveBeenCalledTimes(1);
     });
 
     it('does not attempt a refresh for unauthenticated 401s', async () => {

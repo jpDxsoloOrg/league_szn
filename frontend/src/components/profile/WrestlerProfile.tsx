@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent, ChangeEvent, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { profileApi, imagesApi, overallsApi, transfersApi, divisionsApi, storylineRequestsApi, playersApi, wrestlersApi } from '../../services/api';
+import { profileApi, imagesApi, overallsApi, transfersApi, divisionsApi, storylineRequestsApi, playersApi, wrestlersApi, isApiError } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeName } from '../../utils/sanitize';
 import { isNeedsWrestler, NEEDS_WRESTLER } from '../../utils/needsWrestler';
@@ -173,7 +173,7 @@ export default function WrestlerProfile() {
         finishers: padMoves(profile.finishers),
       });
     } catch (err) {
-      if (err instanceof Error && err.message.includes('404')) {
+      if (isApiError(err, 404)) {
         setError('No player profile found. An admin needs to approve your wrestler request first.');
       } else {
         setError(err instanceof Error ? err.message : 'Failed to load profile');
@@ -337,7 +337,7 @@ export default function WrestlerProfile() {
         imageUrl = response.imageUrl;
       } catch (err) {
         logger.error('Failed to get upload URL for profile image');
-        if (err instanceof Error && err.message.includes('401')) {
+        if (isApiError(err, 401)) {
           throw new Error('Session expired. Please log in again to upload images.');
         }
         throw new Error('Unable to prepare image upload. Please check your connection and try again.');

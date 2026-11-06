@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { showsApi, companiesApi, imagesApi } from '../../services/api';
+import { showsApi, companiesApi, imagesApi, isApiError } from '../../services/api';
 import type { Show, Company, DayOfWeek } from '../../types';
 import { FILE_UPLOAD_LIMITS } from '../../constants';
 import Skeleton from '../ui/Skeleton';
@@ -101,7 +101,7 @@ export default function ManageShows() {
       await imagesApi.uploadToS3(response.uploadUrl, selectedFile);
       return response.imageUrl;
     } catch (err) {
-      if (err instanceof Error && err.message.includes('401')) {
+      if (isApiError(err, 401)) {
         throw new Error('Session expired. Please log in again to upload images.');
       }
       throw new Error('Failed to upload image. Please try again.');

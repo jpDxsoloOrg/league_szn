@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
-import { championshipsApi, divisionsApi, playersApi, imagesApi } from '../../services/api';
+import { championshipsApi, divisionsApi, playersApi, imagesApi, isApiError } from '../../services/api';
 import { sanitizeName } from '../../utils/sanitize';
 import { logger } from '../../utils/logger';
 import { FILE_UPLOAD_LIMITS, VALIDATION } from '../../constants';
@@ -149,7 +149,7 @@ export default function ManageChampionships() {
         imageUrl = response.imageUrl;
       } catch (err) {
         logger.error('Failed to get upload URL for championship image');
-        if (err instanceof Error && err.message.includes('401')) {
+        if (isApiError(err, 401)) {
           throw new Error('Session expired. Please log in again to upload images.');
         }
         throw new Error('Unable to prepare image upload. Please check your connection and try again.');

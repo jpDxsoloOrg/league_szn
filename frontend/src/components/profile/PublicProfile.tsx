@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { playersApi, standingsApi, divisionsApi, factionsApi, tagTeamsApi } from '../../services/api';
+import { playersApi, standingsApi, divisionsApi, factionsApi, tagTeamsApi, isApiError } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import {
@@ -101,7 +101,7 @@ export default function PublicProfile() {
         }
       } catch (err) {
         if (signal.aborted) return;
-        if (err instanceof Error && err.message.includes('404')) {
+        if (isApiError(err, 404)) {
           setError(t('publicProfile.notFound'));
         } else {
           setError(err instanceof Error ? err.message : t('publicProfile.loadError'));

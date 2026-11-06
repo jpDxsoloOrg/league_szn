@@ -7,7 +7,7 @@ import { BrowserRouter } from 'react-router-dom';
 const { mockPlayersApi, mockDivisionsApi, mockImagesApi, mockWrestlersApi } =
   vi.hoisted(() => ({
     mockPlayersApi: {
-      getAll: vi.fn(),
+      getAllIncludingHidden: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -89,13 +89,13 @@ function renderComponent() {
 describe('ManagePlayers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPlayersApi.getAll.mockResolvedValue(mockPlayers);
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue(mockPlayers);
     mockDivisionsApi.getAll.mockResolvedValue(mockDivisions);
     mockWrestlersApi.getAll.mockResolvedValue(mockWrestlers);
   });
 
   it('shows loading state during initial fetch', () => {
-    mockPlayersApi.getAll.mockReturnValue(new Promise(() => {}));
+    mockPlayersApi.getAllIncludingHidden.mockReturnValue(new Promise(() => {}));
     mockDivisionsApi.getAll.mockReturnValue(new Promise(() => {}));
     mockWrestlersApi.getAll.mockReturnValue(new Promise(() => {}));
     renderComponent();
@@ -122,7 +122,7 @@ describe('ManagePlayers', () => {
   });
 
   it('shows error state on API failure', async () => {
-    mockPlayersApi.getAll.mockRejectedValue(new Error('Network error'));
+    mockPlayersApi.getAllIncludingHidden.mockRejectedValue(new Error('Network error'));
     renderComponent();
 
     await waitFor(() => {
@@ -344,7 +344,7 @@ describe('ManagePlayers', () => {
       expect(screen.getByText('Player updated successfully!')).toBeInTheDocument();
     });
     // loadData is called again after success (initial load + post-save reload)
-    expect(mockPlayersApi.getAll).toHaveBeenCalledTimes(2);
+    expect(mockPlayersApi.getAllIncludingHidden).toHaveBeenCalledTimes(2);
   });
 
   it('shows error when save fails', async () => {
