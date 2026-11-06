@@ -1562,6 +1562,9 @@
       "deleteMatch": "Delete",
       "matchTBA": "Match TBA",
       "matchNotFound": "Match data is not available. Try refreshing the page.",
+      "moveMatchDown": "Move {{match}} down",
+      "moveMatchError": "Could not save the new match order.",
+      "moveMatchUp": "Move {{match}} up",
       "openCommentary": "Commentary View",
       "confirmDeleteTitle": "Confirm delete",
       "deleteMatchConfirm": {

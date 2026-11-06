@@ -11,12 +11,13 @@ const { api, authState } = vi.hoisted(() => ({
     getCheckIns: vi.fn(),
     getScheduled: vi.fn(),
     deleteMatch: vi.fn(),
+    claimSlot: vi.fn(),
     getRoster: vi.fn(),
     getPublicPlayers: vi.fn(),
     getBookingSummary: vi.fn(),
     getTagTeams: vi.fn(),
   },
-  authState: { isAdminOrModerator: true },
+  authState: { isAdminOrModerator: true, isAuthenticated: true, isWrestler: false },
 }));
 
 vi.mock('../../../services/api', () => ({
@@ -26,7 +27,7 @@ vi.mock('../../../services/api', () => ({
     delete: api.deleteEvent,
     getCheckIns: api.getCheckIns,
   },
-  matchesApi: { getAll: api.getScheduled, delete: api.deleteMatch },
+  matchesApi: { getAll: api.getScheduled, delete: api.deleteMatch, claimSlot: api.claimSlot },
   playersApi: {
     getAll: api.getPublicPlayers,
     getAllIncludingHidden: api.getRoster,
@@ -38,8 +39,8 @@ vi.mock('../../../services/api', () => ({
 vi.mock('../../../contexts/AuthContext', () => ({
   useAuth: () => ({
     isAdminOrModerator: authState.isAdminOrModerator,
-    isAuthenticated: authState.isAdminOrModerator,
-    isWrestler: false,
+    isAuthenticated: authState.isAuthenticated,
+    isWrestler: authState.isWrestler,
     playerId: null,
     currentWrestler: null,
     alternateWrestler: null,
@@ -48,9 +49,9 @@ vi.mock('../../../contexts/AuthContext', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, fallback?: string | { defaultValue?: string }) => {
+    t: (key: string, fallback?: string | { defaultValue?: string; match?: string }) => {
       if (typeof fallback === 'string') return fallback;
-      return fallback?.defaultValue ?? key;
+      return (fallback?.defaultValue ?? key).replace('{{match}}', fallback?.match ?? '');
     },
   }),
 }));
@@ -64,6 +65,7 @@ vi.mock('../MatchResultForm', () => ({
 }));
 
 import EventDetail from '../EventDetail';
+import { ToastContext } from '../../ui/toastContext';
 
 const scheduledMatch = {
   matchId: 'm1',
@@ -102,14 +104,58 @@ const eventWithMatch = {
   }],
 };
 
+const showToast = vi.fn();
+
 function renderDetail() {
   return render(
-    <MemoryRouter initialEntries={['/events/e1']}>
-      <Routes>
-        <Route path="/events/:eventId" element={<EventDetail />} />
-        <Route path="/events" element={<div>Events list</div>} />
-      </Routes>
-    </MemoryRouter>,
+    <ToastContext.Provider value={{ showToast }}>
+      <MemoryRouter initialEntries={['/events/e1']}>
+        <Routes>
+          <Route path="/events/:eventId" element={<EventDetail />} />
+          <Route path="/events" element={<div>Events list</div>} />
+        </Routes>
+      </MemoryRouter>
+    </ToastContext.Provider>,
+  );
+}
+
+type CardRow = [matchId: string, designation: string, notes?: string];
+
+/** An event as the API returns it: enrichedMatches built 1:1 from matchCards. */
+function eventWithCard(rows: CardRow[], status = 'upcoming') {
+  const matchCards = rows.map(([matchId, designation, notes], index) => ({
+    position: index + 1,
+    matchId,
+    designation,
+    ...(notes ? { notes } : {}),
+  }));
+  return {
+    ...eventWithMatch,
+    status,
+    matchCards,
+    enrichedMatches: matchCards.map((card) => ({
+      ...card,
+      matchData: {
+        matchId: card.matchId,
+        matchFormat: 'singles',
+        participants: [
+          { playerId: `${card.matchId}a`, playerName: 'Player', wrestlerName: `${card.matchId} Red` },
+          { playerId: `${card.matchId}b`, playerName: 'Player', wrestlerName: `${card.matchId} Blue` },
+        ],
+        isChampionship: false,
+        status: 'scheduled',
+      },
+    })),
+  };
+}
+
+const moveUp = (matchId: string) => screen.getByRole('button', { name: `Move ${matchId} Red common.vs ${matchId} Blue up` });
+const moveDown = (matchId: string) => screen.getByRole('button', { name: `Move ${matchId} Red common.vs ${matchId} Blue down` });
+
+/** Match ids in the order the page shows them, read from the rendered rows. */
+function shownOrder(container: HTMLElement) {
+  return [...container.querySelectorAll('.event-match')].map(
+    (row) => row.querySelector('.event-match__wrestler')?.textContent?.replace(' Red', ''),
   );
 }
 
@@ -117,6 +163,8 @@ describe('EventDetail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authState.isAdminOrModerator = true;
+    authState.isAuthenticated = true;
+    authState.isWrestler = false;
     api.getEvent.mockResolvedValue(eventWithMatch);
     api.getScheduled.mockResolvedValue([scheduledMatch]);
     api.getRoster.mockResolvedValue([
@@ -130,6 +178,7 @@ describe('EventDetail', () => {
 
   it('renders the card for the public without staff controls', async () => {
     authState.isAdminOrModerator = false;
+    authState.isAuthenticated = false;
     renderDetail();
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Summer Slam' })).toBeInTheDocument();
@@ -236,5 +285,208 @@ describe('EventDetail', () => {
 
     expect(await screen.findByRole('heading', { name: 'Gone' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'events.detail.backToEvents' })).toBeInTheDocument();
+  });
+
+  describe('moving matches on the card', () => {
+    const card: CardRow[] = [['m1', 'opener'], ['m2', 'midcard', 'Grudge match'], ['m3', 'main-event']];
+
+    it('swaps the row at once and saves the stored cards in the new order', async () => {
+      api.getEvent.mockResolvedValue(eventWithCard(card));
+      api.updateEvent.mockResolvedValue({});
+      const user = userEvent.setup();
+      const { container } = renderDetail();
+
+      await user.click(await waitFor(() => moveUp('m2')));
+
+      expect(shownOrder(container)).toEqual(['m2', 'm1', 'm3']);
+      expect(api.updateEvent).toHaveBeenCalledTimes(1);
+      expect(api.updateEvent).toHaveBeenCalledWith('e1', {
+        matchCards: [
+          { position: 1, matchId: 'm2', designation: 'midcard', notes: 'Grudge match' },
+          { position: 2, matchId: 'm1', designation: 'opener' },
+          { position: 3, matchId: 'm3', designation: 'main-event' },
+        ],
+      });
+    });
+
+    it('keeps the new order when the saved cards are reloaded', async () => {
+      api.getEvent.mockResolvedValue(eventWithCard(card));
+      api.updateEvent.mockImplementation(async (_eventId: string, { matchCards }: { matchCards: { matchId: string; designation: string }[] }) => {
+        api.getEvent.mockResolvedValue(eventWithCard(matchCards.map((entry) => [entry.matchId, entry.designation])));
+        return {};
+      });
+      const user = userEvent.setup();
+      const first = renderDetail();
+
+      await user.click(await waitFor(() => moveDown('m1')));
+      await waitFor(() => expect(moveDown('m1')).not.toHaveAttribute('aria-disabled'));
+      first.unmount();
+
+      const second = renderDetail();
+      await waitFor(() => moveDown('m1'));
+      expect(shownOrder(second.container)).toEqual(['m2', 'm1', 'm3']);
+    });
+
+    it('moves past main card rows stored between two pre-show matches', async () => {
+      api.getEvent.mockResolvedValue(eventWithCard([['m1', 'pre-show'], ['m2', 'midcard'], ['m3', 'pre-show'], ['m4', 'main-event']]));
+      api.updateEvent.mockResolvedValue({});
+      const user = userEvent.setup();
+      const { container } = renderDetail();
+
+      await user.click(await waitFor(() => moveUp('m3')));
+
+      expect(shownOrder(container)).toEqual(['m3', 'm1', 'm2', 'm4']);
+      const saved = api.updateEvent.mock.calls[0]?.[1].matchCards;
+      expect(saved.map((entry: { matchId: string }) => entry.matchId)).toEqual(['m3', 'm2', 'm1', 'm4']);
+      expect(saved.map((entry: { position: number }) => entry.position)).toEqual([1, 2, 3, 4]);
+    });
+
+    it('disables the outward control at each end of a section', async () => {
+      api.getEvent.mockResolvedValue(eventWithCard([['m1', 'pre-show'], ['m2', 'pre-show'], ['m3', 'opener'], ['m4', 'midcard'], ['m5', 'main-event']]));
+      renderDetail();
+      await waitFor(() => moveUp('m1'));
+
+      expect(moveUp('m1')).toBeDisabled();
+      expect(moveDown('m1')).toBeEnabled();
+      expect(moveDown('m2')).toBeDisabled();
+      expect(moveUp('m3')).toBeDisabled();
+      expect(moveUp('m4')).toBeEnabled();
+      expect(moveDown('m4')).toBeEnabled();
+      expect(moveDown('m5')).toBeDisabled();
+    });
+
+    it('locks the controls and match actions while saving, and ignores a second click', async () => {
+      api.getEvent.mockResolvedValue(eventWithCard(card));
+      let finishSave = () => {};
+      api.updateEvent.mockImplementation(() => new Promise<void>((resolve) => { finishSave = resolve; }));
+      const user = userEvent.setup();
+      renderDetail();
+
+      await user.click(await waitFor(() => moveUp('m2')));
+
+      expect(moveUp('m3')).toHaveAttribute('aria-disabled', 'true');
+      expect(screen.getAllByRole('button', { name: 'Delete' })[0]).toBeDisabled();
+      await user.click(moveUp('m3'));
+      expect(api.updateEvent).toHaveBeenCalledTimes(1);
+
+      finishSave();
+      await waitFor(() => expect(moveUp('m3')).not.toHaveAttribute('aria-disabled'));
+    });
+
+    it('rolls the card back and shows an error toast when the save fails', async () => {
+      api.getEvent.mockResolvedValue(eventWithCard(card));
+      api.updateEvent.mockRejectedValue(new Error('Server error'));
+      const user = userEvent.setup();
+      const { container } = renderDetail();
+
+      await user.click(await waitFor(() => moveDown('m1')));
+
+      await waitFor(() => expect(showToast).toHaveBeenCalledWith('Could not save the new match order.', 'error'));
+      expect(shownOrder(container)).toEqual(['m1', 'm2', 'm3']);
+      expect(moveDown('m1')).toHaveFocus();
+      expect(moveDown('m1')).not.toHaveAttribute('aria-disabled');
+
+      api.updateEvent.mockResolvedValue({});
+      await user.click(moveDown('m1'));
+      expect(api.updateEvent.mock.calls[1]?.[1].matchCards.map((entry: { position: number }) => entry.position)).toEqual([1, 2, 3]);
+    });
+
+    it('keeps focus on the control used, or its partner at the end of a section', async () => {
+      api.getEvent.mockResolvedValue(eventWithCard(card));
+      api.updateEvent.mockResolvedValue({});
+      const user = userEvent.setup();
+      renderDetail();
+
+      await user.click(await waitFor(() => moveDown('m1')));
+      expect(moveDown('m1')).toHaveFocus();
+
+      await user.click(moveDown('m1'));
+      expect(moveDown('m1')).toBeDisabled();
+      expect(moveUp('m1')).toHaveFocus();
+    });
+
+    /** The card with an open spot on m3, so Claim can trigger an event read mid-save. */
+    function cardWithOpenSlot(rows: CardRow[]) {
+      const event = eventWithCard(rows);
+      return {
+        ...event,
+        enrichedMatches: event.enrichedMatches.map((entry) => (entry.matchId === 'm3'
+          ? { ...entry, matchData: { ...entry.matchData, status: 'open-signups', slots: [{ slotId: 's1', position: 1 }] } }
+          : entry)),
+      };
+    }
+    const movedCard: CardRow[] = [['m2', 'midcard'], ['m1', 'opener'], ['m3', 'main-event']];
+
+    it('holds an event read back until the save finishes', async () => {
+      api.getEvent.mockResolvedValue(cardWithOpenSlot(card));
+      api.claimSlot.mockResolvedValue(undefined);
+      let finishSave = () => {};
+      api.updateEvent.mockImplementation(() => new Promise<void>((resolve) => { finishSave = resolve; }));
+      const user = userEvent.setup();
+      const { container } = renderDetail();
+
+      await user.click(await waitFor(() => moveUp('m2')));
+      const readsBeforeClaim = api.getEvent.mock.calls.length;
+      await user.click(screen.getByRole('button', { name: 'Claim spot' }));
+      await waitFor(() => expect(api.claimSlot).toHaveBeenCalled());
+
+      expect(api.getEvent).toHaveBeenCalledTimes(readsBeforeClaim);
+      expect(shownOrder(container)).toEqual(['m2', 'm1', 'm3']);
+
+      api.getEvent.mockResolvedValue(cardWithOpenSlot(movedCard));
+      finishSave();
+      await waitFor(() => expect(api.getEvent).toHaveBeenCalledTimes(readsBeforeClaim + 1));
+      expect(shownOrder(container)).toEqual(['m2', 'm1', 'm3']);
+    });
+
+    it('discards a read that started before the save and reads again', async () => {
+      api.getEvent.mockResolvedValue(cardWithOpenSlot(card));
+      api.claimSlot.mockResolvedValue(undefined);
+      api.updateEvent.mockResolvedValue({});
+      const user = userEvent.setup();
+      const { container } = renderDetail();
+      const moveControl = await waitFor(() => moveUp('m2'));
+
+      let finishRead = (_event: unknown) => {};
+      api.getEvent.mockImplementationOnce(() => new Promise((resolve) => { finishRead = resolve; }));
+      await user.click(screen.getByRole('button', { name: 'Claim spot' }));
+      await waitFor(() => expect(api.claimSlot).toHaveBeenCalled());
+      await user.click(moveControl);
+
+      api.getEvent.mockResolvedValue(cardWithOpenSlot(movedCard));
+      const readsBeforeFinish = api.getEvent.mock.calls.length;
+      finishRead(cardWithOpenSlot(card));
+
+      await waitFor(() => expect(api.getEvent.mock.calls.length).toBeGreaterThan(readsBeforeFinish));
+      await waitFor(() => expect(moveUp('m3')).not.toHaveAttribute('aria-disabled'));
+      expect(shownOrder(container)).toEqual(['m2', 'm1', 'm3']);
+    });
+
+    it.each(['completed', 'cancelled'])('shows no controls on a %s event', async (status) => {
+      api.getEvent.mockResolvedValue(eventWithCard(card, status));
+      renderDetail();
+
+      await screen.findByText('m1 Red');
+      expect(screen.queryByRole('button', { name: /^Move / })).not.toBeInTheDocument();
+    });
+
+    it('offers the controls on an event in progress', async () => {
+      api.getEvent.mockResolvedValue(eventWithCard(card, 'in-progress'));
+      renderDetail();
+
+      await waitFor(() => expect(moveUp('m2')).toBeEnabled());
+    });
+
+    it.each([
+      ['a guest', { isAdminOrModerator: false, isAuthenticated: false, isWrestler: false }],
+      ['a wrestler', { isAdminOrModerator: false, isAuthenticated: true, isWrestler: true }],
+    ])('shows no controls to %s', async (_role, role) => {
+      Object.assign(authState, role);
+      api.getEvent.mockResolvedValue(eventWithCard(card));
+      renderDetail();
+
+      await screen.findByText('m1 Red');
+      expect(screen.queryByRole('button', { name: /^Move / })).not.toBeInTheDocument();
+    });
   });
 });

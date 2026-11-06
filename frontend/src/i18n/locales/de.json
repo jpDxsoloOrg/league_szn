@@ -1562,6 +1562,9 @@
       "deleteMatch": "Löschen",
       "matchTBA": "Match noch offen",
       "matchNotFound": "Match-Daten sind nicht verfügbar. Bitte Seite neu laden.",
+      "moveMatchDown": "{{match}} nach unten verschieben",
+      "moveMatchError": "Die neue Match-Reihenfolge konnte nicht gespeichert werden.",
+      "moveMatchUp": "{{match}} nach oben verschieben",
       "openCommentary": "Kommentator-Ansicht",
       "confirmDeleteTitle": "Löschen bestätigen",
       "deleteMatchConfirm": {

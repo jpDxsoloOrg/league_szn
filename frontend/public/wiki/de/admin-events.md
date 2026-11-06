@@ -22,8 +22,11 @@ Stelle die Karte auf der Seite des Events zusammen:
 1. Öffne das Event unter **Events**
 2. Klicke auf **Match hinzufügen**, um ein Match direkt für die Karte zu planen
 3. Klicke bei einem Match auf **Bearbeiten**, um es zu ändern, auch seine Kartenposition (Pre-Show, Opener, Midcard, Co-Main, Main Event)
-4. Klicke bei einem Match auf **Löschen**, um es zu entfernen
-5. Um ein bestehendes einzelnes Match auf eine Karte zu setzen, bearbeite es unter **Einzelne Matches** und wähle das Event
+4. Ändere die Ablaufreihenfolge mit den Pfeilen nach oben und unten an einem Match
+5. Klicke bei einem Match auf **Löschen**, um es zu entfernen
+6. Um ein bestehendes einzelnes Match auf eine Karte zu setzen, bearbeite es unter **Einzelne Matches** und wähle das Event
+
+Die Pfeile sehen Admins und Moderatoren, solange das Event bevorsteht oder läuft. Jede Verschiebung wird sofort gespeichert. Schlägt das Speichern fehl, springt das Match an seinen alten Platz zurück. Pre-Show-Matches und Matches der Hauptkarte lassen sich jeweils nur innerhalb ihres Abschnitts verschieben. Die Kartenposition eines Matches bleibt dabei unverändert. Nutze **Bearbeiten**, um sie zu ändern oder ein Match in die Pre-Show oder aus ihr heraus zu nehmen.
 
 Titelmatches werden auf der Karte mit einem besonderen Badge hervorgehoben.
 
