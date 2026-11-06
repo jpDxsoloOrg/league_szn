@@ -170,6 +170,15 @@ export default function MatchSearch() {
     return map;
   }, [players]);
 
+  // The directory also covers hidden players so old matches keep their names.
+  // Only a deep link that already filters by one keeps that player listed.
+  const playerFilterOptions = useMemo(
+    () => players
+      .filter((player) => player.currentWrestler !== null || player.playerId === filters.playerId)
+      .map((player) => ({ value: player.playerId, label: player.name })),
+    [players, filters.playerId],
+  );
+
   const championshipMap = useMemo(() => {
     const map = new Map<string, Championship>();
     for (const c of championships) map.set(c.championshipId, c);
@@ -301,7 +310,7 @@ export default function MatchSearch() {
       {filtersOpen && (
         <div id="match-search-filters" className="match-search-filters" role="search" aria-label={t('matchSearch.filtersLabel')}>
           {renderSelect('playerId', t('matchSearch.filters.player'), 'filter-player',
-            players.map((player) => ({ value: player.playerId, label: player.name })))}
+            playerFilterOptions)}
           {renderSelect('matchType', t('matchSearch.filters.matchType'), 'filter-matchType',
             matchTypes.map((matchType) => ({ value: matchType.name, label: matchType.name })))}
           {renderSelect('stipulationId', t('matchSearch.filters.stipulation'), 'filter-stipulation',

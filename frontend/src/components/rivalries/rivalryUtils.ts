@@ -1,3 +1,4 @@
+import type { PlayerDirectoryEntry } from '../../services/api/players.api';
 import type { Player } from '../../types';
 import type { RivalryParticipant, RivalryStatus, WrestlerVariant } from '../../types/rivalry';
 
@@ -8,6 +9,31 @@ export const RIVALRY_STATUS_KEY: Record<RivalryStatus, string> = {
   rejected: 'rivalries.status.rejected',
   cancelled: 'rivalries.status.cancelled',
 };
+
+/**
+ * Adds directory entries for players missing from the public roster, so a
+ * rivalry can still name a participant who has no wrestler. Only the name is
+ * known for those players.
+ */
+export function withDirectoryPlayers(
+  players: Player[],
+  directory: PlayerDirectoryEntry[],
+): Player[] {
+  const known = new Set(players.map((player) => player.playerId));
+  const missing = directory
+    .filter((entry) => !known.has(entry.playerId))
+    .map((entry): Player => ({
+      playerId: entry.playerId,
+      name: entry.name,
+      currentWrestler: entry.currentWrestler ?? '',
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      createdAt: '',
+      updatedAt: '',
+    }));
+  return [...players, ...missing];
+}
 
 /**
  * Resolve the display name of a wrestler in a rivalry. Honors the

@@ -38,7 +38,18 @@ function resultTone(result: string): BadgeTone {
   return 'draw';
 }
 
-function PlayerSummary({ player }: { player: TagTeamPlayerInfo }) {
+function PlayerSummary({ player, fallbackName }: { player: TagTeamPlayerInfo | null; fallbackName: string }) {
+  if (!player) {
+    return (
+      <div className="group-person tag-team-detail__player">
+        <Avatar name={fallbackName} size="lg" />
+        <span className="group-person__text">
+          <span className="group-person__name">{fallbackName}</span>
+        </span>
+      </div>
+    );
+  }
+
   return (
     <Link to={`/player/${player.playerId}`} className="group-person tag-team-detail__player">
       <Avatar src={player.imageUrl} name={player.playerName} size="lg" />
@@ -154,9 +165,15 @@ export default function TagTeamDetail() {
       )}
 
       <div className="tag-team-detail__players">
-        <PlayerSummary player={tagTeam.player1} />
+        <PlayerSummary
+          player={tagTeam.player1}
+          fallbackName={tagTeam.player1WrestlerName || t('common.unknown')}
+        />
         <span className="tag-team-detail__ampersand" aria-hidden="true">&amp;</span>
-        <PlayerSummary player={tagTeam.player2} />
+        <PlayerSummary
+          player={tagTeam.player2}
+          fallbackName={tagTeam.player2WrestlerName || t('common.unknown')}
+        />
       </div>
 
       <section className="group-section">

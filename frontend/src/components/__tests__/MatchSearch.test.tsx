@@ -223,6 +223,30 @@ describe('MatchSearch', () => {
     });
   });
 
+  describe('with a hidden player in the directory', () => {
+    const hiddenPlayer = { playerId: 'p9', name: 'Hidden Person', currentWrestler: null };
+
+    const playerOptions = async (): Promise<string[]> => {
+      const playerSelect = await screen.findByLabelText('Player') as HTMLSelectElement;
+      await waitFor(() => expect(playerSelect.options.length).toBeGreaterThan(1));
+      return Array.from(playerSelect.options).map((option) => option.text);
+    };
+
+    beforeEach(() => mockGetAllPlayers.mockResolvedValue([...mockPlayers, hiddenPlayer]));
+
+    it('leaves them out of the filter', async () => {
+      renderWithRouter(['/matches?seasonId=s1']);
+
+      expect(await playerOptions()).not.toContain('Hidden Person');
+    });
+
+    it('keeps them listed when a link already filters by them', async () => {
+      renderWithRouter(['/matches?playerId=p9']);
+
+      expect(await playerOptions()).toContain('Hidden Person');
+    });
+  });
+
   it('calls matchesApi.getAll when the status tab changes', async () => {
     renderWithRouter();
     const completedTab = await screen.findByRole('tab', { name: 'Completed' });

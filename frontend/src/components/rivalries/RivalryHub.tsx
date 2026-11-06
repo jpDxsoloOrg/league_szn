@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { FileText, Flame, Mic, MessageSquare, Swords } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { playersApi, rivalriesApi } from '../../services/api';
+import type { PlayerDirectoryEntry } from '../../services/api/players.api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Player } from '../../types';
 import type {
@@ -18,6 +19,7 @@ import Skeleton from '../ui/Skeleton';
 import Tabs from '../ui/Tabs';
 import { useToast } from '../ui/toastContext';
 import RivalryCard from './RivalryCard';
+import { withDirectoryPlayers } from './rivalryUtils';
 import './RivalryHub.css';
 
 type TabId = 'active' | 'mine' | 'archive';
@@ -84,8 +86,11 @@ export default function RivalryHub() {
     const controller = new AbortController();
     const load = async () => {
       try {
-        const playerList = await playersApi.getAll(controller.signal);
-        if (!controller.signal.aborted) setPlayers(playerList);
+        const [playerList, directory] = await Promise.all([
+          playersApi.getAll(controller.signal),
+          playersApi.getDirectory(controller.signal).catch(() => [] as PlayerDirectoryEntry[]),
+        ]);
+        if (!controller.signal.aborted) setPlayers(withDirectoryPlayers(playerList, directory));
       } catch {
         // Cards fall back to ids and initials.
       }

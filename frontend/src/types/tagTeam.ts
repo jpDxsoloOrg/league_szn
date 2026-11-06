@@ -30,8 +30,9 @@ export interface TagTeamPlayerInfo {
 }
 
 export interface TagTeamWithPlayers extends TagTeam {
-  player1: TagTeamPlayerInfo;
-  player2: TagTeamPlayerInfo;
+  /** Null when the player record no longer exists. */
+  player1: TagTeamPlayerInfo | null;
+  player2: TagTeamPlayerInfo | null;
 }
 
 export interface TagTeamStanding {

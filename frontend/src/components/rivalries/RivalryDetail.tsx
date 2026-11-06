@@ -3,6 +3,7 @@ import { Routes, Route, useParams, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import { playersApi, rivalriesApi } from '../../services/api';
+import type { PlayerDirectoryEntry } from '../../services/api/players.api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Player } from '../../types';
 import type { HydratedRivalry } from '../../types/rivalry';
@@ -28,6 +29,7 @@ import {
   heatScorePercent,
   resolvePlayerCaption,
   resolveWrestlerName,
+  withDirectoryPlayers,
 } from './rivalryUtils';
 import HeatBadge from './HeatBadge';
 import './RivalryDetail.css';
@@ -60,11 +62,12 @@ export default function RivalryDetail() {
     Promise.all([
       rivalriesApi.get(rivalryId, controller.signal),
       playersApi.getAll(controller.signal).catch(() => [] as Player[]),
+      playersApi.getDirectory(controller.signal).catch(() => [] as PlayerDirectoryEntry[]),
     ])
-      .then(([res, p]) => {
+      .then(([res, roster, directory]) => {
         if (!mounted) return;
         setHydrated(res);
-        setPlayers(p);
+        setPlayers(withDirectoryPlayers(roster, directory));
         setError(null);
       })
       .catch((err: Error) => {

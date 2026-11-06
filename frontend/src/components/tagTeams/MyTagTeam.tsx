@@ -118,11 +118,11 @@ export default function MyTagTeam() {
       setIdentityPartnerWrestler('');
       return;
     }
-    const isPlayer1 = tagTeam.player1.playerId === profile.playerId;
+    const isPlayer1 = tagTeam.player1Id === profile.playerId;
     const myOverride = isPlayer1 ? tagTeam.player1WrestlerName : tagTeam.player2WrestlerName;
     const partnerOverride = isPlayer1 ? tagTeam.player2WrestlerName : tagTeam.player1WrestlerName;
-    const myFallback = isPlayer1 ? tagTeam.player1.wrestlerName : tagTeam.player2.wrestlerName;
-    const partnerFallback = isPlayer1 ? tagTeam.player2.wrestlerName : tagTeam.player1.wrestlerName;
+    const myFallback = isPlayer1 ? tagTeam.player1?.wrestlerName : tagTeam.player2?.wrestlerName;
+    const partnerFallback = isPlayer1 ? tagTeam.player2?.wrestlerName : tagTeam.player1?.wrestlerName;
     setIdentityName(tagTeam.name ?? '');
     setIdentityMyWrestler(myOverride ?? myFallback ?? '');
     setIdentityPartnerWrestler(partnerOverride ?? partnerFallback ?? '');
@@ -163,7 +163,7 @@ export default function MyTagTeam() {
   const handleSaveIdentity = useCallback(async (event: FormEvent) => {
     event.preventDefault();
     if (!tagTeam || !profile) return;
-    const isPlayer1 = tagTeam.player1.playerId === profile.playerId;
+    const isPlayer1 = tagTeam.player1Id === profile.playerId;
     const myField = isPlayer1 ? 'player1WrestlerName' : 'player2WrestlerName';
     const partnerField = isPlayer1 ? 'player2WrestlerName' : 'player1WrestlerName';
 
@@ -218,7 +218,7 @@ export default function MyTagTeam() {
   }
 
   const partner = tagTeam && profile
-    ? (tagTeam.player1.playerId === profile.playerId ? tagTeam.player2 : tagTeam.player1)
+    ? (tagTeam.player1Id === profile.playerId ? tagTeam.player2 : tagTeam.player1)
     : null;
 
   const respondButtons = (tagTeamId: string) => (

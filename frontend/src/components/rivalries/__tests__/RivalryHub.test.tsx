@@ -14,7 +14,7 @@ const { mockList, mockGetActivity, mockEventsGetAll, mockPlayersGetAll, mockUseA
 vi.mock('../../../services/api', () => ({
   rivalriesApi: { list: mockList, getActivity: mockGetActivity },
   eventsApi: { getAll: mockEventsGetAll },
-  playersApi: { getAll: mockPlayersGetAll },
+  playersApi: { getAll: mockPlayersGetAll, getDirectory: vi.fn().mockResolvedValue([]) },
 }));
 
 vi.mock('../../../contexts/AuthContext', () => ({
