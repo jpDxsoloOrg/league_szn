@@ -3,7 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import { NotFoundError } from '../../lib/repositories/errors';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
-import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
+import { NEEDS_WRESTLER, isNeedsWrestler } from '../../lib/needsWrestler';
 import { applyMovesetFields } from './movesetFields';
 import { getAuthContext, requireRole } from '../../lib/auth';
 import type { PlayerPatch } from '../../lib/repositories';
@@ -112,7 +112,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         continue;
       }
 
-      (patch as Record<string, unknown>)[field] = value;
+      // A blank wrestler name falls back to the placeholder, never '' or spaces.
+      (patch as Record<string, unknown>)[field] =
+        field === 'currentWrestler' && isNeedsWrestler(value) ? NEEDS_WRESTLER : value;
       hasChanges = true;
     }
 

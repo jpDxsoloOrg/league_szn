@@ -38,7 +38,8 @@
  * CAUTION:
  *   - Root sits just under the 500 limit. A new resource type not covered
  *     here or by the plugin defaults (a new S3 bucket, Cognito group, etc.
- *     added under `resources:`) lands in root and may fail the deploy —
+ *     added under `resources:`, or a new event source on a function) lands
+ *     in root and may fail the deploy —
  *     add a route for it here BEFORE deploying.
  *   - Never change routes in a way that would move already-deployed
  *     resources, and never use `force: true`: moving a deployed resource
@@ -60,6 +61,9 @@ const ROUTES = {
   'AWS::Logs::LogGroup': OVERFLOW,
   // Safe for NEW tables only — existing tables are never moved (see above).
   'AWS::DynamoDB::Table': OVERFLOW,
+  // Every `schedule:` event creates one of these. Without this route the rule
+  // lands in root and fails the deploy at the 500-resource limit.
+  'AWS::Events::Rule': OVERFLOW,
 };
 
 module.exports = (resource) => {

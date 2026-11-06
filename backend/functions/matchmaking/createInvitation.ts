@@ -5,6 +5,7 @@ import { created, badRequest, forbidden, notFound, serverError } from '../../lib
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
+import { isPlayerVisible, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 import type { InvitationRecord } from '../../lib/repositories/LeagueOpsRepository';
 
 interface CreateInvitationBody {
@@ -64,6 +65,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const target = await players.findById(targetPlayerId);
     if (!target) {
       return notFound('Target player not found');
+    }
+    if (!isPlayerVisible(target)) {
+      return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);
     }
 
     // Target must have an active presence row

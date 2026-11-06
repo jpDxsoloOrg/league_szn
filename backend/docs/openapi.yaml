@@ -888,6 +888,16 @@ paths:
     get:
       tags: [Players]
       summary: List players
+      description: Public. Leaves out players with no real wrestler name unless a mode below applies.
+      parameters:
+        - name: includeHidden
+          in: query
+          description: 'When "true", includes hidden players. Honoured for an authenticated Admin or Moderator; ignored otherwise.'
+          schema: { type: string, enum: ['true'] }
+        - name: view
+          in: query
+          description: 'When "directory", returns only playerId, name and currentWrestler (null if unset) for all players.'
+          schema: { type: string, enum: [directory] }
       responses:
         '200': { description: List of players }
     post:
@@ -1660,6 +1670,14 @@ paths:
         - name: promoType
           in: query
           schema: { type: string }
+        - name: includeHidden
+          in: query
+          description: 'When "true", includes moderated promos and promos by hidden players. Honoured for an authenticated Admin or Moderator; ignored otherwise.'
+          schema: { type: string, enum: ['true'] }
+        - name: includeArchived
+          in: query
+          description: 'When "true", includes call-outs and responses past the archive window. Honoured for an authenticated Admin or Moderator; ignored otherwise.'
+          schema: { type: string, enum: ['true'] }
       responses:
         '200': { description: List of promos }
     post:

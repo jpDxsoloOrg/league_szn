@@ -86,7 +86,7 @@ describe('createPromo', () => {
   it('includes optional fields when provided', async () => {
     mockQuery.mockResolvedValue({ Items: [{ playerId: 'player-1', userId: 'user-sub-1', name: 'Test Player' }] });
     // mockGet is called for players.findById(targetPlayerId) during notification check
-    mockGet.mockResolvedValue({ Item: { playerId: 'player-2', name: 'Target Player', userId: 'user-sub-2' } });
+    mockGet.mockResolvedValue({ Item: { playerId: 'player-2', name: 'Target Player', currentWrestler: 'Target Wrestler', userId: 'user-sub-2' } });
     mockPut.mockResolvedValue({});
 
     const event = withAuth(

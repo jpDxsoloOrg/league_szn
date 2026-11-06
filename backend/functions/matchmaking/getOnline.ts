@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, forbidden, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
+import { isPlayerVisible } from '../../lib/needsWrestler';
 
 interface OnlinePlayerResponse {
   playerId: string;
@@ -69,6 +70,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       const presence = livePresence[i];
       const playerItem = playerResults[i];
       if (!playerItem || !playerItem.playerId) continue;
+      if (!isPlayerVisible(playerItem)) continue;
 
       const entry: OnlinePlayerResponse = {
         playerId: playerItem.playerId,

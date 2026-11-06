@@ -57,7 +57,7 @@ describe('createChallenge', () => {
 
   it('creates a challenge with required fields and returns 201', async () => {
     mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
-    mockGet.mockResolvedValue({ Item: { playerId: 'p2', name: 'The Rock' } });
+    mockGet.mockResolvedValue({ Item: { playerId: 'p2', name: 'The Rock', currentWrestler: 'The Rock' } });
     mockPut.mockResolvedValue({});
 
     const result = await createChallenge(wrestlerEvent({ challengedId: 'p2', matchType: 'Singles' }), ctx, cb);
@@ -76,7 +76,7 @@ describe('createChallenge', () => {
 
   it('includes optional fields (stipulation, championshipId, message) when provided', async () => {
     mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
-    mockGet.mockResolvedValue({ Item: { playerId: 'p2' } });
+    mockGet.mockResolvedValue({ Item: { playerId: 'p2', currentWrestler: 'The Rock' } });
     mockPut.mockResolvedValue({});
 
     const result = await createChallenge(
@@ -93,7 +93,7 @@ describe('createChallenge', () => {
 
   it('omits optional fields when not provided', async () => {
     mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
-    mockGet.mockResolvedValue({ Item: { playerId: 'p2' } });
+    mockGet.mockResolvedValue({ Item: { playerId: 'p2', currentWrestler: 'The Rock' } });
     mockPut.mockResolvedValue({});
 
     const result = await createChallenge(wrestlerEvent({ challengedId: 'p2', matchType: 'Singles' }), ctx, cb);
@@ -187,20 +187,20 @@ describe('createChallenge', () => {
     expect(JSON.parse(result!.body).message).toBe('Challenged player not found');
   });
 
-  it('sets 7-day expiration on created challenge', async () => {
+  it('sets 4-day expiration on created challenge', async () => {
     mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'user-sub-1' }] });
-    mockGet.mockResolvedValue({ Item: { playerId: 'p2' } });
+    mockGet.mockResolvedValue({ Item: { playerId: 'p2', currentWrestler: 'The Rock' } });
     mockPut.mockResolvedValue({});
 
     const result = await createChallenge(wrestlerEvent({ challengedId: 'p2', matchType: 'Singles' }), ctx, cb);
     const body = JSON.parse(result!.body);
     const diffDays = (new Date(body.expiresAt).getTime() - new Date(body.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-    expect(diffDays).toBeCloseTo(7, 0);
+    expect(diffDays).toBeCloseTo(4, 2);
   });
 
   it('allows Admin to create challenges (hasRole grants Admin access)', async () => {
     mockQuery.mockResolvedValue({ Items: [{ playerId: 'p1', userId: 'admin-sub' }] });
-    mockGet.mockResolvedValue({ Item: { playerId: 'p2' } });
+    mockGet.mockResolvedValue({ Item: { playerId: 'p2', currentWrestler: 'The Rock' } });
     mockPut.mockResolvedValue({});
 
     const event = withAuth(makeEvent({ body: JSON.stringify({ challengedId: 'p2', matchType: 'Singles' }) }), 'Admin', 'admin-sub');

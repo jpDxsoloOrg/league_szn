@@ -2,10 +2,19 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import type { Promo, PromoType } from '../../lib/repositories/types';
+import { isPlayerVisible } from '../../lib/needsWrestler';
+import { getVerifiedCaller, isStaff } from '../../lib/optionalCaller';
+import { isPromoArchived } from '../../lib/promoArchive';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    const { playerId, promoType, includeHidden, excludeResponses } = event.queryStringParameters || {};
+    const { playerId, promoType, includeHidden, includeArchived, excludeResponses } = event.queryStringParameters || {};
+
+    // Both flags are staff-only and are ignored for anyone else. includeHidden
+    // covers moderated promos and promos by players hidden from the roster.
+    const staff = isStaff(await getVerifiedCaller(event));
+    const showHidden = staff && includeHidden === 'true';
+    const showArchived = staff && includeArchived === 'true';
 
     const { content: { promos }, roster: { players } } = getRepositories();
 
@@ -27,9 +36,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const playerMap: Record<string, { name: string; currentWrestler: string; imageUrl?: string }> = {};
+    const hiddenPlayerIds = new Set<string>();
     for (const pid of playerIds) {
       const player = await players.findById(pid);
       if (player) {
+        if (!isPlayerVisible(player)) hiddenPlayerIds.add(pid);
         playerMap[pid] = {
           name: player.name,
           currentWrestler: player.currentWrestler,
@@ -48,8 +59,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Enrich with player context
+    const now = Date.now();
     const enriched = promoList
-      .filter((p) => (includeHidden === 'true' || !p.isHidden) && !(excludeResponses === 'true' && (p.targetPromoId || p.promoType === 'response')))
+      .filter((p) => showHidden || (!p.isHidden && !hiddenPlayerIds.has(p.playerId)))
+      .filter((p) => showArchived || !isPromoArchived(p, now))
+      .filter((p) => !(excludeResponses === 'true' && (p.targetPromoId || p.promoType === 'response')))
       .map((p) => {
         const author = playerMap[p.playerId];
         const target = p.targetPlayerId ? playerMap[p.targetPlayerId] : undefined;
@@ -84,6 +98,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           targetWrestlerName: target?.currentWrestler,
           targetPromo,
           responseCount: responseCounts[p.promoId] || 0,
+          ...(staff ? { isArchived: isPromoArchived(p, now) } : {}),
         };
       });
 

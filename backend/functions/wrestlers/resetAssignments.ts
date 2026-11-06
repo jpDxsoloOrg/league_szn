@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { serverError, success } from '../../lib/response';
+import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
 
 /**
  * POST /wrestlers/reset-assignments (admin)
@@ -11,8 +12,8 @@ import { serverError, success } from '../../lib/response';
  *   (same staging as the single-release path in updatePlayer/deletePlayer).
  * - Every player with a wrestler FK gets `currentWrestlerId` /
  *   `alternateWrestlerId` removed, along with the denormalized display
- *   names (`currentWrestler` is set to '' since it's a required field;
- *   `alternateWrestler` is removed).
+ *   names (`currentWrestler` is set to the NEEDS_WRESTLER placeholder since
+ *   it's a required field; `alternateWrestler` is removed).
  *
  * All mutations are staged through the unit of work, which flushes
  * TransactWriteItems in ≤100-item chunks.
@@ -47,7 +48,7 @@ export const handler: APIGatewayProxyHandler = async () => {
         const patch: Record<string, unknown> = {};
         if (player.currentWrestlerId) {
           patch.currentWrestlerId = null;
-          patch.currentWrestler = '';
+          patch.currentWrestler = NEEDS_WRESTLER;
         }
         if (player.alternateWrestlerId) {
           patch.alternateWrestlerId = null;

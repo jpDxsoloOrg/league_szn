@@ -11,6 +11,8 @@ import type {
   Championship,
 } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
+import { isPromoArchived } from '../../lib/promoArchive';
 
 const ACTIVITY_TYPES = ['match', 'championship', 'challenge', 'promo', 'tournament', 'season'] as const;
 type ActivityTypeFilter = (typeof ACTIVITY_TYPES)[number];
@@ -57,6 +59,21 @@ function buildPlayerNameMap(allPlayers: Player[]): Record<string, string> {
     names[player.playerId] = player.name || player.currentWrestler || player.playerId;
   }
   return names;
+}
+
+function buildChallengeSummary(status: unknown, challenger: unknown, challenged: unknown): string {
+  switch (status) {
+    case 'accepted':
+      return `${challenged} accepted ${challenger}'s challenge`;
+    case 'declined':
+      return `${challenged} declined ${challenger}'s challenge`;
+    case 'countered':
+      return `${challenged} countered ${challenger}'s challenge`;
+    case 'cancelled':
+      return `${challenger} withdrew their challenge to ${challenged}`;
+    default:
+      return `${challenger} challenged ${challenged}`;
+  }
 }
 
 function buildChampionshipNameMap(allChampionships: Championship[]): Record<string, string> {
@@ -201,6 +218,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     if (includeChallenge) {
       const allChallenges: Challenge[] = await challenges.list();
       for (const c of allChallenges) {
+        // Nobody did anything when a challenge lapses, so it isn't news.
+        if (c.status === 'expired') continue;
         const updatedAt = c.updatedAt || c.createdAt;
         if (!updatedAt) continue; // only show challenges with updatedAt or createdAt
         playerIds.add(c.challengerId);
@@ -224,7 +243,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     if (includePromo) {
       const allPromos: Promo[] = await promos.list();
+      const now = Date.now();
       for (const p of allPromos) {
+        if (isPromoArchived(p, now)) continue;
         const updatedAt = p.updatedAt || p.createdAt;
         if (!updatedAt) continue; // only show promos with updatedAt or createdAt
         playerIds.add(p.playerId);
@@ -290,7 +311,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const meta = item.metadata;
         meta.challengerName = playerNames[meta.challengerId as string] || meta.challengerId;
         meta.challengedName = playerNames[meta.challengedId as string] || meta.challengedId;
-        item.summary = `${meta.challengerName} challenged ${meta.challengedName}`;
+        item.summary = buildChallengeSummary(meta.status, meta.challengerName, meta.challengedName);
       } else if (item.type === 'promo_posted') {
         const meta = item.metadata;
         meta.playerName = playerNames[meta.playerId as string] || meta.playerId;
@@ -298,15 +319,27 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    // Items authored by hidden players leave the feed. Matches, title changes
+    // and tournament results are league history, so they stay, and the name
+    // map above still covers everyone.
+    const hiddenPlayerIds = new Set(
+      allPlayers.filter((p) => !isPlayerVisible(p)).map((p) => p.playerId),
+    );
+    const visibleItems = rawItems.filter((item) => {
+      if (item.type === 'promo_posted') return !hiddenPlayerIds.has(item.metadata.playerId as string);
+      if (item.type === 'challenge_event') return !hiddenPlayerIds.has(item.metadata.challengerId as string);
+      return true;
+    });
+
     // Sort by timestamp desc, then id asc so same-timestamp items have deterministic order and cursor is stable
-    rawItems.sort((a, b) => {
+    visibleItems.sort((a, b) => {
       const ta = new Date(a.timestamp).getTime();
       const tb = new Date(b.timestamp).getTime();
       if (tb !== ta) return tb - ta;
       return a.id.localeCompare(b.id);
     });
 
-    let filtered = rawItems;
+    let filtered = visibleItems;
     if (cursor) {
       let cursorTime: number;
       let cursorId: string | null = null;
@@ -321,7 +354,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       } else {
         cursorTime = new Date(cursor).getTime();
       }
-      filtered = rawItems.filter((i) => {
+      filtered = visibleItems.filter((i) => {
         const t = new Date(i.timestamp).getTime();
         if (t < cursorTime) return true;
         if (t === cursorTime && cursorId !== null) return i.id > cursorId;

@@ -3,6 +3,8 @@ import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext, hasRole } from '../../lib/auth';
+import { findHiddenPlayerIds } from '../../lib/needsWrestler';
+import { isPromoArchived } from '../../lib/promoArchive';
 import type {
   Rivalry,
   RivalryMessage,
@@ -91,13 +93,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const noteVisibility = computeAllowedVisibility(isAdmin, callerIsParticipant);
 
     // Run independent fetches in parallel.
-    const [allMatches, perPlayerPromos, upcomingEvents, messagesPage, allNotes] =
+    const [allMatches, perPlayerPromos, upcomingEvents, messagesPage, allNotes, hiddenAuthorIds] =
       await Promise.all([
         matches.list(),
         Promise.all(participantIds.map((pid) => promos.listByPlayer(pid))),
         events.listByStatus('upcoming'),
         rivalryMessages.list(rivalryId, { limit: MAX_MESSAGES * 4 }),
         rivalryNotes.listByRivalry(rivalryId),
+        findHiddenPlayerIds(participantIds, (playerId) => players.findById(playerId)),
       ]);
 
     const headToHead = computeHeadToHead(allMatches, participantIds, {
@@ -109,8 +112,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       endedAt: rivalry.endedAt,
     });
 
+    const now = Date.now();
     const recentPromos = perPlayerPromos
       .flat()
+      .filter((p) => !isPromoArchived(p, now) && !hiddenAuthorIds.has(p.playerId))
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
       .slice(0, MAX_PROMOS)
       .map((p) => ({

@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
 import {
   computeRecentFormAndStreak,
   type FormResult,
@@ -223,7 +224,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         .map((p) => [p.playerId, p]),
     );
 
-    const members: MemberStatsRow[] = factionMemberIds.map((playerId) => {
+    const listedMemberIds = factionMemberIds.filter((playerId) => {
+      const player = playerById.get(playerId);
+      return !player || isPlayerVisible(player);
+    });
+
+    const members: MemberStatsRow[] = listedMemberIds.map((playerId) => {
       const player = playerById.get(playerId);
       const { results, wins, losses, draws } = computeMemberForm(matches, playerId);
       const { recentForm, currentStreak } = computeRecentFormAndStreak(results, RECENT_FORM_LIMIT);

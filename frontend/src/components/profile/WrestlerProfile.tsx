@@ -476,9 +476,9 @@ export default function WrestlerProfile() {
         // backend lets an FK on a slot win over the text, and omitting them
         // also leaves any existing roster assignment untouched rather than
         // releasing it.
-        // Blank falls back to the placeholder rather than '': GET /players
-        // drops players with no currentWrestler, and clearing the FK
-        // server-side stamps the same placeholder.
+        // Blank falls back to the placeholder rather than '': it matches what
+        // clearing the FK stamps server-side. Either way the player stays
+        // hidden from public views until they set a real name.
         updates.currentWrestler = formData.currentWrestler.trim() || NEEDS_WRESTLER;
         updates.alternateWrestler = formData.alternateWrestler.trim();
       } else {

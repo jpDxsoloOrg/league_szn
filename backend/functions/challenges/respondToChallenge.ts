@@ -3,6 +3,8 @@ import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError, forbidden } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { v4 as uuidv4 } from 'uuid';
+import { challengeExpiresAt, isChallengeExpired } from '../../lib/challengeExpiry';
+import { isPlayerVisible, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 
 type ChallengeAction = 'accept' | 'decline' | 'counter';
 
@@ -75,6 +77,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    if (isChallengeExpired(challenge)) {
+      return badRequest('Challenge expired');
+    }
+
     const now = new Date().toISOString();
 
     if (action === 'accept' || action === 'decline') {
@@ -92,9 +98,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('counterMatchType is required when countering');
     }
 
+    // A counter is a new challenge aimed at the original challenger.
+    const counterTarget = await players.findById(challenge.challengerId);
+    if (counterTarget && !isPlayerVisible(counterTarget)) {
+      return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);
+    }
+
     const counterChallengeId = uuidv4();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
 
     const counterChallenge: Record<string, unknown> = {
       challengeId: counterChallengeId,
@@ -102,7 +112,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       challengedId: challenge.challengerId,
       matchType: counterMatchType,
       status: 'pending',
-      expiresAt: expiresAt.toISOString(),
+      expiresAt: challengeExpiresAt(),
       createdAt: now,
       updatedAt: now,
     };

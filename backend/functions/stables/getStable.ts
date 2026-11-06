@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
 import {
   StableRecord,
   MatchRecord,
@@ -70,17 +71,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     for (const player of memberResults) {
       if (player) {
-        const summary: PlayerSummary = {
-          playerId: player.playerId,
-          playerName: player.name,
-          wrestlerName: player.currentWrestler,
-          imageUrl: player.imageUrl,
-          psnId: player.psnId,
-          wins: player.wins || 0,
-          losses: player.losses || 0,
-          draws: player.draws || 0,
-        };
-        members.push(summary);
+        if (isPlayerVisible(player)) {
+          const summary: PlayerSummary = {
+            playerId: player.playerId,
+            playerName: player.name,
+            wrestlerName: player.currentWrestler,
+            imageUrl: player.imageUrl,
+            psnId: player.psnId,
+            wins: player.wins || 0,
+            losses: player.losses || 0,
+            draws: player.draws || 0,
+          };
+          members.push(summary);
+        }
 
         if (player.playerId === stable.leaderId) {
           leaderName = player.name;

@@ -3,6 +3,8 @@ import { getRepositories } from '../../lib/repositories';
 import { created, badRequest, serverError } from '../../lib/response';
 import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
+import { challengeExpiresAt } from '../../lib/challengeExpiry';
+import { isPlayerVisible, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 // Notifications intentionally not dispatched here while the challenge UI is hidden.
 
 interface CreateChallengeBody {
@@ -50,9 +52,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const challengerId = challengerPlayer.playerId;
 
-    const now = new Date();
-    const expiresAt = new Date(now);
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7-day expiration
+    const expiresAt = challengeExpiresAt();
 
     if (challengeMode === 'tag_team') {
       // --- Tag Team Challenge Flow ---
@@ -80,6 +80,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         return badRequest('A tag team cannot challenge itself');
       }
 
+      const challengedMembers = await Promise.all(
+        [challengedTeam.player1Id, challengedTeam.player2Id].map((id) => players.findById(id)),
+      );
+      if (challengedMembers.some((member) => member && !isPlayerVisible(member))) {
+        return badRequest('A member of that tag team has not set a wrestler name yet');
+      }
+
       const challenge = await challenges.create({
         challengerId,
         challengedId: challengedTeam.player1Id,
@@ -90,7 +97,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         stipulation: stipulation || undefined,
         championshipId: championshipId || undefined,
         message: message || undefined,
-        expiresAt: expiresAt.toISOString(),
+        expiresAt,
       });
 
       // Notification dispatch intentionally disabled while the challenge UI is hidden.
@@ -113,6 +120,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Challenged player not found');
     }
 
+    if (!isPlayerVisible(challengedPlayer)) {
+      return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);
+    }
+
     const challenge = await challenges.create({
       challengerId,
       challengedId,
@@ -120,7 +131,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       stipulation: stipulation || undefined,
       championshipId: championshipId || undefined,
       message: message || undefined,
-      expiresAt: expiresAt.toISOString(),
+      expiresAt,
     });
 
     // Notification dispatch intentionally disabled while the challenge UI is hidden.

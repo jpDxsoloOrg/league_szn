@@ -3,7 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import { NotFoundError } from '../../lib/repositories/errors';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
-import { NEEDS_WRESTLER } from '../../lib/needsWrestler';
+import { NEEDS_WRESTLER, isNeedsWrestler } from '../../lib/needsWrestler';
 import { requireRole } from '../../lib/auth';
 import { applyMovesetFields } from './movesetFields';
 import type { PlayerPatch } from '../../lib/repositories';
@@ -109,7 +109,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       body.currentWrestler !== undefined &&
       body.currentWrestlerId === undefined
     ) {
-      patch.currentWrestler = body.currentWrestler as string;
+      // A blank wrestler name falls back to the placeholder, never '' or spaces.
+      const legacyName = body.currentWrestler;
+      patch.currentWrestler =
+        typeof legacyName === 'string' && !isNeedsWrestler(legacyName)
+          ? legacyName
+          : NEEDS_WRESTLER;
       hasChanges = true;
     }
     if (

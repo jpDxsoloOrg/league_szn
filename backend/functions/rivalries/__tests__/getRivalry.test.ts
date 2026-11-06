@@ -7,7 +7,7 @@ const mockNotes = { listByRivalry: vi.fn() };
 const mockMatches = { list: vi.fn() };
 const mockPromos = { listByPlayer: vi.fn() };
 const mockEvents = { listByStatus: vi.fn() };
-const mockPlayers = { findByUserId: vi.fn() };
+const mockPlayers = { findByUserId: vi.fn(), findById: vi.fn() };
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
@@ -54,6 +54,7 @@ describe('getRivalry (hydrated)', () => {
     mockPromos.listByPlayer.mockResolvedValue([]);
     mockEvents.listByStatus.mockResolvedValue([]);
     mockPlayers.findByUserId.mockResolvedValue(null);
+    mockPlayers.findById.mockResolvedValue(null);
   });
 
   it('returns 404 when the rivalry is missing', async () => {

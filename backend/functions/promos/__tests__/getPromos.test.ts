@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Hoisted mocks ──────────────────────────────────────────────────
@@ -40,7 +40,12 @@ const body = (r: any) => JSON.parse(r!.body);
 // ─── getPromos ───────────────────────────────────────────────────────
 
 describe('getPromos', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Fixtures are dated early 2024; keep them inside the call-out archive window.
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2024-01-03T00:00:00Z') });
+  });
+  afterEach(() => vi.useRealTimers());
 
   it('returns all non-hidden promos via scan when no filters are provided', async () => {
     mockScanAll.mockResolvedValue([

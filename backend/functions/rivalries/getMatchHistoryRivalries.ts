@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { Match, Player } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
 
 const MIN_MATCHES_FOR_RIVALRY = 3;
 const MAX_RIVALRIES_RETURNED = 20;
@@ -38,8 +39,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       matches.list(),
     ]);
 
-    // Only include players who have a wrestler assigned (exclude Fantasy-only users)
-    const filteredPlayers = allPlayers.filter((p: Player) => p.currentWrestler);
+    // Only include players who have a real wrestler name (exclude Fantasy-only users)
+    const filteredPlayers = allPlayers.filter((p: Player) => isPlayerVisible(p));
     let completed = allMatches.filter((m: Match) => m.status === 'completed');
     if (seasonId) {
       completed = completed.filter((m: Match) => m.seasonId === seasonId);
@@ -86,6 +87,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const rivalries = Array.from(aggMap.values())
       .filter((r) => r.matchCount >= MIN_MATCHES_FOR_RIVALRY)
+      // Before the slice, so a dropped pair doesn't cost a visible rivalry its place.
+      .filter((r) => playerMap.has(r.player1Id) && playerMap.has(r.player2Id))
       .map((r) => {
         const sorted = [...r.recentMatchIds].sort(
           (id1, id2) => {

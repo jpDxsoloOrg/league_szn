@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -75,7 +76,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // ------------------------------------------------------------------
-    // 6. Build enriched contender list, excluding the current champion
+    // 6. Build enriched contender list, excluding the current champion and
+    //    hidden players
     // ------------------------------------------------------------------
     const championIds = new Set<string>();
     if (currentChampion) {
@@ -86,9 +88,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    const filteredRankings = rankings.filter(
-      (ranking) => !championIds.has(ranking.playerId),
-    );
+    // Ranks are renumbered below, so dropping hidden players leaves no gaps.
+    const filteredRankings = rankings.filter((ranking) => {
+      if (championIds.has(ranking.playerId)) return false;
+      const player = playersMap.get(ranking.playerId);
+      return !player || isPlayerVisible(player);
+    });
 
     const contendersList = filteredRankings.map((ranking, index) => {
       const player = playersMap.get(ranking.playerId);

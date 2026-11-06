@@ -3,6 +3,8 @@ import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext, hasRole } from '../../lib/auth';
+import { findHiddenPlayerIds } from '../../lib/needsWrestler';
+import { isPromoArchived } from '../../lib/promoArchive';
 import type {
   Rivalry,
   RivalryActivityItem,
@@ -148,10 +150,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       matches.list(),
       Promise.all(
         visible.map(async (r) => {
-          const perPlayer = await Promise.all(
-            r.participants.map((p) => promos.listByPlayer(p.playerId)),
-          );
-          return { rivalry: r, items: perPlayer.flat().slice(0, perSourceCap) };
+          const participantIds = r.participants.map((p) => p.playerId);
+          const [perPlayer, hiddenAuthorIds] = await Promise.all([
+            Promise.all(participantIds.map((playerId) => promos.listByPlayer(playerId))),
+            findHiddenPlayerIds(participantIds, (playerId) => players.findById(playerId)),
+          ]);
+          const listed = perPlayer
+            .flat()
+            .filter((p) => !isPromoArchived(p, now) && !hiddenAuthorIds.has(p.playerId));
+          return { rivalry: r, items: listed.slice(0, perSourceCap) };
         }),
       ),
     ]);

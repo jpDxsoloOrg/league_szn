@@ -7,6 +7,7 @@ vi.mock('uuid', () => ({
 }));
 
 import { buildInMemoryRepositories } from '../../../lib/repositories/inMemory';
+import { NEEDS_WRESTLER } from '../../../lib/needsWrestler';
 import {
   setRepositoriesForTesting,
   resetRepositoriesForTesting,
@@ -116,7 +117,7 @@ describe('resetAssignments', () => {
 
     const freedPlayerOne = await repos.roster.players.findById(playerOne.playerId);
     expect(freedPlayerOne!.currentWrestlerId).toBeUndefined();
-    expect(freedPlayerOne!.currentWrestler).toBe('');
+    expect(freedPlayerOne!.currentWrestler).toBe(NEEDS_WRESTLER);
 
     const freedPlayerTwo = await repos.roster.players.findById(playerTwo.playerId);
     expect(freedPlayerTwo!.alternateWrestlerId).toBeUndefined();

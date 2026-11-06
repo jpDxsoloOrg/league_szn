@@ -9,7 +9,7 @@ const mockMessages = { list: vi.fn() };
 const mockNotes = { listByRivalry: vi.fn() };
 const mockMatches = { list: vi.fn() };
 const mockPromos = { listByPlayer: vi.fn() };
-const mockPlayers = { findByUserId: vi.fn() };
+const mockPlayers = { findByUserId: vi.fn(), findById: vi.fn() };
 
 vi.mock('../../../lib/repositories', () => ({
   getRepositories: () => ({
@@ -54,6 +54,7 @@ describe('getRivalryActivity', () => {
     mockMatches.list.mockResolvedValue([]);
     mockPromos.listByPlayer.mockResolvedValue([]);
     mockPlayers.findByUserId.mockResolvedValue(null);
+    mockPlayers.findById.mockResolvedValue(null);
   });
 
   it('returns an empty page when the caller has no visible rivalries', async () => {

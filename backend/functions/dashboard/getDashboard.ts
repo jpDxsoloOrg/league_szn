@@ -3,6 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import type { Player, Championship, ChampionshipHistoryEntry } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { hasWrestlerRole } from '../../lib/wrestlerRole';
+import { isPlayerVisible } from '../../lib/needsWrestler';
 import { authenticate } from '../../lib/authenticate';
 import { getAuthContext } from '../../lib/auth';
 
@@ -114,11 +115,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Only include players who have a wrestler assigned (exclude Fantasy-only users)
     const wrestlerPlayers = playerList.filter((p) => p.currentWrestler);
 
-    // Roster-facing subset: players whose Cognito user still holds the
-    // Wrestler role. Used for counts and leaderboards. `playerMap` below
-    // deliberately keeps every wrestler so historical recent-results rows
-    // still resolve their participants' names.
-    const rosterPlayers = wrestlerPlayers.filter(hasWrestlerRole);
+    // Roster-facing subset: players with a real wrestler name whose Cognito
+    // user still holds the Wrestler role. Used for counts and leaderboards.
+    // `playerMap` below deliberately keeps every wrestler so historical
+    // recent-results rows still resolve their participants' names.
+    const rosterPlayers = wrestlerPlayers.filter(hasWrestlerRole).filter(isPlayerVisible);
 
     const playerMap = new Map<string, Player>();
     for (const p of wrestlerPlayers) {
@@ -344,7 +345,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           // Resolve before raising the bar: a hidden player must not claim
           // the slot *or* block a lower-scoring wrestler from taking it.
           const p = playerMap.get(s.playerId);
-          if (!p || !hasWrestlerRole(p)) continue;
+          if (!p || !hasWrestlerRole(p) || !isPlayerVisible(p)) continue;
           maxWins = w;
           mostWinsPlayer = {
             name: p.currentWrestler || p.name || '\u2014',

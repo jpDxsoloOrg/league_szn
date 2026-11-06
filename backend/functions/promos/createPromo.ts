@@ -5,6 +5,7 @@ import { getAuthContext, hasRole } from '../../lib/auth';
 import { parseBody } from '../../lib/parseBody';
 import { createNotification } from '../../lib/notifications';
 import { recomputeRivalryHeat } from '../../lib/services/recomputeRivalryHeat';
+import { isPlayerVisible, TARGET_NEEDS_WRESTLER_MESSAGE } from '../../lib/needsWrestler';
 import type { PromoType } from '../../lib/repositories/types';
 
 const VALID_PROMO_TYPES: PromoType[] = [
@@ -77,6 +78,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    // Calling out a hidden player is blocked. Responses are exempt: replying
+    // in an existing thread is not a new call-out.
+    const targetPlayer = targetPlayerId ? await players.findById(targetPlayerId) : null;
+    if (targetPlayer && promoType !== 'response' && !isPlayerVisible(targetPlayer)) {
+      return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);
+    }
+
     const promo = await promos.create({
       playerId: player.playerId,
       promoType: promoType as PromoType,
@@ -93,17 +101,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
 
     // Notify the target player if they have a linked user account
-    if (targetPlayerId) {
-      const targetPlayer = await players.findById(targetPlayerId);
-      if (targetPlayer?.userId) {
-        await createNotification({
-          userId: targetPlayer.userId,
-          type: 'promo_mention',
-          message: `${player.name} cut a promo calling you out!`,
-          sourceId: promo.promoId,
-          sourceType: 'promo',
-        });
-      }
+    if (targetPlayer?.userId) {
+      await createNotification({
+        userId: targetPlayer.userId,
+        type: 'promo_mention',
+        message: `${player.name} cut a promo calling you out!`,
+        sourceId: promo.promoId,
+        sourceType: 'promo',
+      });
     }
 
     // Push the rivalry's heat forward when this promo contributes.

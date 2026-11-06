@@ -1,6 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
+import { canViewHiddenPlayer } from '../../lib/optionalCaller';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -15,6 +17,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const player = await players.findById(playerId);
 
     if (!player) {
+      return notFound('Player not found');
+    }
+
+    // Hidden players read as missing to everyone but themselves and staff.
+    if (!isPlayerVisible(player) && !(await canViewHiddenPlayer(event, player))) {
       return notFound('Player not found');
     }
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
@@ -97,8 +97,12 @@ function setupValidResponder() {
 // ─── respondToChallenge ─────────────────────────────────────────────
 
 describe('respondToChallenge', () => {
+  afterEach(() => vi.useRealTimers());
+
   beforeEach(() => {
     vi.clearAllMocks();
+    // Keep the dated fixture inside its response window.
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2025-01-16T10:00:00.000Z') });
     mockRunInTransaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
       const tx = {
         updateChallenge: vi.fn(),

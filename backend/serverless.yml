@@ -881,6 +881,14 @@ functions:
           method: post
           cors: *corsConfig
 
+  # Hourly sweep that marks overdue pending challenges as expired. The schedule
+  # creates an AWS::Events::Rule, which stacks-map.js routes to Overflow.
+  expireChallenges:
+    handler: functions/challenges/expireChallenges.handler
+    timeout: 60
+    events:
+      - schedule: rate(1 hour)
+
   # Challenges (Phase 2 consolidated: getChallenges, getChallenge, create, respond, cancel, delete, bulkDelete)
   challenges:
     handler: functions/challenges/handler.handler

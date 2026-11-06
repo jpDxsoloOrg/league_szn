@@ -3,6 +3,7 @@ import { getRepositories } from '../../lib/repositories';
 import { computeHeadToHead } from '../../lib/headToHead';
 import type { Match, Player, Championship, ChampionshipHistoryEntry } from '../../lib/repositories';
 import { success, badRequest, serverError } from '../../lib/response';
+import { isPlayerVisible } from '../../lib/needsWrestler';
 
 function normalizeMatchType(value?: string): string {
   const normalized = (value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -153,14 +154,23 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       matchesRepo.list(),
     ]);
 
-    // Only include players who have a wrestler assigned.
-    const players = allPlayers.filter((p) => p.currentWrestler);
+    // Only include players who have a real wrestler name.
+    const players = allPlayers.filter(isPlayerVisible);
+
+    // A hidden player's ID in the query reads as if nobody was selected.
+    const hiddenPlayerIds = new Set(
+      allPlayers.filter((p) => !isPlayerVisible(p)).map((p) => p.playerId),
+    );
+    const selectedPlayerId = (param: string): string | undefined => {
+      const requestedId = event.queryStringParameters?.[param];
+      return requestedId && !hiddenPlayerIds.has(requestedId) ? requestedId : undefined;
+    };
     const allCompletedMatches = allMatches.filter((m) => m.status === 'completed');
     const completedMatches = seasonId ? allCompletedMatches.filter((m) => m.seasonId === seasonId) : allCompletedMatches;
 
     switch (section) {
       case 'player-stats': {
-        const playerId = event.queryStringParameters?.playerId;
+        const playerId = selectedPlayerId('playerId');
 
         // Return player list for dropdowns + stats for specific player
         const playerList = players.map((p) => ({
@@ -259,8 +269,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
 
       case 'head-to-head': {
-        const player1Id = event.queryStringParameters?.player1Id;
-        const player2Id = event.queryStringParameters?.player2Id;
+        const player1Id = selectedPlayerId('player1Id');
+        const player2Id = selectedPlayerId('player2Id');
 
         const playerList = players.map((p) => ({
           playerId: p.playerId,
@@ -584,7 +594,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
 
       case 'achievements': {
-        const playerId = event.queryStringParameters?.playerId;
+        const playerId = selectedPlayerId('playerId');
 
         const playerList = players.map((p) => ({
           playerId: p.playerId,

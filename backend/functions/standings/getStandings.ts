@@ -2,6 +2,7 @@ import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { hasWrestlerRole } from '../../lib/wrestlerRole';
+import { isPlayerVisible } from '../../lib/needsWrestler';
 import { computeRecentFormAndStreak } from '../../lib/recentForm';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -31,10 +32,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       // Get all player details with pagination support
       const allPlayers = await players.list();
 
-      // Only include players who have a wrestler assigned and whose Cognito
+      // Only include players who have a real wrestler name and whose Cognito
       // user still holds the Wrestler role.
       const filteredPlayers = allPlayers
-        .filter((p) => p.currentWrestler)
+        .filter(isPlayerVisible)
         .filter(hasWrestlerRole);
 
       // Build a map of season standings by playerId
@@ -79,10 +80,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Default: get all-time standings from Players table with pagination support
     const allPlayers = await players.list();
 
-    // Only include players who have a wrestler assigned and whose Cognito
+    // Only include players who have a real wrestler name and whose Cognito
     // user still holds the Wrestler role.
     const wrestlers = allPlayers
-      .filter((p) => p.currentWrestler)
+      .filter(isPlayerVisible)
       .filter(hasWrestlerRole);
 
     // Sort players by wins descending, then by losses ascending

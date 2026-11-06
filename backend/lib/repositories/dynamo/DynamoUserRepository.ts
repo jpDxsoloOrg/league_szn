@@ -210,6 +210,23 @@ class ChallengesDelegate
     return items as unknown as Challenge[];
   }
 
+  async expireIfPending(challengeId: string): Promise<boolean> {
+    try {
+      await dynamoDb.update({
+        TableName: TableNames.CHALLENGES,
+        Key: { challengeId },
+        UpdateExpression: 'SET #s = :expired',
+        ConditionExpression: '#s = :pending',
+        ExpressionAttributeNames: { '#s': 'status' },
+        ExpressionAttributeValues: { ':expired': 'expired', ':pending': 'pending' },
+      });
+      return true;
+    } catch (err) {
+      if (err instanceof Error && err.name === 'ConditionalCheckFailedException') return false;
+      throw err;
+    }
+  }
+
   async listByPlayer(playerId: string): Promise<Challenge[]> {
     const [sent, received] = await Promise.all([
       this.listByChallenger(playerId),
@@ -513,6 +530,7 @@ export class DynamoUserRepository implements UserRepository {
     listByChallenger(playerId: string): Promise<Challenge[]>;
     listByChallenged(playerId: string): Promise<Challenge[]>;
     listByPlayer(playerId: string): Promise<Challenge[]>;
+    expireIfPending(challengeId: string): Promise<boolean>;
   } = new ChallengesDelegate();
   readonly fantasy: FantasyMethods = new FantasyDelegate();
   readonly siteConfig: SiteConfigMethods = new SiteConfigDelegate();
