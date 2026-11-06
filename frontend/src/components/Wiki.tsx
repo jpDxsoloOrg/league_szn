@@ -1,4 +1,4 @@
-import { Link, Outlet, useParams } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Printer } from 'lucide-react';
 import Button from './ui/Button';
@@ -13,14 +13,12 @@ export function WikiLayout() {
 
   return (
     <div className={`wiki-layout ${isArticleView ? 'wiki-layout-with-sidebar' : ''}`}>
-      <WikiBreadcrumbs />
       <div className="wiki-layout-header">
-        <Link to="/guide" className="wiki-back-link">
-          {t('wiki.backToGuide')}
-        </Link>
+        <WikiBreadcrumbs />
         <Button
           variant="ghost"
           size="sm"
+          className="wiki-print-button"
           icon={<Printer aria-hidden="true" size={16} />}
           onClick={() => window.print()}
         >

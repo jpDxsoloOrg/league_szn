@@ -15,7 +15,8 @@ import BottomTabBar from './components/mobile/BottomTabBar';
 import Skeleton from './components/ui/Skeleton';
 import { ToastProvider } from './components/ui/Toast';
 import { useIsMobile } from './hooks/useIsMobile';
-import { getPageInfo } from './config/navConfig';
+import { useRouteTitle } from './hooks/useDocumentTitle';
+import { getPageInfo, getSectionTheme } from './config/navConfig';
 // Route guards
 import ProtectedRoute from './components/ProtectedRoute';
 import FeatureRoute from './components/FeatureRoute';
@@ -110,6 +111,12 @@ function App() {
   );
 }
 
+const PROMOS_GUEST_PROMPT = {
+  pageTitleKey: 'nav.promos',
+  titleKey: 'promos.guest.title',
+  descriptionKey: 'promos.guest.description',
+};
+
 function getLayoutClass(isMobile: boolean, pathname: string): string {
   const classes = ['App'];
   if (isMobile) classes.push('app-layout--mobile');
@@ -121,15 +128,17 @@ function AppLayout() {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const { pathname } = useLocation();
+  const pageTitle = getPageInfo(pathname, t).title;
+  useRouteTitle(pageTitle);
 
   return (
-    <div className={getLayoutClass(isMobile, pathname)}>
+    <div className={getLayoutClass(isMobile, pathname)} data-section={getSectionTheme(pathname)}>
       <a href="#main" className="skip-link">{t('nav.skipToContent')}</a>
       <div className="shell-top">
         {isMobile ? <MobileHeader /> : <ShellHeader />}
         <SectionNav />
       </div>
-      <p className="sr-only" role="status">{getPageInfo(pathname, t).title}</p>
+      <p className="sr-only" role="status">{pageTitle}</p>
       <ProfileCompletionModal />
       <AnnouncementModal />
       <main id="main" tabIndex={-1}>
@@ -212,21 +221,21 @@ function AppLayout() {
             {/* Promo Routes - Wrestler only, feature-gated */}
             <Route path="/promos" element={
               <FeatureRoute feature="promos">
-                <ProtectedRoute requiredRole="Wrestler">
+                <ProtectedRoute requiredRole="Wrestler" guestPrompt={PROMOS_GUEST_PROMPT}>
                   <PromoFeed />
                 </ProtectedRoute>
               </FeatureRoute>
             } />
             <Route path="/promos/new" element={
               <FeatureRoute feature="promos">
-                <ProtectedRoute requiredRole="Wrestler">
+                <ProtectedRoute requiredRole="Wrestler" guestPrompt={PROMOS_GUEST_PROMPT}>
                   <PromoEditor />
                 </ProtectedRoute>
               </FeatureRoute>
             } />
             <Route path="/promos/:promoId" element={
               <FeatureRoute feature="promos">
-                <ProtectedRoute requiredRole="Wrestler">
+                <ProtectedRoute requiredRole="Wrestler" guestPrompt={PROMOS_GUEST_PROMPT}>
                   <PromoThread />
                 </ProtectedRoute>
               </FeatureRoute>

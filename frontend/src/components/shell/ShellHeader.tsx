@@ -8,9 +8,11 @@ import Wordmark from './Wordmark';
 import { useNavContext } from '../../hooks/useNavContext';
 import {
   ADMIN_NAV_ICON,
-  findSectionForPath,
+  getActiveSectionKey,
   getSectionLandingPath,
   getVisibleSections,
+  isAdminPath,
+  isHelpPath,
 } from '../../config/navConfig';
 import './ShellHeader.css';
 
@@ -22,8 +24,9 @@ export default function ShellHeader() {
   const { pathname } = useLocation();
   const navContext = useNavContext();
 
-  const activeKey = findSectionForPath(pathname)?.key;
-  const adminActive = pathname === '/admin' || pathname.startsWith('/admin/');
+  const activeKey = getActiveSectionKey(pathname, navContext.isAuthenticated);
+  const adminActive = isAdminPath(pathname);
+  const helpActive = isHelpPath(pathname);
 
   return (
     <header className="shell-header">
@@ -65,7 +68,12 @@ export default function ShellHeader() {
           <SearchLauncher />
           <NotificationBell />
           <LanguageSwitcher />
-          <Link to="/guide" className="shell-header__icon-link" aria-label={t('nav.help')}>
+          <Link
+            to="/guide"
+            className={helpActive ? 'shell-header__icon-link shell-header__icon-link--active' : 'shell-header__icon-link'}
+            aria-label={t('nav.help')}
+            aria-current={helpActive ? 'page' : undefined}
+          >
             <CircleHelp aria-hidden="true" size={22} />
           </Link>
         </div>

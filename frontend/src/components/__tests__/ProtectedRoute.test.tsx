@@ -103,4 +103,46 @@ describe('ProtectedRoute', () => {
     expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
     expect(screen.queryByTestId('navigate')).not.toBeInTheDocument();
   });
+
+  describe('guest prompt', () => {
+    const guestPrompt = { pageTitleKey: 'nav.promos', titleKey: 'promos.guest.title', descriptionKey: 'promos.guest.description' };
+
+    function renderPrompted() {
+      return render(
+        <MemoryRouter initialEntries={['/promos/p1']}>
+          <ProtectedRoute requiredRole="Wrestler" guestPrompt={guestPrompt}>
+            <div data-testid="protected-content">Secret Content</div>
+          </ProtectedRoute>
+        </MemoryRouter>,
+      );
+    }
+
+    it('tells a guest why instead of redirecting, and keeps the content locked', () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: false, isLoading: false, hasRole: () => false });
+      renderPrompted();
+
+      expect(screen.queryByTestId('navigate')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: 'nav.promos' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 2, name: 'promos.guest.title' })).toBeInTheDocument();
+      expect(screen.getByText('promos.guest.description')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'common.signIn' })).toHaveAttribute('href', '/login');
+      expect(screen.getByRole('link', { name: 'common.signUp' })).toHaveAttribute('href', '/signup');
+    });
+
+    it('still denies a signed-in account below the required role', () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, hasRole: () => false });
+      renderPrompted();
+
+      expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
+      expect(screen.getByText('common.accessDenied')).toBeInTheDocument();
+    });
+
+    it('lets a wrestler straight through', () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, hasRole: () => true });
+      renderPrompted();
+
+      expect(screen.getByTestId('protected-content')).toBeInTheDocument();
+    });
+  });
 });

@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
-import { ShieldAlert } from 'lucide-react';
+import { ChevronDown, ShieldAlert } from 'lucide-react';
 import EmptyState from './ui/EmptyState';
 import Skeleton from './ui/Skeleton';
 import './Wiki.css';
@@ -67,6 +67,7 @@ function parseHeadings(markdown: string): TocItem[] {
 export default function WikiArticle() {
   const { slug } = useParams<{ slug: string }>();
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const locale = i18n.language?.startsWith('de') ? 'de' : 'en';
   const { hasRole, isAuthenticated, isAdminOrModerator, isLoading: authLoading } = useAuth();
   const [content, setContent] = useState<string | null>(null);
@@ -216,6 +217,16 @@ export default function WikiArticle() {
       />
     );
   }
+  if (!entry && !content) {
+    return (
+      <EmptyState
+        title={t('wiki.articleNotFound')}
+        description={t('wiki.articleNotFoundHint')}
+        actionLabel={t('wiki.browseArticles')}
+        onAction={() => navigate('/guide/wiki')}
+      />
+    );
+  }
   if (error || !content) {
     return <p className="wiki-error">{t('common.error')}: {error ?? 'No content'}</p>;
   }
@@ -256,6 +267,7 @@ export default function WikiArticle() {
             aria-expanded={tocOpen}
           >
             {t('wiki.onThisPage')}
+            <ChevronDown aria-hidden="true" size={18} className="wiki-toc-chevron" />
           </button>
           <div className={`wiki-toc-list-wrap ${tocOpen ? 'wiki-toc-open' : ''}`}>
             <ul className="wiki-toc-list">

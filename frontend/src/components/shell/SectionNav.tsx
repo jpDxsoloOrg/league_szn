@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import SectionTabs from '../ui/SectionTabs';
 import { useNavContext } from '../../hooks/useNavContext';
 import {
-  ME_HUB_PATH,
+  SIGN_IN_PATHS,
   findActiveTab,
   findSectionForPath,
   getVisibleTabs,
@@ -13,8 +13,6 @@ import {
 import type { SectionTabItem } from '../ui/SectionTabs';
 import './SectionNav.css';
 
-const PATHS_WITHOUT_TABS = [ME_HUB_PATH, '/login', '/signup', '/forgot-password', '/welcome'];
-
 /** Secondary tabs for the current section, plus third-level tabs where a tab has them. */
 export default function SectionNav() {
   const { t } = useTranslation();
@@ -22,7 +20,7 @@ export default function SectionNav() {
   const navContext = useNavContext();
 
   const section = findSectionForPath(pathname);
-  if (!section || PATHS_WITHOUT_TABS.includes(pathname)) return null;
+  if (!section || SIGN_IN_PATHS.includes(pathname)) return null;
 
   const tabs = getVisibleTabs(section, navContext);
   if (tabs.length < 2) return null;

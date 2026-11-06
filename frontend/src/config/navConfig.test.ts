@@ -9,7 +9,9 @@ import {
   canAccessAdminEntry,
   findActiveTab,
   findSectionForPath,
+  getActiveSectionKey,
   getPageInfo,
+  getSectionTheme,
   getSectionLandingPath,
   getVisibleAdminGroups,
   getVisibleSections,
@@ -148,9 +150,49 @@ describe('getPageInfo', () => {
     ['/standings', 'nav.standings'],
     ['/promos/new', 'promos.editor.title'],
     ['/promos/p1', 'promos.thread.title'],
+    ['/player/p1', 'nav.pages.playerProfile'],
     ['/nowhere', 'notFound.title'],
   ])('titles %s', (path, title) => {
     expect(getPageInfo(path, t).title).toBe(title);
+  });
+});
+
+describe('getActiveSectionKey', () => {
+  it.each(['/guide', '/guide/wiki', '/guide/wiki/league-rules', '/contenders/my-status'])(
+    'lights nothing for a guest on %s, because Me reads Sign In',
+    (path) => {
+      expect(getActiveSectionKey(path, false)).toBeUndefined();
+    },
+  );
+
+  it.each(['/me', '/login', '/signup', '/forgot-password', '/welcome'])('lights Sign In for a guest on %s', (path) => {
+    expect(getActiveSectionKey(path, false)).toBe('me');
+  });
+
+  it('keeps Me lit on help for someone signed in', () => {
+    expect(getActiveSectionKey('/guide/wiki', true)).toBe('me');
+  });
+
+  it('leaves other sections alone', () => {
+    expect(getActiveSectionKey('/promos', false)).toBe('storylines');
+  });
+});
+
+describe('getSectionTheme', () => {
+  it.each([
+    ['/', 'home'],
+    ['/activity', 'home'],
+    ['/events/e1', 'events'],
+    ['/matches', 'events'],
+    ['/standings', 'rankings'],
+    ['/player/p1', 'rankings'],
+    ['/promos', 'storylines'],
+    ['/factions/f1', 'storylines'],
+    ['/guide/wiki', 'me'],
+    ['/admin/players', 'admin'],
+    ['/nowhere', 'home'],
+  ])('themes %s as %s', (path, theme) => {
+    expect(getSectionTheme(path)).toBe(theme);
   });
 });
 

@@ -1,6 +1,10 @@
 import type { LeagueEvent } from '../../types/event';
-import type { Championship } from '../../types';
+import type { Championship, Tournament } from '../../types';
+import type { Rivalry } from '../../types/rivalry';
+import type { Stable } from '../../types/stable';
+import type { TagTeam } from '../../types/tagTeam';
 import type { PlayerDirectoryEntry } from '../../services/api';
+import { formatCalendarDate } from '../../utils/dateUtils';
 import {
   ADMIN_GROUPS,
   NAV_SECTIONS,
@@ -13,7 +17,15 @@ import {
   type TranslateFn,
 } from '../../config/navConfig';
 
-export type SearchEntryKind = 'wrestler' | 'event' | 'championship' | 'page';
+export type SearchEntryKind =
+  | 'wrestler'
+  | 'event'
+  | 'championship'
+  | 'faction'
+  | 'tagTeam'
+  | 'tournament'
+  | 'rivalry'
+  | 'page';
 
 export interface SearchEntry {
   id: string;
@@ -45,12 +57,13 @@ export function toWrestlerEntries(players: PlayerDirectoryEntry[]): SearchEntry[
   ));
 }
 
-export function toEventEntries(events: LeagueEvent[]): SearchEntry[] {
+/** Event dates are calendar days, so they must not shift with the viewer's timezone. */
+export function toEventEntries(events: LeagueEvent[], locale?: string): SearchEntry[] {
   return events.map((event) => ({
     id: `event-${event.eventId}`,
     kind: 'event',
     title: event.name,
-    subtitle: new Date(event.date).toLocaleDateString(),
+    subtitle: formatCalendarDate(event.date, locale),
     to: `/events/${event.eventId}`,
   }));
 }
@@ -64,6 +77,47 @@ export function toChampionshipEntries(championships: Championship[]): SearchEntr
       title: championship.name,
       to: '/championships',
     }));
+}
+
+export function toFactionEntries(factions: Stable[]): SearchEntry[] {
+  return factions.map((faction) => ({
+    id: `faction-${faction.stableId}`,
+    kind: 'faction',
+    title: faction.name,
+    to: `/factions/${faction.stableId}`,
+  }));
+}
+
+export function toTagTeamEntries(tagTeams: TagTeam[]): SearchEntry[] {
+  return tagTeams.map((tagTeam) => {
+    const members = [tagTeam.player1WrestlerName, tagTeam.player2WrestlerName].filter(Boolean);
+    return {
+      id: `tag-team-${tagTeam.tagTeamId}`,
+      kind: 'tagTeam',
+      title: tagTeam.name,
+      subtitle: members.length > 0 ? members.join(' & ') : undefined,
+      to: `/tag-teams/${tagTeam.tagTeamId}`,
+    };
+  });
+}
+
+/** Tournaments have no page of their own, so they open the list. */
+export function toTournamentEntries(tournaments: Tournament[]): SearchEntry[] {
+  return tournaments.map((tournament) => ({
+    id: `tournament-${tournament.tournamentId}`,
+    kind: 'tournament',
+    title: tournament.name,
+    to: '/tournaments',
+  }));
+}
+
+export function toRivalryEntries(rivalries: Rivalry[]): SearchEntry[] {
+  return rivalries.map((rivalry) => ({
+    id: `rivalry-${rivalry.rivalryId}`,
+    kind: 'rivalry',
+    title: rivalry.title,
+    to: `/rivalries/${rivalry.rivalryId}`,
+  }));
 }
 
 /** Every page the visitor can open, from the same registry as the nav. */

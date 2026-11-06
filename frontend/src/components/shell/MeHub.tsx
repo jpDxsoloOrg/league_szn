@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, Globe, LogOut } from 'lucide-react';
+import { ChevronRight, EyeOff, Globe, LogOut } from 'lucide-react';
 import Button from '../ui/Button';
 import PageHeader from '../ui/PageHeader';
 import LanguageSwitcher from '../LanguageSwitcher';
@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavContext } from '../../hooks/useNavContext';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { ADMIN_NAV_ICON, NAV_SECTIONS, getVisibleTabs } from '../../config/navConfig';
+import { isNeedsWrestler } from '../../utils/needsWrestler';
 import './MeHub.css';
 
 const AdminIcon = ADMIN_NAV_ICON;
@@ -29,12 +30,13 @@ function HubRow({ to, icon, label, emphasis = false }: { to: string; icon: React
 export default function MeHub() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, playerId, currentWrestler } = useAuth();
   const navContext = useNavContext();
   useDocumentTitle(t('nav.sections.me'));
 
   const meSection = NAV_SECTIONS.find((section) => section.key === 'me');
   const tabs = meSection ? getVisibleTabs(meSection, navContext) : [];
+  const isHidden = Boolean(playerId) && isNeedsWrestler(currentWrestler);
 
   const handleSignOut = async () => {
     await signOut();
@@ -50,6 +52,17 @@ export default function MeHub() {
           <Button to="/login" fullWidth>{t('common.signIn')}</Button>
           <Button to="/signup" variant="secondary" fullWidth>{t('common.signUp')}</Button>
         </div>
+      )}
+
+      {isHidden && (
+        <section className="me-hub__notice" aria-label={t('me.setup.hiddenTitle')}>
+          <EyeOff aria-hidden="true" size={22} className="me-hub__notice-icon" />
+          <div className="me-hub__notice-text">
+            <h2 className="me-hub__notice-title">{t('me.setup.hiddenTitle')}</h2>
+            <p>{t('me.setup.hiddenNotice')}</p>
+            <Button to="/profile">{t('me.setup.enterName')}</Button>
+          </div>
+        </section>
       )}
 
       {navContext.isAdminOrModerator && (

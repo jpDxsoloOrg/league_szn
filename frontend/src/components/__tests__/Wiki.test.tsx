@@ -2,7 +2,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, Navigate } from 'react-router-dom';
-import userEvent from '@testing-library/user-event';
 
 const { mockUseTranslation } = vi.hoisted(() => ({
   mockUseTranslation: vi.fn(() => ({
@@ -50,7 +49,7 @@ describe('Wiki', () => {
     global.fetch = vi.fn();
   });
 
-  it('WikiLayout shows breadcrumbs and back-to-guide link', async () => {
+  it('WikiLayout shows breadcrumbs with no link back to the page itself', async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       ok: true,
       json: async () => [],
@@ -58,11 +57,9 @@ describe('Wiki', () => {
     renderWikiRoutes();
     const nav = screen.getByRole('navigation', { name: 'wiki.breadcrumbNav' });
     expect(nav).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'wiki.breadcrumb.help' })).toHaveAttribute('href', '/guide');
-    expect(screen.getByText('wiki.breadcrumb.wiki')).toBeInTheDocument();
-    const backLink = await screen.findByRole('link', { name: 'wiki.backToGuide' });
-    expect(backLink).toBeInTheDocument();
-    expect(backLink).toHaveAttribute('href', '/guide');
+    expect(screen.getByText('wiki.breadcrumb.help')).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('link', { name: 'wiki.breadcrumb.help' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'wiki.backToGuide' })).not.toBeInTheDocument();
   });
 
   it('WikiIndex fetches index and shows article links', async () => {
@@ -82,17 +79,24 @@ describe('Wiki', () => {
     expect(gettingStartedLink).toHaveAttribute('href', '/guide/wiki/getting-started');
   });
 
-  it('back-to-guide link navigates to /guide and redirects to wiki index', async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
-      ok: true,
-      json: async () => [],
-    });
-    renderWikiRoutes();
-    const backLink = await screen.findByRole('link', { name: 'wiki.backToGuide' });
-    await userEvent.click(backLink);
-    await waitFor(() => {
-      expect(screen.getByRole('link', { name: 'wiki.breadcrumb.help' })).toBeInTheDocument();
-    });
+  it('links an article back to the wiki index from the breadcrumb', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string) => (
+      url.endsWith('.json')
+        ? { ok: true, json: async () => [{ slug: 'faqs', titleKey: 'wiki.articles.faqs', file: 'faqs.md' }] }
+        : { ok: true, text: async () => '# FAQ', headers: new Headers({ 'content-type': 'text/markdown' }) }
+    ));
+    renderWikiRoutes('/guide/wiki/faqs');
+    expect(await screen.findByRole('link', { name: 'wiki.breadcrumb.help' })).toHaveAttribute('href', '/guide/wiki');
+  });
+
+  it('explains a bad article link instead of showing a raw error', async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string) => (
+      url.endsWith('.json') ? { ok: true, json: async () => [] } : { ok: false, status: 404, text: async () => '' }
+    ));
+    renderWikiRoutes('/guide/wiki/nope');
+    expect(await screen.findByRole('heading', { name: 'wiki.articleNotFound' })).toBeInTheDocument();
+    expect(screen.queryByText(/common.error/)).not.toBeInTheDocument();
+    expect(screen.queryByText('nope')).not.toBeInTheDocument();
   });
 
   it('does not render HTML as content when German path returns index.html and fallback returns markdown', async () => {
