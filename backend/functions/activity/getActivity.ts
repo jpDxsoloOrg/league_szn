@@ -8,6 +8,10 @@ import { isPromoArchived } from '../../lib/promoArchive';
 const ACTIVITY_TYPES = ['match', 'championship', 'challenge', 'promo', 'tournament', 'season'] as const;
 type ActivityTypeFilter = (typeof ACTIVITY_TYPES)[number];
 
+// Summaries are shown as written, so an id must never stand in for a name.
+const UNKNOWN_NAME = 'Unknown';
+const UNKNOWN_CHAMPIONSHIP = 'Unknown Championship';
+
 export type ActivityItemType =
   | 'match_result'
   | 'championship_change'
@@ -47,7 +51,7 @@ function parseQuery(event: { queryStringParameters?: Record<string, string | und
 function buildPlayerNameMap(allPlayers: Player[]): Record<string, string> {
   const names: Record<string, string> = {};
   for (const player of allPlayers) {
-    names[player.playerId] = player.name || player.currentWrestler || player.playerId;
+    names[player.playerId] = player.name || player.currentWrestler || UNKNOWN_NAME;
   }
   return names;
 }
@@ -70,7 +74,7 @@ function buildChallengeSummary(status: unknown, challenger: unknown, challenged:
 function buildChampionshipNameMap(allChampionships: Championship[]): Record<string, string> {
   const names: Record<string, string> = {};
   for (const championship of allChampionships) {
-    names[championship.championshipId] = championship.name || championship.championshipId;
+    names[championship.championshipId] = championship.name || UNKNOWN_CHAMPIONSHIP;
   }
   return names;
 }
@@ -264,14 +268,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const playerNames = buildPlayerNameMap(allPlayers);
     const championshipNames = buildChampionshipNameMap(allChampionships);
+    const nameOf = (playerId: unknown): string => playerNames[playerId as string] || UNKNOWN_NAME;
 
     for (const item of rawItems) {
       if (item.type === 'match_result') {
         const meta = item.metadata;
         const winners = (meta.winners as string[]) || [];
         const losers = (meta.losers as string[]) || [];
-        const winnerNames = winners.map((id) => playerNames[id] || id);
-        const loserNames = losers.map((id) => playerNames[id] || id);
+        const winnerNames = winners.map(nameOf);
+        const loserNames = losers.map(nameOf);
         meta.winnerNames = winnerNames;
         meta.loserNames = loserNames;
         item.summary = winnerNames.length && loserNames.length
@@ -280,11 +285,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       } else if (item.type === 'championship_change') {
         const meta = item.metadata;
         const champ = meta.champion;
-        const champNames = Array.isArray(champ)
-          ? (champ as string[]).map((id) => playerNames[id] || id)
-          : [playerNames[champ as string] || (champ as string)];
+        const champNames = Array.isArray(champ) ? champ.map(nameOf) : [nameOf(champ)];
         meta.championNames = champNames;
-        meta.championshipName = championshipNames[meta.championshipId as string] || meta.championshipId;
+        meta.championshipName = championshipNames[meta.championshipId as string] || UNKNOWN_CHAMPIONSHIP;
         item.summary = `${meta.championshipName}: ${champNames.join(' & ')} crowned`;
       } else if (item.type === 'season_event') {
         const meta = item.metadata;
@@ -294,18 +297,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         const meta = item.metadata;
         const name = meta.name as string;
         const winner = meta.winner as string | undefined;
-        meta.winnerName = winner ? playerNames[winner] || winner : undefined;
+        meta.winnerName = winner ? nameOf(winner) : undefined;
         item.summary = winner
-          ? `Tournament "${name}" completed — ${meta.winnerName || winner} won`
+          ? `Tournament "${name}" completed — ${meta.winnerName} won`
           : `Tournament "${name}"`;
       } else if (item.type === 'challenge_event') {
         const meta = item.metadata;
-        meta.challengerName = playerNames[meta.challengerId as string] || meta.challengerId;
-        meta.challengedName = playerNames[meta.challengedId as string] || meta.challengedId;
+        meta.challengerName = nameOf(meta.challengerId);
+        meta.challengedName = nameOf(meta.challengedId);
         item.summary = buildChallengeSummary(meta.status, meta.challengerName, meta.challengedName);
       } else if (item.type === 'promo_posted') {
         const meta = item.metadata;
-        meta.playerName = playerNames[meta.playerId as string] || meta.playerId;
+        meta.playerName = nameOf(meta.playerId);
         item.summary = `${meta.playerName} posted a promo`;
       }
     }
