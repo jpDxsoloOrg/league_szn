@@ -6,22 +6,15 @@
   padding: 1rem 0;
 }
 
-.admin-onboarding-banner {
-  margin: 0 0 1rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--color-hairline);
-  border-left: 3px solid var(--color-violet);
-  border-radius: var(--radius-control);
-  background: var(--color-surface);
+.admin-help {
+  margin: 1.5rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-hairline);
+  color: var(--color-text-muted);
+  font-size: var(--text-dense);
 }
 
-.admin-onboarding-banner p {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-}
-
-.admin-onboarding-banner a {
+.admin-help a {
   color: var(--color-primary);
 }
 

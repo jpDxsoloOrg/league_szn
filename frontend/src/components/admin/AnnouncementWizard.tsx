@@ -1,6 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { ClipboardList, Clapperboard, Zap } from 'lucide-react';
 import { announcementsApi, imagesApi } from '../../services/api';
 import { toMediaUrl } from '../../utils/mediaUrl';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
+import Modal from '../ui/Modal';
+import AdminNotice from './AdminNotice';
+import './adminContent.css';
 import './AnnouncementWizard.css';
 
 interface AnnouncementWizardProps {
@@ -498,15 +503,6 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
   const [error, setError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
-  // Lock background scrolling while the wizard overlay is open
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
-
   const totalSteps =
     mode === 'match-card'
       ? MATCH_CARD_STEPS.length
@@ -693,34 +689,27 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
 
   if (mode === 'select') {
     return (
-      <div className="wizard-overlay">
+      <Modal open onClose={onClose} title="GM Announcement Wizard" size="md">
         <div className="wizard-container">
-          <div className="wizard-header">
-            <h2 className="wizard-title">GM Announcement Wizard</h2>
-            <button className="wizard-close" onClick={onClose} aria-label="Close wizard">
-              ✕
-            </button>
-          </div>
-
           <p className="wizard-subtitle">What type of announcement are you creating?</p>
 
           <div className="wizard-mode-cards">
             <button className="wizard-mode-card" onClick={() => selectMode('match-card')}>
-              <span className="wizard-mode-icon">📋</span>
+              <ClipboardList className="wizard-mode-icon" aria-hidden="true" size={28} />
               <span className="wizard-mode-label">Match Card</span>
               <span className="wizard-mode-desc">
                 Tonight's card with GM intro and per-match promos
               </span>
             </button>
             <button className="wizard-mode-card" onClick={() => selectMode('breaking-news')}>
-              <span className="wizard-mode-icon">⚡</span>
+              <Zap className="wizard-mode-icon" aria-hidden="true" size={28} />
               <span className="wizard-mode-label">Breaking News</span>
               <span className="wizard-mode-desc">
                 Suspension, title vacancy, official statement
               </span>
             </button>
             <button className="wizard-mode-card" onClick={() => selectMode('media-package')}>
-              <span className="wizard-mode-icon">🎬</span>
+              <Clapperboard className="wizard-mode-icon" aria-hidden="true" size={28} />
               <span className="wizard-mode-label">Video / Poster</span>
               <span className="wizard-mode-desc">
                 Promo video package or official poster announcement
@@ -734,27 +723,24 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
             </button>
           </div>
         </div>
-      </div>
+      </Modal>
     );
   }
 
   return (
-    <div className="wizard-overlay">
-      <div className="wizard-container wizard-container--wide">
-        {/* Header */}
-        <div className="wizard-header">
-          <h2 className="wizard-title">
-            {mode === 'match-card'
-              ? 'Match Card Wizard'
-              : mode === 'breaking-news'
-              ? 'Breaking News Wizard'
-              : 'Video / Poster Wizard'}
-          </h2>
-          <button className="wizard-close" onClick={onClose} aria-label="Close wizard">
-            ✕
-          </button>
-        </div>
-
+    <Modal
+      open
+      onClose={onClose}
+      size="lg"
+      title={
+        mode === 'match-card'
+          ? 'Match Card Wizard'
+          : mode === 'breaking-news'
+          ? 'Breaking News Wizard'
+          : 'Video / Poster Wizard'
+      }
+    >
+      <div className="wizard-container">
         {/* Step indicator */}
         <div className="wizard-steps">
           {stepLabels.map((label, i) => (
@@ -768,7 +754,7 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
           ))}
         </div>
 
-        {error && <div className="error-message wizard-error">{error}</div>}
+        {error && <AdminNotice tone="error">{error}</AdminNotice>}
 
         {/* ── Match Card Steps ── */}
         {mode === 'match-card' && (
@@ -1088,7 +1074,7 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
                   <div className="wizard-preview-container">
                     <div
                       className="wizard-preview-render"
-                      dangerouslySetInnerHTML={{ __html: generatedHtml }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(generatedHtml) }}
                     />
                   </div>
                 )}
@@ -1333,7 +1319,7 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
                   <div className="wizard-preview-container">
                     <div
                       className="wizard-preview-render"
-                      dangerouslySetInnerHTML={{ __html: generatedHtml }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(generatedHtml) }}
                     />
                   </div>
                 )}
@@ -1525,7 +1511,7 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
                   <div className="wizard-preview-container">
                     <div
                       className="wizard-preview-render"
-                      dangerouslySetInnerHTML={{ __html: generatedHtml }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(generatedHtml) }}
                     />
                   </div>
                 )}
@@ -1555,6 +1541,6 @@ export default function AnnouncementWizard({ onClose, onPublished }: Announcemen
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

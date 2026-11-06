@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
@@ -23,8 +23,6 @@ vi.mock('../../../services/api', () => ({
     delete: mockDeleteSeason,
   },
 }));
-
-vi.mock('../ManageSeasons.css', () => ({}));
 
 import ManageSeasons from '../ManageSeasons';
 
@@ -60,7 +58,6 @@ function renderManageSeasons() {
 describe('ManageSeasons', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   it('renders season list with status badges and action buttons', async () => {
@@ -68,14 +65,12 @@ describe('ManageSeasons', () => {
 
     renderManageSeasons();
 
-    await waitFor(() => {
-      expect(screen.getByText('Manage Seasons')).toBeInTheDocument();
-    });
+    await screen.findByText('Season 1');
 
     // Section header
-    expect(screen.getByText('All Seasons')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'All Seasons' })).toBeInTheDocument();
 
-    // Season names (Season 2 appears in both banner <h3> and card <h4>)
+    // Season names (Season 2 appears in both the banner and the table)
     expect(screen.getByText('Season 1')).toBeInTheDocument();
     const season2Elements = screen.getAllByText('Season 2');
     expect(season2Elements.length).toBeGreaterThanOrEqual(1);
@@ -97,9 +92,8 @@ describe('ManageSeasons', () => {
     const deleteButtons = screen.getAllByText('Delete');
     expect(deleteButtons.length).toBe(2);
 
-    // End Season button for the active season (banner + card)
-    const endButtons = screen.getAllByText('End Season');
-    expect(endButtons.length).toBe(2); // banner + card
+    // End Season lives on the active season banner
+    expect(screen.getAllByText('End Season')).toHaveLength(1);
   });
 
   it('creates a new season via the form', async () => {
@@ -117,9 +111,7 @@ describe('ManageSeasons', () => {
 
     renderManageSeasons();
 
-    await waitFor(() => {
-      expect(screen.getByText('Manage Seasons')).toBeInTheDocument();
-    });
+    await screen.findByText('Season 1');
 
     // "Create New Season" button should appear when no active season
     const createButton = screen.getByText('Create New Season');
@@ -166,18 +158,13 @@ describe('ManageSeasons', () => {
 
     renderManageSeasons();
 
-    await waitFor(() => {
-      expect(screen.getByText('Manage Seasons')).toBeInTheDocument();
-    });
+    await screen.findByText('Season 1');
 
-    // Click "End Season" in the active season banner
-    const endButtons = screen.getAllByText('End Season');
-    fireEvent.click(endButtons[0]);
-
-    // Confirm dialog should have been shown
-    expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining('end this season')
-    );
+    // Click "End Season" in the active season banner, then confirm in the dialog
+    fireEvent.click(screen.getByText('End Season'));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('marks the season as completed');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'End Season' }));
 
     await waitFor(() => {
       expect(mockUpdateSeason).toHaveBeenCalledWith('s2', { status: 'completed' });
@@ -194,18 +181,16 @@ describe('ManageSeasons', () => {
 
     renderManageSeasons();
 
-    await waitFor(() => {
-      expect(screen.getByText('Manage Seasons')).toBeInTheDocument();
-    });
+    await screen.findByText('Season 1');
 
     // Click "Delete" for the first season (Season 1 - completed)
     const deleteButtons = screen.getAllByText('Delete');
     fireEvent.click(deleteButtons[0]);
 
-    // Confirm dialog with season name
-    expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining('Season 1')
-    );
+    // Confirm in the dialog
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('deletes all standings');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
     await waitFor(() => {
       expect(mockDeleteSeason).toHaveBeenCalledWith('s1');

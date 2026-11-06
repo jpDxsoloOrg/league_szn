@@ -83,6 +83,13 @@ describe('AdminPanel', () => {
     expect(await screen.findByTestId('manage-players')).toBeInTheDocument();
   });
 
+  it('sends the old challenges tab to the call-outs view of promos', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdminOrModerator: true, isSuperAdmin: false });
+
+    renderAdminPanel('/admin/challenges');
+    expect(screen.getByTestId('navigate')).toHaveAttribute('data-to', '/admin/promos?view=call-outs');
+  });
+
   it('redirects to login when not authenticated', () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: false,

@@ -1,320 +1,255 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Megaphone } from 'lucide-react';
 import { challengesApi } from '../../services/api/challenges.api';
 import type { ChallengeStatus, ChallengeWithPlayers } from '../../types/challenge';
-import './AdminChallenges.css';
+import Badge from '../ui/Badge';
+import type { BadgeTone } from '../ui/Badge';
+import Button from '../ui/Button';
+import DataTable from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import Select from '../ui/Select';
+import { useToast } from '../ui/toastContext';
+import AdminNotice from './AdminNotice';
+import useAdminConfirm from './useAdminConfirm';
+import './adminContent.css';
 
-const ALL_STATUSES: ChallengeStatus[] = [
-  'pending',
-  'accepted',
-  'declined',
-  'countered',
-  'scheduled',
-  'expired',
-  'cancelled',
-];
+const ALL_STATUSES: ChallengeStatus[] = ['pending', 'accepted', 'declined', 'countered', 'scheduled', 'expired', 'cancelled'];
 
+const STATUS_TONES: Record<ChallengeStatus, BadgeTone> = {
+  pending: 'warning',
+  accepted: 'win',
+  declined: 'loss',
+  countered: 'violet',
+  scheduled: 'primary',
+  expired: 'neutral',
+  cancelled: 'neutral',
+};
+
+function isOpen(challenge: ChallengeWithPlayers): boolean {
+  return challenge.status === 'pending' || challenge.status === 'countered' || challenge.status === 'accepted';
+}
+
+/** Call-outs moderation. Rendered as a sub-tab of the admin Promos page. */
 export default function AdminChallenges() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const { confirm, confirmDialog } = useAdminConfirm();
   const [challenges, setChallenges] = useState<ChallengeWithPlayers[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ChallengeStatus | 'all'>('all');
-  const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
-  const [showBulkClearModal, setShowBulkClearModal] = useState(false);
-  const [bulkClearing, setBulkClearing] = useState(false);
 
-  const loadChallenges = useCallback(async () => {
+  const loadChallenges = useCallback(async (signal?: AbortSignal) => {
     try {
       setError(null);
-      const data = await challengesApi.getAll();
-      setChallenges(data);
+      setChallenges(await challengesApi.getAll(undefined, signal));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load challenges');
+      if (signal?.aborted) return;
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadChallenges();
+    const controller = new AbortController();
+    void loadChallenges(controller.signal);
+    return () => controller.abort();
   }, [loadChallenges]);
 
-  const filtered = useMemo(() => {
-    if (statusFilter === 'all') return challenges;
-    return challenges.filter((c) => c.status === statusFilter);
-  }, [challenges, statusFilter]);
+  const filtered = useMemo(
+    () => (statusFilter === 'all' ? challenges : challenges.filter((challenge) => challenge.status === statusFilter)),
+    [challenges, statusFilter],
+  );
 
-  const showFeedback = (message: string, type: 'success' | 'error') => {
-    setFeedback({ message, type });
-    setTimeout(() => setFeedback(null), 3000);
-  };
+  const matchup = (challenge: ChallengeWithPlayers) => `${challenge.challenger.wrestlerName} vs ${challenge.challenged.wrestlerName}`;
 
   const handleCancel = async (challenge: ChallengeWithPlayers) => {
     setSubmitting(challenge.challengeId);
     try {
       await challengesApi.cancel(challenge.challengeId);
-      showFeedback(
-        `Cancelled: ${challenge.challenger.wrestlerName} vs ${challenge.challenged.wrestlerName}`,
-        'success'
-      );
+      showToast(t('adminContent.callOuts.cancelled', 'Cancelled: {{matchup}}', { matchup: matchup(challenge) }), 'success');
       await loadChallenges();
     } catch (err) {
-      showFeedback(
-        err instanceof Error ? err.message : 'Failed to cancel challenge',
-        'error'
-      );
+      showToast(err instanceof Error ? err.message : t('adminContent.callOuts.cancelFailed', 'Failed to cancel challenge'), 'error');
     } finally {
       setSubmitting(null);
     }
   };
 
   const handleDelete = async (challenge: ChallengeWithPlayers) => {
+    const confirmed = await confirm({
+      title: t('adminContent.deletePrompt', 'Delete {{name}}?', { name: matchup(challenge) }),
+      confirmLabel: t('challenges.admin.delete', 'Delete'),
+    });
+    if (!confirmed) return;
+
     setSubmitting(challenge.challengeId);
     try {
       await challengesApi.delete(challenge.challengeId);
-      showFeedback(
-        t('challenges.admin.deleted', 'Deleted') + `: ${challenge.challenger.wrestlerName} vs ${challenge.challenged.wrestlerName}`,
-        'success'
-      );
+      showToast(`${t('challenges.admin.deleted', 'Deleted')}: ${matchup(challenge)}`, 'success');
       await loadChallenges();
     } catch (err) {
-      showFeedback(
-        err instanceof Error ? err.message : 'Failed to delete challenge',
-        'error'
-      );
+      showToast(err instanceof Error ? err.message : t('adminContent.callOuts.deleteFailed', 'Failed to delete challenge'), 'error');
     } finally {
       setSubmitting(null);
     }
   };
 
   const handleBulkClearResolved = async () => {
-    setBulkClearing(true);
+    const confirmed = await confirm({
+      title: t('challenges.admin.clearResolved', 'Clear Resolved'),
+      description: t('challenges.admin.clearResolvedConfirm', 'Are you sure you want to delete all cancelled, expired, and scheduled challenges?'),
+      confirmLabel: t('challenges.admin.clearResolved', 'Clear Resolved'),
+    });
+    if (!confirmed) return;
+
     try {
-      const result = await challengesApi.bulkDelete({
-        statuses: ['cancelled', 'expired', 'scheduled'],
-      });
-      showFeedback(result.message, 'success');
-      setShowBulkClearModal(false);
+      const result = await challengesApi.bulkDelete({ statuses: ['cancelled', 'expired', 'scheduled'] });
+      showToast(result.message, 'success');
       await loadChallenges();
     } catch (err) {
-      showFeedback(
-        err instanceof Error ? err.message : 'Failed to clear resolved challenges',
-        'error'
-      );
-    } finally {
-      setBulkClearing(false);
+      showToast(err instanceof Error ? err.message : t('adminContent.callOuts.clearFailed', 'Failed to clear resolved challenges'), 'error');
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString();
+  const scheduleChallenge = (challenge: ChallengeWithPlayers) => {
+    navigate('/admin/schedule', {
+      state: {
+        fromChallenge: {
+          challengeId: challenge.challengeId,
+          challengerId: challenge.challengerId,
+          challengedId: challenge.challengedId,
+          matchType: challenge.matchType,
+          stipulation: challenge.stipulation,
+          championshipId: challenge.championshipId,
+          challenger: challenge.challenger,
+          challenged: challenge.challenged,
+        },
+      },
+    });
   };
-
-  if (loading) {
-    return (
-      <div className="admin-challenges">
-        <h3>{t('challenges.admin.title')}</h3>
-        <div className="admin-challenges-empty"><p>Loading...</p></div>
-      </div>
-    );
-  }
 
   if (error) {
     return (
-      <div className="admin-challenges">
-        <h3>{t('challenges.admin.title')}</h3>
-        <div className="admin-challenge-feedback error">{error}</div>
-        <button onClick={loadChallenges}>Retry</button>
-      </div>
+      <AdminNotice
+        tone="error"
+        action={<Button variant="ghost" size="sm" onClick={() => loadChallenges()}>{t('common.retry', 'Retry')}</Button>}
+      >
+        {error}
+      </AdminNotice>
     );
   }
 
   return (
-    <div className="admin-challenges">
-      <h3>{t('challenges.admin.title')}</h3>
-
-      <div className="admin-challenges-controls">
-        <div className="admin-challenges-filter">
-          <label>{t('challenges.admin.filterByStatus')}:</label>
-          <select
-            value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value as ChallengeStatus | 'all')
-            }
-          >
-            <option value="all">{t('challenges.admin.all')}</option>
-            {ALL_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {t(`challenges.status.${s}`)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <span className="admin-challenges-count">
-          {filtered.length} {filtered.length === 1 ? 'challenge' : 'challenges'}
-        </span>
-        <button
-          type="button"
-          className="admin-btn-clear-resolved"
-          onClick={() => setShowBulkClearModal(true)}
-        >
+    <section className="ac-section">
+      <div className="ac-toolbar">
+        <Select
+          label={t('challenges.admin.filterByStatus', 'Filter by Status')}
+          value={statusFilter}
+          onValueChange={(value) => setStatusFilter(value as ChallengeStatus | 'all')}
+          options={[
+            { value: 'all', label: t('challenges.admin.all', 'All') },
+            ...ALL_STATUSES.map((status) => ({ value: status, label: t(`challenges.status.${status}`, status) })),
+          ]}
+        />
+        <span className="ac-toolbar__count">{filtered.length}</span>
+        <span className="ac-toolbar__spacer" />
+        <Button variant="secondary" onClick={handleBulkClearResolved}>
           {t('challenges.admin.clearResolved', 'Clear Resolved')}
-        </button>
+        </Button>
       </div>
 
-      {showBulkClearModal && (
-        <div className="admin-challenges-modal-overlay" role="dialog" aria-modal="true">
-          <div className="admin-challenges-modal">
-            <p>{t('challenges.admin.clearResolvedConfirm', 'Are you sure you want to delete all cancelled, expired, and scheduled challenges?')}</p>
-            <div className="admin-challenges-modal-actions">
-              <button
-                type="button"
-                className="admin-btn-modal-cancel"
-                onClick={() => setShowBulkClearModal(false)}
-                disabled={bulkClearing}
-              >
-                {t('common.cancel', 'Cancel')}
-              </button>
-              <button
-                type="button"
-                className="admin-btn-modal-confirm"
-                onClick={handleBulkClearResolved}
-                disabled={bulkClearing}
-              >
-                {bulkClearing ? t('common.loading', 'Clearing...') : t('challenges.admin.clearResolved', 'Clear Resolved')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DataTable
+        caption={t('challenges.admin.title', 'Manage Challenges')}
+        density="dense"
+        loading={loading}
+        rows={filtered}
+        rowKey={(challenge) => challenge.challengeId}
+        empty={(
+          <EmptyState
+            icon={<Megaphone aria-hidden="true" size={32} />}
+            title={t('adminContent.callOuts.emptyTitle', 'No call-outs to show')}
+            description={t('adminContent.callOuts.emptyText', 'Challenges between wrestlers will appear here.')}
+          />
+        )}
+        columns={[
+          {
+            key: 'challenger',
+            header: t('challenges.admin.challenger', 'Challenger'),
+            render: (challenge) => (
+              <span className="ac-cell__text">
+                <span className="ac-cell__title">{challenge.challenger.wrestlerName}</span>
+                <span className="ac-cell__sub">{challenge.challenger.playerName}</span>
+              </span>
+            ),
+          },
+          {
+            key: 'challenged',
+            header: t('challenges.admin.challenged', 'Challenged'),
+            render: (challenge) => (
+              <span className="ac-cell__text">
+                <span className="ac-cell__title">{challenge.challenged.wrestlerName}</span>
+                <span className="ac-cell__sub">{challenge.challenged.playerName}</span>
+              </span>
+            ),
+          },
+          {
+            key: 'type',
+            header: t('challenges.admin.type', 'Type'),
+            render: (challenge) => (
+              <span className="ac-cell__text">
+                <span>{challenge.matchType}</span>
+                {challenge.stipulation && <span className="ac-cell__sub">{challenge.stipulation}</span>}
+              </span>
+            ),
+          },
+          {
+            key: 'status',
+            header: t('challenges.admin.status', 'Status'),
+            render: (challenge) => (
+              <Badge tone={STATUS_TONES[challenge.status]}>{t(`challenges.status.${challenge.status}`, challenge.status)}</Badge>
+            ),
+          },
+          {
+            key: 'date',
+            header: t('challenges.admin.date', 'Date'),
+            render: (challenge) => new Date(challenge.createdAt).toLocaleDateString(),
+            sortValue: (challenge) => challenge.createdAt,
+          },
+          {
+            key: 'actions',
+            header: t('challenges.admin.actions', 'Actions'),
+            align: 'end',
+            render: (challenge) => (
+              <div className="ac-actions ac-actions--end">
+                {challenge.status === 'accepted' && (
+                  <Button variant="ghost" size="sm" onClick={() => scheduleChallenge(challenge)}>
+                    {t('challenges.admin.schedule', 'Schedule')}
+                  </Button>
+                )}
+                {isOpen(challenge) && (
+                  <Button variant="ghost" size="sm" disabled={submitting === challenge.challengeId} onClick={() => handleCancel(challenge)}>
+                    {t('challenges.admin.expire', 'Expire')}
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" to={`/challenges/${challenge.challengeId}`}>
+                  {t('challenges.my.viewDetails', 'View Details')}
+                </Button>
+                <Button variant="ghost" size="sm" disabled={submitting === challenge.challengeId} onClick={() => handleDelete(challenge)}>
+                  {t('challenges.admin.delete', 'Delete')}
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+      />
 
-      {feedback && (
-        <div className={`admin-challenge-feedback ${feedback.type}`}>
-          {feedback.message}
-        </div>
-      )}
-
-      {filtered.length === 0 ? (
-        <div className="admin-challenges-empty">
-          <p>{t('challenges.board.noChallenges')}</p>
-        </div>
-      ) : (
-        <table className="admin-challenges-table">
-          <thead>
-            <tr>
-              <th>{t('challenges.admin.challenger')}</th>
-              <th>{t('challenges.admin.challenged')}</th>
-              <th>{t('challenges.admin.type')}</th>
-              <th>{t('challenges.admin.status')}</th>
-              <th>{t('challenges.admin.date')}</th>
-              <th>{t('challenges.admin.actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((challenge) => (
-              <tr key={challenge.challengeId}>
-                <td>
-                  <div className="admin-challenge-player-cell">
-                    <span className="admin-challenge-wrestler-name">
-                      {challenge.challenger.wrestlerName}
-                    </span>
-                    <span className="admin-challenge-player-name">
-                      {challenge.challenger.playerName}
-                    </span>
-                  </div>
-                </td>
-                <td>
-                  <div className="admin-challenge-player-cell">
-                    <span className="admin-challenge-wrestler-name">
-                      {challenge.challenged.wrestlerName}
-                    </span>
-                    <span className="admin-challenge-player-name">
-                      {challenge.challenged.playerName}
-                    </span>
-                  </div>
-                </td>
-                <td>
-                  <div className="admin-challenge-type-cell">
-                    {challenge.matchType}
-                    {challenge.stipulation && (
-                      <span className="admin-challenge-stip">
-                        {challenge.stipulation}
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td>
-                  <span className={`challenge-status-badge ${challenge.status}`}>
-                    {t(`challenges.status.${challenge.status}`)}
-                  </span>
-                </td>
-                <td>{formatDate(challenge.createdAt)}</td>
-                <td>
-                  <div className="admin-challenge-actions">
-                    {challenge.status === 'accepted' && (
-                      <button
-                        className="admin-btn-schedule"
-                        onClick={() =>
-                          navigate('/admin/schedule', {
-                            state: {
-                              fromChallenge: {
-                                challengeId: challenge.challengeId,
-                                challengerId: challenge.challengerId,
-                                challengedId: challenge.challengedId,
-                                matchType: challenge.matchType,
-                                stipulation: challenge.stipulation,
-                                championshipId: challenge.championshipId,
-                                challenger: challenge.challenger,
-                                challenged: challenge.challenged,
-                              },
-                            },
-                          })
-                        }
-                      >
-                        {t('challenges.admin.schedule', 'Schedule')}
-                      </button>
-                    )}
-                    {(challenge.status === 'pending' ||
-                      challenge.status === 'countered' ||
-                      challenge.status === 'accepted') && (
-                      <button
-                        className="admin-btn-expire"
-                        onClick={() => handleCancel(challenge)}
-                        disabled={submitting === challenge.challengeId}
-                      >
-                        {submitting === challenge.challengeId
-                          ? 'Cancelling...'
-                          : t('challenges.admin.expire')}
-                      </button>
-                    )}
-                    <button
-                      className="admin-btn-view-detail"
-                      onClick={() =>
-                        navigate(`/challenges/${challenge.challengeId}`)
-                      }
-                    >
-                      {t('challenges.my.viewDetails')}
-                    </button>
-                    <button
-                      type="button"
-                      className="admin-btn-delete"
-                      onClick={() => handleDelete(challenge)}
-                      disabled={submitting === challenge.challengeId}
-                      title={t('challenges.admin.delete', 'Delete')}
-                    >
-                      {submitting === challenge.challengeId ? '...' : t('challenges.admin.delete', 'Delete')}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+      {confirmDialog}
+    </section>
   );
 }

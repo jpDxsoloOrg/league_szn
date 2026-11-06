@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import type { ComponentType, LazyExoticComponent } from 'react';
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import {
@@ -12,6 +13,7 @@ import {
   isAdminTab,
   type AdminTab,
 } from '../../config/navConfig';
+import EmptyState from '../ui/EmptyState';
 import Skeleton from '../ui/Skeleton';
 import AdminHub, { AdminHubBackRow } from './AdminHub';
 import AdminNav from './AdminNav';
@@ -68,12 +70,18 @@ export default function AdminPanel() {
   if (!isAdminOrModerator) {
     return (
       <div className="admin-panel">
-        <div className="access-denied">
-          <h2>Admin Access Required</h2>
-          <p>You need admin privileges to access this panel.</p>
-        </div>
+        <EmptyState
+          icon={<ShieldAlert aria-hidden="true" size={32} />}
+          title={t('adminContent.panel.accessRequired', 'Admin Access Required')}
+          description={t('adminContent.panel.accessRequiredText', 'You need admin privileges to access this panel.')}
+        />
       </div>
     );
+  }
+
+  // Call-outs moderation lives under Promos.
+  if (tab === 'challenges') {
+    return <Navigate to="/admin/promos?view=call-outs" replace />;
   }
 
   if (tab && !isAdminTab(tab)) {
@@ -88,10 +96,11 @@ export default function AdminPanel() {
   if (activeEntry && !canAccessAdminEntry(activeEntry, isSuperAdmin)) {
     return (
       <div className="admin-panel">
-        <div className="access-denied">
-          <h2>Full Admin Access Required</h2>
-          <p>This action requires full Admin privileges.</p>
-        </div>
+        <EmptyState
+          icon={<ShieldAlert aria-hidden="true" size={32} />}
+          title={t('adminContent.panel.fullAccessRequired', 'Full Admin Access Required')}
+          description={t('adminContent.panel.fullAccessRequiredText', 'This action requires full Admin privileges.')}
+        />
       </div>
     );
   }
@@ -131,14 +140,13 @@ export default function AdminPanel() {
       <AdminNav activeTab={activeTab} isSuperAdmin={isSuperAdmin} />
       <div className="admin-layout__main">
         {parent && <p className="admin-breadcrumb">{parent}</p>}
-        <div className="admin-onboarding-banner">
-          <p>
-            New to admin workflows? Start with{' '}
-            <Link to="/guide/wiki/admin-quickstart">Admin Quickstart</Link> and then review{' '}
-            <Link to="/guide/wiki/admin-workflow">Typical Weekly Workflow</Link>.
-          </p>
-        </div>
         {content}
+        <p className="admin-help">
+          {t('adminContent.panel.helpPrefix', 'New to admin workflows?')}{' '}
+          <Link to="/guide/wiki/admin-quickstart">{t('adminContent.panel.quickstart', 'Admin Quickstart')}</Link>
+          {' · '}
+          <Link to="/guide/wiki/admin-workflow">{t('adminContent.panel.weeklyWorkflow', 'Typical Weekly Workflow')}</Link>
+        </p>
       </div>
     </div>
   );
