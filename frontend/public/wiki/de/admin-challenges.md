@@ -1,20 +1,24 @@
-# Admin: Herausforderungen
+# Admin: Herausforderungen (Call-outs)
 
-Der Tab **Herausforderungen** (Admin → Herausforderungen) ermöglicht das Anzeigen und Verwalten von Match-Herausforderungen zwischen Spielern.
+Herausforderungen zwischen Spielern heißen jetzt **Call-outs**, und einen eigenen Tab Herausforderungen gibt es nicht mehr. Du moderierst sie unter **Admin → Promos** im Tab **Call-outs**. Eine Herausforderung ist etwas anderes als eine Promo vom Typ **Ansage**, die ein Beitrag im Promo-Feed ist.
 
-## Anzeigen und Filtern
+## Ansehen und filtern
 
-- Nutze den Status-Filter für ausstehend, kontert, angenommen, geplant, abgelaufen oder abgebrochen
-- Nur Herausforderungen in bestimmten Status (z. B. ausstehend, angenommen) erscheinen auf der öffentlichen Challenge-Board; geplante und erledigte Herausforderungen sind dort ausgeblendet
+- Mit dem Statusfilter zeigst du ausstehende, angenommene, abgelehnte, gekonterte, geplante, abgelaufene oder abgebrochene Herausforderungen an.
+- Das Team sieht hier immer jede Herausforderung, auch wenn sie aus der Liste der Wrestler verschwunden ist.
 
-## Match aus einer Herausforderung planen
+## Wann Herausforderungen ablaufen
 
-Klicke bei einer Herausforderung auf **Planen**, um „Match planen“ zu öffnen – Teilnehmer, Match-Typ und optionale Stipulation werden aus der Herausforderung übernommen. Das geplante Match speichert einen Verweis auf die Herausforderung.
+Eine Herausforderung läuft 4 Tage nach ihrer Ausstellung ab, wenn niemand antwortet. Eine Konter-Herausforderung bekommt eigene 4 Tage. Die Seite prüft das stündlich, der Status kann sich also bis zu einer Stunde später ändern. Abgelaufene Herausforderungen verschwinden aus der Liste der Wrestler, die beiden beteiligten Spieler sehen sie aber weiterhin.
 
-## Herausforderungen löschen
+## Kampf aus einer Herausforderung planen
 
-Nutze den **Löschen**-Button pro Zeile, um eine Herausforderung zu entfernen.
+Klicke bei einer angenommenen Herausforderung auf **Kampf planen**, um die Planung mit vorausgefüllten Teilnehmern, Match-Typ und optionaler Stipulation zu öffnen. Beim Speichern wird die Herausforderung als geplant markiert und mit dem Match verknüpft.
 
-## Erledigte löschen
+## Aktionen für volle Admins
 
-Die Aktion **Erledigte löschen** entfernt abgebrochene, abgelaufene und geplante Herausforderungen. Vor dem Löschen erscheint ein Bestätigungsdialog.
+Moderatoren können Herausforderungen planen und ansehen. Diese Aktionen sind vollen Admins vorbehalten:
+
+- **Ablaufen lassen** beendet eine ausstehende, gekonterte oder angenommene Herausforderung. Sie wird danach als Abgebrochen angezeigt.
+- **Löschen** entfernt eine Herausforderung aus der Liste.
+- **Erledigte löschen** entfernt alle abgebrochenen, abgelaufenen und geplanten Herausforderungen. Vorher erscheint ein Bestätigungsdialog. Abgelehnte Herausforderungen bleiben.

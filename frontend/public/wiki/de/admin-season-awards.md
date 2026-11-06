@@ -1,24 +1,24 @@
 # Admin: Saison-Auszeichnungen
 
-Nutze **Saison-Auszeichnungen**, um automatisch erzeugte Awards zu prüfen und eigene Awards für eine Saison zu erstellen.
+Unter **Saison-Auszeichnungen** prüfst du automatisch erzeugte Auszeichnungen und fügst für eine gewählte Saison eigene hinzu. Mitglieder sehen sie unter **Ranglisten → Auszeichnungen**.
 
 ## So funktioniert es
 
-- Zuerst eine Saison auswählen.
+- Wähle zuerst eine Saison.
 - Die Seite zeigt:
-  - **Auto-Awards** (aus Saisondaten berechnet)
-  - **Custom Awards** (manuell durch Admins erstellt)
+  - **Automatische Auszeichnungen**, berechnet aus den Saisondaten: MVP, Longest Win Streak, Iron Man, Best Win Percentage und Most Championship Defenses
+  - **Benutzerdefinierte Auszeichnungen**, die das Team erstellt
 
-## Custom Award hinzufügen
+## Eigene Auszeichnung hinzufügen
 
-1. Saison auswählen.
-2. **Award erstellen** klicken.
-3. Name, Spieler und optional Beschreibung eingeben.
-4. Speichern und prüfen, ob der Award in der Liste erscheint.
+1. Wähle eine Saison.
+2. Klicke auf **Auszeichnung erstellen**.
+3. Gib Name, Spieler und optional eine Beschreibung ein.
+4. Speichere und prüfe, ob sie in der Liste der benutzerdefinierten Auszeichnungen erscheint.
 
-## Custom Award löschen
+## Eigene Auszeichnung löschen
 
-- Löschaktion in der Tabelle der Custom Awards verwenden.
-- Löschung im Dialog bestätigen.
+- Klicke in der Tabelle der benutzerdefinierten Auszeichnungen auf **Löschen**.
+- Bestätige das Löschen.
 
-Automatisch erzeugte Awards werden vom System berechnet und auf dieser Seite nicht manuell gelöscht.
+Automatische Auszeichnungen berechnet die Seite selbst, sie lassen sich hier nicht löschen. Beim Löschen einer Saison werden auch ihre benutzerdefinierten Auszeichnungen gelöscht.

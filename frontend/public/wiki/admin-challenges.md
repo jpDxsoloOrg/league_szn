@@ -1,20 +1,24 @@
-# Admin: Challenges
+# Admin: Challenges (Call-outs)
 
-The **Challenges** tab (Admin → Challenges) lets you view and manage match challenges between players.
+Challenges between players are now called **Call-outs**, and there is no separate Challenges tab. Moderate them at **Admin → Promos**, on the **Call-outs** tab. A challenge is different from a promo of the **Call-Out** type, which is a post in the promo feed.
 
 ## Viewing and filtering
 
-- Use the status filter to show pending, countered, accepted, scheduled, expired, or cancelled challenges.
-- Only challenges in certain statuses (e.g. pending, accepted) appear on the public challenge board; scheduled and resolved challenges are hidden from the board.
+- Use the status filter to show pending, accepted, declined, countered, scheduled, expired, or cancelled challenges.
+- Staff always see every challenge here, even after it leaves the list wrestlers see.
+
+## When challenges expire
+
+A challenge expires 4 days after it is issued if nobody answers it. A counter-challenge gets its own 4 days. The site checks every hour, so the status can take up to an hour to change. Expired challenges leave the wrestlers' list, but the two players involved can still see them.
 
 ## Scheduling a match from a challenge
 
-Click **Schedule** on a challenge to open Schedule Match with participants, match type, and optional stipulation pre-filled from the challenge. The scheduled match stores a link to the challenge.
+Click **Schedule** on an accepted challenge to open Schedule Match with participants, match type, and optional stipulation pre-filled. Saving marks the challenge as scheduled and links it to the match.
 
-## Deleting challenges
+## Actions for full Admins
 
-Use the per-row **Delete** button to remove a challenge.
+Moderators can schedule and view challenges. These actions are for full Admins only:
 
-## Clear Resolved
-
-The **Clear Resolved** bulk action removes cancelled, expired, and scheduled challenges. A confirmation dialog appears before clearing.
+- **Expire** ends a pending, countered or accepted challenge. It then shows as Cancelled.
+- **Delete** removes a challenge from the list.
+- **Clear Resolved** removes all cancelled, expired, and scheduled challenges. A confirmation dialog appears first. Declined challenges stay.
