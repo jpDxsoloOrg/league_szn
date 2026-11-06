@@ -7,6 +7,7 @@ provider:
   runtime: ${env:SLS_RUNTIME, 'nodejs20.x'}
   region: us-east-1
   stage: ${opt:stage, 'dev'}
+  logRetentionInDays: 90
   environment:
     SERVICE_NAME: ${self:service}
     STAGE: ${self:provider.stage}
@@ -56,7 +57,8 @@ provider:
     DB_DRIVER: ${env:DB_DRIVER, 'dynamo'}
     COGNITO_USER_POOL_ID: !Ref LeagueUserPool
     COGNITO_CLIENT_ID: !Ref LeagueUserPoolClient
-    ADMIN_SETUP_KEY: ${env:ADMIN_SETUP_KEY, 'default-dev-key-change-in-production'}
+    # Empty when unset, which makes /auth/setup reject every request.
+    ADMIN_SETUP_KEY: ${env:ADMIN_SETUP_KEY, ''}
     ALLOWED_ORIGIN: ${self:custom.allowedOrigin.${self:provider.stage}, 'https://leagueszn.jpdxsolo.com'}
   iam:
     role:
@@ -171,7 +173,7 @@ provider:
           Action:
             - lambda:InvokeFunction
           Resource:
-            - arn:aws:lambda:${self:provider.region}:*:function:${self:service}-${self:provider.stage}-calculateRankings
+            - arn:aws:lambda:${self:provider.region}:*:function:${self:service}-${self:provider.stage}-contenders
 
 plugins:
   - serverless-plugin-typescript
@@ -206,6 +208,8 @@ custom:
       - X-Amz-Security-Token
       - X-Amz-User-Agent
     allowCredentials: true
+    # Chromium caps preflight caching at two hours, so longer buys little.
+    maxAge: 7200
   frontendBucket:
     dev: leagueszn.jpdxsolo.com
     devtest: dev.leagueszn.jpdxsolo.com
@@ -216,6 +220,8 @@ custom:
     devtest: dev.leagueszn.jpdxsolo.com
     prod: leagueszn.jpdxsolo.com
     offline: 'localhost'
+  # AWS managed SecurityHeadersPolicy. Referenced by ID so no resource is added.
+  securityHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03
   certificateArn:
     dev: ${env:PROD_ACM_CERTIFICATE_ARN, ''}
     devtest: ${env:DEV_ACM_CERTIFICATE_ARN, ''}
@@ -326,6 +332,7 @@ functions:
   # Players (Phase 2 consolidated: getPlayers, createPlayer, updatePlayer, deletePlayer, getMyProfile, updateMyProfile)
   players:
     handler: functions/players/handler.handler
+    timeout: 15
     # Single Lambda that routes all /players traffic. Per-path methods are
     # collapsed to ANY (8 http events -> 4) and the gateway-level authorizer
     # is removed -- JWT verification + role checks happen in-Lambda via
@@ -426,6 +433,7 @@ functions:
   # Matches (Phase 3 consolidated: getMatches, scheduleMatch, recordResult)
   matches:
     handler: functions/matches/handler.handler
+    timeout: 29
     events:
       - http:
           path: matches
@@ -503,6 +511,7 @@ functions:
   # Dashboard (aggregated league overview)
   getDashboard:
     handler: functions/dashboard/getDashboard.handler
+    timeout: 15
     events:
       - http:
           path: dashboard
@@ -512,6 +521,7 @@ functions:
   # Standings
   getStandings:
     handler: functions/standings/getStandings.handler
+    timeout: 15
     events:
       - http:
           path: standings
@@ -521,6 +531,7 @@ functions:
   # Activity feed (news feed / activity timeline)
   activity:
     handler: functions/activity/handler.handler
+    timeout: 15
     events:
       - http:
           path: activity
@@ -2645,6 +2656,7 @@ resources:
             - PathPattern: videos/*
               TargetOriginId: S3MediaOrigin
               ViewerProtocolPolicy: redirect-to-https
+              ResponseHeadersPolicyId: ${self:custom.securityHeadersPolicyId}
               AllowedMethods:
                 - GET
                 - HEAD
@@ -2663,6 +2675,7 @@ resources:
           DefaultCacheBehavior:
             TargetOriginId: S3WebsiteOrigin
             ViewerProtocolPolicy: redirect-to-https
+            ResponseHeadersPolicyId: ${self:custom.securityHeadersPolicyId}
             AllowedMethods:
               - GET
               - HEAD

@@ -44,7 +44,7 @@ const generatePolicy = (
 };
 
 export const handler: APIGatewayTokenAuthorizerHandler = async (event) => {
-  console.log('Authorizer event:', JSON.stringify(event, null, 2));
+  console.log('Authorizing request:', event.methodArn);
 
   // Offline mode: skip JWT verification, allow all requests as Admin.
   // This must run before token presence/format checks so local development
@@ -95,7 +95,8 @@ export const handler: APIGatewayTokenAuthorizerHandler = async (event) => {
       groups: groupsStr,
     });
   } catch (error) {
-    console.error('Token verification failed:', error);
+    // Log the error name only; verifier errors can carry decoded token claims.
+    console.error('Token verification failed:', error instanceof Error ? error.name : 'unknown error');
     throw new Error('Unauthorized');
   }
 };
