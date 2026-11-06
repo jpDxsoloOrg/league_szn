@@ -1,55 +1,65 @@
 # Datenverwaltung (Gefahrenzone)
 
-Der Tab **Gefahrenzone** bietet Funktionen zum Erzeugen von Beispieldaten oder zum kompletten Zurücksetzen der Liga. **Nur mit voller Admin-Berechtigung** (Moderatoren haben keinen Zugriff).
+Die Seite **Gefahrenzone** bietet Werkzeuge, um Beispieldaten zu erzeugen oder die Liga komplett zurückzusetzen. **Nur für volle Admins** (Moderatoren können sie nicht öffnen).
+
+**Diese Werkzeuge funktionieren nur auf der Testseite.** Auf der echten Ligaseite sind beide abgeschaltet, und ein Versuch zeigt einen Fehler, dass der Vorgang in dieser Umgebung deaktiviert ist.
 
 ## Beispieldaten erzeugen
 
-Fülle die Liga schnell mit realistischen Beispieldaten für Tests oder Vorführungen.
+Fülle die Testseite schnell mit Beispieldaten für Tests oder Vorführungen.
 
 **Was erstellt wird:**
 
-- **12 Spieler** — Mit zufälligen Sieg-/Niederlagen-Bilanzen und zugewiesenen Wrestlern
-- **3 Divisionen** — z. B. Schwergewicht, Cruiserweight, Mid-Card
-- **1 aktive Saison** — Mit Tabellenständen für alle Spieler
+- **12 Spieler** — Mit zufälligen Bilanzen und zugewiesenen Wrestlern
+- **4 Divisionen** — Raw, SmackDown, NXT und Young Boys
+- **1 aktive Saison** — Mit Tabellen für alle Spieler
 - **4 Meisterschaften** — World, Intercontinental, Tag Team und US-Titel
-- **12 Matches** — Mix aus abgeschlossenen und geplanten Matches
-- **2 Turniere** — K.-o.-System und Rundensystem
+- **12 Matches** — Mischung aus abgeschlossenen und geplanten Matches
+- **2 Turniere** — K.-o.-System und Jeder gegen jeden
+- **Events, Herausforderer-Ranglisten, Rivalitäten, Promos und Match-Bewertungen** — Damit der Rest der Seite etwas anzeigen kann
 
 **So erzeugst du Beispieldaten:**
 
-1. Gehe zum Tab **Gefahrenzone**
+1. Öffne die Seite **Gefahrenzone**
 2. Klicke auf **Beispieldaten erzeugen**
 3. Bestätige die Aktion im Dialog
 4. Warte, bis die Daten erstellt sind
 
-**Tipp:** Für eine saubere Vorführung zuerst „Alle Daten löschen“ ausführen, dann Beispieldaten erzeugen.
+Die Kontrollkästchen unter **Seed-Optionen** werden noch nicht genutzt. Du bekommst immer den vollen Satz, egal was du ankreuzt.
 
-## Wann „Alle Daten löschen“ nutzen
+**Tipp:** Für eine saubere Vorführung nutze zuerst **Alle Daten löschen** und erzeuge dann die Beispieldaten.
 
-- Kompletter Neustart der Liga
-- Tests oder Vorführungen
-- Aufräumen nach einem Testlauf vor dem Live-Betrieb
+## Wann „Alle Daten löschen“ sinnvoll ist
 
-**Vorsicht:** Diese Aktion ist dauerhaft und nicht umkehrbar. Alle Daten gehen unwiederbringlich verloren.
+- Die Testseite zurücksetzen
+- Nach einem Testlauf aufräumen
+
+**Äußerste Vorsicht:** Diese Aktion ist endgültig und kann nicht rückgängig gemacht werden. Alle Daten gehen für immer verloren.
 
 ## Was gelöscht wird
 
-- Alle Spieler (Wrestler) und ihre Match-Daten
-- Alle Matches und Ergebnisse
-- Alle Meisterschaften und ihre komplette Historie
-- Alle Turniere und Brackets
-- Alle Saisons und Tabellen
+- Alle Spieler (Wrestler) und ihre Bilanzen
+- Alle Matches, Ergebnisse und Match-Bewertungen
+- Alle Meisterschaften und ihre gesamte Historie
+- Alle Turniere und Turnierbäume
+- Alle Saisons, Tabellen und Auszeichnungen
 - Alle Divisionen
 - Alle Events
-- Alle Herausforderer-Ranglisten
+- Alle Herausforderer-Ranglisten und Anpassungen
+- Alle Herausforderungen und Promos
+- Alle Rivalitäten mit ihren Nachrichten und Notizen
+- Alle Match-Typen und Stipulationen
+- Die Seiteneinstellungen, auch die Funktionsschalter
+
+Benutzerkonten werden nicht gelöscht.
 
 ## So löschst du alle Daten
 
-1. Gehe zum Tab **Gefahrenzone**
-2. Lies die Warnung aufmerksam
-3. Tippe den exakten Satz **DELETE ALL DATA** in das Bestätigungsfeld
+1. Öffne die Seite **Gefahrenzone**
+2. Lies die Warnung sorgfältig
+3. Gib den genauen Text **DELETE ALL DATA** in das Bestätigungsfeld ein
 4. Klicke auf **Alle Daten löschen**
-5. Bestätige den abschließenden Warn-Dialog
+5. Bestätige die letzte Warnung
 6. Warte, bis der Vorgang abgeschlossen ist
 
-**Tipp:** Exportiere vorher wichtige Daten – gelöschte Daten können nicht wiederhergestellt werden.
+**Hinweis:** Die Seite hat keine Export-Schaltfläche. Du kannst hier also weder eine Kopie sichern noch gelöschte Daten zurückholen.

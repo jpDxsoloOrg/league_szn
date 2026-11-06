@@ -1,33 +1,37 @@
 # Divisionen verwalten
 
-Die Seite **Divisionen** ermöglicht es, Spieler nach Gewichtsklasse, Kartenposition oder Rolle zu gruppieren – z. B. Schwergewicht, Cruiserweight, Main Event oder Jobber. Divisionen sind keine Show-Brands; sie legen fest, wer bei aktivierter Divisionsbeschränkung für welche Meisterschaften antreten kann.
+Auf der Seite **Divisionen** gruppierst du Spieler nach Gewichtsklasse, Position auf der Card oder Rolle, zum Beispiel die Divisionen Heavyweight, Mid-Card und Jobber aus den [Liga-Regeln](league-rules). Divisionen entscheiden, wer um einen Titel kämpfen darf, der auf eine Division beschränkt ist.
 
-## Division anlegen
+## Division erstellen
 
-1. Gehe zu **Divisionen**
+1. Gehe zu **Divisionen** und klicke auf **Division erstellen**
 2. Fülle die Angaben aus:
-   - **Divisionsname** — z. B. „Schwergewicht“, „Cruiserweight“, „Main Event“, „Jobber“
-   - **Beschreibung** (optional) — z. B. „Top-Stars“, „Unter 205 lbs“ oder „Enhancement Talent“
-3. Klicke auf **Division anlegen**, um zu speichern
+   - **Divisionsname** — z. B. „Heavyweight“, „Mid-Card“, „Jobber“
+   - **Beschreibung** (optional) — z. B. „Die größten Stars“ oder „Aufbaugegner“
+3. Klicke zum Speichern auf **Division erstellen**
 
 ## Division bearbeiten
 
-1. Finde die Division in der Übersicht
-2. Klicke auf **Bearbeiten** bei der Division
-3. Passe Name oder Beschreibung an
-4. Klicke auf **Division aktualisieren**, um die Änderungen zu übernehmen
+1. Suche die Division in der Tabelle
+2. Klicke auf **Bearbeiten**
+3. Ändere Name oder Beschreibung
+4. Bestätige mit **Division aktualisieren**
 
 ## Division löschen
 
-1. Finde die Division in der Übersicht
-2. Klicke auf **Löschen** bei der Division
+1. Suche die Division in der Tabelle
+2. Klicke auf **Löschen**
 3. Bestätige die Aktion im Dialog
 
-**Hinweis:** Eine Division, der noch Spieler zugewiesen sind, kann nicht gelöscht werden. Weise die Spieler zuerst einer anderen Division zu oder entferne die Zuweisung.
+**Hinweis:** Eine Division mit zugewiesenen Spielern oder eine, auf die ein Titel beschränkt ist, kannst du nicht löschen. Verschiebe zuerst die Spieler und ändere die Meisterschaft.
 
 ## Spieler Divisionen zuweisen
 
-1. Gehe zu **Spieler verwalten**
-2. Beim Bearbeiten eines Spielers nutze das **Division**-Dropdown
-3. Wähle die passende Division oder „Keine Division“
-4. Speichere den Spieler, um die Zuweisung zu übernehmen
+Wechsel zwischen Divisionen nimmt das Team vor. Dafür gibt es zwei Stellen:
+
+- Klicke unter **Spieler verwalten** bei einem Spieler auf **Bearbeiten**, wähle eine **Division** oder **Keine Division** und klicke auf **Spieler aktualisieren**
+- Nutze in der **Benutzerverwaltung** die Auswahl **Division** in der Zeile; sie speichert sofort
+
+Neue Registrierungen landen in einer Division namens „Young Boys“, falls deine Liga eine hat. Sonst starten sie ohne Division.
+
+Anträge auf einen Divisionstransfer sind abgeschaltet. Spieler können also auf der Seite keinen Wechsel beantragen, und die Seite **Divisionstransfers** erscheint nicht im Admin-Menü.

@@ -1,76 +1,62 @@
 # Admin: Rivalitäten moderieren
 
-Der Rivalitäten-Admintab unter `/admin/rivalries` ist die GM-Steuerzentrale für die Storyline-Funktion. Dieser Artikel behandelt: wann genehmigen, wie schreibe ich Notizen vs. Pläne, wie verknüpfe ich Matches und wie räume ich auf.
+**Admin → Rivalitäten** ist die Steuerseite der GMs für langfristige Storylines. Dieser Artikel erklärt, wie Rivalitäten beginnen, wie du Notizen und Pläne schreibst, wie Matches verknüpft werden und wie du aufräumst. Moderatoren und Admins können hier alles nutzen, außer den **Heat-Einstellungen**, die vollen Admins vorbehalten sind.
 
-> **Hinweis zur Spoiler-Sicherheit.** Plan-Notizen sind standardmäßig auf `gm-only` gesetzt — sie beschreiben zukünftige Storyline-Beats. Wenn du einen Plan auf `participants` oder `all` änderst, sehen alle Wrestler ihn. Das Datenmodell erzwingt das serverseitig, aber ein versehentlicher Klick im Sichtbarkeits-Dropdown kann trotzdem das Finish verraten. Vor dem Speichern doppelt prüfen.
+> **Spoiler-Warnung.** Alles, was du im Tab **Notizen & Pläne** speicherst, können die Rivalen dieser Rivalität lesen, auch Pläne. Eine Option „Nur GMs“ gibt es auf der Seite nicht, also lass Finishes und Überraschungen dort weg.
 
-## Triage-Workflow
+## Rivalität starten
 
-1. Öffne `/admin/rivalries` und wähle den **Prüfung läuft**-Chip.
-2. Pro Zeile entscheidest du:
-   - **Genehmigen**, wenn der Pitch zur Marke passt, beide Wrestler sinnvoll gewählt sind und die Storyline nicht mit einem laufenden Angle kollidiert.
-   - **Ablehnen** mit kurzer Begründung — Wrestler sehen den Grund in ihrer Benachrichtigung. Beispiel: „Heben wir für nach dem Titel-Programm auf" oder „Kollidiert mit der laufenden Stable-Fehde".
-3. Nach Genehmigung erscheint die Rivalität im Hub. Status ist `active`.
+Nur das Team kann eine Rivalität eröffnen. Wrestler, die eine möchten, können sie in ihrem Profil vorschlagen. Diese Vorschläge landen unter **Admin → Storyline-Anfragen**, wo du sie mit **Bestätigen** oder **Ablehnen** beantwortest. Zum Ablehnen ist eine GM-Notiz nötig.
 
-Faustregel: maximal 3 aktive Rivalitäten pro Wrestler. Sonst wird der Hub unübersichtlich.
+1. Gehe zu **Storylines → Rivalitäten** und klicke auf **Rivalität anfragen** (nur das Team sieht diese Schaltfläche)
+2. Wähle zwei Wrestler und welchen Wrestler jeder Spieler verwendet
+3. Gib der Rivalität einen Titel und eine **Anfangshitze**, ergänze eine Storyline-Idee und eventuelle Pläne
+4. Speichere. Die Rivalität ist sofort aktiv, mit dir als Booker
 
-## Storyline-Notizen vs. Pläne
+Eine gute Faustregel: nicht mehr als 3 aktive Rivalitäten pro Wrestler, sonst wird der Hub unübersichtlich.
 
-Beide Notiztypen leben im **Notizen & Pläne**-Tab, dienen aber sehr unterschiedlichen Zwecken:
+Auf der Seite der Rivalität kann das Team die Booker-Angabe mit **Ich buche das**, **Buchung übernehmen** oder **Booker entfernen** ändern.
 
-| Notiztyp | Audience | Wofür |
+## Rivalitäten in Prüfung
+
+Neue Rivalitäten überspringen die Prüfung, deshalb bleibt der Filter **Prüfung läuft** normalerweise leer. Liegt dort noch eine ältere Rivalität, nutze in ihrer Zeile **Genehmigen** oder **Ablehnen**. Eine Ablehnung braucht einen Grund, und die Beteiligten bekommen in beiden Fällen eine Benachrichtigung.
+
+## Storyline-Notizen und Pläne
+
+Beide Notizarten liegen im Tab **Notizen & Pläne** auf der Seite einer Rivalität. Nur die Rivalen und GMs können diesen Tab öffnen.
+
+| Notizart | Wer sie schreiben kann | Wofür |
 |---|---|---|
-| **Storyline** | optional — `all`, `participants` oder `gm-only` | was bisher AUF dem Bildschirm passiert ist (Kontinuität) |
-| **Plan** | Standard `gm-only` | was NOCH passieren wird — Beats, Ziel-Events, Finishes |
+| **Storyline** | Rivalen und GMs | Was bisher auf dem Bildschirm passiert IST (Kontinuität) |
+| **Plan** | Nur GMs | Was passieren WIRD, mit optionalem Datum **Geplant für** |
 
-**Sichtbarkeitsregeln** (serverseitig erzwungen):
+Beide Rivalen und alle GMs können Notizen und Pläne lesen. Wrestler können ihre eigenen Notizen bearbeiten und löschen; GMs können jede Notiz bearbeiten und löschen.
 
-- Wrestler dürfen `storyline`-Notizen schreiben; ihre Sichtbarkeit wird immer auf `gm-only` erzwungen (gilt als Vorschlag an dich).
-- Versucht ein Wrestler einen `plan` zu schreiben, gibt's 403. Pläne sind GM-only.
-- Wrestler sehen die `gm-only`-Storyline-Notizen anderer Wrestler nicht. Eigene sehen sie.
-- Wrestler sehen einen `plan` nie, außer seine Sichtbarkeit ist explizit auf `participants` oder `all` gesetzt.
+## Matches zu einer Rivalität planen
 
-Setzt du einen Plan auf `participants`, lesen die Wrestler ihn — nützlich für „Match 3 gewinnst du", ohne dass es öffentlich ist. Setze ihn nur dann auf `all`, wenn er öffentlich sichtbar sein soll.
+Plane das Match wie gewohnt mit [Match planen](admin-schedule-match) oder **Match hinzufügen** auf einem Event. Sind alle Beteiligten einer aktiven Rivalität im Match und passt nur eine Rivalität, wird das Match automatisch verknüpft. Andernfalls erscheint es trotzdem in den Tabs **Zukünftige Kämpfe** und **Kampfhistorie**, wenn die Rivalen während der Rivalität aufeinandertreffen.
 
-## Pläne mit Matches und Events verknüpfen
+## Wann du abschließen solltest
 
-Beim Anlegen eines Plans kannst du `linkedMatchId` oder `linkedEventId` setzen. Der Tab zeigt dann ein kleines Badge, das auf das Match oder Event verlinkt. Wenn der verknüpfte Datensatz später gelöscht wird, erscheint das Badge durchgestrichen — die Seite läuft nicht in 404.
+Klicke auf **Abschließen**, wenn die Storyline ihr Entscheidungsmatch hatte und du mindestens eine Saison lang nicht darauf zurückkommen willst. Abgeschlossene Rivalitäten wandern in den Tab **Archiv** im öffentlichen Hub, und die Beteiligten bekommen eine Benachrichtigung.
 
-Sinnvoll für „Plan A → Leiter-Match bei PPV-3", damit die Buchung von innerhalb der Rivalität sichtbar ist.
+Der Abschluss-Dialog nimmt eine optionale Notiz an. Halte damit etwa „Entschieden bei WrestleMania 40: Cena schickt Punk in den Ruhestand“ fest, damit das Archiv etwas Kontext hat.
 
-## Matches an eine Rivalität ansetzen
+## Hitze
 
-Zwei Wege:
+Jede Rivalität hat eine **Hitze**-Stufe (Eiskalt, Kalt, Warm, Heiß, Glühend heiß), die auf ihrer Karte und ihrer Seite steht. Die Seite berechnet sie aus den Sternebewertungen der Matches und den Reaktionen auf die Promos der Rivalität.
 
-1. **Vom Zukünftige-Kämpfe-Tab planen** — der schnellste Weg. Öffnet das Schedule-Match-Formular mit den Teilnehmern vorausgefüllt. Das neue Match wird automatisch verknüpft.
-2. **Bestehendes Match verknüpfen** — beim normalen Schedule-Flow das optionale `rivalryId`-Feld setzen. Das Backend prüft, dass beide Match-Teilnehmer in der Rivalität sind.
+Du kannst die Stufe in einer Zeile über **Hitze** weiterhin von Hand setzen, aber die nächste Bewertung oder passende Reaktion überschreibt sie. **Aus Bewertungen neu berechnen** im selben Dialog erzwingt sofort eine neue Berechnung. Die vollständige Formel und die Stufengrenzen findest du unter [Wie Rivalitäts-Hitze funktioniert](/guide/wiki/rivalry-heat-explained).
 
-Matches vor RIV-06 haben kein `rivalryId` und werden über das Teilnehmer-Overlap-Fallback eingeblendet. Neue Arbeit sollte das Feld immer setzen.
+Ein voller Admin kann die Formel unter **Heat-Einstellungen** feinjustieren.
 
-## Wann abschließen
+## Massenbereinigung
 
-Schließe eine Rivalität ab, sobald die Storyline ihr Payoff-Match hatte und du sie mindestens eine Saison ruhen lässt. Abgeschlossene Rivalitäten:
+**Erledigte löschen** löscht die abgeschlossenen, abgelehnten und abgebrochenen Rivalitäten in der Liste endgültig. Nutze das, wenn sich im Archiv Testeinträge oder Unnötiges angesammelt haben. Der Bestätigungsdialog zeigt die genaue Anzahl.
 
-- Wandern ins **Archiv** im öffentlichen Hub.
-- Tauchen standardmäßig nicht mehr im „Meine Rivalitäten"-Tab der Teilnehmer auf.
-- Sind weiterhin abfragbar für Historiker.
-
-Wrestler bekommen eine Benachrichtigung. Das Abschluss-Modal akzeptiert eine optionale Abschluss-Notiz — nutze sie für „WrestleMania 40, Cena retired Punk", damit das Archiv nicht namenlos ist.
-
-## Hitze ergibt sich aus Kampfbewertungen
-
-Jede Rivalität hat eine **Hitze**-Stufe (Eiskalt → Kalt → Warm → Heiß → Glühend heiß), die auf der Rivalitäts-Karte und der Detailseite sichtbar ist. Seit Welle 3 wird die Hitze nicht mehr manuell gesetzt: Sie wird automatisch aus den Sternebewertungen der Nutzer für die Kämpfe der Rivalität neu berechnet.
-
-Du kannst die Hitze einer Rivalität weiterhin manuell überschreiben, doch die nächste abgegebene Bewertung eines ihrer Kämpfe überschreibt deinen Wert wieder. Mit der Schaltfläche **Aus Bewertungen neu berechnen** kannst du eine Neuberechnung sofort erzwingen. Siehe [Wie Rivalitäts-Hitze funktioniert](/guide/wiki/rivalry-heat-explained) für die vollständige Formel und die Schwellenwerte.
-
-## Massen-Aufräumen
-
-Der **Erledigte löschen**-Button löscht jede Rivalität mit Status `completed`, `rejected` oder `cancelled` hart. Nutze das, wenn sich Testdaten oder Rauschen angesammelt haben. Das Bestätigungs-Modal zeigt die exakte Zahl.
-
-Destruktiv — kein Undo. Wenn du versehentlich Produktionsverlauf gelöscht hast, brauchst du das letzte DynamoDB-Backup.
+Rückgängig machen lässt sich das nicht. **Löschen** in einer Zeile entfernt auf dieselbe Weise eine einzelne Rivalität.
 
 ## Siehe auch
 
 - [Promos verwalten](/guide/wiki/admin-promos)
-- [Challenges](/guide/wiki/admin-challenges)
-- [Storyline-Anfragen](/guide/wiki/admin-quickstart)
+- [Herausforderungen](/guide/wiki/admin-challenges)
