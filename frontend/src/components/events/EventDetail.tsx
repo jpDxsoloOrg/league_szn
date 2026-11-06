@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowLeft, ArrowUp, CalendarClock, Lock, LockOpen, Mic, Pencil, Plus, Trash2, Trophy } from 'lucide-react';
-import { eventsApi, matchesApi, playersApi, tagTeamsApi } from '../../services/api';
+import { eventsApi, isApiError, matchesApi, playersApi, tagTeamsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../ui/toastContext';
 import type {
@@ -49,6 +49,14 @@ import './EventDetail.css';
 const EVENT_STATUSES: EventStatus[] = ['upcoming', 'in-progress', 'completed', 'cancelled'];
 
 type HydratedTagTeam = TagTeam & { player1Name?: string; player2Name?: string };
+
+/** A new card list to show at once and save. */
+interface CardListEdit {
+  matchCards: EventWithMatches['matchCards'];
+  enrichedMatches: EventWithMatches['enrichedMatches'];
+  errorMessage: string;
+  moveFocus?: { matchId: string; direction: CardMoveDirection };
+}
 
 /** What the delete confirmation is currently asking about. */
 type PendingDelete =
@@ -304,6 +312,50 @@ export default function EventDetail() {
     }
   };
 
+  /**
+   * Saves an edited card list. matchCards replaces the whole stored list, so the
+   * list this edit started from goes with it and the server refuses the write if
+   * another staff member or tab has changed the card since.
+   */
+  const saveCardList = async ({ matchCards, enrichedMatches, errorMessage, moveFocus }: CardListEdit) => {
+    if (!eventData || !eventId) return;
+    const { matchCards: previousCards, enrichedMatches: previousMatches } = eventData;
+    let cardChanged = false;
+
+    const saveOrder = async () => {
+      try {
+        await eventsApi.update(eventId, { matchCards, expectedMatchCards: previousCards });
+      } catch (err) {
+        if (moveFocus) moveFocusRef.current = moveFocus;
+        if (isApiError(err, 409)) {
+          // The list on screen is the stale one, so reload it rather than restore it.
+          cardChanged = true;
+          showToast(t('events.detail.cardChanged', 'The card changed. Reloaded the latest order; try again.'), 'error');
+          return;
+        }
+        setEventData((current) => current && {
+          ...current,
+          matchCards: previousCards,
+          enrichedMatches: previousMatches,
+        });
+        showToast(errorMessage, 'error');
+      }
+    };
+
+    if (moveFocus) moveFocusRef.current = moveFocus;
+    setSavingCardOrder(true);
+    setEventData((current) => current && { ...current, matchCards, enrichedMatches });
+    cardSaveCountRef.current += 1;
+    const pendingSave = saveOrder();
+    cardSaveRef.current = pendingSave;
+    await pendingSave;
+    cardSaveRef.current = null;
+    setSavingCardOrder(false);
+    // After the ref clears: loadEvent waits on it, so calling this inside the
+    // save would deadlock.
+    if (cardChanged) await loadEvent();
+  };
+
   const handleMoveMatch = async (index: number, direction: CardMoveDirection) => {
     if (!eventData || !eventId || cardSaveRef.current) return;
     const { matchCards: previousCards, enrichedMatches: previousMatches } = eventData;
@@ -315,35 +367,12 @@ export default function EventDetail() {
     // starts from the stored cards: matchCards replaces the whole list, and the
     // enriched rows carry match data that must not be written back.
     const matchCards = swapCards(previousCards, index, targetIndex);
-    const moveFocus = { matchId: movedMatch.matchId, direction };
-
-    const saveOrder = async () => {
-      try {
-        await eventsApi.update(eventId, { matchCards });
-      } catch {
-        moveFocusRef.current = moveFocus;
-        setEventData((current) => current && {
-          ...current,
-          matchCards: previousCards,
-          enrichedMatches: previousMatches,
-        });
-        showToast(t('events.detail.moveMatchError', 'Could not save the new match order.'), 'error');
-      }
-    };
-
-    moveFocusRef.current = moveFocus;
-    setSavingCardOrder(true);
-    setEventData((current) => current && {
-      ...current,
+    await saveCardList({
       matchCards,
       enrichedMatches: swapCards(previousMatches, index, targetIndex),
+      errorMessage: t('events.detail.moveMatchError', 'Could not save the new match order.'),
+      moveFocus: { matchId: movedMatch.matchId, direction },
     });
-    cardSaveCountRef.current += 1;
-    const pendingSave = saveOrder();
-    cardSaveRef.current = pendingSave;
-    await pendingSave;
-    cardSaveRef.current = null;
-    setSavingCardOrder(false);
   };
 
   const handleRequestDeleteEvent = () => {

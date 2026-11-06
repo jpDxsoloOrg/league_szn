@@ -34,6 +34,7 @@ vi.mock('../../../services/api', () => ({
     getBookingSummary: api.getBookingSummary,
   },
   tagTeamsApi: { getAll: api.getTagTeams },
+  isApiError: (err: unknown, status: number) => (err as { status?: number }).status === status,
 }));
 
 vi.mock('../../../contexts/AuthContext', () => ({
@@ -317,6 +318,7 @@ describe('EventDetail', () => {
           { position: 2, matchId: 'm1', designation: 'opener' },
           { position: 3, matchId: 'm3', designation: 'main-event' },
         ],
+        expectedMatchCards: eventWithCard(card).matchCards,
       });
     });
 
@@ -400,6 +402,20 @@ describe('EventDetail', () => {
       api.updateEvent.mockResolvedValue({});
       await user.click(moveDown('m1'));
       expect(api.updateEvent.mock.calls[1]?.[1].matchCards.map((entry: { position: number }) => entry.position)).toEqual([1, 2, 3]);
+    });
+
+    it('reloads the card and warns when another save changed it first', async () => {
+      const newerCard: CardRow[] = [...card, ['m4', 'midcard']];
+      api.getEvent.mockResolvedValueOnce(eventWithCard(card)).mockResolvedValue(eventWithCard(newerCard));
+      api.updateEvent.mockRejectedValue(Object.assign(new Error('Conflict'), { status: 409 }));
+      const user = userEvent.setup();
+      const { container } = renderDetail();
+
+      await user.click(await waitFor(() => moveDown('m1')));
+
+      await waitFor(() => expect(shownOrder(container)).toEqual(['m1', 'm2', 'm3', 'm4']));
+      expect(showToast).toHaveBeenCalledWith('The card changed. Reloaded the latest order; try again.', 'error');
+      expect(api.updateEvent).toHaveBeenCalledTimes(1);
     });
 
     it('keeps focus on the control used, or its partner at the end of a section', async () => {

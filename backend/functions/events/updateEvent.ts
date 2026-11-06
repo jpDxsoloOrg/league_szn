@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
-import { NotFoundError } from '../../lib/repositories/errors';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { ConflictError, NotFoundError } from '../../lib/repositories/errors';
+import { success, badRequest, conflict, notFound, serverError } from '../../lib/response';
 import { parseBody } from '../../lib/parseBody';
 import { normalizeCalendarDate } from '../../lib/calendarDate';
 import type { EventPatch } from '../../lib/repositories/LeagueOpsRepository';
@@ -17,6 +17,8 @@ interface UpdateEventBody {
   status?: 'upcoming' | 'in-progress' | 'completed' | 'cancelled';
   seasonId?: string;
   matchCards?: EventPatch['matchCards'];
+  /** The card the client edited. A list that has since changed gets a 409. */
+  expectedMatchCards?: EventPatch['matchCards'];
   attendance?: number;
   rating?: number;
   companyIds?: string[];
@@ -83,6 +85,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       body.date = normalized;
     }
 
+    if (body.expectedMatchCards !== undefined && !Array.isArray(body.expectedMatchCards)) {
+      return badRequest('expectedMatchCards must be an array');
+    }
+
     const patch: EventPatch = {};
     if (body.name !== undefined) patch.name = body.name;
     if (body.eventType !== undefined) patch.eventType = body.eventType;
@@ -104,12 +110,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('No valid fields to update');
     }
 
-    const updated = await events.update(eventId, patch);
+    const updated = body.expectedMatchCards
+      ? await events.update(eventId, patch, { expectedMatchCards: body.expectedMatchCards })
+      : await events.update(eventId, patch);
 
     return success(updated);
   } catch (err) {
     if (err instanceof NotFoundError) {
       return notFound('Event not found');
+    }
+    if (err instanceof ConflictError) {
+      return conflict('The match card has changed. Reload and try again.');
     }
     console.error('Error updating event:', err);
     return serverError('Failed to update event');

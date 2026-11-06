@@ -1563,6 +1563,7 @@
       "matchTBA": "Match noch offen",
       "matchNotFound": "Match-Daten sind nicht verfügbar. Bitte Seite neu laden.",
       "moveMatchDown": "{{match}} nach unten verschieben",
+      "cardChanged": "Die Matchcard wurde geändert. Die aktuelle Reihenfolge wurde neu geladen, bitte erneut versuchen.",
       "moveMatchError": "Die neue Match-Reihenfolge konnte nicht gespeichert werden.",
       "moveMatchUp": "{{match}} nach oben verschieben",
       "openCommentary": "Kommentator-Ansicht",

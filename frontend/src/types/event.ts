@@ -103,6 +103,8 @@ export interface UpdateEventInput extends Partial<CreateEventInput> {
   eventId: string;
   status?: EventStatus;
   matchCards?: MatchCardEntry[];
+  /** The list the edit started from. The server refuses the write with a 409 if it has changed. */
+  expectedMatchCards?: MatchCardEntry[];
   attendance?: number;
   rating?: number;
   companyIds?: string[];
