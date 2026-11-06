@@ -106,6 +106,38 @@ describe('getCheckIns', () => {
     expect(body.noResponse[0].playerId).toBe('p4');
   });
 
+  it('leaves out hidden players who did not answer, whatever their stored placeholder', async () => {
+    mockQueryAll.mockResolvedValue([]);
+    mockScan.mockResolvedValue({
+      Items: [
+        { playerId: 'p1', name: 'Alice', currentWrestler: 'Stone Cold' },
+        { playerId: 'p6', name: 'Frank', currentWrestler: 'Needs Wrestler' },
+        { playerId: 'p7', name: 'Grace', currentWrestler: '   ' },
+      ],
+    });
+
+    const result = await getCheckIns(withAuth(makeEvent({ pathParameters: { eventId: 'evt-1' } }), 'Admin'), ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.noResponse.map((p: { playerId: string }) => p.playerId)).toEqual(['p1']);
+  });
+
+  it('keeps a real check-in from a hidden player', async () => {
+    mockQueryAll.mockResolvedValue([
+      { eventId: 'evt-1', playerId: 'p6', status: 'available' },
+      { eventId: 'evt-1', playerId: 'p5', status: 'unavailable' },
+    ]);
+    mockScan.mockResolvedValue({
+      Items: [...roster, { playerId: 'p6', name: 'Frank', currentWrestler: 'Needs Wrestler' }],
+    });
+
+    const result = await getCheckIns(withAuth(makeEvent({ pathParameters: { eventId: 'evt-1' } }), 'Admin'), ctx, cb);
+
+    const body = JSON.parse(result!.body);
+    expect(body.available.map((p: { playerId: string }) => p.playerId)).toEqual(['p6']);
+    expect(body.unavailable.map((p: { playerId: string }) => p.playerId)).toEqual(['p5']);
+  });
+
   it('returns 403 for a non-admin (Wrestler) caller', async () => {
     const event = withAuth(makeEvent({ pathParameters: { eventId: 'evt-1' } }), 'Wrestler');
     const result = await getCheckIns(event, ctx, cb);

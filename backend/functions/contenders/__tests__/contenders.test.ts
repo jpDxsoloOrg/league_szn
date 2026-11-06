@@ -288,23 +288,22 @@ describe('getContenders', () => {
     });
   });
 
-  it('enriches contenders with player data and falls back to Unknown', async () => {
+  it('enriches contenders with player data and drops rankings whose player is gone', async () => {
     mockChampionshipsRepo.findById.mockResolvedValue(champ('c1', 'IC Title'));
     mockContendersRepo.listByChampionshipRanked.mockResolvedValue([
-      rankRow('c1', 'p1', 1, 1), rankRow('c1', 'p-gone', 2, null),
+      rankRow('c1', 'p-gone', 1, null), rankRow('c1', 'p1', 2, 1),
     ]);
     mockPlayersRepo.findById
-      .mockResolvedValueOnce(player('p1', 'Known', 'AJ', 'aj.jpg'))
-      .mockResolvedValueOnce(null); // player not found
+      .mockResolvedValueOnce(null) // player not found
+      .mockResolvedValueOnce(player('p1', 'Known', 'AJ', 'aj.jpg'));
 
     const result = await getContenders(makeEvent({ pathParameters: { championshipId: 'c1' } }), ctx, cb);
     const body = JSON.parse(result!.body);
 
+    expect(body.contenders).toHaveLength(1);
+    expect(body.contenders[0].rank).toBe(1);
     expect(body.contenders[0].playerName).toBe('Known');
     expect(body.contenders[0].imageUrl).toBe('aj.jpg');
-    expect(body.contenders[1].playerName).toBe('Unknown');
-    expect(body.contenders[1].wrestlerName).toBe('Unknown');
-    expect(body.contenders[1].imageUrl).toBeNull();
   });
 
   it('calculates movement (previousRank - adjustedRank) and marks new entries', async () => {

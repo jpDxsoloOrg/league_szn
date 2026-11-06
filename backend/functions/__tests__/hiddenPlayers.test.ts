@@ -344,6 +344,30 @@ describe('getStatistics', () => {
     expect(ids(body.players)).toEqual([roster.visibleId]);
   });
 
+  it('leaves hidden players out of the average match ratings', async () => {
+    const date = '2026-01-01T00:00:00.000Z';
+    await repos.competition.matches.create({
+      matchId: 'rated',
+      date,
+      matchFormat: 'singles',
+      participants: [roster.visibleId, roster.placeholderId],
+      winners: [roster.visibleId],
+      losers: [roster.placeholderId],
+      status: 'completed',
+      starRating: 4,
+      createdAt: date,
+      updatedAt: date,
+    });
+
+    const { body } = await call<{
+      highestRatedMatches: unknown[];
+      playerAverageRatings: PlayerRow[];
+    }>(getStatistics, makeEvent({ queryStringParameters: { section: 'match-ratings' } }));
+
+    expect(ids(body.playerAverageRatings)).toEqual([roster.visibleId]);
+    expect(body.highestRatedMatches).toHaveLength(1);
+  });
+
   it('does not return stats for a hidden player ID', async () => {
     const event = makeEvent({
       queryStringParameters: { section: 'player-stats', playerId: roster.placeholderId },
@@ -481,13 +505,13 @@ describe('stable member rows', () => {
     stableId = stable.stableId;
   });
 
-  it('getStable lists visible members but still names a hidden leader', async () => {
-    const { body } = await call<{ members: PlayerRow[]; leaderName: string }>(
+  it('getStable lists visible members and does not name a hidden leader', async () => {
+    const { body } = await call<{ members: PlayerRow[]; leaderName?: string }>(
       getStable,
       makeEvent({ pathParameters: { stableId } }),
     );
     expect(ids(body.members)).toEqual([roster.visibleId]);
-    expect(body.leaderName).toBe('Placeholder Person');
+    expect(body.leaderName).toBeUndefined();
   });
 
   it('getFactionStats lists visible members but keeps faction totals', async () => {
@@ -536,6 +560,39 @@ describe('getActivity', () => {
     const { body } = await call<Feed>(getActivity, makeEvent());
 
     expect(body.items.map((item) => item.id)).toEqual([`promo-${visiblePromo.promoId}`]);
+  });
+
+  it('drops a challenge aimed at a hidden player', async () => {
+    await repos.user.challenges.create({
+      challengerId: roster.visibleId,
+      challengedId: roster.placeholderId,
+      matchType: 'singles',
+      expiresAt: '2030-01-01T00:00:00.000Z',
+    });
+
+    const { body } = await call<Feed>(getActivity, makeEvent());
+
+    expect(body.items).toEqual([]);
+  });
+
+  it('treats a pending challenge past its deadline as lapsed before the sweep runs', async () => {
+    const other = await repos.roster.players.create({ name: 'Other', currentWrestler: 'Kane' });
+    await repos.user.challenges.create({
+      challengerId: roster.visibleId,
+      challengedId: other.playerId,
+      matchType: 'singles',
+      expiresAt: '2020-01-01T00:00:00.000Z',
+    });
+    const open = await repos.user.challenges.create({
+      challengerId: roster.visibleId,
+      challengedId: other.playerId,
+      matchType: 'singles',
+      expiresAt: '2030-01-01T00:00:00.000Z',
+    });
+
+    const { body } = await call<Feed>(getActivity, makeEvent());
+
+    expect(body.items.map((item) => item.id)).toEqual([`challenge-${open.challengeId}`]);
   });
 
   it('keeps match history for hidden players and still names them', async () => {
