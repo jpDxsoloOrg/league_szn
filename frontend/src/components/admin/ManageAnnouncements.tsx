@@ -252,7 +252,7 @@ export default function ManageAnnouncements() {
         onClose={closeForm}
         title={editing ? t('announcements.edit') : t('announcements.create')}
         size="lg"
-        submitLabel={editing ? t('announcements.edit') : t('announcements.create')}
+        submitLabel={editing ? t('announcements.update', 'Update Announcement') : t('announcements.create')}
         onSubmit={handleSubmit}
         busy={saving}
         error={formError}

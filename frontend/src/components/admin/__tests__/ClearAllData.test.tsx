@@ -31,7 +31,7 @@ describe('ClearAllData', () => {
   it('renders danger zone styling with warning content and confirmation input', () => {
     render(<ClearAllData />);
 
-    expect(screen.getByText('Data Management')).toBeInTheDocument();
+    expect(screen.getByText('Danger Zone')).toBeInTheDocument();
     expect(screen.getByText('Danger Zone - Clear All Data')).toBeInTheDocument();
     expect(screen.getByText(/This action will permanently delete/)).toBeInTheDocument();
     expect(screen.getByText(/CANNOT/)).toBeInTheDocument();

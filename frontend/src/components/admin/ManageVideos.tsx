@@ -285,7 +285,7 @@ export default function ManageVideos() {
         open={showForm}
         onClose={handleCancel}
         title={editing ? t('videos.edit') : t('videos.upload')}
-        submitLabel={editing ? t('videos.edit') : t('videos.upload')}
+        submitLabel={editing ? t('videos.update', 'Update Video') : t('videos.upload')}
         onSubmit={handleSubmit}
         busy={uploading}
         error={formError}

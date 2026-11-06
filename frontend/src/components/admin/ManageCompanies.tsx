@@ -175,7 +175,7 @@ export default function ManageCompanies() {
         open={showForm}
         onClose={closeForm}
         title={editingCompany ? t('companies.edit') : t('companies.create')}
-        submitLabel={editingCompany ? t('companies.edit') : t('companies.create')}
+        submitLabel={editingCompany ? t('companies.update', 'Update Company') : t('companies.create')}
         onSubmit={handleSubmit}
         busy={saving}
         error={formError}

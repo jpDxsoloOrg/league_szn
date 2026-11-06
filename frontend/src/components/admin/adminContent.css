@@ -157,6 +157,10 @@
   overflow-wrap: anywhere;
 }
 
+.ac-nowrap {
+  white-space: nowrap;
+}
+
 .ac-cell__sub {
   color: var(--color-text-muted);
   font-size: var(--text-dense);

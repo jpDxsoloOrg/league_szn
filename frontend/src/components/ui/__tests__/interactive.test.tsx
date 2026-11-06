@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -185,6 +185,42 @@ describe('DataTable', () => {
     await user.click(screen.getByRole('button', { name: 'Wins' }));
     expect(firstCells()).toEqual(['Bandido', 'Edge']);
     expect(screen.getByRole('columnheader', { name: 'Wins' })).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  describe('in the phone card layout', () => {
+    beforeEach(() => {
+      vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+        matches: query.includes('max-width'),
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('sorts from a visible control, in both directions', async () => {
+      const user = userEvent.setup();
+      render(<DataTable {...props} rows={rows} />);
+
+      await user.selectOptions(screen.getByLabelText('common.sortBy'), 'name');
+      expect(firstCells()).toEqual(['Bandido', 'Edge']);
+
+      await user.click(screen.getByRole('button', { name: 'common.sortAscending' }));
+      expect(firstCells()).toEqual(['Edge', 'Bandido']);
+      expect(screen.getByRole('button', { name: 'common.sortDescending' })).toBeInTheDocument();
+    });
+
+    it('leaves out columns the cards do not show', () => {
+      render(<DataTable {...props} rows={rows} />);
+      expect(within(screen.getByLabelText('common.sortBy')).queryByRole('option', { name: 'Wins' })).not.toBeInTheDocument();
+    });
   });
 
   it('labels cells for the phone layout', () => {
