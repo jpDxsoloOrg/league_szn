@@ -301,6 +301,7 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
         previousRank: input.previousRank ?? null,
         peakRank: input.peakRank,
         weeksAtTop: input.weeksAtTop,
+        ...(input.lastTopWeek ? { lastTopWeek: input.lastTopWeek } : {}),
         isOverridden: input.isOverridden || false,
         overrideType: input.overrideType || null,
         organicRank: input.organicRank || null,

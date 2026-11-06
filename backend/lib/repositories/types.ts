@@ -442,6 +442,7 @@ export interface ContenderRanking {
   previousRank?: number | null;
   peakRank?: number;
   weeksAtTop?: number;
+  lastTopWeek?: string;
   isOverridden?: boolean;
   overrideType?: string | null;
   organicRank?: number | null;

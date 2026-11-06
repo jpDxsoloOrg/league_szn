@@ -267,7 +267,7 @@ describe('calculateRankingsForChampionship', () => {
     const playerIds = new Set(
       (matches as Array<{ participants: string[] }>).flatMap((match) => match.participants),
     );
-    mockScanAll.mockResolvedValueOnce(players ?? [...playerIds].map((playerId) => ({ playerId })));
+    mockScanAll.mockResolvedValueOnce(players ?? [...playerIds].map((playerId) => ({ playerId, currentWrestler: 'Edge' })));
     mockScanAll.mockResolvedValueOnce(matches);
   }
 
@@ -375,8 +375,8 @@ describe('calculateRankingsForChampionship', () => {
   it('respects division lock when divisionId is set', async () => {
     // First call: scanAll for players
     mockScanAll.mockResolvedValueOnce([
-      { playerId: 'p1', divisionId: 'div-1' },
-      { playerId: 'p2', divisionId: 'div-2' },
+      { playerId: 'p1', divisionId: 'div-1', currentWrestler: 'Edge' },
+      { playerId: 'p2', divisionId: 'div-2', currentWrestler: 'Edge' },
     ]);
     // Second call: scanAll for matches
     mockScanAll.mockResolvedValueOnce([
@@ -413,7 +413,11 @@ describe('calculateRankingsForChampionship', () => {
     );
     mockTables(
       [...wins('p1'), ...wins('soft-deleted'), ...wins('no-row')],
-      [{ playerId: 'p1' }, { playerId: 'p2' }, { playerId: 'soft-deleted', deletedAt: '2026-01-01T00:00:00.000Z' }],
+      [
+        { playerId: 'p1', currentWrestler: 'Edge' },
+        { playerId: 'p2', currentWrestler: 'Edge' },
+        { playerId: 'soft-deleted', currentWrestler: 'Edge', deletedAt: '2026-01-01T00:00:00.000Z' },
+      ],
     );
 
     const results = await calculateRankingsForChampionship({
@@ -426,6 +430,38 @@ describe('calculateRankingsForChampionship', () => {
     });
 
     expect(results.map((r) => r.playerId).sort()).toEqual(['p1', 'p2']);
+  });
+
+  it('gives a hidden player no contender slot', async () => {
+    const wins = (playerId: string) => [1, 2, 3].map((day) =>
+      makeMatch({
+        matchId: `${playerId}-${day}`,
+        date: daysAgo(day),
+        winners: [playerId],
+        losers: ['p2'],
+        participants: [playerId, 'p2'],
+      }),
+    );
+    mockTables(
+      [...wins('p1'), ...wins('hidden')],
+      [
+        { playerId: 'p1', currentWrestler: 'Edge' },
+        { playerId: 'p2', currentWrestler: 'Kane' },
+        { playerId: 'hidden', currentWrestler: 'Needs Wrestler' },
+      ],
+    );
+
+    const results = await calculateRankingsForChampionship({
+      championshipId: 'champ-1',
+      championshipType: 'singles',
+      currentChampion: undefined,
+      seasonId: 'season-1',
+      minimumMatches: 3,
+      maxContenders: 10,
+    });
+
+    expect(results.map((r) => r.playerId)).not.toContain('hidden');
+    expect(mockScanAll.mock.calls[0][0].ProjectionExpression).toContain('currentWrestler');
   });
 
   it('counts a draw as neither a win nor a loss', async () => {

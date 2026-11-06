@@ -515,7 +515,7 @@ describe('stable member rows', () => {
   });
 
   it('getFactionStats lists visible members but keeps faction totals', async () => {
-    await completeMatch('m1', roster.placeholderId, 'outsider');
+    await completeMatch('m1', roster.placeholderId, 'outsider', new Date().toISOString());
 
     const { body } = await call<{ members: PlayerRow[]; totals: { wins: number } }>(
       getFactionStats,

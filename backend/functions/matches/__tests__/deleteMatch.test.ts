@@ -177,6 +177,19 @@ describe('deleteMatch — title defense rollback', () => {
     expect(mockChampionships.decrementDefenses).toHaveBeenCalledWith('c1', currentReign.wonDate);
   });
 
+  it('decrements for a defense later on the card that crowned the champion', async () => {
+    captureTx();
+    // An event match carries its date alone; the reign started when the earlier
+    // title change was recorded that evening.
+    mockMatches.findByIdWithDate.mockResolvedValue({ ...titleMatch, isTitleDefense: true, date: '2024-08-01' });
+    const sameDayReign = { ...currentReign, wonDate: '2024-08-01T21:00:00.000Z', defenses: 1 };
+    mockChampionships.findCurrentReign.mockResolvedValue(sameDayReign);
+
+    await deleteMatch(ev(), ctx, cb);
+
+    expect(mockChampionships.decrementDefenses).toHaveBeenCalledWith('c1', sameDayReign.wonDate);
+  });
+
   it('leaves the current reign alone for a defense from before it began', async () => {
     captureTx();
     mockMatches.findByIdWithDate.mockResolvedValue({
@@ -259,6 +272,50 @@ describe('deleteMatch — stale references', () => {
 });
 
 // ---- Tournament rollback ---------------------------------------------------
+
+describe('deleteMatch — event status', () => {
+  const eventMatch = { ...completed, eventId: 'e1' };
+  const statusAfterDeleting = async (matchIds: string[], statuses: Record<string, string>) => {
+    captureTx();
+    mockMatches.findByIdWithDate.mockResolvedValue(eventMatch);
+    mockEvents.findById.mockResolvedValue({
+      eventId: 'e1',
+      status: 'completed',
+      matchCards: matchIds.map((matchId) => ({ matchId })),
+    });
+    mockMatches.findById.mockImplementation(async (matchId: string) => (
+      statuses[matchId] ? { matchId, status: statuses[matchId] } : null
+    ));
+
+    await deleteMatch(ev(), ctx, cb);
+
+    return mockEvents.update.mock.calls
+      .map(([, patch]) => (patch as { status?: string }).status)
+      .find((status) => status !== undefined);
+  };
+
+  it('keeps an event completed when every remaining match is finished', async () => {
+    const status = await statusAfterDeleting(['m1', 'm2', 'm3'], { m1: 'completed', m2: 'completed', m3: 'completed' });
+
+    expect(status).toBeUndefined();
+  });
+
+  it('reopens an event with a match still to play', async () => {
+    const status = await statusAfterDeleting(['m1', 'm2', 'm3'], { m1: 'completed', m2: 'completed', m3: 'scheduled' });
+
+    expect(status).toBe('in-progress');
+  });
+
+  it('returns a one-match event to upcoming', async () => {
+    expect(await statusAfterDeleting(['m1'], { m1: 'completed' })).toBe('upcoming');
+  });
+
+  it('ignores a card whose match is already gone', async () => {
+    const status = await statusAfterDeleting(['m1', 'gone', 'm3'], { m1: 'completed', m3: 'completed' });
+
+    expect(status).toBeUndefined();
+  });
+});
 
 describe('deleteMatch — tournament rollback', () => {
   const tournamentMatch = { ...completed, tournamentId: 't1' };

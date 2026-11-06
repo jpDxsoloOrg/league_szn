@@ -82,11 +82,17 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
-    // Calling out a hidden player is blocked. Responses are exempt: replying
-    // in an existing thread is not a new call-out.
+    // Calling out a hidden player is blocked. The one exemption is replying to
+    // that player's own promo, which is not a new call-out, so the promo named
+    // has to exist and be theirs.
     const targetPlayer = targetPlayerId ? await players.findById(targetPlayerId) : null;
-    if (targetPlayer && promoType !== 'response' && !isPlayerVisible(targetPlayer)) {
-      return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);
+    if (targetPlayer && !isPlayerVisible(targetPlayer)) {
+      const repliedPromo = promoType === 'response' && targetPromoId
+        ? await promos.findById(targetPromoId)
+        : null;
+      if (repliedPromo?.playerId !== targetPlayer.playerId) {
+        return badRequest(TARGET_NEEDS_WRESTLER_MESSAGE);
+      }
     }
 
     const promo = await promos.create({

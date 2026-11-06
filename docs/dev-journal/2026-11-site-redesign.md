@@ -150,7 +150,11 @@ tests had not. The fixes are in this PR.
   page, so list and detail agree. List numbers can change after deploy. Tag team
   records count only matches within the team's lifetime. On prod data this
   matched every active and dissolved team, and took one old match each from two
-  teams still awaiting approval.
+  teams still awaiting approval. Faction records have the same bound, from
+  `createdAt` to `disbandedAt`, with no end date while the status is not
+  `disbanded` because reactivating keeps the old date. They stay approximate:
+  no membership history is stored, so a member's pre-join matches inside the
+  faction's lifetime still count and a removed member's matches do not.
 - **Win %:** one 0-100 scale everywhere.
 - **Cancelling challenges:** both update builders set `updatedAt` a second time
   when a patch carried it, which DynamoDB rejects, so every cancel returned 500.
@@ -178,6 +182,15 @@ tests had not. The fixes are in this PR.
 - **Challenge notifications:** these stay off. They were removed on purpose when
   matchmaking replaced challenges, so a direct challenge can lapse unseen.
 
+- **User pool protection:** deletion protection is set by `setup-cognito.sh`, not
+  the template. The template has no `LambdaConfig`, so a pool property change makes
+  CloudFormation call `UpdateUserPool` without the triggers, which detached both
+  for 5 minutes on devtest and would leave them off after a failed deploy. Prod's
+  template now matches what is deployed, so its pool is not touched. The next
+  devtest deploy removes the property, so its triggers and protection drop once
+  until the wire step restores them. The wire step now also runs after a failed
+  backend deploy.
+
 ## Release notes
 
 - **Contender rankings:** a new scheduled function recalculates every active title
@@ -192,7 +205,9 @@ tests had not. The fixes are in this PR.
   New badge clears at the next run, so within 6 hours.
 - **Transfers off:** `POST /transfers` returns 403 while the `transfers` flag is
   off. A missing key means off, so prod needs no data change. Admins can still list
-  and review existing requests.
+  and review existing requests through the API only: the admin tab is gated by the
+  same flag, so it disappears on deploy. Reaching a pending request in the UI means
+  turning the flag on, which also reopens `POST /transfers` to everyone.
 - **Clearing transfer requests:** this deletes every row in that stage's
   transfer-requests table. It doesn't change players or send notifications. Stage
   `dev` is prod and `devtest` is the dev site. Run from `backend/`, and read the

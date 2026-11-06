@@ -47,6 +47,23 @@ describe('getPromos', () => {
   });
   afterEach(() => vi.useRealTimers());
 
+  it('leaves the per-account reactions map out of the feed', async () => {
+    mockScanAll.mockResolvedValueOnce([{
+      promoId: 'pr1', playerId: 'pl1', promoType: 'open-mic', content: 'x'.repeat(60),
+      reactions: { 'account-sub-1': 'fire' },
+      reactionCounts: { fire: 1, mic: 0, trash: 0, 'mind-blown': 0, clap: 0 },
+      isHidden: false, isPinned: false,
+      createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z',
+    }]);
+    mockGet.mockResolvedValue({ Item: { playerId: 'pl1', name: 'A', currentWrestler: 'Edge' } });
+
+    const result = await getPromos(makeEvent(), ctx, cb);
+
+    expect(result!.statusCode).toBe(200);
+    expect(result!.body).not.toContain('account-sub-1');
+    expect(body(result)[0].reactionCounts.fire).toBe(1);
+  });
+
   it('returns all non-hidden promos via scan when no filters are provided', async () => {
     mockScanAll.mockResolvedValue([
       { promoId: 'p1', playerId: 'pl1', promoType: 'open-mic', isHidden: false, createdAt: '2024-01-02T00:00:00Z' },

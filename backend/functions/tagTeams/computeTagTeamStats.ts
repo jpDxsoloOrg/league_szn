@@ -5,7 +5,8 @@ import {
 } from '../../lib/stats/recentFormAndStreak';
 import { tallyResults, type WinLossDrawRecord } from '../../lib/stats/record';
 import { resolveBilledName } from '../../lib/needsWrestler';
-import { normalizeCalendarDate } from '../../lib/calendarDate';
+import { isWithinLifetime } from '../../lib/stats/lifetime';
+import { compareMatchesNewestFirst } from '../../lib/recentForm';
 
 export type FormResult = SharedFormResult;
 
@@ -83,27 +84,6 @@ function getTagTeamResult(
   return 'D';
 }
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-/**
- * True when a match falls within the team's lifetime, both end days included.
- * Compares calendar days because a match booked on an event carries the date
- * alone, which would otherwise sort before a team formed earlier that day.
- * createdAt is a UTC time, so a team formed on a US evening carries the next
- * day. A date-only match has no time to compare, so it gets one day of grace.
- * A date that cannot be read sets no limit.
- */
-function isWithinTeamLifetime(matchDate: string, team: TagTeamLifetime): boolean {
-  const matchDay = normalizeCalendarDate(matchDate);
-  if (!matchDay) return true;
-  const formedDay = normalizeCalendarDate(team.createdAt);
-  const firstDay = formedDay && matchDate.length === formedDay.length
-    ? new Date(Date.parse(formedDay) - MS_PER_DAY).toISOString().slice(0, 10)
-    : formedDay;
-  const lastDay = normalizeCalendarDate(team.dissolvedAt);
-  return (!firstDay || matchDay >= firstDay) && (!lastDay || matchDay <= lastDay);
-}
-
 /**
  * Scans all completed matches and finds those where a given tag team's
  * members competed together on the same team while that team existed.
@@ -117,7 +97,7 @@ export function findTagTeamMatches(
 
   for (const match of completedMatches) {
     if (!match.teams || match.teams.length === 0) continue;
-    if (!isWithinTeamLifetime(match.date, team)) continue;
+    if (!isWithinLifetime(match.date, { createdAt: team.createdAt, endedAt: team.dissolvedAt })) continue;
 
     const teamIdx = findTeamIndex(match.teams, player1Id, player2Id);
     if (teamIdx === -1) continue;
@@ -145,11 +125,7 @@ export function computeFormAndStreak(
   matchResults: TagTeamMatchResult[],
   limit: number
 ): { recentForm: FormResult[]; currentStreak: { type: FormResult; count: number } } {
-  const sorted = [...matchResults].sort((a, b) => {
-    const aTime = new Date(a.match.updatedAt ?? a.match.date).getTime();
-    const bTime = new Date(b.match.updatedAt ?? b.match.date).getTime();
-    return bTime - aTime;
-  });
+  const sorted = [...matchResults].sort((a, b) => compareMatchesNewestFirst(a.match, b.match));
 
   return computeRecentFormAndStreak(sorted.map((r) => r.result), limit);
 }

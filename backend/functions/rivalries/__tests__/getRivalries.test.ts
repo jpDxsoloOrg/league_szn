@@ -80,6 +80,18 @@ describe('getRivalries (list)', () => {
     expect(body.rivalries[0].moderationNote).toBeUndefined();
   });
 
+  it('strips moderatedBy and an id-valued bookerName from the response', async () => {
+    const accountId = '11111111-2222-3333-4444-555555555555';
+    mockRivalries.listByStatus.mockResolvedValue({
+      items: [makeRivalry({ moderatedBy: accountId, bookerName: accountId })],
+      nextCursor: undefined,
+    });
+
+    const res = await getRivalriesList(makeEvent({ httpMethod: 'GET' }), ctx, cb);
+
+    expect(res!.body).not.toContain(accountId);
+  });
+
   it('filters by seasonId via participant-pair match-history join', async () => {
     mockRivalries.listByStatus.mockResolvedValue({
       items: [

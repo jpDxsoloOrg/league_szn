@@ -100,8 +100,25 @@ describe('createRivalry', () => {
       'r1',
       expect.objectContaining({
         status: 'active',
-        bookerName: 'gm-jane',
+        moderatedBy: 'gm-jane',
       }),
+    );
+    // A GM with no linked player has no public name, so no booker is set.
+    expect(mockRivalries.update.mock.calls[0][1].bookerName).toBeUndefined();
+  });
+
+  it("uses the GM's linked player name as the booker, never the account id", async () => {
+    mockPlayers.findByUserId.mockResolvedValue({ playerId: 'gm-player', name: 'Jane GM' });
+
+    await createRivalry(
+      gmEvent({ title: 'Booked feud', participants: [{ playerId: 'p2' }, { playerId: 'p3' }] }),
+      ctx,
+      cb,
+    );
+
+    expect(mockRivalries.update).toHaveBeenCalledWith(
+      'r1',
+      expect.objectContaining({ bookerName: 'Jane GM' }),
     );
   });
 

@@ -9,7 +9,7 @@ import {
 import { handler as getTagTeams } from '../getTagTeams';
 import { handler as getTagTeamStandings } from '../getTagTeamStandings';
 import { handler as getTagTeam } from '../getTagTeam';
-import { findTagTeamMatches, type MatchRecord } from '../computeTagTeamStats';
+import { computeFormAndStreak, findTagTeamMatches, type MatchRecord } from '../computeTagTeamStats';
 
 let repos: Repositories;
 const ctx = {} as Context;
@@ -229,5 +229,26 @@ describe('tag team lists', () => {
       expect(team.wins).toBe(0);
       expect((await repos.roster.tagTeams.findById(stored.tagTeamId))?.wins).toBe(7);
     });
+  });
+});
+
+describe('tag team form', () => {
+  const result = (date: string, updatedAt: string, outcome: 'W' | 'L') => ({
+    match: { matchId: date, date, updatedAt, participants: [], isChampionship: false, status: 'completed' },
+    result: outcome,
+    opponentTeamPlayerIds: [],
+  });
+
+  it('orders by match date, so a rating on an old loss does not lead the form', () => {
+    const { recentForm, currentStreak } = computeFormAndStreak(
+      [
+        result('2026-01-02T00:00:00.000Z', '2026-01-02T00:00:00.000Z', 'W'),
+        result('2026-01-01T00:00:00.000Z', '2026-06-01T00:00:00.000Z', 'L'),
+      ],
+      5,
+    );
+
+    expect(recentForm).toEqual(['W', 'L']);
+    expect(currentStreak).toEqual({ type: 'W', count: 1 });
   });
 });

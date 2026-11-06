@@ -116,10 +116,48 @@ describe('getActivity', () => {
     const body = JSON.parse(result!.body);
     expect(body.items).toHaveLength(1);
     expect(body.items[0].type).toBe('match_result');
-    expect(body.items[0].timestamp).toBe('2024-02-01T14:00:00.000Z');
+    expect(body.items[0].timestamp).toBe('2024-02-01T12:00:00.000Z');
     expect(body.items[0].id).toBe('match-m1');
     expect(body.items[0].summary).toBe('Test Player def. Test Player');
     expect(body.nextCursor).toBeNull();
+  });
+
+  it('keeps a rated old match in date order rather than as a fresh result', async () => {
+    const match = { status: 'completed', participants: ['p1', 'p2'], winners: ['p1'], losers: ['p2'] };
+    mockMatchesListCompleted.mockResolvedValue([
+      { ...match, matchId: 'old', date: '2024-01-01T12:00:00.000Z', updatedAt: '2024-06-01T00:00:00.000Z' },
+      { ...match, matchId: 'new', date: '2024-02-01T12:00:00.000Z', updatedAt: '2024-02-01T14:00:00.000Z' },
+    ]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'A', currentWrestler: 'Wrestler' },
+      { playerId: 'p2', name: 'B', currentWrestler: 'Wrestler2' },
+    ]);
+
+    const result = await getActivity(makeEvent(), ctx, cb);
+
+    const { items } = JSON.parse(result!.body);
+    expect(items.map((item: { id: string }) => item.id)).toEqual(['match-new', 'match-old']);
+  });
+
+  it('reports a stored draw rather than a vague completed match', async () => {
+    mockMatchesListCompleted.mockResolvedValue([{
+      matchId: 'm1',
+      date: '2024-02-01T12:00:00.000Z',
+      updatedAt: '2024-02-01T14:00:00.000Z',
+      status: 'completed',
+      participants: ['p1', 'p2'],
+      winners: ['p1', 'p2'],
+      losers: [],
+      isDraw: true,
+    }]);
+    mockPlayersList.mockResolvedValue([
+      { playerId: 'p1', name: 'Alice', currentWrestler: 'Wrestler' },
+      { playerId: 'p2', name: 'Bob', currentWrestler: 'Wrestler2' },
+    ]);
+
+    const result = await getActivity(makeEvent(), ctx, cb);
+
+    expect(JSON.parse(result!.body).items[0].summary).toBe('Alice & Bob drew');
   });
 
   it('excludes matches without updatedAt from activity', async () => {

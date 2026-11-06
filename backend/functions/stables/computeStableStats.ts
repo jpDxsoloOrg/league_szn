@@ -1,6 +1,7 @@
 import { getRepositories } from '../../lib/repositories';
 import { computeRecentFormAndStreak, type FormAndStreak } from '../../lib/stats/recentFormAndStreak';
 import { tallyResults, type WinLossDrawRecord } from '../../lib/stats/record';
+import { isWithinLifetime } from '../../lib/stats/lifetime';
 
 export { computeWinPercentage } from '../../lib/stats/record';
 
@@ -154,6 +155,24 @@ export function determineStableOutcome(
   return null;
 }
 
+/** The parts of a faction that decide which matches belong to it. */
+export type FactionLifetime = Pick<StableRecord, 'createdAt' | 'status' | 'disbandedAt'>;
+
+/**
+ * True when a match happened while the faction existed. Membership history is
+ * not stored, so a current member's matches from before they joined still count
+ * and a removed member's do not.
+ *
+ * Gates on status, never on disbandedAt alone: reactivateStable keeps the old
+ * date as history, so a reactivated faction would otherwise stop counting.
+ */
+export function isWithinFactionLifetime(matchDate: string, faction: FactionLifetime): boolean {
+  return isWithinLifetime(matchDate, {
+    createdAt: faction.createdAt,
+    endedAt: faction.status === 'disbanded' ? faction.disbandedAt : undefined,
+  });
+}
+
 /**
  * Computes match results for a single stable from all completed matches.
  * Returns results sorted by date descending.
@@ -167,6 +186,7 @@ export function computeStableMatchResults(
   const results: StableMatchResult[] = [];
 
   for (const match of matches) {
+    if (!isWithinFactionLifetime(match.date, stable)) continue;
     const outcome = determineStableOutcome(match, memberSet);
     if (outcome === null) continue;
 
@@ -221,11 +241,12 @@ export function tallyRecord(results: ReadonlyArray<{ outcome: MatchOutcome }>): 
  */
 export function computeStableRecord(
   matches: ReadonlyArray<MatchRecord>,
-  memberIds: ReadonlyArray<string>,
+  stable: FactionLifetime & { memberIds?: ReadonlyArray<string> },
 ): WinLossDrawRecord {
-  const memberSet = new Set(memberIds);
+  const memberSet = new Set(stable.memberIds ?? []);
   const outcomes: MatchOutcome[] = [];
   for (const match of matches) {
+    if (!isWithinFactionLifetime(match.date, stable)) continue;
     const outcome = determineStableOutcome(match, memberSet);
     if (outcome !== null) outcomes.push(outcome);
   }

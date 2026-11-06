@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 let uuidCounter = 0;
@@ -208,7 +208,12 @@ async function seedFixture() {
   return { a1, a2, a3, a4, a5, b1, b2, b3, factionA, factionB };
 }
 
+// Factions count matches from their formation on, so every faction in this file
+// must exist before the 2026 fixtures. The stored date comes from the clock.
+afterEach(() => vi.useRealTimers());
+
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'], now: new Date('2025-12-01T12:00:00.000Z') });
   vi.clearAllMocks();
   uuidCounter = 0;
   resetRepositoriesForTesting();
@@ -217,6 +222,26 @@ beforeEach(() => {
 });
 
 describe('getFactionStats (FAC-07)', () => {
+  it('keeps member rows to the matches inside the faction lifetime', async () => {
+    const { a1, factionA } = await seedFixture();
+    const seededWins = async () => {
+      const result = await getFactionStats(makeEvent(factionA.stableId), ctx, cb);
+      const body = JSON.parse(result!.body);
+      return body.members.find((row: { playerId: string }) => row.playerId === a1.playerId).wins;
+    };
+    const before = await seededWins();
+
+    await makeMatch({
+      matchId: 'before-formation',
+      date: '2025-06-01T00:00:00.000Z',
+      matchFormat: 'singles',
+      participants: [a1.playerId],
+      winners: [a1.playerId],
+    });
+
+    expect(await seededWins()).toBe(before);
+  });
+
   it('returns 404 when the faction does not exist', async () => {
     const result = await getFactionStats(makeEvent('does-not-exist'), ctx, cb);
     expect(result!.statusCode).toBe(404);

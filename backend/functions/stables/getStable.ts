@@ -9,6 +9,7 @@ import {
   fetchCompletedMatches,
   buildPlayerToStableMap,
   computeStableMatchResults,
+  isWithinFactionLifetime,
   computeFormAndStreak,
   computeHeadToHead,
   computeMatchTypeRecords,
@@ -133,7 +134,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Build recent matches (last 10)
     const memberSet = new Set(stable.memberIds || []);
-    const recentMatches = buildRecentMatches(matches, memberSet, 10);
+    const lifetimeMatches = matches.filter((match) => isWithinFactionLifetime(match.date, stableForCompute));
+    const recentMatches = buildRecentMatches(lifetimeMatches, memberSet, 10);
 
     return success({
       ...stable,

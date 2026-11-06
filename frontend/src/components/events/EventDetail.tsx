@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowLeft, ArrowUp, CalendarClock, Lock, LockOpen, Mic, Pencil, Plus, Trash2, Trophy } from 'lucide-react';
-import { eventsApi, matchesApi, playersApi, tagTeamsApi } from '../../services/api';
+import { eventsApi, isApiError, matchesApi, playersApi, tagTeamsApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../ui/toastContext';
 import type {
@@ -49,6 +49,14 @@ import './EventDetail.css';
 const EVENT_STATUSES: EventStatus[] = ['upcoming', 'in-progress', 'completed', 'cancelled'];
 
 type HydratedTagTeam = TagTeam & { player1Name?: string; player2Name?: string };
+
+/** A new card list to show at once and save. */
+interface CardListEdit {
+  matchCards: EventWithMatches['matchCards'];
+  enrichedMatches: EventWithMatches['enrichedMatches'];
+  errorMessage: string;
+  moveFocus?: { matchId: string; direction: CardMoveDirection };
+}
 
 /** What the delete confirmation is currently asking about. */
 type PendingDelete =
@@ -209,8 +217,7 @@ export default function EventDetail() {
 
   const handleLoginRequired = useCallback(() => {
     if (!eventId) return;
-    const returnUrl = encodeURIComponent(`/events/${eventId}`);
-    navigate(`/login?returnUrl=${returnUrl}`);
+    navigate('/login', { state: { from: { pathname: `/events/${eventId}` } } });
   }, [eventId, navigate]);
 
   // ── Admin slot-edit dialog ────────────────────────────────────────────────
@@ -246,7 +253,8 @@ export default function EventDetail() {
     setManageError(null);
     try {
       await eventsApi.update(eventId, { status: newStatus as EventStatus });
-      setEventData({ ...eventData, status: newStatus as EventStatus });
+      // Functional: a card move can land while this request is pending.
+      setEventData((current) => current && { ...current, status: newStatus as EventStatus });
     } catch (err) {
       setManageError(err instanceof Error ? err.message : t('events.detail.statusError', 'Failed to update status.'));
     } finally {
@@ -296,12 +304,56 @@ export default function EventDetail() {
     setManageError(null);
     try {
       const updated = await eventsApi.update(eventId, { checkInsLocked: next });
-      setEventData({ ...eventData, checkInsLocked: updated.checkInsLocked });
+      setEventData((current) => current && { ...current, checkInsLocked: updated.checkInsLocked });
     } catch (err) {
       setManageError(err instanceof Error ? err.message : t('events.admin.lockSignups.error', 'Failed to update sign-ups.'));
     } finally {
       setTogglingLock(false);
     }
+  };
+
+  /**
+   * Saves an edited card list. matchCards replaces the whole stored list, so the
+   * list this edit started from goes with it and the server refuses the write if
+   * another staff member or tab has changed the card since.
+   */
+  const saveCardList = async ({ matchCards, enrichedMatches, errorMessage, moveFocus }: CardListEdit) => {
+    if (!eventData || !eventId) return;
+    const { matchCards: previousCards, enrichedMatches: previousMatches } = eventData;
+    let cardChanged = false;
+
+    const saveOrder = async () => {
+      try {
+        await eventsApi.update(eventId, { matchCards, expectedMatchCards: previousCards });
+      } catch (err) {
+        if (moveFocus) moveFocusRef.current = moveFocus;
+        if (isApiError(err, 409)) {
+          // The list on screen is the stale one, so reload it rather than restore it.
+          cardChanged = true;
+          showToast(t('events.detail.cardChanged', 'The card changed. Reloaded the latest order; try again.'), 'error');
+          return;
+        }
+        setEventData((current) => current && {
+          ...current,
+          matchCards: previousCards,
+          enrichedMatches: previousMatches,
+        });
+        showToast(errorMessage, 'error');
+      }
+    };
+
+    if (moveFocus) moveFocusRef.current = moveFocus;
+    setSavingCardOrder(true);
+    setEventData((current) => current && { ...current, matchCards, enrichedMatches });
+    cardSaveCountRef.current += 1;
+    const pendingSave = saveOrder();
+    cardSaveRef.current = pendingSave;
+    await pendingSave;
+    cardSaveRef.current = null;
+    setSavingCardOrder(false);
+    // After the ref clears: loadEvent waits on it, so calling this inside the
+    // save would deadlock.
+    if (cardChanged) await loadEvent();
   };
 
   const handleMoveMatch = async (index: number, direction: CardMoveDirection) => {
@@ -315,35 +367,28 @@ export default function EventDetail() {
     // starts from the stored cards: matchCards replaces the whole list, and the
     // enriched rows carry match data that must not be written back.
     const matchCards = swapCards(previousCards, index, targetIndex);
-    const moveFocus = { matchId: movedMatch.matchId, direction };
-
-    const saveOrder = async () => {
-      try {
-        await eventsApi.update(eventId, { matchCards });
-      } catch {
-        moveFocusRef.current = moveFocus;
-        setEventData((current) => current && {
-          ...current,
-          matchCards: previousCards,
-          enrichedMatches: previousMatches,
-        });
-        showToast(t('events.detail.moveMatchError', 'Could not save the new match order.'), 'error');
-      }
-    };
-
-    moveFocusRef.current = moveFocus;
-    setSavingCardOrder(true);
-    setEventData((current) => current && {
-      ...current,
+    await saveCardList({
       matchCards,
       enrichedMatches: swapCards(previousMatches, index, targetIndex),
+      errorMessage: t('events.detail.moveMatchError', 'Could not save the new match order.'),
+      moveFocus: { matchId: movedMatch.matchId, direction },
     });
-    cardSaveCountRef.current += 1;
-    const pendingSave = saveOrder();
-    cardSaveRef.current = pendingSave;
-    await pendingSave;
-    cardSaveRef.current = null;
-    setSavingCardOrder(false);
+  };
+
+  /**
+   * Takes a card off the event without touching any match, for a card whose
+   * match is gone. deleteMatch cannot help: it returns 404 for these.
+   */
+  const handleRemoveCard = async (index: number) => {
+    if (!eventData || cardSaveRef.current) return;
+    const renumber = <T extends { position: number }>(cards: T[]): T[] => cards
+      .filter((_card, cardIndex) => cardIndex !== index)
+      .map((card, cardIndex) => ({ ...card, position: cardIndex + 1 }));
+    await saveCardList({
+      matchCards: renumber(eventData.matchCards),
+      enrichedMatches: renumber(eventData.enrichedMatches),
+      errorMessage: t('events.detail.removeCardError', 'Could not remove the match from the card.'),
+    });
   };
 
   const handleRequestDeleteEvent = () => {
@@ -545,7 +590,9 @@ export default function EventDetail() {
     );
   }
 
-  if (error || !eventData) {
+  // A failed refetch keeps the page, so a save that worked doesn't look lost.
+  const hasLoadedEvent = eventData?.eventId === eventId;
+  if ((error && !hasLoadedEvent) || !eventData) {
     return (
       <div className="event-detail-page">
         <EmptyState
@@ -665,6 +712,9 @@ export default function EventDetail() {
         onRecordResult={isAdminOrModerator && isScheduled ? () => handleRecordResult(match.matchId) : undefined}
         onEdit={isAdminOrModerator && isScheduled ? () => handleEditMatch(match.matchId) : undefined}
         onDelete={isAdminOrModerator ? () => handleRequestDeleteMatch(match.matchId) : undefined}
+        onRemoveCard={isAdminOrModerator && !deletingMatchId
+          ? () => void handleRemoveCard(enrichedMatches.indexOf(match))
+          : undefined}
         onMatchUpdated={refreshAfterMutation}
       >
         {slots && slots.length > 0 && match.matchData && (
@@ -716,6 +766,7 @@ export default function EventDetail() {
 
   return (
     <div className="event-detail-page">
+      {error && <p className="event-detail-error" role="alert">{error}</p>}
       <Button className="event-detail-back" variant="ghost" size="sm" to="/events" icon={<ArrowLeft aria-hidden="true" size={18} />}>
         {t('events.detail.backToEvents')}
       </Button>
@@ -999,6 +1050,8 @@ interface MatchEntryProps {
   onRecordResult?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  /** Offered on a card whose match no longer exists. */
+  onRemoveCard?: () => void;
   /** Invoked after a rating submission or a MOTN toggle so the parent can
    *  refetch the event and propagate the new aggregate / state. */
   onMatchUpdated?: () => void;
@@ -1016,6 +1069,7 @@ function MatchEntry({
   onRecordResult,
   onEdit,
   onDelete,
+  onRemoveCard,
   onMatchUpdated,
   children,
 }: MatchEntryProps) {
@@ -1034,6 +1088,11 @@ function MatchEntry({
           {designationBadge}
           <span className="event-match__type">{t('events.detail.matchTBA', 'Match TBA')}</span>
           {orderControls}
+          {onRemoveCard && (
+            <Button variant="secondary" size="sm" disabled={isSavingOrder} onClick={onRemoveCard}>
+              {t('events.detail.removeFromCard', 'Remove from card')}
+            </Button>
+          )}
         </div>
       </article>
     );

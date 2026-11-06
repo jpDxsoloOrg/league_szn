@@ -91,6 +91,7 @@ jobs:
           ADMIN_SETUP_KEY: ${{ secrets.ADMIN_SETUP_KEY }}
 
       - name: Deploy backend to dev
+        id: deploy_backend
         working-directory: backend
         run: npx serverless deploy --stage devtest
         env:
@@ -101,6 +102,8 @@ jobs:
 
       - name: Extract Cognito IDs from CloudFormation
         id: cognito
+        # Runs after a failed deploy too: a rollback does not restore the triggers.
+        if: ${{ !cancelled() && steps.deploy_backend.conclusion != 'skipped' }}
         run: |
           USER_POOL_ID=$(aws cloudformation describe-stacks \
             --stack-name wwe-2k-league-api-devtest \
@@ -116,6 +119,7 @@ jobs:
           echo "Cognito Client ID: $CLIENT_ID"
 
       - name: Wire Cognito post-confirmation trigger
+        if: ${{ !cancelled() && steps.deploy_backend.conclusion != 'skipped' }}
         # Idempotent — attaches the PostConfirmation Lambda to the User Pool so
         # new signups auto-receive the Wrestler role + Player record + default
         # division. CloudFormation can't wire this itself due to a circular

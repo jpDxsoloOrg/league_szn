@@ -224,6 +224,30 @@ describe('calculateRankings', () => {
     );
   });
 
+  it('does not count a week twice when a player loses #1 and takes it back', async () => {
+    mockChampionshipsRepo.listActive.mockResolvedValue([champ('c1', 'IC Title')]);
+    const lastMonth = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    mockContendersRepo.listByChampionship.mockResolvedValue([
+      { championshipId: 'c1', playerId: 'p1', rank: 1, weeksAtTop: 4, calculatedAt: lastMonth },
+    ]);
+    mockCalcRankings.mockResolvedValue([rankResult('p1', 1)]);
+    await calculateRankings(makeEvent(), ctx, cb);
+    const { lastTopWeek, weeksAtTop } = mockContendersRepo.upsertRanking.mock.calls[0][0];
+    expect(weeksAtTop).toBe(5);
+
+    vi.clearAllMocks();
+    mockChampionshipsRepo.listActive.mockResolvedValue([champ('c1', 'IC Title')]);
+    mockContendersRepo.listByChampionship.mockResolvedValue([
+      { championshipId: 'c1', playerId: 'p1', rank: 2, weeksAtTop: 5, lastTopWeek, calculatedAt: new Date().toISOString() },
+    ]);
+    mockCalcRankings.mockResolvedValue([rankResult('p1', 1)]);
+    await calculateRankings(makeEvent(), ctx, cb);
+
+    expect(mockContendersRepo.upsertRanking).toHaveBeenCalledWith(
+      expect.objectContaining({ playerId: 'p1', weeksAtTop: 5 }),
+    );
+  });
+
   it('counts a new week at the top', async () => {
     mockChampionshipsRepo.listActive.mockResolvedValue([champ('c1', 'IC Title')]);
     const lastMonth = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();

@@ -1,4 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
+import { maskSystemMessageIds } from '../../lib/reviewerName';
 import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
 import { authenticate } from '../../lib/authenticate';
@@ -180,7 +181,7 @@ export const handler: APIGatewayProxyHandler = rejectOverlongQuery(async (event)
           rivalryId: m.rivalryId,
           messageId: m.messageId,
           authorPlayerId: m.authorPlayerId,
-          body: m.body,
+          body: maskSystemMessageIds(m).body,
           audience: m.audience,
           occurredAt: m.createdAt,
         });

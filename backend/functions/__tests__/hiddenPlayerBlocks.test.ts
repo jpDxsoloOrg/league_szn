@@ -292,6 +292,38 @@ describe('createPromo', () => {
     expect(await repos.content.promos.list()).toEqual([]);
   });
 
+  it('refuses a response that names a hidden player from someone else\'s thread', async () => {
+    const otherThread = await repos.content.promos.create({
+      playerId: roster.visibleId,
+      promoType: 'open-mic',
+      content: promoContent,
+    });
+    const { statusCode } = await call(
+      createPromo,
+      post(
+        'visible-sub',
+        promoBody('response', {
+          targetPlayerId: roster.placeholderId,
+          targetPromoId: otherThread.promoId,
+        }),
+      ),
+    );
+
+    expect(statusCode).toBe(400);
+  });
+
+  it('refuses a response that names a hidden player from a promo that does not exist', async () => {
+    const { statusCode } = await call(
+      createPromo,
+      post(
+        'visible-sub',
+        promoBody('response', { targetPlayerId: roster.placeholderId, targetPromoId: 'ghost' }),
+      ),
+    );
+
+    expect(statusCode).toBe(400);
+  });
+
   it('still allows a response in a thread started by a now-hidden player', async () => {
     const thread = await repos.content.promos.create({
       playerId: roster.placeholderId,

@@ -63,6 +63,7 @@ export type {
   LeagueOpsRepository,
   EventCreateInput,
   EventPatch,
+  EventUpdateOptions,
   ShowCreateInput,
   ShowPatch,
   CompanyCreateInput,

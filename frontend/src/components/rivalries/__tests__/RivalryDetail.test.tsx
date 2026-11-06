@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
-const { mockGet, mockListMessages, mockListNotes, authState, mockShowToast } = vi.hoisted(() => ({
+const { mockGet, mockUpdate, mockGetDirectory, mockListMessages, mockListNotes, authState, mockShowToast } = vi.hoisted(() => ({
   mockGet: vi.fn(),
+  mockUpdate: vi.fn(),
+  mockGetDirectory: vi.fn(),
   mockListMessages: vi.fn(),
   mockListNotes: vi.fn(),
   authState: {
@@ -19,13 +21,13 @@ const { mockGet, mockListMessages, mockListNotes, authState, mockShowToast } = v
 vi.mock('../../../services/api', () => ({
   rivalriesApi: {
     get: mockGet,
-    update: vi.fn(),
+    update: mockUpdate,
     messages: { list: mockListMessages, post: vi.fn() },
     notes: { list: mockListNotes, upsert: vi.fn(), delete: vi.fn() },
   },
   playersApi: {
     getAll: vi.fn().mockResolvedValue([]),
-    getDirectory: vi.fn().mockResolvedValue([]),
+    getDirectory: mockGetDirectory,
   },
   matchesApi: { getAll: vi.fn().mockResolvedValue([]) },
   promosApi: { getAll: vi.fn().mockResolvedValue([]) },
@@ -80,6 +82,7 @@ describe('RivalryDetail private tabs', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGet.mockResolvedValue(hydrated);
+    mockGetDirectory.mockResolvedValue([]);
     mockListMessages.mockResolvedValue({ items: [], nextCursor: null });
     mockListNotes.mockResolvedValue({ notes: [] });
     Object.assign(authState, { isAdminOrModerator: false, isAuthenticated: false, isLoading: false, playerId: null });
@@ -124,6 +127,35 @@ describe('RivalryDetail private tabs', () => {
     renderAt('/rivalries/r1/notes');
 
     await waitFor(() => expect(mockListNotes).toHaveBeenCalled());
+  });
+
+  it("books under the GM's player name, never their email", async () => {
+    Object.assign(authState, {
+      isAuthenticated: true,
+      isAdminOrModerator: true,
+      playerId: 'gm',
+      email: 'jane.private@example.com',
+    });
+    mockGetDirectory.mockResolvedValue([{ playerId: 'gm', name: 'Jane GM' }]);
+    mockUpdate.mockResolvedValue({ ...hydrated.rivalry, bookerName: 'Jane GM' });
+    renderAt('/rivalries/r1');
+
+    fireEvent.click(await screen.findByRole('button', { name: "I'll book this" }));
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledWith('r1', { bookerName: 'Jane GM' }));
+    expect(await screen.findByRole('button', { name: 'Clear booker' })).toBeInTheDocument();
+  });
+
+  it('offers no booking to a GM with no linked player', async () => {
+    Object.assign(authState, {
+      isAuthenticated: true,
+      isAdminOrModerator: true,
+      playerId: null,
+      email: 'jane.private@example.com',
+    });
+    renderAt('/rivalries/r1');
+
+    expect(await screen.findByRole('button', { name: "I'll book this" })).toBeDisabled();
   });
 
   it('waits for the session rather than bouncing a rival on reload', async () => {

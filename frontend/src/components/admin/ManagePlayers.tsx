@@ -270,13 +270,16 @@ export default function ManagePlayers() {
 
       const sanitizedName = sanitizeName(formData.name, VALIDATION.MAX_NAME_LENGTH);
 
-      if (!sanitizedName) {
+      const nameChanged = formData.name !== editingPlayer?.name;
+      if (!sanitizedName && nameChanged) {
         setError(t('adminRoster.players.nameRequired', 'Player name cannot be empty'));
         return;
       }
       if (editingPlayer) {
         await playersApi.update(editingPlayer.playerId, {
-          name: sanitizedName,
+          // Only a change goes out: sanitizing rewrites a stored name that holds
+          // characters the form no longer allows.
+          ...(nameChanged ? { name: sanitizedName } : {}),
           // A slot only goes out when the admin changed it, because clearing
           // the primary slot hides the player. The API ignores an empty id on
           // a slot held by name alone, so a clear has to be stated outright.

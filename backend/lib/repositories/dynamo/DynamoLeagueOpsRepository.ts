@@ -1,12 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
 import { dynamoDb, TableNames } from '../../dynamodb';
-import { NotFoundError } from '../errors';
+import { ConflictError, NotFoundError } from '../errors';
 import { buildUpdateExpression } from './util';
 import { DynamoCrudRepository } from './DynamoCrudRepository';
 import type {
   LeagueOpsRepository,
   EventCreateInput,
   EventPatch,
+  EventUpdateOptions,
   ShowCreateInput,
   ShowPatch,
   CompanyCreateInput,
@@ -214,20 +215,26 @@ export class DynamoLeagueOpsRepository implements LeagueOpsRepository {
       return item;
     },
 
-    update: async (eventId: string, patch: EventPatch): Promise<LeagueEvent> => {
+    update: async (eventId: string, patch: EventPatch, options?: EventUpdateOptions): Promise<LeagueEvent> => {
       const expr = buildUpdateExpression(patch, new Date().toISOString());
+      const expectedMatchCards = options?.expectedMatchCards;
       const result = await dynamoDb
         .update({
           TableName: TableNames.EVENTS,
           Key: { eventId },
           UpdateExpression: expr.UpdateExpression,
           ExpressionAttributeNames: expr.ExpressionAttributeNames,
-          ExpressionAttributeValues: expr.ExpressionAttributeValues,
-          ConditionExpression: 'attribute_exists(eventId)',
+          ExpressionAttributeValues: expectedMatchCards
+            ? { ...expr.ExpressionAttributeValues, ':expectedMatchCards': expectedMatchCards }
+            : expr.ExpressionAttributeValues,
+          ConditionExpression: expectedMatchCards
+            ? 'attribute_exists(eventId) AND matchCards = :expectedMatchCards'
+            : 'attribute_exists(eventId)',
           ReturnValues: 'ALL_NEW',
         })
         .catch((err: { name?: string }) => {
           if (err.name === 'ConditionalCheckFailedException') {
+            if (expectedMatchCards) throw new ConflictError('The match card has changed');
             throw new NotFoundError('Event', eventId);
           }
           throw err;

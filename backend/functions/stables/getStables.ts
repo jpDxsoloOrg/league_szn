@@ -20,7 +20,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return success(
       stables.map((stable) => ({
         ...stable,
-        ...computeStableRecord(matches, stable.memberIds || []),
+        ...computeStableRecord(matches, stable),
       })),
     );
   } catch (err) {

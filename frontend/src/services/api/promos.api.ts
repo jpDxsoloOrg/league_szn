@@ -24,7 +24,7 @@ export const promosApi = {
     });
   },
 
-  react: async (promoId: string, reaction: ReactionType): Promise<{ reactions: Record<string, ReactionType>; reactionCounts: Record<ReactionType, number> }> => {
+  react: async (promoId: string, reaction: ReactionType): Promise<{ reactionCounts: Record<ReactionType, number> }> => {
     return fetchWithAuth(`${API_BASE_URL}/promos/${promoId}/react`, {
       method: 'POST',
       body: JSON.stringify({ reaction }),

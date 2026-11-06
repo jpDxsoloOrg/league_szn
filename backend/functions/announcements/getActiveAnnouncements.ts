@@ -6,7 +6,10 @@ export const handler: APIGatewayProxyHandler = async () => {
   try {
     const { content: { announcements } } = getRepositories();
     const items = await announcements.listActive();
-    return success(items);
+    return success(items.map(({ createdBy, ...announcement }) => {
+      void createdBy;
+      return announcement;
+    }));
   } catch (err) {
     console.error('Error fetching active announcements:', err);
     return serverError('Failed to fetch active announcements');

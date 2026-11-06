@@ -1,4 +1,5 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
+import { isWithinLifetime } from '../../lib/stats/lifetime';
 import { getRepositories } from '../../lib/repositories';
 import type { Match } from '../../lib/repositories';
 import { success, badRequest, conflict, notFound, serverError } from '../../lib/response';
@@ -213,14 +214,14 @@ async function rollbackCompletedMatch(
   // 5. Revert event auto-complete status if needed
   if (match.eventId) {
     try {
-      await revertEventStatus(match.eventId);
+      await revertEventStatus(match.eventId, match.matchId);
     } catch (err) {
       console.warn('Event status revert failed:', err);
     }
   }
 }
 
-async function revertEventStatus(eventId: string): Promise<void> {
+async function revertEventStatus(eventId: string, deletedMatchId: string): Promise<void> {
   const { leagueOps: { events }, competition: { matches } } = getRepositories();
 
   const eventItem = await events.findById(eventId);
@@ -229,22 +230,24 @@ async function revertEventStatus(eventId: string): Promise<void> {
   // Only revert if the event was auto-completed
   if (eventItem.status !== 'completed') return;
 
-  // Check remaining matches to determine correct status
+  // Check the matches that will remain. This runs before the deleted match and
+  // its card are removed, so it is left out here, and a card whose match is
+  // already gone says nothing about the event's progress.
   const matchCards = eventItem.matchCards || [];
-  const matchIds = matchCards.map((c) => c.matchId).filter(Boolean);
+  const remainingIds = matchCards
+    .map((c) => c.matchId)
+    .filter((mId) => mId && mId !== deletedMatchId);
+  const remaining = (await Promise.all(remainingIds.map((mId) => matches.findById(mId))))
+    .filter((m) => m !== null && m !== undefined);
 
-  if (matchIds.length === 0) return;
+  const completedCount = remaining.filter((m) => m.status === 'completed').length;
 
-  let hasCompleted = false;
-  for (const mId of matchIds) {
-    const m = await matches.findById(mId);
-    if (m && m.status === 'completed') {
-      hasCompleted = true;
-    }
-  }
+  // Every remaining match is finished, so the event stays completed. No further
+  // result would arrive to complete it again.
+  if (remaining.length > 0 && completedCount === remaining.length) return;
 
   // If some matches are still completed, set to in-progress; otherwise upcoming
-  const newStatus = hasCompleted ? 'in-progress' : 'upcoming';
+  const newStatus = completedCount > 0 ? 'in-progress' : 'upcoming';
   await events.update(eventId, { status: newStatus as 'upcoming' | 'in-progress' });
 }
 
@@ -281,11 +284,14 @@ async function rollbackChampionshipResult(match: Match): Promise<void> {
     }
   } else if (match.isTitleDefense === true) {
     // A defense counts against the reign it was fought in. A defense from
-    // before the current reign began belongs to an earlier holder.
+    // before the current reign began belongs to an earlier holder. wonDate is
+    // when a result was recorded and an event match carries its date alone, so
+    // this compares days: a time comparison would miss a defense later on the
+    // card that crowned the champion.
     const currentReign = await championships.findCurrentReign(championshipId);
     if (
       currentReign &&
-      new Date(currentReign.wonDate).getTime() <= new Date(match.date).getTime() &&
+      isWithinLifetime(match.date, { createdAt: currentReign.wonDate }) &&
       typeof currentReign.defenses === 'number' &&
       currentReign.defenses > 0
     ) {

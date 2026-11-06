@@ -45,4 +45,21 @@ describe('SlotEditDialog', () => {
     expect(screen.getByRole('option', { name: /Booked Ghost/ })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /Other Ghost/ })).not.toBeInTheDocument();
   });
+
+  it('closes only the picker on the first Escape, and the dialog on the second', async () => {
+    const onClose = vi.fn();
+    const slot = { slotId: 's1', position: 1 } as HydratedMatchSlot;
+    render(<SlotEditDialog slot={slot} players={roster} onSave={vi.fn()} onClose={onClose} />);
+    const picker = screen.getByRole('button', { name: 'Player' });
+
+    await userEvent.click(picker);
+    expect(picker).toHaveAttribute('aria-expanded', 'true');
+
+    await userEvent.keyboard('{Escape}');
+    expect(picker).toHaveAttribute('aria-expanded', 'false');
+    expect(onClose).not.toHaveBeenCalled();
+
+    await userEvent.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

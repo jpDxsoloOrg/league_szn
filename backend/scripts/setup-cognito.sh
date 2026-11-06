@@ -138,7 +138,7 @@ UPDATE_PAYLOAD=$(echo "$CURRENT_POOL" | jq \
   '{
     UserPoolId: $userPoolId,
     Policies: .UserPool.Policies,
-    DeletionProtection: .UserPool.DeletionProtection,
+    DeletionProtection: "ACTIVE",
     LambdaConfig: ((.UserPool.LambdaConfig // {}) | .PostConfirmation = $lambdaArn | .PreSignUp = $preSignUpArn),
     AutoVerifiedAttributes: .UserPool.AutoVerifiedAttributes,
     SmsVerificationMessage: .UserPool.SmsVerificationMessage,

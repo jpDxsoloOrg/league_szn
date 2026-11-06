@@ -71,6 +71,7 @@ describe('respondRivalry', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRivalries.get.mockResolvedValue(pendingRivalry);
+    mockPlayers.findByUserId.mockResolvedValue(null);
     mockPlayers.findById.mockImplementation(async (id: string) =>
       ({ playerId: id, userId: `user-${id}`, name: id }),
     );
@@ -136,6 +137,56 @@ describe('respondRivalry', () => {
     const params = mockCreateNotifications.mock.calls[0][0] as Array<{ type: string; userId: string }>;
     expect(params.map((p) => p.userId).sort()).toEqual(['user-p1', 'user-p2']);
     expect(params[0].type).toBe('rivalry_reviewed');
+  });
+
+  it('names the moderator by player name in public text, keeping the id staff-only', async () => {
+    const accountId = '11111111-2222-3333-4444-555555555555';
+    const staged: Array<{ args: unknown[] }> = [];
+    mockRunInTransaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
+      await fn({
+        updateRivalry: (...args: unknown[]) => staged.push({ args }),
+        appendRivalryMessage: (...args: unknown[]) => staged.push({ args }),
+      });
+    });
+    mockRivalries.get
+      .mockResolvedValueOnce(pendingRivalry)
+      .mockResolvedValueOnce({ ...pendingRivalry, status: 'active' });
+    mockPlayers.findByUserId.mockResolvedValue({ playerId: 'gm', name: 'Bob GM' });
+
+    const event = withAuth(
+      makeEvent({
+        pathParameters: { rivalryId: 'r1' },
+        body: JSON.stringify({ action: 'approve' }),
+        httpMethod: 'POST',
+      }),
+      'Admin',
+      'admin-sub',
+      accountId,
+    );
+    await respondRivalry(event, ctx, cb);
+
+    const [patch, message] = staged.map((s) => s.args[s.args.length - 1]) as [
+      { moderatedBy: string },
+      { body: string },
+    ];
+    expect(patch.moderatedBy).toBe(accountId);
+    expect(message.body).toBe('Rivalry approved by Bob GM.');
+    const notifications = mockCreateNotifications.mock.calls[0][0] as Array<{ message: string }>;
+    expect(notifications[0].message).toContain('Bob GM');
+    expect(notifications[0].message).not.toContain(accountId);
+  });
+
+  it('falls back to a generic label when the moderator has no linked player', async () => {
+    mockRunInTransaction.mockImplementation(async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
+      await fn({ updateRivalry: vi.fn(), appendRivalryMessage: vi.fn() });
+    });
+    mockRivalries.get
+      .mockResolvedValueOnce(pendingRivalry)
+      .mockResolvedValueOnce({ ...pendingRivalry, status: 'active' });
+
+    const res = await respondRivalry(adminEvent('approve'), ctx, cb);
+
+    expect(JSON.parse(res!.body).systemMessage.body).toBe('Rivalry approved by League Staff.');
   });
 
   it('rejects approving a non-pending rivalry', async () => {

@@ -479,6 +479,22 @@ describe('recordResult — event auto-complete', () => {
     expect(mockEventsRepo.update).toHaveBeenCalledWith('e1', { status: 'completed' });
   });
 
+  it('does not let a card whose match is gone hold the event open', async () => {
+    mockMatchesRepo.findByIdWithDate.mockResolvedValue(base);
+    stubCoreTransaction();
+    mockEventsRepo.list.mockResolvedValue([
+      { eventId: 'e1', status: 'in-progress', matchCards: [{ matchId: 'm1' }, { matchId: 'gone' }] },
+    ]);
+    mockMatchesRepo.findById
+      .mockResolvedValueOnce({ matchId: 'm1', status: 'completed' })
+      .mockResolvedValueOnce(null);
+    mockEventsRepo.update.mockResolvedValue(undefined);
+
+    await recordResult(ev({ winners: ['p1'], losers: ['p2'] }), ctx, cb);
+
+    expect(mockEventsRepo.update).toHaveBeenCalledWith('e1', { status: 'completed' });
+  });
+
   it('marks upcoming event as in-progress when some matches still pending', async () => {
     mockMatchesRepo.findByIdWithDate.mockResolvedValue(base);
     stubCoreTransaction();
