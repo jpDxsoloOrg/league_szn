@@ -5,6 +5,7 @@ import {
 } from '../../lib/stats/recentFormAndStreak';
 import { tallyResults, type WinLossDrawRecord } from '../../lib/stats/record';
 import { resolveBilledName } from '../../lib/needsWrestler';
+import { normalizeCalendarDate } from '../../lib/calendarDate';
 
 export type FormResult = SharedFormResult;
 
@@ -40,6 +41,12 @@ export interface TagTeamRecord {
   updatedAt: string;
   dissolvedAt?: string;
 }
+
+/** The parts of a team that decide which matches belong to it. */
+export type TagTeamLifetime = Pick<
+  TagTeamRecord,
+  'player1Id' | 'player2Id' | 'createdAt' | 'dissolvedAt'
+>;
 
 export interface TagTeamMatchResult {
   match: MatchRecord;
@@ -77,18 +84,33 @@ function getTagTeamResult(
 }
 
 /**
+ * True when a match falls within the team's lifetime, both end days included.
+ * Compares calendar days because a match booked on an event carries the date
+ * alone, which would otherwise sort before a team formed earlier that day.
+ * A date that cannot be read sets no limit.
+ */
+function isWithinTeamLifetime(matchDate: string, team: TagTeamLifetime): boolean {
+  const matchDay = normalizeCalendarDate(matchDate);
+  if (!matchDay) return true;
+  const firstDay = normalizeCalendarDate(team.createdAt);
+  const lastDay = normalizeCalendarDate(team.dissolvedAt);
+  return (!firstDay || matchDay >= firstDay) && (!lastDay || matchDay <= lastDay);
+}
+
+/**
  * Scans all completed matches and finds those where a given tag team's
- * members competed together on the same team.
+ * members competed together on the same team while that team existed.
  */
 export function findTagTeamMatches(
   completedMatches: MatchRecord[],
-  player1Id: string,
-  player2Id: string
+  team: TagTeamLifetime
 ): TagTeamMatchResult[] {
+  const { player1Id, player2Id } = team;
   const results: TagTeamMatchResult[] = [];
 
   for (const match of completedMatches) {
     if (!match.teams || match.teams.length === 0) continue;
+    if (!isWithinTeamLifetime(match.date, team)) continue;
 
     const teamIdx = findTeamIndex(match.teams, player1Id, player2Id);
     if (teamIdx === -1) continue;
@@ -171,7 +193,7 @@ export function buildTagTeamMatchMap(
   );
 
   for (const team of tagTeams) {
-    const results = findTagTeamMatches(teamMatches, team.player1Id, team.player2Id);
+    const results = findTagTeamMatches(teamMatches, team);
     map.set(team.tagTeamId, results);
   }
 
