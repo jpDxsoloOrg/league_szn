@@ -16,6 +16,7 @@ const {
   mockGetAllTagTeams,
   mockGetAllDivisions,
   mockGetCheckIns,
+  mockGetChallenges,
 } = vi.hoisted(() => ({
   mockGetAllPlayers: vi.fn(),
   mockGetAllChampionships: vi.fn(),
@@ -28,9 +29,11 @@ const {
   mockGetAllTagTeams: vi.fn(),
   mockGetAllDivisions: vi.fn(),
   mockGetCheckIns: vi.fn(),
+  mockGetChallenges: vi.fn(),
 }));
 
 vi.mock('../../../services/api', () => ({
+  challengesApi: { getAll: mockGetChallenges },
   matchesApi: { schedule: mockScheduleMatch },
   playersApi: { getAllIncludingHidden: mockGetAllPlayers, getBookingSummary: vi.fn().mockResolvedValue({}) },
   championshipsApi: { getAll: mockGetAllChampionships },
@@ -148,6 +151,7 @@ function setupDefaultMocks() {
   mockGetAllMatchTypes.mockResolvedValue(mockMatchTypes);
   mockGetAllTagTeams.mockResolvedValue([]);
   mockGetAllDivisions.mockResolvedValue([]);
+  mockGetChallenges.mockResolvedValue([]);
   mockGetCheckIns.mockResolvedValue({
     available: [{ playerId: 'p1', name: 'John Cena', currentWrestler: 'The Champ' }],
     tentative: [{ playerId: 'p2', name: 'Dwayne Johnson', currentWrestler: 'The Rock' }],
@@ -493,6 +497,80 @@ describe('ScheduleMatch', () => {
 
     expect(await screen.findByLabelText('Championship Match')).toBeChecked();
     expect(screen.getByLabelText('Championship')).toHaveValue('c1');
+  });
+
+  describe('booking a call-out with a challenge', () => {
+    const promo = {
+      promoId: 'pr1', playerId: 'p1', targetPlayerId: 'p2', championshipId: 'c1',
+      challengeId: 'ch1', createdAt: '2026-01-01T10:00:00.000Z',
+    };
+    const challenge = {
+      challengeId: 'ch1', challengerId: 'p1', challengedId: 'p2', championshipId: 'c1',
+      matchType: mockMatchTypes[2].name, stipulation: mockStipulations[0].name,
+      status: 'accepted', createdAt: '2026-01-01T10:00:02.000Z',
+    };
+
+    function renderFromPromo() {
+      render(
+        <MemoryRouter initialEntries={[{ pathname: '/admin/schedule', state: { fromPromo: promo } }]}>
+          <ScheduleMatch />
+        </MemoryRouter>,
+      );
+    }
+
+    it("carries the challenge's match type and stipulation and links both", async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetChallenges.mockResolvedValue([challenge]);
+      mockScheduleMatch.mockResolvedValue({});
+      renderFromPromo();
+
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toHaveValue(challenge.matchType));
+      expect(mockGetChallenges).toHaveBeenCalledWith({ playerId: 'p1' });
+      expect(screen.getByLabelText('Stipulation (Optional)')).toHaveValue(mockStipulations[0].stipulationId);
+
+      await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+      await waitFor(() => {
+        expect(mockScheduleMatch).toHaveBeenCalledWith(expect.objectContaining({
+          matchFormat: challenge.matchType,
+          stipulationId: mockStipulations[0].stipulationId,
+          challengeId: 'ch1',
+          promoId: 'pr1',
+        }));
+      });
+    });
+
+    it('still books from the promo when the challenge cannot be read', async () => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetChallenges.mockRejectedValue(new Error('offline'));
+      mockScheduleMatch.mockResolvedValue({});
+      renderFromPromo();
+
+      expect(await screen.findByLabelText('Championship Match')).toBeChecked();
+      await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+      await waitFor(() => {
+        expect(mockScheduleMatch).toHaveBeenCalledWith(expect.objectContaining({ promoId: 'pr1', championshipId: 'c1' }));
+      });
+    });
+
+    it.each([
+      ['A title match from a challenge must include the current champion. Add them, or book it as a non-title match.', 'scheduleMatch.challengeNeedsChampion'],
+      ['This call-out or challenge already has a match booked', 'scheduleMatch.alreadyBooked'],
+    ])('translates the refusal: %s', async (apiMessage, key) => {
+      const user = userEvent.setup();
+      setupDefaultMocks();
+      mockGetChallenges.mockResolvedValue([challenge]);
+      mockScheduleMatch.mockRejectedValue(new Error(apiMessage));
+      renderFromPromo();
+
+      await waitFor(() => expect(screen.getByLabelText('Match Format')).toHaveValue(challenge.matchType));
+      await user.click(screen.getByRole('button', { name: 'Schedule Match' }));
+
+      expect(await screen.findByText(key)).toBeInTheDocument();
+    });
   });
 
   it('does not offer a tag team with a hidden member', async () => {

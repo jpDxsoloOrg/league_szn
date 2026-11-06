@@ -13,7 +13,9 @@ A challenge expires 4 days after it is issued if nobody answers it. A counter-ch
 
 ## Scheduling a match from a challenge
 
-Click **Schedule** on an accepted challenge to open Schedule Match with participants, match type, and optional stipulation pre-filled. A tag team challenge fills in both teams, and a title challenge ticks **Championship Match** and selects the title. The title shows under the match type in the list. Saving marks the challenge as scheduled and links it to the match.
+Click **Schedule** on an accepted challenge to open Schedule Match with participants, match type, and optional stipulation pre-filled. A tag team challenge fills in both teams, and a title challenge ticks **Championship Match** and selects the title. The title shows under the match type in the list. Saving marks the challenge as scheduled and links it to the match. A challenge can only be booked once, unless its match is deleted or cancelled.
+
+If the title has changed hands since the challenge was issued, a title match has to include the current champion, or it's refused. Add the champion, or book it as a non-title match. A vacant title has no such limit. Title matches you book directly, without a challenge, aren't affected.
 
 ## Actions for full Admins
 

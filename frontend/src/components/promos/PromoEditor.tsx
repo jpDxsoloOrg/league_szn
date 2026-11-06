@@ -312,7 +312,7 @@ export default function PromoEditor() {
     setChallengeWarning(null);
     try {
       const selectedTeam = tagTeams.find((tt) => tt.tagTeamId === selectedTagTeamId);
-      await promosApi.create({
+      const promo = await promosApi.create({
         promoType,
         title: title || undefined,
         content,
@@ -340,6 +340,7 @@ export default function PromoEditor() {
               stipulation: challengeStipulation || undefined,
               championshipId: stakedChampionshipId || undefined,
               message: (title || content.slice(0, 500)) || undefined,
+              promoId: promo.promoId,
             });
           } else {
             await challengesApi.create({
@@ -348,6 +349,7 @@ export default function PromoEditor() {
               stipulation: challengeStipulation || undefined,
               championshipId: stakedChampionshipId || undefined,
               message: (title || content.slice(0, 500)) || undefined,
+              promoId: promo.promoId,
             });
           }
           setChallengeCreated(true);

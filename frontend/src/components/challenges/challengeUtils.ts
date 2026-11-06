@@ -7,6 +7,7 @@ import type {
   ChallengeWithPlayers,
   TagTeamChallengeInfo,
 } from '../../types/challenge';
+import type { Promo } from '../../types/promo';
 
 /** Mirrors CHALLENGE_EXPIRY_DAYS in backend/lib/challengeExpiry.ts. */
 const CHALLENGE_EXPIRY_DAYS = 4;
@@ -70,21 +71,63 @@ export function isChallengedSide(challenge: ChallengeWithPlayers, playerId: stri
 }
 
 /**
- * The challenge a call-out promo produced. Promos do not store a challenge id,
- * and the editor creates the challenge right after the promo, so this picks the
- * challenge between the two players that is closest in time to the promo.
+ * The challenge a call-out promo produced. Older promos do not store a challenge
+ * id, and the editor creates the challenge right after the promo, so for those
+ * this picks the challenge between the two players closest in time to the promo.
  */
 export function findCallOutChallenge(
   challenges: ChallengeWithPlayers[],
-  promo: { playerId: string; createdAt: string },
+  promo: { playerId: string; createdAt: string; challengeId?: string },
   targetPlayerId: string,
 ): ChallengeWithPlayers | null {
+  if (promo.challengeId) {
+    return challenges.find((challenge) => challenge.challengeId === promo.challengeId) ?? null;
+  }
   const promoTime = Date.parse(promo.createdAt);
   const distance = (challenge: ChallengeWithPlayers) => Math.abs(Date.parse(challenge.createdAt) - promoTime);
   const candidates = challenges
     .filter((challenge) => challenge.challengerId === promo.playerId && challenge.challengedId === targetPlayerId)
     .sort((first, second) => distance(first) - distance(second));
   return candidates[0] ?? null;
+}
+
+const CALL_OUT_CHALLENGE_WINDOW_MS = 5 * 60 * 1000;
+
+/**
+ * The challenge to book a call-out from, at the end of any counters, so its
+ * terms are the ones that stand. Stricter than findCallOutChallenge for older
+ * promos, because booking changes the challenge. Mirrors findPromoChallenge and
+ * followCounters in backend/lib/callOutChallenge.ts.
+ */
+export function findChallengeToBook(
+  challenges: ChallengeWithPlayers[],
+  promo: Pick<Promo, 'promoId' | 'playerId' | 'targetPlayerId' | 'championshipId' | 'createdAt' | 'challengeId'>,
+): ChallengeWithPlayers | null {
+  const sinceThePromo = (challenge: ChallengeWithPlayers) => Date.parse(challenge.createdAt) - Date.parse(promo.createdAt);
+  const issued = promo.challengeId
+    ? challenges.find((challenge) => challenge.challengeId === promo.challengeId)
+    : challenges
+      .filter((challenge) => (
+        challenge.challengerId === promo.playerId
+        && challenge.challengedId === promo.targetPlayerId
+        && challenge.championshipId === promo.championshipId
+        && (!challenge.promoId || challenge.promoId === promo.promoId)
+        && sinceThePromo(challenge) >= 0
+        && sinceThePromo(challenge) <= CALL_OUT_CHALLENGE_WINDOW_MS
+      ))
+      .sort((first, second) => sinceThePromo(first) - sinceThePromo(second))[0];
+  if (!issued) return null;
+
+  const visited = new Set([issued.challengeId]);
+  let current = issued;
+  while (current.status === 'countered' && current.counteredChallengeId && !visited.has(current.counteredChallengeId)) {
+    const counterId = current.counteredChallengeId;
+    const counter = challenges.find((challenge) => challenge.challengeId === counterId);
+    if (!counter) break;
+    visited.add(counter.challengeId);
+    current = counter;
+  }
+  return current;
 }
 
 export type ChallengeTitleCandidate = Pick<Player, 'playerId' | 'divisionId'>;

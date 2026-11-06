@@ -16,6 +16,21 @@ interface CreateChallengeBody {
   message?: string;
   challengeMode?: 'singles' | 'tag_team';
   challengedTagTeamId?: string;
+  /** The call-out promo this challenge comes from. */
+  promoId?: string;
+}
+
+/**
+ * Records the challenge on its promo. The challenge already exists by now, so a
+ * failure here is logged rather than reported as a failed challenge. Scheduling
+ * can still find it from the promo, the way it does for older call-outs.
+ */
+async function linkPromoToChallenge(promoId: string, challengeId: string): Promise<void> {
+  try {
+    await getRepositories().content.promos.update(promoId, { challengeId });
+  } catch (err) {
+    console.warn(`Failed to link promo ${promoId} to challenge ${challengeId}:`, err);
+  }
 }
 
 export const handler: APIGatewayProxyHandler = async (event) => {
@@ -27,7 +42,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const { data: body, error: parseError } = parseBody<CreateChallengeBody>(event);
     if (parseError) return parseError;
-    const { challengedId, matchType, stipulation, championshipId, message, challengeMode, challengedTagTeamId } = body;
+    const { challengedId, matchType, stipulation, championshipId, message, challengeMode, challengedTagTeamId, promoId } = body;
 
     if (!matchType) {
       return badRequest('matchType is required');
@@ -52,6 +67,13 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     const challengerId = challengerPlayer.playerId;
+
+    if (promoId) {
+      const promo = await getRepositories().content.promos.findById(promoId);
+      if (promo?.playerId !== challengerId) {
+        return badRequest('A challenge can only be linked to your own promo');
+      }
+    }
 
     const expiresAt = challengeExpiresAt();
 
@@ -110,8 +132,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         stipulation: stipulation || undefined,
         championshipId: championshipId || undefined,
         message: message || undefined,
+        promoId: promoId || undefined,
         expiresAt,
       });
+      if (promoId) await linkPromoToChallenge(promoId, challenge.challengeId);
 
       // Notification dispatch intentionally disabled while the challenge UI is hidden.
       // The challenge row is still persisted so direct API calls keep working.
@@ -153,8 +177,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       stipulation: stipulation || undefined,
       championshipId: championshipId || undefined,
       message: message || undefined,
+      promoId: promoId || undefined,
       expiresAt,
     });
+    if (promoId) await linkPromoToChallenge(promoId, challenge.challengeId);
 
     // Notification dispatch intentionally disabled while the challenge UI is hidden.
     return created(challenge);

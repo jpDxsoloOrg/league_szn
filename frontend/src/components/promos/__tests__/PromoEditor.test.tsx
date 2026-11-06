@@ -229,7 +229,7 @@ describe('PromoEditor', () => {
 
   it('issues a challenge when a call-out is published', async () => {
     const user = userEvent.setup();
-    mockCreatePromo.mockResolvedValue({});
+    mockCreatePromo.mockResolvedValue({ promoId: 'promo-1' });
     mockCreateChallenge.mockResolvedValue({});
     mockGetAllMatchTypes.mockResolvedValue([{ matchTypeId: 'mt-1', name: 'Singles' }]);
 
@@ -254,7 +254,7 @@ describe('PromoEditor', () => {
 
     await waitFor(() => {
       expect(mockCreateChallenge).toHaveBeenCalledWith(
-        expect.objectContaining({ challengedId: 'p-2', matchType: 'Singles' })
+        expect.objectContaining({ challengedId: 'p-2', matchType: 'Singles', promoId: 'promo-1' })
       );
     });
   });

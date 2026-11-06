@@ -2,6 +2,8 @@ import type { Championship } from './repositories/types';
 
 export const CHAMPIONSHIP_NOT_FOUND_MESSAGE = 'Championship not found';
 export const INACTIVE_CHAMPIONSHIP_MESSAGE = 'This championship is inactive and cannot be challenged for';
+/** The frontend matches this wording to show its translation, in ScheduleMatch.tsx. */
+export const CHALLENGE_NEEDS_CHAMPION_MESSAGE = 'A title match from a challenge must include the current champion. Add them, or book it as a non-title match.';
 
 type TitleType = Championship['type'];
 
@@ -38,6 +40,15 @@ export function titleAvailabilityError(championship: Championship | null): strin
 }
 
 /**
+ * True when the title is vacant, or one side holds all of its champions. The
+ * result crowns whoever wins, so a held title needs its champion in the match.
+ */
+export function championIsOnASide(championship: Championship, sides: string[][]): boolean {
+  const holders = [championship.currentChampion ?? []].flat().filter(Boolean);
+  return holders.length === 0 || sides.some((side) => holders.every((holder) => side.includes(holder)));
+}
+
+/**
  * Why this challenge can't be for the title, or null when it can. The result
  * crowns whoever wins, so a held title needs its champion in the challenge.
  */
@@ -54,10 +65,7 @@ export function challengeTitleFitError(championship: Championship, context: Chal
   const formatError = titleFormatError(championship.type, matchType);
   if (formatError) return formatError;
 
-  const holders = [championship.currentChampion ?? []].flat();
-  const championIsInvolved = holders.length === 0
-    || sides.some((side) => holders.every((holder) => side.some((player) => player.playerId === holder)));
-  if (!championIsInvolved) {
+  if (!championIsOnASide(championship, sides.map((side) => side.map((player) => player.playerId)))) {
     return 'The current champion must be part of a challenge for their title';
   }
 

@@ -80,7 +80,7 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
     promo.targetPlayerId === playerId
   );
 
-  const { playerId: authorId, createdAt: postedAt } = promo;
+  const { playerId: authorId, createdAt: postedAt, challengeId: linkedChallengeId } = promo;
 
   // The challenges API returns every status when given a player, so the status
   // shown here always comes from the matched challenge itself.
@@ -91,7 +91,7 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
       try {
         const challenges = await challengesApi.getAll({ playerId }, controller.signal);
         if (!controller.signal.aborted) {
-          setChallenge(findCallOutChallenge(challenges, { playerId: authorId, createdAt: postedAt }, playerId));
+          setChallenge(findCallOutChallenge(challenges, { playerId: authorId, createdAt: postedAt, challengeId: linkedChallengeId }, playerId));
         }
       } catch {
         if (!controller.signal.aborted) setChallenge(null);
@@ -99,7 +99,7 @@ export default function PromoCard({ promo, compact = false, isRead, onView, onRe
     };
     void loadChallenge();
     return () => controller.abort();
-  }, [isTargetOfCallOut, playerId, authorId, postedAt]);
+  }, [isTargetOfCallOut, playerId, authorId, postedAt, linkedChallengeId]);
 
   const handleAcceptChallenge = async () => {
     if (!challenge) return;

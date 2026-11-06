@@ -146,6 +146,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       counterChallenge.challengedTagTeamId = challenge.challengerTagTeamId;
     }
     if (challenge.championshipId) counterChallenge.championshipId = challenge.championshipId;
+    if (challenge.promoId) counterChallenge.promoId = challenge.promoId;
     if (counterStipulation) counterChallenge.stipulation = counterStipulation;
     if (counterMessage) counterChallenge.message = counterMessage;
 

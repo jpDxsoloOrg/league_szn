@@ -317,6 +317,7 @@ components:
         responseMessage: { type: string }
         counteredChallengeId: { type: string }
         matchId: { type: string }
+        promoId: { type: string, description: The call-out promo this challenge came from }
         expiresAt: { type: string }
         createdAt: { type: string }
         updatedAt: { type: string }
@@ -345,6 +346,7 @@ components:
         stipulation: { type: string }
         championshipId: { type: string }
         message: { type: string }
+        promoId: { type: string, description: The caller's own call-out promo to link this challenge to }
 
     RespondChallengeInput:
       type: object

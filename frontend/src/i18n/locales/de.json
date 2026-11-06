@@ -556,6 +556,8 @@
   },
   "scheduleMatch": {
     "removeParticipant": "{{name}} entfernen",
+    "challengeNeedsChampion": "Ein Titelkampf aus einer Herausforderung muss den aktuellen Champion enthalten. Füge ihn hinzu oder plane den Kampf ohne Titel.",
+    "alreadyBooked": "Für diese Ansage oder Herausforderung ist bereits ein Kampf geplant",
     "title": "Kampf planen",
     "dateTime": "Datum & Uhrzeit",
     "matchType": "Kampftyp",

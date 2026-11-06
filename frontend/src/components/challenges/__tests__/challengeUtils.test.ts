@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getChallengeTitleOptions, getDaysRemaining, getDisplayStatus, isChallengedSide, isChallengerSide } from '../challengeUtils';
+import { findCallOutChallenge, findChallengeToBook, getChallengeTitleOptions, getDaysRemaining, getDisplayStatus, isChallengedSide, isChallengerSide } from '../challengeUtils';
 import type { Championship } from '../../../types';
 import type { ChallengeWithPlayers } from '../../../types/challenge';
 
@@ -60,6 +60,49 @@ describe('challengeUtils', () => {
       expect(isChallengerSide(challenge, null)).toBe(false);
       expect(isChallengedSide(challenge, null)).toBe(false);
     });
+  });
+});
+
+describe('call-out challenges', () => {
+  const promo = {
+    promoId: 'pr1', playerId: 'p1', targetPlayerId: 'p2', championshipId: 'c1',
+    createdAt: '2026-06-10T12:00:00.000Z',
+  };
+  const challenge = (overrides: Partial<ChallengeWithPlayers>) => ({
+    challengeId: 'ch1', challengerId: 'p1', challengedId: 'p2', championshipId: 'c1',
+    status: 'accepted', createdAt: '2026-06-10T12:00:03.000Z', ...overrides,
+  }) as ChallengeWithPlayers;
+
+  it('findCallOutChallenge prefers the stored link over closeness in time', () => {
+    const near = challenge({ challengeId: 'near' });
+    const linked = challenge({ challengeId: 'linked', createdAt: '2026-06-12T12:00:00.000Z' });
+    expect(findCallOutChallenge([near, linked], { ...promo, challengeId: 'linked' }, 'p2')).toBe(linked);
+  });
+
+  it('findChallengeToBook uses the stored link', () => {
+    const linked = challenge({ challengeId: 'linked', createdAt: '2026-06-12T12:00:00.000Z' });
+    expect(findChallengeToBook([challenge({}), linked], { ...promo, challengeId: 'linked' })).toBe(linked);
+  });
+
+  it('findChallengeToBook matches an older promo on players, title and time', () => {
+    const issued = challenge({});
+    expect(findChallengeToBook([
+      challenge({ challengeId: 'other-title', championshipId: 'c2' }),
+      challenge({ challengeId: 'days-later', createdAt: '2026-06-12T12:00:00.000Z' }),
+      challenge({ challengeId: 'before', createdAt: '2026-06-10T11:59:00.000Z' }),
+      challenge({ challengeId: 'other-promo', promoId: 'pr2' }),
+      issued,
+    ], promo)).toBe(issued);
+  });
+
+  it('findChallengeToBook finds nothing for a promo with no challenge near it', () => {
+    expect(findChallengeToBook([challenge({ createdAt: '2026-06-12T12:00:00.000Z' })], promo)).toBeNull();
+  });
+
+  it('findChallengeToBook follows counters to the terms that stand', () => {
+    const counter = challenge({ challengeId: 'ch2', matchType: 'Cage', createdAt: '2026-06-11T12:00:00.000Z' });
+    const original = challenge({ status: 'countered', counteredChallengeId: 'ch2' });
+    expect(findChallengeToBook([original, counter], promo)).toBe(counter);
   });
 });
 
