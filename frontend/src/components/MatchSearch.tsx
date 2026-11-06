@@ -250,7 +250,18 @@ export default function MatchSearch() {
     </div>
   );
 
+  /** Open sign-ups start with nobody on the card, so the row says what is on offer instead. */
+  const describeEmptyCard = (match: Match) => {
+    const spots = match.slotsRequired ?? match.slots?.length;
+    return match.status === 'open-signups' && spots
+      ? t('matchSearch.spotsOpen', { count: spots })
+      : t('matchSearch.noParticipants');
+  };
+
   const renderNames = (match: Match) => {
+    if (match.participants.length === 0) {
+      return <span className="match-row__names">{describeEmptyCard(match)}</span>;
+    }
     const isDraw = match.status === 'completed' && !!match.isDraw;
     const sides = groupMatchSides(match.participants, (pid) => pid, match.teams, match.matchFormat);
     const renderName = (pid: string) => (
@@ -419,8 +430,9 @@ export default function MatchSearch() {
                     variant="ghost"
                     size="sm"
                     aria-label={t('matchSearch.detailsFor', {
-                      names: match.participants.map(getPlayerName).join(', '),
-                      defaultValue: `Details: ${match.participants.map(getPlayerName).join(', ')}`,
+                      names: match.participants.length > 0
+                        ? match.participants.map(getPlayerName).join(', ')
+                        : describeEmptyCard(match),
                     })}
                     onClick={() => setDetailMatchId(match.matchId)}
                   >
