@@ -131,4 +131,18 @@
   .stats-page .page-header__actions .ui-select__trigger {
     flex-basis: 100%;
   }
+
+  /* The tab rows above already name the page, so the header gives its height to the data. */
+  .stats-page .page-header {
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+  }
+
+  .stats-page .page-header__eyebrow {
+    display: none;
+  }
+
+  .stats-page .page-header__title {
+    font-size: 1.5rem;
+  }
 }

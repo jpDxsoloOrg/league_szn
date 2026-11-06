@@ -176,3 +176,11 @@
     grid-row: 1;
   }
 }
+
+@media (max-width: 480px) {
+  .h2h-corner .ui-avatar--lg {
+    width: 48px;
+    height: 48px;
+    font-size: 1rem;
+  }
+}

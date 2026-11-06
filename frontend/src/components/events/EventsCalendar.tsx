@@ -371,7 +371,13 @@ export default function EventsCalendar() {
     />
   ) : null;
 
-  const pageHeader = <PageHeader title={t('events.title')} actions={createButton} />;
+  const pageHeader = (
+    <PageHeader
+      title={t('events.title')}
+      actions={createButton}
+      className={heroEvent ? 'page-header--plain' : undefined}
+    />
+  );
 
   if (loading) {
     return (

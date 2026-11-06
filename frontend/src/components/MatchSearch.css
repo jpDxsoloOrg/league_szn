@@ -22,6 +22,8 @@
   display: flex;
   flex: 1 1 260px;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
   gap: 0.5rem;
   min-height: var(--touch-target);
   padding: 0 0.875rem;

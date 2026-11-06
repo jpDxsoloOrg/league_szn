@@ -17,7 +17,6 @@
 
 .tag-team-detail__players {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 1rem 1.5rem;
 }
@@ -42,4 +41,17 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+/* Stacked, so the ampersand always sits between the two names. */
+@media (max-width: 480px) {
+  .tag-team-detail__players {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .tag-team-detail__ampersand {
+    text-align: center;
+  }
 }
