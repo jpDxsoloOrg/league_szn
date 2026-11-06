@@ -126,34 +126,51 @@ describe('generateUploadUrl — success & S3 integration', () => {
     expect(body.imageUrl).toContain('championships/test-uuid-1234.png');
   });
 
-  it('uses last segment after dot as file extension', async () => {
+  it.each([
+    ['image/jpeg', 'jpg'],
+    ['image/png', 'png'],
+    ['image/gif', 'gif'],
+    ['image/webp', 'webp'],
+  ])('derives the extension for %s from the MIME type', async (fileType, extension) => {
     const event = withAuth(
-      makeEvent({
-        body: JSON.stringify({ fileName: 'my.photo.file.webp', fileType: 'image/webp', folder: 'wrestlers' }),
-      }),
+      makeEvent({ body: JSON.stringify({ fileName: 'upload', fileType, folder: 'wrestlers' }) }),
       'Admin',
     );
 
     const result = await generateUploadUrl(event, ctx, cb);
 
-    const body = JSON.parse(result!.body);
-    expect(body.fileKey).toBe('wrestlers/test-uuid-1234.webp');
+    expect(JSON.parse(result!.body).fileKey).toBe(`wrestlers/test-uuid-1234.${extension}`);
   });
 
-  it('uses fileName itself as extension when no dot present', async () => {
+  it.each([
+    ['video/mp4', 'mp4'],
+    ['video/webm', 'webm'],
+    ['video/quicktime', 'mov'],
+    ['image/png', 'png'],
+  ])('derives the extension for %s in the videos folder', async (fileType, extension) => {
     const event = withAuth(
-      makeEvent({
-        body: JSON.stringify({ fileName: 'photo', fileType: 'image/jpeg', folder: 'wrestlers' }),
-      }),
+      makeEvent({ body: JSON.stringify({ fileName: 'upload', fileType, folder: 'videos' }) }),
       'Admin',
     );
 
     const result = await generateUploadUrl(event, ctx, cb);
 
-    const body = JSON.parse(result!.body);
-    // 'photo'.split('.').pop() returns 'photo' (single element, pop returns it)
-    expect(body.fileKey).toBe('wrestlers/test-uuid-1234.photo');
+    expect(JSON.parse(result!.body).fileKey).toBe(`videos/test-uuid-1234.${extension}`);
   });
+
+  it.each(['page.html', 'photo.svg', 'my.photo.file.webp', 'a/b/c', 'photo'])(
+    'ignores the client file name %s when building the key',
+    async (fileName) => {
+      const event = withAuth(
+        makeEvent({ body: JSON.stringify({ fileName, fileType: 'image/jpeg', folder: 'wrestlers' }) }),
+        'Admin',
+      );
+
+      const result = await generateUploadUrl(event, ctx, cb);
+
+      expect(JSON.parse(result!.body).fileKey).toBe('wrestlers/test-uuid-1234.jpg');
+    },
+  );
 
   it('constructs imageUrl from bucket name and fileKey', async () => {
     const event = withAuth(
@@ -188,7 +205,7 @@ describe('generateUploadUrl — success & S3 integration', () => {
     });
   });
 
-  it('calls getSignedUrl with 300 second (5 minute) expiration', async () => {
+  it('calls getSignedUrl with a 5 minute expiration and a signed content type', async () => {
     const event = withAuth(
       makeEvent({
         body: JSON.stringify({ fileName: 'photo.jpg', fileType: 'image/jpeg', folder: 'wrestlers' }),
@@ -200,7 +217,7 @@ describe('generateUploadUrl — success & S3 integration', () => {
 
     expect(mockGetSignedUrl).toHaveBeenCalledOnce();
     const callArgs = mockGetSignedUrl.mock.calls[0];
-    expect(callArgs[2]).toEqual({ expiresIn: 300 });
+    expect(callArgs[2]).toEqual({ expiresIn: 300, signableHeaders: new Set(['content-type']) });
   });
 
   // ─── S3 error handling ────────────────────────────────────────
