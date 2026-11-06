@@ -17,7 +17,24 @@
   width: 100%;
   height: auto;
   max-height: 14rem;
-  aspect-ratio: 5 / 2;
+  aspect-ratio: 3 / 2;
+}
+
+/* Logos come in any shape, so the whole image fits the band instead of filling it. */
+.faction-card .ui-tile__image {
+  object-fit: contain;
+}
+
+/* The chip gets its own row, because over the band it would hide lettering and initials. */
+.faction-card .ui-tile__badge {
+  position: static;
+  display: flex;
+  padding: 0.75rem 1rem 0;
+  background-color: var(--color-bg);
+}
+
+.faction-card .ui-tile__badge + .ui-tile__text {
+  padding-top: 0.5rem;
 }
 
 .faction-card .ui-tile__text {
