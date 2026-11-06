@@ -6,6 +6,7 @@ import { eventsApi } from '../../services/api';
 import type { DashboardEvent } from '../../types';
 import type { EventWithMatches } from '../../types/event';
 import { formatCalendarDate } from '../../utils/dateUtils';
+import { describeSides, groupMatchSides } from '../../utils/matchDisplay';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 
@@ -35,10 +36,11 @@ interface MainEvent {
 /** The booked main event, or null when the card has none yet. */
 function getMainEvent(event: EventWithMatches | null, versus: string): MainEvent | null {
   const match = event?.enrichedMatches?.find((entry) => entry.designation === 'main-event')?.matchData;
-  const names = match?.participants?.map((participant) => participant.wrestlerName || participant.playerName).filter(Boolean) ?? [];
-  if (!match || names.length === 0) return null;
+  if (!match?.participants?.length) return null;
+  const sides = groupMatchSides(match.participants, (participant) => participant.playerId, match.teams, match.matchFormat)
+    .map((side) => side.map((participant) => participant.wrestlerName || participant.playerName).filter(Boolean));
   return {
-    matchup: names.join(` ${versus} `),
+    matchup: describeSides(sides, versus),
     detail: [match.isChampionship ? match.championshipName : undefined, match.stipulationName].filter(Boolean).join(' · '),
   };
 }
@@ -85,7 +87,7 @@ export default function HomeHero({ inProgressEvents, upcomingEvents }: HomeHeroP
 
   if (!featured) {
     return (
-      <section className="home-hero home-hero--empty">
+      <section className="poster-hero home-hero home-hero--empty">
         <div className="home-hero__text">
           <h1 className="home-hero__title">{t('dashboard.title')}</h1>
           <p className="home-hero__description">{t('dashboard.noUpcomingEvents')}</p>
@@ -110,7 +112,7 @@ export default function HomeHero({ inProgressEvents, upcomingEvents }: HomeHeroP
 
   return (
     <>
-      <section className={`home-hero ${isLive ? 'home-hero--live' : ''}`.trim()}>
+      <section className={`poster-hero home-hero ${isLive ? 'home-hero--live' : ''}`.trim()}>
         <div className="home-hero__text">
           <div className="home-hero__status">
             {isLive ? <Badge tone="live">{t('dashboard.liveBadge')}</Badge> : <Badge tone="primary">{t('home.nextUp')}</Badge>}
@@ -129,8 +131,8 @@ export default function HomeHero({ inProgressEvents, upcomingEvents }: HomeHeroP
           </div>
         </div>
         {imageUrl && (
-          <div className="home-hero__media">
-            <img src={imageUrl} alt="" className="home-hero__image" />
+          <div className="poster-hero__frame">
+            <img src={imageUrl} alt="" className="poster-hero__image" />
           </div>
         )}
       </section>

@@ -1,26 +1,21 @@
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import type { DashboardMatch } from '../../types';
+import { formatMatchType } from '../../utils/matchDisplay';
 import { StarRating } from '../matches/StarRating';
 import Badge from '../ui/Badge';
 import Card from '../ui/Card';
-import EmptyState from '../ui/EmptyState';
 import HomeSection from './HomeSection';
 
 const RESULTS_SHOWN = 5;
 
 export default function LatestResults({ results }: { results: DashboardMatch[] }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   return (
     <HomeSection title={t('dashboard.recentResults')} accent="cyan" linkTo="/matches" linkLabel={t('home.allMatches')}>
       {results.length === 0 ? (
-        <EmptyState
-          title={t('dashboard.noRecentResults')}
-          actionLabel={t('dashboard.emptyActions.browseMatches', 'Browse matches')}
-          onAction={() => navigate('/matches')}
-        />
+        <p className="home-empty">{t('dashboard.noRecentResults')}</p>
       ) : (
         <Card padding="none">
           <ul className="home-list">
@@ -33,7 +28,7 @@ export default function LatestResults({ results }: { results: DashboardMatch[] }
                     <span className="home-result__loser">{match.loserName}</span>
                   </span>
                   <span className="home-result__type">
-                    {match.matchType}
+                    {formatMatchType(match.matchType, t)}
                     {match.stipulation ? ` · ${match.stipulation}` : ''}
                   </span>
                   {(match.isChampionship || match.matchOfTheNight || Boolean(match.ratingsCount)) && (

@@ -58,9 +58,15 @@ export default function SeasonSummary({ season, stats }: SeasonSummaryProps) {
               <dd className="home-stats__value">{stats.totalPlayers}</dd>
               <dt className="home-stats__label">{t('home.stats.players')}</dt>
             </div>
+            {season?.matchesPlayed !== undefined && (
+              <div className="home-stats__item">
+                <dd className="home-stats__value">{season.matchesPlayed}</dd>
+                <dt className="home-stats__label">{t('home.stats.seasonMatches')}</dt>
+              </div>
+            )}
             <div className="home-stats__item">
               <dd className="home-stats__value">{stats.totalMatches}</dd>
-              <dt className="home-stats__label">{t('dashboard.matchesPlayed')}</dt>
+              <dt className="home-stats__label">{t('home.stats.allTimeMatches')}</dt>
             </div>
             <div className="home-stats__item">
               <dd className="home-stats__value">{stats.activeChampionships}</dd>
