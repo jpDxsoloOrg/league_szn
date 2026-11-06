@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 // --- Hoisted mocks ---
 const { mockGetAllChampionships, mockGetAllDivisions, mockGetForChampionship } = vi.hoisted(() => ({
@@ -16,6 +17,7 @@ vi.mock('../../../services/api', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string, opts?: Record<string, unknown>) => {
       const map: Record<string, string> = {
         'contenders.title': 'Contender Rankings',
@@ -30,6 +32,8 @@ vi.mock('react-i18next', () => ({
         'contenders.winRate': 'Win Rate',
         'contenders.streak': 'Streak',
         'contenders.new': 'NEW',
+        'contenders.openDivision': 'Open',
+        'contenders.selectChampionship': 'Championship',
         'common.loading': 'Loading...',
       };
       if (key === 'contenders.noContendersHint') {
@@ -138,49 +142,48 @@ describe('ContenderRankings', () => {
     vi.clearAllMocks();
   });
 
-  it('renders championship selector tabs grouped by division', async () => {
+  it('lists titles in a selector, prefixed by division', async () => {
+    const user = userEvent.setup();
     mockGetAllChampionships.mockResolvedValue(mockChampionships);
     mockGetAllDivisions.mockResolvedValue(mockDivisions);
     mockGetForChampionship.mockResolvedValue(mockContenderData);
 
     render(<ContenderRankings />);
 
+    const selector = await screen.findByRole('combobox', { name: 'Championship' });
+    expect(selector).toHaveTextContent('Raw: World Heavyweight');
+
+    await user.click(selector);
+    expect(await screen.findByRole('option', { name: 'SmackDown: Universal Championship' })).toBeInTheDocument();
+    await user.click(screen.getByRole('option', { name: 'Open: Intercontinental' }));
+
     await waitFor(() => {
-      expect(screen.getByText('Contender Rankings')).toBeInTheDocument();
+      expect(mockGetForChampionship).toHaveBeenCalledWith('ch3', expect.any(AbortSignal));
     });
-
-    // Division labels shown (since multiple groups)
-    expect(screen.getByText('Raw')).toBeInTheDocument();
-    expect(screen.getByText('SmackDown')).toBeInTheDocument();
-    expect(screen.getByText('Open')).toBeInTheDocument();
-
-    // Championship tab buttons
-    expect(screen.getByText('World Heavyweight')).toBeInTheDocument();
-    expect(screen.getByText('Universal Championship')).toBeInTheDocument();
-    expect(screen.getByText('Intercontinental')).toBeInTheDocument();
   });
 
-  it('displays current champion card with default image fallback', async () => {
+  it('displays the current champion with an initials fallback', async () => {
     mockGetAllChampionships.mockResolvedValue(mockChampionships);
     mockGetAllDivisions.mockResolvedValue(mockDivisions);
     mockGetForChampionship.mockResolvedValue(mockContenderData);
 
     render(<ContenderRankings />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Current Champion')).toBeInTheDocument();
-    });
+    const champion = await screen.findByRole('region', { name: 'Current Champion' });
+    expect(champion).toHaveTextContent('The Champ');
+    expect(champion).toHaveTextContent('John Cena');
+    expect(screen.getByRole('img', { name: 'The Champ' })).toHaveTextContent('TC');
+  });
 
-    // Champion card shows wrestler and player name
-    const championCard = document.querySelector('.champion-card');
-    expect(championCard).toBeTruthy();
-    expect(championCard).toHaveTextContent('The Champ');
-    expect(championCard).toHaveTextContent('John Cena');
+  it('reports a failed rankings load instead of an empty list', async () => {
+    mockGetAllChampionships.mockResolvedValue(mockChampionships);
+    mockGetAllDivisions.mockResolvedValue(mockDivisions);
+    mockGetForChampionship.mockRejectedValue(new Error('Nope'));
 
-    // Missing imageUrl should use default wrestler image
-    const championImage = championCard!.querySelector('img');
-    expect(championImage).toBeTruthy();
-    expect(championImage).toHaveAttribute('src', '/images/placeholders/wrestler-default.svg');
+    render(<ContenderRankings />);
+
+    expect(await screen.findByText('contenders.rankingsLoadFailed')).toBeInTheDocument();
+    expect(screen.queryByText('No contenders ranked yet.')).not.toBeInTheDocument();
   });
 
   it('shows ranked contenders with movement indicators and stats', async () => {
@@ -199,11 +202,11 @@ describe('ContenderRankings', () => {
     expect(screen.getByText('The Deadman')).toBeInTheDocument();
 
     // Movement indicators -- use CSS class selectors for specificity
-    const upBadge = document.querySelector('.movement-badge.up');
+    const upBadge = document.querySelector('.contender-row__move--up');
     expect(upBadge).toBeTruthy();
     expect(upBadge).toHaveTextContent('1');
 
-    const downBadge = document.querySelector('.movement-badge.down');
+    const downBadge = document.querySelector('.contender-row__move--down');
     expect(downBadge).toBeTruthy();
     expect(downBadge).toHaveTextContent('1');
 

@@ -6,44 +6,44 @@ export interface DivisionFilterProps {
   divisions: Division[];
   selectedDivision: string;
   onSelect: (id: string) => void;
-  /** i18n key for the label (e.g. standings.filterByDivision, championships.filterByDivision). Omit for no label. */
+  /** i18n key naming the filter for screen readers. */
   labelKey?: string;
   /** Whether to show the "No division" option. Default true. */
   showNoDivision?: boolean;
 }
 
+/** Division pills. Wraps on desktop and scrolls within its own row on phones. */
 export default function DivisionFilter({
   divisions,
   selectedDivision,
   onSelect,
-  labelKey,
+  labelKey = 'standings.filterByDivision',
   showNoDivision = true,
 }: DivisionFilterProps) {
   const { t } = useTranslation();
 
+  const options = [
+    { value: 'all', label: t('common.all') },
+    ...divisions.map((division) => ({ value: division.divisionId, label: division.name })),
+    ...(showNoDivision ? [{ value: 'none', label: t('standings.noDivision') }] : []),
+  ];
+
   return (
-    <div className="division-filter">
-      {labelKey != null && (
-        <label className="filter-label" htmlFor="division-filter-select">
-          {t(labelKey)}:
-        </label>
-      )}
-      <select
-        id="division-filter-select"
-        className="filter-select"
-        value={selectedDivision}
-        onChange={(e) => onSelect(e.target.value)}
-      >
-        <option value="all">{t('common.all')}</option>
-        {divisions.map((division) => (
-          <option key={division.divisionId} value={division.divisionId}>
-            {division.name}
-          </option>
-        ))}
-        {showNoDivision && (
-          <option value="none">{t('standings.noDivision')}</option>
-        )}
-      </select>
+    <div className="division-pills" role="group" aria-label={t(labelKey)}>
+      {options.map((option) => {
+        const selected = selectedDivision === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            className={`division-pills__pill${selected ? ' division-pills__pill--selected' : ''}`}
+            aria-pressed={selected}
+            onClick={() => onSelect(option.value)}
+          >
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

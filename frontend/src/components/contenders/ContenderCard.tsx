@@ -1,114 +1,100 @@
+import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ContenderWithPlayer } from '../../types/contender';
-import {
-  DEFAULT_WRESTLER_IMAGE,
-  applyImageFallback,
-  resolveImageSrc,
-} from '../../constants/imageFallbacks';
+import Avatar from '../ui/Avatar';
+import Badge from '../ui/Badge';
 import './ContenderCard.css';
 
 interface ContenderCardProps {
   contender: ContenderWithPlayer;
 }
 
-export default function ContenderCard({ contender }: ContenderCardProps) {
+function Movement({ contender }: ContenderCardProps) {
   const { t } = useTranslation();
 
-  const getMovementIndicator = () => {
-    if (contender.isNew) {
-      return <span className="movement-badge new">{t('contenders.new')}</span>;
-    }
-    if (contender.movement > 0) {
-      return (
-        <span className="movement-badge up">
-          ▲ {contender.movement}
-        </span>
-      );
-    }
-    if (contender.movement < 0) {
-      return (
-        <span className="movement-badge down">
-          ▼ {Math.abs(contender.movement)}
-        </span>
-      );
-    }
-    return <span className="movement-badge stable">—</span>;
-  };
+  if (contender.isNew) {
+    return <span className="contender-row__move contender-row__move--new">{t('contenders.new')}</span>;
+  }
+  if (contender.movement > 0) {
+    return (
+      <span className="contender-row__move contender-row__move--up" title={t('contenders.movedUp', { places: contender.movement })}>
+        <ArrowUp aria-hidden="true" size={14} />
+        {contender.movement}
+      </span>
+    );
+  }
+  if (contender.movement < 0) {
+    const places = Math.abs(contender.movement);
+    return (
+      <span className="contender-row__move contender-row__move--down" title={t('contenders.movedDown', { places })}>
+        <ArrowDown aria-hidden="true" size={14} />
+        {places}
+      </span>
+    );
+  }
+  return (
+    <span className="contender-row__move" aria-label={t('contenders.noMovement')}>
+      <Minus aria-hidden="true" size={14} />
+    </span>
+  );
+}
 
-  const getStreakDisplay = () => {
-    if (contender.currentStreak > 0) {
-      return (
-        <span className="streak positive">
-          W{contender.currentStreak}
-        </span>
-      );
-    }
-    if (contender.currentStreak < 0) {
-      return (
-        <span className="streak negative">
-          L{Math.abs(contender.currentStreak)}
-        </span>
-      );
-    }
-    return <span className="streak neutral">—</span>;
-  };
+function Streak({ streak }: { streak: number }) {
+  if (streak > 0) return <span className="contender-row__streak--win">W{streak}</span>;
+  if (streak < 0) return <span className="contender-row__streak--loss">L{Math.abs(streak)}</span>;
+  return <span>-</span>;
+}
 
+/** One ranked contender. A single grid row on desktop, two lines on phones. */
+export default function ContenderCard({ contender }: ContenderCardProps) {
+  const { t } = useTranslation();
   const isTopContender = contender.rank === 1;
 
   return (
-    <div className={`contender-card ${isTopContender ? 'top-contender' : ''}`}>
-      <div className="rank-section">
-        <div className="rank-number">{contender.rank}</div>
-        <div className="movement-indicator">{getMovementIndicator()}</div>
+    <li className={`contender-row${isTopContender ? ' contender-row--top' : ''}`}>
+      <div className="contender-row__rank">
+        <span className="contender-row__number">{contender.rank}</span>
+        <Movement contender={contender} />
       </div>
 
-      <div className="contender-image">
-        <img
-          src={resolveImageSrc(contender.imageUrl, DEFAULT_WRESTLER_IMAGE)}
-          onError={(event) => applyImageFallback(event, DEFAULT_WRESTLER_IMAGE)}
-          alt={contender.wrestlerName}
-        />
+      <Avatar src={contender.imageUrl} name={contender.wrestlerName} size="md" ring={isTopContender ? 'pink' : 'none'} />
+
+      <div className="contender-row__who">
+        <h3 className="contender-row__wrestler">{contender.wrestlerName}</h3>
+        <p className="contender-row__player">{contender.playerName}</p>
+        {(isTopContender || contender.isOverridden) && (
+          <div className="contender-row__badges">
+            {isTopContender && <Badge tone="pink">{t('contenders.topContender')}</Badge>}
+            {contender.isOverridden && (
+              <Badge tone="warning">
+                {contender.overrideType === 'bump_to_top'
+                  ? t('contenders.overrides.bumpedToTop')
+                  : t('contenders.overrides.sentToBottom')}
+              </Badge>
+            )}
+            {contender.isOverridden && contender.organicRank && (
+              <span className="contender-row__organic">
+                {t('contenders.overrides.organicRank', { rank: contender.organicRank })}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="contender-info">
-        <h4 className="wrestler-name">{contender.wrestlerName}</h4>
-        <p className="player-name">{contender.playerName}</p>
-        <div className="contender-stats">
-          <div className="stat">
-            <span className="stat-label">{t('contenders.score')}</span>
-            <span className="stat-value">{contender.rankingScore.toFixed(1)}</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">{t('contenders.winRate')}</span>
-            <span className="stat-value">{contender.winPercentage.toFixed(1)}%</span>
-          </div>
-          <div className="stat">
-            <span className="stat-label">{t('contenders.streak')}</span>
-            <span className="stat-value">{getStreakDisplay()}</span>
-          </div>
+      <dl className="contender-row__stats">
+        <div>
+          <dt>{t('contenders.score')}</dt>
+          <dd>{contender.rankingScore.toFixed(1)}</dd>
         </div>
-      </div>
-
-      {contender.isOverridden && (
-        <div className={`override-badge ${contender.overrideType}`}>
-          <span className="override-label">
-            {contender.overrideType === 'bump_to_top'
-              ? t('contenders.overrides.bumpedToTop')
-              : t('contenders.overrides.sentToBottom')}
-          </span>
-          {contender.organicRank && (
-            <span className="organic-rank">
-              {t('contenders.overrides.organicRank', { rank: contender.organicRank })}
-            </span>
-          )}
+        <div>
+          <dt>{t('contenders.winRate')}</dt>
+          <dd>{contender.winPercentage.toFixed(1)}%</dd>
         </div>
-      )}
-
-      {isTopContender && (
-        <div className="top-contender-badge">
-          {t('contenders.topContender')}
+        <div>
+          <dt>{t('contenders.streak')}</dt>
+          <dd><Streak streak={contender.currentStreak} /></dd>
         </div>
-      )}
-    </div>
+      </dl>
+    </li>
   );
 }

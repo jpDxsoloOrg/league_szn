@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
-const { mockGetAllChampionships, mockGetAllPlayers, mockGetHistory, mockGetAllDivisions } = vi.hoisted(() => ({
+const { mockGetAllChampionships, mockGetAllPlayers, mockGetDirectory, mockGetHistory, mockGetAllDivisions } = vi.hoisted(() => ({
   mockGetAllChampionships: vi.fn(),
   mockGetAllPlayers: vi.fn(),
+  mockGetDirectory: vi.fn(),
   mockGetHistory: vi.fn(),
   mockGetAllDivisions: vi.fn(),
 }));
@@ -17,6 +19,7 @@ vi.mock('../../services/api', () => ({
   },
   playersApi: {
     getAll: mockGetAllPlayers,
+    getDirectory: mockGetDirectory,
   },
   divisionsApi: {
     getAll: mockGetAllDivisions,
@@ -88,6 +91,12 @@ const mockChampionships = [
   },
 ];
 
+// Includes a former champion who is missing from the public roster.
+const mockDirectory = [
+  ...mockPlayers.map(({ playerId, name, currentWrestler }) => ({ playerId, name, currentWrestler })),
+  { playerId: 'p9', name: 'Retired Legend', currentWrestler: null },
+];
+
 function renderChampionships() {
   return render(
     <BrowserRouter>
@@ -99,12 +108,14 @@ function renderChampionships() {
 describe('Championships', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetDirectory.mockResolvedValue(mockDirectory);
   });
 
   it('shows loading state while data is being fetched', () => {
     // Never resolve the promises to keep loading state
     mockGetAllChampionships.mockReturnValue(new Promise(() => {}));
     mockGetAllPlayers.mockReturnValue(new Promise(() => {}));
+    mockGetDirectory.mockReturnValue(new Promise(() => {}));
     mockGetAllDivisions.mockReturnValue(new Promise(() => {}));
 
     renderChampionships();
@@ -154,5 +165,55 @@ describe('Championships', () => {
     });
 
     expect(screen.getByText('Championships')).toBeInTheDocument();
+  });
+
+  it('names former champions from the directory in the history dialog', async () => {
+    const user = userEvent.setup();
+    mockGetAllChampionships.mockResolvedValue(mockChampionships);
+    mockGetAllPlayers.mockResolvedValue(mockPlayers);
+    mockGetAllDivisions.mockResolvedValue([]);
+    mockGetHistory.mockResolvedValue([
+      { championshipId: 'c1', champion: 'p1', wonDate: '2024-03-01', matchId: 'm2', defenses: 2 },
+      { championshipId: 'c1', champion: 'p9', wonDate: '2024-01-01', lostDate: '2024-03-01', matchId: 'm1', daysHeld: 60 },
+    ]);
+
+    renderChampionships();
+
+    await user.click(await screen.findByRole('button', { name: 'View History: World Heavyweight Championship' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'World Heavyweight Championship History' });
+    expect(await within(dialog).findByText('Retired Legend')).toBeInTheDocument();
+    expect(within(dialog).getByText('60 days')).toBeInTheDocument();
+    expect(mockGetHistory).toHaveBeenCalledWith('c1', expect.any(AbortSignal));
+  });
+
+  it('reports a failed history load inside the dialog', async () => {
+    const user = userEvent.setup();
+    mockGetAllChampionships.mockResolvedValue(mockChampionships);
+    mockGetAllPlayers.mockResolvedValue(mockPlayers);
+    mockGetAllDivisions.mockResolvedValue([]);
+    mockGetHistory.mockRejectedValue(new Error('Nope'));
+
+    renderChampionships();
+
+    await user.click(await screen.findByRole('button', { name: 'View History: World Heavyweight Championship' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByText('championships.historyLoadFailed')).toBeInTheDocument();
+  });
+
+  it('shows an empty state when a division has no titles', async () => {
+    const user = userEvent.setup();
+    mockGetAllChampionships.mockResolvedValue(mockChampionships);
+    mockGetAllPlayers.mockResolvedValue(mockPlayers);
+    mockGetAllDivisions.mockResolvedValue([
+      { divisionId: 'd1', name: 'Raw', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+    ]);
+
+    renderChampionships();
+
+    await user.click(await screen.findByRole('button', { name: 'Raw' }));
+
+    expect(screen.getByText('championships.noneInDivision')).toBeInTheDocument();
   });
 });
