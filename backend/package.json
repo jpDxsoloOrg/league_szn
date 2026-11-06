@@ -7,7 +7,7 @@
     "deploy": "serverless deploy",
     "validate-api-docs": "npx @redocly/cli lint docs/openapi.yaml",
     "embed-docs": "node scripts/embed-docs.js",
-    "remove": "serverless remove",
+    "remove": "echo 'npm run remove is disabled: the dev stage is production. Run npx serverless remove --stage <stage> by hand for a non-production stage.' >&2 && exit 1",
     "logs": "serverless logs",
     "offline": "SLS_RUNTIME=nodejs20.x serverless offline start --stage offline --noPrependStageInUrl --prefix dev",
     "create-tables": "ts-node scripts/create-tables.ts",
