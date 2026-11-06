@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { FormEvent } from 'react';
 
 import SearchableSelect from '../SearchableSelect';
 
@@ -126,7 +127,65 @@ describe('SearchableSelect', () => {
     expect(input).toBeInTheDocument();
 
     // Clear button visible when value is set
-    const clearBtn = screen.getByText('\u00d7');
-    expect(clearBtn).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clear selection' })).toBeInTheDocument();
+  });
+
+  it('exposes the combobox pattern and picks with the keyboard', async () => {
+    const user = userEvent.setup();
+    render(<SearchableSelect options={mockOptions} value="" onChange={mockOnChange} placeholder="Search..." />);
+
+    const input = screen.getByRole('combobox');
+    await user.tab();
+    expect(input).toHaveFocus();
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{ArrowDown}{ArrowDown}');
+    const active = screen.getByRole('option', { name: 'Stone Cold' });
+    expect(input).toHaveAttribute('aria-activedescendant', active.id);
+
+    await user.keyboard('{Enter}');
+    expect(mockOnChange).toHaveBeenCalledWith('p2');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('closes on Escape without selecting', async () => {
+    const user = userEvent.setup();
+    render(<SearchableSelect options={mockOptions} value="" onChange={mockOnChange} placeholder="Search..." />);
+
+    await user.tab();
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(mockOnChange).not.toHaveBeenCalled();
+  });
+
+  it('does not submit the enclosing form when Enter picks an option', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn((event: FormEvent) => event.preventDefault());
+    render(
+      <form onSubmit={onSubmit}>
+        <SearchableSelect options={mockOptions} value="" onChange={mockOnChange} placeholder="Search..." />
+      </form>
+    );
+
+    await user.tab();
+    await user.keyboard('{ArrowDown}{Enter}');
+
+    expect(mockOnChange).toHaveBeenCalledWith('p1');
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('reaches the clear button by tabbing out of the input', async () => {
+    const user = userEvent.setup();
+    render(<SearchableSelect options={mockOptions} value="p2" onChange={mockOnChange} placeholder="Search..." />);
+
+    await user.tab();
+    await user.tab();
+
+    const clearButton = screen.getByRole('button', { name: 'Clear selection' });
+    expect(clearButton).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(mockOnChange).toHaveBeenCalledWith('');
   });
 });

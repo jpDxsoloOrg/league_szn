@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 
 // --- Hoisted mocks ---
@@ -10,7 +11,7 @@ const { mockGetAllPlayers, mockCreateTournament } = vi.hoisted(() => ({
 
 vi.mock('../../../services/api', () => ({
   playersApi: {
-    getAll: mockGetAllPlayers,
+    getAllIncludingHidden: mockGetAllPlayers,
   },
   tournamentsApi: {
     create: mockCreateTournament,
@@ -18,7 +19,7 @@ vi.mock('../../../services/api', () => ({
 }));
 
 // Suppress CSS import
-vi.mock('../CreateTournament.css', () => ({}));
+vi.mock('react-i18next', async () => (await import('./i18nMock')).i18nMock);
 
 import CreateTournament from '../CreateTournament';
 
@@ -82,6 +83,28 @@ describe('CreateTournament', () => {
 
     // Submit button
     expect(screen.getByRole('button', { name: 'Create Tournament' })).toBeInTheDocument();
+  });
+
+  it('uses real toggle buttons and badges players with no wrestler', async () => {
+    const user = userEvent.setup();
+    mockGetAllPlayers.mockResolvedValue([
+      ...mockPlayers,
+      {
+        playerId: 'hidden-1', name: 'Newbie', currentWrestler: 'Needs Wrestler',
+        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      },
+    ]);
+    render(<CreateTournament />);
+
+    const button = await screen.findByRole('button', { name: /Newbie/ });
+    expect(within(button).getByText('Hidden')).toBeInTheDocument();
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+
+    button.focus();
+    await user.keyboard('{Enter}');
+
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Participants (Selected: 1)')).toBeInTheDocument();
   });
 
   it('validates minimum number of participants for single elimination', async () => {

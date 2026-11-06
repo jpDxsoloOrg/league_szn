@@ -1,11 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ArrowDown, ArrowUp, X } from 'lucide-react';
 import type { MatchDesignation, MatchCardEntry, LeagueEvent } from '../../types/event';
 import type { Player } from '../../types';
 import { matchesApi, playersApi, eventsApi } from '../../services/api';
 import { formatCalendarDate } from '../../utils/dateUtils';
 import SearchableSelect from './SearchableSelect';
 import EventCheckInRosterPanel from '../events/EventCheckInRosterPanel';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import EmptyState from '../ui/EmptyState';
+import PageHeader from '../ui/PageHeader';
+import Skeleton from '../ui/Skeleton';
+import AdminNotice from './AdminNotice';
+import './adminRoster.css';
 import './MatchCardBuilder.css';
 
 const designationOptions: { value: MatchDesignation; labelKey: string }[] = [
@@ -15,14 +23,6 @@ const designationOptions: { value: MatchDesignation; labelKey: string }[] = [
   { value: 'co-main', labelKey: 'events.designations.coMain' },
   { value: 'main-event', labelKey: 'events.designations.mainEvent' },
 ];
-
-const designationColors: Record<MatchDesignation, string> = {
-  'pre-show': '#6b7280',
-  'opener': '#60a5fa',
-  'midcard': '#a78bfa',
-  'co-main': '#f59e0b',
-  'main-event': '#d4af37',
-};
 
 interface AvailableMatch {
   matchId: string;
@@ -55,7 +55,7 @@ export default function MatchCardBuilder() {
       const [eventsResult, matchesResult, playersResult] = await Promise.allSettled([
         eventsApi.getAll(),
         matchesApi.getAll({ status: 'scheduled' }),
-        playersApi.getAll(),
+        playersApi.getAllIncludingHidden(),
       ]);
 
       if (eventsResult.status === 'fulfilled') {
@@ -198,208 +198,157 @@ export default function MatchCardBuilder() {
     } catch (err) {
       setMessage({
         type: 'error',
-        text: err instanceof Error ? err.message : 'Failed to save match card',
+        text: err instanceof Error ? err.message : t('adminRoster.matchCard.saveError', 'Failed to save match card'),
       });
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="match-card-builder">
-        <h3 className="builder-title">{t('events.admin.matchCardBuilder')}</h3>
-        <p className="builder-empty">{t('common.loading', 'Loading...')}</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="match-card-builder">
-      <h3 className="builder-title">{t('events.admin.matchCardBuilder')}</h3>
-      <p className="config-subtitle builder-hint">
-        {t('events.admin.matchCardBuilderHint', 'Reorder matches, change designations, or add unassigned matches to an event card. Matches can be assigned to events when scheduling them.')}
-      </p>
+    <div className="ar-page match-card-builder">
+      <PageHeader
+        title={t('events.admin.matchCardBuilder')}
+        subtitle={t('events.admin.matchCardBuilderHint', 'Reorder matches, change designations, or add unassigned matches to an event card. Matches can be assigned to events when scheduling them.')}
+      />
 
-      {loadError && (
-        <div className="save-error-msg builder-load-error">
-          {loadError}
-        </div>
-      )}
+      {loadError && <AdminNotice tone="error">{loadError}</AdminNotice>}
 
-      {/* Event Selector */}
-      <div className="builder-event-selector">
-        <label className="config-label" htmlFor="event-select">
-          {t('events.admin.selectEvent', 'Select Event')}
-        </label>
-        <SearchableSelect
-          id="event-select"
-          value={selectedEventId}
-          onChange={(value) => setSelectedEventId(value)}
-          placeholder={t('events.admin.chooseEvent', '-- Choose an event --')}
-          options={[
-            { value: '', label: t('events.admin.chooseEvent', '-- Choose an event --') },
-            ...events.map((ev) => ({
-              value: ev.eventId,
-              label: `${ev.name} (${formatCalendarDate(ev.date)})`,
-            })),
-          ]}
-        />
-      </div>
-
-      {/* Mobile-only event summary card (hidden on desktop via CSS) */}
-      {selectedEvent && (
-        <div className="builder-event-summary">
-          <div className="builder-event-summary-heading">
-            <span className="builder-event-summary-name">{selectedEvent.name}</span>
-            <span className={`builder-event-status builder-event-status--${selectedEvent.status}`}>
-              {t(`events.status.${selectedEvent.status}`)}
-            </span>
+      {loading ? <Skeleton variant="block" count={3} /> : (
+        <>
+          <div className="ar-field builder-event-selector">
+            <label className="ar-field__label" htmlFor="event-select">
+              {t('events.admin.selectEvent', 'Select Event')}
+            </label>
+            <SearchableSelect
+              id="event-select"
+              value={selectedEventId}
+              onChange={(value) => setSelectedEventId(value)}
+              placeholder={t('events.admin.chooseEvent', '-- Choose an event --')}
+              options={[
+                { value: '', label: t('events.admin.chooseEvent', '-- Choose an event --') },
+                ...events.map((ev) => ({
+                  value: ev.eventId,
+                  label: `${ev.name} (${formatCalendarDate(ev.date)})`,
+                })),
+              ]}
+            />
+            {selectedEvent && (
+              <p className="ar-hint">
+                {t(`events.status.${selectedEvent.status}`)}
+                {selectedEvent.venue ? ` · ${selectedEvent.venue}` : ''}
+              </p>
+            )}
           </div>
-          <div className="builder-event-summary-meta">
-            {formatCalendarDate(selectedEvent.date)}
-            {selectedEvent.venue ? ` · ${selectedEvent.venue}` : ''}
-          </div>
-        </div>
-      )}
 
-      {!selectedEventId ? (
-        <p className="builder-empty">{t('events.admin.selectEventFirst', 'Select an event above to manage its match card.')}</p>
-      ) : (
-        <div className="builder-layout">
-          <div className="builder-main">
-          {cardMatches.length === 0 ? (
-            <p className="builder-empty">{t('events.admin.noMatchesOnCard')}</p>
+          {!selectedEventId ? (
+            <EmptyState title={t('events.admin.selectEventFirst', 'Select an event above to manage its match card.')} />
           ) : (
-            <div className="builder-list">
-              {cardMatches.map((match, index) => (
-                <div
-                  key={match.matchId}
-                  className={`builder-match-item ${match.designation === 'main-event' ? 'main-event-item' : ''}`}
-                >
-                  <div className="builder-match-position">#{match.position}</div>
-
-                  <div className="builder-match-content">
-                    <div className="builder-match-label">
-                      {match.label}
-                      {match.isChampionship && (
-                        <span className="builder-championship-tag">
-                          {t('events.admin.championshipMatch')}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="builder-match-controls">
-                      <select
-                        className="designation-select"
-                        value={match.designation}
-                        onChange={(e) =>
-                          handleDesignationChange(index, e.target.value as MatchDesignation)
-                        }
+            <div className="builder-layout">
+              <div className="ar-page">
+                {cardMatches.length === 0 ? (
+                  <EmptyState title={t('events.admin.noMatchesOnCard')} />
+                ) : (
+                  <ol className="ar-list">
+                    {cardMatches.map((match, index) => (
+                      <li
+                        key={match.matchId}
+                        className={`ar-list__row builder-match-item builder-match-item--${match.designation}`}
                       >
-                        {designationOptions.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {t(opt.labelKey)}
-                          </option>
-                        ))}
-                      </select>
+                        <span className="builder-match-position">#{match.position}</span>
 
-                      <span
-                        className="designation-indicator"
-                        style={{ backgroundColor: designationColors[match.designation] }}
-                      >
-                        {t(
-                          designationOptions.find((d) => d.value === match.designation)
-                            ?.labelKey || ''
-                        )}
-                      </span>
-                    </div>
-                  </div>
+                        <div className="builder-match-content">
+                          <span className="ar-strong">{match.label}</span>
+                          {match.isChampionship && (
+                            <Badge tone="warning">{t('events.admin.championshipMatch')}</Badge>
+                          )}
+                        </div>
 
-                  <div className="builder-match-actions">
-                    <div className="builder-reorder-controls">
-                      <button
-                        className="builder-action-btn"
-                        onClick={() => handleMoveUp(index)}
-                        disabled={index === 0}
-                        title={t('events.admin.moveUp')}
-                      >
-                        &#9650;
-                      </button>
-                      <button
-                        className="builder-action-btn"
-                        onClick={() => handleMoveDown(index)}
-                        disabled={index === cardMatches.length - 1}
-                        title={t('events.admin.moveDown')}
-                      >
-                        &#9660;
-                      </button>
-                    </div>
-                    <button
-                      className="builder-action-btn remove-btn"
-                      onClick={() => handleRemove(index)}
-                      title={t('events.admin.removeMatch')}
+                        <select
+                          className="ar-input designation-select"
+                          aria-label={`${t('adminRoster.matchCard.designationFor', 'Card position for')} ${match.label}`}
+                          value={match.designation}
+                          onChange={(e) => handleDesignationChange(index, e.target.value as MatchDesignation)}
+                        >
+                          {designationOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {t(opt.labelKey)}
+                            </option>
+                          ))}
+                        </select>
+
+                        <div className="ar-row-actions builder-match-actions">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMoveUp(index)}
+                            disabled={index === 0}
+                            title={t('events.admin.moveUp')}
+                            aria-label={t('events.admin.moveUp')}
+                            icon={<ArrowUp aria-hidden="true" size={16} />}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMoveDown(index)}
+                            disabled={index === cardMatches.length - 1}
+                            title={t('events.admin.moveDown')}
+                            aria-label={t('events.admin.moveDown')}
+                            icon={<ArrowDown aria-hidden="true" size={16} />}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemove(index)}
+                            title={t('events.admin.removeMatch')}
+                            aria-label={t('events.admin.removeMatch')}
+                            icon={<X aria-hidden="true" size={16} />}
+                          />
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+
+                {availableToAdd.length > 0 && (
+                  <div className="builder-add-section">
+                    <select
+                      className="ar-input add-match-select"
+                      aria-label={t('events.admin.selectMatch')}
+                      value={selectedMatchToAdd}
+                      onChange={(e) => setSelectedMatchToAdd(e.target.value)}
                     >
-                      &#10005;
-                    </button>
+                      <option value="">{t('events.admin.selectMatch')}</option>
+                      {availableToAdd.map((m) => (
+                        <option key={m.matchId} value={m.matchId}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                    <Button variant="secondary" onClick={handleAddMatch} disabled={!selectedMatchToAdd}>
+                      {t('events.admin.addMatch')}
+                    </Button>
                   </div>
+                )}
+
+                {message && (
+                  <AdminNotice tone={message.type === 'success' ? 'success' : 'error'}>{message.text}</AdminNotice>
+                )}
+
+                <div>
+                  <Button onClick={handleSaveMatchCard} loading={saving}>
+                    {saving
+                      ? t('common.saving', 'Saving...')
+                      : t('events.admin.saveMatchCard', 'Save Match Card')}
+                  </Button>
                 </div>
-              ))}
+              </div>
+              <aside className="builder-sidebar">
+                <EventCheckInRosterPanel eventId={selectedEventId} compact />
+              </aside>
             </div>
           )}
-
-          {/* Add Match */}
-          {availableToAdd.length > 0 && (
-            <div className="builder-add-section">
-              <select
-                className="add-match-select"
-                value={selectedMatchToAdd}
-                onChange={(e) => setSelectedMatchToAdd(e.target.value)}
-              >
-                <option value="">{t('events.admin.selectMatch')}</option>
-                {availableToAdd.map((m) => (
-                  <option key={m.matchId} value={m.matchId}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="add-match-btn"
-                onClick={handleAddMatch}
-                disabled={!selectedMatchToAdd}
-              >
-                {t('events.admin.addMatch')}
-              </button>
-            </div>
-          )}
-
-          {/* Save Button */}
-          <div className="config-actions builder-save-bar">
-            <button
-              className="btn-save"
-              onClick={handleSaveMatchCard}
-              disabled={saving}
-            >
-              {saving
-                ? t('common.saving', 'Saving...')
-                : t('events.admin.saveMatchCard', 'Save Match Card')}
-            </button>
-          </div>
-
-          {message && (
-            <div
-              className={`builder-save-message ${
-                message.type === 'success' ? 'save-success-msg' : 'save-error-msg'
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
-          </div>
-          <aside className="builder-sidebar">
-            <EventCheckInRosterPanel eventId={selectedEventId} compact />
-          </aside>
-        </div>
+        </>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { wrestlersApi } from '../../services/api';
+import { Plus, Upload } from 'lucide-react';
+import { playersApi, wrestlersApi } from '../../services/api';
 import {
   OVERALL_CAP_MAX,
   OVERALL_CAP_MIN,
@@ -9,7 +10,17 @@ import {
   type WrestlerImportResult,
   type WrestlerPromotion,
 } from '../../types';
-import Skeleton from '../ui/Skeleton';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import DataTable from '../ui/DataTable';
+import type { DataTableColumn } from '../ui/DataTable';
+import EmptyState from '../ui/EmptyState';
+import Modal from '../ui/Modal';
+import PageHeader from '../ui/PageHeader';
+import Select from '../ui/Select';
+import AdminNotice from './AdminNotice';
+import ConfirmModal from './ConfirmModal';
+import './adminRoster.css';
 import './ManageWrestlers.css';
 
 type ParsedRow = {
@@ -30,6 +41,10 @@ const DEFAULT_FORM_DATA = {
 };
 
 const PAGE_SIZE = 25;
+
+const FORM_ID = 'wrestler-form';
+
+type PendingAction = { kind: 'delete' | 'release'; wrestler: Wrestler };
 
 function isWrestlerPromotion(value: string): value is WrestlerPromotion {
   return (WRESTLER_PROMOTIONS as readonly string[]).includes(value);
@@ -250,13 +265,15 @@ function parseImportText(text: string, filename: string): ParseOutcome {
 export default function ManageWrestlers() {
   const { t } = useTranslation();
   const [wrestlers, setWrestlers] = useState<Wrestler[]>([]);
+  const [playerNames, setPlayerNames] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingWrestler, setEditingWrestler] = useState<Wrestler | null>(null);
-  const [deleting, setDeleting] = useState<string | null>(null);
-  const [releasing, setReleasing] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
   const [resettingAssignments, setResettingAssignments] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -282,6 +299,20 @@ export default function ManageWrestlers() {
 
   useEffect(() => {
     loadWrestlers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
+  }, []);
+
+  useEffect(() => {
+    // Names are a nicety on this page, so a failed lookup must not block it.
+    const loadPlayerNames = async () => {
+      try {
+        const directory = await playersApi.getDirectory();
+        setPlayerNames(new Map(directory.map((entry) => [entry.playerId, entry.name])));
+      } catch (_err) {
+        setPlayerNames(new Map());
+      }
+    };
+    loadPlayerNames();
   }, []);
 
   const loadWrestlers = async () => {
@@ -290,7 +321,7 @@ export default function ManageWrestlers() {
       const data = await wrestlersApi.getAll();
       setWrestlers(data);
     } catch (_err) {
-      setError('Failed to load wrestlers');
+      setError(t('adminRoster.wrestlers.loadError', 'Failed to load wrestlers'));
     } finally {
       setLoading(false);
     }
@@ -298,18 +329,20 @@ export default function ManageWrestlers() {
 
   const resetForm = () => {
     setFormData(DEFAULT_FORM_DATA);
+    setFormError(null);
     setShowAddForm(false);
     setEditingWrestler(null);
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     setError(null);
     setSuccess(null);
 
     const trimmedName = formData.name.trim();
     if (trimmedName.length === 0) {
-      setError('Name is required');
+      setFormError(t('adminRoster.wrestlers.nameRequired', 'Name is required'));
       return;
     }
     if (
@@ -317,7 +350,11 @@ export default function ManageWrestlers() {
       formData.overallCap < OVERALL_CAP_MIN ||
       formData.overallCap > OVERALL_CAP_MAX
     ) {
-      setError(`Overall Cap must be an integer between ${OVERALL_CAP_MIN} and ${OVERALL_CAP_MAX}`);
+      setFormError(t('adminRoster.wrestlers.capRange', {
+        defaultValue: 'Overall Cap must be an integer between {{min}} and {{max}}',
+        min: OVERALL_CAP_MIN,
+        max: OVERALL_CAP_MAX,
+      }));
       return;
     }
 
@@ -328,20 +365,20 @@ export default function ManageWrestlers() {
           name: trimmedName,
           overallCap: formData.overallCap,
         });
-        setSuccess('Wrestler updated successfully!');
+        setSuccess(t('adminRoster.wrestlers.updated', 'Wrestler updated successfully!'));
       } else {
         await wrestlersApi.create({
           promotion: formData.promotion,
           name: trimmedName,
           overallCap: formData.overallCap,
         });
-        setSuccess('Wrestler created successfully!');
+        setSuccess(t('adminRoster.wrestlers.created', 'Wrestler created successfully!'));
       }
 
       resetForm();
       await loadWrestlers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save wrestler');
+      setFormError(err instanceof Error ? err.message : t('adminRoster.wrestlers.saveError', 'Failed to save wrestler'));
     }
   };
 
@@ -355,47 +392,30 @@ export default function ManageWrestlers() {
     setShowAddForm(true);
   };
 
-  const handleDelete = async (wrestlerId: string) => {
-    if (!confirm('Are you sure you want to delete this wrestler?')) {
-      return;
-    }
-
-    setDeleting(wrestlerId);
+  const handleConfirmAction = async () => {
+    if (!pendingAction) return;
+    const { kind, wrestler } = pendingAction;
+    setActionBusy(true);
     setError(null);
     setSuccess(null);
 
     try {
-      await wrestlersApi.delete(wrestlerId);
-      setSuccess('Wrestler deleted successfully!');
+      if (kind === 'delete') {
+        await wrestlersApi.delete(wrestler.wrestlerId);
+        setSuccess(t('adminRoster.wrestlers.deleted', 'Wrestler deleted successfully!'));
+      } else {
+        await wrestlersApi.update(wrestler.wrestlerId, { isInUse: false });
+        setSuccess(t('adminRoster.wrestlers.released', 'Wrestler released successfully!'));
+      }
       await loadWrestlers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete wrestler');
+      const fallback = kind === 'delete'
+        ? t('adminRoster.wrestlers.deleteError', 'Failed to delete wrestler')
+        : t('adminRoster.wrestlers.releaseError', 'Failed to release wrestler');
+      setError(err instanceof Error ? err.message : fallback);
     } finally {
-      setDeleting(null);
-    }
-  };
-
-  const handleRelease = async (wrestler: Wrestler) => {
-    if (
-      !confirm(
-        `Release "${wrestler.name}"? They will be marked as available. Note: this does not currently un-assign them from a player (P1 feature).`,
-      )
-    ) {
-      return;
-    }
-
-    setReleasing(wrestler.wrestlerId);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      await wrestlersApi.update(wrestler.wrestlerId, { isInUse: false });
-      setSuccess('Wrestler released successfully!');
-      await loadWrestlers();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to release wrestler');
-    } finally {
-      setReleasing(null);
+      setActionBusy(false);
+      setPendingAction(null);
     }
   };
 
@@ -467,7 +487,7 @@ export default function ManageWrestlers() {
       setImportResult(result);
       await loadWrestlers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to import wrestlers');
+      setError(err instanceof Error ? err.message : t('adminRoster.wrestlers.importError', 'Failed to import wrestlers'));
     } finally {
       setImporting(false);
     }
@@ -494,373 +514,334 @@ export default function ManageWrestlers() {
     safePage * PAGE_SIZE,
   );
 
-  if (loading) {
-    return <Skeleton variant="block" count={4} />;
-  }
+  const columns: DataTableColumn<Wrestler>[] = [
+    {
+      key: 'name',
+      header: t('adminRoster.wrestlers.name', 'Name'),
+      render: (wrestler) => <span className="ar-strong">{wrestler.name}</span>,
+    },
+    { key: 'promotion', header: t('adminRoster.wrestlers.promotion', 'Promotion'), render: (wrestler) => wrestler.promotion },
+    {
+      key: 'cap',
+      header: t('adminRoster.wrestlers.overallCap', 'Overall Cap'),
+      align: 'end',
+      render: (wrestler) => <span className="ar-numeric">{wrestler.overallCap}</span>,
+    },
+    {
+      key: 'status',
+      header: t('adminRoster.wrestlers.status', 'Status'),
+      render: (wrestler) => (
+        <Badge tone={wrestler.isInUse ? 'warning' : 'win'}>
+          {wrestler.isInUse
+            ? t('adminRoster.wrestlers.inUse', 'In Use')
+            : t('adminRoster.wrestlers.available', 'Available')}
+        </Badge>
+      ),
+    },
+    {
+      key: 'assigned',
+      header: t('adminRoster.wrestlers.assignedTo', 'Assigned To'),
+      render: (wrestler) => {
+        if (!wrestler.assignedPlayerId) return '—';
+        return playerNames.get(wrestler.assignedPlayerId) ?? t('common.unknown', 'Unknown');
+      },
+    },
+    {
+      key: 'actions',
+      header: t('common.actions', 'Actions'),
+      align: 'end',
+      render: (wrestler) => (
+        <div className="ar-row-actions">
+          <Button variant="secondary" size="sm" onClick={() => handleEdit(wrestler)}>{t('common.edit', 'Edit')}</Button>
+          {wrestler.isInUse && (
+            <Button
+              variant="ghost"
+              size="sm"
+              title={t('adminRoster.wrestlers.releaseHint', 'Mark as available. This does not un-assign them from a player.')}
+              onClick={() => setPendingAction({ kind: 'release', wrestler })}
+            >
+              {t('adminRoster.wrestlers.release', 'Release')}
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={wrestler.isInUse}
+            title={wrestler.isInUse
+              ? t('adminRoster.wrestlers.deleteBlocked', 'Cannot delete a wrestler currently in use. Release first.')
+              : t('adminRoster.wrestlers.deleteHint', 'Delete wrestler')}
+            onClick={() => setPendingAction({ kind: 'delete', wrestler })}
+          >
+            {t('common.delete', 'Delete')}
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  const previewColumns: DataTableColumn<ParsedRow>[] = [
+    { key: 'promotion', header: t('adminRoster.wrestlers.promotion', 'Promotion'), render: (row) => row.promotion },
+    { key: 'name', header: t('adminRoster.wrestlers.name', 'Name'), render: (row) => row.name },
+    { key: 'cap', header: t('adminRoster.wrestlers.overallCap', 'Overall Cap'), align: 'end', render: (row) => row.overallCap },
+  ];
+
+  const renderImportErrors = (errors: Array<{ row: number; reason: string }>) => (
+    <ul className="ar-notice__list">
+      {errors.slice(0, 10).map((err, idx) => (
+        <li key={idx}>
+          {t('adminRoster.wrestlers.importRow', { defaultValue: 'Row {{row}}', row: err.row })}: {err.reason}
+        </li>
+      ))}
+      {errors.length > 10 && (
+        <li>{t('adminRoster.wrestlers.importMoreErrors', { defaultValue: '… and {{count}} more errors', count: errors.length - 10 })}</li>
+      )}
+    </ul>
+  );
+
+  const importCount = importPreview?.length ?? 0;
 
   return (
-    <div className="manage-wrestlers">
-      <div className="wrestlers-header">
-        <h2>Manage Wrestlers</h2>
-        <div className="wrestlers-header-actions">
-          {!showAddForm && (
-            <button className="am-fab" onClick={() => setShowAddForm(true)}>
-              Create Wrestler
-            </button>
-          )}
-          <button className="wrestlers-import-btn" onClick={() => setShowImport(true)}>
-            Import from file
-          </button>
-          <button
-            className="wrestlers-reset-assignments-btn"
-            onClick={handleResetAssignments}
-            disabled={resettingAssignments}
-            title={t('admin.manageWrestlers.resetTitle')}
-          >
-            {resettingAssignments
-              ? t('admin.manageWrestlers.resetting')
-              : t('admin.manageWrestlers.resetAll')}
-          </button>
-        </div>
-      </div>
+    <div className="ar-page manage-wrestlers">
+      <PageHeader
+        title={t('adminRoster.wrestlers.title', 'Manage Wrestlers')}
+        actions={(
+          <>
+            <Button icon={<Plus aria-hidden="true" size={18} />} onClick={() => setShowAddForm(true)}>
+              {t('adminRoster.wrestlers.create', 'Create Wrestler')}
+            </Button>
+            <Button variant="secondary" icon={<Upload aria-hidden="true" size={18} />} onClick={() => setShowImport(true)}>
+              {t('adminRoster.wrestlers.importOpen', 'Import from file')}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={handleResetAssignments}
+              disabled={resettingAssignments}
+              title={t('admin.manageWrestlers.resetTitle')}
+            >
+              {resettingAssignments
+                ? t('admin.manageWrestlers.resetting')
+                : t('admin.manageWrestlers.resetAll')}
+            </Button>
+          </>
+        )}
+      />
 
-      {error && <div className="error-message">{error}</div>}
-      {success && <div className="success-message">{success}</div>}
+      {error && <AdminNotice tone="error">{error}</AdminNotice>}
+      {success && <AdminNotice tone="success">{success}</AdminNotice>}
 
-      {showAddForm && (
-        <div className="wrestler-form-container am-sheet">
-          <h3>{editingWrestler ? 'Edit Wrestler' : 'Create New Wrestler'}</h3>
-          <form onSubmit={handleSubmit} className="wrestler-form am-form">
-            <div className="form-group">
-              <label htmlFor="promotion">Promotion</label>
-              <select
-                id="promotion"
-                value={formData.promotion}
-                onChange={(e) =>
-                  setFormData({ ...formData, promotion: e.target.value as WrestlerPromotion })
-                }
-                required
-              >
-                {WRESTLER_PROMOTIONS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="name">Name</label>
-              <input
-                type="text"
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                maxLength={128}
-                placeholder="e.g., Cody Rhodes"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="overallCap">
-                Overall Cap ({OVERALL_CAP_MIN}–{OVERALL_CAP_MAX})
-              </label>
-              <input
-                type="number"
-                id="overallCap"
-                value={formData.overallCap}
-                onChange={(e) =>
-                  setFormData({ ...formData, overallCap: Number(e.target.value) })
-                }
-                min={OVERALL_CAP_MIN}
-                max={OVERALL_CAP_MAX}
-                step={1}
-                required
-              />
-            </div>
-
-            <div className="form-actions am-actionbar">
-              <button type="submit">
-                {editingWrestler ? 'Update Wrestler' : 'Create Wrestler'}
-              </button>
-              <button type="button" onClick={handleCancel} className="cancel-btn">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="wrestlers-filters">
-        <div className="form-group am-filter-row">
-          <label htmlFor="filter-promotion">Filter by Promotion</label>
-          <select
-            id="filter-promotion"
+      <div className="ar-toolbar">
+        <h2 className="ar-section-title">
+          {t('adminRoster.wrestlers.all', 'All Wrestlers')} ({filteredWrestlers.length}
+          {filteredWrestlers.length !== wrestlers.length ? ` ${t('adminRoster.of', 'of')} ${wrestlers.length}` : ''})
+        </h2>
+        <div className="ar-toolbar__filters wrestlers-filters">
+          <Select
+            label={t('adminRoster.wrestlers.filterPromotion', 'Filter by Promotion')}
             value={filter.promotion}
-            onChange={(e) => {
-              setFilter({
-                ...filter,
-                promotion: e.target.value === '' ? '' : (e.target.value as WrestlerPromotion),
-              });
+            onValueChange={(value) => {
+              setFilter({ ...filter, promotion: value === '' ? '' : (value as WrestlerPromotion) });
               setPage(1);
             }}
-          >
-            <option value="">All promotions</option>
-            {WRESTLER_PROMOTIONS.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-        </div>
-        <label className="wrestlers-filter-checkbox am-toggle-row">
-          <input
-            type="checkbox"
-            className="am-toggle"
-            checked={filter.onlyAvailable}
-            onChange={(e) => {
-              setFilter({ ...filter, onlyAvailable: e.target.checked });
-              setPage(1);
-            }}
+            options={[
+              { value: '', label: t('adminRoster.wrestlers.allPromotions', 'All promotions') },
+              ...WRESTLER_PROMOTIONS.map((promotion) => ({ value: promotion, label: promotion })),
+            ]}
           />
-          Show only available
-        </label>
+          <label className="ar-check">
+            <input
+              type="checkbox"
+              checked={filter.onlyAvailable}
+              onChange={(e) => {
+                setFilter({ ...filter, onlyAvailable: e.target.checked });
+                setPage(1);
+              }}
+            />
+            {t('adminRoster.wrestlers.onlyAvailable', 'Show only available')}
+          </label>
+        </div>
       </div>
 
-      <div className="wrestlers-list">
-        <h3>
-          All Wrestlers ({filteredWrestlers.length}
-          {filteredWrestlers.length !== wrestlers.length ? ` of ${wrestlers.length}` : ''})
-        </h3>
-        {filteredWrestlers.length === 0 ? (
-          <p>No wrestlers match the current filters.</p>
-        ) : (
-          <div className="wrestlers-table-wrapper">
-            <table className="wrestlers-table am-card-table">
-              <thead>
-                <tr>
-                  <th>Promotion</th>
-                  <th>Name</th>
-                  <th>Overall Cap</th>
-                  <th>In Use</th>
-                  <th>Assigned To</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pagedWrestlers.map((wrestler) => (
-                  <tr key={wrestler.wrestlerId} className="am-list-row am-list-row-nomedia">
-                    <td className="am-row-sub">{wrestler.promotion}</td>
-                    <td className="am-row-title">{wrestler.name}</td>
-                    <td className="am-row-badge wrestler-cap-cell">{wrestler.overallCap}</td>
-                    <td className="am-row-badge2">
-                      <span
-                        className={
-                          wrestler.isInUse
-                            ? 'wrestler-status in-use'
-                            : 'wrestler-status available'
-                        }
-                      >
-                        {wrestler.isInUse ? 'In Use' : 'Available'}
-                      </span>
-                    </td>
-                    <td className="am-row-extra">{wrestler.assignedPlayerId ?? '—'}</td>
-                    <td className="am-row-actions am-row-actions-bottom">
-                      <div className="wrestler-actions">
-                        <button
-                          onClick={() => handleEdit(wrestler)}
-                          className="wrestler-edit-btn"
-                        >
-                          Edit
-                        </button>
-                        {wrestler.isInUse && (
-                          <button
-                            onClick={() => handleRelease(wrestler)}
-                            className="wrestler-release-btn"
-                            disabled={releasing === wrestler.wrestlerId}
-                            title="Mark as available (does not currently un-assign from a player; P1 feature)"
-                          >
-                            {releasing === wrestler.wrestlerId ? 'Releasing...' : 'Release'}
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDelete(wrestler.wrestlerId)}
-                          className="wrestler-delete-btn"
-                          disabled={
-                            deleting === wrestler.wrestlerId || wrestler.isInUse
-                          }
-                          title={
-                            wrestler.isInUse
-                              ? 'Cannot delete a wrestler currently in use. Release first.'
-                              : 'Delete wrestler'
-                          }
-                        >
-                          {deleting === wrestler.wrestlerId ? 'Deleting...' : 'Delete'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {totalPages > 1 && (
-          <div className="wrestlers-pager">
-            <button
-              type="button"
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              disabled={safePage <= 1}
-            >
-              {t('admin.manageWrestlers.pagePrev')}
-            </button>
-            <span className="wrestlers-pager-status">
-              {t('admin.manageWrestlers.pageStatus', {
-                page: safePage,
-                total: totalPages,
-              })}
-            </span>
-            <button
-              type="button"
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-              disabled={safePage >= totalPages}
-            >
-              {t('admin.manageWrestlers.pageNext')}
-            </button>
-          </div>
-        )}
-      </div>
+      <DataTable
+        className="ar-table"
+        caption={t('adminRoster.wrestlers.all', 'All Wrestlers')}
+        density="dense"
+        columns={columns}
+        rows={pagedWrestlers}
+        rowKey={(wrestler) => wrestler.wrestlerId}
+        loading={loading}
+        empty={<EmptyState title={t('adminRoster.wrestlers.noMatches', 'No wrestlers match the current filters.')} />}
+      />
 
-      {showImport && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) handleImportClose();
-          }}
-        >
-          <div className="modal-content">
-            <h3>Import Wrestlers</h3>
-            <p className="import-help">
-              Upload a <code>.json</code> or <code>.csv</code> file. CSV must have a header row
-              with columns <code>promotion,name,overallCap</code>. JSON may be either a bare
-              array or an object with a <code>wrestlers</code> array.
-            </p>
-
-            <div className="form-group">
-              <label htmlFor="import-file">File</label>
-              <input
-                type="file"
-                id="import-file"
-                accept=".json,.csv,application/json,text/csv"
-                onChange={handleImportFileChange}
-              />
-            </div>
-
-            {importParseErrors.length > 0 && (
-              <div className="error-message">
-                <strong>Parse errors:</strong>
-                <ul className="import-error-list">
-                  {importParseErrors.slice(0, 10).map((err, idx) => (
-                    <li key={idx}>
-                      Row {err.row}: {err.reason}
-                    </li>
-                  ))}
-                  {importParseErrors.length > 10 && (
-                    <li>… and {importParseErrors.length - 10} more errors</li>
-                  )}
-                </ul>
-              </div>
-            )}
-
-            {importPreview && importPreview.length > 0 && (
-              <div className="import-preview">
-                <h4>
-                  Preview ({importPreview.length} row{importPreview.length === 1 ? '' : 's'}{' '}
-                  valid)
-                </h4>
-                <table className="wrestlers-table">
-                  <thead>
-                    <tr>
-                      <th>Promotion</th>
-                      <th>Name</th>
-                      <th>Overall Cap</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {importPreview.slice(0, 5).map((row, idx) => (
-                      <tr key={idx}>
-                        <td>{row.promotion}</td>
-                        <td>{row.name}</td>
-                        <td>{row.overallCap}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {importPreview.length > 5 && (
-                  <p className="import-more-note">
-                    … and {importPreview.length - 5} more rows.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {importResult && (
-              <div className="import-result">
-                <h4>Import result</h4>
-                <p>
-                  <strong>Created:</strong> {importResult.created}
-                </p>
-                <p>
-                  <strong>Skipped:</strong> {importResult.skipped}
-                </p>
-                {importResult.errors.length > 0 && (
-                  <div>
-                    <strong>Errors ({importResult.errors.length}):</strong>
-                    <ul className="import-error-list">
-                      {importResult.errors.slice(0, 10).map((err, idx) => (
-                        <li key={idx}>
-                          Row {err.row}: {err.reason}
-                        </li>
-                      ))}
-                      {importResult.errors.length > 10 && (
-                        <li>… and {importResult.errors.length - 10} more errors</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="form-actions">
-              <button
-                type="button"
-                onClick={handleImportSubmit}
-                disabled={
-                  importing ||
-                  !importPreview ||
-                  importPreview.length === 0 ||
-                  importResult !== null
-                }
-              >
-                {importing
-                  ? 'Importing...'
-                  : `Import ${importPreview?.length ?? 0} wrestler${
-                      (importPreview?.length ?? 0) === 1 ? '' : 's'
-                    }`}
-              </button>
-              <button type="button" onClick={handleImportClose} className="cancel-btn">
-                {importResult ? 'Close' : 'Cancel'}
-              </button>
-            </div>
-            {importFile && (
-              <p className="import-filename">
-                Selected file: <code>{importFile.name}</code>
-              </p>
-            )}
-          </div>
+      {totalPages > 1 && (
+        <div className="ar-pager">
+          <Button variant="secondary" size="sm" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={safePage <= 1}>
+            {t('admin.manageWrestlers.pagePrev')}
+          </Button>
+          <span>{t('admin.manageWrestlers.pageStatus', { page: safePage, total: totalPages })}</span>
+          <Button variant="secondary" size="sm" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={safePage >= totalPages}>
+            {t('admin.manageWrestlers.pageNext')}
+          </Button>
         </div>
       )}
+
+      <Modal
+        open={showAddForm}
+        onClose={handleCancel}
+        title={editingWrestler
+          ? t('adminRoster.wrestlers.editTitle', 'Edit Wrestler')
+          : t('adminRoster.wrestlers.createTitle', 'Create New Wrestler')}
+        footer={(
+          <>
+            <Button variant="ghost" onClick={handleCancel}>{t('common.cancel', 'Cancel')}</Button>
+            <Button type="submit" form={FORM_ID}>
+              {editingWrestler
+                ? t('adminRoster.wrestlers.update', 'Update Wrestler')
+                : t('adminRoster.wrestlers.create', 'Create Wrestler')}
+            </Button>
+          </>
+        )}
+      >
+        <form id={FORM_ID} onSubmit={handleSubmit} className="ar-form">
+          {formError && <AdminNotice tone="error">{formError}</AdminNotice>}
+          <div className="ar-field">
+            <label className="ar-field__label" htmlFor="promotion">{t('adminRoster.wrestlers.promotion', 'Promotion')}</label>
+            <select
+              className="ar-input"
+              id="promotion"
+              value={formData.promotion}
+              onChange={(e) => setFormData({ ...formData, promotion: e.target.value as WrestlerPromotion })}
+              required
+            >
+              {WRESTLER_PROMOTIONS.map((promotion) => (
+                <option key={promotion} value={promotion}>{promotion}</option>
+              ))}
+            </select>
+          </div>
+          <div className="ar-field">
+            <label className="ar-field__label" htmlFor="wrestler-name">{t('adminRoster.wrestlers.name', 'Name')}</label>
+            <input
+              className="ar-input"
+              type="text"
+              id="wrestler-name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              maxLength={128}
+              placeholder={t('adminRoster.wrestlers.namePlaceholder', 'e.g., Cody Rhodes')}
+            />
+          </div>
+          <div className="ar-field">
+            <label className="ar-field__label" htmlFor="overallCap">
+              {t('adminRoster.wrestlers.overallCap', 'Overall Cap')} ({OVERALL_CAP_MIN}–{OVERALL_CAP_MAX})
+            </label>
+            <input
+              className="ar-input"
+              type="number"
+              id="overallCap"
+              value={formData.overallCap}
+              onChange={(e) => setFormData({ ...formData, overallCap: Number(e.target.value) })}
+              min={OVERALL_CAP_MIN}
+              max={OVERALL_CAP_MAX}
+              step={1}
+              required
+            />
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={showImport}
+        onClose={handleImportClose}
+        size="lg"
+        title={t('adminRoster.wrestlers.importTitle', 'Import Wrestlers')}
+        footer={(
+          <>
+            <Button variant="ghost" onClick={handleImportClose}>
+              {importResult ? t('common.close', 'Close') : t('common.cancel', 'Cancel')}
+            </Button>
+            <Button
+              onClick={handleImportSubmit}
+              loading={importing}
+              disabled={!importPreview || importPreview.length === 0 || importResult !== null}
+            >
+              {t('adminRoster.wrestlers.importSubmit', { defaultValue: 'Import {{count}} wrestlers', count: importCount })}
+            </Button>
+          </>
+        )}
+      >
+        <div className="ar-form">
+          <p className="ar-hint">
+            {t('adminRoster.wrestlers.importHelp', 'Upload a .json or .csv file. CSV needs a header row with promotion, name, overallCap. JSON may be an array or an object with a wrestlers array.')}
+          </p>
+
+          <div className="ar-field">
+            <label className="ar-field__label" htmlFor="import-file">{t('adminRoster.wrestlers.importFile', 'File')}</label>
+            <input
+              className="ar-input"
+              type="file"
+              id="import-file"
+              accept=".json,.csv,application/json,text/csv"
+              onChange={handleImportFileChange}
+            />
+            {importFile && <p className="ar-hint">{importFile.name}</p>}
+          </div>
+
+          {importParseErrors.length > 0 && (
+            <AdminNotice tone="error">
+              <strong>{t('adminRoster.wrestlers.parseErrors', 'Parse errors')}</strong>
+              {renderImportErrors(importParseErrors)}
+            </AdminNotice>
+          )}
+
+          {importPreview && importPreview.length > 0 && (
+            <div className="ar-form">
+              <h3 className="ar-section-title">
+                {t('adminRoster.wrestlers.importPreview', { defaultValue: 'Preview ({{count}} valid rows)', count: importPreview.length })}
+              </h3>
+              <DataTable
+                caption={t('adminRoster.wrestlers.importTitle', 'Import Wrestlers')}
+                density="dense"
+                columns={previewColumns}
+                rows={importPreview.slice(0, 5)}
+                rowKey={(row) => String(importPreview.indexOf(row))}
+              />
+              {importPreview.length > 5 && (
+                <p className="ar-hint">
+                  {t('adminRoster.wrestlers.importMoreRows', { defaultValue: '… and {{count}} more rows.', count: importPreview.length - 5 })}
+                </p>
+              )}
+            </div>
+          )}
+
+          {importResult && (
+            <AdminNotice tone={importResult.errors.length > 0 ? 'warning' : 'success'}>
+              <strong>{t('adminRoster.wrestlers.importResult', 'Import result')}</strong>
+              <p>{t('adminRoster.wrestlers.importCreated', 'Created')}: {importResult.created}</p>
+              <p>{t('adminRoster.wrestlers.importSkipped', 'Skipped')}: {importResult.skipped}</p>
+              {importResult.errors.length > 0 && renderImportErrors(importResult.errors)}
+            </AdminNotice>
+          )}
+        </div>
+      </Modal>
+
+      <ConfirmModal
+        open={pendingAction !== null}
+        title={pendingAction?.kind === 'release'
+          ? t('adminRoster.wrestlers.releaseTitle', 'Release wrestler')
+          : t('adminRoster.wrestlers.deleteTitle', 'Delete wrestler')}
+        message={pendingAction?.kind === 'release'
+          ? t('adminRoster.wrestlers.releaseConfirm', {
+            defaultValue: 'Release "{{name}}"? They will be marked as available. This does not un-assign them from a player.',
+            name: pendingAction.wrestler.name,
+          })
+          : t('adminRoster.wrestlers.deleteConfirm', 'Are you sure you want to delete this wrestler?')}
+        confirmLabel={pendingAction?.kind === 'release'
+          ? t('adminRoster.wrestlers.release', 'Release')
+          : t('common.delete', 'Delete')}
+        busy={actionBusy}
+        onConfirm={handleConfirmAction}
+        onCancel={() => setPendingAction(null)}
+      />
     </div>
   );
 }

@@ -24,7 +24,7 @@ vi.mock('../../../services/api', () => ({
     getAll: mockGetAllMatches,
   },
   playersApi: {
-    getAll: mockGetAllPlayers,
+    getAllIncludingHidden: mockGetAllPlayers,
   },
 }));
 
@@ -144,7 +144,7 @@ describe('MatchCardBuilder', () => {
     });
 
     // Select an event via the SearchableSelect by focusing the input and clicking an option
-    const eventInput = screen.getByRole('textbox');
+    const eventInput = screen.getByRole('combobox', { name: 'Select Event' });
     fireEvent.focus(eventInput);
 
     // Dropdown should open with event options
@@ -169,12 +169,9 @@ describe('MatchCardBuilder', () => {
     // Championship tag on match m1
     expect(screen.getByText('Championship')).toBeInTheDocument();
 
-    // Designation indicators (text also appears in <select> options, so use getAllByText)
-    const mainEventElements = screen.getAllByText('Main Event');
-    expect(mainEventElements.length).toBeGreaterThanOrEqual(1);
-    // The indicator spans have the designation-indicator class
-    const indicators = document.querySelectorAll('.designation-indicator');
-    expect(indicators.length).toBe(2);
+    // Each row reads its card position from the select, and tints by designation.
+    expect(document.querySelectorAll('.designation-select')).toHaveLength(2);
+    expect(document.querySelector('.builder-match-item--main-event')).toBeTruthy();
   });
 
   it('reorders matches using move up and move down buttons', async () => {
@@ -187,7 +184,7 @@ describe('MatchCardBuilder', () => {
     });
 
     // Select WrestleMania
-    const eventInput = screen.getByRole('textbox');
+    const eventInput = screen.getByRole('combobox', { name: 'Select Event' });
     fireEvent.focus(eventInput);
     await waitFor(() => {
       expect(screen.getByText(/WrestleMania/)).toBeInTheDocument();
@@ -238,7 +235,7 @@ describe('MatchCardBuilder', () => {
     });
 
     // Select WrestleMania
-    const eventInput = screen.getByRole('textbox');
+    const eventInput = screen.getByRole('combobox', { name: 'Select Event' });
     fireEvent.focus(eventInput);
     await waitFor(() => {
       expect(screen.getByText(/WrestleMania/)).toBeInTheDocument();

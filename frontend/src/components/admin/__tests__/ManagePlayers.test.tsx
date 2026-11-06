@@ -17,6 +17,8 @@ const { mockPlayersApi, mockDivisionsApi, mockImagesApi, mockWrestlersApi } =
     mockWrestlersApi: { getAll: vi.fn() },
   }));
 
+vi.mock('react-i18next', async () => (await import('./i18nMock')).i18nMock);
+
 vi.mock('../../../services/api', () => ({
   playersApi: mockPlayersApi,
   divisionsApi: mockDivisionsApi,
@@ -99,7 +101,7 @@ describe('ManagePlayers', () => {
     mockDivisionsApi.getAll.mockReturnValue(new Promise(() => {}));
     mockWrestlersApi.getAll.mockReturnValue(new Promise(() => {}));
     renderComponent();
-    expect(screen.getByText('Loading players...')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('renders player list from API after loading', async () => {
@@ -249,42 +251,100 @@ describe('ManagePlayers', () => {
     });
   });
 
-  it('deletes player with confirmation dialog', async () => {
+  it('deletes player after confirming in the dialog', async () => {
     const user = userEvent.setup();
     mockPlayersApi.delete.mockResolvedValue(undefined);
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     renderComponent();
+
     await waitFor(() => { expect(screen.getByText('John')).toBeInTheDocument(); });
 
     const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
-    await user.click(deleteButtons[0]);
+    await user.click(deleteButtons[0]!);
 
-    expect(confirmSpy).toHaveBeenCalledWith(
-      'Are you sure you want to delete John? This action cannot be undone.'
-    );
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent('Are you sure you want to delete John? This action cannot be undone.');
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
+
     await waitFor(() => {
       expect(mockPlayersApi.delete).toHaveBeenCalledWith('p1');
     });
     await waitFor(() => {
       expect(screen.getByText('Player deleted successfully!')).toBeInTheDocument();
     });
-    confirmSpy.mockRestore();
   });
 
-  it('does not delete player when confirmation is cancelled', async () => {
+  it('does not delete player when the dialog is cancelled', async () => {
     const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     renderComponent();
+
     await waitFor(() => { expect(screen.getByText('John')).toBeInTheDocument(); });
 
     const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
-    await user.click(deleteButtons[0]);
+    await user.click(deleteButtons[0]!);
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel' }));
 
-    expect(confirmSpy).toHaveBeenCalled();
     expect(mockPlayersApi.delete).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
+  });
+
+  it('shows a hidden badge on players with no wrestler and can filter to them', async () => {
+    const user = userEvent.setup();
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
+      ...mockPlayers,
+      {
+        playerId: 'p3', name: 'Newbie', currentWrestler: 'Needs Wrestler',
+        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      },
+      {
+        playerId: 'p4', name: 'Blank', currentWrestler: '   ',
+        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      },
+    ]);
+    renderComponent();
+
+    await waitFor(() => { expect(screen.getByText('All Players (4)')).toBeInTheDocument(); });
+
+    expect(mockPlayersApi.getAllIncludingHidden).toHaveBeenCalled();
+    const newbieRow = screen.getByText('Newbie').closest('tr')!;
+    expect(within(newbieRow).getByText('Hidden')).toBeInTheDocument();
+    expect(screen.queryByText('Needs Wrestler')).not.toBeInTheDocument();
+    expect(within(screen.getByText('John').closest('tr')!).queryByText('Hidden')).not.toBeInTheDocument();
+    expect(screen.getByText('2 hidden')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('combobox', { name: 'Filter players' }));
+    await user.click(await screen.findByRole('option', { name: 'Hidden (no wrestler)' }));
+
+    expect(screen.getByText('All Players (2 of 4)')).toBeInTheDocument();
+    expect(screen.queryByText('John')).not.toBeInTheDocument();
+    expect(screen.getByText('Newbie')).toBeInTheDocument();
+  });
+
+  it('starts on every division so hidden players are not filtered out of view', async () => {
+    mockDivisionsApi.getAll.mockResolvedValue([
+      { divisionId: 'div-h', name: 'Heavyweight', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+    ]);
+    mockPlayersApi.getAllIncludingHidden.mockResolvedValue([
+      ...mockPlayers,
+      {
+        playerId: 'p3', name: 'Newbie', currentWrestler: 'Needs Wrestler',
+        wins: 0, losses: 0, draws: 0, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+      },
+    ]);
+    renderComponent();
+
+    expect(await screen.findByText('Newbie')).toBeInTheDocument();
+    expect(screen.getByText('All Players (3)')).toBeInTheDocument();
+  });
+
+  it('filters players by search text', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    await waitFor(() => { expect(screen.getByText('John')).toBeInTheDocument(); });
+
+    await user.type(screen.getByRole('searchbox', { name: 'Search players' }), 'becky');
+
+    expect(screen.queryByText('John')).not.toBeInTheDocument();
+    expect(screen.getByText('Jane')).toBeInTheDocument();
   });
 
   it('handles image upload via presigned URL and S3', async () => {
