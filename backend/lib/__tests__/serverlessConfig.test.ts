@@ -57,7 +57,11 @@ describe('serverless.yml data protection', () => {
 
   it('protects the user pool and retains what hangs off it', () => {
     const [[, pool]] = blocksOfType('AWS::Cognito::UserPool');
-    expect(pool).toContain('DeletionProtection: ACTIVE');
+    // Set by the script that keeps the triggers. As a template property, the
+    // change would make CloudFormation call UpdateUserPool without them.
+    expect(pool).not.toMatch(/^\s+DeletionProtection:/m);
+    const setupScript = readFileSync(join(backendRoot, 'scripts/setup-cognito.sh'), 'utf8');
+    expect(setupScript).toContain('DeletionProtection: "ACTIVE"');
 
     const poolResources = [
       ...blocksOfType('AWS::Cognito::UserPool'),
@@ -126,5 +130,17 @@ describe('serverless.yml edge and setup settings', () => {
     expect(behaviors.length).toBe(2);
     expect(attached.length).toBe(behaviors.length);
     expect(template).toContain('securityHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03');
+  });
+});
+
+describe.each(['deploy-dev.yml', 'deploy-prod.yml'])('%s Cognito wiring', (workflow) => {
+  const steps = readFileSync(join(backendRoot, '../.github/workflows', workflow), 'utf8').split('\n      - name: ');
+  const step = (name: string) => steps.find((text) => text.startsWith(name)) ?? '';
+  const rewiresAfterFailure = "if: ${{ !cancelled() && steps.deploy_backend.conclusion != 'skipped' }}";
+
+  it('re-attaches the triggers even when the backend deploy fails', () => {
+    expect(steps.find((text) => text.startsWith('Deploy backend'))).toContain('id: deploy_backend');
+    expect(step('Extract Cognito IDs')).toContain(rewiresAfterFailure);
+    expect(step('Wire Cognito')).toContain(rewiresAfterFailure);
   });
 });

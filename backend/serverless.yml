@@ -1257,7 +1257,11 @@ resources:
       UpdateReplacePolicy: Retain
       Properties:
         UserPoolName: ${self:service}-pool-v3-${self:provider.stage}
-        DeletionProtection: ACTIVE
+        # Deletion protection is set by setup-cognito.sh, not here. This template
+        # has no LambdaConfig, so any property change makes CloudFormation call
+        # UpdateUserPool without the triggers, which detaches PreSignUp and
+        # PostConfirmation until the wire step runs. Change these properties
+        # only in a quiet window.
         # Tag bumped on 2026-05-03 to force CloudFormation to re-apply the
         # full User Pool config after a destructive update-user-pool call
         # in setup-cognito.sh wiped AutoVerifiedAttributes (verification

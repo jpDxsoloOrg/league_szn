@@ -182,6 +182,15 @@ tests had not. The fixes are in this PR.
 - **Challenge notifications:** these stay off. They were removed on purpose when
   matchmaking replaced challenges, so a direct challenge can lapse unseen.
 
+- **User pool protection:** deletion protection is set by `setup-cognito.sh`, not
+  the template. The template has no `LambdaConfig`, so a pool property change makes
+  CloudFormation call `UpdateUserPool` without the triggers, which detached both
+  for 5 minutes on devtest and would leave them off after a failed deploy. Prod's
+  template now matches what is deployed, so its pool is not touched. The next
+  devtest deploy removes the property, so its triggers and protection drop once
+  until the wire step restores them. The wire step now also runs after a failed
+  backend deploy.
+
 ## Release notes
 
 - **Contender rankings:** a new scheduled function recalculates every active title
