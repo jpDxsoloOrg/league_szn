@@ -244,6 +244,21 @@ describe('getPlayers', () => {
 // ─── updatePlayer ────────────────────────────────────────────────────
 
 describe('updatePlayer', () => {
+  it.each([[''], ['   '], [null]])('rejects a blank name (%j) and changes nothing', async (name) => {
+    const player = await repos.roster.players.create({ name: 'Old Name', currentWrestler: 'Rock' });
+    const event = makeEvent({
+      pathParameters: { playerId: player.playerId },
+      body: JSON.stringify({ name, bio: 'kept out' }),
+    });
+
+    const result = await updatePlayer(withAuth(event, 'Admin'), ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+    const stored = await repos.roster.players.findById(player.playerId);
+    expect(stored).toMatchObject({ name: 'Old Name' });
+    expect(stored?.bio).toBeUndefined();
+  });
+
   it('returns 403 for a Wrestler-role user (staff only)', async () => {
     const player = await repos.roster.players.create({ name: 'Old Name', currentWrestler: 'Rock' });
     const event = makeEvent({

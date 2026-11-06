@@ -35,7 +35,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     let hasChanges = false;
 
     if (body.name !== undefined) {
-      patch.name = body.name as string;
+      if (typeof body.name !== 'string' || body.name.trim().length === 0) {
+        return badRequest('Player name cannot be blank');
+      }
+      patch.name = body.name;
       hasChanges = true;
     }
     if (body.imageUrl !== undefined) {

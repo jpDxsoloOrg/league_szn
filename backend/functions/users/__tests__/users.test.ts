@@ -333,6 +333,31 @@ describe('updateUserRole', () => {
     expect(mockPlayersUpdate).not.toHaveBeenCalled();
   });
 
+  it.each([
+    [
+      'the sign-up attributes',
+      [{ Name: 'custom:player_name', Value: 'Real Name' }, { Name: 'custom:psn_id', Value: 'PSN_1' }],
+      { name: 'Real Name', psnId: 'PSN_1' },
+    ],
+    [
+      'a neutral label, never the email, when nothing else is set',
+      [{ Name: 'email', Value: 'person@example.com' }],
+      { name: 'Player abcd1234' },
+    ],
+  ])('names a player created on promotion from %s', async (_label, attributes, expected) => {
+    mockSend
+      .mockResolvedValueOnce({}) // Add to Wrestler group
+      .mockResolvedValueOnce({ UserAttributes: [{ Name: 'sub', Value: 'abcd1234-5678' }, ...attributes] })
+      .mockResolvedValueOnce({ Groups: [{ GroupName: 'Wrestler' }] });
+    mockPlayersFindByUserId.mockResolvedValueOnce(null);
+    mockPlayersCreate.mockResolvedValueOnce({ playerId: 'test-uuid-1234' });
+    mockPlayersUpdate.mockResolvedValueOnce({});
+
+    await updateUserRole(ev({ username: 'steve', role: 'Wrestler', action: 'promote' }), ctx, cb);
+
+    expect(mockPlayersCreate).toHaveBeenCalledWith(expect.objectContaining(expected));
+  });
+
   it('promotes to Wrestler and creates Player record', async () => {
     mockSend
       .mockResolvedValueOnce({}) // Add to Wrestler group
@@ -357,7 +382,7 @@ describe('updateUserRole', () => {
     const result = await updateUserRole(ev({ username: 'steve', role: 'Wrestler', action: 'promote' }), ctx, cb);
     expect(result!.statusCode).toBe(200);
     expect(mockPlayersCreate).toHaveBeenCalledWith(expect.objectContaining({
-      name: '',
+      name: 'Stone Cold',
       currentWrestler: 'Stone Cold',
     }));
     expect(mockPlayersUpdate).toHaveBeenCalledWith('test-uuid-1234', {
