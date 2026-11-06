@@ -149,6 +149,8 @@ export interface TournamentsMethods {
   list(): Promise<Tournament[]>;
   create(input: Record<string, unknown>): Promise<Tournament>;
   update(tournamentId: string, patch: Partial<Tournament>): Promise<Tournament>;
+  /** Clear a recorded winner. `update` cannot do this: it skips undefined fields. */
+  removeWinner(tournamentId: string): Promise<void>;
 }
 
 export interface ContendersMethods {

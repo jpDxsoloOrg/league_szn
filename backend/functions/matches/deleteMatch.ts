@@ -1,10 +1,26 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import type { Match } from '../../lib/repositories';
-import { success, badRequest, notFound, serverError } from '../../lib/response';
+import { success, badRequest, conflict, notFound, serverError } from '../../lib/response';
 import { requireRole } from '../../lib/auth';
 import { invokeAsync } from '../../lib/asyncLambda';
 import { revertGroupStats } from './revertGroupStats';
+
+interface BracketMatch {
+  participant1?: string;
+  participant2?: string;
+  winner?: string;
+  matchId?: string;
+}
+
+interface Brackets {
+  rounds: Array<{ matches: BracketMatch[] }>;
+}
+
+interface BracketPosition {
+  roundIndex: number;
+  matchIndex: number;
+}
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   const denied = requireRole(event, 'Moderator');
@@ -26,10 +42,19 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // If match was completed, roll back all stat changes
     if (match.status === 'completed') {
+      // These checks only read. They must stay ahead of every rollback write,
+      // because a refusal has to leave records and history untouched.
+      const blockedReason =
+        await findChampionshipRollbackBlocker(match) ?? await findTournamentRollbackBlocker(match);
+      if (blockedReason) {
+        return conflict(blockedReason);
+      }
+
       await rollbackCompletedMatch(match, runInTransaction);
 
-      // Roll back championship changes if this was a championship match
-      if (match.isChampionship && match.championshipId) {
+      // Roll back championship changes if this was a championship match.
+      // Draws never touch a championship, so there is nothing to undo.
+      if (match.isChampionship && match.championshipId && match.isDraw !== true) {
         await rollbackChampionshipResult(match);
       }
 
@@ -71,6 +96,55 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   }
 };
 
+/** Why this match's title change cannot be undone, or null if it can. */
+async function findChampionshipRollbackBlocker(match: Match): Promise<string | null> {
+  if (!match.isChampionship || !match.championshipId || match.isDraw === true) return null;
+
+  const { competition: { championships } } = getRepositories();
+  const history = await championships.listHistory(match.championshipId);
+  const reignCreatedByMatch = history.find((item) => item.matchId === match.matchId);
+  if (!reignCreatedByMatch) return null;
+
+  const reignStart = new Date(reignCreatedByMatch.wonDate).getTime();
+  const isLatestReign = history.every((item) => new Date(item.wonDate).getTime() <= reignStart);
+  if (!reignCreatedByMatch.lostDate && isLatestReign) return null;
+
+  return 'This match started a title reign that has since ended. Only the current reign can be rolled back.';
+}
+
+/** Why this match's bracket result cannot be undone, or null if it can. */
+async function findTournamentRollbackBlocker(match: Match): Promise<string | null> {
+  if (!match.tournamentId) return null;
+
+  const { competition: { tournaments } } = getRepositories();
+  const tournament = await tournaments.findById(match.tournamentId);
+  if (tournament?.type !== 'single-elimination' || !tournament.brackets) return null;
+
+  const brackets = tournament.brackets as Brackets;
+  const position = locateBracketMatch(brackets, match.matchId);
+  if (!position) return null;
+
+  const nextMatch = nextBracketMatch(brackets, position);
+  if (nextMatch?.winner || nextMatch?.matchId) {
+    return 'The next round of this bracket has already been played. Delete that result first.';
+  }
+  return null;
+}
+
+function locateBracketMatch(brackets: Brackets, matchId: string): BracketPosition | null {
+  for (let roundIndex = 0; roundIndex < brackets.rounds.length; roundIndex++) {
+    const roundMatches = brackets.rounds[roundIndex]?.matches ?? [];
+    const matchIndex = roundMatches.findIndex((bracketMatch) => bracketMatch?.matchId === matchId);
+    if (matchIndex !== -1) return { roundIndex, matchIndex };
+  }
+  return null;
+}
+
+/** The match a bracket winner advanced into; undefined for the final. */
+function nextBracketMatch(brackets: Brackets, position: BracketPosition): BracketMatch | undefined {
+  return brackets.rounds[position.roundIndex + 1]?.matches?.[Math.floor(position.matchIndex / 2)];
+}
+
 async function rollbackCompletedMatch(
   match: Match,
   runInTransaction: ReturnType<typeof getRepositories>['runInTransaction'],
@@ -78,30 +152,44 @@ async function rollbackCompletedMatch(
   const winners = match.winners || [];
   const losers = match.losers || [];
   const isDraw = match.isDraw === true;
-  const seasonId = match.seasonId;
+  const { roster: { players }, season: { seasons } } = getRepositories();
+
+  // A completed match outlives its players and season. Deleted players have
+  // no record to correct and their standings rows are gone with them, and
+  // incrementPlayerRecord fails the transaction on a missing player, so the
+  // match would otherwise be undeletable. The same goes for a deleted season:
+  // writing to it would only recreate standings rows for a season that is gone.
+  const existingPlayerIds = new Set(
+    (await Promise.all(
+      [...winners, ...losers].map(async (playerId) => ((await players.findById(playerId)) ? playerId : null)),
+    )).filter((playerId): playerId is string => playerId !== null),
+  );
+  const existingWinners = winners.filter((playerId) => existingPlayerIds.has(playerId));
+  const existingLosers = losers.filter((playerId) => existingPlayerIds.has(playerId));
+  const seasonId = match.seasonId && (await seasons.findById(match.seasonId)) ? match.seasonId : undefined;
 
   // Use UoW to atomically decrement all player/season stats
   await runInTransaction(async (tx) => {
     // 1. Decrement winner stats (all-time)
-    for (const playerId of winners) {
+    for (const playerId of existingWinners) {
       tx.incrementPlayerRecord(playerId, isDraw ? { draws: -1 } : { wins: -1 });
     }
 
     // 2. Decrement loser stats (all-time) — skip for draws
     if (!isDraw) {
-      for (const playerId of losers) {
+      for (const playerId of existingLosers) {
         tx.incrementPlayerRecord(playerId, { losses: -1 });
       }
     }
 
     // 3. Decrement season standings if match had a seasonId
     if (seasonId) {
-      for (const playerId of winners) {
+      for (const playerId of existingWinners) {
         tx.incrementStanding(seasonId, playerId, isDraw ? { draws: -1 } : { wins: -1 });
       }
 
       if (!isDraw) {
-        for (const playerId of losers) {
+        for (const playerId of existingLosers) {
           tx.incrementStanding(seasonId, playerId, { losses: -1 });
         }
       }
@@ -191,10 +279,16 @@ async function rollbackChampionshipResult(match: Match): Promise<void> {
       // No previous reign — title becomes vacant
       await championships.removeChampion(championshipId);
     }
-  } else {
-    // This match was a title defense — decrement defense count on current reign
+  } else if (match.isTitleDefense === true) {
+    // A defense counts against the reign it was fought in. A defense from
+    // before the current reign began belongs to an earlier holder.
     const currentReign = await championships.findCurrentReign(championshipId);
-    if (currentReign && typeof currentReign.defenses === 'number' && currentReign.defenses > 0) {
+    if (
+      currentReign &&
+      new Date(currentReign.wonDate).getTime() <= new Date(match.date).getTime() &&
+      typeof currentReign.defenses === 'number' &&
+      currentReign.defenses > 0
+    ) {
       await championships.decrementDefenses(championshipId, currentReign.wonDate);
     }
   }
@@ -235,66 +329,36 @@ async function rollbackTournamentResult(match: Match): Promise<void> {
     }
 
     const newStatus = tournament.status === 'completed' ? 'in-progress' : tournament.status;
-    const patch: Partial<typeof tournament> = { standings, status: newStatus };
-    delete (patch as Record<string, unknown>).winner;
-    await tournaments.update(tournamentId, patch);
+    await tournaments.update(tournamentId, { standings, status: newStatus });
+    if (tournament.winner) {
+      await tournaments.removeWinner(tournamentId);
+    }
   }
 
   if (tournament.type === 'single-elimination' && tournament.brackets) {
-    const brackets = tournament.brackets as {
-      rounds: Array<{
-        matches: Array<{
-          participant1?: string;
-          participant2?: string;
-          winner?: string;
-          matchId?: string;
-        }>;
-      }>;
-    };
+    const brackets = tournament.brackets as Brackets;
+    const position = locateBracketMatch(brackets, match.matchId);
 
-    let foundRoundIndex = -1;
-    let foundMatchIndex = -1;
-
-    for (let roundIndex = 0; roundIndex < brackets.rounds.length; roundIndex++) {
-      const round = brackets.rounds[roundIndex];
-      if (!round?.matches) continue;
-      for (let matchIndex = 0; matchIndex < round.matches.length; matchIndex++) {
-        const bracketMatch = round.matches[matchIndex];
-        if (bracketMatch?.matchId === match.matchId) {
-          foundRoundIndex = roundIndex;
-          foundMatchIndex = matchIndex;
-          break;
-        }
-      }
-      if (foundRoundIndex !== -1) break;
-    }
-
-    if (foundRoundIndex !== -1 && foundMatchIndex !== -1) {
-      const foundMatch = brackets.rounds[foundRoundIndex].matches[foundMatchIndex];
+    if (position) {
+      const foundMatch = brackets.rounds[position.roundIndex].matches[position.matchIndex];
       delete foundMatch.winner;
       delete foundMatch.matchId;
 
       // Clear the advancement in the next round
-      const isLastRound = foundRoundIndex === brackets.rounds.length - 1;
-      if (!isLastRound) {
-        const nextRoundIndex = foundRoundIndex + 1;
-        const nextMatchIndex = Math.floor(foundMatchIndex / 2);
-        const isFirstOfPair = foundMatchIndex % 2 === 0;
-
-        const nextMatch = brackets.rounds[nextRoundIndex]?.matches?.[nextMatchIndex];
-        if (nextMatch) {
-          if (isFirstOfPair) {
-            delete nextMatch.participant1;
-          } else {
-            delete nextMatch.participant2;
-          }
+      const nextMatch = nextBracketMatch(brackets, position);
+      if (nextMatch) {
+        if (position.matchIndex % 2 === 0) {
+          delete nextMatch.participant1;
+        } else {
+          delete nextMatch.participant2;
         }
       }
 
       const newStatus = tournament.status === 'completed' ? 'in-progress' : tournament.status;
-      const patch: Partial<typeof tournament> = { brackets, status: newStatus };
-      delete (patch as Record<string, unknown>).winner;
-      await tournaments.update(tournamentId, patch);
+      await tournaments.update(tournamentId, { brackets, status: newStatus });
+      if (tournament.winner) {
+        await tournaments.removeWinner(tournamentId);
+      }
     }
   }
 }
