@@ -55,7 +55,6 @@ const mockEventsRepo = {
 const mockContendersRepo = {
   listByChampionship: vi.fn(),
   listByChampionshipRanked: vi.fn(),
-  deleteAllForChampionship: vi.fn(),
   upsertRanking: vi.fn(),
   findOverride: vi.fn(),
   listActiveOverrides: vi.fn(),

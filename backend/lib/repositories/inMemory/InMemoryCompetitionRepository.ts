@@ -281,12 +281,8 @@ export class InMemoryCompetitionRepository implements CompetitionRepository {
       return items;
     },
 
-    deleteAllForChampionship: async (championshipId: string): Promise<void> => {
-      for (const [key, ranking] of this.rankingsStore) {
-        if (ranking.championshipId === championshipId) {
-          this.rankingsStore.delete(key);
-        }
-      }
+    deleteRanking: async (championshipId: string, playerId: string): Promise<void> => {
+      this.rankingsStore.delete(this.rankingKey(championshipId, playerId));
     },
 
     upsertRanking: async (input: ContenderRankingInput): Promise<ContenderRanking> => {

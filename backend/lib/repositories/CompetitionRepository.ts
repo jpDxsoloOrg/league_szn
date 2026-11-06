@@ -157,7 +157,7 @@ export interface ContendersMethods {
   // Rankings
   listByChampionship(championshipId: string): Promise<ContenderRanking[]>;
   listByChampionshipRanked(championshipId: string): Promise<ContenderRanking[]>;
-  deleteAllForChampionship(championshipId: string): Promise<void>;
+  deleteRanking(championshipId: string, playerId: string): Promise<void>;
   upsertRanking(input: ContenderRankingInput): Promise<ContenderRanking>;
 
   // Overrides

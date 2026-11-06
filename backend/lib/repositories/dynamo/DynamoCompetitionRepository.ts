@@ -373,17 +373,11 @@ class ContendersDynamo implements ContendersMethods {
     return items as unknown as ContenderRanking[];
   }
 
-  async deleteAllForChampionship(championshipId: string): Promise<void> {
-    const existing = await this.listByChampionship(championshipId);
-    for (const item of existing) {
-      await dynamoDb.delete({
-        TableName: TableNames.CONTENDER_RANKINGS,
-        Key: {
-          championshipId: item.championshipId,
-          playerId: item.playerId,
-        },
-      });
-    }
+  async deleteRanking(championshipId: string, playerId: string): Promise<void> {
+    await dynamoDb.delete({
+      TableName: TableNames.CONTENDER_RANKINGS,
+      Key: { championshipId, playerId },
+    });
   }
 
   async upsertRanking(input: ContenderRankingInput): Promise<ContenderRanking> {
