@@ -1,37 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ChevronRight } from 'lucide-react';
 import { championshipsApi, divisionsApi, playersApi } from '../services/api';
 import type { PlayerDirectoryEntry } from '../services/api';
-import { formatDate } from '../utils/dateUtils';
+import { formatMatchDate } from '../utils/dateUtils';
 import { logger } from '../utils/logger';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { type Division, type Championship, type ChampionshipReign, type Player } from '../types';
 import DivisionFilter from './DivisionFilter';
 import Avatar from './ui/Avatar';
 import Badge from './ui/Badge';
-import Button from './ui/Button';
 import DataTable from './ui/DataTable';
 import type { DataTableColumn } from './ui/DataTable';
 import EmptyState from './ui/EmptyState';
 import Modal from './ui/Modal';
 import PageHeader from './ui/PageHeader';
 import PhotoTile from './ui/PhotoTile';
-import type { TileAccent } from './ui/PhotoTile';
 import Skeleton from './ui/Skeleton';
+import { getTitleAccent } from './titleAccent';
 import './Championships.css';
 
 function toIds(holder: string | string[]): string[] {
   return Array.isArray(holder) ? holder : [holder];
-}
-
-/** Rim light for a title. Titles carry no tier field, so this reads the name. */
-function getTitleAccent(championship: Championship): TileAccent {
-  if (championship.type === 'tag') return 'tag';
-  const name = championship.name.toLowerCase();
-  if (/world|universal|heavyweight/.test(name)) return 'world';
-  if (/united states|\bus\b/.test(name)) return 'us';
-  if (/intercontinental|\bic\b/.test(name)) return 'ic';
-  return 'none';
 }
 
 export default function Championships() {
@@ -125,7 +115,11 @@ export default function Championships() {
     return [...result].sort((first, second) => Number(second.isActive !== false) - Number(first.isActive !== false));
   }, [championships, selectedDivision]);
 
-  const playerNames = useMemo(() => new Map(directory.map((entry) => [entry.playerId, entry.name])), [directory]);
+  // Wrestler first, the same name the champion goes by on the home page.
+  const playerNames = useMemo(
+    () => new Map(directory.map((entry) => [entry.playerId, entry.currentWrestler || entry.name])),
+    [directory],
+  );
   const playerImages = useMemo(() => new Map(players.map((player) => [player.playerId, player.imageUrl])), [players]);
 
   const getHolderName = (holder: string | string[]) =>
@@ -137,11 +131,11 @@ export default function Championships() {
       header: t('championships.table.champion'),
       render: (reign) => <span className="title-history__champion">{getHolderName(reign.champion)}</span>,
     },
-    { key: 'won', header: t('championships.table.wonDate'), render: (reign) => formatDate(reign.wonDate) },
+    { key: 'won', header: t('championships.table.wonDate'), render: (reign) => formatMatchDate(reign.wonDate) },
     {
       key: 'lost',
       header: t('championships.table.lostDate'),
-      render: (reign) => (reign.lostDate ? formatDate(reign.lostDate) : t('common.current')),
+      render: (reign) => (reign.lostDate ? formatMatchDate(reign.lostDate) : t('common.current')),
     },
     {
       key: 'days',
@@ -202,18 +196,21 @@ export default function Championships() {
                     {holderIds.map((playerId) => (
                       <Avatar key={playerId} size="sm" src={playerImages.get(playerId)} name={playerNames.get(playerId) ?? t('common.unknown')} />
                     ))}
-                    {championship.type === 'singles' ? t('championships.singles') : t('championships.tagTeam')}
+                    {championship.type !== 'singles' && t('championships.tagTeam')}
+                    <span className="title-item__history">
+                      {t('championships.history')}
+                      <ChevronRight aria-hidden="true" size={16} />
+                    </span>
                   </span>
                 )}
               />
-              <Button
-                variant="secondary"
-                fullWidth
+              {/* Laid over the tile, so the whole title opens its history. */}
+              <button
+                type="button"
+                className="title-item__open"
                 aria-label={`${t('championships.viewHistory')}: ${championship.name}`}
                 onClick={() => openHistory(championship)}
-              >
-                {t('championships.history')}
-              </Button>
+              />
             </li>
           );
         })}

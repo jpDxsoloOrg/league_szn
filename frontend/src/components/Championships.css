@@ -16,20 +16,49 @@
 }
 
 .title-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
+  position: relative;
   min-width: 0;
 }
 
+.title-item__open {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  background: none;
+  cursor: pointer;
+}
+
+.title-item__open:hover {
+  border-color: var(--color-cyan);
+}
+
+.title-item__open:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* An inactive title drops its rim colour rather than dimming its text. */
 .title-item--inactive .title-item__tile {
-  opacity: 0.7;
+  filter: saturate(0.5);
 }
 
 .title-item__meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+}
+
+.title-item__history {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  margin-left: auto;
+  color: var(--color-cyan);
+  font-weight: 600;
 }
 
 .title-history__champion {

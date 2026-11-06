@@ -24,7 +24,7 @@
 
 .standings-section-header__range {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   white-space: nowrap;
 }
 
@@ -80,7 +80,7 @@
 
 .standings-player__wrestler {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 /* Phone rows */
@@ -125,7 +125,7 @@
 
 .standings-row__wrestler {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .standings-row__stats {
@@ -145,7 +145,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 @media (max-width: 768px) {
@@ -212,7 +212,7 @@
   display: inline-block;
   padding: 0.2em 0.5em;
   border-radius: 4px;
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   white-space: nowrap;
 }

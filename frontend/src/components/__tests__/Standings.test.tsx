@@ -243,6 +243,31 @@ describe('Standings', () => {
     expect(within(table).getByText('#1')).toBeInTheDocument();
   });
 
+  it('gives medals only to players who have wrestled and keeps ranks in step with the table', async () => {
+    mockGetStandings.mockResolvedValue({
+      sortedByWins: true,
+      // The API order, which puts 0-0-0 above 0-2-0.
+      players: [
+        { ...mockPlayers[0], wins: 3, losses: 0, draws: 0 },
+        { ...mockPlayers[1], wins: 0, losses: 0, draws: 0, recentForm: ['W'], currentStreak: { type: 'W', count: 1 } },
+        { ...mockPlayers[2], wins: 0, losses: 2, draws: 0 },
+      ],
+    });
+
+    renderStandings();
+
+    const podium = await screen.findByRole('list', { name: 'Top three' });
+    expect(within(podium).getByText('John Cena')).toBeInTheDocument();
+    expect(within(podium).getByText('Undertaker')).toBeInTheDocument();
+    expect(within(podium).queryByText('The Rock')).not.toBeInTheDocument();
+
+    const table = screen.getByRole('table');
+    expect(within(table).getByText('#3')).toBeInTheDocument();
+    expect(within(table).getByText('The Rock')).toBeInTheDocument();
+    // Nothing recorded in this scope, so form from elsewhere stays out of the row.
+    expect(within(table).queryByText('W1')).not.toBeInTheDocument();
+  });
+
   it('uses a row list instead of the table on phones', async () => {
     mockMobile.value = true;
 
