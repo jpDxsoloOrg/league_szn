@@ -8,15 +8,15 @@
 }
 
 .h2h-strip {
-  background: #161616;
-  border: 1px solid #2c2c2c;
-  border-radius: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
   padding: 1rem 1.25rem;
 }
 
 .h2h-title {
   margin: 0 0 0.75rem;
-  color: #d4af37;
+  color: var(--color-cyan);
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -32,21 +32,21 @@
 }
 
 .h2h-name {
-  color: #f5f5f5;
+  color: var(--color-text);
   font-size: 1.5rem;
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .h2h-score {
-  color: #d4af37;
+  color: var(--color-cyan);
   font-size: 2.25rem;
   font-weight: 800;
   white-space: nowrap;
 }
 
 .h2h-draws {
-  color: #888;
+  color: var(--color-text-muted);
   font-size: 0.75em;
   font-weight: 500;
 }
@@ -54,12 +54,12 @@
 .h2h-meta {
   margin: 0.5rem 0 0;
   text-align: center;
-  color: #999;
+  color: var(--color-text-muted);
 }
 
 .h2h-multi-label {
   margin: 0 0 0.35rem;
-  color: #888;
+  color: var(--color-text-muted);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -78,19 +78,19 @@
   display: inline-flex;
   gap: 0.5rem;
   align-items: baseline;
-  background: #1e1e1e;
-  border: 1px solid #2c2c2c;
-  border-radius: 999px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-pill);
   padding: 0.25rem 0.75rem;
 }
 
 .h2h-multi-name {
-  color: #ddd;
+  color: var(--color-text-secondary);
   font-size: 0.85rem;
 }
 
 .h2h-multi-record {
-  color: #d4af37;
+  color: var(--color-cyan);
   font-weight: 700;
 }
 
@@ -106,7 +106,7 @@
 
 .h2h-caption {
   caption-side: bottom;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.75rem;
   padding-top: 0.5rem;
   text-align: left;
@@ -114,17 +114,17 @@
 
 .h2h-grid th,
 .h2h-grid td {
-  border: 1px solid #2c2c2c;
+  border: 1px solid var(--color-hairline);
   padding: 0.5rem 0.75rem;
   text-align: center;
 }
 
 .h2h-grid th {
-  color: #ccc;
+  color: var(--color-text-secondary);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background: #1e1e1e;
+  background: var(--color-surface-raised);
 }
 
 .h2h-grid th[scope='row'] {
@@ -132,18 +132,18 @@
 }
 
 .h2h-cell {
-  color: #f0f0f0;
+  color: var(--color-text);
   font-weight: 700;
   font-size: 1.1rem;
 }
 
 .h2h-cell--self {
-  color: #444;
-  background: #121212;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
 }
 
 .h2h-cell--empty {
-  color: #666;
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 
@@ -159,31 +159,29 @@
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 0.15rem 0.75rem;
-  background: #1e1e1e;
-  border: 1px solid #2c2c2c;
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-hairline);
 }
 
 .h2h-pair-names {
-  color: #eee;
+  color: var(--color-text);
   font-weight: 600;
 }
 
 .h2h-vs {
-  color: #888;
+  color: var(--color-text-muted);
   font-weight: 400;
   font-size: 0.8em;
 }
 
 .h2h-pair-score {
-  color: #d4af37;
+  color: var(--color-cyan);
   font-weight: 800;
   font-size: 1.1rem;
 }
 
 .h2h-pair-meta {
   grid-column: 1 / -1;
-  color: #888;
+  color: var(--color-text-muted);
   font-size: 0.8rem;
 }

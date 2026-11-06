@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Lock } from 'lucide-react';
 import type { HydratedMatchSlot, MatchStatus } from '../../types';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import Modal from '../ui/Modal';
 import './MatchSlots.css';
 
 export interface MatchSlotsProps {
@@ -138,18 +142,16 @@ export default function MatchSlots(props: MatchSlotsProps) {
     const rows = loadingCount ?? Math.max(slots.length, 2);
     return (
       <div className="match-slots" data-match-id={matchId} role="status" aria-busy="true">
-        <div className="match-slots-inner">
-          <ol className="match-slots-list">
-            {Array.from({ length: rows }, (_, i) => (
-              <li key={i} className="match-slot match-slot-skeleton">
-                <span className="match-slot-position">·</span>
-                <span className="match-slot-content">
-                  <span className="match-slot-skeleton-bar" />
-                </span>
-              </li>
-            ))}
-          </ol>
-        </div>
+        <ol className="match-slots-list">
+          {Array.from({ length: rows }, (_, i) => (
+            <li key={i} className="match-slot match-slot-skeleton">
+              <span className="match-slot-position">·</span>
+              <span className="match-slot-content">
+                <span className="match-slot-skeleton-bar" />
+              </span>
+            </li>
+          ))}
+        </ol>
       </div>
     );
   }
@@ -161,22 +163,18 @@ export default function MatchSlots(props: MatchSlotsProps) {
 
   return (
     <div className="match-slots" data-match-id={matchId}>
-      <div className="match-slots-inner">
-        <div className="match-slots-header">
-          <span className="match-slots-header-label">
-            {isOpenSignups && <span className="match-slots-header-dot" aria-hidden="true" />}
-            {headerLabel}
-          </span>
-          {isOpenSignups && (
-            <span className="match-slots-badge" role="status">
-              {t('matches.slots.openCountBadge', {
-                open: openCount,
-                total: sortedSlots.length,
-                defaultValue: `${openCount} of ${sortedSlots.length} spots open`,
-              })}
-            </span>
-          )}
-        </div>
+      <div className="match-slots-header">
+        <span className="match-slots-header-label">{headerLabel}</span>
+        {isOpenSignups && (
+          <Badge tone="primary" role="status">
+            {t('matches.slots.openCountBadge', {
+              open: openCount,
+              total: sortedSlots.length,
+              defaultValue: `${openCount} of ${sortedSlots.length} spots open`,
+            })}
+          </Badge>
+        )}
+      </div>
 
         <ol className="match-slots-list">
         {sortedSlots.map((slot) => {
@@ -206,7 +204,7 @@ export default function MatchSlots(props: MatchSlotsProps) {
 
           return (
             <li key={slot.slotId} className={rowClass} data-slot-id={slot.slotId}>
-              <span className="match-slot-position" aria-label={`Position ${slot.position}`}>
+              <span className="match-slot-position" aria-label={t('matches.slots.positionLabel', { position: slot.position, defaultValue: `Position ${slot.position}` })}>
                 {slot.position}
               </span>
 
@@ -230,7 +228,7 @@ export default function MatchSlots(props: MatchSlotsProps) {
                       )
                     )}
                     {isWinner && (
-                      <span className="match-slot-winner-badge" aria-label="Winner">W</span>
+                      <span className="match-slot-winner-badge" aria-label={t('recordResult.winner', { defaultValue: 'Winner' })}>{t('events.detail.winner', { defaultValue: 'W' })}</span>
                     )}
                   </Link>
                 ) : (
@@ -243,20 +241,17 @@ export default function MatchSlots(props: MatchSlotsProps) {
               </span>
 
               {slot.lockedByAdmin && (
-                <span
+                <Lock
                   className="match-slot-lock-icon"
-                  title={t('matches.slots.locked', { defaultValue: 'Locked' })}
-                  aria-hidden="true"
-                >
-                  🔒
-                </span>
+                  aria-label={t('matches.slots.locked', { defaultValue: 'Locked' })}
+                  size={16}
+                />
               )}
 
               <span className="match-slot-actions">
                 {showClaim && (
-                  <button
-                    type="button"
-                    className="match-slot-btn match-slot-claim"
+                  <Button
+                    size="sm"
                     disabled={busy || claimDisabled}
                     title={claimDisabled ? disableClaimReason : undefined}
                     onClick={() => handleClaim(slot.slotId)}
@@ -264,35 +259,25 @@ export default function MatchSlots(props: MatchSlotsProps) {
                     {busy
                       ? t('matches.slots.claiming', { defaultValue: 'Claiming…' })
                       : t('matches.slots.claim', { defaultValue: 'Claim spot' })}
-                  </button>
+                  </Button>
                 )}
                 {showRelease && (
-                  <button
-                    type="button"
-                    className="match-slot-btn match-slot-release"
-                    disabled={busy}
-                    onClick={() => handleRelease(slot.slotId)}
-                  >
+                  <Button variant="secondary" size="sm" disabled={busy} onClick={() => handleRelease(slot.slotId)}>
                     {busy
                       ? t('matches.slots.releasing', { defaultValue: 'Releasing…' })
                       : t('matches.slots.release', { defaultValue: 'Release' })}
-                  </button>
+                  </Button>
                 )}
                 {isAdmin && onAdminEdit && (
-                  <button
-                    type="button"
-                    className="match-slot-btn match-slot-admin-edit"
-                    onClick={() => onAdminEdit(slot)}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => onAdminEdit(slot)}>
                     {t('matches.slots.adminEdit', { defaultValue: 'Edit' })}
-                  </button>
+                  </Button>
                 )}
               </span>
             </li>
           );
         })}
         </ol>
-      </div>
 
       {/* MSL-03 wrestler chooser */}
       {chooserSlotId && currentPlayerCurrentWrestler && currentPlayerAlternateWrestler && (
@@ -324,16 +309,19 @@ function WrestlerChooserDialog({
   const [choice, setChoice] = useState<'main' | 'alternate'>('main');
 
   return (
-    <div
-      className="wrestler-chooser-overlay"
-      role="dialog"
-      aria-modal="true"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onCancel();
-      }}
+    <Modal
+      open
+      onClose={onCancel}
+      size="sm"
+      title={t('matches.slots.chooseWrestler', { defaultValue: 'Choose your wrestler' })}
+      footer={(
+        <>
+          <Button variant="secondary" onClick={onCancel}>{t('common.cancel', { defaultValue: 'Cancel' })}</Button>
+          <Button onClick={() => onConfirm(choice)}>{t('matches.slots.confirmChoice', { defaultValue: 'Confirm' })}</Button>
+        </>
+      )}
     >
       <div className="wrestler-chooser">
-        <h3>{t('matches.slots.chooseWrestler', { defaultValue: 'Choose your wrestler' })}</h3>
         <label className="wrestler-chooser-option">
           <input
             type="radio"
@@ -361,19 +349,7 @@ function WrestlerChooserDialog({
             })}
           </span>
         </label>
-        <div className="wrestler-chooser-actions">
-          <button type="button" className="wrestler-chooser-cancel" onClick={onCancel}>
-            {t('common.cancel', { defaultValue: 'Cancel' })}
-          </button>
-          <button
-            type="button"
-            className="wrestler-chooser-confirm"
-            onClick={() => onConfirm(choice)}
-          >
-            {t('matches.slots.confirmChoice', { defaultValue: 'Confirm' })}
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }

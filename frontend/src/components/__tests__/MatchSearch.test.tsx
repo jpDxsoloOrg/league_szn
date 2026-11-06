@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import type { ComponentProps } from 'react';
 
 // --- Hoisted mocks ---
 const {
@@ -21,7 +22,7 @@ const {
 
 vi.mock('../../services/api', () => ({
   matchesApi: { getAll: mockGetAllMatches },
-  playersApi: { getAll: mockGetAllPlayers },
+  playersApi: { getDirectory: mockGetAllPlayers },
   seasonsApi: { getAll: mockGetAllSeasons },
   championshipsApi: { getAll: mockGetAllChampionships },
   stipulationsApi: { getAll: mockGetAllStipulations },
@@ -73,6 +74,19 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('../MatchSearch.css', () => ({}));
+vi.mock('../ui/Select', () => ({
+  default: ({ id, label, value, onValueChange, options }: {
+    id?: string;
+    label: string;
+    value: string;
+    onValueChange: (value: string) => void;
+    options: { value: string; label: string }[];
+  }) => (
+    <select id={id} aria-label={label} value={value} onChange={(e) => onValueChange(e.target.value)}>
+      {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+    </select>
+  ),
+}));
 vi.mock('../ui/Skeleton', () => ({
   default: () => <div data-testid="skeleton">Loading...</div>,
 }));
@@ -137,7 +151,9 @@ const mockMatches = [
   },
 ];
 
-function renderWithRouter(initialEntries = ['/matches']) {
+type InitialEntries = ComponentProps<typeof MemoryRouter>['initialEntries'];
+
+function renderWithRouter(initialEntries: InitialEntries = ['/matches']) {
   return render(
     <MemoryRouter initialEntries={initialEntries}>
       <MatchSearch />
@@ -176,13 +192,15 @@ describe('MatchSearch', () => {
     });
   });
 
-  it('renders filter dropdowns with options', async () => {
+  it('keeps the advanced filters behind the Filters button', async () => {
     renderWithRouter();
-    await waitFor(() => {
-      expect(screen.getByLabelText('Player')).toBeInTheDocument();
-    });
+    await screen.findAllByText('John Cena');
+    expect(screen.queryByLabelText('Player')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'matchSearch.filtersButton' }));
+
+    expect(screen.getByLabelText('Player')).toBeInTheDocument();
     expect(screen.getByLabelText('Match Type')).toBeInTheDocument();
-    expect(screen.getByLabelText('Status')).toBeInTheDocument();
     expect(screen.getByLabelText('Championship')).toBeInTheDocument();
     expect(screen.getByLabelText('Season')).toBeInTheDocument();
     expect(screen.getByLabelText('Stipulation')).toBeInTheDocument();
@@ -190,8 +208,13 @@ describe('MatchSearch', () => {
     expect(screen.getByLabelText('To')).toBeInTheDocument();
   });
 
-  it('populates player dropdown with fetched players', async () => {
-    renderWithRouter();
+  it('opens the filter panel when the URL already has an advanced filter', async () => {
+    renderWithRouter(['/matches?playerId=p1']);
+    expect(await screen.findByLabelText('Player')).toHaveValue('p1');
+  });
+
+  it('populates player dropdown from the directory', async () => {
+    renderWithRouter(['/matches?seasonId=s1']);
     await waitFor(() => {
       const playerSelect = screen.getByLabelText('Player') as HTMLSelectElement;
       const options = Array.from(playerSelect.options).map((o) => o.text);
@@ -200,14 +223,11 @@ describe('MatchSearch', () => {
     });
   });
 
-  it('calls matchesApi.getAll when a filter is changed', async () => {
+  it('calls matchesApi.getAll when the status tab changes', async () => {
     renderWithRouter();
+    const completedTab = await screen.findByRole('tab', { name: 'Completed' });
 
-    await waitFor(() => {
-      expect(screen.getByLabelText('Status')).toBeInTheDocument();
-    });
-
-    fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'completed' } });
+    fireEvent.mouseDown(completedTab);
 
     await waitFor(() => {
       // Should be called at least twice: once on mount, once after filter change
@@ -216,6 +236,44 @@ describe('MatchSearch', () => {
       const lastCall = mockGetAllMatches.mock.calls[mockGetAllMatches.mock.calls.length - 1];
       expect(lastCall[0]).toEqual(expect.objectContaining({ status: 'completed' }));
     });
+  });
+
+  it('narrows the list with the quick search', async () => {
+    mockGetAllMatches.mockResolvedValue([
+      mockMatches[0],
+      { ...mockMatches[1], matchFormat: 'Tag Team' },
+    ]);
+    renderWithRouter();
+    await screen.findAllByText('John Cena');
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'tag' } });
+
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+  });
+
+  it('highlights the match passed through router state', async () => {
+    renderWithRouter([{ pathname: '/matches', state: { matchId: 'm2' } }]);
+    await screen.findAllByText('John Cena');
+    const current = document.querySelector('[aria-current="true"]');
+    expect(current).toHaveClass('match-row--focused');
+    expect(document.querySelectorAll('.match-row--focused')).toHaveLength(1);
+    expect(current).toHaveTextContent('Scheduled');
+  });
+
+  it('highlights the match named in the URL', async () => {
+    renderWithRouter(['/matches?matchId=m1']);
+    await screen.findAllByText('John Cena');
+    expect(document.querySelector('[aria-current="true"]')).toHaveTextContent('Completed');
+    expect(mockGetAllMatches.mock.calls[0][0]).toBeUndefined();
+  });
+
+  it('shows extra match data in the detail dialog', async () => {
+    renderWithRouter();
+    await screen.findAllByText('John Cena');
+    fireEvent.click(screen.getAllByRole('button', { name: 'matchSearch.detailsFor' })[0]!);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('matchSearch.detailDate')).toBeInTheDocument();
   });
 
   it('shows empty state when no matches exist', async () => {
@@ -248,6 +306,13 @@ describe('MatchSearch', () => {
       expect(screen.getByTestId('empty-state')).toBeInTheDocument();
       expect(screen.getByText('Error')).toBeInTheDocument();
     });
+  });
+
+  it('shows a retry that reloads after an API failure', async () => {
+    mockGetAllMatches.mockRejectedValueOnce(new Error('API Error'));
+    renderWithRouter();
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
+    expect(await screen.findAllByText('John Cena')).not.toHaveLength(0);
   });
 
   it('displays match status badges', async () => {

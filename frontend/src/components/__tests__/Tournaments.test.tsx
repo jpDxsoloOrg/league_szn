@@ -13,7 +13,7 @@ vi.mock('../../services/api', () => ({
     getAll: mockGetAllTournaments,
   },
   playersApi: {
-    getAll: mockGetAllPlayers,
+    getDirectory: mockGetAllPlayers,
   },
 }));
 
@@ -205,7 +205,7 @@ describe('Tournaments', () => {
     fireEvent.click(screen.getByText('View Details'));
 
     // Standings heading
-    expect(screen.getByText('Standings')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Standings' })).toBeInTheDocument();
     expect(screen.getByText('Leader')).toBeInTheDocument();
     expect(screen.getByText('Gap')).toBeInTheDocument();
 
@@ -237,5 +237,26 @@ describe('Tournaments', () => {
     });
 
     expect(screen.getByText('Tournaments')).toBeInTheDocument();
+  });
+
+  it('shows a retry when loading fails', async () => {
+    mockGetAllTournaments.mockRejectedValueOnce(new Error('Boom'));
+    mockGetAllTournaments.mockResolvedValue([completedTournament]);
+    mockGetAllPlayers.mockResolvedValue(mockPlayers);
+
+    renderTournaments();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
+
+    expect(await screen.findByText('Royal Rumble Classic')).toBeInTheDocument();
+  });
+
+  it('resolves names for players outside the public roster through the directory', async () => {
+    mockGetAllTournaments.mockResolvedValue([{ ...completedTournament, winner: 'hidden' }]);
+    mockGetAllPlayers.mockResolvedValue([...mockPlayers, { playerId: 'hidden', name: 'Hidden Player', currentWrestler: null }]);
+
+    renderTournaments();
+
+    expect(await screen.findByText('Hidden Player')).toBeInTheDocument();
   });
 });

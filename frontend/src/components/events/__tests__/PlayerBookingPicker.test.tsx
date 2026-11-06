@@ -210,7 +210,7 @@ describe('PlayerBookingPicker', () => {
 
       expect(screen.getByRole('button', { name: /1 selected/ })).toBeInTheDocument();
       await openMulti(1);
-      expect(screen.getByText('✓')).toBeInTheDocument();
+      expect(document.querySelector('.booking-picker-check')).toBeInTheDocument();
     });
 
     it('keeps a selected player visible even when filtered out', async () => {

@@ -42,6 +42,7 @@ function EventCheckIn({ eventStatus, currentStatus, summary, onChange, signupsLo
               key={status}
               type="button"
               className={`event-checkin-btn event-checkin-btn-${status}${isSelected ? ' selected' : ''}`}
+              aria-pressed={isSelected}
               disabled={disabled}
               onClick={() => handleChange(status)}
             >

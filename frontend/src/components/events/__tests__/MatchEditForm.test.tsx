@@ -34,7 +34,7 @@ vi.mock('../../../services/api', () => ({
     getAll: mockGetAllMatches,
     update: mockUpdateMatch,
   },
-  playersApi: { getAll: mockGetAllPlayers },
+  playersApi: { getAllIncludingHidden: mockGetAllPlayers },
   championshipsApi: { getAll: mockGetAllChampionships },
   tournamentsApi: { getAll: mockGetAllTournaments },
   seasonsApi: { getAll: mockGetAllSeasons },
@@ -51,7 +51,6 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('../../admin/ScheduleMatch.css', () => ({}));
 vi.mock('../MatchEditForm.css', () => ({}));
 vi.mock('../../admin/SearchableSelect.css', () => ({}));
 

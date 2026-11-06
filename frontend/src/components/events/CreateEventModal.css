@@ -1,0 +1,114 @@
+.create-event {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.create-event__error {
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--radius-control);
+  background-color: var(--tint-loss);
+  color: var(--color-loss);
+}
+
+.create-event__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.create-event__label {
+  padding: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.create-event__hint {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.create-event__input {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-control);
+  background-color: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.create-event__input:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.create-event__types {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.create-event__type-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.375rem;
+}
+
+.create-event__type {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+.create-event__type input {
+  position: absolute;
+  opacity: 0;
+}
+
+.create-event__type span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target);
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-control);
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.create-event__type input:checked + span {
+  border-color: var(--color-cyan);
+  background-color: var(--tint-cyan);
+  color: var(--color-cyan);
+}
+
+.create-event__type input:focus-visible + span {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.create-event__columns .ui-select__trigger {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.create-event__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .create-event__type-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

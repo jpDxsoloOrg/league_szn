@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Check, ChevronDown } from 'lucide-react';
 import type { Player, PlayerBookingInfo } from '../../types';
 import {
   compareByBookingRecency,
@@ -50,6 +51,11 @@ export interface PlayerBookingPickerProps {
 interface PickerGroup {
   status: CheckInStatus;
   players: Player[];
+}
+
+/** Hidden players can have no wrestler, so the name stands alone for them. */
+function playerLabel(player: Player): string {
+  return player.currentWrestler ? `${player.currentWrestler} (${player.name})` : player.name;
 }
 
 export default function PlayerBookingPicker({
@@ -257,14 +263,14 @@ export default function PlayerBookingPicker({
               className={`booking-picker-dot booking-picker-dot--${statusOf(selectedPlayer.playerId)}`}
               aria-hidden="true"
             />
-            {selectedPlayer.currentWrestler} ({selectedPlayer.name})
+            {playerLabel(selectedPlayer)}
           </span>
         ) : (
           <span className="booking-picker-trigger-text booking-picker-trigger-text--empty">
             {placeholder ?? openLabel}
           </span>
         )}
-        <span className="booking-picker-caret" aria-hidden="true">▾</span>
+        <ChevronDown className="booking-picker-caret" aria-hidden="true" size={18} />
       </button>
 
       {open && (
@@ -330,10 +336,10 @@ export default function PlayerBookingPicker({
                       aria-hidden="true"
                     />
                     <span className="booking-picker-option-text">
-                      {player.currentWrestler} ({player.name})
+                      {playerLabel(player)}
                     </span>
                     {multi && isSelected(player.playerId) && (
-                      <span className="booking-picker-check" aria-hidden="true">✓</span>
+                      <Check className="booking-picker-check" aria-hidden="true" size={16} />
                     )}
                     {isBooked && (
                       <span className="booking-picker-booked-badge">

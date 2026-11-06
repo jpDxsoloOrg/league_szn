@@ -1,10 +1,10 @@
 .commentary-card {
   /* Keep the header visible when a sticky chip link scrolls to the card. */
   scroll-margin-top: 3.25rem;
-  background: #161616;
-  border: 1px solid #2c2c2c;
-  border-top: 3px solid #d4af37;
-  border-radius: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  border-top: 3px solid var(--color-cyan);
+  border-radius: var(--radius-card);
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -12,10 +12,10 @@
   min-width: 0;
 }
 
-.commentary-card--team-0 { border-top-color: #d4af37; }
-.commentary-card--team-1 { border-top-color: #dc2626; }
-.commentary-card--team-2 { border-top-color: #38bdf8; }
-.commentary-card--team-3 { border-top-color: #a855f7; }
+.commentary-card--team-0 { border-top-color: var(--color-cyan); }
+.commentary-card--team-1 { border-top-color: var(--color-pink); }
+.commentary-card--team-2 { border-top-color: var(--color-magenta); }
+.commentary-card--team-3 { border-top-color: var(--color-violet); }
 
 .commentary-card-header {
   display: flex;
@@ -28,9 +28,9 @@
   height: 120px;
   object-fit: cover;
   border-radius: 8px;
-  border: 2px solid #333;
+  border: 2px solid var(--color-hairline);
   flex-shrink: 0;
-  background: #222;
+  background: var(--color-surface-raised);
 }
 
 .commentary-card-identity {
@@ -39,16 +39,16 @@
 
 .commentary-card-team {
   display: inline-block;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #999;
+  color: var(--color-text-muted);
   margin-bottom: 0.25rem;
 }
 
 .commentary-card-name {
   margin: 0;
-  color: #f5f5f5;
+  color: var(--color-text);
   font-size: 2rem;
   line-height: 1.05;
   text-transform: uppercase;
@@ -58,7 +58,7 @@
 
 .commentary-card-player {
   margin: 0.25rem 0 0.5rem;
-  color: #aaa;
+  color: var(--color-text-muted);
   font-size: 0.95rem;
 }
 
@@ -75,13 +75,13 @@
   letter-spacing: 0.5px;
   padding: 0.15rem 0.5rem;
   border-radius: 4px;
-  border: 1px solid #444;
-  color: #ccc;
+  border: 1px solid var(--color-hairline);
+  color: var(--color-text-secondary);
 }
 
-.commentary-card-alignment--face { border-color: #38bdf8; color: #7dd3fc; background: rgba(56, 189, 248, 0.12); }
-.commentary-card-alignment--heel { border-color: #dc2626; color: #f87171; background: rgba(220, 38, 38, 0.15); }
-.commentary-card-alignment--neutral { border-color: #a855f7; color: #c4b5fd; background: rgba(168, 85, 247, 0.12); }
+.commentary-card-alignment--face { border-color: var(--color-cyan); color: var(--color-cyan); background: var(--tint-cyan); }
+.commentary-card-alignment--heel { border-color: var(--color-pink); color: var(--color-loss); background: var(--tint-pink); }
+.commentary-card-alignment--neutral { border-color: var(--color-violet); color: var(--color-text); background: var(--tint-violet); }
 
 .commentary-card-records {
   display: grid;
@@ -91,23 +91,24 @@
 }
 
 .commentary-card-record {
-  background: #1e1e1e;
-  border: 1px solid #2c2c2c;
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
+  padding: 0.25rem 0.5rem;
   text-align: center;
 }
 
+.commentary-card-record + .commentary-card-record {
+  border-left: 1px solid var(--color-hairline);
+}
+
 .commentary-card-record dt {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #888;
+  color: var(--color-text-muted);
 }
 
 .commentary-card-record dd {
   margin: 0.15rem 0 0;
-  color: #f0f0f0;
+  color: var(--color-text);
   font-size: 1.35rem;
   font-weight: 700;
 }
@@ -120,22 +121,23 @@
 
 .commentary-card-bio {
   margin: 0;
-  color: #c8c8c8;
+  color: var(--color-text-secondary);
   font-style: italic;
   line-height: 1.5;
   white-space: pre-line;
 }
 
 .commentary-card-empty {
-  color: #666;
+  color: var(--color-text-muted);
   font-style: italic;
   margin: 0;
 }
 
 .commentary-card-bio-toggle {
+  min-height: var(--touch-target);
   background: none;
   border: none;
-  color: #d4af37;
+  color: var(--color-cyan);
   font: inherit;
   font-style: normal;
   cursor: pointer;
