@@ -18,6 +18,8 @@ export const handler: Handler = async (event) => {
       minimumMatches: typeof body.minimumMatches === 'number' ? body.minimumMatches : undefined,
       maxContenders: typeof body.maxContenders === 'number' ? body.maxContenders : undefined,
       divisionRestricted: typeof body.divisionRestricted === 'boolean' ? body.divisionRestricted : undefined,
+      // Internal only: a request through the API always counts as real movement.
+      overrideChange: isAsyncInvocation && body.overrideChange === true,
     };
 
     const result = await recalculateContenderRankings(requestedChampionshipId, configOverrides);

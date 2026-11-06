@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getRepositories } from '../../lib/repositories';
 import { success, serverError } from '../../lib/response';
+import { createReviewerNameLookup, UNKNOWN_REVIEWER } from '../../lib/reviewerName';
 
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -34,12 +35,16 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       }
     }
 
+    // createdBy holds the staff member's account id, which isn't fit to display
+    const staffName = createReviewerNameLookup(overrides.length > 0 ? await players.list() : []);
+
     // Enrich overrides with player names and sort by createdAt desc
     const enriched = overrides
       .map((override) => {
         const player = playersMap.get(override.playerId);
         return {
           ...override,
+          createdBy: staffName(override.createdBy) ?? UNKNOWN_REVIEWER,
           playerName: player?.name || 'Unknown',
           wrestlerName: player?.currentWrestler || 'Unknown',
           playerImageUrl: player?.imageUrl || null,

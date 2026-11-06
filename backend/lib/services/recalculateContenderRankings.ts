@@ -1,6 +1,7 @@
 import { getRepositories } from '../repositories';
 import { calculateRankingsForChampionship, RankingResult } from '../rankingCalculator';
 import { applyOverrides, ActiveOverride, OverrideType, RankingWithOverride } from '../overrideApplicator';
+import type { ContenderRanking } from '../repositories/types';
 
 export interface RankingResultSummary {
   message: string;
@@ -15,6 +16,11 @@ export interface ConfigOverrides {
   minimumMatches?: number;
   maxContenders?: number;
   divisionRestricted?: boolean;
+  /**
+   * Set when this run follows staff setting or removing an override. The list
+   * moves, but nobody won or lost their way there, so it isn't rank movement.
+   */
+  overrideChange?: boolean;
 }
 
 interface RankableChampionship {
@@ -35,6 +41,55 @@ function weekPeriod(date: Date): string {
   const weekNumber = Math.ceil((daysSinceYearStart + yearStart.getDay() + 1) / 7);
   const paddedWeek = weekNumber.toString().padStart(2, '0');
   return `${date.getFullYear()}-${paddedWeek}`;
+}
+
+interface RankProgress {
+  previousRank: number | undefined;
+  peakRank: number;
+  weeksAtTop: number;
+  lastTopWeek: string | undefined;
+}
+
+/**
+ * A row's progress when only an override moved it. Each arrow stays as it was,
+ * and peak rank, weeks at #1 and history wait for a run that earned them.
+ */
+function progressKeptThroughOverride(oldData: ContenderRanking | undefined, rank: number): RankProgress {
+  const lastMovement = typeof oldData?.previousRank === 'number' ? oldData.previousRank - oldData.rank : undefined;
+  return {
+    previousRank: lastMovement === undefined ? undefined : rank + lastMovement,
+    peakRank: oldData?.peakRank ?? rank,
+    weeksAtTop: oldData?.weeksAtTop ?? 0,
+    lastTopWeek: oldData?.lastTopWeek,
+  };
+}
+
+/** A row's progress after a run that really ranked it at `rank`. */
+function progressFromRanking(oldData: ContenderRanking | undefined, rank: number, currentWeek: string): RankProgress {
+  // Runs are frequent, so an unchanged rank keeps its last movement rather
+  // than resetting it to zero.
+  const previousRank = oldData?.rank === rank
+    ? (oldData.previousRank ?? oldData.rank)
+    : oldData?.rank;
+  const oldPeakRank = oldData?.peakRank ?? Infinity;
+
+  // Counts weeks, not runs: a player already counted this week isn't counted
+  // again, even if they lost #1 and took it back. Rows from before
+  // lastTopWeek existed fall back to their last run.
+  const alreadyCountedThisWeek = oldData?.lastTopWeek === currentWeek || (
+    oldData?.rank === 1
+    && Boolean(oldData.calculatedAt)
+    && weekPeriod(new Date(oldData.calculatedAt)) === currentWeek
+  );
+
+  return {
+    previousRank,
+    peakRank: Math.min(oldPeakRank, rank),
+    weeksAtTop: rank === 1 && !alreadyCountedThisWeek
+      ? (oldData?.weeksAtTop ?? 0) + 1
+      : (oldData?.weeksAtTop ?? 0),
+    lastTopWeek: rank === 1 ? currentWeek : oldData?.lastTopWeek,
+  };
 }
 
 /**
@@ -93,26 +148,9 @@ async function recalculateChampionship(
 
   for (const ranking of adjustedRankings) {
     const oldData = existingMap.get(ranking.playerId);
-
-    // Runs are frequent, so an unchanged rank keeps its last movement rather
-    // than resetting it to zero.
-    const previousRank = oldData?.rank === ranking.rank
-      ? (oldData.previousRank ?? oldData.rank)
-      : oldData?.rank;
-    const oldPeakRank = oldData?.peakRank ?? Infinity;
-    const peakRank = Math.min(oldPeakRank, ranking.rank);
-
-    // Counts weeks, not runs: a player already counted this week isn't counted
-    // again, even if they lost #1 and took it back. Rows from before
-    // lastTopWeek existed fall back to their last run.
-    const alreadyCountedThisWeek = oldData?.lastTopWeek === currentWeek || (
-      oldData?.rank === 1
-      && Boolean(oldData.calculatedAt)
-      && weekPeriod(new Date(oldData.calculatedAt)) === currentWeek
-    );
-    const weeksAtTop = ranking.rank === 1 && !alreadyCountedThisWeek
-      ? (oldData?.weeksAtTop ?? 0) + 1
-      : (oldData?.weeksAtTop ?? 0);
+    const { previousRank, peakRank, weeksAtTop, lastTopWeek } = configOverrides?.overrideChange
+      ? progressKeptThroughOverride(oldData, ranking.rank)
+      : progressFromRanking(oldData, ranking.rank, currentWeek);
 
     await contenders.upsertRanking({
       championshipId,
@@ -128,11 +166,13 @@ async function recalculateChampionship(
       previousRank: previousRank ?? null,
       peakRank,
       weeksAtTop,
-      lastTopWeek: ranking.rank === 1 ? currentWeek : oldData?.lastTopWeek,
+      lastTopWeek,
       isOverridden: ranking.isOverridden || false,
       overrideType: ranking.overrideType || null,
       organicRank: ranking.organicRank || null,
     });
+
+    if (configOverrides?.overrideChange) continue;
 
     await contenders.writeHistory({
       playerId: ranking.playerId,

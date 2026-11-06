@@ -26,7 +26,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Trigger ranking recalculation for this championship
     try {
-      await invokeAsync('contenders', { source: 'recordResult', championshipId });
+      await invokeAsync('contenders', { source: 'overrideRemoved', championshipId, overrideChange: true });
     } catch (err) {
       console.warn('Failed to invoke calculateRankings async:', err);
     }
