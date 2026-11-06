@@ -3,10 +3,11 @@ import type { APIGatewayProxyEvent, Context, Callback } from 'aws-lambda';
 
 // ─── Mocks ───────────────────────────────────────────────────────────
 
-const { mockGetSignedUrl, mockPutObjectCommand, mockS3Client } = vi.hoisted(() => ({
+const { mockGetSignedUrl, mockPutObjectCommand, mockS3Client, mockFindByUserId } = vi.hoisted(() => ({
   mockGetSignedUrl: vi.fn(),
   mockPutObjectCommand: vi.fn(),
   mockS3Client: vi.fn(),
+  mockFindByUserId: vi.fn(),
 }));
 
 vi.mock('@aws-sdk/s3-request-presigner', () => ({
@@ -20,6 +21,12 @@ vi.mock('@aws-sdk/client-s3', () => ({
 
 vi.mock('uuid', () => ({
   v4: () => 'test-uuid-1234',
+}));
+
+vi.mock('../../../lib/repositories', () => ({
+  getRepositories: () => ({
+    roster: { players: { findByUserId: mockFindByUserId } },
+  }),
 }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -325,5 +332,125 @@ describe('generateUploadUrl — auth & validation', () => {
     const result = await generateUploadUrl(event, ctx, cb);
 
     expect(result!.statusCode).toBe(200);
+  });
+
+  // ─── File type lookup ─────────────────────────────────────────
+
+  it.each(['constructor', '__proto__', 'toString', 'text/html', 'image/svg+xml'])(
+    'returns 400 for file type %s',
+    async (fileType) => {
+      const event = withAuth(
+        makeEvent({ body: JSON.stringify({ fileName: 'photo.jpg', fileType, folder: 'wrestlers' }) }),
+        'Admin',
+      );
+
+      const result = await generateUploadUrl(event, ctx, cb);
+
+      expect(result!.statusCode).toBe(400);
+    },
+  );
+
+  it('returns 400 when fileType is not a string', async () => {
+    const event = withAuth(
+      makeEvent({
+        body: JSON.stringify({ fileName: 'photo.jpg', fileType: ['image/jpeg'], folder: 'wrestlers' }),
+      }),
+      'Admin',
+    );
+
+    const result = await generateUploadUrl(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+  });
+
+  it('rejects video types outside the videos folder', async () => {
+    const event = withAuth(
+      makeEvent({
+        body: JSON.stringify({ fileName: 'clip.mp4', fileType: 'video/mp4', folder: 'wrestlers' }),
+      }),
+      'Admin',
+    );
+
+    const result = await generateUploadUrl(event, ctx, cb);
+
+    expect(result!.statusCode).toBe(400);
+  });
+
+  // ─── Videos folder permission ─────────────────────────────────
+
+  describe('videos folder permission', () => {
+    const videoBody = JSON.stringify({ fileName: 'clip.mp4', fileType: 'video/mp4', folder: 'videos' });
+
+    it.each(['Admin', 'Moderator'])('allows %s without a player lookup', async (group) => {
+      const result = await generateUploadUrl(withAuth(makeEvent({ body: videoBody }), group), ctx, cb);
+
+      expect(result!.statusCode).toBe(200);
+      expect(mockFindByUserId).not.toHaveBeenCalled();
+    });
+
+    it('allows a Wrestler whose player has canUploadVideos', async () => {
+      mockFindByUserId.mockResolvedValue({ playerId: 'p1', canUploadVideos: true });
+
+      const result = await generateUploadUrl(withAuth(makeEvent({ body: videoBody }), 'Wrestler'), ctx, cb);
+
+      expect(result!.statusCode).toBe(200);
+      expect(mockFindByUserId).toHaveBeenCalledWith('user-sub-1');
+    });
+
+    it('allows a permitted Wrestler to upload an image thumbnail', async () => {
+      mockFindByUserId.mockResolvedValue({ playerId: 'p1', canUploadVideos: true });
+      const body = JSON.stringify({ fileName: 'thumb.png', fileType: 'image/png', folder: 'videos' });
+
+      const result = await generateUploadUrl(withAuth(makeEvent({ body }), 'Wrestler'), ctx, cb);
+
+      expect(result!.statusCode).toBe(200);
+    });
+
+    it.each([
+      ['flag is false', { playerId: 'p1', canUploadVideos: false }],
+      ['flag is unset', { playerId: 'p1' }],
+      ['no player is linked', null],
+    ])('returns 403 for a Wrestler when %s', async (_label, player) => {
+      mockFindByUserId.mockResolvedValue(player);
+
+      const result = await generateUploadUrl(withAuth(makeEvent({ body: videoBody }), 'Wrestler'), ctx, cb);
+
+      expect(result!.statusCode).toBe(403);
+      expect(JSON.parse(result!.body).message).toBe('Your account is not permitted to upload videos');
+      expect(mockGetSignedUrl).not.toHaveBeenCalled();
+    });
+
+    it('returns 403 for a Wrestler with no subject claim', async () => {
+      const result = await generateUploadUrl(withAuth(makeEvent({ body: videoBody }), 'Wrestler', ''), ctx, cb);
+
+      expect(result!.statusCode).toBe(403);
+      expect(mockFindByUserId).not.toHaveBeenCalled();
+    });
+
+    it('does not look up the player for other folders', async () => {
+      const body = JSON.stringify({ fileName: 'photo.jpg', fileType: 'image/jpeg', folder: 'wrestlers' });
+
+      const result = await generateUploadUrl(withAuth(makeEvent({ body }), 'Wrestler'), ctx, cb);
+
+      expect(result!.statusCode).toBe(200);
+      expect(mockFindByUserId).not.toHaveBeenCalled();
+    });
+
+    it('returns 500 when the player lookup fails', async () => {
+      mockFindByUserId.mockRejectedValue(new Error('lookup failed'));
+
+      const result = await generateUploadUrl(withAuth(makeEvent({ body: videoBody }), 'Wrestler'), ctx, cb);
+
+      expect(result!.statusCode).toBe(500);
+    });
+
+    it('skips the check when running offline', async () => {
+      process.env.IS_OFFLINE = 'true';
+
+      const result = await generateUploadUrl(makeEvent({ body: videoBody }), ctx, cb);
+
+      expect(result!.statusCode).toBe(200);
+      expect(mockFindByUserId).not.toHaveBeenCalled();
+    });
   });
 });
