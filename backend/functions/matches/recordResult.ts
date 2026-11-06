@@ -480,7 +480,8 @@ async function autoCompleteEvent(matchId: string): Promise<void> {
     let allCompleted = true;
     for (const mId of matchIds) {
       const m = await matches.findById(mId);
-      if (!m || m.status !== 'completed') {
+      // A card whose match is gone must not hold the event open for good.
+      if (m && m.status !== 'completed') {
         allCompleted = false;
         break;
       }
